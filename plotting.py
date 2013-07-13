@@ -28,6 +28,7 @@ save_2D_movie       - saves a list of 2D numpy arrays of gray shades between 0 a
 
 import sys, numpy
 from NeuroTools import check_dependency
+import neo
 
 # Check availability of pylab (essential!)
 if check_dependency('pylab'):
@@ -414,7 +415,7 @@ def plot_event_triggered_average(eta,average = True):
     """Adapted from old NeuroTools.signals.analogs.AnalogSignal.event_triggered_average()
     Plot a result of signals.analogs.event_triggered_average()"""
 
-    time_axis = pylab.linspace(-t_min, t_max, (t_min+t_max)/analog_signal.dt)
+    time_axis = pylab.linspace(-t_min, t_max, (t_min+t_max)/eta.dt)
     subplot   = get_display(display)
     ylabel = "Event Triggered Average"
     xlabel = "Time (ms)"
@@ -431,3 +432,105 @@ def plot_event_triggered_average(eta,average = True):
     subplot.plot([0,0],[ymin, ymax], c='r')
     set_axis_limits(subplot, -t_min, t_max, ymin, ymax)
     pylab.draw()
+
+class VmArray(neo.AnalogSignalArray):
+
+    def plot(self, id_list=None, v_thresh=None, display=True, kwargs={}):
+        """
+        Plot all cells in the AnalogSignalArray defined by id_list
+        
+        Inputs:
+            id_list - can be a integer (and then N cells are randomly selected) or a 
+                      list of ids. If None, we use all the ids of the SpikeArray
+            v_thresh- For graphical purpose, plot a spike when Vm > V_thresh. If None, 
+                      just plot the raw Vm
+            display - if True, a new figure is created. Could also be a subplot
+            kwargs  - dictionary contening extra parameters that will be sent to the plot 
+                      function
+        
+        Examples:
+            >> z = subplot(221)
+            >> aslist.plot(5, v_thresh = -50, display=z, kwargs={'color':'r'})
+        """
+        subplot   = get_display(display)
+        id_list   = self._AnalogSignalArray__sub_id_list(id_list)
+        time_axis = self.time_axis()  
+        if not subplot or not HAVE_MATPLOTLIB:
+            print MATPLOTLIB_ERROR
+        else:
+            xlabel = "Time (ms)"
+            ylabel = "Membrane Potential (mV)"
+            set_labels(subplot, xlabel, ylabel)
+            for id in id_list:
+                to_be_plot = self.analog_signals[id].signal
+                if v_thresh is not None:
+                    to_be_plot = pylab.where(to_be_plot>=v_thresh-0.02, v_thresh+0.5, to_be_plot)
+                if len(time_axis) > len(to_be_plot):
+                    time_axis = time_axis[:-1]
+                if len(to_be_plot) > len(time_axis):
+                    to_be_plot = to_be_plot[:-1]
+                subplot.plot(time_axis, to_be_plot, **kwargs)
+                subplot.hold(1)
+            #pylab.draw()
+
+class CurrentArray(neo.AnalogSignalArray):
+
+    def plot(self, id_list=None, v_thresh=None, display=True, kwargs={}):
+        """
+        Plot all cells in the AnalogSignalArray defined by id_list
+        
+        Inputs:
+            id_list - can be a integer (and then N cells are randomly selected) or a 
+                      list of ids. If None, we use all the ids of the SpikeArray
+            display - if True, a new figure is created. Could also be a subplot
+            kwargs  - dictionary contening extra parameters that will be sent to the plot 
+                      function
+        
+        Examples:
+            >> z = subplot(221)
+            >> aslist.plot(5, display=z, kwargs={'color':'r'})
+        """
+        subplot   = get_display(display)
+        id_list   = self._AnalogSignalArray__sub_id_list(id_list)
+        time_axis = self.time_axis()  
+        if not subplot or not HAVE_PYLAB:
+            print PYLAB_ERROR
+        else:
+            xlabel = "Time (ms)"
+            ylabel = "Current (nA)"
+            set_labels(subplot, xlabel, ylabel)
+            for id in id_list:
+                subplot.plot(time_axis, self.analog_signals[id].signal, **kwargs)
+                subplot.hold(1)
+            pylab.draw()
+
+class ConductanceArray(neo.AnalogSignalArray):
+
+    def plot(self, id_list=None, v_thresh=None, display=True, kwargs={}):
+        """
+        Plot all cells in the AnalogSignalArray defined by id_list
+        
+        Inputs:
+            id_list - can be a integer (and then N cells are randomly selected) or a 
+                      list of ids. If None, we use all the ids of the SpikeArray
+            display - if True, a new figure is created. Could also be a subplot
+            kwargs  - dictionary contening extra parameters that will be sent to the plot 
+                      function
+        
+        Examples:
+            >> z = subplot(221)
+            >> aslist.plot(5, display=z, kwargs={'color':'r'})
+        """
+        subplot   = get_display(display)
+        id_list   = self._AnalogSignalArray__sub_id_list(id_list)
+        time_axis = self.time_axis()  
+        if not subplot or not HAVE_PYLAB:
+            print PYLAB_ERROR
+        else:
+            xlabel = "Time (ms)"
+            ylabel = "Conductance (nS)"
+            set_labels(subplot, xlabel, ylabel)
+            for id in id_list:
+                subplot.plot(time_axis, self.analog_signals[id].signal, **kwargs)
+                subplot.hold(1)
+            pylab.draw()
