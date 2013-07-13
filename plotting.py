@@ -29,7 +29,6 @@ save_2D_movie       - saves a list of 2D numpy arrays of gray shades between 0 a
 import sys, numpy
 from NeuroTools import check_dependency
 
-
 # Check availability of pylab (essential!)
 if check_dependency('pylab'):
     import pylab
@@ -43,13 +42,9 @@ PILIMAGEUSE = check_dependency('PIL')
 if PILIMAGEUSE:
     import PIL.Image as Image
 
-
-
 ########################################################
 # UNIVERSAL FUNCTIONS AND CLASSES FOR NORMAL PYLAB USE #
 ########################################################
-
-
 
 def get_display(display):
     """
@@ -386,3 +381,53 @@ class SimpleMultiplot(object):
             for side,draw in zip([left,bottom,right,top],boollist):
                 if draw:
                     ax.add_line(side)
+
+
+def plot_analog_signal(analog_signal, 
+                       ylabel="Analog Signal", 
+                       display=True, 
+                       kwargs={}):
+    """
+    Adapted from old NeuroTools.signals.analogs.AnalogSignal.plot()
+    Plot a neo.AnalogSignal
+    
+    Inputs:
+        analog_signal - a neo.AnalogSignal instance to plot.  
+        ylabel  - A string to sepcify the label on the yaxis.
+        display - if True, a new figure is created. Could also be a subplot
+        kwargs  - dictionary contening extra parameters that will be sent 
+                  to the plot function
+    
+    Examples:
+        >> z = subplot(221)
+        >> signal.plot(ylabel="Vm", display=z, kwargs={'color':'r'})
+    """
+    subplot   = get_display(display)
+    time_axis = analog_signal.time_axis()  
+    xlabel = "Time (ms)"
+    set_labels(subplot, xlabel, ylabel)
+    subplot.plot(time_axis, analog_signal.signal, **kwargs)
+    pylab.draw()
+
+
+def plot_event_triggered_average(eta,average = True):
+    """Adapted from old NeuroTools.signals.analogs.AnalogSignal.event_triggered_average()
+    Plot a result of signals.analogs.event_triggered_average()"""
+
+    time_axis = pylab.linspace(-t_min, t_max, (t_min+t_max)/analog_signal.dt)
+    subplot   = get_display(display)
+    ylabel = "Event Triggered Average"
+    xlabel = "Time (ms)"
+    set_labels(subplot, xlabel, ylabel)
+    if average:
+        subplot.plot(time_axis, eta, **kwargs)
+    else:
+        for idx in xrange(len(eta)):
+            subplot.plot(time_axis, eta[idx,:], c='0.5', **kwargs)
+            subplot.hold(1)
+        result = pylab.sum(eta, axis=0)/Nspikes
+        subplot.plot(time_axis, result, c='k', **kwargs)
+    xmin, xmax, ymin, ymax = subplot.axis()                    
+    subplot.plot([0,0],[ymin, ymax], c='r')
+    set_axis_limits(subplot, -t_min, t_max, ymin, ymax)
+    pylab.draw()

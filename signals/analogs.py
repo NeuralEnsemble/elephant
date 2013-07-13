@@ -31,58 +31,10 @@ See also NeuroTools.signals.spikes
 
 import os, re, numpy # Base libraries.
 import neo # Other libraries.  
-from NeuroTools import check_dependency, check_numpy_version
-from NeuroTools.io import *
-from NeuroTools.plotting import get_display, set_axis_limits, set_labels
-from NeuroTools.plotting import SimpleMultiplot
-
-if check_dependency('psyco'):
-    import psyco
-    psyco.full()
-
-from NeuroTools import check_dependency
-HAVE_PYLAB = check_dependency('pylab')
-HAVE_MATPLOTLIB = check_dependency('matplotlib')
-if HAVE_PYLAB:
-    import pylab
-else:
-    PYLAB_ERROR = "The pylab package was not detected"
-if not HAVE_MATPLOTLIB:
-    MATPLOTLIB_ERROR = "The matplotlib package was not detected"
-
-PLOT = False # Assume that we are not doing any plotting in these functions.  
-
-newnum = check_numpy_version()
+from NeuroTools.io import * # DataHandler, etc.  
 from pairs import *
 from intervals import *
-    
-# Are we including plotting support?
-def plot(analog_signal, 
-         ylabel="Analog Signal", 
-         display=True, 
-         kwargs={}):
-    """
-    Plot the AnalogSignal
-    
-    Inputs:
-        ylabel  - A string to sepcify the label on the yaxis.
-        display - if True, a new figure is created. Could also be a subplot
-        kwargs  - dictionary contening extra parameters that will be sent 
-                  to the plot function
-    
-    Examples:
-        >> z = subplot(221)
-        >> signal.plot(ylabel="Vm", display=z, kwargs={'color':'r'})
-    """
-    subplot   = get_display(display)
-    time_axis = analog_signal.time_axis()  
-    if not subplot or not HAVE_PYLAB:
-        print PYLAB_ERROR
-    else:
-        xlabel = "Time (ms)"
-        set_labels(subplot, xlabel, ylabel)
-        subplot.plot(time_axis, analog_signal.signal, **kwargs)
-        pylab.draw()
+   
 
 def threshold_detection(analog_signal, 
                         threshold=None, 
@@ -126,10 +78,10 @@ def threshold_detection(analog_signal,
     if format is 'raw':
         return events
     else:
-        return neo.SpikeTrain(events,t_start=analog_signal.t_start,
-                                 t_stop=analog_signal.t_stop)
-        
-                
+        return neo.SpikeTrain(events,analog_signal.t_stop,
+                                     t_start=analog_signal.t_start)
+     
+
 def event_triggered_average(analog_signal, 
                             events, 
                             average = True, 
@@ -208,28 +160,6 @@ def event_triggered_average(analog_signal,
     else:
         result = numpy.array(result)
         
-    if PLOT:
-        if not subplot or not HAVE_PYLAB:
-            if with_time:
-                return result, time_axis
-            else:
-                return result
-        else:
-            xlabel = "Time (ms)"
-            set_labels(subplot, xlabel, ylabel)
-            if average:
-                subplot.plot(time_axis, result, **kwargs)
-            else:
-                for idx in xrange(len(result)):
-                    subplot.plot(time_axis, result[idx,:], c='0.5', **kwargs)
-                    subplot.hold(1)
-                result = numpy.sum(result, axis=0)/Nspikes
-                subplot.plot(time_axis, result, c='k', **kwargs)
-            xmin, xmax, ymin, ymax = subplot.axis()
-                        
-            subplot.plot([0,0],[ymin, ymax], c='r')
-            set_axis_limits(subplot, -t_min, t_max, ymin, ymax)
-            pylab.draw()
 
 def slice_by_events(analog_signal,events,t_min=100,t_max=100):
     """
@@ -271,6 +201,7 @@ def slice_by_events(analog_signal,events,t_min=100,t_max=100):
             t_stop_new = (spike+t_max)
             result[index] = analog_signal.time_slice(t_start_new, t_stop_new)
     return result
+
 
 def mask_events(analog_signal,events,t_min=100,t_max=100):
     """
@@ -322,6 +253,7 @@ def mask_events(analog_signal,events,t_min=100,t_max=100):
         result.signal.mask[i_start:i_stop]=True
                   
     return result
+
 
 def slice_exclude_events(analog_signal,events,t_min=100,t_max=100):
     """
@@ -379,6 +311,7 @@ def slice_exclude_events(analog_signal,events,t_min=100,t_max=100):
     if t_last<analog_signal.t_stop:
         yield analog_signal.time_slice(t_last, analog_signal.t_stop)
 
+
 def cov(signal1,signal2):
     """
 
@@ -414,6 +347,7 @@ def cov(signal1,signal2):
 
     return mean(signal1.signal*signal2.signal) - \
            mean(signal1.signal)*mean(signal2.signal)
+
 
 def load_conductance_array(user_file, 
                            id_list=None, 
@@ -458,6 +392,7 @@ def load_conductance_array(user_file,
                                       t_stop=t_stop, 
                                       dims=dims)
 
+
 def load_vm_array(user_file, 
                   id_list=None, 
                   dt=None, 
@@ -495,6 +430,7 @@ def load_vm_array(user_file,
                                       t_start=t_start, 
                                       t_stop=t_stop, 
                                       dims=dims)
+
 
 def load_current_array(user_file, 
                        id_list=None, 
