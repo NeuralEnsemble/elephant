@@ -132,7 +132,6 @@ def event_triggered_average(analog_signal,
     time_axis = numpy.linspace(-t_min, t_max, (t_min+t_max)/analog_signal.dt)
     N         = len(time_axis)
     Nspikes   = 0.
-    subplot   = get_display(display)
     if average:
         result = numpy.zeros(N, float)
     else:
@@ -159,7 +158,7 @@ def event_triggered_average(analog_signal,
         result = result/Nspikes
     else:
         result = numpy.array(result)
-        
+    return result
 
 def slice_by_events(analog_signal,events,t_min=100,t_max=100):
     """
