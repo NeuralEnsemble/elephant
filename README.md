@@ -1,2 +1,4 @@
-NeuroTools
-==========
+ElePhAnT - Electrophysiology Analysis Toolkit
+=============================================
+
+

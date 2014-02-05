@@ -29,7 +29,8 @@ nosetests.xml
 # Translations
 *.mo
 
-# Mr Developer
+# IDE configs
 .mr.developer.cfg
 .project
 .pydevproject
+*.komodoproject
