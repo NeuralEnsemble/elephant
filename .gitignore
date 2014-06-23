@@ -1,36 +1,70 @@
-*.py[cod]
-
-# C extensions
-*.so
-
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
+#########################################
+# Editor temporary/working/backup files #
+.#*
+[#]*#
+*~
+*$
+*.bak
 .coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# IDE configs
+*.kdev4
+*.komodoproject
 .mr.developer.cfg
+nosetests.xml
+*.orig
 .project
 .pydevproject
-*.komodoproject
+.settings
+*.tmp*
+
+# Compiled source #
+###################
+*.a
+*.com
+*.class
+*.dll
+*.exe
+*.mo
+*.o
+*.py[ocd]
+*.so
+
+# Python files #
+################
+# setup.py working directory
+build
+# other build directories
+bin
+parts
+var
+lib
+lib64
+# sphinx build directory
+doc/_build
+# setup.py dist directory
+dist
+sdist
+# Egg metadata
+*.egg-info
+*.egg
+*.EGG
+*.EGG-INFO
+eggs
+develop-eggs
+# tox testing tool
+.tox
+# Packages
+.installed.cfg
+pip-log.txt
+
+# OS generated files #
+######################
+.directory
+.gdb_history
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Things specific to this project #
+###################################
+neo/test/io/files_for_tests
