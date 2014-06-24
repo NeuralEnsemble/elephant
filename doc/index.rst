@@ -1,23 +1,24 @@
-.. ElePhAnT documentation master file, created by
-   sphinx-quickstart on Wed Feb  5 17:11:26 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+========
+Elephant
+========
 
-Welcome to ElePhAnT's documentation!
-====================================
+Elephant is a package for the analysis of neurophysiology data, based on Neo_.
 
-Contents:
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
+   api_reference
    developers_guide
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
 
+.. _Neo: http://neuralensemble.org/neo

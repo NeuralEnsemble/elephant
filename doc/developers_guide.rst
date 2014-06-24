@@ -127,6 +127,7 @@ documentation system. To build the documentation::
     $ make html
     
 Then open `some/directory/elephant/doc/build/html/index.html` in your browser.
+Docstrings should conform to the `NumPy docstring standard`_.
 
 Committing your changes
 -----------------------
@@ -225,3 +226,4 @@ Finally, tag the release in the Git repository and push it::
 .. _PEP394: http://www.python.org/dev/peps/pep-0394/
 .. _PyPI: http://pypi.python.org
 .. _GitHub: http://github.com
+.. _`NumPy docstring standard`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
