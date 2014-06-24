@@ -15,7 +15,7 @@ if os.environ.get('TRAVIS') == 'true' and \
 setup(
     name = "elephant",
     version = '0.1dev',
-    packages = ['elephant'],
+    packages = ['elephant', 'elephant.test'],
     install_requires=install_requires,
     author = "ElePhAnT authors and contributors",
     author_email = "andrew.davison@unic.cnrs-gif.fr",
