@@ -1,7 +1,7 @@
 """
 docstring goes here
 
-:copyright: Copyright 2014 by the ElePhAnT team, see AUTHORS.txt.
+:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
 :license: CeCILL, see LICENSE.txt for details.
 """
 
