@@ -9,7 +9,7 @@ Mac OS X, with the bash shell. If you develop on Windows, please get in touch.
 Mailing lists
 -------------
 
-General discussion of ElePhAnT development takes place in the `NeuralEnsemble Google
+General discussion of Elephant development takes place in the `NeuralEnsemble Google
 group`_.
 
 Discussion of issues specific to a particular ticket in the issue tracker should
@@ -19,14 +19,14 @@ take place on the tracker.
 Using the issue tracker
 -----------------------
 
-If you find a bug in ElePhAnT, please create a new ticket on the `issue tracker`_,
+If you find a bug in Elephant, please create a new ticket on the `issue tracker`_,
 setting the type to "defect".
 Choose a name that is as specific as possible to the problem you've found, and
 in the description give as much information as you think is necessary to
 recreate the problem. The best way to do this is to create the shortest possible
 Python script that demonstrates the problem, and attach the file to the ticket.
 
-If you have an idea for an improvement to ElePhAnT, create a ticket with type
+If you have an idea for an improvement to Elephant, create a ticket with type
 "enhancement". If you already have an implementation of the idea, open a pull request.
 
 
@@ -59,7 +59,7 @@ To get a local copy of the repository::
     $ git clone git@github.com:<username>/elephant.git
     
 Now you need to make sure that the ``elephant`` package is on your PYTHONPATH.
-You can do this either by installing ElePhAnT::
+You can do this either by installing Elephant::
 
     $ cd elephant
     $ python setup.py install
@@ -72,7 +72,7 @@ PYTHONPATH, for example::
     $ ln -s elephant/elephant
     $ export PYTHONPATH=/some/directory:${PYTHONPATH}
 
-An alternate solution is to install ElePhAnT with the *develop* option, this avoids
+An alternate solution is to install Elephant with the *develop* option, this avoids
 reinstalling when there are changes in the code::
 
     $ sudo python setup.py develop
@@ -145,14 +145,14 @@ You can then push your changes to your online repository on GitHub::
 
     $ git push
     
-Once you think your changes are ready to be included in the main ElePhAnT repository,
+Once you think your changes are ready to be included in the main Elephant repository,
 open a pull request on GitHub (see https://help.github.com/articles/using-pull-requests).
 
 
 Python 3
 --------
 
-ElePhAnT should work with both recent versions of Python 2 (versions 2.6 and 2.7)
+Elephant should work with both recent versions of Python 2 (versions 2.6 and 2.7)
 and Python 3.
 
 So far, we have managed to write code that works with both Python 2 and 3.
