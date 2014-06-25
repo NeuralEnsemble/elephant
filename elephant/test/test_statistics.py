@@ -41,10 +41,10 @@ class SpikeTrainStatisticsTest(unittest.TestCase):
 
     def test_cv_isi_of_regular_spiketrain_is_zero(self):
         regular_st = neo.SpikeTrain([1, 2, 3, 4, 5], units='ms', t_stop=10.0)
-        cvisi = es.cv_isi(regular_st)
+        cvisi = es.cv(es.isi(regular_st))
         self.assertEqual(cvisi, 0.0)
 
     def test_cv_isi_of_regular_array_is_zero(self):
         regular_st = np.array([1, 2, 3, 4, 5])
-        cvisi = es.cv_isi(regular_st)
+        cvisi = es.cv(es.isi(regular_st))
         self.assertEqual(cvisi, 0.0)

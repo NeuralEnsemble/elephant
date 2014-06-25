@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# ElePhAnT documentation build configuration file, created by
+# Elephant documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb  5 17:11:26 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -230,9 +230,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'ElePhAnT', u'ElePhAnT Documentation',
-   authors, 'ElePhAnT', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'Elephant', u'Elephant Documentation',
+     authors, 'Elephant', 'Elephant is a package for the analysis of neurophysiology data.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

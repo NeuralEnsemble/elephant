@@ -5,7 +5,9 @@ docstring goes here
 :license: CeCILL, see LICENSE.txt for details.
 """
 
+from __future__ import division, print_function
 import numpy as np
+import scipy.stats
 import quantities as pq
 
 
@@ -34,42 +36,13 @@ def isi(spiketrain, units=None):
     """
     intervals = np.diff(spiketrain)
     if hasattr(spiketrain, "units"):
+        intervals = pq.Quantity(np.array(intervals), units=spiketrain.units)
         if units is not None:
-            intervals.units = units
-        return pq.Quantity(np.array(intervals), intervals.units)
+            intervals.rescale(units)
     elif units is not None:
-        return pq.Quantity(intervals, units)
-    else:
-        return intervals
+        intervals = pq.Quantity(intervals, units)
+    return intervals
 
 
-def cv_isi(spiketrain):
-    """
-    Return the coefficient of variation of the inter-spike intervals.
-
-    Accepts either a Neo SpikeTrain or a plain NumPy array, containing
-    at least two spike times. If there are fewer than two spikes,
-    raises ValueError.
-
-    Parameters
-    ----------
-
-    spiketrain : Neo SpikeTrain or NumPy ndarray containing spike times
-
-    Returns
-    -------
-
-    float
-
-    Raises
-    ------
-
-    ValueError
-        If the spiketrain contains fewer than two spikes.
-    """
-    if spiketrain.size > 1:
-        intervals = isi(spiketrain)
-        return np.std(intervals)/np.mean(intervals)
-    else:
-        # alternative is to return NaN
-        raise ValueError("Spike train must contain at least two spikes.")
+# we make `cv` an alias for scipy.stats.variation for the convenience of former NeuroTools users
+cv = scipy.stats.variation
