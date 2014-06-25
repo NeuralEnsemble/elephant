@@ -6,7 +6,7 @@ long_description = open("README.rst").read()
 install_requires = ['neo>=0.3.3',
                     'numpy>=1.5.0',
                     'quantities>=0.9.0',
-                    'scipy'>='0.14.0']
+                    'scipy'>='0.9.0']
 
 
 setup(
