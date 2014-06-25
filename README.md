@@ -1,4 +1,0 @@
-ElePhAnT - Electrophysiology Analysis Toolkit
-=============================================
-
-

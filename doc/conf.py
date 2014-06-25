@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# ElePhAnT documentation build configuration file, created by
+# Elephant documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb  5 17:11:26 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -25,7 +25,9 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.pngmath', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx',
+              'sphinx.ext.todo', 'sphinx.ext.pngmath', 'sphinx.ext.mathjax',
+              'sphinx.ext.viewcode', 'numpydoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -40,8 +42,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'ElePhAnT'
-copyright = u'2014, ElePhAnT authors and contributors'
+project = u'Elephant'
+authors = u'Elephant authors and contributors'
+copyright = u'2014, ' + authors
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -164,7 +167,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ElePhAnTdoc'
+htmlhelp_basename = 'elephantdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -183,8 +186,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'ElePhAnT.tex', u'ElePhAnT Documentation',
-   u'ElePhAnT authors and contributors', 'manual'),
+  ('index', 'elephant.tex', u'Elephant Documentation',
+   authors, 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -213,8 +216,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'elephant', u'ElePhAnT Documentation',
-     [u'ElePhAnT authors and contributors'], 1)
+    ('index', 'elephant', u'Elephant Documentation',
+     [authors], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -227,9 +230,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'ElePhAnT', u'ElePhAnT Documentation',
-   u'ElePhAnT authors and contributors', 'ElePhAnT', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'Elephant', u'Elephant Documentation',
+     authors, 'Elephant', 'Elephant is a package for the analysis of neurophysiology data.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -245,10 +248,10 @@ texinfo_documents = [
 # -- Options for Epub output ---------------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'ElePhAnT'
-epub_author = u'ElePhAnT authors and contributors'
-epub_publisher = u'ElePhAnT authors and contributors'
-epub_copyright = u'2014, ElePhAnT authors and contributors'
+epub_title = project
+epub_author = authors
+epub_publisher = authors
+epub_copyright = copyright
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
