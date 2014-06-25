@@ -38,7 +38,7 @@ def isi(spiketrain, units=None):
     if hasattr(spiketrain, "units"):
         intervals = pq.Quantity(np.array(intervals), units=spiketrain.units)
         if units is not None:
-            intervals.rescale(units)
+            intervals = intervals.rescale(units)
     elif units is not None:
         intervals = pq.Quantity(intervals, units)
     return intervals
