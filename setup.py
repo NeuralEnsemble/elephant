@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup
-import os
 
-long_description = ""#open("README.rst").read()
+long_description = open("README.rst").read()
 install_requires = ['neo>=0.3.3',
-                    'numpy>=1.3.0',
-                    'quantities>=0.9.0']
+                    'numpy>=1.5.0',
+                    'quantities>=0.9.0',
+                    'scipy'>='0.14.0']
 
-if os.environ.get('TRAVIS') == 'true' and \
-    os.environ.get('TRAVIS_PYTHON_VERSION').startswith('2.6'):
-    install_requires.append('unittest2>=0.5.1')
 
 setup(
     name = "elephant",
@@ -33,6 +30,3 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering']
 )
-
-
-
