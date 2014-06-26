@@ -45,6 +45,101 @@ def isi(spiketrain, axis=-1):
     return intervals
 
 
+def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
+    """
+    Return the firing rate of the SpikeTrain.
+
+    Accepts a Neo SpikeTrain, a Quantity array, or a plain NumPy array.
+    If either a SpikeTrain or Quantity array is provided, the return value will
+    be a quantities array, otherwise a plain NumPy array. The units of
+    the quantities array will be the inverse of the spiketrain.
+
+    The interval over which the firing rate is calculated can be optionally
+    controlled with `t_start` and `t_stop`
+
+    Parameters
+    ----------
+
+    spiketrain : Neo SpikeTrain or Quantity array or NumPy ndarray
+                 The spike times.
+    t_start : float or Quantity scalar, optional
+              The start time to use for the inveral.
+              If not specified, retrieved from the``t_start`
+              attribute of `spiketrain`.  If that is not present, default to
+              `0`.  Any value from `spiketrain` below this value is ignored.
+    t_stop : float or Quantity scalar, optional
+             The stop time to use for the time points.
+             If not specified, retrieved from the `t_stop`
+             attribute of `spiketrain`.  If that is not present, default to
+             the maximum value of `spiketrain`.  Any value from
+             `spiketrain` above this value is ignored.
+    axis : int, optional
+           The axis over which to do the calculation.
+           Default is `None`, do the calculation over the flattened array.
+
+    Returns
+    -------
+
+    float, quantities scalar, NumPy array or quantities array.
+
+    Notes
+    -----
+
+    If `spiketrain` is a Quantity or Neo SpikeTrain and `t_start` or `t_stop`
+    are not, `t_start` and `t_stop` are assumed to have the same units as
+    `spiketrain`.
+
+    Raises
+    ------
+
+    TypeError
+        If `spiketrain` is a NumPy array and `t_start` or `t_stop`
+        is a quantity scalar.
+
+    """
+    if t_start is None:
+        t_start = getattr(spiketrain, 't_start', 0)
+
+    found_t_start = False
+    if t_stop is None:
+        if hasattr(spiketrain, 't_stop'):
+            t_stop = spiketrain.t_stop
+        else:
+            t_stop = np.max(spiketrain, axis=axis)
+            found_t_start = True
+
+    # figure out what units, if any, we are dealing with
+    if hasattr(spiketrain, 'units'):
+        units = spiketrain.units
+    else:
+        units = None
+
+    # convert everything to the same units
+    if hasattr(t_start, 'units'):
+        if units is None:
+            raise TypeError('t_start cannot be a Quantity if '
+                            'spiketrain is not a quantity')
+        t_start = t_start.rescale(units)
+    elif units is not None:
+        t_start = pq.Quantity(t_start, units=units)
+    if hasattr(t_stop, 'units'):
+        if units is None:
+            raise TypeError('t_stop cannot be a Quantity if '
+                            'spiketrain is not a quantity')
+        t_stop = t_stop.rescale(units)
+    elif units is not None:
+        t_stop = pq.Quantity(t_stop, units=units)
+
+    if not axis or not found_t_start:
+        return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
+                      axis=axis) / (t_stop-t_start)
+    else:
+        # this is needed to handle broadcasting between spiketrain and t_stop
+        t_stop_test = np.expand_dims(t_stop, axis)
+        return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop_test),
+                      axis=axis) / (t_stop-t_start)
+
+
 # we make `cv` an alias for scipy.stats.variation for the convenience
 # of former NeuroTools users
 cv = scipy.stats.variation
