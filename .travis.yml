@@ -1,19 +1,15 @@
 language: python
-python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
 virtualenv:
   system_site_packages: true
-before_install:
- - sudo apt-get install -qq python-numpy python-scipy
-# command to install dependencies
-install:
-  - pip install -r requirements.txt --use-mirrors
-  - pip install coveralls --use-mirrors
-  - pip install . --use-mirrors
-# command to run tests, e.g. python setup.py test
-script:
-  nosetests --with-coverage --cover-package=elephant
+env:
+  matrix:
+    - DISTRIB="ubuntu" PYTHON_VERSION="2.7" INSTALL_ATLAS="true"
+      COVERAGE="true"
+    # This environment tests the newest supported anaconda env
+    - DISTRIB="conda" PYTHON_VERSION="3.4" INSTALL_MKL="true"
+      NUMPY_VERSION="1.8.1" SCIPY_VERSION="0.14.0"
+install: source continuous_integration/install.sh
+script: bash continuous_integration/test_script.sh
 after_success:
-  coveralls
+    - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
+cache: apt
