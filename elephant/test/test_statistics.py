@@ -2,7 +2,7 @@
 docstring goes here
 
 :copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
-:license: CeCILL, see LICENSE.txt for details.
+:license: Modified BSD, see LICENSE.txt for details.
 """
 
 import unittest
