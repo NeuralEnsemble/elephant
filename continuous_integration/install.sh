@@ -13,22 +13,24 @@ if [[ "$INSTALL_ATLAS" == "true" ]]; then
     sudo apt-get install -qq libatlas3gf-base libatlas-dev
 fi
 
-if [[ "$DISTRIB" == "conda" ]]; then
+if [[ "$DISTRIB" == "conda_min" ]]; then
     # Deactivate the travis-provided virtual environment and setup a
     # conda-based environment instead
     deactivate
 
     # Use the miniconda installer for faster download / install of conda
     # itself
-    wget http://repo.continuum.io/miniconda/Miniconda-2.2.2-Linux-x86_64.sh \
+    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
         -O miniconda.sh
-    chmod +x miniconda.sh && ./miniconda.sh -b
-    export PATH=/home/travis/anaconda/bin:$PATH
+    chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
+    export PATH=/home/travis/miniconda/bin:$PATH
+    conda config --set always_yes yes --set changeps1 no
     conda update --yes conda
+    conda info -a
 
     # Configure the conda environment and put it in the path using the
     # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
 
@@ -40,14 +42,54 @@ if [[ "$DISTRIB" == "conda" ]]; then
         conda remove --yes --features mkl || echo "MKL not installed"
     fi
 
+elif [[ "$DISTRIB" == "conda" ]]; then
+    # Deactivate the travis-provided virtual environment and setup a
+    # conda-based environment instead
+    deactivate
+
+    # Use the miniconda installer for faster download / install of conda
+    # itself
+    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
+        -O miniconda.sh
+    chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
+    export PATH=/home/travis/miniconda/bin:$PATH
+    conda config --set always_yes yes --set changeps1 no
+    conda update --yes conda
+    conda info -a
+
+    # Configure the conda environment and put it in the path using the
+    # provided versions
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
+        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION
+    source activate testenv
+
+    if [[ "$INSTALL_MKL" == "true" ]]; then
+        # Make sure that MKL is used
+        conda install --yes mkl
+    else
+        # Make sure that MKL is not used
+        conda remove --yes --features mkl || echo "MKL not installed"
+    fi
+
+    if [[ "$COVERAGE" == "true" ]]; then
+        pip install coveralls
+    fi
+
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     # Use standard ubuntu packages in their default version
-    sudo apt-get install -qq python-scipy python-nose python-pip
+    sudo apt-get install -qq python-scipy python-nose python-pip \
+        python-pandas python-coverage
 fi
 
 if [[ "$COVERAGE" == "true" ]]; then
-    pip install coverage coveralls
+    pip install coveralls
 fi
 
-pip install neo==0.3.3
+# pip install neo==0.3.3
+wget https://github.com/NeuralEnsemble/python-neo/archive/apibreak.tar.gz
+tar -xzvf apibreak.tar.gz
+pushd python-neo-apibreak
+python setup.py install
+popd
+
 pip install .
