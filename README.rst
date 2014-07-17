@@ -12,6 +12,9 @@ Code status
 .. image:: https://coveralls.io/repos/NeuralEnsemble/elephant/badge.png
    :target: https://coveralls.io/r/NeuralEnsemble/elephant
    :alt: Unit Test Coverage
+.. image:: https://requires.io/github/NeuralEnsemble/elephant/requirements.png?branch=master
+   :target: https://requires.io/github/NeuralEnsemble/elephant/requirements/?branch=master
+   :alt: Requirements Status
 
 
 :copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
