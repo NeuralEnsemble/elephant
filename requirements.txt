@@ -1,6 +1,10 @@
 # essential
-neo==0.3.3
-scipy>=0.9.0
+neo==0.4.0
+numpy>=1.6.2
+quantities>=0.9.0
+scipy>=0.11.0
+# optional
+#pandas>=>=0.14.0
 # for building documentation
 #numpydoc==0.5
 #sphinx==1.2.2

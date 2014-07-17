@@ -3,11 +3,21 @@ virtualenv:
   system_site_packages: true
 env:
   matrix:
+    # This environment tests the newest supported anaconda env
+    - DISTRIB="conda" PYTHON_VERSION="2.7" INSTALL_MKL="true"
+      NUMPY_VERSION="1.8.1" SCIPY_VERSION="0.14.0" PANDAS_VERSION="0.14.0"
+      COVERAGE="true"
+    - DISTRIB="conda" PYTHON_VERSION="3.4" INSTALL_MKL="true"
+      NUMPY_VERSION="1.8.1" SCIPY_VERSION="0.14.0" PANDAS_VERSION="0.14.0"
+      COVERAGE="true"
+    # This environment tests minimal dependency versions
+    - DISTRIB="conda_min" PYTHON_VERSION="2.7" INSTALL_MKL="true"
+      NUMPY_VERSION="1.6.2" SCIPY_VERSION="0.11.0" COVERAGE="true"
+    - DISTRIB="conda_min" PYTHON_VERSION="3.4" INSTALL_MKL="true"
+      NUMPY_VERSION="1.8.1" SCIPY_VERSION="0.14.0" COVERAGE="true"
+    # basic Ubuntu build environment, without optional dependencies
     - DISTRIB="ubuntu" PYTHON_VERSION="2.7" INSTALL_ATLAS="true"
       COVERAGE="true"
-    # This environment tests the newest supported anaconda env
-    - DISTRIB="conda" PYTHON_VERSION="3.4" INSTALL_MKL="true"
-      NUMPY_VERSION="1.8.1" SCIPY_VERSION="0.14.0"
 install: source continuous_integration/install.sh
 script: bash continuous_integration/test_script.sh
 after_success:
