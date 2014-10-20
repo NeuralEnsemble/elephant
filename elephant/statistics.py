@@ -163,8 +163,8 @@ def fanofactor(spiketrains):
 
     Parameters
     ----------
-    spiketrains : list of neo.core.SpikeTrain objects, quantities, numpy array
-        or list
+    spiketrains : list of neo.core.SpikeTrain objects, quantitiy array,
+        numpy array or list
         Spike trains for which to compute the FF of spike counts.
 
     Returns

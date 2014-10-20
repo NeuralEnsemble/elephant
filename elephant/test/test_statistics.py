@@ -232,39 +232,40 @@ class FanoFactorTestCase(unittest.TestCase):
     def setUp(self):
         np.random.seed(100)
         num_st = 300
-        self.spiketrains = []
-        self.test_array = np.zeros((num_st, 7))
+        self.test_spiketrains = []
+        self.test_array = []
+        self.test_quantity = []
         self.test_list = []
-        self.test_quantity_list = []
         self.sp_counts = np.zeros(num_st)
-        self.li_counts = np.zeros(num_st)
         for i in range(num_st):
             r = np.random.rand(np.random.randint(20) + 1)
-            st = neo.core.SpikeTrain(r * pq.s,
-                                     t_start=0 * pq.s,
-                                     t_stop=10.0 * pq.s)
-            self.test_array[i] = np.random.rand(7)
-            self.test_list.append(r)
-            self.test_quantity_list.append(pq.Quantity(r, units='ms'))
-            self.spiketrains.append(st)
+            st = neo.core.SpikeTrain(r * pq.ms,
+                                     t_start=0.0 * pq.ms,
+                                     t_stop=20.0 * pq.ms)
+            self.test_spiketrains.append(st)
+            self.test_array.append(r)
+            self.test_quantity.append(r * pq.ms)
+            self.test_list.append(list(r))
             # for cross-validation
             self.sp_counts[i] = len(st)
 
-    def test_fanofactor_spiketrains_list(self):
+    def test_fanofactor_spiketrains(self):
         # Test with list of spiketrains
         self.assertEqual(
             np.var(self.sp_counts) / np.mean(self.sp_counts),
-            es.fanofactor(self.spiketrains))
+            es.fanofactor(self.test_spiketrains))
 
         # One spiketrain in list
-        st = neo.core.SpikeTrain([0.3, 0.56, 0.87, 1.23] * pq.ms,
-                                 t_start=0 * pq.ms, t_stop=1.5 * pq.ms)
+        st = self.test_spiketrains[0]
         self.assertEqual(es.fanofactor([st]), 0.0)
 
-    def test_fanofactor_spiketrains_empty(self):
+    def test_fanofactor_empty(self):
         # Test with empty list
         self.assertTrue(np.isnan(es.fanofactor([])))
         self.assertTrue(np.isnan(es.fanofactor([[]])))
+
+        # Test with empty quantity
+        self.assertTrue(np.isnan(es.fanofactor([] * pq.ms)))
 
         # Empty spiketrain
         st = neo.core.SpikeTrain([] * pq.ms, t_start=0 * pq.ms,
@@ -273,33 +274,32 @@ class FanoFactorTestCase(unittest.TestCase):
 
     def test_fanofactor_spiketrains_same(self):
         # Test with same spiketrains in list
-        sts = []
-        for i in range(3):
-            sts.append(
-                neo.core.SpikeTrain([0.3, 0.56, 0.87, 1.23] * pq.ms,
-                                    t_start=0 * pq.ms,
-                                    t_stop=1.5 * pq.ms))
+        sts = [self.test_spiketrains[0]] * 3
         self.assertEqual(es.fanofactor(sts), 0.0)
 
-    def test_fanofaktor_array(self):
-        self.assertEqual(es.fanofactor(self.test_array), 0.0)
+    def test_fanofactor_array(self):
+        self.assertEqual(es.fanofactor(self.test_array),
+                         np.var(self.sp_counts) / np.mean(self.sp_counts))
 
-    def test_fanofaktor_list(self):
+    def test_fanofactor_array_same(self):
+        lst = [self.test_array[0]] * 3
+        self.assertEqual(es.fanofactor(lst), 0.0)
+
+    def test_fanofactor_quantity(self):
+        self.assertEqual(es.fanofactor(self.test_quantity),
+                         np.var(self.sp_counts) / np.mean(self.sp_counts))
+
+    def test_fanofactor_quantities_same(self):
+        lst = [self.test_quantity[0]] * 3
+        self.assertEqual(es.fanofactor(lst), 0.0)
+
+    def test_fanofactor_list(self):
         self.assertEqual(es.fanofactor(self.test_list),
                          np.var(self.sp_counts) / np.mean(self.sp_counts))
 
     def test_fanofactor_list_same(self):
-        lst = []
-        for i in range(3):
-            lst.append([0.3, 0.56, 0.87, 1.23])
+        lst = [self.test_list[0]] * 3
         self.assertEqual(es.fanofactor(lst), 0.0)
-
-    def test_fanofactor_quantity(self):
-        self.assertEqual(es.fanofactor(self.test_quantity_list),
-                         np.var(self.sp_counts) / np.mean(self.sp_counts))
-
-    def test_fanofactor_quantity_empty(self):
-        self.assertTrue(np.isnan(es.fanofactor([] * pq.ms)))
 
 if __name__ == '__main__':
     unittest.main()
