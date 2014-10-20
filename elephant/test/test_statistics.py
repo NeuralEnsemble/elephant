@@ -289,7 +289,7 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertEqual(es.fanofactor(self.test_quantity),
                          np.var(self.sp_counts) / np.mean(self.sp_counts))
 
-    def test_fanofactor_quantities_same(self):
+    def test_fanofactor_quantity_same(self):
         lst = [self.test_quantity[0]] * 3
         self.assertEqual(es.fanofactor(lst), 0.0)
 
