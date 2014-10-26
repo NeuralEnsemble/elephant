@@ -11,6 +11,7 @@ from __future__ import division, print_function
 import numpy as np
 import quantities as pq
 import scipy.stats
+import neo.core
 
 
 def isi(spiketrain, axis=-1):
@@ -143,3 +144,41 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 # we make `cv` an alias for scipy.stats.variation for the convenience
 # of former NeuroTools users
 cv = scipy.stats.variation
+
+
+def fanofactor(spiketrains):
+    """
+    Evaluates the empirical Fano factor F of the spike counts of
+    a list of `neo.core.SpikeTrain` objects.
+
+    Given the vector v containing the observed spike counts (one per
+    spike train) in the time window [t0, t1], F is defined as:
+
+                        F := var(v)/mean(v).
+
+    The Fano factor is typically computed for spike trains representing the
+    activity of the same neuron over different trials. The higher F, the larger
+    the cross-trial non-stationarity. In theory for a time-stationary Poisson
+    process, F=1.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.core.SpikeTrain objects, quantity array,
+                  numpy array or list
+        Spike trains for which to compute the Fano factor of spike counts.
+
+    Returns
+    -------
+    fano : float or nan
+        The Fano factor of the spike counts of the input spike trains. If an
+        empty list is specified, or if all spike trains are empty, F:=nan.
+    """
+    # Build array of spike counts (one per spike train)
+    spike_counts = np.array([len(t) for t in spiketrains])
+
+    # Compute FF
+    if all([count == 0 for count in spike_counts]):
+        fano = np.nan
+    else:
+        fano = spike_counts.var() / spike_counts.mean()
+    return fano

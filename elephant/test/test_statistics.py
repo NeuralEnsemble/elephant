@@ -228,5 +228,78 @@ class mean_firing_rate_TestCase(unittest.TestCase):
                           t_stop=pq.Quantity(10, 'ms'))
 
 
+class FanoFactorTestCase(unittest.TestCase):
+    def setUp(self):
+        np.random.seed(100)
+        num_st = 300
+        self.test_spiketrains = []
+        self.test_array = []
+        self.test_quantity = []
+        self.test_list = []
+        self.sp_counts = np.zeros(num_st)
+        for i in range(num_st):
+            r = np.random.rand(np.random.randint(20) + 1)
+            st = neo.core.SpikeTrain(r * pq.ms,
+                                     t_start=0.0 * pq.ms,
+                                     t_stop=20.0 * pq.ms)
+            self.test_spiketrains.append(st)
+            self.test_array.append(r)
+            self.test_quantity.append(r * pq.ms)
+            self.test_list.append(list(r))
+            # for cross-validation
+            self.sp_counts[i] = len(st)
+
+    def test_fanofactor_spiketrains(self):
+        # Test with list of spiketrains
+        self.assertEqual(
+            np.var(self.sp_counts) / np.mean(self.sp_counts),
+            es.fanofactor(self.test_spiketrains))
+
+        # One spiketrain in list
+        st = self.test_spiketrains[0]
+        self.assertEqual(es.fanofactor([st]), 0.0)
+
+    def test_fanofactor_empty(self):
+        # Test with empty list
+        self.assertTrue(np.isnan(es.fanofactor([])))
+        self.assertTrue(np.isnan(es.fanofactor([[]])))
+
+        # Test with empty quantity
+        self.assertTrue(np.isnan(es.fanofactor([] * pq.ms)))
+
+        # Empty spiketrain
+        st = neo.core.SpikeTrain([] * pq.ms, t_start=0 * pq.ms,
+                                 t_stop=1.5 * pq.ms)
+        self.assertTrue(np.isnan(es.fanofactor(st)))
+
+    def test_fanofactor_spiketrains_same(self):
+        # Test with same spiketrains in list
+        sts = [self.test_spiketrains[0]] * 3
+        self.assertEqual(es.fanofactor(sts), 0.0)
+
+    def test_fanofactor_array(self):
+        self.assertEqual(es.fanofactor(self.test_array),
+                         np.var(self.sp_counts) / np.mean(self.sp_counts))
+
+    def test_fanofactor_array_same(self):
+        lst = [self.test_array[0]] * 3
+        self.assertEqual(es.fanofactor(lst), 0.0)
+
+    def test_fanofactor_quantity(self):
+        self.assertEqual(es.fanofactor(self.test_quantity),
+                         np.var(self.sp_counts) / np.mean(self.sp_counts))
+
+    def test_fanofactor_quantity_same(self):
+        lst = [self.test_quantity[0]] * 3
+        self.assertEqual(es.fanofactor(lst), 0.0)
+
+    def test_fanofactor_list(self):
+        self.assertEqual(es.fanofactor(self.test_list),
+                         np.var(self.sp_counts) / np.mean(self.sp_counts))
+
+    def test_fanofactor_list_same(self):
+        lst = [self.test_list[0]] * 3
+        self.assertEqual(es.fanofactor(lst), 0.0)
+
 if __name__ == '__main__':
     unittest.main()
