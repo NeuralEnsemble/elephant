@@ -301,5 +301,39 @@ class FanoFactorTestCase(unittest.TestCase):
         lst = [self.test_list[0]] * 3
         self.assertEqual(es.fanofactor(lst), 0.0)
 
+
+class LVTestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_seq = [1, 28,  4, 47,  5, 16,  2,  5, 21, 12,
+                         4, 12, 59,  2,  4, 18, 33, 25,  2, 34,
+                         4,  1,  1, 14,  8,  1, 10,  1,  8, 20,
+                         5,  1,  6,  5, 12,  2,  8,  8,  2,  8,
+                         2, 10,  2,  1,  1,  2, 15,  3, 20,  6,
+                         11, 6, 18,  2,  5, 17,  4,  3, 13,  6,
+                         1, 18,  1, 16, 12,  2, 52,  2,  5,  7,
+                         6, 25,  6,  5,  3, 15,  4,  3, 16,  3,
+                         6,  5, 24, 21,  3,  3,  4,  8,  4, 11,
+                         5,  7,  5,  6,  8, 11, 33, 10,  7,  4]
+
+        self.target = 0.971826029994
+
+    def test_lv_with_quantities(self):
+        seq = pq.Quantity(self.test_seq, units='ms')
+        assert_array_almost_equal(es.lv(seq), self.target, decimal=9)
+
+    def test_lv_with_plain_array(self):
+        seq = np.array(self.test_seq)
+        assert_array_almost_equal(es.lv(seq), self.target, decimal=9)
+
+    def test_lv_with_list(self):
+        seq = self.test_seq
+        assert_array_almost_equal(es.lv(seq), self.target, decimal=9)
+
+    def test_lv_raise_error(self):
+        seq = self.test_seq
+        self.assertRaises(AttributeError, es.lv, [])
+        self.assertRaises(AttributeError, es.lv, 1)
+        self.assertRaises(ValueError, es.lv, np.array([seq, seq]))
+
 if __name__ == '__main__':
     unittest.main()
