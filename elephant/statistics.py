@@ -8,9 +8,12 @@ docstring goes here.
 
 from __future__ import division, print_function
 
+import warnings
 import numpy as np
 import quantities as pq
 import scipy.stats
+import neo.core
+import elephant.conversion as conv
 
 
 def isi(spiketrain, axis=-1):
@@ -132,12 +135,12 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
     if not axis or not found_t_start:
         return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
-                      axis=axis) / (t_stop-t_start)
+                      axis=axis) / (t_stop - t_start)
     else:
         # this is needed to handle broadcasting between spiketrain and t_stop
         t_stop_test = np.expand_dims(t_stop, axis)
         return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop_test),
-                      axis=axis) / (t_stop-t_start)
+                      axis=axis) / (t_stop - t_start)
 
 
 # we make `cv` an alias for scipy.stats.variation for the convenience
@@ -240,3 +243,83 @@ def lv(v):
     # calculate LV and return result
     # raise error if input is multi-dimensional
     return 3.*np.mean(np.power(np.diff(v)/(v[:-1] + v[1:]), 2))
+
+
+def psth(sts, w, t_start=None, t_stop=None, output='counts', clip=False):
+    """
+    Peristimulus Time Histogram (PSTH) of a list of spike trains.
+
+    Parameters
+    ----------
+    sts : list of neo.core.SpikeTrain objects
+        Spiketrains with a common time axis (same t_start and t_stop)
+    w : Quantity
+        width of the histogram's time bins.
+    t_start, t_stop : Quantity (optional)
+        Start and stop time of the histogram. Only events in the input
+        spike trains falling between t_start and t_stop (both included) are
+        considered in the histogram. If t_start and/or t_stop are not
+        specified, the maximum t_start of all Spiketrains is used as t_start,
+        and the minimum t_stop is used as t_stop.
+        Default: t_start=t_stop=None
+    output : str (optional)
+        Normalization of the histogram. Can be one of:
+        * 'counts': spike counts at each bin (as integer numbers)
+        * 'mean': mean spike counts per spike train
+        * 'rate': mean spike rate per spike train. Like 'mean', but the
+          counts are additionally normalized by the bin width.
+
+    Returns
+    -------
+    analogSignal : neo.core.AnalogSignal
+        neo.core.AnalogSignal object containing the PSTH values.
+        AnalogSignal[j] is the PSTH computed between
+        t_start + j * w and t_start + (j + 1) * w.
+
+    """
+
+    if t_start is None:
+        # Find the internal range for t_start, where all spike trains are
+        # defined; cut all spike trains taking that time range only
+        max_tstart = max([t.t_start for t in sts])
+        t_start = max_tstart
+        if not all([max_tstart == t.t_start for t in sts]):
+            warnings.warn(
+                "Spiketrains have different t_start values -- "
+                "using maximum t_start as t_start.")
+
+    if t_stop is None:
+        # Find the internal range for t_stop
+        min_tstop = min([t.t_stop for t in sts])
+        t_stop = min_tstop
+        if not all([min_tstop == t.t_stop for t in sts]):
+            warnings.warn(
+                "Spiketrains have different t_stop values -- "
+                "using minimum t_stop as t_stop.")
+
+    sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in sts]
+
+    # Bin the spike trains and sum across columns
+    bs = conv.Binned(sts_cut, t_start=t_start, t_stop=t_stop, binsize=w)
+
+    if clip is True:
+        bin_hist = bs.sparse_mat_clip.sum(axis=0)
+    else:
+        bin_hist = bs.sparse_mat_unclip.sum(axis=0)
+    # Transform matrix to numpy array
+    bin_hist = np.asarray(bin_hist).ravel()
+    # Renormalise the histogram
+    if output == 'counts':
+        # Raw
+        bin_hist = bin_hist * pq.dimensionless
+    elif output == 'mean':
+        # Divide by number of input spike trains
+        bin_hist = bin_hist * 1. / len(sts) * pq.dimensionless
+    elif output == 'rate':
+        # Divide by number of input spike trains and bin width
+        bin_hist = bin_hist * 1. / len(sts) / w
+    else:
+        raise ValueError('Parameter output is not valid.')
+
+    return neo.AnalogSignal(
+        signal=bin_hist, sampling_period=w, t_start=t_start)
