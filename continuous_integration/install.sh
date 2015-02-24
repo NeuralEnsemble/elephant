@@ -77,8 +77,20 @@ elif [[ "$DISTRIB" == "conda" ]]; then
 
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     # Use standard ubuntu packages in their default version
-    sudo apt-get install -qq python-scipy python-nose python-pip \
-        python-pandas python-coverage
+    # sudo apt-get install -qq python-nose python-pip \
+    #    python-pandas python-coverage
+    sudo apt-get build-dep python-scipy 
+    deactivate
+    # Create a new virtualenv using system site packages for numpy and scipy
+     virtualenv --system-site-packages testenv
+     source testenv/bin/activate
+     pip install nose
+     pip install coverage
+     pip install numpy==1.6.2
+     travis_wait pip install scipy==0.14.0 --verbose
+     pip install pandas
+     pip install quantities
+
 fi
 
 if [[ "$COVERAGE" == "true" ]]; then
