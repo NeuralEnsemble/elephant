@@ -15,7 +15,9 @@ Code status
 .. image:: https://requires.io/github/NeuralEnsemble/elephant/requirements.png?branch=master
    :target: https://requires.io/github/NeuralEnsemble/elephant/requirements/?branch=master
    :alt: Requirements Status
+.. image:: https://readthedocs.org/projects/elephant/badge/?version=latest
+   :target: https://readthedocs.org/projects/elephant/?badge=latest
+   :alt: Documentation Status
 
-
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD License, see LICENSE.txt for details.
