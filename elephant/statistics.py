@@ -63,7 +63,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     spiketrain : Neo SpikeTrain or Quantity array or NumPy ndarray
                  The spike times.
     t_start : float or Quantity scalar, optional
-              The start time to use for the inveral.
+              The start time to use for the interval.
               If not specified, retrieved from the``t_start`
               attribute of `spiketrain`.  If that is not present, default to
               `0`.  Any value from `spiketrain` below this value is ignored.
