@@ -414,6 +414,9 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
 
     Parameters
     -----------
+    spiketrain: 'neo.core.spiketrain.SpikeTrain'
+        neo object that contains spike times, the unit of the time stamps
+        and t_start and t_stop of the spike train.
     sampling_period : Quantity
         time stamp resolution of the spike times. the same resolution will
         be assumed for the kernel
