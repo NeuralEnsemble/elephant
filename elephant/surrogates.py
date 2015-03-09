@@ -222,7 +222,7 @@ def isi_shuffling(spiketrain, n=1, decimals=None):
 
         # Create list of surrogate spike trains by random ISI permutation
         sts = []
-        for i in xrange(n):
+        for i in range(n):
             surr_times = np.cumsum(np.random.permutation(ISIs)) *\
                 spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
@@ -234,7 +234,7 @@ def isi_shuffling(spiketrain, n=1, decimals=None):
         empty_train = neo.SpikeTrain([]*spiketrain.units,
                                      t_start=spiketrain.t_start,
                                      t_stop=spiketrain.t_stop)
-        for i in xrange(n):
+        for i in range(n):
             sts.append(empty_train)
 
     return sts
