@@ -97,7 +97,7 @@ class ButterTestCase(unittest.TestCase):
 
     def test_butter_input_types(self):
         # generate white noise data of different types
-        noise_np = np.random.normal(size=(4, 5000))
+        noise_np = np.random.normal(size=5000)
         noise_pq = noise_np * pq.mV
         noise = n.AnalogSignalArray(noise_pq, sampling_rate=1000.0*pq.Hz)
 
@@ -139,6 +139,21 @@ class ButterTestCase(unittest.TestCase):
                                                              fs=1000.0,
                                                              axis=0)
         self.assertTrue(np.all(filtered_noise==filtered_noise_transposed.T))
+
+    def test_butter_multidim_input(self):
+        noise_pq = np.random.normal(size=(4, 5000)) * pq.mV
+        noise_neo = n.AnalogSignalArray(noise_pq.T, sampling_rate=1000.0*pq.Hz)
+        noise_neo1d = n.AnalogSignalArray(noise_pq[0],
+                                          sampling_rate=1000.0*pq.Hz)
+        filtered_noise_pq = elephant.signal_processing.butter(noise_pq, 250.0,
+                                                              fs=1000.0)
+        filtered_noise_neo = elephant.signal_processing.butter(noise_neo,
+                                                               250.0)
+        filtered_noise_neo1d = elephant.signal_processing.butter(noise_neo1d,
+                                                               250.0)
+        self.assertTrue(np.all(filtered_noise_pq.magnitude==filtered_noise_neo.T.magnitude))
+        self.assertTrue(np.all(filtered_noise_neo1d.magnitude==filtered_noise_neo.T.magnitude[0]))
+
 
 def suite():
     suite = unittest.makeSuite(ButterTestCase, 'test')

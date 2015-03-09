@@ -90,8 +90,13 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         if isinstance(lowpass_freq, pq.quantity.Quantity) else lowpass_freq
     b, a = _design_butterworth_filter(Fs, Fh, Fl, order)
 
-    # apply filter
+    # When the input is AnalogSignalArray, the axis for time index (i.e. the
+    # first axis) needs to be rolled to the last
     data = np.asarray(signal)
+    if isinstance(signal, neo.AnalogSignalArray):
+        data = np.rollaxis(data, 0, len(data.shape))
+
+    # apply filter
     if filter_function is 'lfilter':
         filtered_data = scipy.signal.lfilter(b, a, data, axis=axis)
     elif filter_function is 'filtfilt':
@@ -102,7 +107,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         )
 
     if isinstance(signal, neo.AnalogSignalArray):
-        return signal.duplicate_with_new_array(filtered_data)
+        return signal.duplicate_with_new_array(filtered_data.T)
     elif isinstance(signal, pq.quantity.Quantity):
         return filtered_data * signal.units
     else:
