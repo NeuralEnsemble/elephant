@@ -55,9 +55,6 @@ class WelchPSDTestCase(unittest.TestCase):
         data = n.AnalogSignalArray(np.array(signal+noise),
                                       sampling_period=sampling_period*pq.s,
                                       units='mV')
-        data_multidim = n.AnalogSignalArray(np.array([signal+noise] * 5),
-                                   sampling_period=sampling_period*pq.s,
-                                   units='mV')
 
         # consistency between different ways of specifying segment length
         freqs1, psd1 = elephant.signal.welch_psd(data, len_seg=data_length/5, overlap=0)
@@ -72,21 +69,22 @@ class WelchPSDTestCase(unittest.TestCase):
         freqs_np, psd_np = elephant.signal.welch_psd(data.magnitude, fs=1/sampling_period, freq_res=freq_res)
         self.assertTrue(np.all((freqs==freqs_np, psd==psd_np)))
 
-        # multi-dimensional return value for multi-dimensional input array
-        freqs, psds = elephant.signal.welch_psd(data_multidim)
-        self.assertTrue(psds.shape[:-1] == data_multidim.shape[:-1])
-
         # check of scipy.signal.welch() parameters
         params = {'window': 'hamming', 'nfft': 1024, 'detrend': 'linear',
                   'return_onesided': False, 'scaling': 'spectrum'}
         for key, val in params.items():
-            freq, psd = elephant.signal.welch_psd(data, len_seg=1000, overlap=0, **{key: val})
-            freq_spsig, psd_spsig = spsig.welch(data, fs=1/sampling_period, nperseg=1000, noverlap=0, **{key: val})
-            self.assertTrue(np.all((freq==freq_spsig, psd==psd_spsig)))
+            freqs, psd = elephant.signal.welch_psd(data, len_seg=1000, overlap=0, **{key: val})
+            freqs_spsig, psd_spsig = spsig.welch(data, fs=1/sampling_period, nperseg=1000, noverlap=0, **{key: val})
+            self.assertTrue(np.all((freqs==freqs_spsig, psd==psd_spsig)))
 
-        freqs, psds = elephant.signal.welch_psd(data_multidim)
-        freqs_spsig, psds_spsig = elephant.signal.welch_psd(data_multidim.T, axis=0)
-        self.assertTrue(np.all((freq==freq_spsig, psd==psd_spsig)))
+        # - generate multidimensional data for check of parameter `axis`
+        num_channel = 4
+        data_length = 5000
+        data_multidim = np.random.normal(size=(num_channel, data_length))
+        freqs, psd = elephant.signal.welch_psd(data_multidim)
+        freqs_T, psd_T = elephant.signal.welch_psd(data_multidim.T, axis=0)
+        self.assertTrue(np.all(freqs==freqs_T))
+        self.assertTrue(np.all(psd==psd_T.T))
 
     def test_welch_psd_input_types(self):
         # generate a test data
@@ -102,15 +100,43 @@ class WelchPSDTestCase(unittest.TestCase):
 
         # outputs from Quantity array input are of Quantity type
         freqs_pq, psd_pq = elephant.signal.welch_psd(data.magnitude*data.units, fs=1/sampling_period)
-        self.assertTrue(np.all((freqs_neo==freqs_pq, psd_neo==psd_pq)))
         self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
         self.assertTrue(isinstance(psd_pq, pq.quantity.Quantity))
 
         # outputs from Numpy ndarray input are NOT of Quantity type
         freqs_np, psd_np = elephant.signal.welch_psd(data.magnitude, fs=1/sampling_period)
-        self.assertTrue(np.all((freqs_neo==freqs_np, psd_neo==psd_np)))
         self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(psd_np, pq.quantity.Quantity))
+
+        # check if the results from different input types are identical
+        self.assertTrue(np.all((freqs_neo==freqs_pq, psd_neo==psd_pq)))
+        self.assertTrue(np.all((freqs_neo==freqs_np, psd_neo==psd_np)))
+
+    def test_welch_psd_multidim_input(self):
+        # generate multidimensional data
+        num_channel = 4
+        data_length = 5000
+        sampling_period = 0.001
+        noise = np.random.normal(size=(num_channel, data_length))
+        data_np = np.array(noise)
+        # Since row-column order in AnalogSignalArray is different from the
+        # conventional one, `data_np` needs to be transposed when its used to
+        # define an AnalogSignalArray
+        data_neo = n.AnalogSignalArray(data_np.T,
+                                       sampling_period=sampling_period*pq.s,
+                                       units='mV')
+        data_neo_1dim = n.AnalogSignalArray(data_np[0],
+                                       sampling_period=sampling_period*pq.s,
+                                       units='mV')
+
+        # check if the results from different input types are identical
+        freqs_np, psd_np = elephant.signal.welch_psd(data_np,
+                                                     fs=1/sampling_period)
+        freqs_neo, psd_neo = elephant.signal.welch_psd(data_neo)
+        freqs_neo_1dim, psd_neo_1dim = elephant.signal.welch_psd(data_neo_1dim)
+        self.assertTrue(np.all(freqs_np==freqs_neo))
+        self.assertTrue(np.all(psd_np==psd_neo))
+        self.assertTrue(np.all(psd_neo_1dim==psd_neo[0]))
 
 
 def suite():

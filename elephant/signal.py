@@ -11,7 +11,7 @@ import quantities as pq
 import neo
 
 
-def welch_psd(data, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
+def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
               fs=1.0, window='hanning', nfft=None, detrend='constant',
               return_onesided=True, scaling='density', axis=-1):
     """
@@ -37,7 +37,7 @@ def welch_psd(data, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     Parameters
     ----------
-    data: Neo AnalogSignalArray or Quantity array or Numpy ndarray
+    signal: Neo AnalogSignalArray or Quantity array or Numpy ndarray
         Time series data, of which PSD is estimated. When a Quantity array or
         Numpy ndarray is given, sampling frequency should be given through the
         keyword argument `fs`, otherwise the default value (`fs=1.0`) is used.
@@ -70,26 +70,32 @@ def welch_psd(data, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     freqs: Quantity array or Numpy ndarray
         Frequencies associated with the power estimates in `psd`. `freqs` is
         always a 1-dimensional array irrespective of the shape of the input
-        data. Quantity array is returned if `data` is AnalogSignalArray or
+        data. Quantity array is returned if `signal` is AnalogSignalArray or
         Quantity array. Otherwise Numpy ndarray containing frequency in Hz is
         returned.
     psd: Quantity array or Numpy ndarray
-        PSD estimates of the time series in `data`. Quantity array is returned
-        if `data` is AnalogSignalArray or Quantity array. Otherwise Numpy
-        ndarray is returned.
+        PSD estimates of the time series in `signal`. Quantity array is
+        returned if `data` is AnalogSignalArray or Quantity array. Otherwise
+        Numpy ndarray is returned.
     """
 
     # initialize a parameter dict (to be given to scipy.signal.welch()) with
-    # the data array and the parameters directly passed on to
-    # scipy.signal.welch()
-    params = {'x': np.asarray(data), 'window': window, 'nfft': nfft,
+    # the parameters directly passed on to scipy.signal.welch()
+    params = {'window': window, 'nfft': nfft,
               'detrend': detrend, 'return_onesided': return_onesided,
               'scaling': scaling, 'axis': axis}
 
+    # add the input data to params. When the input is AnalogSignalArray, the
+    # data is added after rolling the axis for time index to the last
+    data = np.asarray(signal)
+    if isinstance(signal, neo.AnalogSignalArray):
+        data = np.rollaxis(data, 0, len(data.shape))
+    params['x'] = data
+
     # if the data is given as AnalogSignalArray, use its attribute to specify
     # the sampling frequency
-    if hasattr(data, 'sampling_rate'):
-        params['fs'] = data.sampling_rate.rescale('Hz').magnitude
+    if hasattr(signal, 'sampling_rate'):
+        params['fs'] = signal.sampling_rate.rescale('Hz').magnitude
     else:
         params['fs'] = fs
 
@@ -131,11 +137,11 @@ def welch_psd(data, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     freqs, psd = scipy.signal.welch(**params)
 
     # attach proper units to return values
-    if isinstance(data, pq.quantity.Quantity):
+    if isinstance(signal, pq.quantity.Quantity):
         if 'scaling' in params and params['scaling'] is 'spectrum':
-            psd = psd * data.units * data.units
+            psd = psd * signal.units * signal.units
         else:
-            psd = psd * data.units * data.units / pq.Hz
+            psd = psd * signal.units * signal.units / pq.Hz
         freqs = freqs * pq.Hz
 
     return freqs, psd
