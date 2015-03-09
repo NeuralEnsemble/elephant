@@ -516,7 +516,7 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
-    rate = neo.AnalogSignal(signal=r, sampling_period=sampling_period,
+    rate = neo.AnalogSignalArray(signal=r, sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
     return rate

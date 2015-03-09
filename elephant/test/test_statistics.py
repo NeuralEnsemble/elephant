@@ -359,7 +359,7 @@ class RateEstimationTestCase(unittest.TestCase):
         sampling_period = 0.01*pq.s
         inst_rate = es.instantaneous_rate(
             st, sampling_period, 'TRI', 0.03*pq.s)
-        self.assertEquals(type(inst_rate), neo.core.AnalogSignal)
+        self.assertEquals(type(inst_rate), neo.core.AnalogSignalArray)
         self.assertEquals(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
         self.assertEquals(inst_rate.simplified.units, pq.Hz)
@@ -445,13 +445,14 @@ class RateEstimationTestCase(unittest.TestCase):
 
             for rate_estimate in rate_estimate_list:
                 num_spikes = len(self.spike_train)
-                re_diff = np.diff(rate_estimate)
-                re_fixed = rate_estimate[:-1] + re_diff
+                # re_diff = np.diff(rate_estimate)
+                re_diff = rate_estimate.magnitude[1:]-rate_estimate.magnitude[:-1]
+                re_fixed = rate_estimate.magnitude[:-1] + re_diff
                 re_times_diff = np.diff(rate_estimate.times.rescale('s'))
                 integral = 0
                 for i, rate in enumerate(re_fixed):
-                    integral += rate*re_times_diff[i]
-                integral = integral.simplified
+                    integral += rate*re_times_diff.magnitude[i]
+                integral = integral
 
                 self.assertAlmostEqual(num_spikes, integral)
 
