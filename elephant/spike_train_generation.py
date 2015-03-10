@@ -88,7 +88,7 @@ def homogeneous_poisson_process(rate, t_start=0.0*ms, t_stop=1000.0*ms, as_array
 def homogeneous_gamma_process(a, b, t_start=0.0*ms, t_stop=1000.0*ms, as_array=False):
     """
     Returns a spike train whose spikes are a realization of a gamma process
-    with the given parameters, starting at time `t_start` and stopping `time t_stop`.
+    with the given parameters, starting at time `t_start` and stopping time `t_stop`.
     (average rate will be b/a).
 
     All numerical values should be given as Quantities, e.g. 100*Hz.
