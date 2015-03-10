@@ -13,33 +13,35 @@ from neo.core import AnalogSignalArray, SpikeTrain
 
 def spike_triggered_average(signal, spiketrains, window):
     """
-    Calculates the spike-triggered average of analog signals in a given time window around 
+    Calculates the spike-triggered averages of analog signals in a time window relative to
     the spike times of a corresponding spiketrain for multiple signals each.
-
-    The function receives n analog signals and either one or n spiketrains. In case it is one spiketrain 
-    this one is muliplied n-fold and used for each of the n analog signals.
+    The function receives n analog signals and either one or n spiketrains. In case it is 
+    one spiketrain this one is muliplied n-fold and used for each of the n analog signals.
 
     Parameters
     ----------
-
-        signal: neo AnalogSignalArray object containing n analog signals
-        spiketrains: One SpikeTrain or one numpy ndarray or a list of n of either of those
-        window: pair (2-tuple) of a starttime and a stoptime (relative to a spike) 
-                of the time interval for signal averaging
+    signal : neo AnalogSignalArray object
+        'signal' contains n analog signals.
+    spiketrains : one SpikeTrain or one numpy ndarray or a list of n of either of those.
+        'spiketrains' contains the times of the spikes in the spiketrains.
+    window : pair (2-tuple) of Time Quantity objects.
+        'window' is the starttime and the stoptime relative to a spike of the 
+        time interval for signal averaging.
 
     Returns
     -------
-
-        Returns an AnalogSignalArray of spike-triggered averages of the respective spiketrains.
-        The length of the respective array is calculated as the number of window_bins from the 
-        given start- and stoptime of the averaging interval and the sampling rate of the analog signal.
-        If for an analog signal no spike was either given or all given spikes had to be ignored because 
-        of a too large analysis window, the corresponding analog signal is returned as nan.
+    result_sta : neo AnalogSignalArray object
+        'result_sta' contains the spike-triggered averages of each of the analog signals with
+        respect to the spikes in the corresponding spiketrains. The length of 'result_sta' is
+        calculated as the number of bins from the given start- and stoptime of the averaging
+        interval and the sampling rate of the analog signal. If for an analog signal no spike
+        was either given or all given spikes had to be ignored because of a too large averaging
+        interval, the corresponding analog signal is returned as nan.
 
     Example
     -------
-
-        result = spike_triggered_average(signal, [spiketrain1, spiketrain2], (-5 * ms, 10 * ms))
+        signal = AnalogSignalArray(np.array([signal1, signal2]).T, units='mV', sampling_rate=10/ms)
+        result_sta = spike_triggered_average(signal, [spiketrain1, spiketrain2], (-5 * ms, 10 * ms))
 
     """
 
