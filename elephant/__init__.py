@@ -6,7 +6,7 @@ docstring goes here.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from . import statistics
+from . import statistics, spike_train_generation
 from . import conversion
 from . import neo_tools
 

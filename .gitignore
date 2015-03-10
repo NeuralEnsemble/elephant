@@ -15,6 +15,7 @@ nosetests.xml
 .pydevproject
 .settings
 *.tmp*
+.idea
 
 # Compiled source #
 ###################
@@ -55,6 +56,8 @@ develop-eggs
 # Packages
 .installed.cfg
 pip-log.txt
+# coverage
+cover
 
 # OS generated files #
 ######################
