@@ -75,7 +75,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
             btype = 'highpass'
         else:
             raise ValueError(
-                "Either highpass_freq or lowpath_freq must be given"
+                "Either highpass_freq or lowpass_freq must be given"
             )
 
         # return filter coefficients
