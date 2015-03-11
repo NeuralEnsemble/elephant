@@ -187,55 +187,55 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.spiketrain_b = None
         del self.spiketrain_b
 
-    def test_time_histogram_sparse(self):
+    def test_binned_spiketrain_sparse(self):
         a = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
         b = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
         binsize = 1 * pq.s
         nbins = 10
-        x = cv.TimeHistogram([a, b], num_bins=nbins, binsize=binsize,
-                             t_start=0 * pq.s)
+        x = cv.BinnedSpikeTrain([a, b], num_bins=nbins, binsize=binsize,
+                                t_start=0 * pq.s)
         x_sparse = [2, 1, 2, 1]
         s = x.to_sparse_array()
         self.assertTrue(np.array_equal(s.data, x_sparse))
         self.assertTrue(
             np.array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]]))
 
-    def test_time_histogram_shape(self):
+    def test_binned_spiketrain_shape(self):
         a = self.spiketrain_a
-        x = cv.TimeHistogram(a, num_bins=10,
-                             binsize=self.binsize,
-                             t_start=0 * pq.s)
-        x_bool = cv.TimeHistogram(a, num_bins=10, binsize=self.binsize,
-                                  t_start=0 * pq.s)
+        x = cv.BinnedSpikeTrain(a, num_bins=10,
+                                binsize=self.binsize,
+                                t_start=0 * pq.s)
+        x_bool = cv.BinnedSpikeTrain(a, num_bins=10, binsize=self.binsize,
+                                     t_start=0 * pq.s)
         self.assertTrue(x.to_array().shape == (1, 10))
         self.assertTrue(x_bool.to_bool_array().shape == (1, 10))
 
     # shape of the matrix for a list of spike trains
-    def test_time_histogram_shape_list(self):
+    def test_binned_spiketrain_shape_list(self):
         a = self.spiketrain_a
         b = self.spiketrain_b
         c = [a, b]
         nbins = 5
-        x = cv.TimeHistogram(c, num_bins=nbins, t_start=0 * pq.s,
-                             t_stop=10.0 * pq.s)
-        x_bool = cv.TimeHistogram(c, num_bins=nbins, t_start=0 * pq.s,
-                                  t_stop=10.0 * pq.s)
+        x = cv.BinnedSpikeTrain(c, num_bins=nbins, t_start=0 * pq.s,
+                                t_stop=10.0 * pq.s)
+        x_bool = cv.BinnedSpikeTrain(c, num_bins=nbins, t_start=0 * pq.s,
+                                     t_stop=10.0 * pq.s)
         self.assertTrue(x.to_array().shape == (2, 5))
         self.assertTrue(x_bool.to_bool_array().shape == (2, 5))
 
-    def test_time_histogram_neg_times(self):
+    def test_binned_spiketrain_neg_times(self):
         a = neo.SpikeTrain(
             [-6.5, 0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
             t_start=-6.5 * pq.s, t_stop=10.0 * pq.s)
         binsize = self.binsize
         nbins = 16
-        x = cv.TimeHistogram(a, num_bins=nbins, binsize=binsize,
-                             t_start=-6.5 * pq.s)
+        x = cv.BinnedSpikeTrain(a, num_bins=nbins, binsize=binsize,
+                                t_start=-6.5 * pq.s)
         y = [
             np.array([1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0])]
         self.assertTrue(np.array_equal(x.to_bool_array(), y))
 
-    def test_time_histogram_neg_times_list(self):
+    def test_binned_spiketrain_neg_times_list(self):
         a = neo.SpikeTrain(
             [-6.5, 0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
             t_start=-7 * pq.s, t_stop=7 * pq.s)
@@ -245,7 +245,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         c = [a, b]
 
         binsize = self.binsize
-        x_bool = cv.TimeHistogram(c, binsize=binsize)
+        x_bool = cv.BinnedSpikeTrain(c, binsize=binsize)
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
                      [1, 0, 1, 1, 0, 1, 1, 0]]
 
@@ -253,14 +253,14 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array_equal(x_bool.to_bool_array(), y_bool))
 
     # checking spike_indices(f) and matrix(m) for 1 spiketrain
-    def test_time_histogram_indices(self):
+    def test_binned_spiketrain_indices(self):
         a = self.spiketrain_a
         binsize = self.binsize
         nbins = 10
-        x = cv.TimeHistogram(a, num_bins=nbins, binsize=binsize,
-                             t_start=0 * pq.s)
-        x_bool = cv.TimeHistogram(a, num_bins=nbins, binsize=binsize,
-                                  t_start=0 * pq.s)
+        x = cv.BinnedSpikeTrain(a, num_bins=nbins, binsize=binsize,
+                                t_start=0 * pq.s)
+        x_bool = cv.BinnedSpikeTrain(a, num_bins=nbins, binsize=binsize,
+                                     t_start=0 * pq.s)
         y_matrix = [
             np.array([2., 1., 0., 1., 1., 1., 1., 0., 0., 0.])]
         y_bool_matrix = [
@@ -276,17 +276,17 @@ class TimeHistogramTestCase(unittest.TestCase):
             x_bool.to_sparse_bool_array().nonzero()]
         self.assertTrue(np.array_equal(s, [[True]*6]))
 
-    def test_time_histogram_list(self):
+    def test_binned_spiketrain_list(self):
         a = self.spiketrain_a
         b = self.spiketrain_b
 
         binsize = self.binsize
         nbins = 10
         c = [a, b]
-        x = cv.TimeHistogram(c, num_bins=nbins, binsize=binsize,
-                             t_start=0 * pq.s)
-        x_bool = cv.TimeHistogram(c, num_bins=nbins, binsize=binsize,
-                                  t_start=0 * pq.s)
+        x = cv.BinnedSpikeTrain(c, num_bins=nbins, binsize=binsize,
+                                t_start=0 * pq.s)
+        x_bool = cv.BinnedSpikeTrain(c, num_bins=nbins, binsize=binsize,
+                                     t_start=0 * pq.s)
         y_matrix = np.array(
             [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0],
              [2, 1, 1, 0, 1, 1, 0, 0, 1, 0]])
@@ -300,41 +300,41 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array_equal(x_bool.to_bool_array(), y_matrix_bool))
 
     # t_stop is None
-    def test_time_histogram_list_t_stop(self):
+    def test_binned_spiketrain_list_t_stop(self):
         a = self.spiketrain_a
         b = self.spiketrain_b
         c = [a, b]
         binsize = self.binsize
         nbins = 10
-        x = cv.TimeHistogram(c, num_bins=nbins, binsize=binsize,
-                             t_start=0 * pq.s,
-                             t_stop=None)
-        x_bool = cv.TimeHistogram(c, num_bins=nbins, binsize=binsize,
-                                  t_start=0 * pq.s)
+        x = cv.BinnedSpikeTrain(c, num_bins=nbins, binsize=binsize,
+                                t_start=0 * pq.s,
+                                t_stop=None)
+        x_bool = cv.BinnedSpikeTrain(c, num_bins=nbins, binsize=binsize,
+                                     t_start=0 * pq.s)
         self.assertTrue(x.t_stop == 10 * pq.s)
         self.assertTrue(x_bool.t_stop == 10 * pq.s)
 
     # Test number of bins
-    def test_time_histogram_list_numbins(self):
+    def test_binned_spiketrain_list_numbins(self):
         a = self.spiketrain_a
         b = self.spiketrain_b
         c = [a, b]
         binsize = 1 * pq.s
-        x = cv.TimeHistogram(c, binsize=binsize, t_start=0 * pq.s,
-                             t_stop=10. * pq.s)
-        x_bool = cv.TimeHistogram(c, binsize=binsize, t_start=0 * pq.s,
-                                  t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(c, binsize=binsize, t_start=0 * pq.s,
+                                t_stop=10. * pq.s)
+        x_bool = cv.BinnedSpikeTrain(c, binsize=binsize, t_start=0 * pq.s,
+                                     t_stop=10. * pq.s)
         self.assertTrue(x.num_bins == 10)
         self.assertTrue(x_bool.num_bins == 10)
 
-    def test_time_histogram_matrix(self):
+    def test_binned_spiketrain_matrix(self):
         # Init
         a = self.spiketrain_a
         b = self.spiketrain_b
-        x_bool_a = cv.TimeHistogram(a, binsize=pq.s, t_start=0 * pq.s,
-                                    t_stop=10. * pq.s)
-        x_bool_b = cv.TimeHistogram(b, binsize=pq.s, t_start=0 * pq.s,
-                                    t_stop=10. * pq.s)
+        x_bool_a = cv.BinnedSpikeTrain(a, binsize=pq.s, t_start=0 * pq.s,
+                                       t_stop=10. * pq.s)
+        x_bool_b = cv.BinnedSpikeTrain(b, binsize=pq.s, t_start=0 * pq.s,
+                                       t_stop=10. * pq.s)
 
         # Assumed results
         y_matrix_a = [
@@ -350,14 +350,14 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertTrue(
             np.array_equal(x_bool_a.to_array(), y_matrix_a))
 
-    def test_time_histogram_matrix_storing(self):
+    def test_binned_spiketrain_matrix_storing(self):
         a = self.spiketrain_a
         b = self.spiketrain_b
 
-        x_bool = cv.TimeHistogram(a, binsize=pq.s, t_start=0 * pq.s,
-                                  t_stop=10. * pq.s)
-        x = cv.TimeHistogram(b, binsize=pq.s, t_start=0 * pq.s,
-                             t_stop=10. * pq.s)
+        x_bool = cv.BinnedSpikeTrain(a, binsize=pq.s, t_start=0 * pq.s,
+                                     t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(b, binsize=pq.s, t_start=0 * pq.s,
+                                t_stop=10. * pq.s)
         # Store Matrix in variable
         matrix_bool = x_bool.to_bool_array()
         matrix = x.to_array(store_array=True)
@@ -379,18 +379,18 @@ class TimeHistogramTestCase(unittest.TestCase):
                                        x_bool.to_sparse_bool_array().toarray()))
 
         # New class without calculating the matrix
-        x = cv.TimeHistogram(b, binsize=pq.s, t_start=0 * pq.s,
-                             t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(b, binsize=pq.s, t_start=0 * pq.s,
+                                t_stop=10. * pq.s)
         # No matrix calculated, should be None
         self.assertEqual(x._mat_u, None)
         # Test with stored matrix
         self.assertFalse(np.array_equal(x, matrix))
 
     # Test matrix removing
-    def test_time_histogram_remove_matrix(self):
+    def test_binned_spiketrain_remove_matrix(self):
         a = self.spiketrain_a
-        x = cv.TimeHistogram(a, binsize=1 * pq.s, num_bins=10,
-                             t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s, num_bins=10,
+                                t_stop=10. * pq.s)
         # Store
         x.to_array(store_array=True)
         # Remove
@@ -399,28 +399,28 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertIsNone(x._mat_u)
 
     # Test if t_start is calculated correctly
-    def test_time_histogram_parameter_calc_tstart(self):
+    def test_binned_spiketrain_parameter_calc_tstart(self):
         a = self.spiketrain_a
-        x = cv.TimeHistogram(a, binsize=1 * pq.s, num_bins=10,
-                             t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s, num_bins=10,
+                                t_stop=10. * pq.s)
         self.assertEqual(x.t_start, 0. * pq.s)
         self.assertEqual(x.t_stop, 10. * pq.s)
         self.assertEqual(x.binsize, 1 * pq.s)
         self.assertEqual(x.num_bins, 10)
 
     # Test if error raises when type of num_bins is not an integer
-    def test_time_histogram_numbins_type_error(self):
+    def test_binned_spiketrain_numbins_type_error(self):
         a = self.spiketrain_a
-        self.assertRaises(TypeError, cv.TimeHistogram, a, binsize=pq.s,
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, binsize=pq.s,
                           num_bins=1.4, t_start=0 * pq.s,
                           t_stop=10. * pq.s)
 
     # Test if error is raised when providing insufficient number of
     # parameters
-    def test_time_histogram_insufficient_arguments(self):
+    def test_binned_spiketrain_insufficient_arguments(self):
         a = self.spiketrain_a
-        self.assertRaises(AttributeError, cv.TimeHistogram, a)
-        self.assertRaises(ValueError, cv.TimeHistogram, a, binsize=1 * pq.s,
+        self.assertRaises(AttributeError, cv.BinnedSpikeTrain, a)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, binsize=1 * pq.s,
                           t_start=0 * pq.s, t_stop=0 * pq.s)
 
     def test_calc_attributes_error(self):
@@ -430,7 +430,7 @@ class TimeHistogramTestCase(unittest.TestCase):
     def test_different_input_types(self):
         a = self.spiketrain_a
         q = [1, 2, 3] * pq.s
-        self.assertRaises(TypeError, cv.TimeHistogram, [a, q], binsize=pq.s)
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, [a, q], binsize=pq.s)
 
     def test_get_start_stop(self):
         a = self.spiketrain_a
@@ -448,26 +448,26 @@ class TimeHistogramTestCase(unittest.TestCase):
         a = self.spiketrain_a
         b = neo.SpikeTrain([-2, -1] * pq.s, t_start=-2 * pq.s,
                            t_stop=-1 * pq.s)
-        self.assertRaises(ValueError, cv.TimeHistogram, [a, b], t_start=5,
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, [a, b], t_start=5,
                           t_stop=0, binsize=pq.s, num_bins=10)
 
         b = neo.SpikeTrain([-7, -8, -9] * pq.s, t_start=-9 * pq.s,
                            t_stop=-7 * pq.s)
-        self.assertRaises(ValueError, cv.TimeHistogram, b, t_start=0,
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, b, t_start=0,
                           t_stop=10, binsize=pq.s, num_bins=10)
-        self.assertRaises(ValueError, cv.TimeHistogram, a, t_start=0 * pq.s,
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
                           t_stop=10 * pq.s, binsize=3 * pq.s, num_bins=10)
 
         b = neo.SpikeTrain([-4, -2, 0, 1] * pq.s, t_start=-4 * pq.s,
                            t_stop=1 * pq.s)
-        self.assertRaises(TypeError, cv.TimeHistogram, b, binsize=-2*pq.s,
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, b, binsize=-2*pq.s,
                           t_start=-4 * pq.s, t_stop=0 * pq.s)
 
     # Test edges
-    def test_time_histogram_bin_edges(self):
+    def test_binned_spiketrain_bin_edges(self):
         a = self.spiketrain_a
-        x = cv.TimeHistogram(a, binsize=1 * pq.s, num_bins=10,
-                             t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s, num_bins=10,
+                                t_stop=10. * pq.s)
         # Test all edges
         edges = [float(i) for i in range(11)]
         self.assertTrue(np.array_equal(x.bin_edges, edges))
@@ -485,12 +485,12 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertTrue(np.array_equal(x.bin_centers, edges))
 
     # Test for different units but same times
-    def test_time_histogram_different_units(self):
+    def test_binned_spiketrain_different_units(self):
         a = self.spiketrain_a
         b = a.rescale(pq.ms)
         binsize = 1 * pq.s
-        xa = cv.TimeHistogram(a, binsize=binsize)
-        xb = cv.TimeHistogram(b, binsize=binsize.rescale(pq.ms))
+        xa = cv.BinnedSpikeTrain(a, binsize=binsize)
+        xb = cv.BinnedSpikeTrain(b, binsize=binsize.rescale(pq.ms))
         self.assertTrue(
             np.array_equal(xa.to_bool_array(), xb.to_bool_array()))
         self.assertTrue(

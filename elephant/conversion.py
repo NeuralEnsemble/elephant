@@ -313,7 +313,7 @@ def _get_start_stop_from_input(spiketrains):
     return start, stop
 
 
-class TimeHistogram(object):
+class BinnedSpikeTrain(object):
     """
     Class which calculates a binned spike train and provides methods to
     transform the binned spike train to a boolean matrix or a matrix with
@@ -650,7 +650,7 @@ class TimeHistogram(object):
         >>> import neo as n
         >>> import quantities as pq
         >>> st = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        >>> x = conv.TimeHistogram(st, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
+        >>> x = conv.BinnedSpikeTrain(st, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
         >>> print(x.spike_indices)
         [[0, 0, 1, 3, 4, 5, 6]]
         >>> print(x.to_sparse_array().nonzero()[1])
@@ -692,7 +692,7 @@ class TimeHistogram(object):
         >>> import neo as n
         >>> import quantities as pq
         >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        >>> x = conv.TimeHistogram(a, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
+        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
         >>> print(x.to_bool_array())
         [[ True  True False  True  True  True  True False False False]]
 
@@ -725,7 +725,7 @@ class TimeHistogram(object):
         >>> import elephant.conversion as conv
         >>> import neo as n
         >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        >>> x = conv.TimeHistogram(a, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
+        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
         >>> print(x.to_array())
         [[2 1 0 1 1 1 1 0 0 0]]
 
