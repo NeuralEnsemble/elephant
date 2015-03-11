@@ -451,7 +451,7 @@ class RateEstimationTestCase(unittest.TestCase):
                 num_spikes = len(self.spike_train)
                 # re_diff = np.diff(rate_estimate)
                 re_diff = rate_estimate.magnitude[1:]-rate_estimate.magnitude[:-1]
-                re_fixed = rate_estimate.magnitude[:-1] + re_diff
+                re_fixed = (rate_estimate.magnitude[:-1] + re_diff)[:,0]
                 re_times_diff = np.diff(rate_estimate.times.rescale('s'))
                 integral = 0
                 for i, rate in enumerate(re_fixed):
