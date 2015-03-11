@@ -330,7 +330,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 
     """
     forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'])
-    forms_verbose = np.array(['rectangle', 'triangle', 'gaussian', 'epanechnikov',
+    forms_verbose = np.array(['boxcar', 'triangle', 'gaussian', 'epanechnikov',
                      'exponential', 'alpha'])
     if form in forms_verbose:
         form = forms_abbreviated[forms_verbose == form][0]
@@ -460,7 +460,7 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
 
     Returns
     -------
-    rate : neo.AnalogSingal
+    rate : neo.AnalogSingalArray
         Contains the rate estimation in unit Hertz (Hz).
         Has a property 'rate.times' which contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
@@ -519,7 +519,8 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
-    rate = neo.AnalogSignalArray(signal=r, sampling_period=sampling_period,
+    rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
+                                 sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
     return rate

@@ -359,7 +359,7 @@ class RateEstimationTestCase(unittest.TestCase):
         sampling_period = 0.01*pq.s
         inst_rate = es.instantaneous_rate(
             st, sampling_period, 'TRI', 0.03*pq.s)
-        self.assertEquals(type(inst_rate), neo.core.AnalogSignalArray)
+        self.assertIsInstance(inst_rate, neo.core.AnalogSignalArray)
         self.assertEquals(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
         self.assertEquals(inst_rate.simplified.units, pq.Hz)
@@ -392,8 +392,12 @@ class RateEstimationTestCase(unittest.TestCase):
             sampling_period=0.01*pq.ms, form='TRI', sigma=-0.03*pq.s)
 
     def test_re_consistency(self):
-        # calculate rate estimate
-        shapes = ['GAU', 'gaussian', 'TRI', 'triangle', 'BOX', 'rectangle',
+        """
+        test, whether the integral of the rate estimation curve is (almost)
+        equal to the number of spikes of the spike train.
+        """
+
+        shapes = ['GAU', 'gaussian', 'TRI', 'triangle', 'BOX', 'boxcar',
                   'EPA', 'epanechnikov', 'ALP', 'alpha', 'EXP', 'exponential']
         kernel_resolution = 0.01*pq.s
         for shape in shapes:
