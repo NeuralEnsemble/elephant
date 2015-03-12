@@ -12,7 +12,7 @@ import scipy.signal as spsig
 import quantities as pq
 import neo.core as n
 
-import elephant.signal
+import elephant.spectral
 
 
 class WelchPSDTestCase(unittest.TestCase):
@@ -23,24 +23,24 @@ class WelchPSDTestCase(unittest.TestCase):
 
         # check for invalid parameter values
         # - length of segments
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           len_seg=0)
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           len_seg=data.shape[-1] * 2)
         # - number of segments
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           num_seg=0)
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           num_seg=data.shape[-1] * 2)
         # - frequency resolution
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           freq_res=-1)
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           freq_res=data.sampling_rate/(data.shape[-1]+1))
         # - overlap
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           overlap=-1.0)
-        self.assertRaises(ValueError, elephant.signal.welch_psd, data,
+        self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           overlap=1.1)
 
     def test_welch_psd_behavior(self):
@@ -57,23 +57,23 @@ class WelchPSDTestCase(unittest.TestCase):
                                       units='mV')
 
         # consistency between different ways of specifying segment length
-        freqs1, psd1 = elephant.signal.welch_psd(data, len_seg=data_length/5, overlap=0)
-        freqs2, psd2 = elephant.signal.welch_psd(data, num_seg=5, overlap=0)
+        freqs1, psd1 = elephant.spectral.welch_psd(data, len_seg=data_length/5, overlap=0)
+        freqs2, psd2 = elephant.spectral.welch_psd(data, num_seg=5, overlap=0)
         self.assertTrue(np.all((psd1==psd2, freqs1==freqs2)))
 
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
-        freqs, psd = elephant.signal.welch_psd(data, freq_res=freq_res)
+        freqs, psd = elephant.spectral.welch_psd(data, freq_res=freq_res)
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertEqual(freqs[psd.argmax()], signal_freq)
-        freqs_np, psd_np = elephant.signal.welch_psd(data.magnitude, fs=1/sampling_period, freq_res=freq_res)
+        freqs_np, psd_np = elephant.spectral.welch_psd(data.magnitude, fs=1/sampling_period, freq_res=freq_res)
         self.assertTrue(np.all((freqs==freqs_np, psd==psd_np)))
 
         # check of scipy.signal.welch() parameters
         params = {'window': 'hamming', 'nfft': 1024, 'detrend': 'linear',
                   'return_onesided': False, 'scaling': 'spectrum'}
         for key, val in params.items():
-            freqs, psd = elephant.signal.welch_psd(data, len_seg=1000, overlap=0, **{key: val})
+            freqs, psd = elephant.spectral.welch_psd(data, len_seg=1000, overlap=0, **{key: val})
             freqs_spsig, psd_spsig = spsig.welch(data, fs=1/sampling_period, nperseg=1000, noverlap=0, **{key: val})
             self.assertTrue(np.all((freqs==freqs_spsig, psd==psd_spsig)))
 
@@ -81,8 +81,8 @@ class WelchPSDTestCase(unittest.TestCase):
         num_channel = 4
         data_length = 5000
         data_multidim = np.random.normal(size=(num_channel, data_length))
-        freqs, psd = elephant.signal.welch_psd(data_multidim)
-        freqs_T, psd_T = elephant.signal.welch_psd(data_multidim.T, axis=0)
+        freqs, psd = elephant.spectral.welch_psd(data_multidim)
+        freqs_T, psd_T = elephant.spectral.welch_psd(data_multidim.T, axis=0)
         self.assertTrue(np.all(freqs==freqs_T))
         self.assertTrue(np.all(psd==psd_T.T))
 
@@ -94,17 +94,17 @@ class WelchPSDTestCase(unittest.TestCase):
                                    units='mV')
 
         # outputs from AnalogSignalArray input are of Quantity type (standard usage)
-        freqs_neo, psd_neo = elephant.signal.welch_psd(data)
+        freqs_neo, psd_neo = elephant.spectral.welch_psd(data)
         self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
         self.assertTrue(isinstance(psd_neo, pq.quantity.Quantity))
 
         # outputs from Quantity array input are of Quantity type
-        freqs_pq, psd_pq = elephant.signal.welch_psd(data.magnitude*data.units, fs=1/sampling_period)
+        freqs_pq, psd_pq = elephant.spectral.welch_psd(data.magnitude*data.units, fs=1/sampling_period)
         self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
         self.assertTrue(isinstance(psd_pq, pq.quantity.Quantity))
 
         # outputs from Numpy ndarray input are NOT of Quantity type
-        freqs_np, psd_np = elephant.signal.welch_psd(data.magnitude, fs=1/sampling_period)
+        freqs_np, psd_np = elephant.spectral.welch_psd(data.magnitude, fs=1/sampling_period)
         self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(psd_np, pq.quantity.Quantity))
 
@@ -130,10 +130,10 @@ class WelchPSDTestCase(unittest.TestCase):
                                        units='mV')
 
         # check if the results from different input types are identical
-        freqs_np, psd_np = elephant.signal.welch_psd(data_np,
+        freqs_np, psd_np = elephant.spectral.welch_psd(data_np,
                                                      fs=1/sampling_period)
-        freqs_neo, psd_neo = elephant.signal.welch_psd(data_neo)
-        freqs_neo_1dim, psd_neo_1dim = elephant.signal.welch_psd(data_neo_1dim)
+        freqs_neo, psd_neo = elephant.spectral.welch_psd(data_neo)
+        freqs_neo_1dim, psd_neo_1dim = elephant.spectral.welch_psd(data_neo_1dim)
         self.assertTrue(np.all(freqs_np==freqs_neo))
         self.assertTrue(np.all(psd_np==psd_neo))
         self.assertTrue(np.all(psd_neo_1dim==psd_neo[0]))
