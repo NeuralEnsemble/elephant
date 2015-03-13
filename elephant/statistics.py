@@ -528,7 +528,7 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
 
 
 def psth(spiketrains, binsize, t_start=None, t_stop=None, output='counts',
-         as_bool=False):
+         clip=False):
     """
     Peristimulus Time Histogram (PSTH) of a list of :attr:`neo.SpikeTrain`
     objects.
@@ -552,6 +552,11 @@ def psth(spiketrains, binsize, t_start=None, t_stop=None, output='counts',
         * `mean`: mean spike counts per spike train
         * `rate`: mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
+    clip : bool (optional)
+        Indicates if all spiketrain objects should first binned to a binary
+        representation (**True** case) and the calculation of the `PSTH` is
+        based on this representation.
+        Default: False
 
     Returns
     -------
@@ -595,7 +600,7 @@ def psth(spiketrains, binsize, t_start=None, t_stop=None, output='counts',
     bs = conv.BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
                                binsize=binsize)
 
-    if as_bool:
+    if clip:
         bin_hist = bs.to_sparse_bool_array().sum(axis=0)
     else:
         bin_hist = bs.to_sparse_array().sum(axis=0)

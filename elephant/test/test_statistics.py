@@ -482,7 +482,7 @@ class PSTHTestCase(unittest.TestCase):
 
     def test_psth_clipped(self):
         targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
-        psth = es.psth(self.spiketrains, binsize=pq.s, as_bool=True)
+        psth = es.psth(self.spiketrains, binsize=pq.s, clip=True)
         assert_array_equal(targ, psth[:, 0].magnitude)
 
     def test_psth_tstart_tstop(self):
