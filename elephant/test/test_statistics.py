@@ -10,7 +10,7 @@ import unittest
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 import quantities as pq
 
 import elephant.statistics as es
@@ -459,6 +459,54 @@ class RateEstimationTestCase(unittest.TestCase):
                 integral = integral
 
                 self.assertAlmostEqual(num_spikes, integral)
+
+
+class PSTHTestCase(unittest.TestCase):
+    def setUp(self):
+        self.spiketrain_a = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_b = neo.SpikeTrain(
+            [0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrains = [self.spiketrain_a, self.spiketrain_b]
+
+    def tearDown(self):
+        del self.spiketrain_a
+        self.spiketrain_a = None
+        del self.spiketrain_b
+        self.spiketrain_b = None
+
+    def test_psth_unclipped(self):
+        targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
+        psth = es.psth(self.spiketrains, binsize=pq.s)
+        assert_array_equal(targ, psth[:, 0].magnitude)
+
+    def test_psth_clipped(self):
+        targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
+        psth = es.psth(self.spiketrains, binsize=pq.s, as_bool=True)
+        assert_array_equal(targ, psth[:, 0].magnitude)
+
+    def test_psth_tstart_tstop(self):
+        # Start, stop short range
+        targ = np.array([2, 1])
+        psth = es.psth(self.spiketrains, binsize=pq.s, t_start=5*pq.s,
+                       t_stop=7*pq.s)
+        assert_array_equal(targ, psth[:, 0].magnitude)
+
+    def test_psth_output(self):
+        # Normalization mean
+        psth = es.psth(self.spiketrains, binsize=pq.s, output='mean')
+        targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0], dtype=float) / 2
+        assert_array_equal(targ.reshape(targ.size, 1), psth.magnitude)
+
+        # Normalization rate
+        psth = es.psth(self.spiketrains, binsize=pq.s, output='rate')
+        assert_array_equal(psth.view(pq.Quantity),
+                           targ.reshape(targ.size, 1) * 1 / pq.s)
+
+        # Normalization unspecified, raises error
+        self.assertRaises(ValueError, es.psth, self.spiketrains,
+                          binsize=pq.s, output=' ')
+
 
 if __name__ == '__main__':
     unittest.main()
