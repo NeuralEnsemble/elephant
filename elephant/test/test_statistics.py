@@ -492,6 +492,15 @@ class PSTHTestCase(unittest.TestCase):
                        t_stop=7*pq.s)
         assert_array_equal(targ, psth[:, 0].magnitude)
 
+        # Test without t_stop
+        targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
+        psth = es.psth(self.spiketrains, binsize=1 * pq.s, t_start=0 * pq.s)
+        assert_array_equal(targ, psth[:, 0].magnitude)
+
+        # Test without t_start
+        psth = es.psth(self.spiketrains, binsize=1 * pq.s, t_stop=10 * pq.s)
+        assert_array_equal(targ, psth[:, 0].magnitude)
+
     def test_psth_output(self):
         # Normalization mean
         psth = es.psth(self.spiketrains, binsize=pq.s, output='mean')
