@@ -527,11 +527,10 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
     return rate
 
 
-def psth(spiketrains, binsize, t_start=None, t_stop=None, output='counts',
-         clip=False):
+def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
+                   output='counts', binary=False):
     """
-    Peristimulus Time Histogram (PSTH) of a list of :attr:`neo.SpikeTrain`
-    objects.
+    Time Histogram of a list of :attr:`neo.SpikeTrain` objects.
 
     Parameters
     ----------
@@ -552,18 +551,25 @@ def psth(spiketrains, binsize, t_start=None, t_stop=None, output='counts',
         * `mean`: mean spike counts per spike train
         * `rate`: mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
-    clip : bool (optional)
-        Indicates if all spiketrain objects should first binned to a binary
-        representation (**True** case) and the calculation of the `PSTH` is
+    binary : bool (optional)
+        If **True**, indicates whether all spiketrain objects should first
+        binned to a binary representation (using the `BinnedSpikeTrain` class
+        in the `conversion` module) and the calculation of the histogram is
         based on this representation.
+        Note that the output is not binary, but a histogram of the converted,
+        binary representation.
         Default: False
 
     Returns
     -------
     analogSignalArray : neo.AnalogSignalArray
-        An neo.AnalogSignalArray object containing the PSTH values.
-        `AnalogSignal[j]` is the PSTH computed between
+        An neo.AnalogSignalArray object containing the histogram values.
+        `AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+
+    See also
+    --------
+    elephant.conversion.BinnedSpikeTrain
 
     """
     min_tstop = 0
@@ -600,7 +606,7 @@ def psth(spiketrains, binsize, t_start=None, t_stop=None, output='counts',
     bs = conv.BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
                                binsize=binsize)
 
-    if clip:
+    if binary:
         bin_hist = bs.to_sparse_bool_array().sum(axis=0)
     else:
         bin_hist = bs.to_sparse_array().sum(axis=0)
