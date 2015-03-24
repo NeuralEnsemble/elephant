@@ -16,7 +16,7 @@ from neo import AnalogSignalArray, SpikeTrain
 import quantities as pq
 from quantities import ms, mV, Hz
 import elephant.sta as sta
-
+import warnings
 
 class sta_TestCase(unittest.TestCase):
 
@@ -161,13 +161,8 @@ class sta_TestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, sta.spike_triggered_average, asiga, st, (-1 * ms, 1 * ms))
 
-    def test_all_spiketrains_empty(self):
-        st = SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)
-        self.assertRaises(
-            ValueError, sta.spike_triggered_average, self.asiga1, st, (-1 * ms, 1 * ms))
-
     def test_one_spiketrain_empty(self):
-        '''Test for one empty SpikeTrain, but existing spikes in other, should be permitted'''
+        '''Test for one empty SpikeTrain, but existing spikes in other'''
         st = [SpikeTrain([9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi], units='ms',
                          t_stop=self.asiga1.t_stop), SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)]
         STA = sta.spike_triggered_average(self.asiga1, st, (-1 * ms, 1 * ms))
@@ -176,6 +171,19 @@ class sta_TestCase(unittest.TestCase):
         cmp_array = cmp_array / 0.
         cmp_array.t_start = -1 * ms
         assert_array_equal(STA[:, 1], cmp_array[:, 0])
+
+    def test_all_spiketrains_empty(self):
+        st = SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger warnings.
+            STA = sta.spike_triggered_average(self.asiga1, st, (-1 * ms, 1 * ms))
+            assert "No spike at all was either found or used for averaging" == str(w[-1].message)
+            nan_array = np.empty(20)
+            nan_array.fill(np.nan)
+            cmp_array = AnalogSignalArray(np.array([nan_array, nan_array]).T, units='mV', sampling_rate=10 / ms)
+            assert_array_equal(STA, cmp_array)
 
 
 if __name__ == '__main__':

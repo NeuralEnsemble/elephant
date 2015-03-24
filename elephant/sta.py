@@ -9,7 +9,7 @@ Function to calculate spike-triggered averages of analog signals.
 import numpy as np
 import quantities as pq
 from neo.core import AnalogSignalArray, SpikeTrain
-
+import warnings
 
 def spike_triggered_average(signal, spiketrains, window):
     """
@@ -139,8 +139,7 @@ def spike_triggered_average(signal, spiketrains, window):
         total_used_spikes += used_spikes[i]
 
     if total_used_spikes == 0:
-        raise ValueError(
-            "No spike at all was either found or used for averaging")
+        warnings.warn("No spike at all was either found or used for averaging")
     result_sta.annotate(used_spikes=used_spikes, unused_spikes=unused_spikes)
 
     return result_sta
