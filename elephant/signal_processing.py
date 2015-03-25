@@ -60,7 +60,7 @@ def zscore(signal, inplace=True):
     Example
     -------
     >>> a=neo.AnalogSignalArray(
-            [1,2,3,4,5,6]*mV,
+            np.array([1,2,3,4,5,6]).reshape(-1,1)*mV,
             t_start=0*s, sampling_rate=1000*Hz)
 
     >>> b=neo.AnalogSignalArray(
@@ -72,18 +72,20 @@ def zscore(signal, inplace=True):
             t_start=0*s, sampling_rate=1000*Hz)
 
     >>> print zscore(a)
-    <AnalogSignalArray(array([-1.46385011, -0.87831007, -0.29277002,
-        0.29277002, 0.87831007, 1.46385011]) * mV, [0.0 s, 0.006 s],
-        sampling rate: 1000.0 Hz)>
+    [[-1.46385011]
+     [-0.87831007]
+     [-0.29277002]
+     [ 0.29277002]
+     [ 0.87831007]
+     [ 1.46385011]] dimensionless
 
     >>> print zscore(b)
-    <AnalogSignalArray(array([[-1.46385011, -1.46385011],
-       [-0.87831007, -0.87831007],
-       [-0.29277002, -0.29277002],
-       [ 0.29277002,  0.29277002],
-       [ 0.87831007,  0.87831007],
-       [ 1.46385011,  1.46385011]]) * mV, [0.0 s, 0.006 s],
-       sampling rate: 1000.0 Hz)>
+    [[-1.46385011 -1.46385011]
+     [-0.87831007 -0.87831007]
+     [-0.29277002 -0.29277002]
+     [ 0.29277002  0.29277002]
+     [ 0.87831007  0.87831007]
+     [ 1.46385011  1.46385011]] dimensionless
 
     >>> print zscore([b,c])
     [<AnalogSignalArray(array([[-1.11669108, -1.08361877],
