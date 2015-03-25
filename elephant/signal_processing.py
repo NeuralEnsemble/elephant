@@ -7,12 +7,12 @@ signal_proc module
 
 from __future__ import division, print_function
 import numpy as np
+import quantities as pq
 
 
 def zscore(signal, inplace=True):
     '''
-    Apply a z-score operation to one or several AnalogSignal or
-    AnalogSignalArray objects.
+    Apply a z-score operation to one or several AnalogSignalArray objects.
 
     The z-score operation subtracts the mean :math:`\\mu` of the signal, and
     divides by its standard deviation :math:`\\sigma`:
@@ -23,31 +23,28 @@ def zscore(signal, inplace=True):
     If an AnalogSignalArray containing multiple signals is provided, the
     z-transform is always calculated for each signal individually.
 
-    If a list of AnalogSignal or AnalogSignalArray objects is supplied, the
-    mean and standard deviation are calculated across all objects of the list.
-    Thus, all list elements are z-transformed by the same values of
-    :math:`\\mu` and :math:`\\sigma`. For AnalogSignalArrays, each signal of
-    the array is treated separately across list elements. Therefore, the number
-    of signals must be identical for each AnalogSignalArray of the list.
+    If a list of AnalogSignalArray objects is supplied, the mean and standard
+    deviation are calculated across all objects of the list. Thus, all list
+    elements are z-transformed by the same values of :math:`\\mu` and
+    :math:`\\sigma`. For AnalogSignalArrays, each signal of the array is
+    treated separately across list elements. Therefore, the number of signals
+    must be identical for each AnalogSignalArray of the list.
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or neo.AnalogSignalArray or
-             list of neo.AnalogSignal or list of neo.AnalogSignalArray
+    signal : neo.AnalogSignalArray or list of neo.AnalogSignalArray
         Signals for which to calculate the z-score.
     inplace : bool
         If True, the contents of the input signal(s) is replaced by the
-        z-transformed signal. Otherwise, a copy of the original AnalogSignal(s)
-        is returned. Default: True
+        z-transformed signal. Otherwise, a copy of the original
+        AnalogSignalArray(s) is returned. Default: True
 
     Returns
     -------
-    neo.AnalogSignal or neo.AnalogSignalArray or
-    list of neo.AnalogSignal or list of neo.AnalogSignalArray
-        The output format matches the user format, for each supplied
-        AnalogSignal or AnalogSignalArray object a corresponding object is
-        returned containing the z-transformed signal with the unit
-        dimensionless.
+    neo.AnalogSignalArray or list of neo.AnalogSignalArray
+        The output format matches the input format: for each supplied
+        AnalogSignalArray object a corresponding object is returned containing
+        the z-transformed signal with the unit dimensionless.
 
     Use Case
     --------
@@ -60,7 +57,7 @@ def zscore(signal, inplace=True):
 
     Example
     -------
-    >>> a=neo.AnalogSignal(
+    >>> a=neo.AnalogSignalArray(
             [1,2,3,4,5,6]*mV,
             t_start=0*s, sampling_rate=1000*Hz)
 
@@ -73,8 +70,8 @@ def zscore(signal, inplace=True):
             t_start=0*s, sampling_rate=1000*Hz)
 
     >>> print zscore(a)
-    <AnalogSignal(array([-1.46385011, -0.87831007, -0.29277002,  0.29277002,
-        0.87831007, 1.46385011]) * mV, [0.0 s, 0.006 s],
+    <AnalogSignalArray(array([-1.46385011, -0.87831007, -0.29277002,
+        0.29277002, 0.87831007, 1.46385011]) * mV, [0.0 s, 0.006 s],
         sampling rate: 1000.0 Hz)>
 
     >>> print zscore(b)
@@ -119,7 +116,9 @@ def zscore(signal, inplace=True):
     else:
         # Overwrite signal
         for sig in signal:
-            sig[:] = (sig.magnitude - m) / s
+            sig[:] = pq.Quantity(
+                (sig.magnitude - m.magnitude) / s.magnitude,
+                units=sig.units)
             sig /= sig.units
         result = signal
 

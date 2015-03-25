@@ -6,6 +6,7 @@ Unit tests for the signal_proc module of elephant.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
+
 import unittest
 
 import neo
@@ -14,7 +15,7 @@ import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
 
-import elephant.signal_proc as es
+import elephant.signal_processing as es
 from numpy.ma.testutils import assert_array_equal
 
 
@@ -43,9 +44,10 @@ class ZscoreTestCase(unittest.TestCase):
 
     def test_zscore_single_dup(self):
         '''
-        Test zscore on a single AnalogSignal, asking to return a duplicate.
+        Test z-score on a single AnalogSignalArray, asking to return a
+        duplicate.
         '''
-        signal = neo.AnalogSignal(
+        signal = neo.AnalogSignalArray(
             self.test_seq1, units='mV',
             t_start=0.*pq.ms, sampling_rate=1000.*pq.Hz, dtype=float)
 
@@ -65,9 +67,10 @@ class ZscoreTestCase(unittest.TestCase):
 
     def test_zscore_single_inplace(self):
         '''
-        Test z-score on a single AnalogSignal, asking for an inplace operation.
+        Test z-score on a single AnalogSignalArray, asking for an inplace
+        operation.
         '''
-        signal = neo.AnalogSignal(
+        signal = neo.AnalogSignalArray(
             self.test_seq1, units='mV',
             t_start=0.*pq.ms, sampling_rate=1000.*pq.Hz, dtype=float)
 
@@ -87,7 +90,7 @@ class ZscoreTestCase(unittest.TestCase):
 
     def test_zscore_single_multidim_dup(self):
         '''
-        Test zscore on a single AnalogSignal with multiple dimensions, asking
+        Test z-score on a single AnalogSignal with multiple dimensions, asking
         to return a duplicate.
         '''
         signal = neo.AnalogSignalArray(
@@ -129,10 +132,10 @@ class ZscoreTestCase(unittest.TestCase):
     def test_zscore_single_dup_int(self):
         '''
         Test if the z-score is correctly calculated even if the input is an
-        AnalogSignal of type int, asking for a duplicate (duplicate should be
-        of type float).
+        AnalogSignalArray of type int, asking for a duplicate (duplicate should
+        be of type float).
         '''
-        signal = neo.AnalogSignal(
+        signal = neo.AnalogSignalArray(
             self.test_seq1, units='mV',
             t_start=0.*pq.ms, sampling_rate=1000.*pq.Hz, dtype=int)
 
@@ -150,10 +153,9 @@ class ZscoreTestCase(unittest.TestCase):
     def test_zscore_single_inplace_int(self):
         '''
         Test if the z-score is correctly calculated even if the input is an
-        AnalogSignal of type int, asking for an inplace operation
-        (should be int?).
+        AnalogSignalArray of type int, asking for an inplace operation.
         '''
-        signal = neo.AnalogSignal(
+        signal = neo.AnalogSignalArray(
             self.test_seq1, units='mV',
             t_start=0.*pq.ms, sampling_rate=1000.*pq.Hz, dtype=int)
 
