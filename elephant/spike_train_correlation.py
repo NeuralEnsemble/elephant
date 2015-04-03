@@ -51,6 +51,21 @@ def corrcoef(binned_sts, binary=False):
         binned_sts[i] and binned_sts[j]. If binned_sts contains only one
         SpikeTrain, C=1.0.
 
+    Examples
+    --------
+    Generate two Poisson spike trains
+    >>> st1=elephant.spike_train_generation.homogeneous_poisson_process(
+            rate=10.*Hz, t_start=0.*s, t_stop=10.*s)
+    >>> st2=elephant.spike_train_generation.homogeneous_poisson_process(
+            rate=10.*Hz, t_start=0.*s, t_stop=10.*s)
+
+    Calculate the correlation matrix.
+    >>> cc_matrix=elephant.spike_train_correlation.corrcoef(
+        elephant.conversion.BinnedSpikeTrain([st1,st2], binsize=5*ms))
+
+    The correlation coefficient between the spike trains is stored in
+    cc_matrix[0,1] (or cc_matrix[1,0])
+
     Notes
     -----
     * The spike trains in the binned structure are assumed to all cover the
