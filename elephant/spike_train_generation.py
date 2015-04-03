@@ -1,6 +1,5 @@
 """
 Spike train generation
-======================
 
 Functions to generate random spike trains.
 
@@ -25,9 +24,9 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop, a
         return (x / mean_rate.units).rescale(t_stop.units)
 
     n = int(((t_stop - t_start) * mean_rate).simplified)
-    number = np.ceil(n + 3*np.sqrt(n))
+    number = np.ceil(n + 3 * np.sqrt(n))
     if number < 100:
-        number = min(5 + np.ceil(2*n), 100)
+        number = min(5 + np.ceil(2 * n), 100)
     assert number > 4  # if positive, number cannot be less than 5
     isi = rescale(interval_generator(*args, size=number))
     spikes = np.cumsum(isi)
@@ -42,19 +41,21 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop, a
             extra_spikes.append(t_last)
             t_last = t_last + rescale(interval_generator(*args, size=1))[0]
         # np.concatenate does not conserve units
-        spikes = Quantity(np.concatenate((spikes, extra_spikes)).magnitude, units=spikes.units)
+        spikes = Quantity(
+            np.concatenate((spikes, extra_spikes)).magnitude, units=spikes.units)
     else:
         spikes = spikes[:i]
 
     if as_array:
         spikes = spikes.magnitude
     else:
-        spikes = SpikeTrain(spikes, t_start=t_start, t_stop=t_stop, units=spikes.units)
+        spikes = SpikeTrain(
+            spikes, t_start=t_start, t_stop=t_stop, units=spikes.units)
 
     return spikes
 
 
-def homogeneous_poisson_process(rate, t_start=0.0*ms, t_stop=1000.0*ms, as_array=False):
+def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms, as_array=False):
     """
     Returns a spike train whose spikes are a realization of a Poisson process
     with the given rate, starting at time `t_start` and stopping time `t_stop`.
@@ -81,11 +82,11 @@ def homogeneous_poisson_process(rate, t_start=0.0*ms, t_stop=1000.0*ms, as_array
         >>> homogeneous_poisson_process(20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
-    mean_interval = 1/rate
+    mean_interval = 1 / rate
     return _homogeneous_process(np.random.exponential, (mean_interval,), rate, t_start, t_stop, as_array)
 
 
-def homogeneous_gamma_process(a, b, t_start=0.0*ms, t_stop=1000.0*ms, as_array=False):
+def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms, as_array=False):
     """
     Returns a spike train whose spikes are a realization of a gamma process
     with the given parameters, starting at time `t_start` and stopping time `t_stop`.
@@ -116,5 +117,5 @@ def homogeneous_gamma_process(a, b, t_start=0.0*ms, t_stop=1000.0*ms, as_array=F
 
     """
     rate = b / a
-    k, theta = a, (1/b)
+    k, theta = a, (1 / b)
     return _homogeneous_process(np.random.gamma, (k, theta), rate, t_start, t_stop, as_array)

@@ -1,24 +1,66 @@
-========
-Elephant
-========
+.. elephant documentation master file, created by
+   sphinx-quickstart on Thu Aug 22 08:39:42 2013.
 
-Elephant is a package for the analysis of neurophysiology data, based on Neo_.
 
-Contents
+elephant - Electrophysiology Analysis Toolkit
+=============================================
+
+
+.. sidebar:: Summary
+   
+    :Release:
+        |release|
+    :Date:
+        |today|
+    :Authors:
+        The elephant authors and contributers, see :ref:`authors`.
+    :Code written in:
+        `Python <http://en.wikipedia.org/wiki/Python_%28programming_language%29>`_
+    :Development status:
+        Active
+    :Operating system:
+        `cross-platform <http://en.wikipedia.org/wiki/Cross-platform>`_
+    :Language:
+        English
+    :Type:
+        Neuroscience / Neuroinformatics
+    :Logo: 
+        .. image:: images/elephant_logo.png
+            :width: 200px
+
+Synopsis
 --------
+    
+*elephant* is a generic toolbox for the analysis of electrophysiolgical data based on the Neo_ framework. This manual covers the installation of elephant in an existing Python environment, several tutorials to help get you started, information on the structure and conventions of the library, a list of modules, and help for future contributers to elephant.
+
+	
+Table of Contents
+-----------------
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 1
 
-   api_reference
-   developers_guide
+    overview
+    install
+    tutorial
+    modules
+    developers_guide
+    authors
+
+   
+
+.. Indices and tables
+.. ==================
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
 
 
-Indices and tables
-------------------
+.. _`Neo`: https://github.com/NeuralEnsemble/python-neo
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
-.. _Neo: http://neuralensemble.org/neo
+.. |date| date::
+.. |time| date:: %H:%M
+
+This document was generated on |date| at |time|.
