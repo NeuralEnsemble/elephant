@@ -1,0 +1,4 @@
+#!/bin/bash
+echo Rescanning elephant modules and rebuilding rst files...
+sphinx-apidoc -e -d 4 -f -o source ../elephant/ ../elephant/test
+
