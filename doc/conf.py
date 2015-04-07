@@ -42,8 +42,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'elephant'
-authors = u'elephant authors and contributors'
+project = u'Elephant'
+authors = u'Elephant authors and contributors'
 copyright = u'2015, ' + authors
 
 # The version info for the project you're documenting, acts as replacement for

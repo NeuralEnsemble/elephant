@@ -2,34 +2,34 @@
 Overview
 ********
 
-What is elephant?
+What is Elephant?
 =====================
 
 As a result of the complexity inherent in modern recording technologies that yield massively parallel data streams and in advanced analysis methods to explore such rich data sets, the need for more reproducible research in the neurosciences can no longer be ignored. Reproducibility rests on building workflows that may allow users to transparently trace their analysis steps from data acquisition to final publication. A key component of such a workflow is a set of defined analysis methods to perform the data processing.
 
-elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages. In addition to providing a common platform for analysis codes from different laboratories, the elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. elephant is the direct successor to Neurotools [#f1]_ and maintains ties to complementary projects such as OpenElectrophy [#f2]_ and spykeviewer [#f3]_.
+Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages. In addition to providing a common platform for analysis codes from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. Elephant is the direct successor to Neurotools [#f1]_ and maintains ties to complementary projects such as OpenElectrophy [#f2]_ and spykeviewer [#f3]_.
 
 * Analysis functions use consistent data formats and conventions as input arguments and outputs. Electrophysiological data will generally be represented by data models defined by the Neo_ [#f4]_ project.
 * Library functions are based on a set of core functions for commonly used operations, such as sliding windows, converting data to alternate representations, or the generation of surrogates for hypothesis testing.
 * Accepted analysis functions must be equipped with a range of unit tests to ensure a high standard of code quality.
 
 
-elephant library structure
+Elephant library structure
 ==========================
 
-elephant is a standard python package and is structured into a number of submodules. The following is a sketch of the layout of the elephant library (0.1.0 release).
+Elephant is a standard python package and is structured into a number of submodules. The following is a sketch of the layout of the Elephant library (0.1.0 release).
 
 .. figure:: images/elephant_structure.png
     :width: 600 px
     :align: center
     :figwidth: 80 %
     
-    Modules of the elephant library. Modules containing analysis functions are colored in blue shades, core functionality in green shades.
+    Modules of the Elephant library. Modules containing analysis functions are colored in blue shades, core functionality in green shades.
    
 
-Conceptually, modules of the elephant library can be divided into those related to a specific field of analysis methods, and core functions that provide a layer of various foundation and utility functions. All available modules are available directly on the the top level of the elephant package in the ``elephant`` subdirectory to avoid unnecessary hierarchical clutter. Unit tests for all functions are located in the ``elephant/test`` subdirectory and are named according the module name. This documentation is located in the top level ``doc`` subdirectory.
+Conceptually, modules of the Elephant library can be divided into those related to a specific field of analysis methods, and core functions that provide a layer of various foundation and utility functions. All available modules are available directly on the the top level of the Elephant package in the ``elephant`` subdirectory to avoid unnecessary hierarchical clutter. Unit tests for all functions are located in the ``elephant/test`` subdirectory and are named according the module name. This documentation is located in the top level ``doc`` subdirectory.
 
-In the following we provide a brief overview of the modules available in elephant.
+In the following we provide a brief overview of the modules available in Elephant.
 
 
 Analysis modules
@@ -77,7 +77,7 @@ Provides useful convenience functions to work efficiently with Neo objects.
 
 ``pandas_bridge``
 ^^^^^^^^^^^^^^^^^
-Bridge from elephant to the pandas library.
+Bridge from Elephant to the pandas library.
 
 
 References

@@ -4,20 +4,20 @@
 Prerequisites / Installation
 ****************************
 
-elephant is a pure Python package so that it should be easy to install on any system.
+Elephant is a pure Python package so that it should be easy to install on any system.
 
 
 Dependencies
 ============
 
-The following packages are required to use elephant:
+The following packages are required to use Elephant:
     * Python_ >= 2.6
     * numpy_ >= 1.6.2
     * scipy_>=0.11.0
     * quantities_ >= 0.9.0
     * neo_ == 0.4.0
 
-The following packages are optional in order to run certain parts of elephant:
+The following packages are optional in order to run certain parts of Elephant:
     * For using the pandas_bridge module: 
         * pandas>=>=0.14.0
     * For building the documentation:
@@ -51,11 +51,11 @@ Installation
 Automatic installation from pypi
 --------------------------------
 
-The easiest option to install elephant is via pip_::
+The easiest option to install Elephant is via pip_::
 
     $ pip install elephant    
 
-*Linux:* We recommend to install elephant locally in the home directory using the ``--user`` option of pip, or using a virtual environment provided by virtualenv_ , both of which do not require administrator privileges.
+*Linux:* We recommend to install Elephant locally in the home directory using the ``--user`` option of pip, or using a virtual environment provided by virtualenv_ , both of which do not require administrator privileges.
 
 Alternatively, if you have setuptools_, please use::
     

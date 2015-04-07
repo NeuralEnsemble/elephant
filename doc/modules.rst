@@ -1,5 +1,6 @@
-elephant API Reference
-======================
+**********************
+Elephant API Reference
+**********************
 
 .. toctree::
    :maxdepth: 2

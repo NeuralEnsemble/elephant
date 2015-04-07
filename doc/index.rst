@@ -1,9 +1,10 @@
-.. elephant documentation master file, created by
+.. Elephant documentation master file, created by
    sphinx-quickstart on Thu Aug 22 08:39:42 2013.
 
 
-elephant - Electrophysiology Analysis Toolkit
-=============================================
+*********************************************
+Elephant - Electrophysiology Analysis Toolkit
+*********************************************
 
 
 .. sidebar:: Summary
@@ -13,7 +14,7 @@ elephant - Electrophysiology Analysis Toolkit
     :Date:
         |today|
     :Authors:
-        The elephant authors and contributers, see :ref:`authors`.
+        The Elephant authors and contributers, see :ref:`authors`.
     :Code written in:
         `Python <http://en.wikipedia.org/wiki/Python_%28programming_language%29>`_
     :Development status:
@@ -31,7 +32,7 @@ elephant - Electrophysiology Analysis Toolkit
 Synopsis
 --------
     
-*elephant* is a generic toolbox for the analysis of electrophysiolgical data based on the Neo_ framework. This manual covers the installation of elephant in an existing Python environment, several tutorials to help get you started, information on the structure and conventions of the library, a list of modules, and help for future contributers to elephant.
+*Elephant* is a generic toolbox for the analysis of electrophysiolgical data based on the Neo_ framework. This manual covers the installation of Elephant in an existing Python environment, several tutorials to help get you started, information on the structure and conventions of the library, a list of modules, and help for future contributers to Elephant.
 
 	
 Table of Contents

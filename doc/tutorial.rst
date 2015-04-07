@@ -1,10 +1,11 @@
+*********
 Tutorials
-=========
+*********
 
 Getting Started
 ---------------
 
-In this first tutorial, we will go through a very simple example of how to use elephant. We will investigate numerically verify that the coefficient of variation (CV), a measure of the variability of inter-spike intervals, of a spike train that is modeled as a random (stochastic) Poisson process is 1.
+In this first tutorial, we will go through a very simple example of how to use Elephant. We will investigate numerically verify that the coefficient of variation (CV), a measure of the variability of inter-spike intervals, of a spike train that is modeled as a random (stochastic) Poisson process is 1.
 
 As a first step, install ``elephant`` and its dependencies as outlined in :ref:`install`. Next, start up your python shell. Under Windows, depending on your distribution, you can likely launch a Python shell from the Start menu. Under Linux or Mac, you may start Python by typing::
 
@@ -34,7 +35,7 @@ Notice that the units ``s`` and ``Hz`` have both been imported from the ``quanti
     >>> print(type(spiketrain_list[0]))
     <class 'neo.core.spiketrain.SpikeTrain'>
 
-Before we continue, let us (optionally) have a look at the spike trains in a spike raster plot. This can be created, e.g., using the `matplotlib`_ framework (you may need to install this library, as it is not one of the dependencies of elephant)::
+Before we continue, let us (optionally) have a look at the spike trains in a spike raster plot. This can be created, e.g., using the `matplotlib`_ framework (you may need to install this library, as it is not one of the dependencies of Elephant)::
 
     >>> import matplotlib.pyplot as plt
     >>> for i in range(len(spiketrain_list)):
@@ -68,7 +69,7 @@ In a final step, let's plot a histogram of the obtained CVs (again illustrated u
     >>> plt.gca().tick_params(axis='both', which='major', labelsize=14)
     >>> plt.show()
 
-As predicted by theory, the CV values are clustered around 1. This concludes our first getting started tutorial on the use of elephant.
+As predicted by theory, the CV values are clustered around 1. This concludes our first getting started tutorial on the use of Elephant.
 
 .. figure:: images/tutorials/tutorial_1_figure_2.png
     :width: 600 px
