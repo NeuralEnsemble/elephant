@@ -66,8 +66,8 @@ class sta_TestCase(unittest.TestCase):
         STA = sta.spike_triggered_average(
             self.asiga0, self.st0, (-4 * ms, 4 * ms))
         target = 5e-2 * mV
-        assert np.abs(STA).max().dimensionality.simplified == pq.Quantity(
-            1, "V").dimensionality.simplified
+        self.assertEqual(np.abs(STA).max().dimensionality.simplified, 
+                         pq.Quantity(1, "V").dimensionality.simplified)
         self.assertLess(np.abs(STA).max(), target)
 
     def test_only_one_spike(self):
@@ -93,8 +93,9 @@ class sta_TestCase(unittest.TestCase):
             18.5 * math.pi, 19.5 * math.pi], units='ms', t_stop=20 * math.pi)
         STA = sta.spike_triggered_average(
             self.asiga0, st, (-math.pi * ms, math.pi * ms))
-        assert STA.annotations['used_spikes'] == 3
-        assert STA.annotations['unused_spikes'] == 1
+        self.assertEqual(STA.annotations['used_spikes'], 3)
+        self.assertEqual(STA.annotations['unused_spikes'], 1)
+
 
     #***********************************************************************
     #**** Test for an invalid value, to check that the function raises *****
@@ -192,8 +193,8 @@ class sta_TestCase(unittest.TestCase):
             # Trigger warnings.
             STA = sta.spike_triggered_average(
                 self.asiga1, st, (-1 * ms, 1 * ms))
-            assert "No spike at all was either found or used " \
-                "for averaging" == str(w[-1].message)
+            self.assertEqual("No spike at all was either found or used "
+                             "for averaging", str(w[-1].message))
             nan_array = np.empty(20)
             nan_array.fill(np.nan)
             cmp_array = AnalogSignalArray(np.array([nan_array, nan_array]).T,
