@@ -83,7 +83,7 @@ Bridge from Elephant to the pandas library.
 References
 ==========
 .. [#f1]  http://neuralensemble.org/NeuroTools/
-.. [#f2]   http://neuralensemble.org/OpenElectrophy/
+.. [#f2]  http://neuralensemble.org/OpenElectrophy/
 .. [#f3]  http://spykeutils.readthedocs.org/en/0.4.1/
 .. [#f4]  Garcia et al. (2014) Front.~Neuroinform. 8:10
-.. _`Neo`: https://github.com/NeuralEnsemble/python-neo
+.. _`Neo`: http://neuralensemble.org/neo/

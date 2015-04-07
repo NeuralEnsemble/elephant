@@ -293,3 +293,18 @@ intersphinx_mapping = {'http://docs.python.org/': None}
 
 # Use more reliable mathjax source
 mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+
+# Remove the copyright notice from docstrings:
+def process_docstring_remove_copyright(app, what, name, obj, options, lines):
+    copyright_line = None
+    for i,line in enumerate(lines):
+        if line.startswith(':copyright:'):
+            copyright_line = i
+            break
+    if copyright_line:
+        while len(lines) > copyright_line:
+            lines.pop()
+
+
+def setup(app):
+    app.connect('autodoc-process-docstring', process_docstring_remove_copyright)

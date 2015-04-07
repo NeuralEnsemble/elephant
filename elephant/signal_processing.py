@@ -1,7 +1,7 @@
 '''
-signal_processing module
+Basic processing procedures for analog signals (e.g., performing a z-score of a signal, or filtering a signal).
 
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 '''
 
@@ -57,8 +57,8 @@ def zscore(signal, inplace=True):
     signal of each electrode separately, but transform all trials of a given
     electrode in the same way.
 
-    Example
-    -------
+    Examples
+    --------
     >>> a=neo.AnalogSignalArray(
             np.array([1,2,3,4,5,6]).reshape(-1,1)*mV,
             t_start=0*s, sampling_rate=1000*Hz)
@@ -150,13 +150,13 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         High-pass and low-pass cut-off frequencies, respectively. When given as
         float, the given value is taken as frequency in Hz.
         Filter type is determined depending on values of these arguments:
-            highpass_freq only (lowpass_freq = None):    highpass filter
-            lowpass_freq only (highpass_freq = None):    lowpass filter
-            highpass_freq < lowpass_freq:    bandpass filter
-            highpass_freq > lowpass_freq:    bandstop filter
+            * highpass_freq only (lowpass_freq = None):    highpass filter
+            * lowpass_freq only (highpass_freq = None):    lowpass filter
+            * highpass_freq < lowpass_freq:    bandpass filter
+            * highpass_freq > lowpass_freq:    bandstop filter
     order : int
         Order of Butterworth filter. Default is 4.
-    filter_function: string
+    filter_function : string
         Filtering function to be used. Either 'filtfilt'
         (`scipy.signal.filtfilt()`) or 'lfilter' (`scipy.signal.lfilter()`). In
         most applications 'filtfilt' should be used, because it doesn't bring

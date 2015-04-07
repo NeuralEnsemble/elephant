@@ -3,6 +3,7 @@
 Module to generate surrogates of a spike train by randomising its spike times
 in different ways (see [1]). Different methods destroy different features of
 the original data:
+
 * randomise_spikes:
     randomly reposition all spikes inside the time interval (t_start, t_stop).
     Keeps spike count, generates Poisson spike trains with time-stationary
@@ -71,7 +72,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         For surrogate spikes falling outside the range
         `[spiketrain.t_start, spiketrain.t_stop)`, whether to drop them out
         (for edges = True) or set that to the range's closest end
-         (for edges = False).
+        (for edges = False).
         Default: True
 
     Returns
@@ -81,8 +82,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
       randomly dithering its spikes. The range of the surrogate spike trains
       is the same as :attr:`spiketrain`.
 
-    Example
-    -------
+    Examples
+    --------
     >>> import quantities as pq
     >>> import neo
     >>>
@@ -161,8 +162,8 @@ def randomise_spikes(spiketrain, n=1, decimals=None):
       by randomly dithering its spikes. The range of the surrogate spike trains
       is the same as :attr:`spiketrain`.
 
-    Example
-    -------
+    Examples
+    --------
     >>> import quantities as pq
     >>> import neo
     >>>
@@ -223,8 +224,8 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
       shuffling. The range of the surrogate `neo.SpikeTrain` objects is the
       same as :attr:`spiketrain`.
 
-    Example
-    -------
+    Examples
+    --------
     >>> import quantities as pq
     >>> import neo
     >>>
@@ -308,8 +309,8 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
       dithering its spikes. The range of the surrogate spike trains is the
       same as :attr:`spiketrain`.
 
-    Example
-    -------
+    Examples
+    --------
     >>> import quantities as pq
     >>> import neo
     >>>
@@ -390,8 +391,8 @@ def jitter_spikes(spiketrain, binsize, n=1):
       replacing its spikes within bins of user-defined width. The range of the
       surrogate spike trains is the same as `spiketrain`.
 
-    Example
-    -------
+    Examples
+    --------
     >>> import quantities as pq
     >>> import neo
     >>>
