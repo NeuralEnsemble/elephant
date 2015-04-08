@@ -11,7 +11,7 @@ Dependencies
 ============
 
 The following packages are required to use Elephant:
-    * Python_ >= 2.6
+    * Python_ >= 2.7
     * numpy_ >= 1.6.2
     * scipy_ >= 0.11.0
     * quantities_ >= 0.9.0

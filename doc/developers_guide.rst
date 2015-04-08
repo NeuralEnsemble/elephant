@@ -33,16 +33,7 @@ If you have an idea for an improvement to Elephant, create a ticket with type
 Requirements
 ------------
 
-    * Python_ 2.6, 2.7, 3.1 or 3.2
-    * numpy_ >= 1.3.0
-    * quantities_ >= 0.9.0
-    * Neo_ >= 0.3.3
-    * nose_ >= 0.11.1
-    * if using Python 2.6 or 3.1, unittest2_ >= 0.5.1
-    * Distribute_ >= 0.6
-    * Sphinx_ >= 0.6.4
-    * (optional) tox_ >= 0.9 (makes it easier to test with multiple Python versions)
-    * (optional) coverage_ >= 2.85 (for measuring test coverage)
+See :doc:`install`. We strongly recommend using virtualenv_ or similar.
 
 
 Getting the source code
@@ -59,23 +50,21 @@ To get a local copy of the repository::
     $ git clone git@github.com:<username>/elephant.git
     
 Now you need to make sure that the ``elephant`` package is on your PYTHONPATH.
-You can do this either by installing Elephant::
+You can do this by installing Elephant::
 
     $ cd elephant
     $ python setup.py install
     $ python3 setup.py install
 
-(if you do this, you will have to re-run ``setup.py install`` any time you make
-changes to the code) *or* by creating symbolic links from somewhere on your
-PYTHONPATH, for example::
+but if you do this, you will have to re-run ``setup.py install`` any time you make
+changes to the code. A better solution is to install Elephant with the *develop* option,
+this avoids reinstalling when there are changes in the code::
 
-    $ ln -s elephant/elephant
-    $ export PYTHONPATH=/some/directory:${PYTHONPATH}
+    $ python setup.py develop
 
-An alternate solution is to install Elephant with the *develop* option, this avoids
-reinstalling when there are changes in the code::
+or::
 
-    $ sudo python setup.py develop
+    $ pip install -e .
 
 To update to the latest version from the repository::
 
@@ -90,7 +79,7 @@ on your system::
 
     $ cd elephant/test
 
-With Python 2.7 or 3.2::
+With Python 2.7 or 3.x::
 
     $ python -m unittest discover
     $ python3 -m unittest discover
@@ -126,8 +115,17 @@ documentation system. To build the documentation::
     $ cd elephant/doc
     $ make html
     
-Then open `some/directory/elephant/doc/build/html/index.html` in your browser.
+Then open `some/directory/elephant/doc/_build/html/index.html` in your browser.
 Docstrings should conform to the `NumPy docstring standard`_.
+
+To check that all example code in the documentation is correct, run::
+
+    $ make doctest
+
+To check that all URLs in the documentation are correct, run::
+
+    $ make linkcheck
+
 
 Committing your changes
 -----------------------
@@ -174,7 +172,7 @@ Coding standards and style
 --------------------------
 
 All code should conform as much as possible to `PEP 8`_, and should run with
-Python 2.6, 2.7, 3.1, 3.2 and 3.3.
+Python 2.7, 3.2, 3.3 and 3.4.
 
 
 Making a release
@@ -182,9 +180,9 @@ Making a release
 
 .. TODO: discuss branching/tagging policy.
 
-Add a section in /doc/src/whatisnew.rst for the release.
+.. Add a section in /doc/releases/<version>.rst for the release.
 
-First check that the version string (in :file:`elephant/version.py`, :file:`setup.py`,
+First check that the version string (in :file:`elephant/__init__.py`, :file:`setup.py`,
 :file:`doc/conf.py` and :file:`doc/install.rst`) is correct.
 
 To build a source package::
@@ -194,14 +192,13 @@ To build a source package::
 To upload the package to `PyPI`_ (if you have the necessary permissions)::
 
     $ python setup.py sdist upload
-    $ python setup.py upload_docs --upload-dir=doc/build/html
 
 .. should we also distribute via software.incf.org
 
 Finally, tag the release in the Git repository and push it::
 
     $ git tag <version>
-    $ git push --tags origin
+    $ git push --tags upstream
     
 
 .. make a release branch
@@ -211,9 +208,6 @@ Finally, tag the release in the Git repository and push it::
 .. _Python: http://www.python.org
 .. _nose: http://somethingaboutorange.com/mrl/projects/nose/
 .. _neo: http://neuralensemble.org/neo
-.. _unittest2: http://pypi.python.org/pypi/unittest2
-.. _Distribute: http://pypi.python.org/pypi/distribute
-.. _tox: http://codespeak.net/tox/
 .. _coverage: http://nedbatchelder.com/code/coverage/
 .. _`PEP 8`: http://www.python.org/dev/peps/pep-0008/
 .. _`issue tracker`: https://github.com/NeuralEnsemble/elephant/issues
@@ -227,3 +221,4 @@ Finally, tag the release in the Git repository and push it::
 .. _PyPI: http://pypi.python.org
 .. _GitHub: http://github.com
 .. _`NumPy docstring standard`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+.. _`virtualenv`: https://virtualenv.pypa.io/en/latest/

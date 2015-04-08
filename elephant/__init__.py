@@ -20,3 +20,5 @@ try:
     from . import pandas_bridge
 except ImportError:
     pass
+
+__version__ = "0.1.0"
