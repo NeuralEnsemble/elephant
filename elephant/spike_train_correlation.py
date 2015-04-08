@@ -4,7 +4,7 @@ Spike train correlation
 
 This modules provides functions to calculate correlations between spike trains.
 
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
@@ -36,11 +36,11 @@ def corrcoef(binned_sts, binary=False):
     Parameters
     ----------
     binned_sts : elephant.conversion.BinnedSpikeTrain
-        A binned spike train class containing the spike trains to be evaluated.
+        A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, two spikes of a particular spike train falling in the same
         bin are counted as 1, resulting in binary binned vectors b_i. If False,
-        the binned vectors $b_i$ contain the actually spike counts per bin.
+        the binned vectors $b_i$ contain the spike counts per bin.
         Default: False
 
     Returns
