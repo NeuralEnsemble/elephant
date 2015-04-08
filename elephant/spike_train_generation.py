@@ -1,6 +1,4 @@
 """
-Spike train generation
-
 Functions to generate random spike trains.
 
 Most of these functions were adapted from the NeuroTools stgen module, which was mostly written by Eilif Muller.

@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-docstring goes here.
+This module allows to convert standard data representations
+(e.g., a spike train stored as Neo SpikeTrain object)
+into other representations useful to perform calculations on the data.
+An example is the representation of a spike train as a sequence of 0-1 values
+(binned spike train).
 
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
 :license: CeCILL, see LICENSE.txt for details.
 """
 
@@ -61,7 +65,7 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
     -------
 
     values : NumPy array of bools
-             A `True``value at a particular index indicates the presence of
+             A ``True`` value at a particular index indicates the presence of
              one or more spikes at the corresponding time point.
     times : NumPy array or Quantity array, optional
             The time points.  This will have the same units as `spiketrain`.
@@ -80,7 +84,7 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 
     If `spiketrain` is a Quantity or Neo SpikeTrain and
     `t_start`, `t_stop` or `sampling_rate` is not, then the arguments that
-    are not quantities will be assumed to have the same units as`spiketrain`.
+    are not quantities will be assumed to have the same units as `spiketrain`.
 
     Raises
     ------

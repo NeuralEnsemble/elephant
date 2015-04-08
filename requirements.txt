@@ -4,9 +4,9 @@ numpy>=1.6.2
 quantities>=0.9.0
 scipy>=0.11.0
 # optional
-#pandas>=>=0.14.0
+#pandas>=0.14.0
 # for building documentation
-#numpydoc==0.5
-#sphinx==1.2.2
+#numpydoc>=0.5
+#sphinx>=1.2.2
 # for running tests
-nose==1.3.3
+nose>=1.3.3

@@ -1,8 +1,15 @@
-**********************
-Elephant API Reference
-**********************
+******************
+Function Reference
+******************
 
 .. toctree::
    :maxdepth: 2
 
-   elephant
+   reference/statistics
+   reference/signal_processing
+   reference/spectral
+   reference/spike_train_generation
+   reference/spike_train_surrogates
+   reference/conversion
+
+..   reference/spike_triggered_average

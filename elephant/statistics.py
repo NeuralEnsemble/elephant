@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-docstring goes here.
+Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
 
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -166,8 +166,7 @@ def fanofactor(spiketrains):
 
     Parameters
     ----------
-    spiketrains : list of neo.core.SpikeTrain objects, quantity array,
-                  numpy array or list
+    spiketrains : list of neo.SpikeTrain objects, quantity arrays, numpy arrays or lists
         Spike trains for which to compute the Fano factor of spike counts.
 
     Returns
@@ -289,7 +288,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         coincides with the median of the numeric array, i.e for a
         triangle, the maximum will be at the center bin with equal
         number of bins to the right and to the left.
-   norm : float
+    norm : float
         For rate estimates. The kernel vector is normalized such that
         the sum of all entries equals unity sum(kernel)=1. When
         estimating rate functions from discrete spike data (0/1) the
@@ -317,11 +316,11 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 
     See also
     --------
-    SpikeTrain.instantaneous_rate
-    SpikeList.averaged_instantaneous_rate
+    elephant.statistics.instantaneous_rate
 
     References
     ----------
+
     .. [1] Meier R, Egert U, Aertsen A, Nawrot MP, "FIND - a unified framework
        for neural data analysis"; Neural Netw. 2008 Oct; 21(8):1085-93.
 
@@ -415,8 +414,8 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
 
     Parameters
     -----------
-    spiketrain: 'neo.core.spiketrain.SpikeTrain'
-        neo object that contains spike times, the unit of the time stamps
+    spiketrain: 'neo.SpikeTrain'
+        Neo object that contains spike times, the unit of the time stamps
         and t_start and t_stop of the spike train.
     sampling_period : Quantity
         time stamp resolution of the spike times. the same resolution will
@@ -461,14 +460,16 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma, m_idx=None,
 
     Returns
     -------
-    rate : neo.AnalogSingalArray
-        Contains the rate estimation in unit Hertz (Hz).
+    rate : neo.AnalogSignalArray
+        Contains the rate estimation in unit hertz (Hz).
         Has a property 'rate.times' which contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
         is given as an argument to the function.
 
-    See also:
-        statistics.make_kernel
+    See also
+    --------
+
+    elephant.statistics.make_kernel
     """
     kernel, norm, m_idx = make_kernel(form=form, sigma=sigma,
                                       sampling_period=sampling_period)
@@ -544,7 +545,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         are considered in the histogram. If `t_start` and/or `t_stop` are not
         specified, the maximum `t_start` of all :attr:spiketrains is used as
         `t_start`, and the minimum `t_stop` is used as `t_stop`.
-        Default: t_start = t_stop= None
+        Default: t_start = t_stop = None
     output : str (optional)
         Normalization of the histogram. Can be one of:
         * `counts`'`: spike counts at each bin (as integer numbers)
@@ -562,15 +563,14 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
     Returns
     -------
-    analogSignalArray : neo.AnalogSignalArray
-        An neo.AnalogSignalArray object containing the histogram values.
+    time_hist : neo.AnalogSignalArray
+        A neo.AnalogSignalArray object containing the histogram values.
         `AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
-
     """
     min_tstop = 0
     if t_start is None:

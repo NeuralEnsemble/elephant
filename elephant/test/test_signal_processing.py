@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-<<<<<<< HEAD
 Unit tests for the signal_proc module of elephant.
 
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
