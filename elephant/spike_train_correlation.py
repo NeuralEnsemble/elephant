@@ -1,0 +1,146 @@
+# -*- coding: utf-8 -*-
+"""
+Spike train correlation
+
+This modules provides functions to calculate correlations between spike trains.
+
+:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+from __future__ import division
+import numpy as np
+
+
+def corrcoef(binned_sts, binary=False):
+    '''
+    Calculate the NxN matrix of pairwise Pearson's correlation coefficients
+    between all combinations of N binned spike trains.
+
+    For each pair of spike trains $(i,j)$, the correlation coefficient $C[i,j]$
+    is given by the correlation coefficient between the vectors obtained by
+    binning $i$ and $j$ at the desired bin size. Let $b_i$ and $b_j$ denote the
+    binary vectors and $m_i$ and  $m_j$ their respective averages. Then
+
+    .math $$ C[i,j] = <b_i-m_i, b_j-m_j> /
+                      \sqrt{<b_i-m_i, b_i-m_i>*<b_j-m_j,b_j-m_j>} $$
+
+    where <..,.> is the scalar product of two vectors.
+
+    For an input of n spike trains, a n x n matrix is returned.
+    Each entry in the matrix is a real number ranging between -1 (perfectly
+    anti-correlated spike trains) and +1 (perfectly correlated spike trains).
+
+    If binary is True, the binned spike trains are clipped before computing the
+    correlation coefficients, so that the binned vectors b_i, b_j are binary.
+
+    Parameters
+    ----------
+    binned_sts : elephant.conversion.BinnedSpikeTrain
+        A binned spike train containing the spike trains to be evaluated.
+    binary : bool, optional
+        If True, two spikes of a particular spike train falling in the same
+        bin are counted as 1, resulting in binary binned vectors b_i. If False,
+        the binned vectors $b_i$ contain the spike counts per bin.
+        Default: False
+
+    Returns
+    -------
+    C : ndarrray
+        The square matrix of correlation coefficients. The element
+        $C[i,j]=C[j,i]$ is the Pearson's correlation coefficient between
+        binned_sts[i] and binned_sts[j]. If binned_sts contains only one
+        SpikeTrain, C=1.0.
+
+    Examples
+    --------
+    Generate two Poisson spike trains
+    >>> st1=elephant.spike_train_generation.homogeneous_poisson_process(
+            rate=10.*Hz, t_start=0.*s, t_stop=10.*s)
+    >>> st2=elephant.spike_train_generation.homogeneous_poisson_process(
+            rate=10.*Hz, t_start=0.*s, t_stop=10.*s)
+
+    Calculate the correlation matrix.
+    >>> cc_matrix=elephant.spike_train_correlation.corrcoef(
+        elephant.conversion.BinnedSpikeTrain([st1,st2], binsize=5*ms))
+
+    The correlation coefficient between the spike trains is stored in
+    cc_matrix[0,1] (or cc_matrix[1,0])
+
+    Notes
+    -----
+    * The spike trains in the binned structure are assumed to all cover the
+      complete time span of binned_sts [t_start,t_stop).
+    '''
+    num_neurons = binned_sts.matrix_rows
+
+    # Pre-allocate correlation matrix
+    C = np.zeros((num_neurons, num_neurons))
+
+    # Retrieve unclipped matrix
+    spmat = binned_sts.to_sparse_array()
+
+    # For each row, extract the nonzero column indices and the corresponding
+    # data in the matrix (for performance reasons)
+    bin_idx_unique = []
+    bin_counts_unique = []
+    if binary:
+        for s in spmat:
+            bin_idx_unique.append(s.nonzero()[1])
+    else:
+        for s in spmat:
+            bin_counts_unique.append(s.data)
+
+    # All combinations of spike trains
+    for i in range(num_neurons):
+        for j in range(i, num_neurons):
+            # Number of spikes in i and j
+            if binary:
+                n_i = len(bin_idx_unique[i])
+                n_j = len(bin_idx_unique[j])
+            else:
+                n_i = np.sum(bin_counts_unique[i])
+                n_j = np.sum(bin_counts_unique[j])
+
+            # Enumerator:
+            # $$ <b_i-m_i, b_j-m_j>
+            #      = <b_i, b_j> + l*m_i*m_j - <b_i, M_j> - <b_j, M_i>
+            #      =:    ij     + l*m_i*m_j - n_i * m_j  - n_j * m_i
+            #      =     ij     - n_i*n_j/l                         $$
+            # where $n_i$ is the spike count of spike train $i$,
+            # $l$ is the number of bins used (i.e., length of $b_i$ or $b_j$),
+            # and $M_i$ is a vector [m_i, m_i,..., m_i].
+            if binary:
+                # Intersect indices to identify number of coincident spikes in
+                # i and j (more efficient than directly using the dot product)
+                ij = len(np.intersect1d(
+                    bin_idx_unique[i], bin_idx_unique[j], assume_unique=True))
+            else:
+                # Calculate dot product b_i*b_j between unclipped matrices
+                ij = spmat[i].dot(spmat[j].transpose()).toarray()[0][0]
+
+            cc_enum = ij - n_i * n_j / binned_sts.num_bins
+
+            # Denominator:
+            # $$ <b_i-m_i, b_i-m_i>
+            #      = <b_i, b_i> + m_i^2 - 2 <b_i, M_i>
+            #      =:    ii     + m_i^2 - 2 n_i * m_i
+            #      =     ii     - n_i^2 /               $$
+            if binary:
+                # Here, b_i*b_i is just the number of filled bins (since each
+                # filled bin of a clipped spike train has value equal to 1)
+                ii = len(bin_idx_unique[i])
+                jj = len(bin_idx_unique[j])
+            else:
+                # directly calculate the dot product based on the counts of all
+                # filled entries (more efficient than using the dot product of
+                # the rows of the sparse matrix)
+                ii = np.dot(bin_counts_unique[i], bin_counts_unique[i])
+                jj = np.dot(bin_counts_unique[j], bin_counts_unique[j])
+
+            cc_denom = np.sqrt(
+                (ii - (n_i ** 2) / binned_sts.num_bins) *
+                (jj - (n_j ** 2) / binned_sts.num_bins))
+
+            # Fill entry of correlation matrix
+            C[i, j] = C[j, i] = cc_enum / cc_denom
+    return C
