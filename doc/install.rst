@@ -97,7 +97,7 @@ To install the latest version of Elephant from the Git repository::
 
 
 .. _`Python`: http://python.org/
-.. _`numpy`: http://numpy.scipy.org/
+.. _`numpy`: http://www.numpy.org/
 .. _`scipy`: http://scipy.org/scipylib/
 .. _`quantities`: http://pypi.python.org/pypi/quantities
 .. _`neo`: http://pypi.python.org/pypi/neo

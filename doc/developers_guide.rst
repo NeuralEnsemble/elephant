@@ -221,7 +221,7 @@ Finally, tag the release in the Git repository and push it::
 .. _`NeuralEnsemble Google group`: http://groups.google.com/group/neuralensemble
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _Sphinx: http://sphinx.pocoo.org/
-.. _numpy: http://numpy.scipy.org/
+.. _numpy: http://www.numpy.org/
 .. _quantities: http://pypi.python.org/pypi/quantities
 .. _PEP394: http://www.python.org/dev/peps/pep-0394/
 .. _PyPI: http://pypi.python.org

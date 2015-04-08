@@ -59,17 +59,17 @@ def zscore(signal, inplace=True):
 
     Examples
     --------
-    >>> a=neo.AnalogSignalArray(
-            np.array([1,2,3,4,5,6]).reshape(-1,1)*mV,
-            t_start=0*s, sampling_rate=1000*Hz)
+    >>> a = neo.AnalogSignalArray(
+    ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1)*mV,
+    ...       t_start=0*s, sampling_rate=1000*Hz)
 
-    >>> b=neo.AnalogSignalArray(
-            np.transpose([[1,2,3,4,5,6],[11,12,13,14,15,16]])*mV,
-            t_start=0*s, sampling_rate=1000*Hz)
+    >>> b = neo.AnalogSignalArray(
+    ...       np.transpose([[1, 2, 3, 4, 5, 6], [11, 12, 13, 14, 15, 16]])*mV,
+    ...       t_start=0*s, sampling_rate=1000*Hz)
 
-    >>> c=neo.AnalogSignalArray(
-            np.transpose([[21,22,23,24,25,26],[31,32,33,34,35,36]])*mV,
-            t_start=0*s, sampling_rate=1000*Hz)
+    >>> c = neo.AnalogSignalArray(
+    ...       np.transpose([[21, 22, 23, 24, 25, 26], [31, 32, 33, 34, 35, 36]])*mV,
+    ...       t_start=0*s, sampling_rate=1000*Hz)
 
     >>> print zscore(a)
     [[-1.46385011]
@@ -87,20 +87,20 @@ def zscore(signal, inplace=True):
      [ 0.87831007  0.87831007]
      [ 1.46385011  1.46385011]] dimensionless
 
-    >>> print zscore([b,c])
+    >>> print zscore([b,c])   #  doctest: +NORMALIZE_WHITESPACE
     [<AnalogSignalArray(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
        [-1.01772411, -1.01394628],
        [-0.96824063, -0.97911003],
        [-0.91875714, -0.94427378],
-       [-0.86927366, -0.90943753]]) * mV, [0.0 s, 0.006 s],
+       [-0.86927366, -0.90943753]]) * dimensionless, [0.0 s, 0.006 s],
        sampling rate: 1000.0 Hz)>,
        <AnalogSignalArray(array([[ 0.78170952,  0.84779261],
        [ 0.86621866,  0.90728682],
        [ 0.9507278 ,  0.96678104],
        [ 1.03523694,  1.02627526],
        [ 1.11974608,  1.08576948],
-       [ 1.20425521,  1.1452637 ]]) * mV, [0.0 s, 0.006 s],
+       [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
        sampling rate: 1000.0 Hz)>]
     '''
     # Transform input to a list

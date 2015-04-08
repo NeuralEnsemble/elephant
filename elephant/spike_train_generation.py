@@ -76,8 +76,8 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms, as_a
     Examples
     --------
         >>> from quantities import Hz, ms
-        >>> homogeneous_poisson_process(50*Hz, 0*ms, 1000*ms)
-        >>> homogeneous_poisson_process(20*Hz, 5000*ms, 10000*ms, as_array=True)
+        >>> spikes = homogeneous_poisson_process(50*Hz, 0*ms, 1000*ms)
+        >>> spikes = homogeneous_poisson_process(20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
     mean_interval = 1 / rate
@@ -110,8 +110,8 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms, as_arr
     Examples
     --------
         >>> from quantities import Hz, ms
-        >>> homogeneous_gamma_process(2.0, 50*Hz, 0*ms, 1000*ms)
-        >>> homogeneous_gamma_process(5.0, 20*Hz, 5000*ms, 10000*ms, as_array=True)
+        >>> spikes = homogeneous_gamma_process(2.0, 50*Hz, 0*ms, 1000*ms)
+        >>> spikes = homogeneous_gamma_process(5.0, 20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
     rate = b / a

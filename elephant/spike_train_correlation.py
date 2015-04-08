@@ -16,13 +16,14 @@ def corrcoef(binned_sts, binary=False):
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
 
-    For each pair of spike trains $(i,j)$, the correlation coefficient $C[i,j]$
+    For each pair of spike trains :math:`(i,j)`, the correlation coefficient :math:`C[i,j]`
     is given by the correlation coefficient between the vectors obtained by
-    binning $i$ and $j$ at the desired bin size. Let $b_i$ and $b_j$ denote the
-    binary vectors and $m_i$ and  $m_j$ their respective averages. Then
+    binning :math:`i` and :math:`j` at the desired bin size. Let :math:`b_i` and :math:`b_j` denote the
+    binary vectors and :math:`m_i` and  :math:`m_j` their respective averages. Then
 
-    .math $$ C[i,j] = <b_i-m_i, b_j-m_j> /
-                      \sqrt{<b_i-m_i, b_i-m_i>*<b_j-m_j,b_j-m_j>} $$
+    .. math::
+         C[i,j] = <b_i-m_i, b_j-m_j> /
+                      \sqrt{<b_i-m_i, b_i-m_i>*<b_j-m_j,b_j-m_j>}
 
     where <..,.> is the scalar product of two vectors.
 
@@ -31,7 +32,7 @@ def corrcoef(binned_sts, binary=False):
     anti-correlated spike trains) and +1 (perfectly correlated spike trains).
 
     If binary is True, the binned spike trains are clipped before computing the
-    correlation coefficients, so that the binned vectors b_i, b_j are binary.
+    correlation coefficients, so that the binned vectors :math:`b_i` and :math:`b_j` are binary.
 
     Parameters
     ----------
@@ -39,29 +40,30 @@ def corrcoef(binned_sts, binary=False):
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, two spikes of a particular spike train falling in the same
-        bin are counted as 1, resulting in binary binned vectors b_i. If False,
-        the binned vectors $b_i$ contain the spike counts per bin.
+        bin are counted as 1, resulting in binary binned vectors :math:`b_i`. If False,
+        the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False
 
     Returns
     -------
     C : ndarrray
         The square matrix of correlation coefficients. The element
-        $C[i,j]=C[j,i]$ is the Pearson's correlation coefficient between
+        :math:`C[i,j]=C[j,i]` is the Pearson's correlation coefficient between
         binned_sts[i] and binned_sts[j]. If binned_sts contains only one
         SpikeTrain, C=1.0.
 
     Examples
     --------
     Generate two Poisson spike trains
-    >>> st1=elephant.spike_train_generation.homogeneous_poisson_process(
-            rate=10.*Hz, t_start=0.*s, t_stop=10.*s)
-    >>> st2=elephant.spike_train_generation.homogeneous_poisson_process(
-            rate=10.*Hz, t_start=0.*s, t_stop=10.*s)
+
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> st1 = homogeneous_poisson_process(rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    >>> st2 = homogeneous_poisson_process(rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
 
     Calculate the correlation matrix.
-    >>> cc_matrix=elephant.spike_train_correlation.corrcoef(
-        elephant.conversion.BinnedSpikeTrain([st1,st2], binsize=5*ms))
+
+    >>> from elephant.conversion import BinnedSpikeTrain
+    >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
 
     The correlation coefficient between the spike trains is stored in
     cc_matrix[0,1] (or cc_matrix[1,0])
