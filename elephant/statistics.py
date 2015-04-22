@@ -407,7 +407,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 
 
 def instantaneous_rate(spiketrain, sampling_period, form,
-                       sigma=None, t_start=None, t_stop=None,
+                       sigma='auto', t_start=None, t_stop=None,
                        acausal=True, trim=False):
 
     """
