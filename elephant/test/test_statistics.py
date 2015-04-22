@@ -385,11 +385,9 @@ class RateEstimationTestCase(unittest.TestCase):
             AssertionError, es.instantaneous_rate, spiketrain=st,
             sampling_period=0.01*pq.ms, form='NONE', sigma=0.03*pq.s)
         self.assertRaises(
-            AttributeError, es.instantaneous_rate, spiketrain=st,
-            sampling_period=0.01*pq.ms, form='TRI', sigma=0.03)
-        self.assertRaises(
             ValueError, es.instantaneous_rate, spiketrain=st,
             sampling_period=0.01*pq.ms, form='TRI', sigma=-0.03*pq.s)
+
 
     def test_re_consistency(self):
         """
@@ -401,10 +399,18 @@ class RateEstimationTestCase(unittest.TestCase):
                   'EPA', 'epanechnikov', 'ALP', 'alpha', 'EXP', 'exponential']
         kernel_resolution = 0.01*pq.s
         for shape in shapes:
+            rate_estimate_a0 = es.instantaneous_rate(self.spike_train,
+                                              form=shape,
+                                              sampling_period=kernel_resolution,
+                                              sigma='auto',
+                                              t_start=self.st_tr[0]*pq.s,
+                                              t_stop=self.st_tr[1]*pq.s,
+                                              trim=False,
+                                              acausal=False)
+
             rate_estimate0 = es.instantaneous_rate(self.spike_train, form=shape,
                                                   sampling_period=kernel_resolution,
-                                                  sigma=0.5*pq.s,
-                                                  m_idx=None)
+                                                  sigma=0.5*pq.s)
 
             rate_estimate1 = es.instantaneous_rate(self.spike_train, form=shape,
                                                    sampling_period=kernel_resolution,
@@ -445,7 +451,7 @@ class RateEstimationTestCase(unittest.TestCase):
             ### test consistency
             rate_estimate_list = [rate_estimate0, rate_estimate1,
                                   rate_estimate2, rate_estimate3,
-                                  rate_estimate4]
+                                  rate_estimate4, rate_estimate_a0]
 
             for rate_estimate in rate_estimate_list:
                 num_spikes = len(self.spike_train)
@@ -458,7 +464,13 @@ class RateEstimationTestCase(unittest.TestCase):
                     integral += rate*re_times_diff.magnitude[i]
                 integral = integral
 
-                self.assertAlmostEqual(num_spikes, integral)
+                # The following test allows for a rate estimation discrepancy of +- 1%
+                self.assertAlmostEqual(num_spikes, integral, delta=0.01*num_spikes)
+
+        self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
+                          form='GAU', sampling_period=kernel_resolution,
+                          sigma='wrong_string', t_start=self.st_tr[0]*pq.s,
+                          t_stop=self.st_tr[1]*pq.s, trim=False, acausal=True)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
@@ -520,6 +532,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         # Normalization unspecified, raises error
         self.assertRaises(ValueError, es.time_histogram, self.spiketrains,
                           binsize=pq.s, output=' ')
+
 
 
 if __name__ == '__main__':
