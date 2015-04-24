@@ -458,7 +458,7 @@ class RateEstimationTestCase(unittest.TestCase):
                 num_spikes = len(self.spike_train)
                 auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0], x=rate_estimate.times.rescale('s').magnitude)[-1]
 
-                self.assertAlmostEqual(num_spikes, auc)
+                self.assertAlmostEqual(num_spikes, auc, delta=0.01*num_spikes)
 
         self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
                           form='GAU', sampling_period=kernel_resolution,
