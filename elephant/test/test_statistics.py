@@ -12,6 +12,7 @@ import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 import quantities as pq
+import scipy.integrate as spint
 
 import elephant.statistics as es
 
@@ -455,17 +456,9 @@ class RateEstimationTestCase(unittest.TestCase):
 
             for rate_estimate in rate_estimate_list:
                 num_spikes = len(self.spike_train)
-                # re_diff = np.diff(rate_estimate)
-                re_diff = rate_estimate.magnitude[1:]-rate_estimate.magnitude[:-1]
-                re_fixed = (rate_estimate.magnitude[:-1] + re_diff)[:,0]
-                re_times_diff = np.diff(rate_estimate.times.rescale('s'))
-                integral = 0
-                for i, rate in enumerate(re_fixed):
-                    integral += rate*re_times_diff.magnitude[i]
-                integral = integral
+                auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0], x=rate_estimate.times.rescale('s').magnitude)[-1]
 
-                # The following test allows for a rate estimation discrepancy of +- 1%
-                self.assertAlmostEqual(num_spikes, integral, delta=0.01*num_spikes)
+                self.assertAlmostEqual(num_spikes, auc)
 
         self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
                           form='GAU', sampling_period=kernel_resolution,
