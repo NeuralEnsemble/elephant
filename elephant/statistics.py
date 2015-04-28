@@ -649,8 +649,8 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
 
 """Kernel Bandwidth Optimization.
-Copyright (c) 2014 Subhasis Ray
-License: GPL v3
+
+Python implementation by Subhasis Ray.
 
 Original matlab code (sskernel.m) here:
 http://2000.jukuin.keio.ac.jp/shimazaki/res/kernel.html
