@@ -543,7 +543,7 @@ def instantaneous_rate(spiketrain, sampling_period, form,
                                  sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
-    return rate
+    return rate, sigma
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
