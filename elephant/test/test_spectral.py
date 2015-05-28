@@ -139,6 +139,51 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertTrue(np.all(psd_neo_1dim==psd_neo[0]))
 
 
+class CohereTestCase(unittest.TestCase):
+    def test_cohere_behavior(self):
+        import matplotlib.pyplot as plt
+
+        # parameters of test data (sinusoid + noise)
+        fs = 1000.0 * pq.Hz
+        data_dur = 1.0 * pq.s
+        signal_freq = 50.0 * pq.Hz
+        noise_amp = 0.2
+
+        # generate test data
+        t = np.arange(0, data_dur.magnitude, 1/fs.magnitude) * pq.s
+        x_data = (np.cos(2 * np.pi * signal_freq * t)
+                  + noise_amp * np.random.normal(0, 1, len(t))) * pq.mV
+        y_data = (np.sin(2 * np.pi * signal_freq * t)
+                  + noise_amp * np.random.normal(0, 1, len(t))) * pq.mV
+        x = n.AnalogSignalArray(x_data.T, sampling_rate=fs)
+        y = n.AnalogSignalArray(y_data.T, sampling_rate=fs)
+
+        freqs, coherency, phaselag = elephant.spectral.welch_cohere(x, y)
+
+        plt.subplot(121)
+        plt.plot(x.times, x)
+        plt.plot(y.times, y)
+        plt.grid()
+        plt.xlabel("Time (s)")
+        plt.ylabel("Analog signal (mV)")
+
+        plt.subplot(222)
+        plt.plot(freqs[:len(freqs)/2], coherency[:len(freqs)/2])
+        plt.ylim(0, 1)
+        plt.grid()
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Coherency")
+
+        plt.subplot(224)
+        plt.plot(freqs[:len(freqs)/2], phaselag[:len(freqs)/2])
+        plt.ylim(-np.pi, np.pi)
+        plt.grid()
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Phase lag (rad)")
+
+        plt.show()
+
+
 def suite():
     suite = unittest.makeSuite(WelchPSDTestCase, 'test')
     return suite
