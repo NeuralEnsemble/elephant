@@ -233,3 +233,72 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data * signal.units
     else:
         return filtered_data
+
+def wavelet_transform(signal, freq, nco, Fs):
+    '''
+    Compute the wavelet transform of a given signal with Morlet mother wavelet.
+    The definition of the wavelet is based on Le van Quyen et al. J
+    Neurosci Meth 111:83-98 (2001).
+
+    **Args**:
+    signal : 1D array_like
+        Signal to be transformed
+    freq : float
+        Center frequency of the Morlet wavelet.
+    nco : float
+        Size of the mother wavelet (approximate number of cycles within a
+        wavelet). A larger nco value leads to a higher frequency resolution but
+        a lower temporal resolution, and vice versa. Typically used values are
+        in a range of 3 - 8.
+    Fs : float
+        Sampling rate of the signal.
+
+    **Return**:
+    signal_trans: 1D complex array
+        Transformed signal
+    '''
+    # Morlet wavelet generator (c.f. Le van Quyen et al. J Neurosci Meth
+    # 111:83-98 (2001))
+    def _morlet_wavelet(freq, nco, Fs, N):
+        sigma = nco / (6. * freq)
+        t = (np.arange(N, dtype='float') - N / 2) / Fs
+        if N % 2 == 0:
+            t = np.roll(t, int(N / 2))
+        else:
+            t = np.roll(t, int(N / 2) + 1)
+        return np.sqrt(freq) * np.exp(
+            -(t * t) / (2 * sigma ** 2) + 1j * 2 * np.pi * freq * t)
+
+    # When the input is AnalogSignalArray, the axis for time index (i.e. the
+    # first axis) needs to be rolled to the last
+    data = np.asarray(signal)
+    if isinstance(signal, neo.AnalogSignalArray):
+        data = np.rollaxis(data, 0, len(data.shape))
+
+    # check whether the given central frequency is less than the Nyquist
+    # frequency of the signal
+    if freq >= Fs / 2:
+        raise ValueError(
+            "freq must be less than the half of Fs "+
+            "(sampling rate of the original signal)")
+
+    N = len(data)
+    # the least power of 2 greater than N
+    N_pow2 = 2 ** (int(np.log2(N)) + 1)
+
+    # zero-padding to a power of 2 for efficient convolution
+    tmpdata = np.zeros(N_pow2)
+    tmpdata[0:N] = data
+
+    # generate Morlet wavelet
+    wavelet = _morlet_wavelet(freq, nco, Fs, N_pow2)
+
+    # convolution of the signal with the wavelet
+    signal_trans = np.fft.ifft(np.fft.fft(tmpdata) * np.fft.fft(wavelet))[0:N]
+
+    if isinstance(signal, neo.AnalogSignalArray):
+        return signal.duplicate_with_new_array(signal_trans.T)
+    elif isinstance(signal, pq.quantity.Quantity):
+        return signal_trans * signal.units
+    else:
+        return signal_trans

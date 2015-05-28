@@ -395,5 +395,24 @@ class ButterTestCase(unittest.TestCase):
             filtered_noise_neo1d.magnitude ==
             filtered_noise_neo.T.magnitude[0]))
 
+class WaveletTestCase(unittest.TestCase):
+    def setUp(self):
+        self.Fs = 2000.0
+        self.T = np.arange(0, 10*np.pi, 1/self.Fs)
+        self.dummy_signal = np.sin(self.T)
+        self.dummy_signal_pq = self.dummy_signal*pq.mV
+        self.dummy_signal_neo = neo.AnalogSignalArray(
+            self.dummy_signal_pq, t_start=self.T[0]*pq.s,
+            t_stop=self.T[-1]*pq.s, sampling_period=(1/self.Fs)*pq.s)
+
+    def test_wavelet_io(self):
+        dummy_wavelet = elephant.signal_processing.wavelet_transform(self.dummy_signal, 3.14, 3, self.Fs)
+        dummy_wavelet_pq = elephant.signal_processing.wavelet_transform(self.dummy_signal_pq, 3.14, 3, self.Fs)
+        dummy_wavelet_neo = elephant.signal_processing.wavelet_transform(self.dummy_signal_neo, 3.14, 3, self.Fs)
+
+        print (isinstance(dummy_wavelet, type(self.dummy_signal)))
+        print (isinstance(dummy_wavelet_pq, type(self.dummy_signal_pq)))
+        print (isinstance(dummy_wavelet_neo, type(self.dummy_signal_neo)))
+
 if __name__ == '__main__':
     unittest.main()
