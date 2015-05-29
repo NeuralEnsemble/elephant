@@ -21,7 +21,6 @@ import neo
 def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
           nfft=None, detrend='constant', scaling='density', axis=-1):
     """
-
     A helper function to estimate cross spectral density using Welch's method.
     This function is a slightly modified version of `scipy.signal.welch()` with
     modifications based on `matplotlib.mlab._spectral_helper()`.
@@ -90,6 +89,7 @@ def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
     .. [2] M.S. Bartlett, "Periodogram Analysis and Continuous Spectra",
            Biometrika, vol. 37, pp. 1-16, 1950.
     """
+    # TODO: This function should be replaced by `scipy.signal.csd()`, which will appear in SciPy 0.16.0.
     # The checks for if y is x are so that we can use the same function to
     # obtain both power spectrum and cross spectrum without doing extra
     # calculations.
