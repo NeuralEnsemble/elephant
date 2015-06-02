@@ -777,16 +777,26 @@ class BinnedSpikeTrain(object):
            SpikeTrain object or from a list of SpikeTrain objects.
 
         """
-        lil_mat = sps.lil_matrix((self.matrix_rows, self.matrix_columns),
-                                 dtype=int)
+        # column
+        filled = []
+        # row
+        indices = []
+        # data
+        counts = []
         for idx, elem in enumerate(spiketrains):
             ev = elem.view(pq.Quantity)
             scale = np.array(((ev - self.t_start).rescale(
                 self.binsize.units) / self.binsize).magnitude, dtype=int)
             l = np.logical_and(ev >= self.t_start.rescale(self.binsize.units),
                                ev <= self.t_stop.rescale(self.binsize.units))
-            filled = scale[l]
-            filled = filled[filled < self.num_bins]
-            for inner_elem in filled:
-                lil_mat[idx, inner_elem] += 1
-        self._sparse_mat_u = lil_mat.tocsr()
+            filled_tmp = scale[l]
+            filled_tmp = filled_tmp[filled_tmp < self.num_bins]
+            f, c = np.unique(filled_tmp, return_counts=True)
+            filled.extend(f)
+            counts.extend(c)
+            indices.extend([idx] * len(f))
+        csr_matrix = sps.csr_matrix((counts, (indices, filled)),
+                                    shape=(self.matrix_rows,
+                                           self.matrix_columns),
+                                    dtype=int)
+        self._sparse_mat_u = csr_matrix
