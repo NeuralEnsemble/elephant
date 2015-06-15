@@ -10,10 +10,75 @@ import unittest
 
 import numpy as np
 from numpy.testing.utils import assert_array_equal
+from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
 import neo
 import elephant.conversion as conv
+import elephant.spike_train_generation as sgen
 import elephant.spike_train_correlation as sc
+
+class crosscorrelogram_TestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_array_1d_0 = [
+            1.3, 7.56, 15.87, 28.23, 30.9, 34.2, 38.2, 43.2]
+        self.test_array_1d_1 = [
+            1.02, 2.71, 18.82, 28.46, 28.79, 43.6]
+
+        # Build spike trains
+        self.st_0 = neo.SpikeTrain(
+            self.test_array_1d_0, units='ms', t_stop=50.)
+        self.st_1 = neo.SpikeTrain(
+            self.test_array_1d_1, units='ms', t_stop=50.)
+        self.st_2 = sgen.homogeneous_poisson_process(100 * pq.Hz, t_stop = 1000. * pq.ms)
+
+        # And binned counterparts
+        self.binned_st_0 = conv.BinnedSpikeTrain(self.st_0, 
+                t_start=0 * pq.ms, t_stop=50. * pq.ms,
+                binsize=1 * pq.ms)
+        self.binned_st_1 = conv.BinnedSpikeTrain(self.st_1, 
+                t_start=0 * pq.ms, t_stop=50. * pq.ms,
+                binsize=1 * pq.ms)
+        self.binned_st_2 = conv.BinnedSpikeTrain(self.st_2, 
+                binsize=1 * pq.ms)
+
+    def test_autocorrelogram_binned_train(self):
+        '''
+        Test calculation of auto-correlogram
+        '''
+
+        st = self.binned_st_0
+        lags, xcorr = sc.crosscorrelogram(st, st, [-5 * pq.ms, 5 * pq.ms],
+                chance_corrected=False)
+
+        # check dimensions
+        self.assertEqual(len(lags), len(xcorr))
+        self.assertEqual(len(xcorr), 11)
+
+        # check normalisation
+        self.assertEqual(xcorr.max(), xcorr[5])
+        self.assertAlmostEqual(xcorr[5], 1., 2)
+
+    def test_chance_coincidences(self):
+        '''
+        Test cross-correlogram correction for chance coincidences.
+        '''
+
+        st = self.binned_st_2
+        lags, xcorr = sc.crosscorrelogram(st, st, [-5 * pq.ms, 5 * pq.ms],
+                chance_corrected=True)
+
+        # remove peak due to autocorrelation
+        xcorr[5] = 0.
+        assert_array_almost_equal(xcorr, 0., 1)
+
+
+    def test_check_inputs(self):
+        '''
+        Test if fails on malformed arguments
+        '''
+
+
+
 
 
 class corrcoeff_TestCase(unittest.TestCase):
@@ -35,6 +100,7 @@ class corrcoeff_TestCase(unittest.TestCase):
         self.binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_1], t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
+
 
     def test_corrcoef_binned(self):
         '''

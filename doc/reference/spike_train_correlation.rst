@@ -6,6 +6,7 @@ Stochastic spike train generation
 
    from quantities import Hz, s, ms
    from elephant.spike_train_correlation import corrcoef
+   from elephant.spike_train_correlation import crosscorrelogram
 
 
 .. automodule:: elephant.spike_train_correlation
