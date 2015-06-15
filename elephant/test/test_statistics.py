@@ -358,7 +358,7 @@ class RateEstimationTestCase(unittest.TestCase):
     def test_instantaneous_rate(self):
         st = self.spike_train
         sampling_period = 0.01*pq.s
-        inst_rate = es.instantaneous_rate(
+        inst_rate, sigma = es.instantaneous_rate(
             st, sampling_period, 'TRI', 0.03*pq.s)
         self.assertIsInstance(inst_rate, neo.core.AnalogSignalArray)
         self.assertEquals(
@@ -447,7 +447,7 @@ class RateEstimationTestCase(unittest.TestCase):
 
             kernel = es.make_kernel(form=shape, sampling_period=kernel_resolution,
                                     sigma=0.5*pq.s, direction=-1)
-
+            self.assertAlmostEqual(kernel[0].sum(), 1.0)
 
             ### test consistency
             rate_estimate_list = [rate_estimate0, rate_estimate1,
@@ -456,9 +456,10 @@ class RateEstimationTestCase(unittest.TestCase):
 
             for rate_estimate in rate_estimate_list:
                 num_spikes = len(self.spike_train)
-                auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0], x=rate_estimate.times.rescale('s').magnitude)[-1]
+                auc = spint.cumtrapz(y=rate_estimate[0].magnitude[:, 0],
+                                     x=rate_estimate[0].times.rescale('s').magnitude)[-1]
 
-                self.assertAlmostEqual(num_spikes, auc, delta=0.01*num_spikes)
+                self.assertAlmostEqual(num_spikes, auc, delta=0.05*num_spikes)
 
         self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
                           form='GAU', sampling_period=kernel_resolution,
