@@ -1,6 +1,6 @@
-=================================
-Stochastic spike train generation
-=================================
+=======================
+Spike train correlation
+=======================
 
 .. testsetup::
 
