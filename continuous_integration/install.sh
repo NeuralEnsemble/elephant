@@ -31,7 +31,9 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
+        numpy scipy
+        # numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
+
     source activate testenv
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
@@ -60,7 +62,8 @@ elif [[ "$DISTRIB" == "conda" ]]; then
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION
+        numpy scipy pandas
+        # numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION
     source activate testenv
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
@@ -86,8 +89,8 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
      source testenv/bin/activate
      pip install nose
      pip install coverage
-     pip install numpy==1.6.2
-     travis_wait pip install scipy==0.14.0 --verbose
+     pip install numpy
+     travis_wait pip install scipy --verbose
      pip install pandas
      pip install quantities
 
