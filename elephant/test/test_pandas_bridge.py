@@ -235,23 +235,23 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res8.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res3.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res4.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res5.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res6.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res7.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res8.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__spiketrain_to_dataframe__noparents(self):
         blk = fake_neo('Block', seed=0)
@@ -297,11 +297,11 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res2.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__spiketrain_to_dataframe__parents_childfirst(self):
         blk = fake_neo('Block', seed=0)
@@ -350,13 +350,13 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res3.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res3.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__spiketrain_to_dataframe__parents_parentfirst(self):
         blk = fake_neo('Block', seed=0)
@@ -392,10 +392,9 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res1.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
-
+            assert_index_equal(value, level, False, False)
 
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class EventToDataframeTestCase(unittest.TestCase):
@@ -489,23 +488,23 @@ class EventToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res8.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res3.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res4.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res5.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res6.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res7.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res8.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__event_to_dataframe__noparents(self):
         blk = fake_neo('Block', seed=42)
@@ -551,11 +550,11 @@ class EventToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res2.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__event_to_dataframe__parents_childfirst(self):
         blk = fake_neo('Block', seed=42)
@@ -608,13 +607,13 @@ class EventToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res3.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res3.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__event_to_dataframe__parents_parentfirst(self):
         blk = fake_neo('Block', seed=42)
@@ -651,9 +650,9 @@ class EventToDataframeTestCase(unittest.TestCase):
         self.assertEqual(keys, res1.columns.names)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
 
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
@@ -772,23 +771,23 @@ class EpochToDataframeTestCase(unittest.TestCase):
         assert_array_equal(targindex, res8.index.levels)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res3.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res4.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res5.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res6.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res7.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res8.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__epoch_to_dataframe__noparents(self):
         blk = fake_neo('Block', seed=42)
@@ -845,11 +844,11 @@ class EpochToDataframeTestCase(unittest.TestCase):
         assert_array_equal(targindex, res2.index.levels)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__epoch_to_dataframe__parents_childfirst(self):
         blk = fake_neo('Block', seed=42)
@@ -915,13 +914,13 @@ class EpochToDataframeTestCase(unittest.TestCase):
         assert_array_equal(targindex, res3.index.levels)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res2.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res3.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
     def test__epoch_to_dataframe__parents_parentfirst(self):
         blk = fake_neo('Block', seed=42)
@@ -968,9 +967,9 @@ class EpochToDataframeTestCase(unittest.TestCase):
         assert_array_equal(targindex, res1.index.levels)
 
         for value, level in zip(values, res0.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
         for value, level in zip(values, res1.columns.levels):
-            assert_index_equal(value, level)
+            assert_index_equal(value, level, False, False)
 
 
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
