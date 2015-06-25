@@ -71,7 +71,8 @@ class IzhSim(object):
 def threshold_detection(signal, threshold=0.0*mV, sign='above'):
     """
     Returns the times when the analog signal crosses a threshold.
-    Usually used for extracting spike times from a membrane potential.  
+    Usually used for extracting spike times from a membrane potential. 
+    Adapted from version in NeuroTools.   
 
     Parameters
     ----------
