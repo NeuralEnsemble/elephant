@@ -13,7 +13,7 @@ import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon
-from quantities import ms, second, Hz, kHz
+from quantities import ms, second, Hz, kHz, mV
 
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
@@ -26,6 +26,34 @@ def pdiff(a, b):
     """
     return abs((a - b)/a)
 
+
+class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_threshold_detection(self):
+        # Test whether spikes are extracted at the correct times from
+        # an analog signal.  
+        dt = 0.1 # ms
+        n = stgen.IzhNeuron("(A) tonic spiking", a=0.02, b=0.2, 
+                                                 c=-65, d=6, v0=-70) # Neuron
+        s = stgen.IzhSim(n, T=300, dt=dt) # Simulation
+        s.stim = np.array([14 if t > 10 else 0 for t in s.t]) # Stimulus
+        t = s.t # Simulation times.  
+        v = s.integrate()[0] # Simulation membrane potential. 
+        # Neo version of membrane potential.   
+        signal = neo.core.AnalogSignal(v, units='mV', sampling_period=dt*ms)
+        # Extract a spike train using threshold detection.  
+        spike_train = stgen.threshold_detection(signal, threshold = 0.0*mV)
+        # Correct values determined previously.  
+        true_spike_train = [0.0127, 0.0164, 0.0302, 0.0574, 0.0845, 0.1116, 
+                            0.1387, 0.1658, 0.193, 0.22, 0.2471, 0.2742]
+        # Does threshold_detection gives the correct number of spikes?
+        assert len(spike_train) == len(true_spike_train) 
+        # Does threshold_detection gives the correct times for the spikes?    
+        assert np.allclose(spike_train,spike_train) 
+        
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
