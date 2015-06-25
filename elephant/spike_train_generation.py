@@ -1,7 +1,10 @@
 """
-Functions to generate random spike trains.
+Functions to generate spike trains from analog signals, 
+or to generate random spike trains.
 
-Most of these functions were adapted from the NeuroTools stgen module, which was mostly written by Eilif Muller.
+Most of these functions were adapted from the NeuroTools stgen module, 
+which was mostly written by Eilif Muller, 
+or from the NeuroTools signals.analogs module.  
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -9,8 +12,107 @@ Most of these functions were adapted from the NeuroTools stgen module, which was
 
 from __future__ import division
 import numpy as np
-from quantities import ms, Hz, Quantity
+from quantities import ms, mV, Hz, Quantity
 from neo import SpikeTrain
+
+
+
+class IzhNeuron(object):
+    """
+    An Izhikevich neuron that can be used to generate membrane potential 
+    traces for testing, with a variety of dynamics.
+    From http://www.neurdon.com/2011/02/02/neural-modeling-with-python-part-3/
+    """
+    
+    def __init__(self, label, a, b, c, d, v0, u0=None):
+        self.label = label
+
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+
+        self.v = v0
+        self.u = u0 if u0 is not None else b*v0
+
+
+class IzhSim(object):
+    """
+    An Izhikevich model simulator that simulates IzhNeuron objects.  
+    From http://www.neurdon.com/2011/02/02/neural-modeling-with-python-part-3/
+    """
+    
+    def __init__(self, n, T, dt=0.25):
+        self.neuron = n
+        self.dt     = dt
+        self.t      = t = np.arange(0, T+dt, dt)
+        self.stim   = np.zeros(len(t))
+        self.x      = 5
+        self.y      = 140
+        self.du     = lambda a, b, v, u: a*(b*v - u)
+
+    def integrate(self, n=None):
+        if n is None: n = self.neuron
+        trace = np.zeros((2,len(self.t)))
+        for i, j in enumerate(self.stim):
+            n.v += self.dt * (0.04*n.v**2 + self.x*n.v + 
+                              self.y - n.u + self.stim[i])
+            n.u += self.dt * self.du(n.a, n.b, n.v, n.u)
+            if n.v > 30:
+                trace[0,i] = 30
+                n.v        = n.c
+                n.u       += n.d
+            else:
+                trace[0,i] = n.v
+                trace[1,i] = n.u
+        return trace
+
+
+def threshold_detection(signal, threshold=0.0*mV, sign='above'):
+    """
+    Returns the times when the analog signal crosses a threshold.
+    Usually used for extracting spike times from a membrane potential.  
+
+    Parameters
+    ----------
+    signal : neo AnalogSignal object
+        'signal' is an analog signal.
+    threshold : A quantity, e.g. in mV  
+        'threshold' contains a value that must be reached 
+        for an event to be detected.
+    sign : 'above' or 'below'
+        'sign' determines whether to count thresholding crossings
+        that cross above or below the threshold.  
+    format : None or 'raw'
+        Whether to return as SpikeTrain (None) 
+        or as a plain array of times ('raw').
+
+    Returns
+    -------
+    result_st : neo SpikeTrain object
+        'result_st' contains the spike times of each of the events (spikes)
+        extracted from the signal.  
+    """
+
+    assert threshold is not None, "A threshold must be provided"
+
+    if sign is 'above':
+        cutout = np.where(signal > threshold)[0]
+    elif sign in 'below':
+        cutout = np.where(signal < threshold)[0]
+
+    if len(cutout) <= 0:
+        events = np.zeros(0)
+    else:
+        take = np.where(np.diff(cutout)>1)[0]+1
+        take = np.append(0,take)
+
+        time = signal.times
+        events = time[cutout][take]
+        
+    result_st = SpikeTrain(events.base,units=signal.times.units,
+                           t_start=signal.t_start,t_stop=signal.t_stop)
+    return result_st
 
 
 def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop, as_array):
