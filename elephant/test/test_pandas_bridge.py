@@ -25,6 +25,19 @@ else:
     import elephant.pandas_bridge as ep
     HAVE_PANDAS = True
 
+if HAVE_PANDAS:
+    # Currying, otherwise the unittest will break with pandas>=0.16.0
+    # parameter check_names is introduced in a newer versions than 0.14.0
+    # this test is written for pandas 0.14.0
+    def assert_index_equal(left, right):
+        try:
+            # pandas>=0.16.0
+            return pd.util.testing.assert_index_equal(left, right,
+                                                      check_names=False)
+        except TypeError:
+            # pandas older version
+            return pd.util.testing.assert_index_equal(left, right)
+
 
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class MultiindexFromDictTestCase(unittest.TestCase):
