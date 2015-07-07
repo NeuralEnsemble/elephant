@@ -693,9 +693,7 @@ def complexity_pdf(spiketrains, binsize):
         pophist.magnitude, bins=range(0, len(spiketrains)+2))[0]
 
     # Normalization of the Complexity Histogram to 1 (probabilty distribution)
-    sum_complexity = float(sum(complexity_hist))
-    complexity_hist = [s/sum_complexity for s in complexity_hist]
-
+    complexity_hist = complexity_hist / complexity_hist.sum()
     # Convert the Complexity pdf to an neo.AnalogSignalArray
     complexity_distribution = neo.AnalogSignalArray(
         np.array(complexity_hist).reshape(len(complexity_hist), 1) *
