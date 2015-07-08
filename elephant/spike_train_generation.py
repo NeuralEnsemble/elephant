@@ -16,58 +16,6 @@ from quantities import ms, mV, Hz, Quantity
 from neo import SpikeTrain
 
 
-
-class IzhNeuron(object):
-    """
-    An Izhikevich neuron that can be used to generate membrane potential 
-    traces for testing, with a variety of dynamics.
-    From http://www.neurdon.com/2011/02/02/neural-modeling-with-python-part-3/
-    """
-    
-    def __init__(self, label, a, b, c, d, v0, u0=None):
-        self.label = label
-
-        self.a = a
-        self.b = b
-        self.c = c
-        self.d = d
-
-        self.v = v0
-        self.u = u0 if u0 is not None else b*v0
-
-
-class IzhSim(object):
-    """
-    An Izhikevich model simulator that simulates IzhNeuron objects.  
-    From http://www.neurdon.com/2011/02/02/neural-modeling-with-python-part-3/
-    """
-    
-    def __init__(self, n, T, dt=0.25):
-        self.neuron = n
-        self.dt     = dt
-        self.t      = t = np.arange(0, T+dt, dt)
-        self.stim   = np.zeros(len(t))
-        self.x      = 5
-        self.y      = 140
-        self.du     = lambda a, b, v, u: a*(b*v - u)
-
-    def integrate(self, n=None):
-        if n is None: n = self.neuron
-        trace = np.zeros((2,len(self.t)))
-        for i, j in enumerate(self.stim):
-            n.v += self.dt * (0.04*n.v**2 + self.x*n.v + 
-                              self.y - n.u + self.stim[i])
-            n.u += self.dt * self.du(n.a, n.b, n.v, n.u)
-            if n.v > 30:
-                trace[0,i] = 30
-                n.v        = n.c
-                n.u       += n.d
-            else:
-                trace[0,i] = n.v
-                trace[1,i] = n.u
-        return trace
-
-
 def threshold_detection(signal, threshold=0.0*mV, sign='above'):
     """
     Returns the times when the analog signal crosses a threshold.
