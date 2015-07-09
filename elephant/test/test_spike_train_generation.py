@@ -8,6 +8,7 @@ docstring goes here.
 
 from __future__ import division
 import unittest
+import os
 
 import neo
 import numpy as np
