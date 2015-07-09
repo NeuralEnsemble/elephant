@@ -38,7 +38,9 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
 
         # Load membrane potential simulated using Brian2 
         # according to make_spike_extraction_test_data.py.  
-        iom2 = neo.io.PyNNNumpyIO('./spike_extraction_test_data.npz')
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
+        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
         data = iom2.read()
         vm = data[0].segments[0].analogsignals[0]
         spike_train = stgen.threshold_detection(vm)
