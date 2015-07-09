@@ -1,7 +1,10 @@
 """
-Functions to generate random spike trains.
+Functions to generate spike trains from analog signals, 
+or to generate random spike trains.
 
-Most of these functions were adapted from the NeuroTools stgen module, which was mostly written by Eilif Muller.
+Most of these functions were adapted from the NeuroTools stgen module, 
+which was mostly written by Eilif Muller, 
+or from the NeuroTools signals.analogs module.  
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -9,8 +12,56 @@ Most of these functions were adapted from the NeuroTools stgen module, which was
 
 from __future__ import division
 import numpy as np
-from quantities import ms, Hz, Quantity
+from quantities import ms, mV, Hz, Quantity
 from neo import SpikeTrain
+
+
+def threshold_detection(signal, threshold=0.0*mV, sign='above'):
+    """
+    Returns the times when the analog signal crosses a threshold.
+    Usually used for extracting spike times from a membrane potential. 
+    Adapted from version in NeuroTools.   
+
+    Parameters
+    ----------
+    signal : neo AnalogSignal object
+        'signal' is an analog signal.
+    threshold : A quantity, e.g. in mV  
+        'threshold' contains a value that must be reached 
+        for an event to be detected.
+    sign : 'above' or 'below'
+        'sign' determines whether to count thresholding crossings
+        that cross above or below the threshold.  
+    format : None or 'raw'
+        Whether to return as SpikeTrain (None) 
+        or as a plain array of times ('raw').
+
+    Returns
+    -------
+    result_st : neo SpikeTrain object
+        'result_st' contains the spike times of each of the events (spikes)
+        extracted from the signal.  
+    """
+
+    assert threshold is not None, "A threshold must be provided"
+
+    if sign is 'above':
+        cutout = np.where(signal > threshold)[0]
+    elif sign in 'below':
+        cutout = np.where(signal < threshold)[0]
+
+    if len(cutout) <= 0:
+        events = np.zeros(0)
+    else:
+        take = np.where(np.diff(cutout)>1)[0]+1
+        take = np.append(0,take)
+
+        time = signal.times
+        events = time[cutout][take]
+        
+    result_st = SpikeTrain(events.base,units=signal.times.units,
+                           t_start=signal.t_start,t_stop=signal.t_stop)
+    return result_st
 
 
 def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop, as_array):

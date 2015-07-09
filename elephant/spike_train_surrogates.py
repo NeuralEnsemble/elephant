@@ -38,7 +38,11 @@ the original data:
 import numpy as np
 import quantities as pq
 import neo
-import elephant.statistics as es
+try:
+    import elephant.statistics as es
+    isi = es.isi
+except ImportError:
+    from .statistics import isi # Convenience when in elephant working dir.  
 
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
@@ -243,7 +247,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
     if len(spiketrain) > 0:
         isi0 = spiketrain[0] - spiketrain.t_start
-        ISIs = np.hstack([isi0, es.isi(spiketrain)])
+        ISIs = np.hstack([isi0, isi(spiketrain)])
 
         # Round the ISIs to decimal position, if requested
         if decimals is not None:
