@@ -290,12 +290,11 @@ if __name__ == '__main__':
     ele_pos = np.array([[-0.2, -0.2],[0, 0], [0, 1], [1, 0], [1,1], [0.5, 0.5],
                         [1.2, 1.2]])
     pots = np.array([[-1], [-1], [-1], [0], [0], [1], [-1.5]])
-    
     # params = {'gdX': 0.05, 'gdY': 0.05, 'xmin': -2.0, 'xmax': 2.0, 'ymin': -2.0,
     #          'ymax': 2.0}
 
     k = KCSD2D(ele_pos, pots)#, params=params)
-    #print k.cross_validate(Rs=np.array((0.01,0.02,0.04)))
+    k.cross_validate(Rs=np.array((0.01,0.02,0.04)))
     #print k.cross_validate()
-    print k.values()
+    #k_test = k.values()
 
