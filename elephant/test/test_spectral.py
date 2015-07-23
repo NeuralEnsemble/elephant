@@ -57,7 +57,7 @@ class WelchPSDTestCase(unittest.TestCase):
                                       units='mV')
 
         # consistency between different ways of specifying segment length
-        freqs1, psd1 = elephant.spectral.welch_psd(data, len_seg=data_length/5, overlap=0)
+        freqs1, psd1 = elephant.spectral.welch_psd(data, len_seg=data_length//5, overlap=0)
         freqs2, psd2 = elephant.spectral.welch_psd(data, num_seg=5, overlap=0)
         self.assertTrue(np.all((psd1==psd2, freqs1==freqs2)))
 
@@ -189,7 +189,7 @@ class WelchCohereTestCase(unittest.TestCase):
 
         # consistency between different ways of specifying segment length
         freqs1, coherency1, phase_lag1 = elephant.spectral.welch_cohere(x, y,
-            len_seg=data_length/5, overlap=0)
+            len_seg=data_length//5, overlap=0)
         freqs2, coherency2, phase_lag2 = elephant.spectral.welch_cohere(x, y,
             num_seg=5, overlap=0)
         self.assertTrue(np.all((coherency1==coherency2,
