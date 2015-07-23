@@ -349,7 +349,7 @@ class RateEstimationTestCase(unittest.TestCase):
         st_num_spikes = np.random.poisson(self.st_rate*(self.st_dur-2*self.st_margin))
         spike_train = np.random.rand(st_num_spikes) * (self.st_dur-2*self.st_margin) + self.st_margin
         spike_train.sort()
-        
+
         # convert spike train into neo objects
         self.spike_train = neo.SpikeTrain(spike_train*pq.s,
                                           t_start=self.st_tr[0]*pq.s,
@@ -526,6 +526,32 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertRaises(ValueError, es.time_histogram, self.spiketrains,
                           binsize=pq.s, output=' ')
 
+
+class ComplexityPdfTestCase(unittest.TestCase):
+    def setUp(self):
+        self.spiketrain_a = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_b = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_c = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrains = [
+            self.spiketrain_a, self.spiketrain_b, self.spiketrain_c]
+
+    def tearDown(self):
+        del self.spiketrain_a
+        self.spiketrain_a = None
+        del self.spiketrain_b
+        self.spiketrain_b = None
+
+    def test_complexity_pdf(self):
+        targ = np.array([0.92, 0.01, 0.01, 0.06])
+        complexity = es.complexity_pdf(self.spiketrains, binsize=0.1*pq.s)
+        assert_array_equal(targ, complexity[:, 0].magnitude)
+        self.assertEqual(1, complexity[:, 0].magnitude.sum())
+        self.assertEqual(len(self.spiketrains)+1, len(complexity))
+        self.assertIsInstance(complexity, neo.AnalogSignalArray)
+        self.assertEqual(complexity.units, 1*pq.dimensionless)
 
 
 if __name__ == '__main__':

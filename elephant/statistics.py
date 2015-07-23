@@ -648,6 +648,61 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                                  t_start=t_start)
 
 
+def complexity_pdf(spiketrains, binsize):
+    """
+    Complexity Distribution [1] of a list of :attr:`neo.SpikeTrain` objects.
+
+    Probability density computed from the complexity histogram which is the
+    histogram of the entries of the population histogram of clipped (binary)
+    spike trains computed with a bin width of binsize.
+    It provides for each complexity (== number of active neurons per bin) the
+    number of occurrences. The normalization of that histogram to 1 is the
+    probability density.
+
+    Parameters
+    ----------
+    spiketrains : List of neo.SpikeTrain objects
+    Spiketrains with a common time axis (same `t_start` and `t_stop`)
+    binsize : quantities.Quantity
+    Width of the histogram's time bins.
+
+    Returns
+    -------
+    time_hist : neo.AnalogSignalArray
+    A neo.AnalogSignalArray object containing the histogram values.
+    `AnalogSignal[j]` is the histogram computed between .
+
+    See also
+    --------
+    elephant.conversion.BinnedSpikeTrain
+
+    References
+    ----------
+    [1]Gruen, S., Abeles, M., & Diesmann, M. (2008). Impact of higher-order
+    correlations on coincidence distributions of massively parallel data.
+    In Dynamic Brain-from Neural Spikes to Behaviors (pp. 96-114).
+    Springer Berlin Heidelberg.
+
+    """
+    # Computing the population histogram with parameter binary=True to clip the
+    # spike trains before summing
+    pophist = time_histogram(spiketrains, binsize, binary=True)
+
+    # Computing the histogram of the entries of pophist (=Complexity histogram)
+    complexity_hist = np.histogram(
+        pophist.magnitude, bins=range(0, len(spiketrains)+2))[0]
+
+    # Normalization of the Complexity Histogram to 1 (probabilty distribution)
+    complexity_hist = complexity_hist / complexity_hist.sum()
+    # Convert the Complexity pdf to an neo.AnalogSignalArray
+    complexity_distribution = neo.AnalogSignalArray(
+        np.array(complexity_hist).reshape(len(complexity_hist), 1) *
+        pq.dimensionless, t_start=0*pq.dimensionless,
+        sampling_period=1*pq.dimensionless)
+
+    return complexity_distribution
+
+
 """Kernel Bandwidth Optimization.
 
 Python implementation by Subhasis Ray.
