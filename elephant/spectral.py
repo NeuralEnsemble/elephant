@@ -375,12 +375,20 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         frequency in Hz is returned.
     coherency: Numpy ndarray
         Estimate of coherency between the input time series. For each frequency
-        `coherency` takes a value between 0 and 1, with 0 or 1 representing no
-        or perfect coherence, respectively, between `x` and `y`.
-    phase_lag: Numpy ndarray
+        coherency takes a value between 0 and 1, with 0 or 1 representing no or
+        perfect coherence, respectively. When the input arrays `x` and `y` are
+        multi-dimensional, `coherency` is of the same shape as the inputs and
+        frequency is indexed along either the first or the last axis depending
+        on the type of the input: when the input is AnalogSignalArray, the
+        first axis indexes frequency, otherwise the last axis does.
+    phase_lag: Quantity array or Numpy ndarray
         Estimate of phase lag in radian between the input time series. For each
-        frequency `phaselag` takes a value between -PI and PI, positive values
-        meaning phase precession of `x` ahead of `y` and vice versa.
+        frequency phase lag takes a value between -PI and PI, positive values
+        meaning phase precession of `x` ahead of `y` and vice versa. Quantity
+        array is returned if `x` and `y` are of AnalogSignalArray or Quantity
+        array. Otherwise Numpy ndarray containing phase lag in radian is
+        returned. The axis for frequency index is determined in the same way as
+        for `coherency`.
     """
 
     # initialize a parameter dict (to be given to _welch()) with
@@ -447,5 +455,12 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     # attach proper units to return values
     if isinstance(x, pq.quantity.Quantity):
         freqs = freqs * pq.Hz
+        phase_lag = phase_lag * pq.rad
+
+    # When the input is AnalogSignalArray, the axis for frequency index is
+    # rolled to the first to comply with the Neo convention about time axis
+    if isinstance(x, neo.AnalogSignalArray):
+        coherency = np.rollaxis(coherency, -1)
+        phase_lag = np.rollaxis(phase_lag, -1)
 
     return freqs, coherency, phase_lag
