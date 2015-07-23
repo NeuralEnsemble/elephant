@@ -139,49 +139,162 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertTrue(np.all(psd_neo_1dim==psd_neo[0]))
 
 
-class CohereTestCase(unittest.TestCase):
-    def test_cohere_behavior(self):
-        import matplotlib.pyplot as plt
+class WelchCohereTestCase(unittest.TestCase):
+    def test_welch_cohere_errors(self):
+        # generate a dummy data
+        x = n.AnalogSignalArray(np.zeros(5000), sampling_period=0.001*pq.s,
+            units='mV')
+        y = n.AnalogSignalArray(np.zeros(5000), sampling_period=0.001*pq.s,
+            units='mV')
 
-        # parameters of test data (sinusoid + noise)
-        fs = 1000.0 * pq.Hz
-        data_dur = 1.0 * pq.s
-        signal_freq = 50.0 * pq.Hz
-        noise_amp = 0.2
+        # check for invalid parameter values
+        # - length of segments
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            len_seg=0)
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            len_seg=x.shape[-1] * 2)
+        # - number of segments
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            num_seg=0)
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            num_seg=x.shape[-1] * 2)
+        # - frequency resolution
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            freq_res=-1)
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            freq_res=x.sampling_rate/(x.shape[-1]+1))
+        # - overlap
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            overlap=-1.0)
+        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
+            overlap=1.1)
 
-        # generate test data
-        t = np.arange(0, data_dur.magnitude, 1/fs.magnitude) * pq.s
-        x_data = (np.cos(2 * np.pi * signal_freq * t)
-                  + noise_amp * np.random.normal(0, 1, len(t))) * pq.mV
-        y_data = (np.sin(2 * np.pi * signal_freq * t)
-                  + noise_amp * np.random.normal(0, 1, len(t))) * pq.mV
-        x = n.AnalogSignalArray(x_data.T, sampling_rate=fs)
-        y = n.AnalogSignalArray(y_data.T, sampling_rate=fs)
+    def test_welch_cohere_behavior(self):
+        # generate data by adding white noise and a sinusoid
+        data_length = 5000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        noise1 = np.random.normal(size=data_length) * 0.01
+        noise2 = np.random.normal(size=data_length) * 0.01
+        signal1 = [np.cos(2*np.pi*signal_freq*t)
+                  for t in np.arange(0, data_length*sampling_period,
+                sampling_period)]
+        signal2 = [np.sin(2*np.pi*signal_freq*t)
+                   for t in np.arange(0, data_length*sampling_period,
+                sampling_period)]
+        x = n.AnalogSignalArray(np.array(signal1+noise1), units='mV',
+            sampling_period=sampling_period*pq.s)
+        y = n.AnalogSignalArray(np.array(signal2+noise2), units='mV',
+            sampling_period=sampling_period*pq.s)
 
-        freqs, coherency, phaselag = elephant.spectral.welch_cohere(x, y)
+        # consistency between different ways of specifying segment length
+        freqs1, coherency1, phase_lag1 = elephant.spectral.welch_cohere(x, y,
+            len_seg=data_length/5, overlap=0)
+        freqs2, coherency2, phase_lag2 = elephant.spectral.welch_cohere(x, y,
+            num_seg=5, overlap=0)
+        self.assertTrue(np.all((coherency1==coherency2,
+                                phase_lag1==phase_lag2,
+                                freqs1==freqs2)))
 
-        plt.subplot(121)
-        plt.plot(x.times, x)
-        plt.plot(y.times, y)
-        plt.grid()
-        plt.xlabel("Time (s)")
-        plt.ylabel("Analog signal (mV)")
+        # frequency resolution and consistency with data
+        freq_res = 1.0 * pq.Hz
+        freqs, coherency, phase_lag = elephant.spectral.welch_cohere(x, y,
+            freq_res=freq_res)
+        self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
+        self.assertAlmostEqual(freqs[coherency.argmax()], signal_freq,
+            places=2)
+        self.assertAlmostEqual(phase_lag[coherency.argmax()], np.pi/2,
+            places=2)
+        freqs_np, coherency_np, phase_lag_np =\
+            elephant.spectral.welch_cohere(x.magnitude, y.magnitude,
+                fs=1/sampling_period, freq_res=freq_res)
+        self.assertTrue(np.all((freqs==freqs_np,
+                                coherency==coherency_np,
+                                phase_lag==phase_lag_np)))
 
-        plt.subplot(222)
-        plt.plot(freqs[:len(freqs)/2], coherency[:len(freqs)/2])
-        plt.ylim(0, 1)
-        plt.grid()
-        plt.xlabel("Frequency (Hz)")
-        plt.ylabel("Coherency")
+        # - check the behavior of parameter `axis` using multidimensional data
+        num_channel = 4
+        data_length = 5000
+        x_multidim = np.random.normal(size=(num_channel, data_length))
+        y_multidim = np.random.normal(size=(num_channel, data_length))
+        freqs, coherency, phase_lag =\
+            elephant.spectral.welch_cohere(x_multidim, y_multidim)
+        freqs_T, coherency_T, phase_lag_T =\
+            elephant.spectral.welch_cohere(x_multidim.T, y_multidim.T, axis=0)
+        self.assertTrue(np.all(freqs==freqs_T))
+        self.assertTrue(np.all(coherency==coherency_T.T))
+        self.assertTrue(np.all(phase_lag==phase_lag_T.T))
 
-        plt.subplot(224)
-        plt.plot(freqs[:len(freqs)/2], phaselag[:len(freqs)/2])
-        plt.ylim(-np.pi, np.pi)
-        plt.grid()
-        plt.xlabel("Frequency (Hz)")
-        plt.ylabel("Phase lag (rad)")
+    def test_welch_cohere_input_types(self):
+        # generate a test data
+        sampling_period = 0.001
+        x = n.AnalogSignalArray(np.array(np.random.normal(size=5000)),
+            sampling_period=sampling_period*pq.s,
+            units='mV')
+        y = n.AnalogSignalArray(np.array(np.random.normal(size=5000)),
+            sampling_period=sampling_period*pq.s,
+            units='mV')
 
-        plt.show()
+        # outputs from AnalogSignalArray input are of Quantity type
+        # (standard usage)
+        freqs_neo, coherency_neo, phase_lag_neo =\
+            elephant.spectral.welch_cohere(x, y)
+        self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
+        self.assertTrue(isinstance(phase_lag_neo, pq.quantity.Quantity))
+
+        # outputs from Quantity array input are of Quantity type
+        freqs_pq, coherency_pq, phase_lag_pq =\
+            elephant.spectral.welch_cohere(x.magnitude*x.units,
+                y.magnitude*y.units, fs=1/sampling_period)
+        self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
+        self.assertTrue(isinstance(phase_lag_pq, pq.quantity.Quantity))
+
+        # outputs from Numpy ndarray input are NOT of Quantity type
+        freqs_np, coherency_np, phase_lag_np =\
+            elephant.spectral.welch_cohere(x.magnitude, y.magnitude,
+                fs=1/sampling_period)
+        self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
+        self.assertFalse(isinstance(phase_lag_np, pq.quantity.Quantity))
+
+        # check if the results from different input types are identical
+        self.assertTrue(np.all((freqs_neo==freqs_pq,
+                                coherency_neo==coherency_pq,
+                                phase_lag_neo==phase_lag_pq)))
+        self.assertTrue(np.all((freqs_neo==freqs_np,
+                                coherency_neo==coherency_np,
+                                phase_lag_neo==phase_lag_np)))
+
+    def test_welch_cohere_multidim_input(self):
+        # generate multidimensional data
+        num_channel = 4
+        data_length = 5000
+        sampling_period = 0.001
+        x_np = np.array(np.random.normal(size=(num_channel, data_length)))
+        y_np = np.array(np.random.normal(size=(num_channel, data_length)))
+        # Since row-column order in AnalogSignalArray is different from the
+        # convention in NumPy/SciPy, `data_np` needs to be transposed when its
+        # used to define an AnalogSignalArray
+        x_neo = n.AnalogSignalArray(x_np.T, units='mV',
+            sampling_period=sampling_period*pq.s)
+        y_neo = n.AnalogSignalArray(y_np.T, units='mV',
+            sampling_period=sampling_period*pq.s)
+        x_neo_1dim = n.AnalogSignalArray(x_np[0], units='mV',
+            sampling_period=sampling_period*pq.s)
+        y_neo_1dim = n.AnalogSignalArray(y_np[0], units='mV',
+            sampling_period=sampling_period*pq.s)
+
+        # check if the results from different input types are identical
+        freqs_np, coherency_np, phase_lag_np =\
+            elephant.spectral.welch_cohere(x_np, y_np, fs=1/sampling_period)
+        freqs_neo, coherency_neo, phase_lag_neo =\
+            elephant.spectral.welch_cohere(x_neo, y_neo)
+        freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim =\
+            elephant.spectral.welch_cohere(x_neo_1dim, y_neo_1dim)
+        self.assertTrue(np.all(freqs_np==freqs_neo))
+        self.assertTrue(np.all(coherency_np.T==coherency_neo))
+        self.assertTrue(np.all(phase_lag_np.T==phase_lag_neo))
+        self.assertTrue(np.all(coherency_neo_1dim==coherency_neo[:, 0]))
+        self.assertTrue(np.all(phase_lag_neo_1dim==phase_lag_neo[:, 0]))
 
 
 def suite():
