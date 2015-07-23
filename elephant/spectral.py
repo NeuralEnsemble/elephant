@@ -89,7 +89,9 @@ def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
     .. [2] M.S. Bartlett, "Periodogram Analysis and Continuous Spectra",
            Biometrika, vol. 37, pp. 1-16, 1950.
     """
-    # TODO: This function should be replaced by `scipy.signal.csd()`, which will appear in SciPy 0.16.0.
+    # TODO: This function should be replaced by `scipy.signal.csd()`, which
+    # will appear in SciPy 0.16.0.
+
     # The checks for if y is x are so that we can use the same function to
     # obtain both power spectrum and cross spectrum without doing extra
     # calculations.
@@ -381,8 +383,8 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         meaning phase precession of `x` ahead of `y` and vice versa.
     """
 
-    # initialize a parameter dict (to be given to scipy.signal.welch()) with
-    # the parameters directly passed on to scipy.signal.welch()
+    # initialize a parameter dict (to be given to _welch()) with
+    # the parameters directly passed on to _welch()
     params = {'window': window, 'nfft': nfft,
               'detrend': detrend, 'scaling': scaling, 'axis': axis}
 
