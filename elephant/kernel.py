@@ -404,14 +404,9 @@ class EpanechnikovKernel(SymmetricKernel):
     ## 'half_width' comparison: 
     ## In make_kernel probably halfwidth is number of bins.
     ## In Spykeutils half_width seems to be a quantity of type of 'sigma' in make_kernel
-    ##
-    ## TODO: Understand better 't'!!! Value into this t always via the __call__-method in class Kernel?
 
     @staticmethod
     def evaluate(t, half_width):
-    ## In order to get halfwidth in the sense of make_kernel for building the parabola,
-    ## we need here sthg like SI_time_stamp_resolution from sampling_period. From where?
-    ## Maybe those things only needed in context of function discretize_kernel further down...
         return sp.maximum(
             0.0,
             (3/4)*(1 - (t * pq.dimensionless / half_width).simplified ** 2))
