@@ -13,7 +13,8 @@ import scipy.signal
 import scipy.fftpack as fftpack
 import scipy.signal.signaltools as signaltools
 from scipy.signal.windows import get_window
-from scipy.lib.six import string_types
+# from scipy.lib.six import string_types
+from six import string_types
 import quantities as pq
 import neo
 
