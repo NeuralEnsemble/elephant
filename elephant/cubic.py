@@ -1,6 +1,6 @@
 '''
 CuBIC is a statistical method for the detection of higher order of
-correlation in of parallel spike train based on the analysis of the
+correlations in parallel spike trains based on the analysis of the
 cumulants of the population count.
 Given a list sts of SpikeTrains, the analysis comprises the following
 steps:
@@ -31,21 +31,23 @@ def cubic(data, ximax=100, alpha=0.05):
 
     The null hypothesis :math:`H_0: k_3(data)<=k^*_{3,\\xi}` is iteratively
     tested with increasing correlation order :math:`\\xi` (correspondent to
-    variable xi) until it is possible accept, with a significance level alpha,
-    that :math:`\\hat{\\xi}` (correspondent to variable xi_hat) is the minimum
+    variable xi) until it is possible to accept, with a significance level alpha,
+    that :math:`\\hat{\\xi}` (corresponding to variable xi_hat) is the minimum
     order of correlation necessary to explain the third cumulant
     :math:`k_3(data)`.
 
-    :math:`k^*_{3,\\xi}` is the maximized third cumulant, supposed a CPP model
+    :math:`k^*_{3,\\xi}` is the maximized third cumulant, supposing a Compund
+    Poisson Process (CPP) model for correlated spike trains (see [1])
     with maximum order of correlation equal to :math:`\\xi`.
 
     Parameters
     ----------
     data : neo.AnalogSignalArray
-        The population histogram of the entire population of neurons.
+        The population histogram (count of spikes per time bin) of the entire
+        population of neurons.
     ximax : int
-         The max number of iteration of the hypothesis test:
-         if it's not possible compute the :math:`\\hat{\\xi}` before ximax
+         The maximum number of iteration of the hypothesis test:
+         if it is not possible to compute the :math:`\\hat{\\xi}` before ximax
          iteration the CuBIC procedure is aborted.
          Default: 100
     alpha : float
@@ -55,7 +57,7 @@ def cubic(data, ximax=100, alpha=0.05):
     Returns
     -------
     xi_hat : int
-        The minimum correlation order stimated by CuBIC, necessary to
+        The minimum correlation order estimated by CuBIC, necessary to
         explain the value of the third cumulant calculated from the population.
     p : list
         The ordred list of all the p-values of the hypothesis tests that have
@@ -74,11 +76,11 @@ def cubic(data, ximax=100, alpha=0.05):
     # alpha in in the interval [0,1]
     if alpha < 0 or alpha > 1:
         raise ValueError(
-            'the significant level alpha (= %s) has to be in [0,1]' % alpha)
+            'the significance level alpha (= %s) has to be in [0,1]' % alpha)
 
     if not isinstance(ximax, int) or ximax < 0:
         raise ValueError(
-            'The maximum number of iteration ximax(= %i) has to be a positive'
+            'The maximum number of iterations ximax(= %i) has to be a positive'
             % alpha + ' integer')
 
     # dict of all possible rate functions
@@ -202,7 +204,9 @@ def _kstat(data):
         The first three cumulants of the population count
     '''
     L = len(data)
-    S = [sum(data ** r) for r in range(1, 4)]
+    if L == 0:
+        raise ValueError('The input data must be a non-empty array')
+    S = [(data ** r).sum() for r in range(1, 4)]
     kappa = []
     kappa.append(S[0] / float(L))
     kappa.append((L * S[1] - S[0] ** 2) / (L * (L - 1)))

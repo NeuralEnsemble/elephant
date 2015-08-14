@@ -117,7 +117,7 @@ class CubicTestCase(unittest.TestCase):
 
         # Empty signal
         self.assertRaises(
-            ZeroDivisionError, cubic.cubic, neo.AnalogSignalArray(
+            ValueError, cubic.cubic, neo.AnalogSignalArray(
                 []*pq.dimensionless, sampling_period=10*pq.ms))
 
         # Multidimensional array
