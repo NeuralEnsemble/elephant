@@ -1,6 +1,7 @@
 import copy
 import quantities as pq
-import scipy as sp
+## import scipy as sp
+import numpy as np
 import scipy.signal
 import scipy.special
 import tools
@@ -101,7 +102,8 @@ class Kernel(object):
         :rtype: Quantity 2D
         """
 
-        D = sp.empty((len(vectors), len(vectors)))
+        ## D = sp.empty((len(vectors), len(vectors)))
+        D = np.empty((len(vectors), len(vectors)))
         if len(vectors) > 0:
             might_have_units = self(vectors[0])
             if hasattr(might_have_units, 'units'):
@@ -109,9 +111,12 @@ class Kernel(object):
             else:
                 D = D * pq.dimensionless
 
-        for i, j in sp.ndindex(len(vectors), len(vectors)):
-            D[i, j] = sp.sum(self(
-                (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+        ## for i, j in sp.ndindex(len(vectors), len(vectors)):
+        for i, j in np.ndindex(len(vectors), len(vectors)):
+            ## D[i, j] = sp.sum(self(
+            D[i, j] = np.sum(self(
+                ## (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+                (vectors[i] - np.atleast_2d(vectors[j]).T).flatten()))
         return D
 
 
@@ -167,7 +172,8 @@ class SymmetricKernel(Kernel):
         return True
 
     def summed_dist_matrix(self, vectors, presorted=False):
-        D = sp.empty((len(vectors), len(vectors)))
+        ## D = sp.empty((len(vectors), len(vectors)))
+        D = np.empty((len(vectors), len(vectors)))
         if len(vectors) > 0:
             might_have_units = self(vectors[0])
             if hasattr(might_have_units, 'units'):
@@ -175,8 +181,10 @@ class SymmetricKernel(Kernel):
 
         for i in xrange(len(vectors)):
             for j in xrange(i, len(vectors)):
-                D[i, j] = D[j, i] = sp.sum(self(
-                    (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+                ## D[i, j] = D[j, i] = sp.sum(self(
+                D[i, j] = D[j, i] = np.sum(self(
+                    ## (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+                    (vectors[i] - np.atleast_2d(vectors[j]).T).flatten()))
         return D
 
 
@@ -199,7 +207,8 @@ class AsymmetricKernel(Kernel):
 
     ## TODO:
     def summed_dist_matrix(self, vectors, presorted=False):
-        D = sp.empty((len(vectors), len(vectors)))
+        ## D = sp.empty((len(vectors), len(vectors)))
+        D = np.empty((len(vectors), len(vectors)))
         if len(vectors) > 0:
             might_have_units = self(vectors[0])
             if hasattr(might_have_units, 'units'):
@@ -207,8 +216,10 @@ class AsymmetricKernel(Kernel):
 
         for i in xrange(len(vectors)):
             for j in xrange(i, len(vectors)):
-                D[i, j] = D[j, i] = sp.sum(self(
-                    (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+                ## D[i, j] = D[j, i] = sp.sum(self(
+                D[i, j] = D[j, i] = np.sum(self(
+                    ## (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+                    (vectors[i] - np.atleast_2d(vectors[j]).T).flatten()))
         return D
 
 
@@ -225,7 +236,8 @@ class GaussianKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, kernel_size):
-        return sp.exp(
+        ## return sp.exp(
+        return np.exp(
             ## -0.5 * (t * pq.dimensionless / kernel_size).simplified ** 2)
             -0.5 * (t / kernel_size).simplified.magnitude ** 2)
 
@@ -233,10 +245,13 @@ class GaussianKernel(SymmetricKernel):
         return self.evaluate(t, kernel_size)
 
     def normalization_factor(self, kernel_size):
-        return 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size)
+        ## return 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size)
+        return 1.0 / (np.sqrt(2.0 * np.pi) * kernel_size)
 
     def boundary_enclosing_at_least(self, fraction):
-        return self.kernel_size * sp.sqrt(2.0) * \
+        ## return self.kernel_size * sp.sqrt(2.0) * \
+        ##     scipy.special.erfinv(fraction + scipy.special.erf(0.0))
+        return self.kernel_size * np.sqrt(2.0) * \
             scipy.special.erfinv(fraction + scipy.special.erf(0.0))
 
 
@@ -252,9 +267,11 @@ class LaplacianKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, kernel_size):
-        return sp.exp(
+        ## return sp.exp(
+        return np.exp(
             ## -(sp.absolute(t) * pq.dimensionless / kernel_size).simplified)
-            -(sp.absolute(t) / kernel_size).simplified)
+            ## -(sp.absolute(t) / kernel_size).simplified)
+            -(np.absolute(t) / kernel_size).simplified)
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
@@ -263,7 +280,8 @@ class LaplacianKernel(SymmetricKernel):
         return 0.5 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
-        return -self.kernel_size * sp.log(1.0 - fraction)
+        ## return -self.kernel_size * sp.log(1.0 - fraction)
+        return -self.kernel_size * np.log(1.0 - fraction)
 
     def summed_dist_matrix(self, vectors, presorted=False):
         # This implementation is based on
@@ -282,45 +300,63 @@ class LaplacianKernel(SymmetricKernel):
         # O(N^2 * n). O(N^2 + N * n) memory will be needed.
 
         if len(vectors) <= 0:
-            return sp.zeros((0, 0))
+            ## return sp.zeros((0, 0))
+            return np.zeros((0, 0))
 
         if not presorted:
             vectors = [v.copy() for v in vectors]
             for v in vectors:
                 v.sort()
 
-        sizes = sp.asarray([v.size for v in vectors])
-        values = sp.empty((len(vectors), max(1, sizes.max())))
-        values.fill(sp.nan)
+        ## sizes = sp.asarray([v.size for v in vectors])
+        sizes = np.asarray([v.size for v in vectors])
+        ## values = sp.empty((len(vectors), max(1, sizes.max())))
+        values = np.empty((len(vectors), max(1, sizes.max())))
+        ## values.fill(sp.nan)
+        values.fill(np.nan)
         for i, v in enumerate(vectors):
             if v.size > 0:
                 values[i, :v.size] = \
                     (v / self.kernel_size * pq.dimensionless).simplified
 
-        exp_diffs = sp.exp(values[:, :-1] - values[:, 1:])
-        markage = sp.zeros(values.shape)
+        ## exp_diffs = sp.exp(values[:, :-1] - values[:, 1:])
+        exp_diffs = np.exp(values[:, :-1] - values[:, 1:])
+        ## markage = sp.zeros(values.shape)
+        markage = np.zeros(values.shape)
         for u in xrange(len(vectors)):
             markage[u, 0] = 0
             for i in xrange(sizes[u] - 1):
                 markage[u, i + 1] = (markage[u, i] + 1.0) * exp_diffs[u, i]
 
         # Same vector terms
-        D = sp.empty((len(vectors), len(vectors)))
-        D[sp.diag_indices_from(D)] = sizes + 2.0 * sp.sum(markage, axis=1)
+        ## D = sp.empty((len(vectors), len(vectors)))
+        D = np.empty((len(vectors), len(vectors)))
+        ## D[sp.diag_indices_from(D)] = sizes + 2.0 * sp.sum(markage, axis=1)
+        D[np.diag_indices_from(D)] = sizes + 2.0 * np.sum(markage, axis=1)
 
         # Cross vector terms
         for u in xrange(D.shape[0]):
-            all_ks = sp.searchsorted(values[u], values, 'left') - 1
+            ## all_ks = sp.searchsorted(values[u], values, 'left') - 1
+            all_ks = np.searchsorted(values[u], values, 'left') - 1
             for v in xrange(u):
-                js = sp.searchsorted(values[v], values[u], 'right') - 1
+                ## js = sp.searchsorted(values[v], values[u], 'right') - 1
+                js = np.searchsorted(values[v], values[u], 'right') - 1
                 ks = all_ks[v]
-                slice_j = sp.s_[sp.searchsorted(js, 0):sizes[u]]
-                slice_k = sp.s_[sp.searchsorted(ks, 0):sizes[v]]
-                D[u, v] = sp.sum(
-                    sp.exp(values[v][js[slice_j]] - values[u][slice_j]) *
+                ## slice_j = sp.s_[sp.searchsorted(js, 0):sizes[u]]
+                slice_j = np.s_[np.searchsorted(js, 0):sizes[u]]
+                ## slice_k = sp.s_[sp.searchsorted(ks, 0):sizes[v]]
+                slice_k = np.s_[np.searchsorted(ks, 0):sizes[v]]
+                ## D[u, v] = sp.sum(
+                D[u, v] = np.sum(
+                    ## sp.exp(values[v][js[slice_j]] - values[u][slice_j]) *
+                    ## (1.0 + markage[v][js[slice_j]]))
+                    np.exp(values[v][js[slice_j]] - values[u][slice_j]) *
                     (1.0 + markage[v][js[slice_j]]))
-                D[u, v] += sp.sum(
-                    sp.exp(values[u][ks[slice_k]] - values[v][slice_k]) *
+                ## D[u, v] += sp.sum(
+                ##     sp.exp(values[u][ks[slice_k]] - values[v][slice_k]) *
+                ##     (1.0 + markage[u][ks[slice_k]]))
+                D[u, v] += np.sum(
+                    np.exp(values[u][ks[slice_k]] - values[v][slice_k]) *
                     (1.0 + markage[u][ks[slice_k]]))
                 D[v, u] = D[u, v]
 
@@ -344,7 +380,8 @@ class RectangularKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, half_width):
-        return (sp.absolute(t) < half_width)
+        ## return (sp.absolute(t) < half_width)
+        return (np.absolute(t) < half_width)
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
@@ -369,11 +406,13 @@ class TriangularKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, half_width):
-        return sp.maximum(
+        ## return sp.maximum(
+        return np.maximum(
             0.0,
             ## (1.0 - sp.absolute(t.rescale(half_width.units)) * pq.dimensionless /
             ##  half_width).magnitude)
-            (1.0 - sp.absolute(t.rescale(half_width.units)) / half_width).magnitude)
+            ## (1.0 - sp.absolute(t.rescale(half_width.units)) / half_width).magnitude)
+            (1.0 - np.absolute(t.rescale(half_width.units)) / half_width).magnitude)
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
@@ -418,7 +457,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, half_width):
-        return sp.maximum(
+        ## return sp.maximum(
+        return np.maximum(
             0.0,
             (3/(4 * half_width.rescale(pq.s).magnitude))*(1 - (t / half_width).simplified.magnitude ** 2))
 
@@ -451,10 +491,12 @@ class CausalDecayingExpKernel(Kernel):
 
     @staticmethod
     def evaluate(t, kernel_size):
-        return sp.piecewise(
+        ## return sp.piecewise(
+        return np.piecewise(
             t, [t < 0, t >= 0], [
                 lambda t: 0,
-                lambda t: sp.exp(
+                ## lambda t: sp.exp(
+                lambda t: np.exp(
                     ## (-t * pq.dimensionless / kernel_size).simplified)])
                     (-t / kernel_size).simplified)])
 
@@ -465,7 +507,8 @@ class CausalDecayingExpKernel(Kernel):
         return 1.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
-        return -self.kernel_size * sp.log(1.0 - fraction)
+        ## return -self.kernel_size * sp.log(1.0 - fraction)
+        return -self.kernel_size * np.log(1.0 - fraction)
 
 
 ## class ExponentialKernel(Kernel):
@@ -499,10 +542,12 @@ class ExponentialKernel(AsymmetricKernel):
         ##         lambda t: 0,
         ##         lambda t: sp.exp(
         ##             (-t * pq.dimensionless / kernel_size).simplified)])
-        kernel = sp.piecewise(
+        ## kernel = sp.piecewise(
+        kernel = np.piecewise(
             t, [t < 0, t >= 0], [
                 lambda t: 0,
-                lambda t: sp.exp(
+                ## lambda t: sp.exp(
+                lambda t: np.exp(
                     ## (-t * pq.dimensionless / kernel_size).simplified)])
                     (-t / kernel_size).simplified.magnitude)])
         if direction == -1:
@@ -516,7 +561,8 @@ class ExponentialKernel(AsymmetricKernel):
         return 1.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
-        return -self.kernel_size * sp.log(1.0 - fraction)
+        ## return -self.kernel_size * sp.log(1.0 - fraction)
+        return -self.kernel_size * np.log(1.0 - fraction)
 
 
 ## class AlphaKernel(Kernel):
@@ -545,10 +591,12 @@ class AlphaKernel(AsymmetricKernel):
 
     @staticmethod
     def evaluate(t, kernel_size):
-        return sp.piecewise(
+        ## return sp.piecewise(
+        return np.piecewise(
             t, [t < 0, t >= 0], [
                 lambda t: 0,
-                lambda t: sp.exp(
+                ## lambda t: sp.exp(
+                lambda t: np.exp(
                     ## (-t * pq.dimensionless / kernel_size).simplified)])
                     (-t / kernel_size).simplified.magnitude)])
 
@@ -559,7 +607,8 @@ class AlphaKernel(AsymmetricKernel):
         return 1.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
-        return -self.kernel_size * sp.log(1.0 - fraction)
+        ## return -self.kernel_size * sp.log(1.0 - fraction)
+        return -self.kernel_size * np.log(1.0 - fraction)
 
 
 
@@ -595,15 +644,19 @@ def discretize_kernel(
         boundary = kernel.boundary_enclosing_at_least(area_fraction)
         if hasattr(boundary, 'rescale'):
             boundary = boundary.rescale(t_step.units)
-        start = sp.ceil(-boundary / t_step)
-        stop = sp.floor(boundary / t_step) + 1
+        ## start = sp.ceil(-boundary / t_step)
+        start = np.ceil(-boundary / t_step)
+        ## stop = sp.floor(boundary / t_step) + 1
+        stop = np.floor(boundary / t_step) + 1
     else:
         raise ValueError(
             "One of area_fraction and num_bins must not be None.")
 
-    k = kernel(sp.arange(start, stop) * t_step)
+    ## k = kernel(sp.arange(start, stop) * t_step)
+    k = kernel(np.arange(start, stop) * t_step)
     if ensure_unit_area:
-        k /= sp.sum(k) * t_step
+        ## k /= sp.sum(k) * t_step
+        k /= np.sum(k) * t_step
     return k
 
 
@@ -683,7 +736,8 @@ def st_convolve(
 
     assert (result.size - binned.size) % 2 == 0
     num_additional_bins = (result.size - binned.size) // 2
-    bins = sp.linspace(
+    ## bins = sp.linspace(
+    bins = np.linspace(
         bins[0] - num_additional_bins / sampling_rate,
         bins[-1] + num_additional_bins / sampling_rate,
         result.size + 1)
