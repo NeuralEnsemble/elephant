@@ -2,11 +2,11 @@
 Release Notes
 *************
 
-Elephant 0.2 release notes
+Elephant 0.2.0 release notes
 ==========================
-September 21th 2015
+September 22nd 2015
 
-Welcome to the 0.2 release of Elephant!
+Welcome to the 0.2.0 release of Elephant!
 
 New functions
 =============
@@ -24,6 +24,5 @@ API changes
 Other changes
 =============
 * **Optimized creation of sparse matrices**: The creation speed of the sparse matrix inside the `BinnedSpikeTrain` class is optimized
-* Added **Izhikevich neuron simulator** for generation of membrane potential waveforms the in `make_spike_extraction_test_data` module
-* Fixed bugs on Travis CI script: Adapted to new container system and fixed small bugs
-
+* Added **Izhikevich neuron simulator** in the `make_spike_extraction_test_data` module
+* Minor improvements to the test and continous integration infrastructure
