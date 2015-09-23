@@ -55,6 +55,10 @@ Functions to quantify correlations between sets of spike trains.
 ^^^^^^^
 Calculate the spike-triggered average of an analog signal and related measures.
 
+``csd``
+^^^^^^^
+Inverse and standard methods to estimate of current source density (CSD) of laminar LFP recordings.
+
 
 Core modules
 ------------
