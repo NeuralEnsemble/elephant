@@ -8,12 +8,13 @@ docstring goes here.
 
 from __future__ import division
 import unittest
+import os
 
 import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon
-from quantities import ms, second, Hz, kHz
+from quantities import ms, second, Hz, kHz, mV
 
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
@@ -26,6 +27,34 @@ def pdiff(a, b):
     """
     return abs((a - b)/a)
 
+
+class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_threshold_detection(self):
+        # Test whether spikes are extracted at the correct times from
+        # an analog signal.  
+
+        # Load membrane potential simulated using Brian2 
+        # according to make_spike_extraction_test_data.py.  
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
+        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
+        data = iom2.read()
+        vm = data[0].segments[0].analogsignals[0]
+        spike_train = stgen.threshold_detection(vm)
+
+        # Correct values determined previously.  
+        true_spike_train = [0.0123, 0.0354, 0.0712, 0.1191, 
+                            0.1694, 0.22, 0.2711]
+        
+        # Does threshold_detection gives the correct number of spikes?
+        assert len(spike_train) == len(true_spike_train) 
+        # Does threshold_detection gives the correct times for the spikes?    
+        assert np.allclose(spike_train,spike_train) 
+        
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 

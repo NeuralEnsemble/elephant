@@ -245,8 +245,25 @@ def lv(v):
     return 3.*np.mean(np.power(np.diff(v)/(v[:-1] + v[1:]), 2))
 
 
-#adaptation to output neo.AnalogSignal and wrapper make_kernel() in
-#instantaneous_rate()
+def sigma2kw(form):
+    if form.upper() == 'BOX':
+        coeff = 2.0 * np.sqrt(3)
+    elif form.upper() == 'TRI':
+        coeff = 2.0 * np.sqrt(6)
+    elif form.upper() == 'EPA':
+        coeff = 2.0 * np.sqrt(5)
+    elif form.upper() == 'GAU':
+        coeff = 2.0 * 2.7  # > 99% of distribution weight
+    elif form.upper() == 'ALP':
+        coeff = 5.0
+    elif form.upper() == 'EXP':
+        coeff = 5.0
+
+    return coeff
+
+def kw2sigma(form):
+    return 1/sigma2kw(form)
+
 def make_kernel(form, sigma, sampling_period, direction=1):
     """
     Creates kernel functions for convolution.
@@ -341,20 +358,23 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     assert direction in (1, -1), "direction must be either 1 or -1"
 
     # conversion to SI units (s)
+    if sigma < 0:
+        raise ValueError('sigma must be positive!')
+
     SI_sigma = sigma.rescale('s').magnitude
     SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
 
     norm = 1./SI_time_stamp_resolution
 
+    w = sigma2kw(form)
+
     if form.upper() == 'BOX':
-        w = 2.0 * SI_sigma * np.sqrt(3)
         # always odd number of bins
         width = 2 * np.floor(w / 2.0 / SI_time_stamp_resolution) + 1
         height = 1. / width
         kernel = np.ones((1, width)) * height  # area = 1
 
     elif form.upper() == 'TRI':
-        w = 2 * SI_sigma * np.sqrt(6)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         trileft = np.arange(1, halfwidth + 2)
         triright = np.arange(halfwidth, 0, -1)  # odd number of bins
@@ -362,7 +382,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = triangle / triangle.sum()  # area = 1
 
     elif form.upper() == 'EPA':
-        w = 2.0 * SI_sigma * np.sqrt(5)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         base = np.arange(-halfwidth, halfwidth + 1)
         parabula = base**2
@@ -370,15 +389,13 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = epanech / epanech.sum()  # area = 1
 
     elif form.upper() == 'GAU':
-        w = 2.0 * SI_sigma * 2.7  # > 99% of distribution weight
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)  # always odd
         base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
         g = np.exp(
             -(base**2) / 2.0 / SI_sigma**2) / SI_sigma / np.sqrt(2.0 * np.pi)
-        kernel = g / g.sum()
+        kernel = g / g.sum() # area = 1
 
     elif form.upper() == 'ALP':
-        w = 5.0 * SI_sigma
         alpha = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -390,7 +407,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
             kernel = np.flipud(kernel)
 
     elif form.upper() == 'EXP':
-        w = 5.0 * SI_sigma
         expo = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -433,7 +449,9 @@ def instantaneous_rate(spiketrain, sampling_period, form,
         This is used here as an alternative definition to the cut-off
         frequency of the associated linear filter.
         Default value is 'auto'. In this case, the optimized kernel width for
-        the rate estimation is calculated according to [1].
+        the rate estimation is calculated according to [1]. Note that the
+        automatized calculation of the kernel width ONLY works for gaussian
+        kernel shapes!
     t_start : Quantity (Optional)
         start time of the interval used to compute the firing rate, if None
         assumed equal to spiketrain.t_start
@@ -484,10 +502,11 @@ def instantaneous_rate(spiketrain, sampling_period, form,
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
     """
     if sigma == 'auto':
+        form = 'GAU'
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        sigma = kernel_width*unit
+        sigma = kw2sigma(form) * kernel_width*unit
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
                         ' Found: %s, value %s' %(type(sigma), str(sigma)))
@@ -543,7 +562,7 @@ def instantaneous_rate(spiketrain, sampling_period, form,
                                  sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
-    return rate
+    return rate, sigma
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
@@ -646,6 +665,61 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     return neo.AnalogSignalArray(signal=bin_hist.reshape(bin_hist.size, 1),
                                  sampling_period=binsize, units=bin_hist.units,
                                  t_start=t_start)
+
+
+def complexity_pdf(spiketrains, binsize):
+    """
+    Complexity Distribution [1] of a list of :attr:`neo.SpikeTrain` objects.
+
+    Probability density computed from the complexity histogram which is the
+    histogram of the entries of the population histogram of clipped (binary)
+    spike trains computed with a bin width of binsize.
+    It provides for each complexity (== number of active neurons per bin) the
+    number of occurrences. The normalization of that histogram to 1 is the
+    probability density.
+
+    Parameters
+    ----------
+    spiketrains : List of neo.SpikeTrain objects
+    Spiketrains with a common time axis (same `t_start` and `t_stop`)
+    binsize : quantities.Quantity
+    Width of the histogram's time bins.
+
+    Returns
+    -------
+    time_hist : neo.AnalogSignalArray
+    A neo.AnalogSignalArray object containing the histogram values.
+    `AnalogSignal[j]` is the histogram computed between .
+
+    See also
+    --------
+    elephant.conversion.BinnedSpikeTrain
+
+    References
+    ----------
+    [1]Gruen, S., Abeles, M., & Diesmann, M. (2008). Impact of higher-order
+    correlations on coincidence distributions of massively parallel data.
+    In Dynamic Brain-from Neural Spikes to Behaviors (pp. 96-114).
+    Springer Berlin Heidelberg.
+
+    """
+    # Computing the population histogram with parameter binary=True to clip the
+    # spike trains before summing
+    pophist = time_histogram(spiketrains, binsize, binary=True)
+
+    # Computing the histogram of the entries of pophist (=Complexity histogram)
+    complexity_hist = np.histogram(
+        pophist.magnitude, bins=range(0, len(spiketrains)+2))[0]
+
+    # Normalization of the Complexity Histogram to 1 (probabilty distribution)
+    complexity_hist = complexity_hist / complexity_hist.sum()
+    # Convert the Complexity pdf to an neo.AnalogSignalArray
+    complexity_distribution = neo.AnalogSignalArray(
+        np.array(complexity_hist).reshape(len(complexity_hist), 1) *
+        pq.dimensionless, t_start=0*pq.dimensionless,
+        sampling_period=1*pq.dimensionless)
+
+    return complexity_distribution
 
 
 """Kernel Bandwidth Optimization.

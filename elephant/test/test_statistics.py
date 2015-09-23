@@ -349,7 +349,7 @@ class RateEstimationTestCase(unittest.TestCase):
         st_num_spikes = np.random.poisson(self.st_rate*(self.st_dur-2*self.st_margin))
         spike_train = np.random.rand(st_num_spikes) * (self.st_dur-2*self.st_margin) + self.st_margin
         spike_train.sort()
-        
+
         # convert spike train into neo objects
         self.spike_train = neo.SpikeTrain(spike_train*pq.s,
                                           t_start=self.st_tr[0]*pq.s,
@@ -358,7 +358,7 @@ class RateEstimationTestCase(unittest.TestCase):
     def test_instantaneous_rate(self):
         st = self.spike_train
         sampling_period = 0.01*pq.s
-        inst_rate = es.instantaneous_rate(
+        inst_rate, sigma = es.instantaneous_rate(
             st, sampling_period, 'TRI', 0.03*pq.s)
         self.assertIsInstance(inst_rate, neo.core.AnalogSignalArray)
         self.assertEquals(
@@ -447,7 +447,7 @@ class RateEstimationTestCase(unittest.TestCase):
 
             kernel = es.make_kernel(form=shape, sampling_period=kernel_resolution,
                                     sigma=0.5*pq.s, direction=-1)
-
+            self.assertAlmostEqual(kernel[0].sum(), 1.0)
 
             ### test consistency
             rate_estimate_list = [rate_estimate0, rate_estimate1,
@@ -456,9 +456,10 @@ class RateEstimationTestCase(unittest.TestCase):
 
             for rate_estimate in rate_estimate_list:
                 num_spikes = len(self.spike_train)
-                auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0], x=rate_estimate.times.rescale('s').magnitude)[-1]
+                auc = spint.cumtrapz(y=rate_estimate[0].magnitude[:, 0],
+                                     x=rate_estimate[0].times.rescale('s').magnitude)[-1]
 
-                self.assertAlmostEqual(num_spikes, auc, delta=0.01*num_spikes)
+                self.assertAlmostEqual(num_spikes, auc, delta=0.05*num_spikes)
 
         self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
                           form='GAU', sampling_period=kernel_resolution,
@@ -526,6 +527,32 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertRaises(ValueError, es.time_histogram, self.spiketrains,
                           binsize=pq.s, output=' ')
 
+
+class ComplexityPdfTestCase(unittest.TestCase):
+    def setUp(self):
+        self.spiketrain_a = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_b = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_c = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrains = [
+            self.spiketrain_a, self.spiketrain_b, self.spiketrain_c]
+
+    def tearDown(self):
+        del self.spiketrain_a
+        self.spiketrain_a = None
+        del self.spiketrain_b
+        self.spiketrain_b = None
+
+    def test_complexity_pdf(self):
+        targ = np.array([0.92, 0.01, 0.01, 0.06])
+        complexity = es.complexity_pdf(self.spiketrains, binsize=0.1*pq.s)
+        assert_array_equal(targ, complexity[:, 0].magnitude)
+        self.assertEqual(1, complexity[:, 0].magnitude.sum())
+        self.assertEqual(len(self.spiketrains)+1, len(complexity))
+        self.assertIsInstance(complexity, neo.AnalogSignalArray)
+        self.assertEqual(complexity.units, 1*pq.dimensionless)
 
 
 if __name__ == '__main__':
