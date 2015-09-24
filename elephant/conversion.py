@@ -777,12 +777,16 @@ class BinnedSpikeTrain(object):
            SpikeTrain object or from a list of SpikeTrain objects.
 
         """
+        from distutils.version import StrictVersion
         # column
         filled = []
         # row
         indices = []
         # data
         counts = []
+        # to be downwards compatible compare numpy versions, if the used
+        # version is smaller than v1.9 use different functions
+        smaller_version = StrictVersion(np.__version__) < '1.9.0'
         for idx, elem in enumerate(spiketrains):
             ev = elem.view(pq.Quantity)
             scale = np.array(((ev - self.t_start).rescale(
@@ -791,7 +795,11 @@ class BinnedSpikeTrain(object):
                                ev <= self.t_stop.rescale(self.binsize.units))
             filled_tmp = scale[l]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
-            f, c = np.unique(filled_tmp, return_counts=True)
+            if smaller_version:
+                f = np.unique(filled_tmp)
+                c = np.bincount(f.searchsorted(filled_tmp))
+            else:
+                f, c = np.unique(filled_tmp, return_counts=True)
             filled.extend(f)
             counts.extend(c)
             indices.extend([idx] * len(f))
@@ -800,3 +808,4 @@ class BinnedSpikeTrain(object):
                                            self.matrix_columns),
                                     dtype=int)
         self._sparse_mat_u = csr_matrix
+
