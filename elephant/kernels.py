@@ -393,7 +393,7 @@ class RectangularKernel(SymmetricKernel):
     ## def normalization_factor(self, half_width):
     def normalization_factor(self, kernel_size):
         ## return 0.5 / half_width
-        return 0.5 / kernel_size
+        return 1.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
@@ -483,8 +483,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     ## def normalization_factor(self, half_width):
     def normalization_factor(self, kernel_size):
-        ## return 1.0 / half_width
-        return 2.0 / kernel_size
+        ## TODO:
+        return 1.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
