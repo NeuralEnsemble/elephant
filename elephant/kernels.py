@@ -375,19 +375,25 @@ class RectangularKernel(SymmetricKernel):
     Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
     """
 
-    def __init__(self, half_width=1.0 * pq.s, normalize=True):
-        Kernel.__init__(self, half_width, normalize)
+    ## def __init__(self, half_width=1.0 * pq.s, normalize=True):
+    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+        ## Kernel.__init__(self, half_width, normalize)
+        Kernel.__init__(self, kernel_size, normalize)
 
     @staticmethod
-    def evaluate(t, half_width):
+    ## def evaluate(t, half_width):
+    def evaluate(t, kernel_size):
         ## return (sp.absolute(t) < half_width)
-        return (np.absolute(t) < half_width)
+        ## return (np.absolute(t) < half_width)
+        return (np.absolute(t) < kernel_size / 2.0)
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
 
-    def normalization_factor(self, half_width):
-        return 0.5 / half_width
+    ## def normalization_factor(self, half_width):
+    def normalization_factor(self, kernel_size):
+        ## return 0.5 / half_width
+        return 0.5 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
@@ -401,24 +407,30 @@ class TriangularKernel(SymmetricKernel):
     Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
     """
 
-    def __init__(self, half_width=1.0 * pq.s, normalize=True):
-        Kernel.__init__(self, half_width, normalize)
+    ## def __init__(self, half_width=1.0 * pq.s, normalize=True):
+    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+        ## Kernel.__init__(self, half_width, normalize)
+        Kernel.__init__(self, kernel_size, normalize)
 
     @staticmethod
-    def evaluate(t, half_width):
+    ## def evaluate(t, half_width):
+    def evaluate(t, kernel_size):
         ## return sp.maximum(
         return np.maximum(
             0.0,
             ## (1.0 - sp.absolute(t.rescale(half_width.units)) * pq.dimensionless /
             ##  half_width).magnitude)
             ## (1.0 - sp.absolute(t.rescale(half_width.units)) / half_width).magnitude)
-            (1.0 - np.absolute(t.rescale(half_width.units)) / half_width).magnitude)
+            ## (1.0 - np.absolute(t.rescale(half_width.units)) / half_width).magnitude)
+            (1.0 - np.absolute(t.rescale(kernel_size.units)) / (kernel_size / 2.0)).magnitude)
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
 
-    def normalization_factor(self, half_width):
-        return 1.0 / half_width
+    ## def normalization_factor(self, half_width):
+    def normalization_factor(self, kernel_size):
+        ## return 1.0 / half_width
+        return 2.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
@@ -452,11 +464,15 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     ## In make_kernel probably halfwidth is number of bins.
     ## In Spykeutils half_width seems to be a quantity of type of 'sigma' in make_kernel
 
-    def __init__(self, half_width=1.0 * pq.s, normalize=True):
-        Kernel.__init__(self, half_width, normalize)
+    ## def __init__(self, half_width=1.0 * pq.s, normalize=True):
+    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+        ## Kernel.__init__(self, half_width, normalize)
+        Kernel.__init__(self, kernel_size, normalize)
 
     @staticmethod
-    def evaluate(t, half_width):
+    ## def evaluate(t, half_width):
+    def evaluate(t, kernel_size):
+        half_width = kernel_size / 2.0
         ## return sp.maximum(
         return np.maximum(
             0.0,
@@ -465,8 +481,10 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
 
-    def normalization_factor(self, half_width):
-        return 1.0 / half_width
+    ## def normalization_factor(self, half_width):
+    def normalization_factor(self, kernel_size):
+        ## return 1.0 / half_width
+        return 2.0 / kernel_size
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
