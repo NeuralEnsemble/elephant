@@ -15,6 +15,7 @@ import scipy.signal
 import neo
 import warnings
 import elephant.conversion as conv
+import kernels
 
 
 def isi(spiketrain, axis=-1):
@@ -407,9 +408,8 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-#adaptation to output neo.AnalogSignal and wrapper make_kernel() in
-#instantaneous_rate()
-def select_kernel(form, sigma, sampling_period, direction=1, normalize):
+## def select_kernel(form, sigma, sampling_period, direction=1, normalize):
+def select_kernel(form, sigma, sampling_period, direction=1, normalize=False):
     """
     Selects kernel functions for convolution.
 
@@ -499,16 +499,16 @@ def select_kernel(form, sigma, sampling_period, direction=1, normalize):
     if form in forms_verbose:
         form = forms_abbreviated[forms_verbose == form][0]
 
-    assert form.upper() in ('BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'), \
-    "form must be one of either 'BOX','TRI','GAU','EPA','EXP' or 'ALP'!"
+    assert form.upper() in ('BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP', 'LAP'), \
+    "form must be one of either 'BOX','TRI','GAU','EPA','EXP', 'ALP' or 'LAP'!"
 
     assert direction in (1, -1), "direction must be either 1 or -1"
 
     # conversion to SI units (s)
-    SI_sigma = sigma.rescale('s').magnitude
-    SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
+    ## SI_sigma = sigma.rescale('s').magnitude
+    ## SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
 
-    norm = 1./SI_time_stamp_resolution
+    ## norm = 1./SI_time_stamp_resolution
 
     if form.upper() == 'BOX':
         ## w = 2.0 * SI_sigma * np.sqrt(3)
@@ -517,7 +517,6 @@ def select_kernel(form, sigma, sampling_period, direction=1, normalize):
         ## height = 1. / width
         ## kernel = np.ones((1, width)) * height  # area = 1
         ##
-        ## TODO: width vs halfwidth in comparison with kernel.py for all kernels
         kernel = kernels.RectangularKernel(sigma, normalize)
 
     elif form.upper() == 'TRI':
@@ -575,11 +574,12 @@ def select_kernel(form, sigma, sampling_period, direction=1, normalize):
     elif form.upper() == 'LAP':
         kernel = kernels.LaplacianKernel(sigma, normalize)
 
-    kernel = kernel.ravel()
-    m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
+    ## kernel = kernel.ravel()
+    ## m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
 
-    return kernel, norm, m_idx
-
+    ## return kernel, norm, m_idx
+    ## return kernel, m_idx
+    return kernel
 
 def instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
