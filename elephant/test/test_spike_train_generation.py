@@ -44,6 +44,37 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
         data = iom2.read()
         vm = data[0].segments[0].analogsignals[0]
+        
+        ######### Delete #########
+        print('Max Vm is %.2f' % vm.max())
+        
+        signal = vm
+        threshold  = 0.0*mV
+        sign = 'above'
+
+        if sign is 'above':
+            cutout = np.where(signal > threshold)[0]
+        elif sign in 'below':
+            cutout = np.where(signal < threshold)[0]
+        print('Cutout length is %d' % len(cutout))
+
+        if len(cutout) <= 0:
+            events = np.zeros(0)
+        else:
+            take = np.where(np.diff(cutout)>1)[0]+1
+            take = np.append(0,take)
+        print('Take length is %d' % len(take))
+
+        time = signal.times
+        events = time[cutout][take]
+        print('Events length is %d' % len(events))
+
+        from neo import SpikeTrain
+        result_st = SpikeTrain(events.base,units=signal.times.units,
+                           t_start=signal.t_start,t_stop=signal.t_stop)
+        print(result_st)
+        ##########################
+
         spike_train = stgen.threshold_detection(vm)
         try:
             len(spike_train)
@@ -60,8 +91,10 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         # Does threshold_detection gives the correct number of spikes?
         self.assertEqual(len(spike_train),len(true_spike_train))
         # Does threshold_detection gives the correct times for the spikes?    
-        self.assertTrue(np.allclose(spike_train,spike_train))
-        
+        try:
+            self.assertTrue(np.allclose(spike_train,spike_train))
+        except AttributeError: # If numpy version too old to have allclose
+            self.assertTrue(np.array_equal(spike_train,spike_train))
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
