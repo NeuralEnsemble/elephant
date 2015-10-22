@@ -44,46 +44,7 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
         data = iom2.read()
         vm = data[0].segments[0].analogsignals[0]
-        
-        ######### Delete #########
-        print('Max Vm is %.2f' % vm.max())
-        
-        signal = vm
-        threshold  = 0.0*mV
-        sign = 'above'
-
-        if sign is 'above':
-            cutout = np.where(signal > threshold)[0]
-        elif sign in 'below':
-            cutout = np.where(signal < threshold)[0]
-        print('Cutout length is %d' % len(cutout))
-
-        if len(cutout) <= 0:
-            events = np.zeros(0)
-        else:
-            take = np.where(np.diff(cutout)>1)[0]+1
-            take = np.append(0,take)
-        print('Take length is %d' % len(take))
-
-        time = signal.times
-        events = time[cutout][take]
-        print('Events length is %d' % len(events))
-        print('Events are ',events)
-        print('Event 0 is ',events[0])
-        print('Events base is ',events.base)
-        print('Event 0 base is ',events[0].base)
-        print('Events are ',events)
-        events_ = np.array([event.base for event in events])
-
-        from neo import SpikeTrain
-        result_st = SpikeTrain(events_,units=signal.times.units,
-                           t_start=signal.t_start,t_stop=signal.t_stop)
-        print('Here is the spike train:',result_st)
-        print('Units are ',signal.times.units)
-        print('Start and stop time are ',signal.t_start,signal.t_stop)
-        ##########################
-
-        spike_train = result_st#stgen.threshold_detection(vm)
+        spike_train = stgen.threshold_detection(vm)
         try:
             len(spike_train)
         except TypeError: # Handles an error in Neo related to some zero length

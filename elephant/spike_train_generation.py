@@ -59,7 +59,12 @@ def threshold_detection(signal, threshold=0.0*mV, sign='above'):
         time = signal.times
         events = time[cutout][take]
         
-    result_st = SpikeTrain(events.base,units=signal.times.units,
+    events_base = events.base
+    if events_base is None: # This occurs in some Python 3 builds due to some
+                            # bug in quantities.  
+        events_base = np.array([event.base for event in events]) # Workaround
+    
+    result_st = SpikeTrain(events_base,units=signal.times.units,
                            t_start=signal.t_start,t_stop=signal.t_stop)
     return result_st
 
