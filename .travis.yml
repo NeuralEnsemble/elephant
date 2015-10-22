@@ -10,6 +10,7 @@ addons:
       - libatlas-base-dev
       - liblapack-dev
       - gfortran
+      - libgfortran3
       - python-scipy
       
 env:

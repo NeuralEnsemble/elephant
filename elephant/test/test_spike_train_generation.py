@@ -68,18 +68,27 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         time = signal.times
         events = time[cutout][take]
         print('Events length is %d' % len(events))
+        print('Events are ',events)
+        print('Event 0 is ',events[0])
+        print('Events base is ',events.base)
+        print('Event 0 base is ',events[0].base)
+        print('Events are ',events)
+        events_ = np.array([event.base for event in events])
 
         from neo import SpikeTrain
-        result_st = SpikeTrain(events.base,units=signal.times.units,
+        result_st = SpikeTrain(events_,units=signal.times.units,
                            t_start=signal.t_start,t_stop=signal.t_stop)
-        print(result_st)
+        print('Here is the spike train:',result_st)
+        print('Units are ',signal.times.units)
+        print('Start and stop time are ',signal.t_start,signal.t_stop)
         ##########################
 
-        spike_train = stgen.threshold_detection(vm)
+        spike_train = result_st#stgen.threshold_detection(vm)
         try:
             len(spike_train)
         except TypeError: # Handles an error in Neo related to some zero length
                           # spike trains being treated as unsized objects.
+            print("We had a type error...")
             spike_train = neo.core.SpikeTrain([],t_start=spike_train.t_start,
                                                  t_stop=spike_train.t_stop,
                                                  units=spike_train.units)
