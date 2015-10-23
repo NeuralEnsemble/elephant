@@ -58,6 +58,7 @@ develop-eggs
 pip-log.txt
 # coverage
 cover
+.ipynb_checkpoints
 
 # OS generated files #
 ######################
