@@ -115,16 +115,21 @@ def zscore(signal, inplace=True):
         # Create new signal instance
         result = [sig.duplicate_with_new_array(
             (sig.magnitude - m.magnitude) / s.magnitude) for sig in signal]
+        l = []
         for sig in result:
-            sig /= sig.units
+            sig_dimless = sig / sig.units
+            l.append(sig_dimless)
+        result = l
     else:
+        l = []
         # Overwrite signal
         for sig in signal:
             sig[:] = pq.Quantity(
                 (sig.magnitude - m.magnitude) / s.magnitude,
                 units=sig.units)
-            sig /= sig.units
-        result = signal
+            sig_dimless = sig / sig.units
+            l.append(sig_dimless)
+        result = l
 
     # Return single object, or list of objects
     if len(result) == 1:
