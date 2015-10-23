@@ -26,12 +26,13 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
     export PATH=/home/travis/miniconda/bin:$PATH
     conda config --set always_yes yes
     conda update --yes conda
-    
+
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
+    conda install libgfortran
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
@@ -82,7 +83,7 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install coverage
     pip install numpy==$NUMPY_VERSION
     pip install six
-    pip install pandas
+    pip install pandas==0.16.0
     pip install quantities
 fi
 
