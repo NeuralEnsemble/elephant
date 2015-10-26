@@ -16,17 +16,18 @@ class Kernel(object):
 
     ## def __init__(self, kernel_size, normalize):
     ## def __init__(self, sigma, normalize):
-    def __init__(self, sigma, normalize, direction):
+    ## def __init__(self, sigma, normalize, direction):
+    def __init__(self, sigma, direction):
         """
         ## :param kernel_size: Parameter controlling the kernel size.
         :param sigma: Standard deviation of the kernel.
         ## :type kernel_size: Quantity 1D
         :type sigma: Quantity 1D
-        :param bool normalize: Whether to normalize the kernel to unit area.
+        ## :param bool normalize: Whether to normalize the kernel to unit area.
         """
         ## self.kernel_size = kernel_size
         self.sigma = sigma
-        self.normalize = normalize
+        ## self.normalize = normalize
         self.direction = direction
 
     ## def __call__(self, t, kernel_size=None):
@@ -46,15 +47,16 @@ class Kernel(object):
         ## if kernel_size is None:
         ##     kernel_size = self.kernel_size
 
-        if self.normalize:
-            ## normalization = self.normalization_factor(kernel_size)
-            normalization = self.normalization_factor(self.sigma)
-        else:
-            normalization = 1.0 * pq.dimensionless
+        ## if self.normalize:
+        ##     ## normalization = self.normalization_factor(kernel_size)
+        ##     normalization = self.normalization_factor(self.sigma)
+        ## else:
+        ##     normalization = 1.0 * pq.dimensionless
 
         ## return self._evaluate(t, kernel_size) * normalization
         ## return self._evaluate(t, self.sigma) * normalization
-        return self._evaluate(t, self.sigma, self.direction) * normalization
+        ## return self._evaluate(t, self.sigma, self.direction) * normalization
+        return self._evaluate(t, self.sigma, self.direction)
 
     ## def _evaluate(self, t, kernel_size):
     def _evaluate(self, t, sigma):
@@ -69,16 +71,16 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
-    ## def normalization_factor(self, kernel_size):
-    def normalization_factor(self, sigma):
-        """ Returns the factor needed to normalize the kernel to unit area.
-
-        :param kernel_size: Controls the width of the kernel.
-        :type kernel_size: Quantity scalar
-        :returns: Factor to normalize the kernel to unit width.
-        :rtype: Quantity scalar
-        """
-        raise NotImplementedError()
+    ## ## def normalization_factor(self, kernel_size):
+    ## def normalization_factor(self, sigma):
+    ##     """ Returns the factor needed to normalize the kernel to unit area.
+    ##
+    ##     :param kernel_size: Controls the width of the kernel.
+    ##     :type kernel_size: Quantity scalar
+    ##     :returns: Factor to normalize the kernel to unit width.
+    ##     :rtype: Quantity scalar
+    ##     """
+    ##     raise NotImplementedError()
 
     def boundary_enclosing_at_least(self, fraction):
         """ Calculates the boundary :math:`b` so that the integral from
@@ -91,6 +93,12 @@ class Kernel(object):
         :rtype: Quantity scalar
         """
         raise NotImplementedError()
+
+    ## TODO:
+    ## def median_index(self):
+    ## in make_kernel:
+    ## m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
+
 
     def is_symmetric(self):
         """ Should return `True` if the kernel is symmetric. """
@@ -141,7 +149,8 @@ class KernelFromFunction(Kernel):
     ## def __init__(self, kernel_func, kernel_size):
     def __init__(self, kernel_func, sigma):
         ## Kernel.__init__(self, kernel_size, normalize=False)
-        Kernel.__init__(self, sigma, normalize=False)
+        ## Kernel.__init__(self, sigma, normalize=False)
+        Kernel.__init__(self, sigma)
         self._evaluate = kernel_func
 
     def is_symmetric(self):
@@ -183,17 +192,19 @@ class SymmetricKernel(Kernel):
 
     ## def __init__(self, kernel_size, normalize):
     ## def __init__(self, sigma, normalize):
-    def __init__(self, sigma, normalize, direction):
+    ## def __init__(self, sigma, normalize, direction):
+    def __init__(self, sigma, direction):
         """
         ## :param kernel_size: Parameter controlling the kernel size.
         :param sigma: Standard deviation of the kernel.
         ## :type kernel_size: Quantity 1D
         :type sigma: Quantity 1D
-        :param bool normalize: Whether to normalize the kernel to unit area.
+        ## :param bool normalize: Whether to normalize the kernel to unit area.
         """
         ## Kernel.__init__(self, kernel_size, normalize)
         ## Kernel.__init__(self, sigma, normalize)
-        Kernel.__init__(self, sigma, normalize, direction)
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     def is_symmetric(self):
         return True
@@ -222,17 +233,19 @@ class AsymmetricKernel(Kernel):
 
     ## def __init__(self, kernel_size, normalize):
     ## def __init__(self, sigma, normalize):
-    def __init__(self, sigma, normalize, direction):
+    ## def __init__(self, sigma, normalize, direction):
+    def __init__(self, sigma, direction):
         """
         ## :param kernel_size: Parameter controlling the kernel size.
         :param sigma: Standard deviation of the kernel.
         ## :type kernel_size: Quantity 1D
         :type sigma: Quantity 1D
-        :param bool normalize: Whether to normalize the kernel to unit area.
+        ## :param bool normalize: Whether to normalize the kernel to unit area.
         """
         ## Kernel.__init__(self, kernel_size, normalize)
         ## Kernel.__init__(self, sigma, normalize)
-        Kernel.__init__(self, sigma, normalize, direction)
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     ## TODO: Necessary?
     def is_symmetric(self):
@@ -245,6 +258,7 @@ class AsymmetricKernel(Kernel):
 
 
     ## TODO:
+    ## Does summed_dist_matrix make sense in context of asymmetric kernels?
     def summed_dist_matrix(self, vectors, presorted=False):
         ## D = sp.empty((len(vectors), len(vectors)))
         D = np.empty((len(vectors), len(vectors)))
@@ -263,31 +277,41 @@ class AsymmetricKernel(Kernel):
 
 
 class GaussianKernel(SymmetricKernel):
-    """ Unnormalized: :math:`K(t) = \exp(-\frac{t^2}{2 \sigma^2})`
+    ## """ Unnormalized: :math:`K(t) = \exp(-\frac{t^2}{2 \sigma^2})`
+    ## with :math:`\sigma` being the standard deviation.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = \frac{1}{\sigma \sqrt{2 \pi}} K(t)`
+    ## """
+    """ :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
     with :math:`\sigma` being the standard deviation.
-
-    Normalized to unit area: :math:`K'(t) = \frac{1}{\sigma \sqrt{2 \pi}} K(t)`
     """
 
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     ## def evaluate(t, sigma):
     def evaluate(t, sigma, direction):
         ## return sp.exp(
-        return np.exp(
+        ## return np.exp(
+        ##     ## -0.5 * (t * pq.dimensionless / kernel_size).simplified ** 2)
+        ##     ## -0.5 * (t / kernel_size).simplified.magnitude ** 2)
+        ##     -0.5 * (t / sigma).simplified.magnitude ** 2)
+        return (1.0 / (np.sqrt(2.0 * np.pi) * sigma)) * np.exp(
             ## -0.5 * (t * pq.dimensionless / kernel_size).simplified ** 2)
             ## -0.5 * (t / kernel_size).simplified.magnitude ** 2)
             -0.5 * (t / sigma).simplified.magnitude ** 2)
+
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
     def _evaluate(self, t, sigma, direction):
         return self.evaluate(t, sigma, direction)
 
-    def normalization_factor(self, sigma):
-        return 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
+    ## def normalization_factor(self, sigma):
+    ##     return 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
 
     def boundary_enclosing_at_least(self, fraction):
         ## return self.kernel_size * sp.sqrt(2.0) * \
@@ -299,21 +323,31 @@ class GaussianKernel(SymmetricKernel):
 
 
 class LaplacianKernel(SymmetricKernel):
-    """
-    Unnormalized: :math:`K(t) = \exp(-|\frac{t}{\tau}|)`
+    ## """
+    ## Unnormalized: :math:`K(t) = \exp(-|\frac{t}{\tau}|)`
+    ## with :math:`\tau = \sigma / \sqrt{2}`.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
+    ## """
+    """ :math:`K(t) = \frac{1}{2 \tau} \exp(-|\frac{t}{\tau}|)`
     with :math:`\tau = \sigma / \sqrt{2}`.
-
-    Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
     """
 
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     ## def evaluate(t, sigma):
     def evaluate(t, sigma, direction):
         ## return sp.exp(
-        return np.exp(
+        ## return np.exp(
+        ##     ## -(sp.absolute(t) * pq.dimensionless / kernel_size).simplified)
+        ##     ## -(sp.absolute(t) / kernel_size).simplified)
+        ##     ## -(np.absolute(t) / kernel_size).simplified)
+        ##     -(np.absolute(t) * np.sqrt(2.0) / sigma).simplified)
+        return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
             ## -(sp.absolute(t) * pq.dimensionless / kernel_size).simplified)
             ## -(sp.absolute(t) / kernel_size).simplified)
             ## -(np.absolute(t) / kernel_size).simplified)
@@ -324,8 +358,8 @@ class LaplacianKernel(SymmetricKernel):
     def _evaluate(self, t, sigma, direction):
         return self.evaluate(t, sigma, direction)
 
-    def normalization_factor(self, sigma):
-        return 1 / (np.sqrt(2.0) * sigma)
+    ## def normalization_factor(self, sigma):
+    ##     return 1 / (np.sqrt(2.0) * sigma)
 
     def boundary_enclosing_at_least(self, fraction):
         ## return -self.kernel_size * sp.log(1.0 - fraction)
@@ -410,60 +444,83 @@ class LaplacianKernel(SymmetricKernel):
                     (1.0 + markage[u][ks[slice_k]]))
                 D[v, u] = D[u, v]
 
-        if self.normalize:
-            ## normalization = self.normalization_factor(self.kernel_size)
-            normalization = self.normalization_factor(self.sigma)
-        else:
-            normalization = 1.0
-        return normalization * D
+        ## if self.normalize:
+        ##     ## normalization = self.normalization_factor(self.kernel_size)
+        ##     normalization = self.normalization_factor(self.sigma)
+        ## else:
+        ##     normalization = 1.0
+        ## return normalization * D
+        return D
 
 
 class RectangularKernel(SymmetricKernel):
-    """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll}1, & |t| < \tau \\
+    ## """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll}1, & |t| < \tau \\
+    ## 0, & |t| \geq \tau\end{array} \right`
+    ## with :math:`\tau` corresponding to the half width of the kernel.
+    ## It holds :math:`\tau = \sqrt(3) * \sigma`.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
+    ## """
+    """ :math:`K(t) = \left\{\begin{array}{ll} \frac{1}{2 \tau}, & |t| < \tau \\
     0, & |t| \geq \tau\end{array} \right`
     with :math:`\tau` corresponding to the half width of the kernel.
     It holds :math:`\tau = \sqrt(3) * \sigma`.
-
-    Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
     """
 
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     ## def evaluate(t, sigma):
     def evaluate(t, sigma, direction):
-        return (np.absolute(t) < np.sqrt(3.0) * sigma)
+        ## return (np.absolute(t) < np.sqrt(3.0) * sigma)
+        return (0.5 / (np.sqrt(3.0) * sigma)) * (np.absolute(t) < np.sqrt(3.0) * sigma)
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
     def _evaluate(self, t, sigma, direction):
         return self.evaluate(t, sigma, direction)
 
-    def normalization_factor(self, sigma):
-        return 0.5 / (np.sqrt(3.0) * sigma)
+    ## def normalization_factor(self, sigma):
+    ##     return 0.5 / (np.sqrt(3.0) * sigma)
 
     def boundary_enclosing_at_least(self, fraction):
         return np.sqrt(3.0) * self.sigma
 
 
 class TriangularKernel(SymmetricKernel):
-    """ Unnormalized: :math:`K(t) = \left\{ \begin{array}{ll}1
-    - \frac{|t|}{\tau}, & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
+    ## """ Unnormalized: :math:`K(t) = \left\{ \begin{array}{ll}1
+    ## - \frac{|t|}{\tau}, & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
+    ## with :math:`\tau` corresponding to the half width of the kernel.
+    ## It holds :math:`\tau = \sqrt(6) * \sigma`.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
+    ## """
+    """ :math:`K(t) = \left\{ \begin{array}{ll} \frac{1}{\tau} (1
+    - \frac{|t|}{\tau}), & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
     with :math:`\tau` corresponding to the half width of the kernel.
     It holds :math:`\tau = \sqrt(6) * \sigma`.
-
-    Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
     """
 
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     ## def evaluate(t, sigma):
     def evaluate(t, sigma, direction):
         ## return sp.maximum(
-        return np.maximum(
+        ## return np.maximum(
+        ##     0.0,
+        ##     ## (1.0 - sp.absolute(t.rescale(half_width.units)) * pq.dimensionless /
+        ##     ##  half_width).magnitude)
+        ##     ## (1.0 - sp.absolute(t.rescale(half_width.units)) / half_width).magnitude)
+        ##     ## (1.0 - np.absolute(t.rescale(half_width.units)) / half_width).magnitude)
+        ##     (1.0 - np.absolute(t.rescale(sigma.units)) / (np.sqrt(6.0) * sigma)).magnitude)
+        return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
             0.0,
             ## (1.0 - sp.absolute(t.rescale(half_width.units)) * pq.dimensionless /
             ##  half_width).magnitude)
@@ -476,22 +533,27 @@ class TriangularKernel(SymmetricKernel):
     def _evaluate(self, t, sigma, direction):
         return self.evaluate(t, sigma, direction)
 
-    ## def normalization_factor(self, half_width):
-    def normalization_factor(self, sigma):
-        ## return 1.0 / half_width
-        return 1.0 / (np.sqrt(6.0) * sigma)
+    ## ## def normalization_factor(self, half_width):
+    ## def normalization_factor(self, sigma):
+    ##     ## return 1.0 / half_width
+    ##     return 1.0 / (np.sqrt(6.0) * sigma)
 
     def boundary_enclosing_at_least(self, fraction):
         return np.sqrt(6.0) * self.sigma
 
 
 class EpanechnikovLikeKernel(SymmetricKernel):
-    """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll} 1 - (t / d)^2, & |t| < d \\
+    ## """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll} 1 - (t / d)^2, & |t| < d \\
+    ## 0, & |t| \geq d \end{array} \right`
+    ## with d being the half width of the kernel.
+    ## It holds :math:`d = \sqrt{5} \sigma`.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = (3 /(4 d)) K(t)`
+    ## """
+    """ :math:`K(t) = \left\{\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2), & |t| < d \\
     0, & |t| \geq d \end{array} \right`
     with d being the half width of the kernel.
     It holds :math:`d = \sqrt{5} \sigma`.
-
-    Normalized to unit area: :math:`K'(t) = (3 /(4 d)) K(t)`
 
     The Epanechnikov kernel under full consideration of its axioms has a half width of sqrt(5).
     Ignoring one axiom also the respective kernel with half width = 1 can be called Epanechnikov kernel.
@@ -499,26 +561,33 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     Arbitrary width of this type of kernel is here preferred to be called 'Epanechnikov-like' kernel.
     """
 
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     ## def evaluate(t, sigma):
     def evaluate(t, sigma, direction):
         ## return sp.maximum(
-        return np.maximum(
+        ## return np.maximum(
+        ##     0.0,
+        ##     ## (3/(4 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude))*(1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2))
+        ##     1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2)
+        return (3.0 / (4.0 * np.sqrt(5.0) * sigma)) * np.maximum(
             0.0,
             ## (3/(4 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude))*(1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2))
             1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2)
+
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
     def _evaluate(self, t, sigma, direction):
         return self.evaluate(t, sigma, direction)
 
-    def normalization_factor(self, sigma):
-        ## return 3.0 / (4.0 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude)
-        return 3.0 / (4.0 * np.sqrt(5.0) * sigma)
+    ## def normalization_factor(self, sigma):
+    ##     ## return 3.0 / (4.0 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude)
+    ##     return 3.0 / (4.0 * np.sqrt(5.0) * sigma)
 
     def boundary_enclosing_at_least(self, fraction):
         return np.sqrt(5.0) * self.sigma
@@ -530,77 +599,81 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
 
 ## TODO: finally eliminated
-class CausalDecayingExpKernel(Kernel):
-    """ Unnormalized: :math:`K(t) = \exp(-\frac{t}{\tau}) \Theta(t)` with
-    :math:`\Theta(t) = \left\{\begin{array}{ll}0, & x < 0\\ 1, & x \geq
-    0\end{array}\right.` and kernel size :math:`\tau`.
-
-    Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
-    """
-
-    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
-        Kernel.__init__(self, kernel_size, normalize)
-
-    @staticmethod
-    def evaluate(t, kernel_size):
-        ## return sp.piecewise(
-        return np.piecewise(
-            t, [t < 0, t >= 0], [
-                lambda t: 0,
-                ## lambda t: sp.exp(
-                lambda t: np.exp(
-                    ## (-t * pq.dimensionless / kernel_size).simplified)])
-                    (-t / kernel_size).simplified)])
-
-    def _evaluate(self, t, kernel_size):
-        return self.evaluate(t, kernel_size)
-
-    def normalization_factor(self, kernel_size):
-        return 1.0 / kernel_size
-
-    def boundary_enclosing_at_least(self, fraction):
-        ## return -self.kernel_size * sp.log(1.0 - fraction)
-        return -self.kernel_size * np.log(1.0 - fraction)
+## class CausalDecayingExpKernel(Kernel):
+##     """ Unnormalized: :math:`K(t) = \exp(-\frac{t}{\tau}) \Theta(t)` with
+##     :math:`\Theta(t) = \left\{\begin{array}{ll}0, & x < 0\\ 1, & x \geq
+##     0\end{array}\right.` and kernel size :math:`\tau`.
+##
+##     Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
+##     """
+##
+##     def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+##         Kernel.__init__(self, kernel_size, normalize)
+##
+##     @staticmethod
+##     def evaluate(t, kernel_size):
+##         ## return sp.piecewise(
+##         return np.piecewise(
+##             t, [t < 0, t >= 0], [
+##                 lambda t: 0,
+##                 ## lambda t: sp.exp(
+##                 lambda t: np.exp(
+##                     ## (-t * pq.dimensionless / kernel_size).simplified)])
+##                     (-t / kernel_size).simplified)])
+##
+##     def _evaluate(self, t, kernel_size):
+##         return self.evaluate(t, kernel_size)
+##
+##     def normalization_factor(self, kernel_size):
+##         return 1.0 / kernel_size
+##
+##     def boundary_enclosing_at_least(self, fraction):
+##         ## return -self.kernel_size * sp.log(1.0 - fraction)
+##         return -self.kernel_size * np.log(1.0 - fraction)
 
 
 ## class ExponentialKernel(Kernel):
 class ExponentialKernel(AsymmetricKernel):
-    """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll} \exp{-t / \tau}, & t > 0 \\
+    ## """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll} \exp{-t / \tau}, & t > 0 \\
+    ## 0, & t \leq 0 \end{array} \right`
+    ## with :math:`\tau = \sigma`.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = (1 / \tau) K(t)`
+    ## """
+    """ :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau}, & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma`.
-
-    Normalized to unit area: :math:`K'(t) = (1 / \tau) K(t)`
     """
 
-    ## in elephant:
-    ## elif form.upper() == 'EXP':
-    ##     w = 5.0 * SI_sigma
-    ##     expo = np.arange(
-    ##         1, (
-    ##             2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
-    ##         1) * SI_time_stamp_resolution
-    ##     expo = np.exp(-expo / SI_sigma)
-    ##     kernel = expo / expo.sum()
-    ##     if direction == -1:
-    ##         kernel = np.flipud(kernel)
-    ## 
-    ## TODO: To be adjusted to kernel in both directions. How one can implement 'direction' for classes?
-
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     def evaluate(t, sigma, direction):
+        ## if direction == 1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: 0,
+        ##             lambda t: np.exp(
+        ##                 (-t / sigma).simplified.magnitude)])
+        ## elif direction == -1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: np.exp(
+        ##                 (t / sigma).simplified.magnitude),
+        ##             lambda t: 0])
         if direction == 1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: np.exp(
+                    lambda t: (1.0 / sigma) * np.exp(
                         (-t / sigma).simplified.magnitude)])
         elif direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: np.exp(
+                    lambda t: (1.0 / sigma) * np.exp(
                         (t / sigma).simplified.magnitude),
                     lambda t: 0])
         return kernel
@@ -608,8 +681,8 @@ class ExponentialKernel(AsymmetricKernel):
     def _evaluate(self, t, sigma, direction):
         return self.evaluate(t, sigma, direction)
 
-    def normalization_factor(self, sigma):
-        return 1.0 / sigma
+    ## def normalization_factor(self, sigma):
+    ##     return 1.0 / sigma
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.sigma * np.log(1.0 - fraction)
@@ -617,27 +690,21 @@ class ExponentialKernel(AsymmetricKernel):
 
 ## class AlphaKernel(Kernel):
 class AlphaKernel(AsymmetricKernel):
-    """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll} t \exp{-t / \tau}, & t > 0 \\
+    ## """ Unnormalized: :math:`K(t) = \left\{\begin{array}{ll} t \exp{-t / \tau}, & t > 0 \\
+    ## 0, & t \leq 0 \end{array} \right`
+    ## with :math:`\tau = \sigma / \sqrt{2}`.
+    ##
+    ## Normalized to unit area: :math:`K'(t) = (1 / (\tau)^2) K(t)`
+    ## """
+    """ :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau}, & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.
-
-    Normalized to unit area: :math:`K'(t) = (1 / (\tau)^2) K(t)`
     """
-    ## in elephant:
-    ## elif form.upper() == 'ALP':
-    ##     w = 5.0 * SI_sigma
-    ##     alpha = np.arange(
-    ##         1, (
-    ##             2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
-    ##         1) * SI_time_stamp_resolution
-    ##     alpha = (2.0 / SI_sigma**2) * alpha * np.exp(
-    ##         -alpha * np.sqrt(2) / SI_sigma)
-    ##     kernel = alpha / alpha.sum()  # normalization
-    ##     if direction == -1:
-    ##         kernel = np.flipud(kernel)
 
-    def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
-        Kernel.__init__(self, sigma, normalize, direction)
+    ## def __init__(self, sigma=1.0 * pq.s, normalize=True, direction=1):
+    def __init__(self, sigma=1.0 * pq.s, direction=1):
+        ## Kernel.__init__(self, sigma, normalize, direction)
+        Kernel.__init__(self, sigma, direction)
 
     @staticmethod
     ## def evaluate(t, sigma):
@@ -646,15 +713,25 @@ class AlphaKernel(AsymmetricKernel):
     ##             lambda t: 0,
     ##             lambda t: t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
     def evaluate(t, sigma, direction):
+        ## if direction == 1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: 0,
+        ##             lambda t: t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
+        ## elif direction == -1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: -t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
+        ##             lambda t: 0 ])
         if direction == 1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
+                    lambda t: (2.0 / sigma**2) * t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
         elif direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: -t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
+                    lambda t: (2.0 / sigma**2) * (-1) * t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
                     lambda t: 0 ])
         return kernel
 
@@ -664,8 +741,8 @@ class AlphaKernel(AsymmetricKernel):
         return self.evaluate(t, sigma, direction)
 
 
-    def normalization_factor(self, sigma):
-        return 2.0 / sigma**2
+    ## def normalization_factor(self, sigma):
+    ##     return 2.0 / sigma**2
 
     ## TODO:
     def boundary_enclosing_at_least(self, fraction):
