@@ -409,7 +409,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 
 
 ## def select_kernel(form, sigma, sampling_period, direction=1, normalize):
-def select_kernel(form, sigma, sampling_period, direction=1, normalize=False):
+def select_kernel(form, sigma, sampling_period, normalize=False, direction=1):
     """
     Selects kernel functions for convolution.
 
@@ -555,9 +555,9 @@ def select_kernel(form, sigma, sampling_period, direction=1, normalize=False):
         ## alpha = (2.0 / SI_sigma**2) * alpha * np.exp(
         ##     -alpha * np.sqrt(2) / SI_sigma)
         ## kernel = alpha / alpha.sum()  # normalization
-        kernel = kernels.AlphaKernel(sigma, normalize)
-        if direction == -1:
-            kernel = np.flipud(kernel)
+        kernel = kernels.AlphaKernel(sigma, normalize, direction)
+        ## if direction == -1:
+        ##     kernel = np.flipud(kernel)
 
     elif form.upper() == 'EXP':
         ## w = 5.0 * SI_sigma
@@ -567,9 +567,9 @@ def select_kernel(form, sigma, sampling_period, direction=1, normalize=False):
         ##     1) * SI_time_stamp_resolution
         ## expo = np.exp(-expo / SI_sigma)
         ## kernel = expo / expo.sum()
-        kernel = kernels.ExponentialKernel(sigma, normalize)
-        if direction == -1:
-            kernel = np.flipud(kernel)
+        kernel = kernels.ExponentialKernel(sigma, normalize, direction)
+        ## if direction == -1:
+        ##     kernel = np.flipud(kernel)
 
     elif form.upper() == 'LAP':
         kernel = kernels.LaplacianKernel(sigma, normalize)
