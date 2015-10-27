@@ -408,8 +408,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-## def select_kernel(form, sigma, sampling_period, direction=1, normalize):
-## def select_kernel(form, sigma, sampling_period, normalize=False, direction=1):
 def select_kernel(form, sigma, sampling_period, direction=1):
     """
     Selects kernel functions for convolution.
@@ -512,75 +510,25 @@ def select_kernel(form, sigma, sampling_period, direction=1):
     ## norm = 1./SI_time_stamp_resolution
 
     if form.upper() == 'BOX':
-        ## w = 2.0 * SI_sigma * np.sqrt(3)
-        ## # always odd number of bins
-        ## width = 2 * np.floor(w / 2.0 / SI_time_stamp_resolution) + 1
-        ## height = 1. / width
-        ## kernel = np.ones((1, width)) * height  # area = 1
-        ##
-        ## kernel = kernels.RectangularKernel(sigma, normalize)
         kernel = kernels.RectangularKernel(sigma)
 
     elif form.upper() == 'TRI':
-        ## w = 2 * SI_sigma * np.sqrt(6)
-        ## halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
-        ## trileft = np.arange(1, halfwidth + 2)
-        ## triright = np.arange(halfwidth, 0, -1)  # odd number of bins
-        ## triangle = np.append(trileft, triright)
-        ## kernel = triangle / triangle.sum()  # area = 1
-        ## kernel = kernels.TriangularKernel(sigma, normalize)
         kernel = kernels.TriangularKernel(sigma)
 
     elif form.upper() == 'EPA':
-        ## w = 2.0 * SI_sigma * np.sqrt(5)
-        ## halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
-        ## base = np.arange(-halfwidth, halfwidth + 1)
-        ## parabula = base**2
-        ## epanech = parabula.max() - parabula  # inverse parabula
-        ## kernel = epanech / epanech.sum()  # area = 1
-        ## kernel = kernels.EpanechnikovLikeKernel(sigma, normalize)
         kernel = kernels.EpanechnikovLikeKernel(sigma)
 
     elif form.upper() == 'GAU':
-        ## w = 2.0 * SI_sigma * 2.7  # > 99% of distribution weight
-        ## halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)  # always odd
-        ## base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
-        ## g = np.exp(
-        ##     -(base**2) / 2.0 / SI_sigma**2) / SI_sigma / np.sqrt(2.0 * np.pi)
-        ## kernel = g / g.sum()
-        ## kernel = kernels.GaussianKernel(sigma, normalize)
         kernel = kernels.GaussianKernel(sigma)
 
+    elif form.upper() == 'LAP':
+        kernel = kernels.LaplacianKernel(sigma)
+
     elif form.upper() == 'ALP':
-        ## w = 5.0 * SI_sigma
-        ## alpha = np.arange(
-        ##     1, (
-        ##         2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
-        ##     1) * SI_time_stamp_resolution
-        ## alpha = (2.0 / SI_sigma**2) * alpha * np.exp(
-        ##     -alpha * np.sqrt(2) / SI_sigma)
-        ## kernel = alpha / alpha.sum()  # normalization
-        ## kernel = kernels.AlphaKernel(sigma, normalize, direction)
         kernel = kernels.AlphaKernel(sigma, direction)
-        ## if direction == -1:
-        ##     kernel = np.flipud(kernel)
 
     elif form.upper() == 'EXP':
-        ## w = 5.0 * SI_sigma
-        ## expo = np.arange(
-        ##     1, (
-        ##         2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
-        ##     1) * SI_time_stamp_resolution
-        ## expo = np.exp(-expo / SI_sigma)
-        ## kernel = expo / expo.sum()
-        ## kernel = kernels.ExponentialKernel(sigma, normalize, direction)
         kernel = kernels.ExponentialKernel(sigma, direction)
-        ## if direction == -1:
-        ##     kernel = np.flipud(kernel)
-
-    elif form.upper() == 'LAP':
-        ## kernel = kernels.LaplacianKernel(sigma, normalize)
-        kernel = kernels.LaplacianKernel(sigma)
 
     ## kernel = kernel.ravel()
     ## m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
