@@ -56,16 +56,16 @@ class Kernel(object):
         ## return self._evaluate(t, kernel_size) * normalization
         ## return self._evaluate(t, self.sigma) * normalization
         ## return self._evaluate(t, self.sigma, self.direction) * normalization
-        return self._evaluate(t, self.sigma, self.direction)
+        ## return self._evaluate(t, self.sigma, self.direction)
+        return self._evaluate(t)
 
     ## def _evaluate(self, t, kernel_size):
-    def _evaluate(self, t, sigma):
+    ## def _evaluate(self, t, sigma):
+    def _evaluate(self, t):
         """ Evaluates the kernel.
 
         :param t: Time points to evaluate the kernel at.
         :type t: Quantity 1D
-        :param kernel_size: Controls the width of the kernel.
-        :type kernel_size: Quantity scalar
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
         """
@@ -252,7 +252,7 @@ class AsymmetricKernel(Kernel):
         return False
 
     ## TODO:
-    ## def _evaluate(self, t, sigma, direction):
+    ## def _evaluate(self, t):
     ##    if self.direction == -1:
     ##        \tilde(f)(t)=f(-t)
 
@@ -293,22 +293,25 @@ class GaussianKernel(SymmetricKernel):
 
     @staticmethod
     ## def evaluate(t, sigma):
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## return sp.exp(
         ## return np.exp(
         ##     ## -0.5 * (t * pq.dimensionless / kernel_size).simplified ** 2)
         ##     ## -0.5 * (t / kernel_size).simplified.magnitude ** 2)
         ##     -0.5 * (t / sigma).simplified.magnitude ** 2)
-        return (1.0 / (np.sqrt(2.0 * np.pi) * sigma)) * np.exp(
-            ## -0.5 * (t * pq.dimensionless / kernel_size).simplified ** 2)
-            ## -0.5 * (t / kernel_size).simplified.magnitude ** 2)
-            -0.5 * (t / sigma).simplified.magnitude ** 2)
+        ## return (1.0 / (np.sqrt(2.0 * np.pi) * sigma)) * np.exp(
+        ##     -0.5 * (t / sigma).simplified.magnitude ** 2)
+        return (1.0 / (np.sqrt(2.0 * np.pi) * self.sigma)) * np.exp(
+            -0.5 * (t / self.sigma).simplified.magnitude ** 2)
 
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
     ## def normalization_factor(self, sigma):
     ##     return 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
@@ -340,23 +343,25 @@ class LaplacianKernel(SymmetricKernel):
 
     @staticmethod
     ## def evaluate(t, sigma):
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## return sp.exp(
         ## return np.exp(
         ##     ## -(sp.absolute(t) * pq.dimensionless / kernel_size).simplified)
         ##     ## -(sp.absolute(t) / kernel_size).simplified)
         ##     ## -(np.absolute(t) / kernel_size).simplified)
         ##     -(np.absolute(t) * np.sqrt(2.0) / sigma).simplified)
-        return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
-            ## -(sp.absolute(t) * pq.dimensionless / kernel_size).simplified)
-            ## -(sp.absolute(t) / kernel_size).simplified)
-            ## -(np.absolute(t) / kernel_size).simplified)
-            -(np.absolute(t) * np.sqrt(2.0) / sigma).simplified)
+        ## return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
+        ##     -(np.absolute(t) * np.sqrt(2.0) / sigma).simplified)
+        return (1 / (np.sqrt(2.0) * self.sigma)) * np.exp(
+            -(np.absolute(t) * np.sqrt(2.0) / self.sigma).simplified)
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
     ## def normalization_factor(self, sigma):
     ##     return 1 / (np.sqrt(2.0) * sigma)
@@ -474,14 +479,18 @@ class RectangularKernel(SymmetricKernel):
 
     @staticmethod
     ## def evaluate(t, sigma):
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## return (np.absolute(t) < np.sqrt(3.0) * sigma)
-        return (0.5 / (np.sqrt(3.0) * sigma)) * (np.absolute(t) < np.sqrt(3.0) * sigma)
+        ## return (0.5 / (np.sqrt(3.0) * sigma)) * (np.absolute(t) < np.sqrt(3.0) * sigma)
+        return (0.5 / (np.sqrt(3.0) * self.sigma)) * (np.absolute(t) < np.sqrt(3.0) * self.sigma)
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
     ## def normalization_factor(self, sigma):
     ##     return 0.5 / (np.sqrt(3.0) * sigma)
@@ -511,7 +520,8 @@ class TriangularKernel(SymmetricKernel):
 
     @staticmethod
     ## def evaluate(t, sigma):
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## return sp.maximum(
         ## return np.maximum(
         ##     0.0,
@@ -520,18 +530,19 @@ class TriangularKernel(SymmetricKernel):
         ##     ## (1.0 - sp.absolute(t.rescale(half_width.units)) / half_width).magnitude)
         ##     ## (1.0 - np.absolute(t.rescale(half_width.units)) / half_width).magnitude)
         ##     (1.0 - np.absolute(t.rescale(sigma.units)) / (np.sqrt(6.0) * sigma)).magnitude)
-        return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
+        ## return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
+        ##     0.0,
+        ##     (1.0 - np.absolute(t.rescale(sigma.units)) / (np.sqrt(6.0) * sigma)).magnitude)
+        return (1.0 / (np.sqrt(6.0) * self.sigma)) * np.maximum(
             0.0,
-            ## (1.0 - sp.absolute(t.rescale(half_width.units)) * pq.dimensionless /
-            ##  half_width).magnitude)
-            ## (1.0 - sp.absolute(t.rescale(half_width.units)) / half_width).magnitude)
-            ## (1.0 - np.absolute(t.rescale(half_width.units)) / half_width).magnitude)
-            (1.0 - np.absolute(t.rescale(sigma.units)) / (np.sqrt(6.0) * sigma)).magnitude)
+            (1.0 - np.absolute(t.rescale(self.sigma.units)) / (np.sqrt(6.0) * self.sigma)).magnitude)
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
     ## ## def normalization_factor(self, half_width):
     ## def normalization_factor(self, sigma):
@@ -568,22 +579,27 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     @staticmethod
     ## def evaluate(t, sigma):
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## return sp.maximum(
         ## return np.maximum(
         ##     0.0,
         ##     ## (3/(4 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude))*(1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2))
         ##     1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2)
-        return (3.0 / (4.0 * np.sqrt(5.0) * sigma)) * np.maximum(
+        ## return (3.0 / (4.0 * np.sqrt(5.0) * sigma)) * np.maximum(
+        ##     0.0,
+        ##     1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2)
+        return (3.0 / (4.0 * np.sqrt(5.0) * self.sigma)) * np.maximum(
             0.0,
-            ## (3/(4 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude))*(1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2))
-            1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2)
+            1 - (t / (np.sqrt(5.0) * self.sigma)).simplified.magnitude ** 2)
 
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
     ## def normalization_factor(self, sigma):
     ##     ## return 3.0 / (4.0 * np.sqrt(5.0) * sigma.rescale(pq.s).magnitude)
@@ -651,7 +667,8 @@ class ExponentialKernel(AsymmetricKernel):
         Kernel.__init__(self, sigma, direction)
 
     @staticmethod
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## if direction == 1:
         ##     kernel = np.piecewise(
         ##         t, [t < 0, t >= 0], [
@@ -664,22 +681,36 @@ class ExponentialKernel(AsymmetricKernel):
         ##             lambda t: np.exp(
         ##                 (t / sigma).simplified.magnitude),
         ##             lambda t: 0])
-        if direction == 1:
+        ## if direction == 1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: 0,
+        ##             lambda t: (1.0 / sigma) * np.exp(
+        ##                 (-t / sigma).simplified.magnitude)])
+        ## elif direction == -1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: (1.0 / sigma) * np.exp(
+        ##                 (t / sigma).simplified.magnitude),
+        ##             lambda t: 0])
+        if self.direction == 1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: (1.0 / sigma) * np.exp(
-                        (-t / sigma).simplified.magnitude)])
-        elif direction == -1:
+                    lambda t: (1.0 / self.sigma) * np.exp(
+                        (-t / self.sigma).simplified.magnitude)])
+        elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: (1.0 / sigma) * np.exp(
-                        (t / sigma).simplified.magnitude),
+                    lambda t: (1.0 / self.sigma) * np.exp(
+                        (t / self.sigma).simplified.magnitude),
                     lambda t: 0])
         return kernel
 
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
     ## def normalization_factor(self, sigma):
     ##     return 1.0 / sigma
@@ -712,7 +743,8 @@ class AlphaKernel(AsymmetricKernel):
     ##         t, [t < 0, t >= 0], [
     ##             lambda t: 0,
     ##             lambda t: t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
-    def evaluate(t, sigma, direction):
+    ## def evaluate(t, sigma, direction):
+    def evaluate(t):
         ## if direction == 1:
         ##     kernel = np.piecewise(
         ##         t, [t < 0, t >= 0], [
@@ -723,22 +755,34 @@ class AlphaKernel(AsymmetricKernel):
         ##         t, [t < 0, t >= 0], [
         ##             lambda t: -t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
         ##             lambda t: 0 ])
-        if direction == 1:
+        ## if direction == 1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: 0,
+        ##             lambda t: (2.0 / sigma**2) * t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
+        ## elif direction == -1:
+        ##     kernel = np.piecewise(
+        ##         t, [t < 0, t >= 0], [
+        ##             lambda t: (2.0 / sigma**2) * (-1) * t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
+        ##             lambda t: 0 ])
+        if self.direction == 1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: (2.0 / sigma**2) * t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
-        elif direction == -1:
+                    lambda t: (2.0 / self.sigma**2) * t * np.exp((-t * np.sqrt(2.0) / self.sigma).simplified.magnitude)])
+        elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: (2.0 / sigma**2) * (-1) * t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
+                    lambda t: (2.0 / self.sigma**2) * (-1) * t * np.exp((t * np.sqrt(2.0) / self.sigma).simplified.magnitude),
                     lambda t: 0 ])
         return kernel
 
     ## def _evaluate(self, t, sigma):
     ##     return self.evaluate(t, sigma)
-    def _evaluate(self, t, sigma, direction):
-        return self.evaluate(t, sigma, direction)
+    ## def _evaluate(self, t, sigma, direction):
+    ##     return self.evaluate(t, sigma, direction)
+    def _evaluate(self, t):
+        return self.evaluate(t)
 
 
     ## def normalization_factor(self, sigma):
