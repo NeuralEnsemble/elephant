@@ -9,6 +9,7 @@ docstring goes here.
 from __future__ import division
 import unittest
 import os
+import warnings
 
 import neo
 import numpy as np
@@ -49,7 +50,9 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
             len(spike_train)
         except TypeError: # Handles an error in Neo related to some zero length
                           # spike trains being treated as unsized objects.
-            print("We had a type error...")
+            warnings.warn(("The spike train may be an unsized object. This may be related "
+                            "to an issue in Neo with some zero-length SpikeTrain objects. "
+                            "Bypassing this by creating an empty SpikeTrain object."))
             spike_train = neo.core.SpikeTrain([],t_start=spike_train.t_start,
                                                  t_stop=spike_train.t_stop,
                                                  units=spike_train.units)
