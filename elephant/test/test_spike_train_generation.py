@@ -45,6 +45,14 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         data = iom2.read()
         vm = data[0].segments[0].analogsignals[0]
         spike_train = stgen.threshold_detection(vm)
+        try:
+            len(spike_train)
+        except TypeError: # Handles an error in Neo related to some zero length
+                          # spike trains being treated as unsized objects.
+            print("We had a type error...")
+            spike_train = neo.core.SpikeTrain([],t_start=spike_train.t_start,
+                                                 t_stop=spike_train.t_stop,
+                                                 units=spike_train.units)
 
         # Correct values determined previously.  
         true_spike_train = [0.0123, 0.0354, 0.0712, 0.1191, 
