@@ -59,10 +59,12 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
                             0.1694, 0.22, 0.2711]
         
         # Does threshold_detection gives the correct number of spikes?
-        assert len(spike_train) == len(true_spike_train) 
+        self.assertEqual(len(spike_train),len(true_spike_train))
         # Does threshold_detection gives the correct times for the spikes?    
-        assert np.allclose(spike_train,spike_train) 
-        
+        try:
+            self.assertTrue(np.allclose(spike_train,spike_train))
+        except AttributeError: # If numpy version too old to have allclose
+            self.assertTrue(np.array_equal(spike_train,spike_train))
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
