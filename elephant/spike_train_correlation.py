@@ -10,6 +10,119 @@ This modules provides functions to calculate correlations between spike trains.
 from __future__ import division
 import numpy as np
 
+def crosscorrelogram(binned_st1, binned_st2, win, chance_corrected=False):
+    '''
+    Calculate cross-correlogram for a pair of binned spike train. To
+    caluculate auto-correlogram use the same spike train for both.
+
+    Parameters
+    ----------
+    binned_st1 : elephant.conversion.BinnedSpikeTrain
+        A binned spike train containing the 'post-synaptic' spikes.
+    binned_st2 : elephant.conversion.BinnedSpikeTrain
+        A binned spike train containing the reference ('pre-synaptic') spikes.
+    win : sequence of lenght 2
+        Window in which the correlogram will be correlated (minimum, maximum lag)
+    chance_corrected : bool, default True
+        Whether to correct for chance coincidences.
+
+    Returns
+    -------
+    lags : ndarray
+        Array of time lags. Useful for plotting
+    xcorr : ndarray
+        Array of cross-correlogram values; one per time lag.
+
+    Examples
+    --------
+
+    Generate Poisson spike train
+
+    >>> from quantities import Hz, ms
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> st1 = homogeneous_poisson_process(rate=10.0*Hz, t_stop=10000*ms)
+
+    Generate a second spike train by adding some jitter.
+
+    >>> import numpy as np
+    >>> st2 = st1.copy()
+    >>> st2.times[:] += np.random.randn(len(st1)) * 5 * ms
+
+    Bin spike trains
+    >>> from elephant.conversion import BinnedSpikeTrain
+    >>> st1b = BinnedSpikeTrain(st1, binsize = 1 * ms)
+    >>> st2b = BinnedSpikeTrain(st2, binsize = 1 * ms)
+
+    Calculate auto- and cross-correlogram
+
+    >>> lags, acorr = crosscorrelogram(st1b, st1b, [-100*ms, 100*ms])
+    >>> _, xcorr = crosscorrelogram(st1b, st2b, [-100*ms, 100*ms])
+
+    Plot them
+
+    >>> import matplotlib.pyplot as plt
+    >>> plt.plot(lags, xcorr)
+    >>> plt.plot(lags, acorr)
+
+
+    Notes
+    -----
+
+    *Algorithm*
+
+    The algorithm is implemented as a convolution between binned spike train.
+    We trim the spike trains according to the selected correlogram window.
+    This allows us to avoid edge effects due to undersampling of long
+    inter-spike intervals, but also removes some data from calculation, which
+    may be considerable amount for long windows. This method also improves
+    the performance since we do not have to calculate correlogram for all
+    possible lags, but only the selected ones.
+    
+    *Normalisation*
+
+    By default normalisation is set such that for perfectly synchronised
+    spike train (same spike train passed in binned_st1 and binned_st2) the
+    maximum correlogram (at lag 0) is 1.
+
+    If the chance_coincidences == True than the expected coincidence rate is
+    subracted, such that the  expected correlogram for non-correlated spike
+    train is 0.  '''
+
+    assert binned_st1.matrix_rows == 1, "spike train must be one dimensional"
+    assert binned_st2.matrix_rows == 1, "spike train must be one dimensional"
+    assert binned_st1.binsize == binned_st2.binsize, "bin sizes must be equal"
+
+    st1_arr = binned_st1.to_array()[0,:]
+    st2_arr = binned_st2.to_array()[0,:]
+
+    binsize = binned_st1.binsize
+    
+    def _xcorr(x, y, win, dt):
+
+        l,r = int(win[0]/dt), int(win[1]/dt)
+        n = len(x)
+        # trim trains to have appropriate length of xcorr array
+        if l<0:
+            y = y[-l:]
+        else:
+            x = x[l:]
+        y = y[:-r]
+        mx, my = x.mean(), y.mean()
+        #TODO: possibly use fftconvolve for faster calculation
+        corr = np.convolve(x, y[::-1], 'valid')
+        # correct for chance coincidences
+        #mx = np.convolve(x, np.ones(len(y)), 'valid') / len(y)
+        corr = corr / np.sum(y)
+
+        if chance_corrected:
+            corr = corr - mx
+
+
+        lags = np.r_[l:r+1]
+        return lags * dt, corr
+
+    return _xcorr(st1_arr, st2_arr, win, binsize)
+
 
 def covariance(binned_sts, binary=False):
     '''
