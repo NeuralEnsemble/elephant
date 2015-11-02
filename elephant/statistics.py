@@ -408,7 +408,8 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-def select_kernel(form, sigma, sampling_period, direction=1):
+## def select_kernel(form, sigma, sampling_period, direction=1):
+def select_kernel(form, sigma, direction=1):
     """
     Selects kernel functions for convolution.
 
