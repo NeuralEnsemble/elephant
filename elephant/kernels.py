@@ -221,8 +221,8 @@ class GaussianKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, sigma):
-        return (1.0 / (np.sqrt(2.0 * np.pi) * sigma)) * np.exp(
-            -0.5 * (t / sigma).simplified.magnitude ** 2)
+        return (1.0 / (np.sqrt(2.0 * np.pi) * sigma.rescale(t.units))) * np.exp(
+            -0.5 * (t / sigma.rescale(t.units)).magnitude ** 2)
 
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
@@ -242,10 +242,8 @@ class LaplacianKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, sigma):
-        ## return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
-        ##     -(np.absolute(t) * np.sqrt(2.0) / sigma).simplified)
-        return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
-            -(np.absolute(t) * np.sqrt(2.0) / sigma).simplified.magnitude)
+        return (1 / (np.sqrt(2.0) * sigma.rescale(t.units))) * np.exp(
+            -(np.absolute(t) * np.sqrt(2.0) / sigma.rescale(t.units)).magnitude)
 
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
@@ -328,7 +326,7 @@ class RectangularKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, sigma):
-        return (0.5 / (np.sqrt(3.0) * sigma)) * (np.absolute(t) < np.sqrt(3.0) * sigma)
+        return (0.5 / (np.sqrt(3.0) * sigma.rescale(t.units))) * (np.absolute(t) < np.sqrt(3.0) * sigma.rescale(t.units))
 
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
@@ -348,12 +346,9 @@ class TriangularKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, sigma):
-        ## return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
-        ##     0.0,
-        ##     (1.0 - np.absolute(t.rescale(sigma.units)) / (np.sqrt(6.0) * sigma)).magnitude)
-        return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
+        return (1.0 / (np.sqrt(6.0) * sigma.rescale(t.units))) * np.maximum(
             0.0,
-            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * sigma)).simplified.magnitude))
+            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * sigma.rescale(t.units))).magnitude))
 
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
@@ -378,9 +373,9 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, sigma):
-        return (3.0 / (4.0 * np.sqrt(5.0) * sigma)) * np.maximum(
+        return (3.0 / (4.0 * np.sqrt(5.0) * sigma.rescale(t.units))) * np.maximum(
             0.0,
-            1 - (t / (np.sqrt(5.0) * sigma)).simplified.magnitude ** 2)
+            1 - (t / (np.sqrt(5.0) * sigma.rescale(t.units))).magnitude ** 2)
 
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
@@ -409,13 +404,13 @@ class ExponentialKernel(AsymmetricKernel):
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: (1.0 / sigma) * np.exp(
-                        (-t / sigma).simplified.magnitude)])
+                    lambda t: (1.0 / sigma.rescale(t.units)) * np.exp(
+                        (-t / sigma.rescale(t.units)).magnitude)])
         elif direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: (1.0 / sigma) * np.exp(
-                        (t / sigma).simplified.magnitude),
+                    lambda t: (1.0 / sigma.rescale(t.units)) * np.exp(
+                        (t / sigma.rescale(t.units)).magnitude),
                     lambda t: 0])
         return kernel
 
@@ -442,11 +437,11 @@ class AlphaKernel(AsymmetricKernel):
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: (2.0 / sigma**2) * t * np.exp((-t * np.sqrt(2.0) / sigma).simplified.magnitude)])
+                    lambda t: (2.0 / (sigma.rescale(t.units))**2) * t * np.exp((-t * np.sqrt(2.0) / sigma.rescale(t.units)).magnitude)])
         elif direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: (2.0 / sigma**2) * (-1) * t * np.exp((t * np.sqrt(2.0) / sigma).simplified.magnitude),
+                    lambda t: (2.0 / (sigma.rescale(t.units))**2) * (-1) * t * np.exp((t * np.sqrt(2.0) / sigma.rescale(t.units)).magnitude),
                     lambda t: 0 ])
         return kernel
 
