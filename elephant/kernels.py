@@ -38,6 +38,10 @@ class Kernel(object):
         ## if sigma is None:
         ##     sigma = self.sigma
 
+        if  t.dimensionality.simplified != self.sigma.dimensionality.simplified:
+            raise TypeError("The dimensionality of sigma and the input array to the callable kernel object "
+                        "must be the same. Otherwise a normalization to 1 of the kernel cannot be performed.")
+
         return self._evaluate(t)
 
     def _evaluate(self, t):
@@ -62,14 +66,13 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
-    ## TODO:
     def m_idx(self, t):
         """
         Calculates the index of the Median of the kernel.
+
+        Remark: The following formula using retrieval of the sampling period from t only works for t with equidistant time intervals!
         """
-        ## in make_kernel:
-        ## m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
-        return np.nonzero(self(t).cumsum() >= 0.5)[0].min()
+        return np.nonzero(self(t).cumsum() * (t[len(t)-1] -t[0])/(len(t)-1) >= 0.5)[0].min()
 
 
     def is_symmetric(self):
