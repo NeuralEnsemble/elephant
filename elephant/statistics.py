@@ -408,7 +408,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-## def select_kernel(form, sigma, sampling_period, direction=1):
 def select_kernel(form, sigma, direction=1):
     """
     Selects kernel functions for convolution.
@@ -422,10 +421,10 @@ def select_kernel(form, sigma, direction=1):
 
     Parameters
     ----------
-    form : {'BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP', 'LAP'}
+    form : {'BOX', 'TRI', 'GAU', 'EPA', 'LAP', 'EXP', 'ALP'}
         Kernel form. Currently implemented forms are BOX (boxcar),
-        TRI (triangle), GAU (gaussian), EPA (epanechnikov), EXP (exponential),
-        ALP (alpha function), 'LAP' (laplacian). EXP and ALP are asymmetric kernel
+        TRI (triangle), GAU (gaussian), EPA (epanechnikov), 'LAP'(laplacian),
+        EXP (exponential), ALP (alpha function). EXP and ALP are asymmetric kernel
         forms and assume optional parameter `direction`.
     sigma : Quantity
         Standard deviation of the distribution associated with kernel shape.
@@ -433,64 +432,31 @@ def select_kernel(form, sigma, direction=1):
         and makes different kernels comparable (cf. [1] for symmetric kernels).
         This is used here as an alternative definition to the cut-off
         frequency of the associated linear filter.
-    sampling_period : float
-        Temporal resolution of input and output.
-    direction : {-1, 1}
-        Asymmetric kernels have two possible directions.
-        The values are -1 or 1, default is 1. The
-        definition here is that for direction = 1 the
+    direction : {-1, 1} (optional)
+        Asymmetric kernels have two possible orientations.
+        The values are -1 or 1, default value is 1.
+        The definition here is that for direction = 1 the
         kernel represents the impulse response function
-        of the linear filter. Default value is 1.
-    normalize : bool
-        Decides if the kernel should be normalized or not.
+        of the linear filter.
 
     Returns
     -------
-    kernel : numpy.ndarray
+    ## TODO:
+    kernel : callable object
+        ## TODO:
         Array of kernel. The length of this array is always an odd
         number to represent symmetric kernels such that the center bin
         coincides with the median of the numeric array, i.e for a
         triangle, the maximum will be at the center bin with equal
         number of bins to the right and to the left.
-    norm : float
-        For rate estimates. The kernel vector is normalized such that
-        the sum of all entries equals unity sum(kernel)=1. When
-        estimating rate functions from discrete spike data (0/1) the
-        additional parameter `norm` allows for the normalization to
-        rate in spikes per second.
-
-        For example:
-        ``rate = norm * scipy.signal.lfilter(kernel, 1, spike_data)``
-    m_idx : int
-        Index of the numerically determined median (center of gravity)
-        of the kernel function.
 
     Examples
     --------
-    To obtain single trial rate function of trial one should use::
-
-        r = norm * scipy.signal.fftconvolve(sua, kernel)
-
-    To obtain trial-averaged spike train one should use::
-
-        r_avg = norm * scipy.signal.fftconvolve(sua, np.mean(X,1))
-
-    where `X` is an array of shape `(l,n)`, `n` is the number of trials and
-    `l` is the length of each trial.
+        ## TODO
 
     See also
     --------
     elephant.statistics.instantaneous_rate
-
-    References
-    ----------
-
-    .. [1] Meier R, Egert U, Aertsen A, Nawrot MP, "FIND - a unified framework
-       for neural data analysis"; Neural Netw. 2008 Oct; 21(8):1085-93.
-
-    .. [2] Nawrot M, Aertsen A, Rotter S, "Single-trial estimation of neuronal
-       firing rates - from single neuron spike trains to population activity";
-       J. Neurosci Meth 94: 81-92; 1999.
 
     """
     forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP', 'LAP'])
@@ -503,12 +469,6 @@ def select_kernel(form, sigma, direction=1):
     "form must be one of either 'BOX','TRI','GAU','EPA','EXP', 'ALP' or 'LAP'!"
 
     assert direction in (1, -1), "direction must be either 1 or -1"
-
-    # conversion to SI units (s)
-    ## SI_sigma = sigma.rescale('s').magnitude
-    ## SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
-
-    ## norm = 1./SI_time_stamp_resolution
 
     if form.upper() == 'BOX':
         kernel = kernels.RectangularKernel(sigma)
@@ -531,14 +491,10 @@ def select_kernel(form, sigma, direction=1):
     elif form.upper() == 'EXP':
         kernel = kernels.ExponentialKernel(sigma, direction)
 
-    ## kernel = kernel.ravel()
-    ## m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
-
-    ## return kernel, norm, m_idx
-    ## return kernel, m_idx
     return kernel
 
-def instantaneous_rate(spiketrain, sampling_period, form,
+
+def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
                        acausal=True, trim=False):
 
@@ -672,6 +628,147 @@ def instantaneous_rate(spiketrain, sampling_period, form,
             r = r[2 * m_idx:-2*(kernel.size - m_idx)]
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
+
+    rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
+                                 sampling_period=sampling_period,
+                                 units=pq.Hz, t_start=t_start)
+
+    return rate
+
+
+## def instantaneous_rate(spiketrain, sampling_period, form,
+##                        sigma='auto', t_start=None, t_stop=None,
+##                        acausal=True, trim=False):
+def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto',
+                       direction=1, t_start=None, t_stop=None, trim=False):
+
+    """
+    Estimate instantaneous firing rate by kernel convolution.
+
+    Parameters
+    -----------
+    spiketrain : 'neo.SpikeTrain'
+        Neo object that contains spike times, the unit of the time stamps
+        and t_start and t_stop of the spike train.
+    sampling_period : Quantity
+        time stamp resolution of the spike times. the same resolution will
+        be assumed for the kernel
+    form : {'BOX', 'TRI', 'GAU', 'EPA', 'LAP', 'EXP', 'ALP'}
+        Kernel form. Currently implemented forms are BOX (boxcar),
+        TRI (triangle), GAU (gaussian), EPA (epanechnikov), LAP (Laplacian),
+        EXP (exponential), ALP (alpha function).
+    sigma : string or Quantity
+        Standard deviation of the distribution associated with kernel shape.
+        This parameter defines the time resolution of the kernel estimate
+        and makes different kernels comparable (cf. [1] for symmetric kernels).
+        This is used here as an alternative definition to the cut-off
+        frequency of the associated linear filter.
+        Default value is 'auto'. In this case, the optimized kernel width for
+        the rate estimation is calculated according to [1].
+    direction : {-1, 1} (optional)
+        Kernel forms EXP and ALP are asymmetric. The parameter `direction`
+        determines their orientation.
+        Default: 1
+    t_start : Quantity (optional)
+        Start time of the interval used to compute the firing rate. If None
+        assumed equal to spiketrain.t_start
+        Default: None
+    t_stop : Quantity (optional)
+        End time of the interval used to compute the firing rate (included).
+        If None assumed equal to spiketrain.t_stop
+        Default: None
+    trim : bool
+        if True, only the 'valid' region of the convolved
+        signal are returned, i.e., the points where there
+        isn't complete overlap between kernel and spike train
+        are discarded
+        ## TODO:
+        NOTE: if True and an asymmetrical kernel is provided
+        the output will not be aligned with [t_start, t_stop]
+    ## TODO:
+    m_idx : int
+        index of the value in the kernel function vector that corresponds
+        to its gravity center. this parameter is not mandatory for
+        symmetrical kernels but it is required when asymmetrical kernels
+        are to be aligned at their gravity center with the event times if None
+        is assumed to be the median value of the kernel support
+        Default : None
+
+    Returns
+    -------
+    rate : neo.AnalogSignalArray
+        Contains the rate estimation in unit hertz (Hz).
+        Has a property 'rate.times' which contains the time axis of the rate
+        estimate. The unit of this property is the same as the resolution that
+        is given via the argument 'sampling_period' to the function.
+
+    Raises
+    ------
+    TypeError:
+        If argument value for the parameter `sigma` is not a quantity object
+        or string 'auto'.
+
+    See also
+    --------
+    elephant.statistics.make_kernel
+
+    References
+    ----------
+    ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
+    """
+    if sigma == 'auto':
+        unit = spiketrain.units
+        kernel_width = sskernel(spiketrain.magnitude, tin=None,
+                                bootstrap=True)['optw']
+        sigma = kernel_width*unit
+    elif not isinstance(sigma, pq.Quantity):
+        raise TypeError('sigma must be either a quantities object or "auto".'
+                        ' Found: %s, value %s' %(type(sigma), str(sigma)))
+
+    ## kernel = select_kernel(form=form, sigma=sigma, direction = 1)
+    kernel = select_kernel(form, sigma, direction)
+
+    units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
+    spiketrain = spiketrain.rescale(units)
+    if t_start is None:
+        t_start = spiketrain.t_start
+    else:
+        t_start = t_start.rescale(spiketrain.units)
+
+    if t_stop is None:
+        t_stop = spiketrain.t_stop
+    else:
+        t_stop = t_stop.rescale(spiketrain.units)
+
+    time_vector = np.zeros(int((t_stop - t_start)) + 1)
+
+    spikes_slice = spiketrain.time_slice(t_start, t_stop) \
+        if len(spiketrain) else np.array([])
+
+    for spike in spikes_slice:
+        index = int((spike - t_start))
+        time_vector[index] += 1
+
+    ## TODO:
+    const = 5.0
+    t_arr = np.arange(-const * sigma.magnitude, const * sigma.magnitude + sampling_period.rescale(sigma.units).magnitude , sampling_period.rescale(sigma.units).magnitude) * sigma.units
+
+    ## r = norm * scipy.signal.fftconvolve(time_vector, kernel, 'full')
+    ## TODO: Is correct, when now kernel already normalized in class file, to just leave out factor 'norm' here?
+    r = scipy.signal.fftconvolve(time_vector, kernel(t_arr), 'full')
+    if np.any(r < 0):
+        warnings.warn('Instantaneous firing rate approximation contains '
+                      'negative values, possibly caused due to machine '
+                      'precision errors')
+
+    if not trim:
+        r = r[kernel.m_idx(t_arr):-(kernel(t_arr).size - kernel.m_idx(t_arr))]
+
+    elif trim:
+        r = r[2 * kernel.m_idx(t_arr):-2*(kernel(t_arr).size - kernel.m_idx(t_arr))]
+        t_start = t_start + kernel.m_idx(t_arr) * spiketrain.units
+        t_stop = t_stop - ((kernel(t_arr).size) - kernel.m_idx(t_arr)) * spiketrain.units
+
 
     rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
                                  sampling_period=sampling_period,
