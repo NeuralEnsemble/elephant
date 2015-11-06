@@ -218,6 +218,8 @@ class GaussianKernel(SymmetricKernel):
     """ :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
     with :math:`\sigma` being the standard deviation.
     """
+    min_stddevmultfactor = 2.7
+    ## min_stddevmultfactor = 3.0
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -239,6 +241,7 @@ class LaplacianKernel(SymmetricKernel):
     """ :math:`K(t) = \frac{1}{2 \tau} \exp(-|\frac{t}{\tau}|)`
     with :math:`\tau = \sigma / \sqrt{2}`.
     """
+    min_stddevmultfactor = 3.0
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -323,6 +326,7 @@ class RectangularKernel(SymmetricKernel):
     0, & |t| \geq \tau \end{array} \right`
     with :math:`\tau = \sqrt{3} \sigma` corresponding to the half width of the kernel.
     """
+    min_stddevmultfactor = np.sqrt(3.0)
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -343,6 +347,7 @@ class TriangularKernel(SymmetricKernel):
     - \frac{|t|}{\tau}), & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
     with :math:`\tau = \sqrt{6} \sigma` corresponding to the half width of the kernel.
     """
+    min_stddevmultfactor = np.sqrt(6.0)
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -370,6 +375,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     ( https://de.wikipedia.org/wiki/Epanechnikov-Kern )
     However, arbitrary width of this type of kernel is here preferred to be called 'Epanechnikov-like' kernel.
     """
+    min_stddevmultfactor = np.sqrt(5.0)
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -397,6 +403,7 @@ class ExponentialKernel(AsymmetricKernel):
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma`.
     """
+    min_stddevmultfactor = 3.0
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -430,6 +437,7 @@ class AlphaKernel(AsymmetricKernel):
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.
     """
+    min_stddevmultfactor = 3.0
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -454,131 +462,3 @@ class AlphaKernel(AsymmetricKernel):
     ## TODO:
     def boundary_enclosing_at_least(self, fraction):
         return -self.sigma * np.log(1.0 - fraction)
-
-
-def discretize_kernel(
-        kernel, sampling_rate, area_fraction=default_kernel_area_fraction,
-        num_bins=None, ensure_unit_area=False):
-    """ Discretizes a kernel.
-
-    :param kernel: The kernel or kernel function. If a kernel function is used
-        it should take exactly one 1-D array as argument.
-    :type kernel: :class:`Kernel` or function
-    :param sampling_rate: Sampling rate for the discretization. The unit will
-        typically be a frequency unit.
-    :type sampling_rate: Quantity scalar
-    :param float area_fraction: Fraction between 0 and 1 (exclusive)
-        of the integral of the kernel which will be at least covered by the
-        discretization. Will be ignored if `num_bins` is not `None`. If
-        `area_fraction` is used, the kernel has to provide a method
-        :meth:`boundary_enclosing_at_least` (see
-        :meth:`.Kernel.boundary_enclosing_at_least`).
-    :param int num_bins: Number of bins to use for the discretization.
-    :param bool ensure_unit_area: If `True`, the area of the discretized
-        kernel will be normalized to 1.0.
-    :rtype: Quantity 1D
-    """
-
-    t_step = 1.0 / sampling_rate
-
-    if num_bins is not None:
-        start = -num_bins // 2
-        stop = num_bins // 2
-    elif area_fraction is not None:
-        boundary = kernel.boundary_enclosing_at_least(area_fraction)
-        if hasattr(boundary, 'rescale'):
-            boundary = boundary.rescale(t_step.units)
-        start = np.ceil(-boundary / t_step)
-        stop = np.floor(boundary / t_step) + 1
-    else:
-        raise ValueError(
-            "One of area_fraction and num_bins must not be None.")
-
-    k = kernel(np.arange(start, stop) * t_step)
-    if ensure_unit_area:
-        k /= np.sum(k) * t_step
-    return k
-
-
-def smooth(
-        binned, kernel, sampling_rate, mode='same',
-        **kernel_discretization_params):
-    """ Smoothes a binned representation (e.g. of a spike train) by convolving
-    with a kernel.
-
-    :param binned: Bin array to smooth.
-    :type binned: 1-D array
-    :param kernel: The kernel instance to convolve with.
-    :type kernel: :class:`Kernel`
-    :param sampling_rate: The sampling rate which will be used to discretize the
-        kernel. It should be equal to the sampling rate used to obtain `binned`.
-        The unit will typically be a frequency unit.
-    :type sampling_rate: Quantity scalar
-    :param mode:
-        * 'same': The default which returns an array of the same size as
-          `binned`
-        * 'full': Returns an array with a bin for each shift where `binned` and
-          the discretized kernel overlap by at least one bin.
-        * 'valid': Returns only the discretization bins where the discretized
-          kernel and `binned` completely overlap.
-
-        See also `numpy.convolve
-        <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
-    :type mode: {'same', 'full', 'valid'}
-    :param dict kernel_discretization_params: Additional discretization
-        arguments which will be passed to :func:`.discretize_kernel`.
-    :returns: The smoothed representation of `binned`.
-    :rtype: Quantity 1D
-    """
-    k = discretize_kernel(
-        kernel, sampling_rate=sampling_rate, **kernel_discretization_params)
-    return scipy.signal.convolve(binned, k, mode) * k.units
-
-
-def st_convolve(
-        train, kernel, sampling_rate, mode='same', binning_params={},
-        kernel_discretization_params={}):
-    """ Convolves a :class:`neo.core.SpikeTrain` with a kernel.
-
-    :param train: Spike train to convolve.
-    :type train: :class:`neo.core.SpikeTrain`
-    :param kernel: The kernel instance to convolve with.
-    :type kernel: :class:`Kernel`
-    :param sampling_rate: The sampling rate which will be used to bin
-        the spike train. The unit will typically be a frequency unit.
-    :type sampling_rate: Quantity scalar
-    :param mode:
-        * 'same': The default which returns an array covering the whole
-          duration of the spike train `train`.
-        * 'full': Returns an array with additional discretization bins in the
-          beginning and end so that for each spike the whole discretized
-          kernel is included.
-        * 'valid': Returns only the discretization bins where the discretized
-          kernel and spike train completely overlap.
-
-        See also :func:`scipy.signal.convolve`.
-    :type mode: {'same', 'full', 'valid'}
-    :param dict binning_params: Additional discretization arguments which will
-        be passed to :func:`.tools.bin_spike_trains`.
-    :param dict kernel_discretization_params: Additional discretization
-        arguments which will be passed to :func:`.discretize_kernel`.
-    :returns: The convolved spike train, the boundaries of the discretization
-        bins
-    :rtype: (Quantity 1D, Quantity 1D with the inverse units of `sampling_rate`)
-    """
-
-    binned, bins = tools.bin_spike_trains(
-        {0: [train]}, sampling_rate, **binning_params)
-    binned = binned[0][0]
-    #sampling_rate = binned.size / (bins[-1] - bins[0])
-    result = smooth(
-        binned, kernel, sampling_rate, mode, **kernel_discretization_params)
-
-    assert (result.size - binned.size) % 2 == 0
-    num_additional_bins = (result.size - binned.size) // 2
-    bins = np.linspace(
-        bins[0] - num_additional_bins / sampling_rate,
-        bins[-1] + num_additional_bins / sampling_rate,
-        result.size + 1)
-
-    return result, bins
