@@ -246,9 +246,29 @@ def lv(v):
     return 3.*np.mean(np.power(np.diff(v)/(v[:-1] + v[1:]), 2))
 
 
+## sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
+def sigma2kw(form):
+    if form.upper() == 'BOX':
+        coeff = 2.0 * np.sqrt(3)
+    elif form.upper() == 'TRI':
+        coeff = 2.0 * np.sqrt(6)
+    elif form.upper() == 'EPA':
+        coeff = 2.0 * np.sqrt(5)
+    elif form.upper() == 'GAU':
+        coeff = 2.0 * 2.7  # > 99% of distribution weight
+    elif form.upper() == 'ALP':
+        coeff = 5.0
+    elif form.upper() == 'EXP':
+        coeff = 5.0
+
+    return coeff
+
+
+def kw2sigma(form):
+    return 1/sigma2kw(form)
+
+
 ## to finally be taken out of Elephant
-#adaptation to output neo.AnalogSignal and wrapper make_kernel() in
-#instantaneous_rate()
 def make_kernel(form, sigma, sampling_period, direction=1):
     """
     Creates kernel functions for convolution.
@@ -343,6 +363,9 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     assert direction in (1, -1), "direction must be either 1 or -1"
 
     # conversion to SI units (s)
+    if sigma < 0:
+        raise ValueError('sigma must be positive!')
+
     SI_sigma = sigma.rescale('s').magnitude
     SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
 
@@ -377,7 +400,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
         g = np.exp(
             -(base**2) / 2.0 / SI_sigma**2) / SI_sigma / np.sqrt(2.0 * np.pi)
-        kernel = g / g.sum()
+        kernel = g / g.sum()  # area = 1
 
     elif form.upper() == 'ALP':
         w = 5.0 * SI_sigma
@@ -470,6 +493,9 @@ def select_kernel(form, sigma, direction=1):
 
     assert direction in (1, -1), "direction must be either 1 or -1"
 
+    if sigma.magnitude < 0:
+        raise ValueError('sigma must be positive!')
+
     if form.upper() == 'BOX':
         kernel = kernels.RectangularKernel(sigma)
 
@@ -494,6 +520,7 @@ def select_kernel(form, sigma, direction=1):
     return kernel
 
 
+## to finally be taken out of Elephant
 def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
                        acausal=True, trim=False):
@@ -521,7 +548,9 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
         This is used here as an alternative definition to the cut-off
         frequency of the associated linear filter.
         Default value is 'auto'. In this case, the optimized kernel width for
-        the rate estimation is calculated according to [1].
+        the rate estimation is calculated according to [1]. Note that the
+        automatized calculation of the kernel width ONLY works for gaussian
+        kernel shapes!
     t_start : Quantity (Optional)
         start time of the interval used to compute the firing rate, if None
         assumed equal to spiketrain.t_start
@@ -572,18 +601,17 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
     """
     if sigma == 'auto':
+        form = 'GAU'
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        sigma = kernel_width*unit
+        sigma = kw2sigma(form) * kernel_width*unit
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
                         ' Found: %s, value %s' %(type(sigma), str(sigma)))
 
-    ## TODO:
-    kernel, norm, m_idx = select_kernel(form=form, sigma=sigma,
+    kernel, norm, m_idx = make_kernel(form=form, sigma=sigma,
                                       sampling_period=sampling_period)
-
     units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
@@ -633,14 +661,11 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                                  sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
-    return rate
+    return rate, sigma
 
 
-## def instantaneous_rate(spiketrain, sampling_period, form,
-##                        sigma='auto', t_start=None, t_stop=None,
-##                        acausal=True, trim=False):
-def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto',
-                       direction=1, t_start=None, t_stop=None, trim=False):
+def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', direction=1,
+                       stddevmultfactor=5.0, t_start=None, t_stop=None, trim=False):
 
     """
     Estimate instantaneous firing rate by kernel convolution.
@@ -664,11 +689,16 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto',
         This is used here as an alternative definition to the cut-off
         frequency of the associated linear filter.
         Default value is 'auto'. In this case, the optimized kernel width for
-        the rate estimation is calculated according to [1].
+        the rate estimation is calculated according to [1]. Note that the
+        automatized calculation of the kernel width ONLY works for gaussian
+        kernel shapes!
     direction : {-1, 1} (optional)
         Kernel forms EXP and ALP are asymmetric. The parameter `direction`
         determines their orientation.
         Default: 1
+    stddevmultfactor : float
+        This factor determines the cutoff of the probability distribution of
+        the kernel, i.e. the considered width of the kernel in terms of sigma.
     t_start : Quantity (optional)
         Start time of the interval used to compute the firing rate. If None
         assumed equal to spiketrain.t_start
@@ -716,18 +746,21 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto',
     ----------
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
     """
+
     if sigma == 'auto':
+        form = 'GAU'
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        sigma = kernel_width*unit
+        ## sigma = kw2sigma(form) * kernel_width * unit
+        ## TODO:
+        sigma = 1/(2.0 * 2.7) * kernel_width * unit
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
                         ' Found: %s, value %s' %(type(sigma), str(sigma)))
 
     ## kernel = select_kernel(form=form, sigma=sigma, direction = 1)
     kernel = select_kernel(form, sigma, direction)
-
     units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
@@ -749,9 +782,13 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto',
         index = int((spike - t_start))
         time_vector[index] += 1
 
-    ## TODO:
-    const = 5.0
-    t_arr = np.arange(-const * sigma.magnitude, const * sigma.magnitude + sampling_period.rescale(sigma.units).magnitude , sampling_period.rescale(sigma.units).magnitude) * sigma.units
+    if stddevmultfactor < kernel.min_stddevmultfactor:
+        stddevmultfactor = kernel.min_stddevmultfactor
+    ## TODO: Message to the user in case of overwriting?
+
+    t_arr = np.arange(-stddevmultfactor * sigma.magnitude,
+                      stddevmultfactor * sigma.magnitude + sampling_period.rescale(sigma.units).magnitude,
+                      sampling_period.rescale(sigma.units).magnitude) * sigma.units
 
     ## r = norm * scipy.signal.fftconvolve(time_vector, kernel, 'full')
     ## TODO: Is correct, when now kernel already normalized in class file, to just leave out factor 'norm' here?
@@ -774,7 +811,8 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto',
                                  sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
-    return rate
+    ## return rate
+    return rate, sigma
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
