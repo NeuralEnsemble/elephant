@@ -175,45 +175,6 @@ class SymmetricKernel(Kernel):
                     (vectors[i] - np.atleast_2d(vectors[j]).T).flatten()))
         return D
 
-
-## TODO:
-## The following started from a copy of class SymmetricKernel; to be adjusted
-## In an ideal case here to be realized the kernel direction flip
-class AsymmetricKernel(Kernel):
-    """ Base class for asymmetric kernels. """
-
-    def __init__(self, sigma, direction):
-        """
-        :param sigma: Standard deviation of the kernel.
-        :type sigma: Quantity scalar
-        """
-        Kernel.__init__(self, sigma, direction)
-
-    ## TODO: Necessary?
-    def is_symmetric(self):
-        return False
-
-    ## TODO:
-    ## def _evaluate(self, t):
-    ##    if self.direction == -1:
-    ##        \tilde(f)(t)=f(-t)
-
-    ## TODO:
-    ## Does summed_dist_matrix make sense in context of asymmetric kernels?
-    def summed_dist_matrix(self, vectors, presorted=False):
-        D = np.empty((len(vectors), len(vectors)))
-        if len(vectors) > 0:
-            might_have_units = self(vectors[0])
-            if hasattr(might_have_units, 'units'):
-                D = D * might_have_units.units
-
-        for i in xrange(len(vectors)):
-            for j in xrange(i, len(vectors)):
-                D[i, j] = D[j, i] = np.sum(self(
-                    (vectors[i] - np.atleast_2d(vectors[j]).T).flatten()))
-        return D
-
-
 class GaussianKernel(SymmetricKernel):
     """ :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
     with :math:`\sigma` being the standard deviation.
@@ -397,8 +358,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 ## Quartic (biweight), Triweight, Tricube, Cosine, Logistics, Silverman
 
 
-## class ExponentialKernel(Kernel):
-class ExponentialKernel(AsymmetricKernel):
+class ExponentialKernel(Kernel):
+## class ExponentialKernel(AsymmetricKernel):
     """ :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau}, & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma`.
@@ -431,8 +392,8 @@ class ExponentialKernel(AsymmetricKernel):
         return -self.sigma * np.log(1.0 - fraction)
 
 
-## class AlphaKernel(Kernel):
-class AlphaKernel(AsymmetricKernel):
+class AlphaKernel(Kernel):
+## class AlphaKernel(AsymmetricKernel):
     """ :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau}, & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.

@@ -784,15 +784,13 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
 
     if stddevmultfactor < kernel.min_stddevmultfactor:
         stddevmultfactor = kernel.min_stddevmultfactor
-    ## TODO: Message to the user in case of overwriting?
+        warnings.warn('The width of the kernel was adjusted to a minimally allowed width.')
 
-    t_arr = np.arange(-stddevmultfactor * sigma.magnitude,
-                      stddevmultfactor * sigma.magnitude + sampling_period.rescale(sigma.units).magnitude,
-                      sampling_period.rescale(sigma.units).magnitude) * sigma.units
+    t_arr = np.arange(-stddevmultfactor * sigma.rescale(units).magnitude,
+                      stddevmultfactor * sigma.rescale(units).magnitude + sampling_period.rescale(units).magnitude,
+                      sampling_period.rescale(units).magnitude) * units
 
-    ## r = norm * scipy.signal.fftconvolve(time_vector, kernel, 'full')
-    ## TODO: Is correct, when now kernel already normalized in class file, to just leave out factor 'norm' here?
-    r = scipy.signal.fftconvolve(time_vector, kernel(t_arr), 'full')
+    r = scipy.signal.fftconvolve(time_vector, kernel(t_arr).rescale(pq.Hz).magnitude, 'full')
     if np.any(r < 0):
         warnings.warn('Instantaneous firing rate approximation contains '
                       'negative values, possibly caused due to machine '
@@ -800,7 +798,6 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
 
     if not trim:
         r = r[kernel.m_idx(t_arr):-(kernel(t_arr).size - kernel.m_idx(t_arr))]
-
     elif trim:
         r = r[2 * kernel.m_idx(t_arr):-2*(kernel(t_arr).size - kernel.m_idx(t_arr))]
         t_start = t_start + kernel.m_idx(t_arr) * spiketrain.units
