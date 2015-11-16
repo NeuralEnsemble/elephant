@@ -247,6 +247,7 @@ def lv(v):
 
 
 ## sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
+## to finally be taken out of Elephant
 def sigma2kw(form):
     if form.upper() == 'BOX':
         coeff = 2.0 * np.sqrt(3)
@@ -752,14 +753,13 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        ## sigma = kw2sigma(form) * kernel_width * unit
-        ## TODO:
+        # factor 2.0 connects kernel_width with half_width,
+        # factor 2.7 connects width of Gaussian distribution with 99% probability mass with standard deviation sigma.
         sigma = 1/(2.0 * 2.7) * kernel_width * unit
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
                         ' Found: %s, value %s' %(type(sigma), str(sigma)))
 
-    ## kernel = select_kernel(form=form, sigma=sigma, direction = 1)
     kernel = select_kernel(form, sigma, direction)
     units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)

@@ -54,7 +54,7 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
-    def boundary_enclosing_at_least(self, fraction):
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         """ Calculates the boundary :math:`b` so that the integral from
         :math:`-b` to :math:`b` encloses at least a certain fraction of the
         integral over the complete kernel.
@@ -70,7 +70,11 @@ class Kernel(object):
         """
         Calculates the index of the Median of the kernel.
 
-        Remark: The following formula using retrieval of the sampling period from t only works for t with equidistant time intervals!
+        Remarks:
+        The following formula using retrieval of the sampling period from t
+        only works for t with equidistant time intervals!
+        The formula calculates the Median slightly wrong by the potentially ignored probability in the
+        distribution corresponding to lower values than the minimum in the array t.
         """
         return np.nonzero(self(t).cumsum() * (t[len(t)-1] -t[0])/(len(t)-1) >= 0.5)[0].min()
 
@@ -175,12 +179,13 @@ class SymmetricKernel(Kernel):
                     (vectors[i] - np.atleast_2d(vectors[j]).T).flatten()))
         return D
 
+
 class GaussianKernel(SymmetricKernel):
     """ :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
     with :math:`\sigma` being the standard deviation.
     """
-    min_stddevmultfactor = 2.7
-    ## min_stddevmultfactor = 3.0
+    ## min_stddevmultfactor = 2.7
+    min_stddevmultfactor = 3.0
 
     def __init__(self, sigma=1.0 * pq.s, direction=1):
         Kernel.__init__(self, sigma, direction)
@@ -193,9 +198,10 @@ class GaussianKernel(SymmetricKernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
 
-    def boundary_enclosing_at_least(self, fraction):
-        return self.sigma * np.sqrt(2.0) * \
-            scipy.special.erfinv(fraction + scipy.special.erf(0.0))
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+        ## return self.sigma * np.sqrt(2.0) * \
+        ##     scipy.special.erfinv(fraction + scipy.special.erf(0.0))
+        return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
 
 
 class LaplacianKernel(SymmetricKernel):
@@ -215,9 +221,7 @@ class LaplacianKernel(SymmetricKernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
 
-    def boundary_enclosing_at_least(self, fraction):
-        ## return -self.kernel_size * np.log(1.0 - fraction)
-        ## TODO:
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
 
     def summed_dist_matrix(self, vectors, presorted=False):
@@ -299,7 +303,7 @@ class RectangularKernel(SymmetricKernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
 
-    def boundary_enclosing_at_least(self, fraction):
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(3.0) * self.sigma
 
 
@@ -322,7 +326,7 @@ class TriangularKernel(SymmetricKernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
 
-    def boundary_enclosing_at_least(self, fraction):
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(6.0) * self.sigma
 
 
@@ -350,7 +354,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma)
 
-    def boundary_enclosing_at_least(self, fraction):
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(5.0) * self.sigma
 
 
@@ -388,7 +392,7 @@ class ExponentialKernel(Kernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma, self.direction)
 
-    def boundary_enclosing_at_least(self, fraction):
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return -self.sigma * np.log(1.0 - fraction)
 
 
@@ -420,6 +424,5 @@ class AlphaKernel(Kernel):
     def _evaluate(self, t):
         return self.evaluate(t, self.sigma, self.direction)
 
-    ## TODO:
-    def boundary_enclosing_at_least(self, fraction):
-        return -self.sigma * np.log(1.0 - fraction)
+    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+        return - self.sigma * (1 + scipy.special.lambertw((fraction - 1.0) / np.exp(1.0))) / np.sqrt(2.0)
