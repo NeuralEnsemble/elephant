@@ -465,7 +465,7 @@ def select_kernel(form, sigma, direction=1):
 
     Returns
     -------
-    kernel : callable object of the Kernel class from module 'kernel.py'
+    kernel : Callable object of :class:`Kernel` from module 'kernels.py'
 
     See also
     --------
@@ -486,11 +486,11 @@ def select_kernel(form, sigma, direction=1):
     if form.upper() not in ('REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'):
         raise ValueError("form must be one of either 'REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP' or 'ALP'!")
 
+    if sigma.magnitude < 0:
+        raise ValueError("sigma must be positive!")
+
     if direction not in (1, -1):
         raise ValueError("direction must be either 1 or -1")
-
-    if sigma.magnitude < 0:
-        raise ValueError('sigma must be positive!')
 
     if form.upper() == 'REC':
         kernel = kernels.RectangularKernel(sigma)
