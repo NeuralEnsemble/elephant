@@ -83,43 +83,6 @@ class Kernel(object):
         return False
 
 
-class KernelFromFunction(Kernel):
-    """ Creates a kernel from a function. Please note, that not all methods for
-    such a kernel are implemented.
-    """
-
-    def __init__(self, kernel_func, sigma):
-        Kernel.__init__(self, sigma)
-        self._evaluate = kernel_func
-
-    def is_symmetric(self):
-        return False
-
-
-def as_kernel_of_size(obj, sigma):
-    """ Returns a kernel of desired size.
-
-    :param obj: Either an existing kernel or a kernel function. A kernel
-        function takes two arguments. First a `Quantity 1D` of evaluation time
-        points and second a kernel size.
-    :type obj: Kernel or func
-    :param sigma: Desired standard deviation of the kernel.
-    :type sigma: Quantity scalar
-    :returns: A :class:`Kernel` with the desired kernel size. If `obj` is
-        already a :class:`Kernel` instance, a shallow copy of this instance with
-        changed kernel size will be returned. If `obj` is a function it will be
-        wrapped in a :class:`Kernel` instance.
-    :rtype: :class:`Kernel`
-    """
-
-    if isinstance(obj, Kernel):
-        obj = copy.copy(obj)
-        obj.sigma = sigma
-    else:
-        obj = KernelFromFunction(obj, sigma)
-    return obj
-
-
 class SymmetricKernel(Kernel):
     """ Base class for symmetric kernels. """
 
