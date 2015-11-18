@@ -445,9 +445,9 @@ def select_kernel(form, sigma, direction=1):
 
     Parameters
     ----------
-    form : {'BOX', 'TRI', 'GAU', 'EPA', 'LAP', 'EXP', 'ALP'}
-        Kernel form. Currently implemented forms are BOX (boxcar),
-        TRI (triangle), GAU (gaussian), EPA (epanechnikov), 'LAP'(laplacian),
+    form : {'REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'}
+        Kernel form. Currently implemented forms are REC (rectangular),
+        TRI (triangular), EPA (epanechnikovlike), GAU (gaussian), 'LAP'(laplacian),
         EXP (exponential), ALP (alpha function). EXP and ALP are asymmetric kernel
         forms and assume optional parameter `direction`.
     sigma : Quantity
@@ -465,39 +465,34 @@ def select_kernel(form, sigma, direction=1):
 
     Returns
     -------
-    ## TODO:
-    kernel : callable object
-        ## TODO:
-        Array of kernel. The length of this array is always an odd
-        number to represent symmetric kernels such that the center bin
-        coincides with the median of the numeric array, i.e for a
-        triangle, the maximum will be at the center bin with equal
-        number of bins to the right and to the left.
-
-    Examples
-    --------
-        ## TODO
+    kernel : callable object of the Kernel class from module 'kernel.py'
 
     See also
     --------
     elephant.statistics.instantaneous_rate
 
+    Reference
+    ----------
+    .. [1] Meier R, Egert U, Aertsen A, Nawrot MP, "FIND - a unified framework
+       for neural data analysis"; Neural Netw. 2008 Oct; 21(8):1085-93.
+
     """
-    forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP', 'LAP'])
-    forms_verbose = np.array(['boxcar', 'triangle', 'gaussian', 'epanechnikov',
-                     'exponential', 'alpha', 'laplacian'])
+    forms_abbreviated = np.array(['REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'])
+    forms_verbose = np.array(['rectangular', 'triangular', 'epanechnikovlike', 'gaussian',
+                     'laplacian', 'exponential', 'alpha'])
     if form in forms_verbose:
         form = forms_abbreviated[forms_verbose == form][0]
 
-    assert form.upper() in ('BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP', 'LAP'), \
-    "form must be one of either 'BOX','TRI','GAU','EPA','EXP', 'ALP' or 'LAP'!"
+    if form.upper() not in ('REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'):
+        raise ValueError("form must be one of either 'REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP' or 'ALP'!")
 
-    assert direction in (1, -1), "direction must be either 1 or -1"
+    if direction not in (1, -1):
+        raise ValueError("direction must be either 1 or -1")
 
     if sigma.magnitude < 0:
         raise ValueError('sigma must be positive!')
 
-    if form.upper() == 'BOX':
+    if form.upper() == 'REC':
         kernel = kernels.RectangularKernel(sigma)
 
     elif form.upper() == 'TRI':
@@ -512,11 +507,11 @@ def select_kernel(form, sigma, direction=1):
     elif form.upper() == 'LAP':
         kernel = kernels.LaplacianKernel(sigma)
 
-    elif form.upper() == 'ALP':
-        kernel = kernels.AlphaKernel(sigma, direction)
-
     elif form.upper() == 'EXP':
         kernel = kernels.ExponentialKernel(sigma, direction)
+
+    elif form.upper() == 'ALP':
+        kernel = kernels.AlphaKernel(sigma, direction)
 
     return kernel
 
@@ -679,9 +674,9 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
     sampling_period : Quantity
         time stamp resolution of the spike times. the same resolution will
         be assumed for the kernel
-    form : {'BOX', 'TRI', 'GAU', 'EPA', 'LAP', 'EXP', 'ALP'}
-        Kernel form. Currently implemented forms are BOX (boxcar),
-        TRI (triangle), GAU (gaussian), EPA (epanechnikov), LAP (Laplacian),
+    form : {'REC', 'TRI', 'GAU', 'EPA', 'LAP', 'EXP', 'ALP'}
+        Kernel form. Currently implemented forms are REC (rectangular),
+        TRI (triangular), GAU (gaussian), EPA (epanechnikov), LAP (Laplacian),
         EXP (exponential), ALP (alpha function).
     sigma : string or Quantity
         Standard deviation of the distribution associated with kernel shape.
@@ -699,7 +694,7 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
         Default: 1
     stddevmultfactor : float
         This factor determines the cutoff of the probability distribution of
-        the kernel, i.e. the considered width of the kernel in terms of sigma.
+        the kernel, i.e., the considered width of the kernel in terms of sigma.
     t_start : Quantity (optional)
         Start time of the interval used to compute the firing rate. If None
         assumed equal to spiketrain.t_start
@@ -709,21 +704,15 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
         If None assumed equal to spiketrain.t_stop
         Default: None
     trim : bool
-        if True, only the 'valid' region of the convolved
-        signal are returned, i.e., the points where there
-        isn't complete overlap between kernel and spike train
-        are discarded
-        ## TODO:
-        NOTE: if True and an asymmetrical kernel is provided
-        the output will not be aligned with [t_start, t_stop]
-    ## TODO:
-    m_idx : int
-        index of the value in the kernel function vector that corresponds
-        to its gravity center. this parameter is not mandatory for
-        symmetrical kernels but it is required when asymmetrical kernels
-        are to be aligned at their gravity center with the event times if None
-        is assumed to be the median value of the kernel support
-        Default : None
+        if False, the output of the Fast Fourier Transformation being a longer
+        vector than the input vector by the size of the kernel is reduced back
+        to the original size of the considered time interval of the spiketrain
+        using the median of the kernel.
+        if True, only the region of the convolved signal is returned, where
+        there is complete overlap between kernel and spike train. This is
+        achieved by reducing the length of the output of the Fast Fourier
+        Transformation by a total of two times the size of the kernel, and
+        t_start and t_stop are adjusted.
 
     Returns
     -------
@@ -741,7 +730,7 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
 
     See also
     --------
-    elephant.statistics.make_kernel
+    elephant.statistics.select_kernel
 
     References
     ----------
@@ -753,9 +742,9 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        # factor 2.0 connects kernel_width with half_width,
-        # factor 2.7 connects width of Gaussian distribution with 99% probability mass with standard deviation sigma.
         sigma = 1/(2.0 * 2.7) * kernel_width * unit
+        # factor 2.0 connects kernel width with its half width,
+        # factor 2.7 connects half width of Gaussian distribution with 99% probability mass with its standard deviation.
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
                         ' Found: %s, value %s' %(type(sigma), str(sigma)))
@@ -799,17 +788,15 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
     if not trim:
         r = r[kernel.m_idx(t_arr):-(kernel(t_arr).size - kernel.m_idx(t_arr))]
     elif trim:
-        r = r[2 * kernel.m_idx(t_arr):-2*(kernel(t_arr).size - kernel.m_idx(t_arr))]
+        r = r[2 * kernel.m_idx(t_arr):-2 * (kernel(t_arr).size - kernel.m_idx(t_arr))]
         t_start = t_start + kernel.m_idx(t_arr) * spiketrain.units
-        t_stop = t_stop - ((kernel(t_arr).size) - kernel.m_idx(t_arr)) * spiketrain.units
-
+        t_stop = t_stop - (kernel(t_arr).size - kernel.m_idx(t_arr)) * spiketrain.units
 
     rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
                                  sampling_period=sampling_period,
-                                 units=pq.Hz, t_start=t_start)
+                                 units=pq.Hz, t_start=t_start, t_stop=t_stop)
 
-    ## return rate
-    return rate, sigma
+    return rate
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
