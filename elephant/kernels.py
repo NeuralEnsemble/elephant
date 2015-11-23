@@ -1,11 +1,6 @@
-import copy
 import quantities as pq
 import numpy as np
-import scipy.signal
 import scipy.special
-import tools
-
-import numpy as np
 
 default_kernel_area_fraction = 0.99999
 
