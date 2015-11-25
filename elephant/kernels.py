@@ -1,7 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Definition of classes of various kernel functions to be used
-in convolution, e.g., in firing rate estimation.
+Definition of classes of various kernel functions to be used in convolution,
+e.g., for data smoothing (low pass filtering) or firing rate estimation.
+
+Currently implemented forms are rectangular, triangular, epanechnikovlike,
+gaussian, laplacian, exponential, and alpha function, of which exponential
+and alpha kernels have asymmetric form.
+
+Exponential and alpha kernels may also be used to represent postynaptic
+currents / potentials in a linear (current-based) model.
+
+Example of usage:
+kernel = kernels.GaussianKernel(sigma=100*ms, direction=1)
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -17,20 +27,35 @@ default_kernel_area_fraction = 0.99999
 class Kernel(object):
     """ Base class for kernels.  """
 
-    def __init__(self, sigma, direction):
+    def __init__(self, sigma, direction=1):
         """
         :param sigma: Standard deviation of the kernel.
+            This parameter determines the time resolution of the kernel estimate
+            and makes different kernels comparable (Meier R, Egert U, Aertsen A,
+            Nawrot MP, "FIND - a unified framework for neural data analysis";
+            Neural Netw. 2008 Oct; 21(8):1085-93.) for symmetric kernels.
         :type sigma: Quantity scalar
-        :param direction: direction of asymmetric kernels
-        :type direction: integer of value 1 or -1
+        :param direction (optional): orientation of asymmetric kernels, 
+               e.g., exponential or alpha kernels.
+        :type direction: integer of value 1 or -1, default: 1
         """
+        if not (isinstance(sigma, pq.quantity.Quantity)):
+            raise TypeError("sigma must be a quantity!")
+
+        if sigma.magnitude < 0:
+            raise ValueError("sigma cannot be negative!")
+
+        if direction not in (1, -1):
+            raise ValueError("direction must be either 1 or -1")
+
         self.sigma = sigma
         self.direction = direction
 
-    def __call__(self, t):
-        """ Evaluates the kernel at all time points in the array `t`.
 
-        :param t: Time points to evaluate the kernel at.
+    def __call__(self, t):
+        """ Evaluates the kernel at all points in the array `t`.
+
+        :param t: Interval on which the kernel is evaluated, not necessarily a time interval.
         :type t: Quantity 1D
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
@@ -46,7 +71,7 @@ class Kernel(object):
     def evaluate(self, t):
         """ Evaluates the kernel.
 
-        :param t: Time points to evaluate the kernel at.
+        :param t: Interval on which the kernel is evaluated, not necessarily a time interval.
         :type t: Quantity 1D
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
@@ -71,14 +96,14 @@ class Kernel(object):
         This parameter is not mandatory for symmetrical kernels but it is required
         when asymmetrical kernels have to be aligned at their median.
 
-        :param t: Time points at which the kernel is evaluated
+        :param t: Interval on which the kernel is evaluated,
         :type t: Quantity 1D
         :returns: Estimated value of the kernel median
         :rtype: int
 
         Remarks:
-        The formula in this method using retrieval of the sampling period from t
-        only works for t with equidistant time intervals!
+        The formula in this method using retrieval of the sampling interval from t
+        only works for t with equidistant intervals!
         The formula calculates the Median slightly wrong by the potentially ignored probability in the
         distribution corresponding to lower values than the minimum in the array t.
         """
@@ -200,8 +225,8 @@ class LaplacianKernel(SymmetricKernel):
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
 
 
-## Potential further symmetric kernels from Wiki Kernels (statistics):
-## Quartic (biweight), Triweight, Tricube, Cosine, Logistics, Silverman
+# Potential further symmetric kernels from Wiki Kernels (statistics):
+# Quartic (biweight), Triweight, Tricube, Cosine, Logistics, Silverman
 
 
 class ExponentialKernel(Kernel):
