@@ -13,6 +13,7 @@ import quantities as pq
 import scipy.stats
 import scipy.signal
 import neo
+from neo.core import SpikeTrain
 import warnings
 import elephant.conversion as conv
 import kernels
@@ -432,90 +433,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-def select_kernel(form, sigma, direction=1):
-    """
-    Selects kernel functions for convolution.
-
-    Builds a numeric linear convolution kernel of basic shape to be used
-    for data smoothing (linear low pass filtering) and firing rate estimation
-    from single trial or trial-averaged spike trains.
-
-    Exponential and alpha kernels may also be used to represent postynaptic
-    currents / potentials in a linear (current-based) model.
-
-    Parameters
-    ----------
-    form : {'REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'}
-        Kernel form. Currently implemented forms are REC (rectangular),
-        TRI (triangular), EPA (epanechnikovlike), GAU (gaussian), 'LAP'(laplacian),
-        EXP (exponential), ALP (alpha function). EXP and ALP are asymmetric kernel
-        forms and assume optional parameter `direction`.
-    sigma : Quantity
-        Standard deviation of the distribution associated with kernel shape.
-        This parameter defines the time resolution of the kernel estimate
-        and makes different kernels comparable (cf. [1] for symmetric kernels).
-        This is used here as an alternative definition to the cut-off
-        frequency of the associated linear filter.
-    direction : {-1, 1} (optional)
-        Asymmetric kernels have two possible orientations.
-        The values are -1 or 1, default value is 1.
-        The definition here is that for direction = 1 the
-        kernel represents the impulse response function
-        of the linear filter.
-
-    Returns
-    -------
-    kernel : Callable object of :class:`Kernel` from module 'kernels.py'
-
-    See also
-    --------
-    elephant.statistics.instantaneous_rate
-
-    Reference
-    ----------
-    .. [1] Meier R, Egert U, Aertsen A, Nawrot MP, "FIND - a unified framework
-       for neural data analysis"; Neural Netw. 2008 Oct; 21(8):1085-93.
-
-    """
-    forms_abbreviated = np.array(['REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'])
-    forms_verbose = np.array(['rectangular', 'triangular', 'epanechnikovlike', 'gaussian',
-                     'laplacian', 'exponential', 'alpha'])
-    if form in forms_verbose:
-        form = forms_abbreviated[forms_verbose == form][0]
-
-    if form.upper() not in ('REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP', 'ALP'):
-        raise ValueError("form must be one of either 'REC', 'TRI', 'EPA', 'GAU', 'LAP', 'EXP' or 'ALP'!")
-
-    if sigma.magnitude < 0:
-        raise ValueError("sigma must be positive!")
-
-    if direction not in (1, -1):
-        raise ValueError("direction must be either 1 or -1")
-
-    if form.upper() == 'REC':
-        kernel = kernels.RectangularKernel(sigma)
-
-    elif form.upper() == 'TRI':
-        kernel = kernels.TriangularKernel(sigma)
-
-    elif form.upper() == 'EPA':
-        kernel = kernels.EpanechnikovLikeKernel(sigma)
-
-    elif form.upper() == 'GAU':
-        kernel = kernels.GaussianKernel(sigma)
-
-    elif form.upper() == 'LAP':
-        kernel = kernels.LaplacianKernel(sigma)
-
-    elif form.upper() == 'EXP':
-        kernel = kernels.ExponentialKernel(sigma, direction)
-
-    elif form.upper() == 'ALP':
-        kernel = kernels.AlphaKernel(sigma, direction)
-
-    return kernel
-
-
 ## to finally be taken out of Elephant
 def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
@@ -660,46 +577,43 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
     return rate, sigma
 
 
-def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', direction=1,
+def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                        stddevmultfactor=5.0, t_start=None, t_stop=None, trim=False):
 
     """
-    Estimate instantaneous firing rate by kernel convolution.
+    Estimates instantaneous firing rate by kernel convolution.
 
     Parameters
     -----------
     spiketrain : 'neo.SpikeTrain'
         Neo object that contains spike times, the unit of the time stamps
         and t_start and t_stop of the spike train.
-    sampling_period : Quantity
-        time stamp resolution of the spike times. the same resolution will
+    sampling_period : Time Quantity
+        Time stamp resolution of the spike times. The same resolution will
         be assumed for the kernel
-    form : {'REC', 'TRI', 'GAU', 'EPA', 'LAP', 'EXP', 'ALP'}
-        Kernel form. Currently implemented forms are REC (rectangular),
-        TRI (triangular), GAU (gaussian), EPA (epanechnikov), LAP (Laplacian),
-        EXP (exponential), ALP (alpha function).
-    sigma : string or Quantity
-        Standard deviation of the distribution associated with kernel shape.
-        This parameter defines the time resolution of the kernel estimate
-        and makes different kernels comparable (cf. [1] for symmetric kernels).
-        This is used here as an alternative definition to the cut-off
-        frequency of the associated linear filter.
-        Default value is 'auto'. In this case, the optimized kernel width for
-        the rate estimation is calculated according to [1]. Note that the
-        automatized calculation of the kernel width ONLY works for gaussian
-        kernel shapes!
-    direction : {-1, 1} (optional)
-        Kernel forms EXP and ALP are asymmetric. The parameter `direction`
-        determines their orientation.
-        Default: 1
+    kernel : string 'auto' or callable object of :class:`Kernel` from module
+        'kernels.py'. Currently implemented kernel forms are rectangular,
+        triangular, epanechnikovlike, gaussian, laplacian, exponential,
+        and alpha function.
+        Examples: kernel = kernels.RectangularKernel(sigma=100*ms, direction=1)
+             or   kernel = kernels.AlphaKernel(sigma=0.1*s, direction=-1)
+        The kernel is used for convolution with the spike train and its
+        standard deviation determines the time resolution of the instantaneous
+        rate estimation.
+        Default: 'auto'. In this case, the optimized kernel width for the 
+        rate estimation is calculated according to [1] and with this width
+        a gaussian kernel is constructed. Automatized calculation of the 
+        kernel width is not available for other than gaussian kernel shapes.
     stddevmultfactor : float
         This factor determines the cutoff of the probability distribution of
-        the kernel, i.e., the considered width of the kernel in terms of sigma.
-    t_start : Quantity (optional)
+        the kernel, i.e., the considered width of the kernel in terms of 
+        multiples of sigma.
+        Default: 5.0
+    t_start : Time Quantity (optional)
         Start time of the interval used to compute the firing rate. If None
         assumed equal to spiketrain.t_start
         Default: None
-    t_stop : Quantity (optional)
+    t_stop : Time Quantity (optional)
         End time of the interval used to compute the firing rate (included).
         If None assumed equal to spiketrain.t_stop
         Default: None
@@ -713,6 +627,7 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
         achieved by reducing the length of the output of the Fast Fourier
         Transformation by a total of two times the size of the kernel, and
         t_start and t_stop are adjusted.
+        Default: False
 
     Returns
     -------
@@ -725,31 +640,50 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
     Raises
     ------
     TypeError:
-        If argument value for the parameter `sigma` is not a quantity object
-        or string 'auto'.
+        If `spiketrain` is not an instance of :class:`SpikeTrain` of Neo.
+        If `sampling_period` is not a time quantity.
+        If `kernel` is neither instance of :class:`Kernel` or string 'auto'.
 
-    See also
-    --------
-    elephant.statistics.select_kernel
+    ValueError:
+        If `sampling_period` is smaller than zero.
 
     References
     ----------
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
-    """
 
-    if sigma == 'auto':
-        form = 'GAU'
-        unit = spiketrain.units
+    """
+    # spiketrain type check:
+    if not isinstance(spiketrain, SpikeTrain):
+        raise TypeError(
+            "spiketrain must be instance of :class:`SpikeTrain` of Neo!\n"
+            "    Found: %s, value %s" %(type(spiketrain), str(spiketrain)))
+
+    # sampling period checks:
+    if not (isinstance(sampling_period, pq.Quantity) and
+            sampling_period.dimensionality.simplified ==
+            pq.Quantity(1, "s").dimensionality):
+        raise TypeError(
+            "The sampling period must be a time quantity!\n"
+            "    Found: %s, value %s" %(type(sampling_period), str(sampling_period)))
+
+    if sampling_period.magnitude < 0:
+        raise ValueError("The sampling period must be larger than zero.")
+
+    # kernel checks:
+    if kernel == 'auto':
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
+        unit = spiketrain.units
         sigma = 1/(2.0 * 2.7) * kernel_width * unit
         # factor 2.0 connects kernel width with its half width,
-        # factor 2.7 connects half width of Gaussian distribution with 99% probability mass with its standard deviation.
-    elif not isinstance(sigma, pq.Quantity):
-        raise TypeError('sigma must be either a quantities object or "auto".'
-                        ' Found: %s, value %s' %(type(sigma), str(sigma)))
+        # factor 2.7 connects half width of Gaussian distribution with
+        #             99% probability mass with its standard deviation.
+        kernel = kernels.GaussianKernel(sigma)
+    elif not isinstance(kernel, kernels.Kernel):
+        raise TypeError(
+            "kernel must be either instance of :class:`Kernel` or the string 'auto'!\n"
+            "    Found: %s, value %s" %(type(kernel), str(kernel)))
 
-    kernel = select_kernel(form, sigma, direction)
     units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
@@ -775,15 +709,15 @@ def instantaneous_rate(spiketrain, sampling_period, form, sigma='auto', directio
         stddevmultfactor = kernel.min_stddevmultfactor
         warnings.warn('The width of the kernel was adjusted to a minimally allowed width.')
 
-    t_arr = np.arange(-stddevmultfactor * sigma.rescale(units).magnitude,
-                      stddevmultfactor * sigma.rescale(units).magnitude + sampling_period.rescale(units).magnitude,
+    t_arr = np.arange(-stddevmultfactor * kernel.sigma.rescale(units).magnitude,
+                      stddevmultfactor * kernel.sigma.rescale(units).magnitude + sampling_period.rescale(units).magnitude,
                       sampling_period.rescale(units).magnitude) * units
 
     r = scipy.signal.fftconvolve(time_vector, kernel(t_arr).rescale(pq.Hz).magnitude, 'full')
     if np.any(r < 0):
         warnings.warn('Instantaneous firing rate approximation contains '
                       'negative values, possibly caused due to machine '
-                      'precision errors')
+                      'precision errors.')
 
     if not trim:
         r = r[kernel.m_idx(t_arr):-(kernel(t_arr).size - kernel.m_idx(t_arr))]
