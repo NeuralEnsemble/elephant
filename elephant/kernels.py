@@ -10,8 +10,9 @@ and alpha kernels have asymmetric form.
 Exponential and alpha kernels may also be used to represent postynaptic
 currents / potentials in a linear (current-based) model.
 
-Example of usage:
-kernel = kernels.GaussianKernel(sigma=100*ms, direction=1)
+Examples of usage:
+kernel1 = kernels.GaussianKernel(sigma=100*ms)
+kernel2 = kernels.ExponentialKernel(sigma=10*mm, direction=-1)
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -25,20 +26,22 @@ default_kernel_area_fraction = 0.99999
 
 
 class Kernel(object):
-    """ Base class for kernels.  """
+    """
+    Base class for kernels.
 
-    def __init__(self, sigma, direction=1):
-        """
-        :param sigma: Standard deviation of the kernel.
-            This parameter determines the time resolution of the kernel estimate
-            and makes different kernels comparable (Meier R, Egert U, Aertsen A,
-            Nawrot MP, "FIND - a unified framework for neural data analysis";
-            Neural Netw. 2008 Oct; 21(8):1085-93.) for symmetric kernels.
-        :type sigma: Quantity scalar
-        :param direction (optional): orientation of asymmetric kernels, 
-               e.g., exponential or alpha kernels.
-        :type direction: integer of value 1 or -1, default: 1
-        """
+    :param sigma (optional): Standard deviation of the kernel.
+        This parameter determines the time resolution of the kernel estimate
+        and makes different kernels comparable (Meier R, Egert U, Aertsen A,
+        Nawrot MP, "FIND - a unified framework for neural data analysis";
+        Neural Netw. 2008 Oct; 21(8):1085-93.) for symmetric kernels.
+    :type sigma: Quantity scalar, default: 10 ms
+    :param direction (optional): Orientation of asymmetric kernels,
+            e.g., exponential or alpha kernels.
+    :type direction: integer of value 1 or -1, default: 1
+    """
+
+    def __init__(self, sigma = 10.0 * pq.ms, direction = 1):
+
         if not (isinstance(sigma, pq.quantity.Quantity)):
             raise TypeError("sigma must be a quantity!")
 
@@ -117,26 +120,26 @@ class Kernel(object):
 class SymmetricKernel(Kernel):
     """ Base class for symmetric kernels. """
 
-    def __init__(self, sigma, direction):
-        """
-        :param sigma: Standard deviation of the kernel.
-        :type sigma: Quantity scalar
-        """
-        Kernel.__init__(self, sigma, direction)
+    # def __init__(self, sigma, direction):
+    #     Kernel.__init__(self, sigma, direction)
 
     def is_symmetric(self):
         return True
 
 
 class RectangularKernel(SymmetricKernel):
-    """ :math:`K(t) = \left\{\begin{array}{ll} \frac{1}{2 \tau}, & |t| < \tau \\
+    """
+    Class for rectangular kernels
+
+    :math:`K(t) = \left\{\begin{array}{ll} \frac{1}{2 \tau}, & |t| < \tau \\
     0, & |t| \geq \tau \end{array} \right`
     with :math:`\tau = \sqrt{3} \sigma` corresponding to the half width of the kernel.
-    """
-    min_stddevmultfactor = np.sqrt(3.0)
 
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    Besides the standard deviation `sigma`, for consistency of interfaces the
+    parameter `direction` needed for asymmetric kernels also exists without
+    having any effect in the case of symmetric kernels,
+    """
+    min_cutoff = np.sqrt(3.0)
 
     def evaluate(self, t):
         return (0.5 / (np.sqrt(3.0) * self.sigma)) * \
@@ -147,14 +150,18 @@ class RectangularKernel(SymmetricKernel):
 
 
 class TriangularKernel(SymmetricKernel):
-    """ :math:`K(t) = \left\{ \begin{array}{ll} \frac{1}{\tau} (1
+    """
+    Class for triangular kernels
+
+    :math:`K(t) = \left\{ \begin{array}{ll} \frac{1}{\tau} (1
     - \frac{|t|}{\tau}), & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
     with :math:`\tau = \sqrt{6} \sigma` corresponding to the half width of the kernel.
-    """
-    min_stddevmultfactor = np.sqrt(6.0)
 
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    Besides the standard deviation `sigma`, for consistency of interfaces the
+    parameter `direction` needed for asymmetric kernels also exists without
+    having any effect in the case of symmetric kernels,
+    """
+    min_cutoff = np.sqrt(6.0)
 
     def evaluate(self, t):
         return (1.0 / (np.sqrt(6.0) * self.sigma)) * np.maximum(
@@ -166,7 +173,10 @@ class TriangularKernel(SymmetricKernel):
 
 
 class EpanechnikovLikeKernel(SymmetricKernel):
-    """ :math:`K(t) = \left\{\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2), & |t| < d \\
+    """
+    Class for epanechnikov-like kernels
+
+    :math:`K(t) = \left\{\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2), & |t| < d \\
     0, & |t| \geq d \end{array} \right`
     with :math:`d = \sqrt{5} \sigma` being the half width of the kernel.
 
@@ -176,11 +186,12 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     ( https://de.wikipedia.org/wiki/Epanechnikov-Kern )
     However, arbitrary width of this type of kernel is here preferred to be
     called 'Epanechnikov-like' kernel.
-    """
-    min_stddevmultfactor = np.sqrt(5.0)
 
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    Besides the standard deviation `sigma`, for consistency of interfaces the
+    parameter `direction` needed for asymmetric kernels also exists without
+    having any effect in the case of symmetric kernels,
+    """
+    min_cutoff = np.sqrt(5.0)
 
     def evaluate(self, t):
         return (3.0 / (4.0 * np.sqrt(5.0) * self.sigma)) * np.maximum(
@@ -192,13 +203,17 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
 
 class GaussianKernel(SymmetricKernel):
-    """ :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
-    with :math:`\sigma` being the standard deviation.
     """
-    min_stddevmultfactor = 3.0
+    Class for gaussian kernels
 
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
+    with :math:`\sigma` being the standard deviation.
+
+    Besides the standard deviation `sigma`, for consistency of interfaces the
+    parameter `direction` needed for asymmetric kernels also exists without
+    having any effect in the case of symmetric kernels,
+    """
+    min_cutoff = 3.0
 
     def evaluate(self, t):
         return (1.0 / (np.sqrt(2.0 * np.pi) * self.sigma)) * np.exp(
@@ -209,13 +224,17 @@ class GaussianKernel(SymmetricKernel):
 
 
 class LaplacianKernel(SymmetricKernel):
-    """ :math:`K(t) = \frac{1}{2 \tau} \exp(-|\frac{t}{\tau}|)`
-    with :math:`\tau = \sigma / \sqrt{2}`.
     """
-    min_stddevmultfactor = 3.0
+    Class for laplacian kernels
 
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    :math:`K(t) = \frac{1}{2 \tau} \exp(-|\frac{t}{\tau}|)`
+    with :math:`\tau = \sigma / \sqrt{2}`.
+
+    Besides the standard deviation `sigma`, for consistency of interfaces the
+    parameter `direction` needed for asymmetric kernels also exists without
+    having any effect in the case of symmetric kernels,
+    """
+    min_cutoff = 3.0
 
     def evaluate(self, t):
         return (1 / (np.sqrt(2.0) * self.sigma)) * np.exp(
@@ -231,14 +250,14 @@ class LaplacianKernel(SymmetricKernel):
 
 class ExponentialKernel(Kernel):
 ## class ExponentialKernel(AsymmetricKernel):
-    """ :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau}, & t > 0 \\
+    """
+    Class for exponential kernels
+
+    :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau}, & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma`.
     """
-    min_stddevmultfactor = 3.0
-
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    min_cutoff = 3.0
 
     def evaluate(self, t):
         if self.direction == 1:
@@ -261,14 +280,14 @@ class ExponentialKernel(Kernel):
 
 class AlphaKernel(Kernel):
 ## class AlphaKernel(AsymmetricKernel):
-    """ :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau}, & t > 0 \\
+    """
+    Class for alpha kernels
+
+    :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau}, & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.
     """
-    min_stddevmultfactor = 3.0
-
-    def __init__(self, sigma=1.0 * pq.s, direction=1):
-        Kernel.__init__(self, sigma, direction)
+    min_cutoff = 3.0
 
     def evaluate(self, t):
         if self.direction == 1:
