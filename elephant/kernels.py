@@ -67,11 +67,9 @@ class Kernel(object):
             raise TypeError("The dimensionality of sigma and the input array to the callable kernel object "
                         "must be the same. Otherwise a normalization to 1 of the kernel cannot be performed.")
 
-        self.sigma = self.sigma.rescale(t.units)
+        return self._evaluate(t)
 
-        return self.evaluate(t)
-
-    def evaluate(self, t):
+    def _evaluate(self, t):
         """ Evaluates the kernel.
 
         :param t: Interval on which the kernel is evaluated, not necessarily a time interval.
@@ -141,9 +139,9 @@ class RectangularKernel(SymmetricKernel):
     """
     min_cutoff = np.sqrt(3.0)
 
-    def evaluate(self, t):
-        return (0.5 / (np.sqrt(3.0) * self.sigma)) * \
-               (np.absolute(t) < np.sqrt(3.0) * self.sigma)
+    def _evaluate(self, t):
+        return (0.5 / (np.sqrt(3.0) * self.sigma.rescale(t.units))) * \
+               (np.absolute(t) < np.sqrt(3.0) * self.sigma.rescale(t.units))
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(3.0) * self.sigma
@@ -163,10 +161,10 @@ class TriangularKernel(SymmetricKernel):
     """
     min_cutoff = np.sqrt(6.0)
 
-    def evaluate(self, t):
-        return (1.0 / (np.sqrt(6.0) * self.sigma)) * np.maximum(
+    def _evaluate(self, t):
+        return (1.0 / (np.sqrt(6.0) * self.sigma.rescale(t.units))) * np.maximum(
             0.0,
-            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * self.sigma)).magnitude))
+            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * self.sigma.rescale(t.units))).magnitude))
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(6.0) * self.sigma
@@ -193,10 +191,10 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     """
     min_cutoff = np.sqrt(5.0)
 
-    def evaluate(self, t):
-        return (3.0 / (4.0 * np.sqrt(5.0) * self.sigma)) * np.maximum(
+    def _evaluate(self, t):
+        return (3.0 / (4.0 * np.sqrt(5.0) * self.sigma.rescale(t.units))) * np.maximum(
             0.0,
-            1 - (t / (np.sqrt(5.0) * self.sigma)).magnitude ** 2)
+            1 - (t / (np.sqrt(5.0) * self.sigma.rescale(t.units))).magnitude ** 2)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(5.0) * self.sigma
@@ -215,9 +213,9 @@ class GaussianKernel(SymmetricKernel):
     """
     min_cutoff = 3.0
 
-    def evaluate(self, t):
-        return (1.0 / (np.sqrt(2.0 * np.pi) * self.sigma)) * np.exp(
-            -0.5 * (t / self.sigma).magnitude ** 2)
+    def _evaluate(self, t):
+        return (1.0 / (np.sqrt(2.0 * np.pi) * self.sigma.rescale(t.units))) * np.exp(
+            -0.5 * (t / self.sigma.rescale(t.units)).magnitude ** 2)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
@@ -236,9 +234,9 @@ class LaplacianKernel(SymmetricKernel):
     """
     min_cutoff = 3.0
 
-    def evaluate(self, t):
-        return (1 / (np.sqrt(2.0) * self.sigma)) * np.exp(
-            -(np.absolute(t) * np.sqrt(2.0) / self.sigma).magnitude)
+    def _evaluate(self, t):
+        return (1 / (np.sqrt(2.0) * self.sigma.rescale(t.units))) * np.exp(
+            -(np.absolute(t) * np.sqrt(2.0) / self.sigma.rescale(t.units)).magnitude)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
@@ -259,18 +257,18 @@ class ExponentialKernel(Kernel):
     """
     min_cutoff = 3.0
 
-    def evaluate(self, t):
+    def _evaluate(self, t):
         if self.direction == 1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: (1.0 / self.sigma.magnitude) * np.exp(
-                        (-t / self.sigma).magnitude)]) / t.units
+                    lambda t: (1.0 / self.sigma.rescale(t.units).magnitude) * np.exp(
+                        (-t / self.sigma.rescale(t.units)).magnitude)]) / t.units
         elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: (1.0 / self.sigma.magnitude) * np.exp(
-                        (t / self.sigma).magnitude),
+                    lambda t: (1.0 / self.sigma.rescale(t.units).magnitude) * np.exp(
+                        (t / self.sigma.rescale(t.units)).magnitude),
                     lambda t: 0]) / t.units
         return kernel
 
@@ -289,18 +287,18 @@ class AlphaKernel(Kernel):
     """
     min_cutoff = 3.0
 
-    def evaluate(self, t):
+    def _evaluate(self, t):
         if self.direction == 1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: 2.0 * (t / (self.sigma)**2).magnitude *
-                              np.exp((-t * np.sqrt(2.0) / self.sigma).magnitude)]) / t.units
+                    lambda t: 2.0 * (t / (self.sigma.rescale(t.units))**2).magnitude *
+                              np.exp((-t * np.sqrt(2.0) / self.sigma.rescale(t.units)).magnitude)]) / t.units
         elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: -2.0 * (t / (self.sigma)**2).magnitude *
-                              np.exp((t * np.sqrt(2.0) / self.sigma).magnitude),
+                    lambda t: -2.0 * (t / (self.sigma.rescale(t.units))**2).magnitude *
+                              np.exp((t * np.sqrt(2.0) / self.sigma.rescale(t.units)).magnitude),
                     lambda t: 0 ]) / t.units
         return kernel
 
