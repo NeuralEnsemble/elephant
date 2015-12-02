@@ -642,6 +642,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         If `spiketrain` is not an instance of :class:`SpikeTrain` of Neo.
         If `sampling_period` is not a time quantity.
         If `kernel` is neither instance of :class:`Kernel` or string 'auto'.
+        If `cutoff` is neither float nor int.
+        If `t_start` and `t_stop` are neither None nor a time quantity.
+        If `trim` is not bool.
 
     ValueError:
         If `sampling_period` is smaller than zero.
