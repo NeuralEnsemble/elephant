@@ -12,7 +12,7 @@ currents / potentials in a linear (current-based) model.
 
 Examples of usage:
 kernel1 = kernels.GaussianKernel(sigma=100*ms)
-kernel2 = kernels.ExponentialKernel(sigma=10*mm, direction=-1)
+kernel2 = kernels.ExponentialKernel(sigma=8*mm, direction=-1)
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -29,18 +29,18 @@ class Kernel(object):
     """
     Base class for kernels.
 
-    :param sigma (optional): Standard deviation of the kernel.
+    :param sigma: Standard deviation of the kernel.
         This parameter determines the time resolution of the kernel estimate
         and makes different kernels comparable (Meier R, Egert U, Aertsen A,
         Nawrot MP, "FIND - a unified framework for neural data analysis";
         Neural Netw. 2008 Oct; 21(8):1085-93.) for symmetric kernels.
-    :type sigma: Quantity scalar, default: 10 ms
+    :type sigma: Quantity scalar
     :param direction (optional): Orientation of asymmetric kernels,
             e.g., exponential or alpha kernels.
     :type direction: integer of value 1 or -1, default: 1
     """
 
-    def __init__(self, sigma = 10.0 * pq.ms, direction = 1):
+    def __init__(self, sigma, direction = 1):
 
         if not (isinstance(sigma, pq.quantity.Quantity)):
             raise TypeError("sigma must be a quantity!")
@@ -58,21 +58,29 @@ class Kernel(object):
     def __call__(self, t):
         """ Evaluates the kernel at all points in the array `t`.
 
-        :param t: Interval on which the kernel is evaluated, not necessarily a time interval.
+        :param t: Interval on which the kernel is evaluated, not necessarily
+            a time interval.
         :type t: Quantity 1D
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
         """
         if  t.dimensionality.simplified != self.sigma.dimensionality.simplified:
-            raise TypeError("The dimensionality of sigma and the input array to the callable kernel object "
-                        "must be the same. Otherwise a normalization to 1 of the kernel cannot be performed.")
+            raise TypeError("The dimensionality of sigma and the input array "
+                "to the callable kernel object must be the same. Otherwise a "
+                "normalization to 1 of the kernel cannot be performed.")
+
+        self._sigma_scaled = self.sigma.rescale(t.units)
+        # A hidden variable _sigma_scaled is introduced here in order to avoid
+        # accumulation of floating point errors of sigma upon multiple
+        # usages of the __call__ - function for the same Kernel instance.
 
         return self._evaluate(t)
 
     def _evaluate(self, t):
         """ Evaluates the kernel.
 
-        :param t: Interval on which the kernel is evaluated, not necessarily a time interval.
+        :param t: Interval on which the kernel is evaluated, not necessarily
+            a time interval.
         :type t: Quantity 1D
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
@@ -84,8 +92,8 @@ class Kernel(object):
         :math:`-b` to :math:`b` encloses at least a certain fraction of the
         integral over the complete kernel.
 
-        :param float fraction: Fraction of the whole area which at least has to
-            be enclosed.
+        :param float fraction: Fraction of the whole area which at least has
+            to be enclosed.
         :returns: boundary
         :rtype: Quantity scalar
         """
@@ -94,8 +102,8 @@ class Kernel(object):
     def m_idx(self, t):
         """
         Estimates the index of the Median of the kernel.
-        This parameter is not mandatory for symmetrical kernels but it is required
-        when asymmetrical kernels have to be aligned at their median.
+        This parameter is not mandatory for symmetrical kernels but it is
+        required when asymmetrical kernels have to be aligned at their median.
 
         :param t: Interval on which the kernel is evaluated,
         :type t: Quantity 1D
@@ -103,10 +111,11 @@ class Kernel(object):
         :rtype: int
 
         Remarks:
-        The formula in this method using retrieval of the sampling interval from t
-        only works for t with equidistant intervals!
-        The formula calculates the Median slightly wrong by the potentially ignored probability in the
-        distribution corresponding to lower values than the minimum in the array t.
+        The formula in this method using retrieval of the sampling interval
+        from t only works for t with equidistant intervals!
+        The formula calculates the Median slightly wrong by the potentially
+        ignored probability in the distribution corresponding to lower values
+        than the minimum in the array t.
         """
         return np.nonzero(self(t).cumsum() * (t[len(t)-1] -t[0]) / (len(t)-1) >= 0.5)[0].min()
 
@@ -131,17 +140,18 @@ class RectangularKernel(SymmetricKernel):
 
     :math:`K(t) = \left\{\begin{array}{ll} \frac{1}{2 \tau}, & |t| < \tau \\
     0, & |t| \geq \tau \end{array} \right`
-    with :math:`\tau = \sqrt{3} \sigma` corresponding to the half width of the kernel.
+    with :math:`\tau = \sqrt{3} \sigma` corresponding to the half width
+    of the kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
-    having any effect in the case of symmetric kernels,
+    having any effect in the case of symmetric kernels.
     """
     min_cutoff = np.sqrt(3.0)
 
     def _evaluate(self, t):
-        return (0.5 / (np.sqrt(3.0) * self.sigma.rescale(t.units))) * \
-               (np.absolute(t) < np.sqrt(3.0) * self.sigma.rescale(t.units))
+        return (0.5 / (np.sqrt(3.0) * self._sigma_scaled)) * \
+               (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(3.0) * self.sigma
@@ -157,14 +167,14 @@ class TriangularKernel(SymmetricKernel):
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
-    having any effect in the case of symmetric kernels,
+    having any effect in the case of symmetric kernels.
     """
     min_cutoff = np.sqrt(6.0)
 
     def _evaluate(self, t):
-        return (1.0 / (np.sqrt(6.0) * self.sigma.rescale(t.units))) * np.maximum(
+        return (1.0 / (np.sqrt(6.0) * self._sigma_scaled)) * np.maximum(
             0.0,
-            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * self.sigma.rescale(t.units))).magnitude))
+            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(6.0) * self.sigma
@@ -187,14 +197,14 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
-    having any effect in the case of symmetric kernels,
+    having any effect in the case of symmetric kernels.
     """
     min_cutoff = np.sqrt(5.0)
 
     def _evaluate(self, t):
-        return (3.0 / (4.0 * np.sqrt(5.0) * self.sigma.rescale(t.units))) * np.maximum(
+        return (3.0 / (4.0 * np.sqrt(5.0) * self._sigma_scaled)) * np.maximum(
             0.0,
-            1 - (t / (np.sqrt(5.0) * self.sigma.rescale(t.units))).magnitude ** 2)
+            1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return np.sqrt(5.0) * self.sigma
@@ -209,13 +219,13 @@ class GaussianKernel(SymmetricKernel):
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
-    having any effect in the case of symmetric kernels,
+    having any effect in the case of symmetric kernels.
     """
     min_cutoff = 3.0
 
     def _evaluate(self, t):
-        return (1.0 / (np.sqrt(2.0 * np.pi) * self.sigma.rescale(t.units))) * np.exp(
-            -0.5 * (t / self.sigma.rescale(t.units)).magnitude ** 2)
+        return (1.0 / (np.sqrt(2.0 * np.pi) * self._sigma_scaled)) * np.exp(
+            -0.5 * (t / self._sigma_scaled).magnitude ** 2)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
@@ -230,13 +240,13 @@ class LaplacianKernel(SymmetricKernel):
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
-    having any effect in the case of symmetric kernels,
+    having any effect in the case of symmetric kernels.
     """
     min_cutoff = 3.0
 
     def _evaluate(self, t):
-        return (1 / (np.sqrt(2.0) * self.sigma.rescale(t.units))) * np.exp(
-            -(np.absolute(t) * np.sqrt(2.0) / self.sigma.rescale(t.units)).magnitude)
+        return (1 / (np.sqrt(2.0) * self._sigma_scaled)) * np.exp(
+            -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
 
     def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
@@ -262,13 +272,13 @@ class ExponentialKernel(Kernel):
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: (1.0 / self.sigma.rescale(t.units).magnitude) * np.exp(
-                        (-t / self.sigma.rescale(t.units)).magnitude)]) / t.units
+                    lambda t: (1.0 / self._sigma_scaled.magnitude) * np.exp(
+                        (-t / self._sigma_scaled).magnitude)]) / t.units
         elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: (1.0 / self.sigma.rescale(t.units).magnitude) * np.exp(
-                        (t / self.sigma.rescale(t.units)).magnitude),
+                    lambda t: (1.0 / self._sigma_scaled.magnitude) * np.exp(
+                        (t / self._sigma_scaled).magnitude),
                     lambda t: 0]) / t.units
         return kernel
 
@@ -292,13 +302,13 @@ class AlphaKernel(Kernel):
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: 2.0 * (t / (self.sigma.rescale(t.units))**2).magnitude *
-                              np.exp((-t * np.sqrt(2.0) / self.sigma.rescale(t.units)).magnitude)]) / t.units
+                    lambda t: 2.0 * (t / (self._sigma_scaled)**2).magnitude *
+                              np.exp((-t * np.sqrt(2.0) / self._sigma_scaled).magnitude)]) / t.units
         elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: -2.0 * (t / (self.sigma.rescale(t.units))**2).magnitude *
-                              np.exp((t * np.sqrt(2.0) / self.sigma.rescale(t.units)).magnitude),
+                    lambda t: -2.0 * (t / (self._sigma_scaled)**2).magnitude *
+                              np.exp((t * np.sqrt(2.0) / self._sigma_scaled).magnitude),
                     lambda t: 0 ]) / t.units
         return kernel
 
