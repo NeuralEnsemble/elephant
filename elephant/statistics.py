@@ -373,15 +373,15 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 
     norm = 1./SI_time_stamp_resolution
 
+    w = sigma2kw(form)
+
     if form.upper() == 'BOX':
-        w = 2.0 * SI_sigma * np.sqrt(3)
         # always odd number of bins
         width = 2 * np.floor(w / 2.0 / SI_time_stamp_resolution) + 1
         height = 1. / width
         kernel = np.ones((1, width)) * height  # area = 1
 
     elif form.upper() == 'TRI':
-        w = 2 * SI_sigma * np.sqrt(6)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         trileft = np.arange(1, halfwidth + 2)
         triright = np.arange(halfwidth, 0, -1)  # odd number of bins
@@ -389,7 +389,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = triangle / triangle.sum()  # area = 1
 
     elif form.upper() == 'EPA':
-        w = 2.0 * SI_sigma * np.sqrt(5)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         base = np.arange(-halfwidth, halfwidth + 1)
         parabula = base**2
@@ -397,7 +396,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = epanech / epanech.sum()  # area = 1
 
     elif form.upper() == 'GAU':
-        w = 2.0 * SI_sigma * 2.7  # > 99% of distribution weight
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)  # always odd
         base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
         g = np.exp(
@@ -405,7 +403,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = g / g.sum()  # area = 1
 
     elif form.upper() == 'ALP':
-        w = 5.0 * SI_sigma
         alpha = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -417,7 +414,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
             kernel = np.flipud(kernel)
 
     elif form.upper() == 'EXP':
-        w = 5.0 * SI_sigma
         expo = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
