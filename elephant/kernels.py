@@ -42,7 +42,7 @@ class Kernel(object):
 
     def __init__(self, sigma, direction=1):
 
-        if not (isinstance(sigma, pq.quantity.Quantity)):
+        if not (isinstance(sigma, pq.Quantity)):
             raise TypeError("sigma must be a quantity!")
 
         if sigma.magnitude < 0:
@@ -63,6 +63,10 @@ class Kernel(object):
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
         """
+        if not (isinstance(t, pq.Quantity)):
+            raise TypeError("The argument of the kernel callable must be "
+                            "of type quantity!")
+
         if t.dimensionality.simplified != self.sigma.dimensionality.simplified:
             raise TypeError("The dimensionality of sigma and the input array "
                             "to the callable kernel object must be the same. "
