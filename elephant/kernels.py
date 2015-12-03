@@ -40,7 +40,7 @@ class Kernel(object):
     :type direction: integer of value 1 or -1, default: 1
     """
 
-    def __init__(self, sigma, direction = 1):
+    def __init__(self, sigma, direction=1):
 
         if not (isinstance(sigma, pq.quantity.Quantity)):
             raise TypeError("sigma must be a quantity!")
@@ -54,7 +54,6 @@ class Kernel(object):
         self.sigma = sigma
         self.direction = direction
 
-
     def __call__(self, t):
         """ Evaluates the kernel at all points in the array `t`.
 
@@ -64,10 +63,11 @@ class Kernel(object):
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
         """
-        if  t.dimensionality.simplified != self.sigma.dimensionality.simplified:
+        if t.dimensionality.simplified != self.sigma.dimensionality.simplified:
             raise TypeError("The dimensionality of sigma and the input array "
-                "to the callable kernel object must be the same. Otherwise a "
-                "normalization to 1 of the kernel cannot be performed.")
+                            "to the callable kernel object must be the same. "
+                            "Otherwise a normalization to 1 of the kernel "
+                            "cannot be performed.")
 
         self._sigma_scaled = self.sigma.rescale(t.units)
         # A hidden variable _sigma_scaled is introduced here in order to avoid
@@ -87,7 +87,8 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         """ Calculates the boundary :math:`b` so that the integral from
         :math:`-b` to :math:`b` encloses at least a certain fraction of the
         integral over the complete kernel.
@@ -117,7 +118,8 @@ class Kernel(object):
         ignored probability in the distribution corresponding to lower values
         than the minimum in the array t.
         """
-        return np.nonzero(self(t).cumsum() * (t[len(t)-1] -t[0]) / (len(t)-1) >= 0.5)[0].min()
+        return np.nonzero(self(t).cumsum() *
+                          (t[len(t)-1] - t[0]) / (len(t) - 1) >= 0.5)[0].min()
 
     def is_symmetric(self):
         """ Should return `True` if the kernel is symmetric. """
@@ -153,7 +155,8 @@ class RectangularKernel(SymmetricKernel):
         return (0.5 / (np.sqrt(3.0) * self._sigma_scaled)) * \
                (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         return np.sqrt(3.0) * self.sigma
 
 
@@ -163,7 +166,8 @@ class TriangularKernel(SymmetricKernel):
 
     :math:`K(t) = \left\{ \begin{array}{ll} \frac{1}{\tau} (1
     - \frac{|t|}{\tau}), & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
-    with :math:`\tau = \sqrt{6} \sigma` corresponding to the half width of the kernel.
+    with :math:`\tau = \sqrt{6} \sigma` corresponding to the half width of the
+    kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
@@ -174,9 +178,11 @@ class TriangularKernel(SymmetricKernel):
     def _evaluate(self, t):
         return (1.0 / (np.sqrt(6.0) * self._sigma_scaled)) * np.maximum(
             0.0,
-            (1.0 - (np.absolute(t) / (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
+            (1.0 - (np.absolute(t) /
+                    (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         return np.sqrt(6.0) * self.sigma
 
 
@@ -184,7 +190,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     """
     Class for epanechnikov-like kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2), & |t| < d \\
+    :math:`K(t) = \left\{\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2),
+    & |t| < d \\
     0, & |t| \geq d \end{array} \right`
     with :math:`d = \sqrt{5} \sigma` being the half width of the kernel.
 
@@ -206,7 +213,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
             0.0,
             1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         return np.sqrt(5.0) * self.sigma
 
 
@@ -214,7 +222,8 @@ class GaussianKernel(SymmetricKernel):
     """
     Class for gaussian kernels
 
-    :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}}) \exp(-\frac{t^2}{2 \sigma^2})`
+    :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}})
+    \exp(-\frac{t^2}{2 \sigma^2})`
     with :math:`\sigma` being the standard deviation.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
@@ -227,7 +236,8 @@ class GaussianKernel(SymmetricKernel):
         return (1.0 / (np.sqrt(2.0 * np.pi) * self._sigma_scaled)) * np.exp(
             -0.5 * (t / self._sigma_scaled).magnitude ** 2)
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
 
 
@@ -248,7 +258,8 @@ class LaplacianKernel(SymmetricKernel):
         return (1 / (np.sqrt(2.0) * self._sigma_scaled)) * np.exp(
             -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
 
 
@@ -256,12 +267,13 @@ class LaplacianKernel(SymmetricKernel):
 # Quartic (biweight), Triweight, Tricube, Cosine, Logistics, Silverman
 
 
+# class ExponentialKernel(AsymmetricKernel):
 class ExponentialKernel(Kernel):
-## class ExponentialKernel(AsymmetricKernel):
     """
     Class for exponential kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau}, & t > 0 \\
+    :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau},
+    & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma`.
     """
@@ -282,16 +294,18 @@ class ExponentialKernel(Kernel):
                     lambda t: 0]) / t.units
         return kernel
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
         return -self.sigma * np.log(1.0 - fraction)
 
 
+# class AlphaKernel(AsymmetricKernel):
 class AlphaKernel(Kernel):
-## class AlphaKernel(AsymmetricKernel):
     """
     Class for alpha kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau}, & t > 0 \\
+    :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau},
+    & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.
     """
@@ -302,15 +316,20 @@ class AlphaKernel(Kernel):
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
-                    lambda t: 2.0 * (t / (self._sigma_scaled)**2).magnitude *
-                              np.exp((-t * np.sqrt(2.0) / self._sigma_scaled).magnitude)]) / t.units
+                    lambda t: 2.0 * (t / self._sigma_scaled**2).magnitude *
+                              np.exp((-t * np.sqrt(2.0) /
+                                      self._sigma_scaled).magnitude)]) / t.units
         elif self.direction == -1:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
-                    lambda t: -2.0 * (t / (self._sigma_scaled)**2).magnitude *
-                              np.exp((t * np.sqrt(2.0) / self._sigma_scaled).magnitude),
+                    lambda t: -2.0 * (t / self._sigma_scaled**2).magnitude *
+                              np.exp((t * np.sqrt(2.0) /
+                                      self._sigma_scaled).magnitude),
                     lambda t: 0 ]) / t.units
         return kernel
 
-    def boundary_enclosing_at_least(self, fraction = default_kernel_area_fraction):
-        return - self.sigma * (1 + scipy.special.lambertw((fraction - 1.0) / np.exp(1.0))) / np.sqrt(2.0)
+    def boundary_enclosing_at_least(self,
+                                    fraction=default_kernel_area_fraction):
+        return - self.sigma * \
+               (1 + scipy.special.lambertw((fraction - 1.0) / np.exp(1.0))) / \
+               np.sqrt(2.0)

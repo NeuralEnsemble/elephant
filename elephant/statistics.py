@@ -247,8 +247,8 @@ def lv(v):
     return 3.*np.mean(np.power(np.diff(v)/(v[:-1] + v[1:]), 2))
 
 
-## sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
-## to finally be taken out of Elephant
+# sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
+# to finally be taken out of Elephant
 def sigma2kw(form):
     if form.upper() == 'BOX':
         coeff = 2.0 * np.sqrt(3)
@@ -270,7 +270,7 @@ def kw2sigma(form):
     return 1/sigma2kw(form)
 
 
-## to finally be taken out of Elephant
+# to finally be taken out of Elephant
 def make_kernel(form, sigma, sampling_period, direction=1):
     """
     Creates kernel functions for convolution.
@@ -373,15 +373,15 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 
     norm = 1./SI_time_stamp_resolution
 
-    w = sigma2kw(form)
-
     if form.upper() == 'BOX':
+        w = 2.0 * SI_sigma * np.sqrt(3)
         # always odd number of bins
         width = 2 * np.floor(w / 2.0 / SI_time_stamp_resolution) + 1
         height = 1. / width
         kernel = np.ones((1, width)) * height  # area = 1
 
     elif form.upper() == 'TRI':
+        w = 2 * SI_sigma * np.sqrt(6)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         trileft = np.arange(1, halfwidth + 2)
         triright = np.arange(halfwidth, 0, -1)  # odd number of bins
@@ -389,6 +389,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = triangle / triangle.sum()  # area = 1
 
     elif form.upper() == 'EPA':
+        w = 2.0 * SI_sigma * np.sqrt(5)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         base = np.arange(-halfwidth, halfwidth + 1)
         parabula = base**2
@@ -396,6 +397,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = epanech / epanech.sum()  # area = 1
 
     elif form.upper() == 'GAU':
+        w = 2.0 * SI_sigma * 2.7  # > 99% of distribution weight
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)  # always odd
         base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
         g = np.exp(
@@ -403,6 +405,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = g / g.sum()  # area = 1
 
     elif form.upper() == 'ALP':
+        w = 5.0 * SI_sigma
         alpha = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -414,6 +417,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
             kernel = np.flipud(kernel)
 
     elif form.upper() == 'EXP':
+        w = 5.0 * SI_sigma
         expo = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -429,7 +433,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-## to finally be taken out of Elephant
+# to finally be taken out of Elephant
 def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
                        acausal=True, trim=False):
@@ -659,14 +663,14 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     if not isinstance(spiketrain, SpikeTrain):
         raise TypeError(
             "spiketrain must be instance of :class:`SpikeTrain` of Neo!\n"
-            "    Found: %s, value %s" %(type(spiketrain), str(spiketrain)))
+            "    Found: %s, value %s" % (type(spiketrain), str(spiketrain)))
 
     if not (isinstance(sampling_period, pq.Quantity) and
             sampling_period.dimensionality.simplified ==
             pq.Quantity(1, "s").dimensionality):
         raise TypeError(
             "The sampling period must be a time quantity!\n"
-            "    Found: %s, value %s" %(type(sampling_period), str(sampling_period)))
+            "    Found: %s, value %s" % (type(sampling_period), str(sampling_period)))
 
     if sampling_period.magnitude < 0:
         raise ValueError("The sampling period must be larger than zero.")
@@ -684,17 +688,17 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         raise TypeError(
             "kernel must be either instance of :class:`Kernel` "
             "or the string 'auto'!\n"
-            "    Found: %s, value %s" %(type(kernel), str(kernel)))
+            "    Found: %s, value %s" % (type(kernel), str(kernel)))
 
     if not (isinstance(cutoff, float) or isinstance(cutoff, int)):
         raise TypeError("cutoff must be float or integer!")
 
-    if not (t_start == None or (isinstance(t_start, pq.Quantity) and
+    if not (t_start is None or (isinstance(t_start, pq.Quantity) and
             t_start.dimensionality.simplified ==
             pq.Quantity(1, "s").dimensionality)):
         raise TypeError("t_start must be a time quantity!")
 
-    if not (t_stop == None or (isinstance(t_stop, pq.Quantity) and
+    if not (t_stop is None or (isinstance(t_stop, pq.Quantity) and
             t_stop.dimensionality.simplified ==
             pq.Quantity(1, "s").dimensionality)):
         raise TypeError("t_stop must be a time quantity!")
@@ -745,9 +749,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         r = r[kernel.m_idx(t_arr):-(kernel(t_arr).size - kernel.m_idx(t_arr))]
     elif trim:
         r = r[2 * kernel.m_idx(t_arr):-2 * (kernel(t_arr).size - kernel.m_idx(t_arr))]
-        t_start = t_start + kernel.m_idx(t_arr) * spiketrain.units
-        t_stop = t_stop - \
-                 (kernel(t_arr).size - kernel.m_idx(t_arr)) * spiketrain.units
+        t_start += kernel.m_idx(t_arr) * spiketrain.units
+        t_stop -= (kernel(t_arr).size - kernel.m_idx(t_arr)) * spiketrain.units
 
     rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
                                  sampling_period=sampling_period,
