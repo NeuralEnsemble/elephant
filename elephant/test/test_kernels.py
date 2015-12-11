@@ -19,10 +19,12 @@ import elephant.kernels as kernels
 class kernel_TestCase(unittest.TestCase):
     def setUp(self):
         self.kernel_types = [obj for obj in kernels.__dict__.values()
-                             if isinstance(obj, type) and issubclass(obj, kernels.Kernel) and hasattr(obj, "_evaluate")
-                             and obj is not kernels.Kernel and obj is not kernels.SymmetricKernel]
+                             if isinstance(obj, type) and
+                             issubclass(obj, kernels.Kernel) and
+                             hasattr(obj, "_evaluate") and
+                             obj is not kernels.Kernel and
+                             obj is not kernels.SymmetricKernel]
         self.fraction = 0.9999
-        # self.fraction = 0.999
 
     def test_error_kernels(self):
         """
