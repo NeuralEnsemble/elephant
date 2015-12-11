@@ -89,20 +89,36 @@ class Kernel(object):
         :returns: The result of the kernel evaluations.
         :rtype: Quantity 1D
         """
-        raise NotImplementedError()
+        raise NotImplementedError("The Kernel class should not be used directly, "
+                                  "instead the subclasses for the single kernels.")
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         """ Calculates the boundary :math:`b` so that the integral from
         :math:`-b` to :math:`b` encloses at least a certain fraction of the
-        integral over the complete kernel.
+        integral over the complete kernel. By definition the returned value
+        of the method boundary_enclosing_area_fraction is hence non-negative, even
+        if the whole probability mass of the kernel is concentrated over
+        negative support for direction-inverted kernels.
 
         :param float fraction: Fraction of the whole area which at least has
             to be enclosed.
         :returns: boundary
         :rtype: Quantity scalar
         """
-        raise NotImplementedError()
+        raise NotImplementedError("The Kernel class should not be used directly, "
+                                  "instead the subclasses for the single kernels.")
+
+    def _check_fraction(self, fraction):
+        """
+        Checks the input variable of the method boundary_enclosing_area_fraction
+        for validity of type and value.
+        :param fraction: Fraction of the area under the kernel function.
+        """
+        if not isinstance(fraction, (float, int)):
+            raise TypeError("`fraction` must be float or integer!")
+        if not 0 <= fraction <= 1:
+            raise ValueError("`fraction` must be in the interval [0, 1]!")
 
     def m_idx(self, t):
         """
@@ -159,8 +175,10 @@ class RectangularKernel(SymmetricKernel):
         return (0.5 / (np.sqrt(3.0) * self._sigma_scaled)) * \
                (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        # @doc_inherit
+        self._check_fraction(fraction)
         return np.sqrt(3.0) * self.sigma
 
 
@@ -185,8 +203,9 @@ class TriangularKernel(SymmetricKernel):
             (1.0 - (np.absolute(t) /
                     (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        self._check_fraction(fraction)
         return np.sqrt(6.0) * self.sigma
 
 
@@ -217,8 +236,9 @@ class EpanechnikovLikeKernel(SymmetricKernel):
             0.0,
             1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        self._check_fraction(fraction)
         return np.sqrt(5.0) * self.sigma
 
 
@@ -240,8 +260,9 @@ class GaussianKernel(SymmetricKernel):
         return (1.0 / (np.sqrt(2.0 * np.pi) * self._sigma_scaled)) * np.exp(
             -0.5 * (t / self._sigma_scaled).magnitude ** 2)
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        self._check_fraction(fraction)
         return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
 
 
@@ -262,8 +283,9 @@ class LaplacianKernel(SymmetricKernel):
         return (1 / (np.sqrt(2.0) * self._sigma_scaled)) * np.exp(
             -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        self._check_fraction(fraction)
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
 
 
@@ -298,8 +320,9 @@ class ExponentialKernel(Kernel):
                     lambda t: 0]) / t.units
         return kernel
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        self._check_fraction(fraction)
         return -self.sigma * np.log(1.0 - fraction)
 
 
@@ -332,8 +355,23 @@ class AlphaKernel(Kernel):
                     lambda t: 0 ]) / t.units
         return kernel
 
-    def boundary_enclosing_at_least(self,
+    def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
-        return - self.sigma * \
-               (1 + scipy.special.lambertw((fraction - 1.0) / np.exp(1.0))) / \
-               np.sqrt(2.0)
+        """
+        An analytical expression for the boundary of the integral as a function
+        of the area under the alpha kernel function cannot be given.
+        Hence in this case the value of the boundary is determined by kernel-
+        approximating numerical integration.
+        """
+        self._check_fraction(fraction)
+        sigma_division = 500            # arbitrary choice
+        self._sigma_scaled = self.sigma
+        interval = self.sigma / sigma_division
+        area = 0
+        counter = 0
+        while area < fraction:
+            area += (self._evaluate((counter + 1) * self.direction * interval) +
+                     self._evaluate(counter * self.direction * interval)) * interval / 2
+            counter += 1
+        return counter * interval
+
