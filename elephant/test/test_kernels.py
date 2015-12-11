@@ -45,6 +45,8 @@ class kernel_TestCase(unittest.TestCase):
         self.assertRaises(
             NotImplementedError, kernel.boundary_enclosing_area_fraction,
             fraction=0.9)
+        self.assertRaises(TypeError, rec_kernel.boundary_enclosing_area_fraction, [1,2])
+        self.assertRaises(ValueError, rec_kernel.boundary_enclosing_area_fraction, -10)
         self.assertEquals(kernel.is_symmetric(), False)
         self.assertEquals(rec_kernel.is_symmetric(), True)
 
