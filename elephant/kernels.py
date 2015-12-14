@@ -29,15 +29,17 @@ class Kernel(object):
     """
     Base class for kernels.
 
-    :param sigma: Standard deviation of the kernel.
+    Parameters
+    ----------
+    sigma : Quantity scalar
+        Standard deviation of the kernel.
         This parameter determines the time resolution of the kernel estimate
         and makes different kernels comparable (Meier R, Egert U, Aertsen A,
         Nawrot MP, "FIND - a unified framework for neural data analysis";
         Neural Netw. 2008 Oct; 21(8):1085-93.) for symmetric kernels.
-    :type sigma: Quantity scalar
-    :param direction (optional): Orientation of asymmetric kernels,
-            e.g., exponential or alpha kernels.
-    :type direction: integer of value 1 or -1, default: 1
+    direction: integer of value 1 or -1, optional
+        Orientation of asymmetric kernels, e.g., exponential or alpha kernels.
+        Default: 1
     """
 
     def __init__(self, sigma, direction=1):
@@ -57,11 +59,16 @@ class Kernel(object):
     def __call__(self, t):
         """ Evaluates the kernel at all points in the array `t`.
 
-        :param t: Interval on which the kernel is evaluated, not necessarily
+        Parameter
+        ---------
+        t : Quantity 1D
+            Interval on which the kernel is evaluated, not necessarily
             a time interval.
-        :type t: Quantity 1D
-        :returns: The result of the kernel evaluations.
-        :rtype: Quantity 1D
+
+        Returns
+        -------
+            Quantity 1D
+            The result of the kernel evaluations.
         """
         if not (isinstance(t, pq.Quantity)):
             raise TypeError("The argument of the kernel callable must be "
@@ -83,11 +90,16 @@ class Kernel(object):
     def _evaluate(self, t):
         """ Evaluates the kernel.
 
-        :param t: Interval on which the kernel is evaluated, not necessarily
+        Parameter
+        ---------
+        t : Quantity 1D
+            Interval on which the kernel is evaluated, not necessarily
             a time interval.
-        :type t: Quantity 1D
-        :returns: The result of the kernel evaluations.
-        :rtype: Quantity 1D
+
+        Returns
+        -------
+            Quantity 1D
+            The result of the kernel evaluations.
         """
         raise NotImplementedError("The Kernel class should not be used directly, "
                                   "instead the subclasses for the single kernels.")
@@ -97,14 +109,20 @@ class Kernel(object):
         """ Calculates the boundary :math:`b` so that the integral from
         :math:`-b` to :math:`b` encloses at least a certain fraction of the
         integral over the complete kernel. By definition the returned value
-        of the method boundary_enclosing_area_fraction is hence non-negative, even
-        if the whole probability mass of the kernel is concentrated over
+        of the method boundary_enclosing_area_fraction is hence non-negative,
+        even if the whole probability mass of the kernel is concentrated over
         negative support for direction-inverted kernels.
 
-        :param float fraction: Fraction of the whole area which at least has
+        Parameter
+        ---------
+        fraction : float
+            Fraction of the whole area which at least has
             to be enclosed.
-        :returns: boundary
-        :rtype: Quantity scalar
+
+        Returns
+        -------
+            Quantity scalar
+            boundary
         """
         raise NotImplementedError("The Kernel class should not be used directly, "
                                   "instead the subclasses for the single kernels.")
@@ -113,7 +131,11 @@ class Kernel(object):
         """
         Checks the input variable of the method boundary_enclosing_area_fraction
         for validity of type and value.
-        :param fraction: Fraction of the area under the kernel function.
+
+        Parameter
+        ---------
+        fraction : float or int
+            Fraction of the area under the kernel function.
         """
         if not isinstance(fraction, (float, int)):
             raise TypeError("`fraction` must be float or integer!")
@@ -126,12 +148,18 @@ class Kernel(object):
         This parameter is not mandatory for symmetrical kernels but it is
         required when asymmetrical kernels have to be aligned at their median.
 
-        :param t: Interval on which the kernel is evaluated,
-        :type t: Quantity 1D
-        :returns: Estimated value of the kernel median
-        :rtype: int
+        Parameter
+        ---------
+        t : Quantity 1D
+            Interval on which the kernel is evaluated,
 
-        Remarks:
+        Returns
+        -------
+            int
+            Index of the estimated value of the kernel median.
+
+        Remarks
+        -------
         The formula in this method using retrieval of the sampling interval
         from t only works for t with equidistant intervals!
         The formula calculates the Median slightly wrong by the potentially
