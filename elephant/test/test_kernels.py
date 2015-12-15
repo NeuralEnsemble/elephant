@@ -116,14 +116,7 @@ class kernel_TestCase(unittest.TestCase):
                 kern = kernel(restric_defdomain)
                 frac= spint.cumtrapz(y=kern.magnitude,
                                      x=restric_defdomain.magnitude)[-1]
-                # For kernels with finite support
-                # boundary_enclosing_area_fraction(fraction) returns a boundary
-                # such that the integral over the kernel with this boundary is
-                # one, i.e. `frac` is one, no matter which `fraction` was given.
-                # Hence those cases have to be excluded from the comparison
-                # of `frac` with `fraction`.
-                if frac < 0.999:
-                    self.assertAlmostEqual(frac, fraction, delta=0.002)
+                self.assertAlmostEqual(frac, fraction, delta=0.002)
 
 if __name__ == '__main__':
     unittest.main()

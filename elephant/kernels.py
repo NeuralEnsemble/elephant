@@ -24,7 +24,6 @@ import scipy.special
 
 default_kernel_area_fraction = 0.99999
 
-
 class Kernel(object):
     """
     Base class for kernels.
@@ -57,7 +56,8 @@ class Kernel(object):
         self.direction = direction
 
     def __call__(self, t):
-        """ Evaluates the kernel at all points in the array `t`.
+        """
+        Evaluates the kernel at all points in the array `t`.
 
         Parameter
         ---------
@@ -88,7 +88,8 @@ class Kernel(object):
         return self._evaluate(t)
 
     def _evaluate(self, t):
-        """ Evaluates the kernel.
+        """
+        Evaluates the kernel.
 
         Parameter
         ---------
@@ -106,7 +107,8 @@ class Kernel(object):
 
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
-        """ Calculates the boundary :math:`b` so that the integral from
+        """
+        Calculates the boundary :math:`b` so that the integral from
         :math:`-b` to :math:`b` encloses at least a certain fraction of the
         integral over the complete kernel. By definition the returned value
         of the method boundary_enclosing_area_fraction is hence non-negative,
@@ -170,16 +172,16 @@ class Kernel(object):
                           (t[len(t)-1] - t[0]) / (len(t) - 1) >= 0.5)[0].min()
 
     def is_symmetric(self):
-        """ Should return `True` if the kernel is symmetric. """
+        """
+        Should return `True` if the kernel is symmetric.
+        """
         return False
 
 
 class SymmetricKernel(Kernel):
-    """ Base class for symmetric kernels. """
-
-    # def __init__(self, sigma, direction):
-    #     Kernel.__init__(self, sigma, direction)
-
+    """
+    Base class for symmetric kernels.
+    """
     def is_symmetric(self):
         return True
 
@@ -205,9 +207,8 @@ class RectangularKernel(SymmetricKernel):
 
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
-        # @doc_inherit
         self._check_fraction(fraction)
-        return np.sqrt(3.0) * self.sigma
+        return np.sqrt(3.0) * self.sigma * fraction
 
 
 class TriangularKernel(SymmetricKernel):
@@ -234,7 +235,7 @@ class TriangularKernel(SymmetricKernel):
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
-        return np.sqrt(6.0) * self.sigma
+        return np.sqrt(6.0) * self.sigma * (1 - np.sqrt(1 - fraction))
 
 
 class EpanechnikovLikeKernel(SymmetricKernel):
@@ -267,7 +268,29 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
-        return np.sqrt(5.0) * self.sigma
+        # Integration within the boundaries 0 and b of the density of the
+        # Epanechnikov-like kernel and solving for b leads to the problem of
+        # finding the roots of a polynomial of third order. The following
+        # implemented formulas are based on the solution of this problem
+        # given in
+        # https://en.wikipedia.org/wiki/Cubic_function
+        #
+        # Python's complex-operator cannot handle quantities, hence the
+        # following construction on quantities necessary:
+        Delta_0 = complex(1.0 / (5.0 * self.sigma.magnitude**2), 0) / \
+                  self.sigma.units**2
+        Delta_1 = complex(2.0 * np.sqrt(5.0) * fraction /
+                          (25.0 * self.sigma.magnitude**3), 0) / \
+                  self.sigma.units**3
+        C = ((Delta_1 + (Delta_1**2.0 - 4.0 * Delta_0**3.0)**(1.0 / 2.0)) /
+             2.0)**(1.0 / 3.0)
+        # u_1 = complex( 1.0, 0)                  # Solution on negative side
+        # u_2 = complex(-1.0/2.0, np.sqrt(3.0)/2.0) # Solution for larger
+                                   # values than zero crossing of the density
+        u_3 = complex(-1.0/2.0, -np.sqrt(3.0)/2.0)  # Solution for smaller
+                                   # values than zero crossing of the density
+        b= -5.0 * self.sigma**2 * (u_3 * C + Delta_0 / (u_3 * C))
+        return b.real
 
 
 class GaussianKernel(SymmetricKernel):
@@ -321,7 +344,6 @@ class LaplacianKernel(SymmetricKernel):
 # Quartic (biweight), Triweight, Tricube, Cosine, Logistics, Silverman
 
 
-# class ExponentialKernel(AsymmetricKernel):
 class ExponentialKernel(Kernel):
     """
     Class for exponential kernels
@@ -354,7 +376,6 @@ class ExponentialKernel(Kernel):
         return -self.sigma * np.log(1.0 - fraction)
 
 
-# class AlphaKernel(AsymmetricKernel):
 class AlphaKernel(Kernel):
     """
     Class for alpha kernels
