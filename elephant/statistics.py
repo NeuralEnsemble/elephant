@@ -17,7 +17,7 @@ from neo.core import SpikeTrain
 import elephant.conversion as conv
 import kernels
 import warnings
-warnings.simplefilter('always', DeprecationWarning)
+# warnings.simplefilter('always', DeprecationWarning)
 
 
 def isi(spiketrain, axis=-1):
@@ -251,6 +251,7 @@ def lv(v):
 # sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
 # to finally be taken out of Elephant
 def sigma2kw(form):
+    warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     if form.upper() == 'BOX':
         coeff = 2.0 * np.sqrt(3)
@@ -269,6 +270,7 @@ def sigma2kw(form):
 
 
 def kw2sigma(form):
+    warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     return 1/sigma2kw(form)
 
@@ -356,6 +358,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
        J. Neurosci Meth 94: 81-92; 1999.
 
     """
+    warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'])
     forms_verbose = np.array(['boxcar', 'triangle', 'gaussian', 'epanechnikov',
@@ -517,6 +520,7 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
     ----------
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
     """
+    warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     if sigma == 'auto':
         form = 'GAU'
