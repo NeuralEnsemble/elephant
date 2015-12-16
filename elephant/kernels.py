@@ -22,6 +22,22 @@ import quantities as pq
 import numpy as np
 import scipy.special
 
+def inherit_docstring(fromfunc, sep=""):
+    """
+    Decorator: Copy the docstring of `fromfunc`
+
+    based on:
+    http://stackoverflow.com/questions/13741998/is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
+    """
+    def _decorator(func):
+        parent_doc = fromfunc.__doc__
+        if func.__doc__ is None:
+            func.__doc__ = parent_doc
+        else:
+            func.__doc__ = sep.join([parent_doc, func.__doc__])
+        return func
+    return _decorator
+
 default_kernel_area_fraction = 0.99999
 
 class Kernel(object):
@@ -100,7 +116,7 @@ class Kernel(object):
         Returns
         -------
             Quantity 1D
-            The result of the kernel evaluations.
+            The result of the kernel evaluation.
         """
         raise NotImplementedError("The Kernel class should not be used directly, "
                                   "instead the subclasses for the single kernels.")
@@ -118,13 +134,14 @@ class Kernel(object):
         Parameter
         ---------
         fraction : float
-            Fraction of the whole area which at least has
-            to be enclosed.
+            Fraction of the whole area which has to be enclosed.
+            Default: 0.99999
 
         Returns
         -------
             Quantity scalar
-            boundary
+            Boundary of the kernel containing area :math:`fraction` under the
+            kernel density.
         """
         raise NotImplementedError("The Kernel class should not be used directly, "
                                   "instead the subclasses for the single kernels.")
@@ -141,8 +158,8 @@ class Kernel(object):
         """
         if not isinstance(fraction, (float, int)):
             raise TypeError("`fraction` must be float or integer!")
-        if not 0 <= fraction <= 1:
-            raise ValueError("`fraction` must be in the interval [0, 1]!")
+        if not 0 <= fraction < 1:
+            raise ValueError("`fraction` must be in the interval [0, 1)!")
 
     def m_idx(self, t):
         """
@@ -173,7 +190,9 @@ class Kernel(object):
 
     def is_symmetric(self):
         """
-        Should return `True` if the kernel is symmetric.
+        In the case of symmetric kernels, this method is overwritten in the class
+        SymmetricKernel, where it returns 'True', hence leaving the here returned
+        value 'False' for the asymmetric kernels.
         """
         return False
 
@@ -181,7 +200,10 @@ class Kernel(object):
 class SymmetricKernel(Kernel):
     """
     Base class for symmetric kernels.
+
+    Derived from:
     """
+    __doc__ += Kernel.__doc__
     def is_symmetric(self):
         return True
 
@@ -198,13 +220,18 @@ class RectangularKernel(SymmetricKernel):
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
+
+    Derived from:
     """
+    __doc__ += SymmetricKernel.__doc__
     min_cutoff = np.sqrt(3.0)
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (0.5 / (np.sqrt(3.0) * self._sigma_scaled)) * \
                (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
@@ -223,15 +250,20 @@ class TriangularKernel(SymmetricKernel):
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
+
+    Derived from:
     """
+    __doc__ += SymmetricKernel.__doc__
     min_cutoff = np.sqrt(6.0)
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (1.0 / (np.sqrt(6.0) * self._sigma_scaled)) * np.maximum(
             0.0,
             (1.0 - (np.absolute(t) /
                     (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
@@ -257,26 +289,39 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
+
+    Derived from:
     """
+    __doc__ += SymmetricKernel.__doc__
     min_cutoff = np.sqrt(5.0)
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (3.0 / (4.0 * np.sqrt(5.0) * self._sigma_scaled)) * np.maximum(
             0.0,
             1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
+        """
+        For Epanechnikov-like kernels, integration of its density within
+        the boundaries 0 and :math:`b`, and then solving for :math:`b` leads
+        to the problem of finding the roots of a polynomial of third order.
+        The implemented formulas are based on the solution of this problem
+        given in https://en.wikipedia.org/wiki/Cubic_function,
+        where the following 3 solutions are given:
+        :math:`u_1 = 1` :                  Solution on negative side
+        :math:`u_2 = \frac{-1 + i\sqrt{3}}{2}` : Solution for larger
+                            values than zero crossing of the density
+        :math:`u_3 = \frac{-1 - i\sqrt{3}}{2}` : Solution for smaller
+                            values than zero crossing of the density
+        The solution :math:`u_3` is the relevant one for the problem at hand,
+        since it involves only positive area contributions.
+        """
         self._check_fraction(fraction)
-        # Integration within the boundaries 0 and b of the density of the
-        # Epanechnikov-like kernel and solving for b leads to the problem of
-        # finding the roots of a polynomial of third order. The following
-        # implemented formulas are based on the solution of this problem
-        # given in
-        # https://en.wikipedia.org/wiki/Cubic_function
-        #
         # Python's complex-operator cannot handle quantities, hence the
-        # following construction on quantities necessary:
+        # following construction on quantities is necessary:
         Delta_0 = complex(1.0 / (5.0 * self.sigma.magnitude**2), 0) / \
                   self.sigma.units**2
         Delta_1 = complex(2.0 * np.sqrt(5.0) * fraction /
@@ -284,11 +329,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
                   self.sigma.units**3
         C = ((Delta_1 + (Delta_1**2.0 - 4.0 * Delta_0**3.0)**(1.0 / 2.0)) /
              2.0)**(1.0 / 3.0)
-        # u_1 = complex( 1.0, 0)                  # Solution on negative side
-        # u_2 = complex(-1.0/2.0, np.sqrt(3.0)/2.0) # Solution for larger
-                                   # values than zero crossing of the density
-        u_3 = complex(-1.0/2.0, -np.sqrt(3.0)/2.0)  # Solution for smaller
-                                   # values than zero crossing of the density
+        u_3 = complex(-1.0/2.0, -np.sqrt(3.0)/2.0)
         b= -5.0 * self.sigma**2 * (u_3 * C + Delta_0 / (u_3 * C))
         return b.real
 
@@ -304,13 +345,18 @@ class GaussianKernel(SymmetricKernel):
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
+
+    Derived from:
     """
+    __doc__ += SymmetricKernel.__doc__
     min_cutoff = 3.0
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (1.0 / (np.sqrt(2.0 * np.pi) * self._sigma_scaled)) * np.exp(
             -0.5 * (t / self._sigma_scaled).magnitude ** 2)
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
@@ -327,13 +373,18 @@ class LaplacianKernel(SymmetricKernel):
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `direction` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
+
+    Derived from:
     """
+    __doc__ += SymmetricKernel.__doc__
     min_cutoff = 3.0
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (1 / (np.sqrt(2.0) * self._sigma_scaled)) * np.exp(
             -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
@@ -352,9 +403,13 @@ class ExponentialKernel(Kernel):
     & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma`.
+
+    Derived from:
     """
+    __doc__ += Kernel.__doc__
     min_cutoff = 3.0
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         if self.direction == 1:
             kernel = np.piecewise(
@@ -370,6 +425,7 @@ class ExponentialKernel(Kernel):
                     lambda t: 0]) / t.units
         return kernel
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         self._check_fraction(fraction)
@@ -384,9 +440,13 @@ class AlphaKernel(Kernel):
     & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.
+
+    Derived from:
     """
+    __doc__ += Kernel.__doc__
     min_cutoff = 3.0
 
+    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         if self.direction == 1:
             kernel = np.piecewise(
@@ -404,13 +464,14 @@ class AlphaKernel(Kernel):
                     lambda t: 0 ]) / t.units
         return kernel
 
+    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self,
                                     fraction=default_kernel_area_fraction):
         """
-        An analytical expression for the boundary of the integral as a function
-        of the area under the alpha kernel function cannot be given.
-        Hence in this case the value of the boundary is determined by kernel-
-        approximating numerical integration.
+        For the alpha kernel an analytical expression for the boundary of the
+        integral as a function of the area under the alpha kernel function
+        cannot be given. Hence in this case the value of the boundary is
+        determined by kernel-approximating numerical integration.
         """
         self._check_fraction(fraction)
         sigma_division = 500            # arbitrary choice
