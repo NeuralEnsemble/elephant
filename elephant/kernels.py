@@ -27,7 +27,8 @@ def inherit_docstring(fromfunc, sep=""):
     Decorator: Copy the docstring of `fromfunc`
 
     based on:
-    http://stackoverflow.com/questions/13741998/is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
+    http://stackoverflow.com/questions/13741998/
+    is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
     """
     def _decorator(func):
         parent_doc = fromfunc.__doc__
@@ -190,9 +191,9 @@ class Kernel(object):
 
     def is_symmetric(self):
         """
-        In the case of symmetric kernels, this method is overwritten in the class
-        SymmetricKernel, where it returns 'True', hence leaving the here returned
-        value 'False' for the asymmetric kernels.
+        In the case of symmetric kernels, this method is overwritten in the
+        class SymmetricKernel, where it returns 'True', hence leaving the
+        here returned value 'False' for the asymmetric kernels.
         """
         return False
 
@@ -481,7 +482,13 @@ class AlphaKernel(Kernel):
         counter = 0
         while area < fraction:
             area += (self._evaluate((counter + 1) * self.direction * interval) +
-                     self._evaluate(counter * self.direction * interval)) * interval / 2
+                     self._evaluate(counter * self.direction * interval)) * \
+                    interval / 2
             counter += 1
+            if(counter > 1000000):
+                raise ValueError("fraction was chosen too close to one such "
+                                 "that in combination with integral "
+                                 "approximation errors the calculation of a "
+                                 "boundary was not possible.")
         return counter * interval
 
