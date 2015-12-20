@@ -9,7 +9,6 @@ Unit tests for the kernels module.
 import unittest
 
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 import quantities as pq
 import scipy.integrate as spint
 import elephant.kernels as kernels
@@ -34,7 +33,8 @@ class kernel_TestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, kernels.RectangularKernel, sigma=-0.03*pq.s)
         self.assertRaises(
-            ValueError, kernels.RectangularKernel, sigma=2.0*pq.ms, direction=2)
+            ValueError, kernels.RectangularKernel, sigma=2.0*pq.ms,
+            direction=2)
         rec_kernel = kernels.RectangularKernel(sigma=0.3*pq.ms)
         self.assertRaises(
             TypeError, rec_kernel, [1, 2, 3])
@@ -46,13 +46,16 @@ class kernel_TestCase(unittest.TestCase):
         self.assertRaises(
             NotImplementedError, kernel.boundary_enclosing_area_fraction,
             fraction=0.9)
-        self.assertRaises(TypeError, rec_kernel.boundary_enclosing_area_fraction, [1, 2])
-        self.assertRaises(ValueError, rec_kernel.boundary_enclosing_area_fraction, -10)
+        self.assertRaises(TypeError,
+                          rec_kernel.boundary_enclosing_area_fraction, [1, 2])
+        self.assertRaises(ValueError,
+                          rec_kernel.boundary_enclosing_area_fraction, -10)
         self.assertEquals(kernel.is_symmetric(), False)
         self.assertEquals(rec_kernel.is_symmetric(), True)
         # Very time-consuming test:
         # alp_kernel = kernels.AlphaKernel(sigma=0.3*pq.ms)
-        # self.assertRaises(ValueError, alp_kernel.boundary_enclosing_area_fraction, 0.9999999)
+        # self.assertRaises(ValueError,
+        #     alp_kernel.boundary_enclosing_area_fraction, 0.9999999)
 
     def test_kernels_normalization(self):
         """
