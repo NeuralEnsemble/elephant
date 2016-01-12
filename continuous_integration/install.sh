@@ -83,7 +83,7 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install coverage
     pip install numpy==$NUMPY_VERSION
     pip install six
-    pip install pandas==0.16.0
+    pip install pandas==$PANDAS_VERSION
     pip install quantities
 fi
 

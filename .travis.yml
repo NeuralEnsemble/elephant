@@ -28,7 +28,7 @@ env:
       NUMPY_VERSION="1.8.1" SCIPY_VERSION="0.14.0" COVERAGE="true"
     # basic Ubuntu build environment
     - DISTRIB="ubuntu" PYTHON_VERSION="2.7" INSTALL_ATLAS="true"
-      NUMPY_VERSION="1.6.2"
+      NUMPY_VERSION="1.6.2" PANDAS_VERSION="0.16.0"
       COVERAGE="true"
 install: source continuous_integration/install.sh
 script: bash continuous_integration/test_script.sh
