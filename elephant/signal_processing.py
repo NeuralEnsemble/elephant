@@ -87,7 +87,7 @@ def zscore(signal, inplace=True):
      [ 0.87831007  0.87831007]
      [ 1.46385011  1.46385011]] dimensionless
 
-    >>> print zscore([b,c])   #  doctest: +NORMALIZE_WHITESPACE
+    >>> print zscore([b,c])
     [<AnalogSignalArray(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
        [-1.01772411, -1.01394628],
@@ -113,24 +113,20 @@ def zscore(signal, inplace=True):
 
     if not inplace:
         # Create new signal instance
-        result = [sig.duplicate_with_new_array(
-            (sig.magnitude - m.magnitude) / s.magnitude) for sig in signal]
-        l = []
-        for sig in result:
-            sig_dimless = sig / sig.units
-            l.append(sig_dimless)
-        result = l
+        result = []
+        for sig in signal:
+            sig_dimless = sig.duplicate_with_new_array(
+                    (sig.magnitude - m.magnitude) / s.magnitude) / sig.units
+            result.append(sig_dimless)
     else:
-        l = []
+        result = []
         # Overwrite signal
         for sig in signal:
             sig[:] = pq.Quantity(
                 (sig.magnitude - m.magnitude) / s.magnitude,
                 units=sig.units)
             sig_dimless = sig / sig.units
-            l.append(sig_dimless)
-        result = l
-
+            result.append(sig_dimless)
     # Return single object, or list of objects
     if len(result) == 1:
         return result[0]
