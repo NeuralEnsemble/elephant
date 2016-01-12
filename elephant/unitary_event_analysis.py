@@ -14,6 +14,9 @@ Gruen S, Riehle A, and Diesmann M (2003) Effect of cross-trial nonstationarity
 on joint-spike events Biological Cybernetics 88(5):335-351. 
 Gruen S (2009) Data-driven significance estimation of precise spike correlation. 
 J Neurophysiology 101:1126-1140 (invited review)
+
+:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
 """
 
 
@@ -37,14 +40,14 @@ def hash_from_pattern(m, N, base=2):
 
     Parameters:
     -----------
-    m: list of integers
-           matrix of 0-1 patterns as columns,
-           shape: (number of neurons, number of patterns)
+    m: 2-dim ndarray
+           spike patterns represented as a binary matrix (i.e., matrix of 0's and 1's). 
+           Rows and columns correspond to patterns and neurons, respectively.
     N: integer
            number of neurons is required to be equal to the number
            of rows
     base: integer
-           base for calculation of the number from binary
+           base for calculation of hash values from binary
            sequences (= pattern).
            Default is 2
 
@@ -81,7 +84,11 @@ def hash_from_pattern(m, N, base=2):
     if N != np.shape(m)[0]:
         raise ValueError('patterns in the matrix should be column entries')
 
-    # generate the representation for binary system
+    # check the entries of the matrix
+    if not np.all((np.array(m) == 0) + (np.array(m)==1)):
+        raise ValueError('patterns should be zero or one')
+
+    # generate the representation
     v = np.array([base**x for x in range(N)])
     # reverse the order
     v = v[np.argsort(-v)]
@@ -129,8 +136,8 @@ def inverse_hash_from_pattern(h, N, base=2):
                [0, 0]])
     """
 
-    # check if the hash values are not bigger than possible hash value
-    # for N neuron with basis = base
+    # check if the hash values are not greater than the greatest possible 
+    # value for N neurons with the given base
     if np.any(h > np.sum([base**x for x in range(N)])):
         raise ValueError(
             "hash value is not compatible with the number of neurons N")
@@ -150,30 +157,30 @@ def inverse_hash_from_pattern(h, N, base=2):
 
 def n_emp_mat(mat, N, pattern_hash, base=2):
     """
-    Calculates empirical number of observed patterns expressed
-    by their hash values
+    Count the occurrences of spike coincidence patterns 
+    in the given spike trains.
 
     Parameters:
     -----------
-    m: list of integers
-           matrix of 0-1 patterns as columns,
-           shape: (number of neurons N, number of patterns)
+    mat: 2-dim ndarray
+           binned spike trains of N neurons. Rows and columns correspond 
+           to neurons and temporal bins, respectively.
     N: integer
            number of neurons
     pattern_hash: list of integers
-            array of hash values. Length defines number of patterns
+           hash values representing the spike coincidence patterns 
+           of which occurrences are counted.
     base: integer
-           base for calculation of the number from binary
-           sequences (= pattern).
+           Base which was used to generate the hash values.
            Default is 2
 
     Returns:
     --------
     N_emp: list of integers
-           empirical number of each observed pattern.
-           Same length as pattern_hash
-    indices: list of list of integers
-           list of indices of mat per entry of pattern_hash.
+           number of occurrences of the given patterns in the given spike trains
+    indices: list of lists of integers
+           indices indexing the bins where the given spike patterns are found 
+           in `mat`. Same length as `pattern_hash`
            indices[i] = N_emp[i] = pattern_hash[i]
 
     Raises:
@@ -192,26 +199,28 @@ def n_emp_mat(mat, N, pattern_hash, base=2):
     [array([]), array([0, 3])]
     """
     # check if the mat is zero-one matrix
-    if np.any(mat>1) or np.any(mat<0):
+    if not np.all((np.array(mat) == 0) + (np.array(mat)==1)):    
         raise ValueError("entries of mat should be either one or zero")
     h = hash_from_pattern(mat, N, base = base)
     N_emp = np.zeros(len(pattern_hash))
     indices = []
-    for p_h_idx, p_h in enumerate(pattern_hash):
-        indices_tmp = np.nonzero(h == p_h)[0]
+    for idx_ph, ph in enumerate(pattern_hash):
+        indices_tmp = np.where(h == ph)[0]
         indices.append(indices_tmp)
-        N_emp_tmp = len(indices_tmp)
-        N_emp[p_h_idx] = N_emp_tmp
+        N_emp[idx_ph] = len(indices_tmp)
     return N_emp, indices
 
 
-def n_emp_mat_sum_trial(mat, N, pattern_hash, method='analytic_TrialByTrial'):
+def n_emp_mat_sum_trial(mat, N, pattern_hash):
     """
     Calculates empirical number of observed patterns summed across trials
 
     Parameters:
     -----------
-    mat: 3d numpy array
+    mat: 3d numpy array or elephant BinndedSpikeTrain object
+           Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
+           segmented into trials. Trials should contain an identical number of neurons and 
+           an identical number of time bins.
             the entries are zero or one
             0-axis --> trials
             1-axis --> neurons
@@ -220,31 +229,19 @@ def n_emp_mat_sum_trial(mat, N, pattern_hash, method='analytic_TrialByTrial'):
             number of neurons
     pattern_hash: list of integers
             array of hash values, length: number of patterns
-    method: string
-            method with which the unitary events whould be computed
-            'analytic_TrialByTrial' -- > calculate the expectency
-            (analytically) on each trial, then sum over all trials.
-            'analytic_TrialAverage' -- > calculate the expectency
-            by averaging over trials.
-            (cf. Gruen et al. 2003)
-            'surrogate_TrialByTrial' -- > calculate the distribution 
-            of expected coincidences by spike time randomzation in 
-            each trial and sum over trials.
-            Default is 'analytic_trialByTrial'
-
 
 
     Returns:
     --------
-    N_empL list of integers
-           empirical number of observed pattern summed across trials,
-           length: number of patterns (i.e. len(patter_hash))
-    idx_trials: list of list of integers
+    N_emp: list of integers
+           numbers of occurences of the given spike patterns in the given spike trains, 
+           summed across trials. Same length as `pattern_hash`.
+    idx_trials: list of lists of integers
            list of indices of mat for each trial in which
            the specific pattern has been observed.
            0-axis --> trial
            1-axis --> list of indices for the chosen trial per
-           entry of pattern_hash
+           entry of `pattern_hash`
 
     Raises:
     -------
@@ -279,46 +276,52 @@ def n_emp_mat_sum_trial(mat, N, pattern_hash, method='analytic_TrialByTrial'):
     N_emp = np.zeros(num_patt)
 
     idx_trials = []
+    # check if the mat is zero-one matrix
+    if not np.all((np.array(mat) == 0) + (np.array(mat)==1)):    
+        raise ValueError("entries of mat should be either one or zero")
+
     for mat_tr in mat:
-        # check if the mat is zero-one matrix
-        if np.any(np.array(mat_tr)>1):
-            raise ValueError("entries of mat should be either one or zero")
         N_emp_tmp,indices_tmp = n_emp_mat(mat_tr, N, pattern_hash,base=2)
         idx_trials.append(indices_tmp)
         N_emp += N_emp_tmp
-    if method == 'analytic_TrialByTrial' or method == 'surrogate_TrialByTrial':
-        return N_emp, idx_trials
-    elif method == 'analytic_TrialAverage':
-        return N_emp/float(len(mat)), idx_trials
+
+    return N_emp, idx_trials    
 
 
-def _sts_overlap(sts, t_start=None, t_stop=None):
+def _n_exp_mat_analytic(mat, N, pattern_hash):
     """
-    Find the internal range t_start, t_stop where all spike trains are
-    defined; cut all spike trains taking that time range only
+    Calculates the expected joint probability for each spike pattern analyticaly
     """
-    max_tstart = max([t.t_start for t in sts])
-    min_tstop = min([t.t_stop for t in sts])
-
-    if t_start is None:
-        t_start = max_tstart
-        if not all([max_tstart == t.t_start for t in sts]):
-            warnings.warn(
-                "Spiketrains have different t_start values -- "
-                "using maximum t_start as t_start.")
-
-    if t_stop is None:
-        t_stop = min_tstop
-        if not all([min_tstop == t.t_stop for t in sts]):
-            warnings.warn(
-                "Spiketrains have different t_stop values -- "
-                "using minimum t_stop as t_stop.")
-
-    sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in sts]
-    return sts_cut
+    marg_prob = np.mean(mat,1,dtype=float)
+    # marg_prob needs to be a column vector, so we
+    # build a two dimensional array with 1 column
+    # and len(marg_prob) rows
+    marg_prob = np.reshape(marg_prob,(len(marg_prob),1))
+    m = inverse_hash_from_pattern(pattern_hash, N)
+    nrep = np.shape(m)[1]
+    # multipyling the marginal probability of neurons with regard to the pattern
+    pmat = np.multiply(m,np.tile(marg_prob,(1,nrep))) +\
+           np.multiply(1-m,np.tile(1-marg_prob,(1,nrep)))
+    return np.prod(pmat,axis=0)*float(np.shape(mat)[1])
 
 
-def n_exp_mat(mat, N, pattern_hash, method = 'analytic', **kwargs):
+def _n_exp_mat_surrogate(mat, N, pattern_hash,n_surr=1):
+    """
+    Calculates the expected joint probability for each spike pattern with spike
+    time randomization surrogate
+    """
+    if len(pattern_hash)>1:
+            raise ValueError('surrogate method works only for one pattern!')            
+    N_exp_array = np.zeros(n_surr)
+    for rz_idx, rz in enumerate(np.arange(n_surr)):
+        # shuffling all elements of zero-one matrix
+        mat_surr = np.array(mat)
+        [np.random.shuffle(i) for i in mat_surr]
+        N_exp_array[rz_idx] = n_emp_mat(mat_surr, N, pattern_hash)[0][0]
+    return N_exp_array
+
+
+def n_exp_mat(mat, N, pattern_hash, method = 'analytic', n_surr=1):
     """
     Calculates the expected joint probability for each spike pattern
 
@@ -335,11 +338,12 @@ def n_exp_mat(mat, N, pattern_hash, method = 'analytic', **kwargs):
             'analytic' -- > analytically
             'surr' -- > with surrogates (spike time randomization)
             Default is 'analytic'
+    n_surr: integer
+            number of surrogates for constructing the distribution of expected joint probability.
+            Default is 1 and this number is needed only when method = 'surr'
+    
     kwargs:
     -------
-    n_surr: integer
-            number of surrogate to be used
-            Default is 100
 
     Raises:
     -------
@@ -385,32 +389,9 @@ def n_exp_mat(mat, N, pattern_hash, method = 'analytic', **kwargs):
         raise ValueError("entries of mat should be either one or zero")
 
     if method == 'analytic':
-        marg_prob = np.mean(mat,1,dtype=float)
-        # marg_prob needs to be a column vector, so we
-        # build a two dimensional array with 1 column
-        # and len(marg_prob) rows
-        marg_prob = np.reshape(marg_prob,(len(marg_prob),1))
-        m = inverse_hash_from_pattern(pattern_hash, N)
-        nrep = np.shape(m)[1]
-        # multipyling the marginal probability of neurons with regard to the pattern
-        pmat = np.multiply(m,np.tile(marg_prob,(1,nrep))) +\
-               np.multiply(1-m,np.tile(1-marg_prob,(1,nrep)))
-        return np.prod(pmat,axis=0)*float(np.shape(mat)[1])
+        return _n_exp_mat_analytic(mat, N, pattern_hash)
     if method == 'surr':
-        if len(pattern_hash)>1:
-                raise ValueError('surrogate method works only for one pattern!')            
-        if 'n_surr' in kwargs:
-            n_surr = kwargs['n_surr']
-        else:
-            n_surr = 100.
-        N_exp_array = np.zeros(n_surr)
-        for rz_idx, rz in enumerate(np.arange(n_surr)):
-            # shuffling all elements of zero-one matrix
-            mat_surr = np.array(mat)
-            [np.random.shuffle(i) for i in mat_surr]
-            N_exp_array[rz_idx] = n_emp_mat(mat_surr, N, pattern_hash)[0][0]
-        return N_exp_array
-
+        return _n_exp_mat_surrogate(mat, N, pattern_hash,n_surr)
 
 def n_exp_mat_sum_trial(mat, N, pattern_hash, method = 'analytic_TrialByTrial', **kwargs):
     """
@@ -419,7 +400,10 @@ def n_exp_mat_sum_trial(mat, N, pattern_hash, method = 'analytic_TrialByTrial', 
 
     Parameters:
     -----------
-    mat: 3d numpy array
+    mat: 3d numpy array or elephant BinndedSpikeTrain object
+           Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
+           segmented into trials. Trials should contain an identical number of neurons and 
+           an identical number of time bins.
             the entries are zero or one
             0-axis --> trials
             1-axis --> neurons
@@ -444,7 +428,7 @@ def n_exp_mat_sum_trial(mat, N, pattern_hash, method = 'analytic_TrialByTrial', 
     -------
     n_surr: integer
             number of surrogate to be used
-            Default is 100
+            Default is 1
 
     Returns:
     --------
@@ -484,7 +468,7 @@ def n_exp_mat_sum_trial(mat, N, pattern_hash, method = 'analytic_TrialByTrial', 
         if 'n_surr' in kwargs: 
             n_surr = kwargs['n_surr']
         else:
-            n_surr = 100.
+            n_surr = 1.
         n_exp = np.zeros(n_surr)
         for mat_tr in mat:
             n_exp += n_exp_mat(mat_tr, N, pattern_hash, method='surr', n_surr = n_surr)
@@ -506,7 +490,10 @@ def gen_pval_anal(mat, N, pattern_hash, method='analytic_TrialByTrial',**kwargs)
 
     Parameters:
     -----------
-    mat: 3d numpy array
+    mat: 3d numpy array or elephant BinndedSpikeTrain object
+           Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
+           segmented into trials. Trials should contain an identical number of neurons and 
+           an identical number of time bins.
             the entries are zero or one
             0-axis --> trials
             1-axis --> neurons
@@ -528,7 +515,7 @@ def gen_pval_anal(mat, N, pattern_hash, method='analytic_TrialByTrial',**kwargs)
     -------
     n_surr: integer
             number of surrogate to be used
-            Default is 100
+            Default is 1
 
 
     Returns:
@@ -564,7 +551,7 @@ def gen_pval_anal(mat, N, pattern_hash, method='analytic_TrialByTrial',**kwargs)
         if 'n_surr' in kwargs: 
             n_surr = kwargs['n_surr'] 
         else:
-            n_surr = 100.
+            n_surr = 1.
         n_exp = n_exp_mat_sum_trial(mat, N, pattern_hash, method = method, n_surr = n_surr)
         def pval(n_emp):
             hist = np.bincount(np.int64(n_exp))
@@ -653,11 +640,11 @@ def _UE(mat, N, pattern_hash, method='analytic_TrialByTrial',**kwargs):
     in the given mat, n_exp and average rate of neurons)
     """
     rate_avg = _rate_mat_avg_trial(mat)
-    n_emp, indices = n_emp_mat_sum_trial(mat, N, pattern_hash, method)
+    n_emp, indices = n_emp_mat_sum_trial(mat, N, pattern_hash)
     if method == 'surrogate_TrialByTrial':
         if 'n_surr' in kwargs: 
             n_surr = kwargs['n_surr']
-        else: n_surr = 100
+        else: n_surr = 1
         dist_exp, n_exp = gen_pval_anal(mat, N, pattern_hash, method, n_surr=n_surr)
     elif method == 'analytic_TrialByTrial' or method == 'analytic_TrialAverage':
         dist_exp, n_exp = gen_pval_anal(mat, N, pattern_hash, method)
@@ -693,13 +680,21 @@ def jointJ_window_analysis(
             method with which the unitary events whould be computed
             'analytic_TrialByTrial' -- > calculate the expectency
             (analytically) on each trial, then sum over all trials.
-            ''analytic_TrialAverage' -- > calculate the expectency
+            'analytic_TrialAverage' -- > calculate the expectency
             by averaging over trials.
             (cf. Gruen et al. 2003)
             'surrogate_TrialByTrial' -- > calculate the distribution 
             of expected coincidences by spike time randomzation in 
             each trial and sum over trials.
             Default is 'analytic_trialByTrial'
+    t_start: float or Quantity scalar, optional
+             The start time to use for the time points.
+             If not specified, retrieved from the `t_start`
+             attribute of `spiketrain`.
+    t_stop: float or Quantity scalar, optional
+            The start time to use for the time points.
+            If not specified, retrieved from the `t_stop`
+            attribute of `spiketrain`.
 
     kwargs:
     -------

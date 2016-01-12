@@ -1,7 +1,7 @@
 """
 Various functions to test the ue_utils package
 
-@author: Rostami
+@author: Vahid Rostami
 """
 
 import unittest
@@ -111,8 +111,13 @@ class UETestCase(unittest.TestCase):
         h = ue.hash_from_pattern(m, N=100)
         self.assertTrue(np.all(expected == h))
 
-    def test_hash_ValueError(self):
+    def test_hash_ValueError_wrong_orientation(self):
         m = np.array([[0,0,0], [1,0,0], [0,1,0], [0,0,1], [1,1,0],
+                      [1,0,1],[0,1,1],[1,1,1]])
+        self.assertRaises(ValueError, ue.hash_from_pattern, m, N=3)
+
+    def test_hash_ValueError_wrong_entries(self):
+        m = np.array([[0,0,0], [1,0,0], [0,2,0], [0,0,1], [1,1,0],
                       [1,0,1],[0,1,1],[1,1,1]])
         self.assertRaises(ValueError, ue.hash_from_pattern, m, N=3)
 
@@ -179,20 +184,6 @@ class UETestCase(unittest.TestCase):
         for item0_cnt,item0 in enumerate(n_emp_idx):
             for item1_cnt,item1 in enumerate(item0):
                 self.assertTrue(np.allclose(expected2[item0_cnt][item1_cnt],item1))
-
-    def test_n_emp_mat_sum_trial_TrialAverge(self):
-        mat = self.binary_sts
-        pattern_hash = np.array([4,6])
-        N = 3
-        expected1 = np.array([ 1./len(mat),  3./len(mat)])
-        expected2 = [[[0], [3]],[[],[2,4]]]
-        n_emp, n_emp_idx = ue.n_emp_mat_sum_trial(
-            mat, N, pattern_hash, method='analytic_TrialAverage')
-        self.assertTrue(np.all(n_emp == expected1))
-        for item0_cnt,item0 in enumerate(n_emp_idx):
-            for item1_cnt,item1 in enumerate(item0):
-                self.assertTrue(np.allclose(expected2[item0_cnt][item1_cnt],item1))
-
 
     def test_n_emp_mat_sum_trial_ValueError(self):
         mat = np.array([[0,0,0], [1,0,0], [0,1,0], [0,0,1], [1,1,0],
