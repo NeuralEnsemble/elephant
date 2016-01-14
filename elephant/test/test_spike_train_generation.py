@@ -65,7 +65,7 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         self.assertEqual(len(spike_train),len(true_spike_train))
         # Does threshold_detection gives the correct times for the spikes?    
         try:
-            self.assertTrue(np.allclose(spike_train,spike_train))
+            assert_array_almost_equal(spike_train,spike_train)
         except AttributeError: # If numpy version too old to have allclose
             self.assertTrue(np.array_equal(spike_train,spike_train))
 
