@@ -39,8 +39,6 @@ def inherit_docstring(fromfunc, sep=""):
         return func
     return _decorator
 
-default_kernel_area_fraction = 0.99999
-
 class Kernel(object):
     """
     Base class for kernels.
@@ -122,11 +120,10 @@ class Kernel(object):
         raise NotImplementedError("The Kernel class should not be used directly, "
                                   "instead the subclasses for the single kernels.")
 
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         """
         Calculates the boundary :math:`b` so that the integral from
-        :math:`-b` to :math:`b` encloses at least a certain fraction of the
+        :math:`-b` to :math:`b` encloses a certain fraction of the
         integral over the complete kernel. By definition the returned value
         of the method boundary_enclosing_area_fraction is hence non-negative,
         even if the whole probability mass of the kernel is concentrated over
@@ -136,7 +133,6 @@ class Kernel(object):
         ---------
         fraction : float
             Fraction of the whole area which has to be enclosed.
-            Default: 0.99999
 
         Returns
         -------
@@ -144,8 +140,24 @@ class Kernel(object):
             Boundary of the kernel containing area :math:`fraction` under the
             kernel density.
         """
-        raise NotImplementedError("The Kernel class should not be used directly, "
-                                  "instead the subclasses for the single kernels.")
+        self._check_fraction(fraction)
+        sigma_division = 500            # arbitrary choice
+        interval = self.sigma / sigma_division
+        self._sigma_scaled = self.sigma
+        area = 0
+        counter = 0
+        while area < fraction:
+            area += (self._evaluate((counter + 1) * interval) +
+                     self._evaluate(counter * interval)) * interval / 2
+            area += (self._evaluate(-1 * (counter + 1) * interval) +
+                     self._evaluate(-1 * counter * interval)) * interval / 2
+            counter += 1
+            if(counter > 1000000):
+                raise ValueError("fraction was chosen too close to one such "
+                                 "that in combination with integral "
+                                 "approximation errors the calculation of a "
+                                 "boundary was not possible.")
+        return counter * interval
 
     def _check_fraction(self, fraction):
         """
@@ -233,8 +245,7 @@ class RectangularKernel(SymmetricKernel):
                (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return np.sqrt(3.0) * self.sigma * fraction
 
@@ -265,8 +276,7 @@ class TriangularKernel(SymmetricKernel):
                     (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return np.sqrt(6.0) * self.sigma * (1 - np.sqrt(1 - fraction))
 
@@ -303,8 +313,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
             1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         """
         For Epanechnikov-like kernels, integration of its density within
         the boundaries 0 and :math:`b`, and then solving for :math:`b` leads
@@ -358,8 +367,7 @@ class GaussianKernel(SymmetricKernel):
             -0.5 * (t / self._sigma_scaled).magnitude ** 2)
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
 
@@ -386,8 +394,7 @@ class LaplacianKernel(SymmetricKernel):
             -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
 
@@ -427,8 +434,7 @@ class ExponentialKernel(Kernel):
         return kernel
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
+    def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return -self.sigma * np.log(1.0 - fraction)
 
@@ -441,6 +447,12 @@ class AlphaKernel(Kernel):
     & t > 0 \\
     0, & t \leq 0 \end{array} \right`
     with :math:`\tau = \sigma / \sqrt{2}`.
+
+    For the alpha kernel an analytical expression for the boundary of the
+    integral as a function of the area under the alpha kernel function
+    cannot be given. Hence in this case the value of the boundary is
+    determined by kernel-approximating numerical integration, inherited
+    from the Kernel class.
 
     Derived from:
     """
@@ -464,31 +476,3 @@ class AlphaKernel(Kernel):
                                       self._sigma_scaled).magnitude),
                     lambda t: 0 ]) / t.units
         return kernel
-
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
-    def boundary_enclosing_area_fraction(self,
-                                    fraction=default_kernel_area_fraction):
-        """
-        For the alpha kernel an analytical expression for the boundary of the
-        integral as a function of the area under the alpha kernel function
-        cannot be given. Hence in this case the value of the boundary is
-        determined by kernel-approximating numerical integration.
-        """
-        self._check_fraction(fraction)
-        sigma_division = 500            # arbitrary choice
-        self._sigma_scaled = self.sigma
-        interval = self.sigma / sigma_division
-        area = 0
-        counter = 0
-        while area < fraction:
-            area += (self._evaluate((counter + 1) * self.direction * interval) +
-                     self._evaluate(counter * self.direction * interval)) * \
-                    interval / 2
-            counter += 1
-            if(counter > 1000000):
-                raise ValueError("fraction was chosen too close to one such "
-                                 "that in combination with integral "
-                                 "approximation errors the calculation of a "
-                                 "boundary was not possible.")
-        return counter * interval
-
