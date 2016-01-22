@@ -180,7 +180,7 @@ class Kernel(object):
         if not 0 <= fraction < 1:
             raise ValueError("`fraction` must be in the interval [0, 1)!")
 
-    def m_idx(self, t):
+    def median_index(self, t):
         """
         Estimates the index of the Median of the kernel.
         This parameter is not mandatory for symmetrical kernels but it is

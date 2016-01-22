@@ -755,11 +755,14 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                       "precision errors.")
 
     if not trim:
-        r = r[kernel.m_idx(t_arr):-(kernel(t_arr).size - kernel.m_idx(t_arr))]
+        r = r[kernel.median_index(t_arr):-(kernel(t_arr).size -
+                                           kernel.median_index(t_arr))]
     elif trim:
-        r = r[2 * kernel.m_idx(t_arr):-2 * (kernel(t_arr).size - kernel.m_idx(t_arr))]
-        t_start += kernel.m_idx(t_arr) * spiketrain.units
-        t_stop -= (kernel(t_arr).size - kernel.m_idx(t_arr)) * spiketrain.units
+        r = r[2 * kernel.median_index(t_arr):-2 * (kernel(t_arr).size -
+                                                   kernel.median_index(t_arr))]
+        t_start += kernel.median_index(t_arr) * spiketrain.units
+        t_stop -= (kernel(t_arr).size -
+                   kernel.median_index(t_arr)) * spiketrain.units
 
     rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
                                  sampling_period=sampling_period,
