@@ -422,7 +422,7 @@ class RateEstimationTestCase(unittest.TestCase):
                         hasattr(obj, "_evaluate") and
                         obj is not kernels.Kernel and
                         obj is not kernels.SymmetricKernel]
-        kernel_list = [kernel_type(sigma=0.5*pq.s, direction=1)
+        kernel_list = [kernel_type(sigma=0.5*pq.s, invert=False)
                        for kernel_type in kernel_types]
         kernel_resolution = 0.01*pq.s
         for kernel in kernel_list:

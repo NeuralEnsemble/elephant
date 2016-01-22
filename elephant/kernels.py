@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Definition of classes of various kernel functions to be used in convolution,
-e.g., for data smoothing (low pass filtering) or firing rate estimation.
-
-Currently implemented forms are rectangular, triangular, epanechnikovlike,
-gaussian, laplacian, exponential, and alpha function, of which exponential
-and alpha kernels have asymmetric form.
-
-Exponential and alpha kernels may also be used to represent postynaptic
-currents / potentials in a linear (current-based) model.
+Definition of a hierarchy of classes for kernel functions to be used
+in convolution, e.g., for data smoothing (low pass filtering) or
+firing rate estimation.
 
 Examples of usage:
 kernel1 = kernels.GaussianKernel(sigma=100*ms)
-kernel2 = kernels.ExponentialKernel(sigma=8*mm, direction=-1)
+kernel2 = kernels.ExponentialKernel(sigma=8*mm, invert=True)
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -41,22 +35,34 @@ def inherit_docstring(fromfunc, sep=""):
 
 class Kernel(object):
     """
-    Base class for kernels.
+    This is the base class for commonly used kernels.
+
+    General definition of kernel:
+    A function K(x, y) is called a kernel function if
+    \int K(x, y) g(x) g(y) dx dy \geq 0 \forall g \in L_2.
+    TODO: argument from general towards special!
+    In neuroscience typically a specialized version of kernel is used
+    for convolution, which essentially has the properties of probability
+    densities, i.e., it is positive and normalized to one.
+
+    Currently implemented kernel forms are rectangular, triangular,
+    epanechnikovlike, gaussian, laplacian, exponential, and alpha function,
+    of which exponential and alpha kernels have asymmetric form.
+
+    Exponential and alpha kernels may also be used to represent postynaptic
+    currents / potentials in a linear (current-based) model.
 
     Parameters
     ----------
     sigma : Quantity scalar
         Standard deviation of the kernel.
-        This parameter determines the time resolution of the kernel estimate
-        and makes different kernels comparable (Meier R, Egert U, Aertsen A,
-        Nawrot MP, "FIND - a unified framework for neural data analysis";
-        Neural Netw. 2008 Oct; 21(8):1085-93.) for symmetric kernels.
-    direction: integer of value 1 or -1, optional
-        Orientation of asymmetric kernels, e.g., exponential or alpha kernels.
-        Default: 1
+    invert: bool, optional
+        Determines inversion of asymmetric kernels, e.g., exponential
+        or alpha kernels.
+        Default: False
     """
 
-    def __init__(self, sigma, direction=1):
+    def __init__(self, sigma, invert=False):
 
         if not (isinstance(sigma, pq.Quantity)):
             raise TypeError("sigma must be a quantity!")
@@ -64,11 +70,11 @@ class Kernel(object):
         if sigma.magnitude < 0:
             raise ValueError("sigma cannot be negative!")
 
-        if direction not in (1, -1):
-            raise ValueError("direction must be either 1 or -1")
+        if not isinstance(invert, bool):
+            raise ValueError("invert must be bool!")
 
         self.sigma = sigma
-        self.direction = direction
+        self.invert = invert
 
     def __call__(self, t):
         """
@@ -127,7 +133,7 @@ class Kernel(object):
         integral over the complete kernel. By definition the returned value
         of the method boundary_enclosing_area_fraction is hence non-negative,
         even if the whole probability mass of the kernel is concentrated over
-        negative support for direction-inverted kernels.
+        negative support for inverted kernels.
 
         Parameter
         ---------
@@ -231,7 +237,7 @@ class RectangularKernel(SymmetricKernel):
     of the kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
-    parameter `direction` needed for asymmetric kernels also exists without
+    parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
     Derived from:
@@ -260,7 +266,7 @@ class TriangularKernel(SymmetricKernel):
     kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
-    parameter `direction` needed for asymmetric kernels also exists without
+    parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
     Derived from:
@@ -298,7 +304,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     called 'Epanechnikov-like' kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
-    parameter `direction` needed for asymmetric kernels also exists without
+    parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
     Derived from:
@@ -353,7 +359,7 @@ class GaussianKernel(SymmetricKernel):
     with :math:`\sigma` being the standard deviation.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
-    parameter `direction` needed for asymmetric kernels also exists without
+    parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
     Derived from:
@@ -380,7 +386,7 @@ class LaplacianKernel(SymmetricKernel):
     with :math:`\tau = \sigma / \sqrt{2}`.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
-    parameter `direction` needed for asymmetric kernels also exists without
+    parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
     Derived from:
@@ -419,13 +425,13 @@ class ExponentialKernel(Kernel):
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
-        if self.direction == 1:
+        if self.invert == False:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
                     lambda t: (1.0 / self._sigma_scaled.magnitude) * np.exp(
                         (-t / self._sigma_scaled).magnitude)]) / t.units
-        elif self.direction == -1:
+        elif self.invert == True:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: (1.0 / self._sigma_scaled.magnitude) * np.exp(
@@ -461,14 +467,14 @@ class AlphaKernel(Kernel):
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
-        if self.direction == 1:
+        if self.invert == False:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: 0,
                     lambda t: 2.0 * (t / self._sigma_scaled**2).magnitude *
                               np.exp((-t * np.sqrt(2.0) /
                                       self._sigma_scaled).magnitude)]) / t.units
-        elif self.direction == -1:
+        elif self.invert == True:
             kernel = np.piecewise(
                 t, [t < 0, t >= 0], [
                     lambda t: -2.0 * (t / self._sigma_scaled**2).magnitude *

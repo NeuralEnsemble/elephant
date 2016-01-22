@@ -34,7 +34,7 @@ class kernel_TestCase(unittest.TestCase):
             ValueError, kernels.RectangularKernel, sigma=-0.03*pq.s)
         self.assertRaises(
             ValueError, kernels.RectangularKernel, sigma=2.0*pq.ms,
-            direction=2)
+            invert=2)
         rec_kernel = kernels.RectangularKernel(sigma=0.3*pq.ms)
         self.assertRaises(
             TypeError, rec_kernel, [1, 2, 3])
@@ -52,10 +52,12 @@ class kernel_TestCase(unittest.TestCase):
                           rec_kernel.boundary_enclosing_area_fraction, -10)
         self.assertEquals(kernel.is_symmetric(), False)
         self.assertEquals(rec_kernel.is_symmetric(), True)
-        # Very time-consuming test:
-        # alp_kernel = kernels.AlphaKernel(sigma=0.3*pq.ms)
-        # self.assertRaises(ValueError,
-        #     alp_kernel.boundary_enclosing_area_fraction, 0.9999999)
+
+    @unittest.skip('very time-consuming test')
+    def test_error_alpha_kernel(self):
+        alp_kernel = kernels.AlphaKernel(sigma=0.3*pq.ms)
+        self.assertRaises(ValueError,
+            alp_kernel.boundary_enclosing_area_fraction, 0.9999999)
 
     def test_kernels_normalization(self):
         """
@@ -63,7 +65,7 @@ class kernel_TestCase(unittest.TestCase):
         """
         sigma = 0.1 * pq.mV
         kernel_resolution = sigma / 100.0
-        kernel_list = [kernel_type(sigma, direction=1) for
+        kernel_list = [kernel_type(sigma, invert=False) for
                        kernel_type in self.kernel_types]
         for kernel in kernel_list:
             b = kernel.boundary_enclosing_area_fraction(self.fraction).magnitude
@@ -81,8 +83,8 @@ class kernel_TestCase(unittest.TestCase):
         """
         sigma = 0.5 * pq.s
         kernel_resolution = sigma / 50.0
-        for direction in (1, -1):
-            kernel_list = [kernel_type(sigma, direction) for
+        for invert in (False, True):
+            kernel_list = [kernel_type(sigma, invert) for
                            kernel_type in self.kernel_types]
             for kernel in kernel_list:
                 b = kernel.boundary_enclosing_area_fraction(self.fraction).magnitude
@@ -110,7 +112,7 @@ class kernel_TestCase(unittest.TestCase):
         """
         sigma = 0.5 * pq.s
         kernel_resolution = sigma / 500.0
-        kernel_list = [kernel_type(sigma, direction=1) for
+        kernel_list = [kernel_type(sigma, invert=False) for
                        kernel_type in self.kernel_types]
         for fraction in np.arange(0.15, 1.0, 0.4):
             for kernel in kernel_list:

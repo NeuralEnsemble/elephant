@@ -604,7 +604,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         'kernels.py'. Currently implemented kernel forms are rectangular,
         triangular, epanechnikovlike, gaussian, laplacian, exponential,
         and alpha function.
-        Example: kernel = kernels.RectangularKernel(sigma=10*ms, direction=1)
+        Example: kernel = kernels.RectangularKernel(sigma=10*ms, invert=False)
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
         rate estimation.
@@ -660,7 +660,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Example
     --------
-    kernel = kernels.AlphaKernel(sigma = 0.05*s, direction = -1)
+    kernel = kernels.AlphaKernel(sigma = 0.05*s, invert = True)
     rate = instantaneous_rate(spiketrain, sampling_period = 2*ms, kernel)
 
     References
