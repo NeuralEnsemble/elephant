@@ -243,7 +243,11 @@ class RectangularKernel(SymmetricKernel):
     Derived from:
     """
     __doc__ += SymmetricKernel.__doc__
-    min_cutoff = np.sqrt(3.0)
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = np.sqrt(3.0)
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
@@ -272,7 +276,11 @@ class TriangularKernel(SymmetricKernel):
     Derived from:
     """
     __doc__ += SymmetricKernel.__doc__
-    min_cutoff = np.sqrt(6.0)
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = np.sqrt(6.0)
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
@@ -310,7 +318,11 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     Derived from:
     """
     __doc__ += SymmetricKernel.__doc__
-    min_cutoff = np.sqrt(5.0)
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = np.sqrt(5.0)
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
@@ -365,7 +377,11 @@ class GaussianKernel(SymmetricKernel):
     Derived from:
     """
     __doc__ += SymmetricKernel.__doc__
-    min_cutoff = 3.0
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = 3.0
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
@@ -392,7 +408,11 @@ class LaplacianKernel(SymmetricKernel):
     Derived from:
     """
     __doc__ += SymmetricKernel.__doc__
-    min_cutoff = 3.0
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = 3.0
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
@@ -421,7 +441,11 @@ class ExponentialKernel(Kernel):
     Derived from:
     """
     __doc__ += Kernel.__doc__
-    min_cutoff = 3.0
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = 3.0
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
@@ -463,7 +487,11 @@ class AlphaKernel(Kernel):
     Derived from:
     """
     __doc__ += Kernel.__doc__
-    min_cutoff = 3.0
+
+    @property
+    def min_cutoff(self):
+        min_cutoff = 3.0
+        return min_cutoff
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
