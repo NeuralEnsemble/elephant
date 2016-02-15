@@ -74,6 +74,8 @@ elif [[ "$DISTRIB" == "conda" ]]; then
         pip install coveralls
     fi
 
+    python -c "import pandas; import os; assert os.getenv('PANDAS_VERSION') == pandas.__version__"
+
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     deactivate
     # Create a new virtualenv using system site packages for numpy and scipy
@@ -82,9 +84,8 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install nose
     pip install coverage
     pip install numpy==$NUMPY_VERSION
-    pip install scipy=$SCIPY_VERSION
+    pip install scipy==$SCIPY_VERSION
     pip install six
-    #pip install pandas==$PANDAS_VERSION
     pip install quantities
 fi
 
@@ -104,4 +105,3 @@ pip install .
 
 python -c "import numpy; import os; assert os.getenv('NUMPY_VERSION') == numpy.__version__"
 python -c "import scipy; import os; assert os.getenv('SCIPY_VERSION') == scipy.__version__"
-python -c "import pandas; import os; assert os.getenv('PANDAS_VERSION') == pandas.__version__"
