@@ -93,7 +93,7 @@ fi
 
 # pip install neo==0.3.3
 wget https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.tar.gz
-tar -xzvf python-neo-snapshot-20150821.tar.gz
+tar -xzvf snapshot-20150821.tar.gz
 pushd python-neo-snapshot-20150821
 python setup.py install
 popd
