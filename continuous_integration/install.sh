@@ -41,6 +41,7 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
         # Make sure that MKL is not used
         conda remove --yes --features mkl || echo "MKL not installed"
     fi
+    pip install quantities=$QUANTITIES_VERSION
 
 elif [[ "$DISTRIB" == "conda" ]]; then
     # Deactivate the travis-provided virtual environment and setup a
@@ -73,6 +74,7 @@ elif [[ "$DISTRIB" == "conda" ]]; then
     if [[ "$COVERAGE" == "true" ]]; then
         pip install coveralls
     fi
+    pip install quantities=$QUANTITIES_VERSION
 
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     deactivate
@@ -84,7 +86,7 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install numpy==$NUMPY_VERSION
     pip install six
     pip install pandas==$PANDAS_VERSION
-    pip install quantities
+    pip install quantities=$QUANTITIES_VERSION
 fi
 
 if [[ "$COVERAGE" == "true" ]]; then
