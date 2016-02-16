@@ -35,12 +35,12 @@ Debian/Ubuntu
 -------------
 For Debian/Ubuntu, we recommend to install numpy and scipy as system packages using apt-get::
     
-    $ apt-get install python-numpy python-scipy python-pip
+    $ apt-get install python-numpy python-scipy python-pip python-six
 
 Further packages are found on the Python package index (pypi) and should be installed with pip_::
     
     $ pip install quantities
-    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@apibreak#egg=neo-apibreak
+    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
 
 We highly recommend to install these packages using a virtual environment provided by virtualenv_ or locally in the home directory using the ``--user`` option of pip (e.g., ``pip install --user quantities``), neither of which require administrator privileges.
 
@@ -49,11 +49,10 @@ Windows/Mac OS X
 
 On non-Linux operating systems we recommend using the Anaconda_ Python distribution, and installing all dependencies in a `Conda environment`_, e.g.::
 
-    $ conda create -n neuroscience python
+    $ conda create -n neuroscience python numpy scipy pip six
     $ source activate neuroscience
-    $ conda install numpy scipy pip
     $ pip install quantities
-    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@apibreak#egg=neo-apibreak
+    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
 
 
 Installation
@@ -103,6 +102,6 @@ To install the latest version of Elephant from the Git repository::
 .. _`neo`: http://pypi.python.org/pypi/neo
 .. _`pip`: http://pypi.python.org/pypi/pip
 .. _`virtualenv`: https://virtualenv.pypa.io/en/latest/
-.. _`this snapshot`: https://github.com/NeuralEnsemble/python-neo/archive/apibreak.zip
+.. _`this snapshot`: https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.zip
 .. _Anaconda: http://continuum.io/downloads
 .. _`Conda environment`: http://conda.pydata.org/docs/faq.html#creating-new-environments
