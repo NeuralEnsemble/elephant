@@ -12,16 +12,16 @@ Dependencies
 
 The following packages are required to use Elephant:
     * Python_ >= 2.7
-    * numpy_ >= 1.6.2
-    * scipy_ >= 0.11.0
-    * quantities_ >= 0.9.0
+    * numpy_ >= 1.8.2
+    * scipy_ >= 0.14.0
+    * quantities_ >= 0.10.1
     * neo_ == 0.4.0
 
 .. note:: at the time of writing Neo 0.4.0 has not been released. You should therefore use `this snapshot`_.
 
 The following packages are optional in order to run certain parts of Elephant:
     * For using the pandas_bridge module: 
-        * pandas >= 0.14.0
+        * pandas >= 0.14.1
     * For building the documentation:
         * numpydoc >= 0.5
         * sphinx >= 1.2.2

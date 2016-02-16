@@ -36,7 +36,7 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
-        conda install --yes mkl
+        conda install --yes --no-update-dependencies mkl
     else
         # Make sure that MKL is not used
         conda remove --yes --features mkl || echo "MKL not installed"
@@ -64,7 +64,7 @@ elif [[ "$DISTRIB" == "conda" ]]; then
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
-        conda install --yes mkl
+        conda install --yes --no-update-dependencies mkl
     else
         # Make sure that MKL is not used
         conda remove --yes --features mkl || echo "MKL not installed"
@@ -74,6 +74,8 @@ elif [[ "$DISTRIB" == "conda" ]]; then
         pip install coveralls
     fi
 
+    python -c "import pandas; import os; assert os.getenv('PANDAS_VERSION') == pandas.__version__"
+
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     deactivate
     # Create a new virtualenv using system site packages for numpy and scipy
@@ -82,8 +84,8 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install nose
     pip install coverage
     pip install numpy==$NUMPY_VERSION
+    pip install scipy==$SCIPY_VERSION
     pip install six
-    pip install pandas==$PANDAS_VERSION
     pip install quantities
 fi
 
@@ -99,3 +101,7 @@ python setup.py install
 popd
 
 pip install .
+
+
+python -c "import numpy; import os; assert os.getenv('NUMPY_VERSION') == numpy.__version__"
+python -c "import scipy; import os; assert os.getenv('SCIPY_VERSION') == scipy.__version__"
