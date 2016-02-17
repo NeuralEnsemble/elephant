@@ -381,7 +381,7 @@ class BinnedSpikeTrain(object):
     calculated from given SpikeTrain objects (max start and min stop point).
     Missing parameter will also be calculated automatically.
     All parameters will be checked for consistency. A corresponding error will
-    be risen, if one of the four parameters does not match the consistency
+    be raised, if one of the four parameters does not match the consistency
     requirements.
 
     """

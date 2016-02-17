@@ -745,7 +745,7 @@ def fftkernel(x, w):
 
     y = fftkernel(x,w)
 
-    Function `fftkernel' applies the Gauss kernel smoother to an input
+    Function `fftkernel` applies the Gauss kernel smoother to an input
     signal using FFT algorithm.
 
     Input argument

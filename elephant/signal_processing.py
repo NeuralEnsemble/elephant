@@ -175,6 +175,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
     filtered_signal : AnalogSignalArray or Quantity array or NumPy ndarray
         Filtered input data. The shape and type is identical to those of the
         input.
+
     """
 
     def _design_butterworth_filter(Fs, hpfreq=None, lpfreq=None, order=4):
