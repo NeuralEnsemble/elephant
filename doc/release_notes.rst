@@ -3,7 +3,7 @@ Release Notes
 *************
 
 Elephant 0.2.0 release notes
-==========================
+============================
 September 22nd 2015
 
 Welcome to the 0.2.0 release of Elephant!
@@ -26,3 +26,11 @@ Other changes
 * **Optimized creation of sparse matrices**: The creation speed of the sparse matrix inside the `BinnedSpikeTrain` class is optimized
 * Added **Izhikevich neuron simulator** in the `make_spike_extraction_test_data` module
 * Minor improvements to the test and continous integration infrastructure
+
+
+Elephant 0.2.1 release notes
+============================
+February 18th 2016
+
+Minor bug fixes.
+

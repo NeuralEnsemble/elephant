@@ -150,8 +150,7 @@ open a pull request on GitHub (see https://help.github.com/articles/using-pull-r
 Python 3
 --------
 
-Elephant should work with both recent versions of Python 2 (versions 2.6 and 2.7)
-and Python 3.
+Elephant should work with Python 2.7 and Python 3.
 
 So far, we have managed to write code that works with both Python 2 and 3.
 Mainly this involves avoiding the ``print`` statement (use ``logging.info``
@@ -172,7 +171,7 @@ Coding standards and style
 --------------------------
 
 All code should conform as much as possible to `PEP 8`_, and should run with
-Python 2.7, 3.2, 3.3 and 3.4.
+Python 2.7 and 3.2-3.5.
 
 
 Making a release
