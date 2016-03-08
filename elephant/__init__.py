@@ -18,6 +18,7 @@ from . import (statistics,
 
 try:
     from . import pandas_bridge
+    from . import asset
 except ImportError:
     pass
 
