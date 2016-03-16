@@ -766,7 +766,7 @@ def jointJ_window_analysis(
         mat_tr_unit_spt[tr] = mat
 
     num_win = len(t_winpos)
-    Js_win, n_exp_win, n_emp_win = (np.zeros(num_win) for _ in xrange(3))
+    Js_win, n_exp_win, n_emp_win = (np.zeros(num_win) for _ in range(3))
     rate_avg = np.zeros((num_win,N))
     indices_win = {}
     for i in range(num_tr):
