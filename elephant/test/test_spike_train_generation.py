@@ -15,7 +15,7 @@ import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon
-from quantities import ms, second, Hz, kHz, mV
+from quantities import ms, second, Hz, kHz, mV, dimensionless
 
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
@@ -36,10 +36,10 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
 
     def test_threshold_detection(self):
         # Test whether spikes are extracted at the correct times from
-        # an analog signal.  
+        # an analog signal.
 
-        # Load membrane potential simulated using Brian2 
-        # according to make_spike_extraction_test_data.py.  
+        # Load membrane potential simulated using Brian2
+        # according to make_spike_extraction_test_data.py.
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
         iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
@@ -57,13 +57,13 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
                                                  t_stop=spike_train.t_stop,
                                                  units=spike_train.units)
 
-        # Correct values determined previously.  
-        true_spike_train = [0.0123, 0.0354, 0.0712, 0.1191, 
+        # Correct values determined previously.
+        true_spike_train = [0.0123, 0.0354, 0.0712, 0.1191,
                             0.1694, 0.22, 0.2711]
-        
+
         # Does threshold_detection gives the correct number of spikes?
         self.assertEqual(len(spike_train),len(true_spike_train))
-        # Does threshold_detection gives the correct times for the spikes?    
+        # Does threshold_detection gives the correct times for the spikes?
         try:
             assert_array_almost_equal(spike_train,spike_train)
         except AttributeError: # If numpy version too old to have allclose
@@ -152,6 +152,128 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
                               alternative='two-sided')
                 self.assertGreater(p, 0.001)
                 self.assertLess(D, 0.25)
+
+
+class _n_poisson_TestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.n = 4
+        self.rate = 10*Hz
+        self.rates = range(1, self.n + 1)*Hz
+        self.t_stop = 10000*ms
+
+    def test_poisson(self):
+
+        # Check the output types for input rate + n number of neurons
+        pp = stgen._n_poisson(rate=self.rate, t_stop=self.t_stop, n=self.n)
+        self.assertIsInstance(pp, list)
+        self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(pp[0].simplified.units, 1000*ms)
+        self.assertEqual(len(pp), self.n)
+
+        # Check the output types for input list of rates
+        pp = stgen._n_poisson(rate=self.rates, t_stop=self.t_stop)
+        self.assertIsInstance(pp, list)
+        self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(pp[0].simplified.units, 1000*ms)
+        self.assertEqual(len(pp), self.n)
+
+    def test_poisson_error(self):
+
+        # Dimensionless rate
+        self.assertRaises(
+            ValueError, stgen._n_poisson, rate=5, t_stop=self.t_stop)
+        # Negative rate
+        self.assertRaises(
+            ValueError, stgen._n_poisson, rate=-5*Hz, t_stop=self.t_stop)
+        # Negative value when rate is a list
+        self.assertRaises(
+            ValueError, stgen._n_poisson, rate=[-5, 3]*Hz, t_stop=self.t_stop)
+        # Negative n
+        self.assertRaises(
+            ValueError, stgen._n_poisson, rate=self.rate, t_stop=self.t_stop,
+            n=-1)
+        # t_start>t_stop
+        self.assertRaises(
+            ValueError, stgen._n_poisson, rate=self.rate, t_start=4*ms,
+            t_stop=3*ms, n=3)
+
+
+class singleinteractionprocess_TestCase(unittest.TestCase):
+    def setUp(self):
+        self.n = 4
+        self.rate = 10*Hz
+        self.rates = range(1, self.n + 1)*Hz
+        self.t_stop = 10000*ms
+        self.rate_c = 1*Hz
+
+    def test_sip(self):
+
+        # Generate an example SIP mode
+        sip, coinc = stgen.single_interaction_process(
+            n=self.n, t_stop=self.t_stop, rate=self.rate,
+            rate_c=self.rate_c, return_coinc=True)
+
+        # Check the output types
+        self.assertEqual(type(sip), list)
+        self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(sip[0].simplified.units,  1000*ms)
+        self.assertEqual(coinc[0].simplified.units,  1000*ms)
+
+        # Check the output length
+        self.assertEqual(len(sip), self.n)
+        self.assertEqual(
+            len(coinc[0]), (self.rate_c*self.t_stop).rescale(dimensionless))
+
+        # Generate an example SIP mode giving a list of rates as imput
+        sip, coinc = stgen.single_interaction_process(
+            t_stop=self.t_stop, rate=self.rates,
+            rate_c=self.rate_c, return_coinc=True)
+
+        # Check the output types
+        self.assertEqual(type(sip), list)
+        self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(sip[0].simplified.units,  1000*ms)
+        self.assertEqual(coinc[0].simplified.units,  1000*ms)
+
+        # Check the output length
+        self.assertEqual(len(sip), self.n)
+        self.assertEqual(
+            len(coinc[0]), (self.rate_c*self.t_stop).rescale(dimensionless))
+
+        # Generate an example SIP mode stochastic number of coincidences
+        sip = stgen.single_interaction_process(
+            n=self.n, t_stop=self.t_stop, rate=self.rate,
+            rate_c=self.rate_c, coincidences='stochastic', return_coinc=False)
+
+        # Check the output types
+        self.assertEqual(type(sip), list)
+        self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(sip[0].simplified.units,  1000*ms)
+
+    def test_sip_error(self):
+        # Negative rate
+        self.assertRaises(
+            ValueError, stgen.single_interaction_process, n=self.n, rate=-5*Hz,
+            rate_c=self.rate_c, t_stop=self.t_stop)
+        # Negative coincidence rate
+        self.assertRaises(
+            ValueError, stgen.single_interaction_process, n=self.n,
+            rate=self.rate, rate_c=-3*Hz, t_stop=self.t_stop)
+        # Negative value when rate is a list
+        self.assertRaises(
+            ValueError, stgen.single_interaction_process, n=self.n,
+            rate=[-5, 3, 4, 2]*Hz, rate_c=self.rate_c, t_stop=self.t_stop)
+        # Negative n
+        self.assertRaises(
+            ValueError, stgen.single_interaction_process, n=-1,
+            rate=self.rate, rate_c=self.rate_c, t_stop=self.t_stop)
+        # Rate_c < rate
+        self.assertRaises(
+            ValueError, stgen.single_interaction_process, n=self.n,
+            rate=self.rate, rate_c=self.rate + 1*Hz, t_stop=self.t_stop)
 
 
 if __name__ == '__main__':
