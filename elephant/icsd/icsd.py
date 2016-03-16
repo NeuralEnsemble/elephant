@@ -24,10 +24,12 @@ Requires pylab environment to work, i.e numpy+scipy+matplotlib, with the
 addition of quantities (http://pythonhosted.org/quantities) and
 neo (https://pythonhosted.org/neo)-
 
-Adapted from CSDplotter-0.1.1, copyrighted under General Public License,
-Klas. H. Pettersen 2005,
-by Espen.Hagen@umb.no, 2010,
-by e.hagen@fz-juelich.de, 2015
+Original implementation from CSDplotter-0.1.1
+(http://software.incf.org/software/csdplotter) by Klas. H. Pettersen 2005.
+
+Written by:
+- Espen.Hagen@umb.no, 2010,
+- e.hagen@fz-juelich.de, 2015-2016
 
 
 Example
