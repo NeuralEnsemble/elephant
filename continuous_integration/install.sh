@@ -64,7 +64,6 @@ elif [[ "$DISTRIB" == "conda" ]]; then
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
     source activate testenv
 
-
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
         conda install --yes --no-update-dependencies mkl
