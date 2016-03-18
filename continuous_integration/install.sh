@@ -32,7 +32,7 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
-    conda install libgfortran
+    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
@@ -59,8 +59,9 @@ elif [[ "$DISTRIB" == "conda" ]]; then
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION
+        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
     source activate testenv
+    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
