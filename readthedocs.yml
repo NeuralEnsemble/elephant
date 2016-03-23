@@ -1,4 +1,2 @@
 conda:
   file: doc/environment.yml
-python:
-   pip_install: true
