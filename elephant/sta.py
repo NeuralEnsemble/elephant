@@ -181,10 +181,10 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     Calculates the spike-field coherence between a analog signal(s) and a
     (binned) spike train.
 
-    The current implementation makes use of scipy.signal.cohere(). Additional
-    kwargs will will be directly forwarded to scipy.signal.cohere(), except for
-    the axis parameter and the sampling frequency, which will be extracted from
-    the input signals.
+    The current implementation makes use of scipy.signal.coherence(). Additional
+    kwargs will will be directly forwarded to scipy.signal.coherence(),
+    except for the axis parameter and the sampling frequency, which will be
+    extracted from the input signals.
 
     The spike_field_coherence function receives an analog signal array and
     either a binned spike train or a spike train containing the original spike
@@ -205,7 +205,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     KWArgs
     ------
-    All KWArgs are passed to scipy.signal.cohere().
+    All KWArgs are passed to scipy.signal.coherence().
 
     Returns
     -------
@@ -247,6 +247,13 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     >>> plt.xlim((0, 60))
     >>> plt.show()
     """
+
+    if not hasattr(scipy.signal,'coherence'):
+        raise AttributeError('scipy.signal.coherence is not available. The sfc '
+                             'function uses scipy.signal.coherence for '
+                             'the coherence calculation. This function is '
+                             'available for scipy version 0.16 or newer. '
+                             'Please update you scipy version.')
 
     # spiketrains type check
     if not isinstance(spiketrain, (SpikeTrain, BinnedSpikeTrain)):
