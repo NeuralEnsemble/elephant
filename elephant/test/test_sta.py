@@ -202,7 +202,14 @@ class sta_TestCase(unittest.TestCase):
                 units='mV', sampling_rate=10 / ms)
             assert_array_equal(STA, cmp_array)
 
-class sfc_TestCase(unittest.TestCase):
+
+# =========================================================================
+# Tests for new scipy verison (with scipy.signal.coherence)
+# =========================================================================
+
+@unittest.skipIf(not hasattr(scipy.signal, 'coherence'), "Please update scipy "
+                                                        "to a version >= 0.16")
+class sfc_TestCase_new_scipy(unittest.TestCase):
 
     def setUp(self):
         # standard testsignals
@@ -263,125 +270,140 @@ class sfc_TestCase(unittest.TestCase):
         self.bst6 = BinnedSpikeTrain(
             self.st3, binsize=fs0, t_start=4.5 * fs0, t_stop=tlen0 - 4.5 * fs0)
 
+    # =========================================================================
+    # Tests for correct input handling
+    # =========================================================================
 
-    if hasattr(scipy.signal,'coherence'):
+    def test_wrong_input_type(self):
+        self.assertRaises(TypeError,
+                          sta.spike_field_coherence,
+                          np.array([1, 2, 3]), self.bst0)
+        self.assertRaises(TypeError,
+                          sta.spike_field_coherence,
+                          self.anasig0, [1, 2, 3])
+        self.assertRaises(ValueError,
+                          sta.spike_field_coherence,
+                          self.anasig0.duplicate_with_new_array([]), self.bst0)
 
-        # =========================================================================
-        # Tests for correct input handling
-        # =========================================================================
+    def test_start_stop_times_out_of_range(self):
+        self.assertRaises(ValueError,
+                          sta.spike_field_coherence,
+                          self.anasig1, self.bst0)
 
-        def test_wrong_input_type(self):
-            self.assertRaises(TypeError,
-                              sta.spike_field_coherence,
-                              np.array([1, 2, 3]), self.bst0)
-            self.assertRaises(TypeError,
-                              sta.spike_field_coherence,
-                              self.anasig0, [1, 2, 3])
-            self.assertRaises(ValueError,
-                              sta.spike_field_coherence,
-                              self.anasig0.duplicate_with_new_array([]), self.bst0)
+        self.assertRaises(ValueError,
+                          sta.spike_field_coherence,
+                          self.anasig2, self.bst0)
 
-        def test_start_stop_times_out_of_range(self):
-            self.assertRaises(ValueError,
-                              sta.spike_field_coherence,
-                              self.anasig1, self.bst0)
+    def test_non_matching_input_binning(self):
+        self.assertRaises(ValueError,
+                          sta.spike_field_coherence,
+                          self.anasig0, self.bst1)
 
-            self.assertRaises(ValueError,
-                              sta.spike_field_coherence,
-                              self.anasig2, self.bst0)
+    def test_incompatible_spiketrain_analogsignal(self):
+        # These spike trains have incompatible binning (binsize or alignment to
+        # time axis of analog signal)
+        self.assertRaises(ValueError,
+                          sta.spike_field_coherence,
+                          self.anasig0, self.bst5)
+        self.assertRaises(ValueError,
+                          sta.spike_field_coherence,
+                          self.anasig0, self.bst6)
 
-        def test_non_matching_input_binning(self):
-            self.assertRaises(ValueError,
-                              sta.spike_field_coherence,
-                              self.anasig0, self.bst1)
+    def test_signal_dimensions(self):
+        # single analogsignal trace and single spike train
+        s_single, f_single = sta.spike_field_coherence(self.anasig0, self.bst0)
 
-        def test_incompatible_spiketrain_analogsignal(self):
-            # These spike trains have incompatible binning (binsize or alignment to
-            # time axis of analog signal)
-            self.assertRaises(ValueError,
-                              sta.spike_field_coherence,
-                              self.anasig0, self.bst5)
-            self.assertRaises(ValueError,
-                              sta.spike_field_coherence,
-                              self.anasig0, self.bst6)
+        self.assertEqual(len(f_single.shape), 1)
+        self.assertEqual(len(s_single.shape), 1)
 
-        def test_signal_dimensions(self):
-            # single analogsignal trace and single spike train
-            s_single, f_single = sta.spike_field_coherence(self.anasig0, self.bst0)
+        # multiple analogsignal traces and single spike train
+        s_multi, f_multi = sta.spike_field_coherence(self.anasig4, self.bst0)
 
-            self.assertEqual(len(f_single.shape), 1)
-            self.assertEqual(len(s_single.shape), 1)
+        self.assertEqual(len(f_multi.shape), 1)
+        self.assertEqual(len(s_multi.shape), 2)
 
-            # multiple analogsignal traces and single spike train
-            s_multi, f_multi = sta.spike_field_coherence(self.anasig4, self.bst0)
+        # frequencies are identical since same sampling frequency was used
+        # in both cases and data length is the same
+        assert_array_equal(f_single, f_multi)
+        # coherences of s_single and first signal in s_multi are identical,
+        # since first analogsignal trace in anasig4 is same as in anasig0
+        assert_array_equal(s_single, s_multi[:, 0])
 
-            self.assertEqual(len(f_multi.shape), 1)
-            self.assertEqual(len(s_multi.shape), 2)
+    def test_non_binned_spiketrain_input(self):
+        s, f = sta.spike_field_coherence(self.anasig0, self.st0)
 
-            # frequencies are identical since same sampling frequency was used
-            # in both cases and data length is the same
-            assert_array_equal(f_single, f_multi)
-            # coherences of s_single and first signal in s_multi are identical,
-            # since first analogsignal trace in anasig4 is same as in anasig0
-            assert_array_equal(s_single, s_multi[:, 0])
+        f_ind = np.where(f >= 19.)[0][0]
+        max_ind = np.argmax(s[1:]) + 1
 
-        def test_non_binned_spiketrain_input(self):
-            s, f = sta.spike_field_coherence(self.anasig0, self.st0)
+        self.assertEqual(f_ind, max_ind)
+        self.assertAlmostEqual(s[f_ind], 1., delta=0.01)
 
-            f_ind = np.where(f >= 19.)[0][0]
-            max_ind = np.argmax(s[1:]) + 1
+    # =========================================================================
+    # Tests for correct return values
+    # =========================================================================
 
-            self.assertEqual(f_ind, max_ind)
-            self.assertAlmostEqual(s[f_ind], 1., delta=0.01)
+    def test_spike_field_coherence_perfect_coherence(self):
+        # check for detection of 20Hz peak in anasig0/bst0
+        s, f = sta.spike_field_coherence(
+            self.anasig0, self.bst0, window='boxcar')
 
-        # =========================================================================
-        # Tests for correct return values
-        # =========================================================================
+        f_ind = np.where(f >= 19.)[0][0]
+        max_ind = np.argmax(s[1:]) + 1
 
-        def test_spike_field_coherence_perfect_coherence(self):
-            # check for detection of 20Hz peak in anasig0/bst0
-            s, f = sta.spike_field_coherence(
-                self.anasig0, self.bst0, window='boxcar')
+        self.assertEqual(f_ind, max_ind)
+        self.assertAlmostEqual(s[f_ind], 1., delta=0.01)
 
-            f_ind = np.where(f >= 19.)[0][0]
-            max_ind = np.argmax(s[1:]) + 1
+    def test_output_frequencies(self):
+        nfft = 256
+        _, f = sta.spike_field_coherence(self.anasig3, self.bst1, nfft=nfft)
 
-            self.assertEqual(f_ind, max_ind)
-            self.assertAlmostEqual(s[f_ind], 1., delta=0.01)
+        # check number of frequency samples
+        self.assertEqual(len(f), nfft / 2 + 1)
 
-        def test_output_frequencies(self):
-            nfft = 256
-            _, f = sta.spike_field_coherence(self.anasig3, self.bst1, nfft=nfft)
+        # check values of frequency samples
+        assert_array_almost_equal(
+            f, np.linspace(
+                0, self.anasig3.sampling_rate.rescale('Hz').magnitude / 2,
+                nfft / 2 + 1) * pq.Hz)
 
-            # check number of frequency samples
-            self.assertEqual(len(f), nfft / 2 + 1)
+    def test_short_spiketrain(self):
+        # this spike train has the same length as anasig0
+        s1, f1 = sta.spike_field_coherence(
+            self.anasig0, self.bst3, window='boxcar')
 
-            # check values of frequency samples
-            assert_array_almost_equal(
-                f, np.linspace(
-                    0, self.anasig3.sampling_rate.rescale('Hz').magnitude / 2,
-                    nfft / 2 + 1) * pq.Hz)
+        # this spike train has the same spikes as above, but is shorter than
+        # anasig0
+        s2, f2 = sta.spike_field_coherence(
+            self.anasig0, self.bst4, window='boxcar')
 
-        def test_short_spiketrain(self):
-            # this spike train has the same length as anasig0
-            s1, f1 = sta.spike_field_coherence(
-                self.anasig0, self.bst3, window='boxcar')
-
-            # this spike train has the same spikes as above, but is shorter than
-            # anasig0
-            s2, f2 = sta.spike_field_coherence(
-                self.anasig0, self.bst4, window='boxcar')
-
-            # the results above should be the same, nevertheless
-            assert_array_equal(s1.magnitude, s2.magnitude)
-            assert_array_equal(f1.magnitude, f2.magnitude)
+        # the results above should be the same, nevertheless
+        assert_array_equal(s1.magnitude, s2.magnitude)
+        assert_array_equal(f1.magnitude, f2.magnitude)
 
 
-    else:
+# =========================================================================
+# Tests for old scipy verison (without scipy.signal.coherence)
+# =========================================================================
 
-        # =========================================================================
-        # Tests for old scipy verison (without scipy.signal.coherence)
-        # =========================================================================
+@unittest.skipIf(hasattr(scipy.signal, 'coherence'), 'Applies only for old '
+                                                     'scipy versions (<0.16)')
+class sfc_TestCase_old_scipy(unittest.TestCase):
+
+    def setUp(self):
+        # standard testsignals
+        tlen0 = 100 * pq.s
+        f0 = 20. * pq.Hz
+        fs0 = 1 * pq.ms
+        t0 = np.arange(
+            0, tlen0.rescale(pq.s).magnitude,
+            fs0.rescale(pq.s).magnitude) * pq.s
+        self.anasig0 = AnalogSignalArray(
+            np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
+            units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
+        self.st0 = SpikeTrain(
+            np.arange(0, tlen0.rescale(pq.ms).magnitude, 50) * pq.ms,
+            t_start=0 * pq.ms, t_stop=tlen0)
+        self.bst0 = BinnedSpikeTrain(self.st0, binsize=fs0)
 
         def test_old_scipy_version(self):
             self.assertRaises(AttributeError,  sta.spike_field_coherence,
