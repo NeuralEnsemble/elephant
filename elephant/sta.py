@@ -8,8 +8,12 @@ Function to calculate spike-triggered averages of analog signals.
 
 from __future__ import division
 import numpy as np
+import scipy.signal
 import quantities as pq
+
 from neo.core import AnalogSignalArray, SpikeTrain
+from elephant.conversion import BinnedSpikeTrain
+
 import warnings
 
 def spike_triggered_average(signal, spiketrains, window):
@@ -171,3 +175,143 @@ def spike_triggered_average(signal, spiketrains, window):
     result_sta.annotate(used_spikes=used_spikes, unused_spikes=unused_spikes)
 
     return result_sta
+
+def spike_field_coherence(signal, spiketrain, **kwargs):
+    """
+    Calculates the spike-field coherence between a analog signal(s) and a
+    (binned) spike train.
+
+    The current implementation makes use of scipy.signal.coherence(). Additional
+    kwargs will will be directly forwarded to scipy.signal.coherence(),
+    except for the axis parameter and the sampling frequency, which will be
+    extracted from the input signals.
+
+    The spike_field_coherence function receives an analog signal array and
+    either a binned spike train or a spike train containing the original spike
+    times. In case of original spike times the spike train is binned according
+    to the sampling rate of the analog signal array.
+
+    The AnalogSignal object can contain one or multiple signal traces. In case
+    of multiple signal traces, the spike field coherence is calculated
+    individually for each signal trace and the spike train.
+
+    Parameters
+    ----------
+    signal : neo AnalogSignalArray object
+        'signal' contains n analog signals.
+    spiketrain : SpikeTrain or BinnedSpikeTrain
+        Single spike train to perform the analysis on. The binsize of the
+        binned spike train must match the sampling_rate of signal.
+
+    KWArgs
+    ------
+    All KWArgs are passed to scipy.signal.coherence().
+
+    Returns
+    -------
+    coherence : complex Quantity array
+        contains the coherence values calculated for each analog signal trace
+        in combination with the spike train. The first dimension corresponds to
+        the frequency, the second to the number of the signal trace.
+    frequencies : Quantity array
+        contains the frequency values corresponding to the first dimension of
+        the 'coherence' array
+
+    Example
+    -------
+
+    Plot the SFC between a regular spike train at 20 Hz, and two sinusoidal
+    time series at 20 Hz and 23 Hz, respectively.
+
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> from quantities import ms, mV, Hz, kHz
+    >>> import neo, elephant
+
+    >>> t = pq.Quantity(range(10000),units='ms')
+    >>> f1, f2 = 20. * Hz, 23. * Hz
+    >>> signal = neo.AnalogSignal(np.array([
+            np.sin(f1 * 2. * np.pi * t.rescale(s)),
+            np.sin(f2 * 2. * np.pi * t.rescale(s))]).T,
+            units=pq.mV, sampling_rate=1. * kHz)
+    >>> spiketrain = neo.SpikeTrain(
+        range(t[0], t[-1], 50), units='ms',
+        t_start=t[0], t_stop=t[-1])
+    >>> sfc, freqs = elephant.sta.spike_field_coherence(
+        signal, spiketrain, window='boxcar')
+
+    >>> plt.plot(freqs, sfc[:,0])
+    >>> plt.plot(freqs, sfc[:,1])
+    >>> plt.xlabel('Frequency [Hz]')
+    >>> plt.ylabel('SFC')
+    >>> plt.xlim((0, 60))
+    >>> plt.show()
+    """
+
+    if not hasattr(scipy.signal,'coherence'):
+        raise AttributeError('scipy.signal.coherence is not available. The sfc '
+                             'function uses scipy.signal.coherence for '
+                             'the coherence calculation. This function is '
+                             'available for scipy version 0.16 or newer. '
+                             'Please update you scipy version.')
+
+    # spiketrains type check
+    if not isinstance(spiketrain, (SpikeTrain, BinnedSpikeTrain)):
+        raise TypeError(
+            "spiketrain must be of type SpikeTrain or BinnedSpikeTrain, "
+            "not %s." % type(spiketrain))
+
+    # checks on analogsignal
+    if not isinstance(signal, AnalogSignalArray):
+        raise TypeError(
+            "Signal must be an AnalogSignalArray, not %s." % type(signal))
+    if len(signal.shape) > 1:
+        # num_signals: number of individual traces in the analog signal
+        num_signals = signal.shape[1]
+    elif len(signal.shape) == 1:
+        num_signals = 1
+    else:
+        raise ValueError("Empty analog signal.")
+    len_signals = signal.shape[0]
+
+    # bin spiketrain if necessary
+    if isinstance(spiketrain, SpikeTrain):
+        spiketrain = BinnedSpikeTrain(
+            spiketrain, binsize=signal.sampling_period)
+
+    # check the start and stop times of signal and spike trains
+    if spiketrain.t_start < signal.t_start:
+        raise ValueError(
+            "The spiketrain starts earlier than the analog signal.")
+    if spiketrain.t_stop > signal.t_stop:
+        raise ValueError(
+            "The spiketrain stops later than the analog signal.")
+
+    # check equal time resolution for both signals
+    if spiketrain.binsize != signal.sampling_period:
+        raise ValueError(
+            "The spiketrain and signal must have a "
+            "common sampling frequency / binsize")
+
+    # calculate how many bins to add on the left of the binned spike train
+    delta_t = spiketrain.t_start - signal.t_start
+    if delta_t % spiketrain.binsize == 0:
+        left_edge = int((delta_t / spiketrain.binsize).magnitude)
+    else:
+        raise ValueError("Incompatible binning of spike train and LFP")
+    right_edge = int(left_edge + spiketrain.num_bins)
+
+    # duplicate spike trains
+    spiketrain_array = np.zeros((1, len_signals))
+    spiketrain_array[0, left_edge:right_edge] = spiketrain.to_array()
+    spiketrains_array = np.squeeze(
+        np.repeat(spiketrain_array, repeats=num_signals, axis=0)).transpose()
+
+    # calculate coherence
+    frequencies, sfc = scipy.signal.coherence(
+        spiketrains_array, signal.magnitude,
+        fs=signal.sampling_rate.rescale('Hz').magnitude,
+        axis=0, **kwargs)
+
+    return (pq.Quantity(sfc, units=pq.dimensionless),
+            pq.Quantity(frequencies, units=pq.Hz))
