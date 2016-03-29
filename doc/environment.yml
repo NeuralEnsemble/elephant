@@ -1,5 +1,6 @@
 name: elephant
 dependencies:
+- libgfortran=1.0=0
 - alabaster=0.7.7=py35_0
 - babel=2.2.0=py35_0
 - docutils=0.12=py35_0
@@ -29,3 +30,4 @@ dependencies:
   - https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.zip
   - quantities
   - sphinx-rtd-theme==0.1.9
+ 
