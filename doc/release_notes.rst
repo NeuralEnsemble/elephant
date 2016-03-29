@@ -2,11 +2,45 @@
 Release Notes
 *************
 
+Elephant 0.3.0 release notes
+============================
+April 12st 2016
+
+New functions
+=============
+* `spike_train_correlation` module:
+    * cross correlation histogram: **cross_correlation_histogram()**
+* `spike_train_generation` module:
+    * single interaction process (SIP): **single_interaction_process()**
+    * compound Poisson process (CPP): **compound_poisson_process()**
+* `signal_processing` module:
+    * analytic signal: **hilbert()**
+* `sta` module:
+    * spike field coherence: **spike_field_coherence()**
+* Module to represent kernels: `kernels` module
+* Spike train metrics / dissimilarity / synchrony measures: `spike_train_dissimilarity` module
+* Unitary Event (UE) analysis: `unitary_event_analysis` module
+* Analysis of Sequences of Synchronous EvenTs (ASSET): `asset` module
+
+API changes
+===========
+* Function **instantaneous_rate()** now uses kernels as objects defined in the `kernels` module. The previous implementation of the function using the `make_kernel()` function is deprecated, but still temporarily available as `oldfct_instantaneous_rate()`.
+
+Other changes
+=============
+* Fixes to travis and readthedocs configuration files.
+
+
+Elephant 0.2.1 release notes
+============================
+February 18th 2016
+
+Minor bug fixes.
+
+
 Elephant 0.2.0 release notes
 ============================
 September 22nd 2015
-
-Welcome to the 0.2.0 release of Elephant!
 
 New functions
 =============
@@ -26,11 +60,3 @@ Other changes
 * **Optimized creation of sparse matrices**: The creation speed of the sparse matrix inside the `BinnedSpikeTrain` class is optimized
 * Added **Izhikevich neuron simulator** in the `make_spike_extraction_test_data` module
 * Minor improvements to the test and continous integration infrastructure
-
-
-Elephant 0.2.1 release notes
-============================
-February 18th 2016
-
-Minor bug fixes.
-

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 22 14:35:49 2014
+Unit tests for the ASSET analysis.
 
-@author: torre
+:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
 """
 
 import unittest

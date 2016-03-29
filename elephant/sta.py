@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 '''
-Function to calculate spike-triggered averages of analog signals.
+Functions to calculate spike-triggered average and spike-field coherence of
+analog signals.
 
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 '''
 
@@ -15,6 +16,7 @@ from neo.core import AnalogSignalArray, SpikeTrain
 from elephant.conversion import BinnedSpikeTrain
 
 import warnings
+
 
 def spike_triggered_average(signal, spiketrains, window):
     """
@@ -67,7 +69,7 @@ def spike_triggered_average(signal, spiketrains, window):
     # interval relative to a spike
     window_starttime, window_stoptime = window
     if not (isinstance(window_starttime, pq.quantity.Quantity) and
-            window_starttime.dimensionality.simplified == 
+            window_starttime.dimensionality.simplified ==
             pq.Quantity(1, "s").dimensionality):
         raise TypeError("The start time of the window (window[0]) "
                         "must be a time quantity.")
@@ -136,9 +138,9 @@ def spike_triggered_average(signal, spiketrains, window):
     window_bins = int(np.ceil(((window_stoptime - window_starttime) *
         signal.sampling_rate).simplified))
     # result_sta: array containing finally the spike-triggered averaged signal
-    result_sta = AnalogSignalArray(np.zeros((window_bins, num_signals)), 
+    result_sta = AnalogSignalArray(np.zeros((window_bins, num_signals)),
         sampling_rate=signal.sampling_rate, units=signal.units)
-    # setting of correct times of the spike-triggered average 
+    # setting of correct times of the spike-triggered average
     # relative to the spike
     result_sta.t_start = window_starttime
     used_spikes = np.zeros(num_signals, dtype=int)
@@ -150,7 +152,7 @@ def spike_triggered_average(signal, spiketrains, window):
         for spiketime in spiketrains[i]:
             # checks for sufficient signal data around spiketime
             if (spiketime + window_starttime >= signal.t_start and
-                spiketime + window_stoptime <= signal.t_stop):
+                    spiketime + window_stoptime <= signal.t_stop):
                 # calculating the startbin in the analog signal of the
                 # averaging window for spike
                 startbin = int(np.floor(((spiketime + window_starttime -
@@ -175,6 +177,7 @@ def spike_triggered_average(signal, spiketrains, window):
     result_sta.annotate(used_spikes=used_spikes, unused_spikes=unused_spikes)
 
     return result_sta
+
 
 def spike_field_coherence(signal, spiketrain, **kwargs):
     """
@@ -248,7 +251,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     >>> plt.show()
     """
 
-    if not hasattr(scipy.signal,'coherence'):
+    if not hasattr(scipy.signal, 'coherence'):
         raise AttributeError('scipy.signal.coherence is not available. The sfc '
                              'function uses scipy.signal.coherence for '
                              'the coherence calculation. This function is '

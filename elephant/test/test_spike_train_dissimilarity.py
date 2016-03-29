@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests for the spike train dissimilarity measures defined in the 
-file spike_train_dissimilarity_measures.py
+Tests for the spike train dissimilarity measures module.
 
 :copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.

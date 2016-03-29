@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Tests for the function sta.spike_triggered_average
+Tests for the function sta module
 
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
