@@ -455,18 +455,12 @@ class ExponentialKernel(Kernel):
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
-        if self.invert == False:
-            kernel = np.piecewise(
-                t, [t < 0, t >= 0], [
-                    lambda t: 0,
-                    lambda t: (1.0 / self._sigma_scaled.magnitude) * np.exp(
-                        (-t / self._sigma_scaled).magnitude)]) / t.units
-        elif self.invert == True:
-            kernel = np.piecewise(
-                t, [t < 0, t >= 0], [
-                    lambda t: (1.0 / self._sigma_scaled.magnitude) * np.exp(
-                        (t / self._sigma_scaled).magnitude),
-                    lambda t: 0]) / t.units
+        if not self.invert:
+            kernel = (t >= 0) * (1. / self._sigma_scaled.magnitude) *\
+                np.exp((-t / self._sigma_scaled).magnitude) / t.units
+        elif self.invert:
+            kernel = (t <= 0) * (1. / self._sigma_scaled.magnitude) *\
+                np.exp((t / self._sigma_scaled).magnitude) / t.units
         return kernel
 
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
@@ -501,18 +495,12 @@ class AlphaKernel(Kernel):
 
     @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
-        if self.invert == False:
-            kernel = np.piecewise(
-                t, [t < 0, t >= 0], [
-                    lambda t: 0,
-                    lambda t: 2.0 * (t / self._sigma_scaled**2).magnitude *
-                              np.exp((-t * np.sqrt(2.0) /
-                                      self._sigma_scaled).magnitude)]) / t.units
-        elif self.invert == True:
-            kernel = np.piecewise(
-                t, [t < 0, t >= 0], [
-                    lambda t: -2.0 * (t / self._sigma_scaled**2).magnitude *
-                              np.exp((t * np.sqrt(2.0) /
-                                      self._sigma_scaled).magnitude),
-                    lambda t: 0 ]) / t.units
+        if not self.invert:
+            kernel = (t >= 0) * 2. * (t / self._sigma_scaled**2).magnitude *\
+                np.exp((
+                    -t * np.sqrt(2.) / self._sigma_scaled).magnitude) / t.units
+        elif self.invert:
+            kernel = (t <= 0) * -2. * (t / self._sigma_scaled**2).magnitude *\
+                np.exp((
+                    t * np.sqrt(2.) / self._sigma_scaled).magnitude) / t.units
         return kernel
