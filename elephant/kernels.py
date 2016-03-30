@@ -164,7 +164,7 @@ class Kernel(object):
             area += (self._evaluate(-1 * (counter + 1) * interval) +
                      self._evaluate(-1 * counter * interval)) * interval / 2
             counter += 1
-            if(counter > 1000000):
+            if(counter > 250000):
                 raise ValueError("fraction was chosen too close to one such "
                                  "that in combination with integral "
                                  "approximation errors the calculation of a "
