@@ -15,7 +15,7 @@ import scipy.signal
 import neo
 from neo.core import SpikeTrain
 import elephant.conversion as conv
-import kernels
+import elephant.kernels as kernels
 import warnings
 # warnings.simplefilter('always', DeprecationWarning)
 
