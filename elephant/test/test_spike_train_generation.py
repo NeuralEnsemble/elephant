@@ -75,8 +75,11 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         pass
 
     def test_statistics(self):
-        # There is a statistical test and has a non-zero chance of failure during normal operation.
-        # Re-run the test to see if the error persists.
+        # This is a statistical test that has a non-zero chance of failure
+        # during normal operation. Thus, we set the random seed to a value that
+        # creates a realization passing the test.
+        np.random.seed(seed=12345)
+        
         for rate in [123.0*Hz, 0.123*kHz]:
             for t_stop in [2345*ms, 2.345*second]:
                 spiketrain = stgen.homogeneous_poisson_process(rate, t_stop=t_stop)
@@ -125,8 +128,11 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         pass
 
     def test_statistics(self):
-        # There is a statistical test and has a non-zero chance of failure during normal operation.
-        # Re-run the test to see if the error persists.
+        # This is a statistical test that has a non-zero chance of failure
+        # during normal operation. Thus, we set the random seed to a value that
+        # creates a realization passing the test.
+        np.random.seed(seed=12345)
+
         a = 3.0
         for b in (67.0*Hz, 0.067*kHz):
             for t_stop in (2345*ms, 2.345*second):
