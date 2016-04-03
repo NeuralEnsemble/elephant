@@ -87,7 +87,7 @@ def zscore(signal, inplace=True):
      [ 0.87831007  0.87831007]
      [ 1.46385011  1.46385011]] dimensionless
 
-    >>> print zscore([b,c])   #  doctest: +NORMALIZE_WHITESPACE
+    >>> print zscore([b,c])
     [<AnalogSignalArray(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
        [-1.01772411, -1.01394628],
@@ -113,19 +113,20 @@ def zscore(signal, inplace=True):
 
     if not inplace:
         # Create new signal instance
-        result = [sig.duplicate_with_new_array(
-            (sig.magnitude - m.magnitude) / s.magnitude) for sig in signal]
-        for sig in result:
-            sig /= sig.units
+        result = []
+        for sig in signal:
+            sig_dimless = sig.duplicate_with_new_array(
+                (sig.magnitude - m.magnitude) / s.magnitude) / sig.units
+            result.append(sig_dimless)
     else:
+        result = []
         # Overwrite signal
         for sig in signal:
             sig[:] = pq.Quantity(
                 (sig.magnitude - m.magnitude) / s.magnitude,
                 units=sig.units)
-            sig /= sig.units
-        result = signal
-
+            sig_dimless = sig / sig.units
+            result.append(sig_dimless)
     # Return single object, or list of objects
     if len(result) == 1:
         return result[0]
@@ -174,6 +175,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
     filtered_signal : AnalogSignalArray or Quantity array or NumPy ndarray
         Filtered input data. The shape and type is identical to those of the
         input.
+
     """
 
     def _design_butterworth_filter(Fs, hpfreq=None, lpfreq=None, order=4):
@@ -233,3 +235,98 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data * signal.units
     else:
         return filtered_data
+
+
+def hilbert(signal, N='nextpow'):
+    '''
+    Apply a Hilbert transform to an AnalogSignal object in order to obtain its
+    (complex) analytic signal.
+
+    The time series of the instantaneous angle and amplitude can be obtained as
+    the angle (np.angle) and absolute value (np.abs) of the complex analytic
+    signal, respectively.
+
+    By default, the function will zero-pad the signal to a length corresponding
+    to the next higher power of 2. This will provide higher computational
+    efficiency at the expense of memory. In addition, this circumvents a
+    situation where for some specific choices of the length of the input,
+    scipy.signal.hilbert() will not terminate.
+
+    Parameters
+    -----------
+    signal : neo.AnalogSignal
+        Signal(s) to transform
+    N : string or int
+        Defines whether the signal is zero-padded.
+            'none': no padding
+            'nextpow':  zero-pad to the next length that is a power of 2
+            int: directly specify the length to zero-pad to (indicates the
+                number of Fourier components, see parameter N of
+                scipy.signal.hilbert()).
+        Default: 'nextpow'.
+
+    Returns
+    -------
+    neo.AnalogSignal
+        Contains the complex analytic signal(s) corresponding to the input
+        signals. The unit of the analytic signal is dimensionless.
+
+    Example
+    -------
+    Create a sine signal at 5 Hz with increasing amplitude and calculate the
+    instantaneous phases
+
+    >>> t = np.arange(0, 5000) * ms
+    >>> f = 5. * Hz
+    >>> a = neo.AnalogSignalArray(
+    ...       np.array(
+    ...           (1 + t.magnitude / t[-1].magnitude) * np.sin(
+    ...               2. * np.pi * f * t.rescale(s))).reshape((-1,1))*mV,
+    ...       t_start=0*s, sampling_rate=1000*Hz)
+
+    >>> analytic_signal = hilbert(a, N='nextpow')
+    >>> angles = np.angle(analytic_signal)
+    >>> amplitudes = np.abs(analytic_signal)
+    >>> print angles
+            [[-1.57079633]
+             [-1.51334228]
+             [-1.46047675]
+             ...,
+             [-1.73112977]
+             [-1.68211683]
+             [-1.62879501]]
+    >>> plt.plot(t,angles)
+    '''
+    # Length of input signals
+    n_org = signal.shape[0]
+
+    # Right-pad signal to desired length using the signal itself
+    if type(N) == int:
+        # User defined padding
+        n = N
+    elif N == 'nextpow':
+        # To speed up calculation of the Hilbert transform, make sure we change
+        # the signal to be of a length that is a power of two. Failure to do so
+        # results in computations of certain signal lengths to not finish (or
+        # finish in absurd time). This might be a bug in scipy (0.16), e.g.,
+        # the following code will not terminate for this value of k:
+        #
+        # import numpy
+        # import scipy.signal
+        # k=679346
+        # t = np.arange(0, k) / 1000.
+        # a = (1 + t / t[-1]) * np.sin(2 * np.pi * 5 * t)
+        # analytic_signal = scipy.signal.hilbert(a)
+        #
+        # For this reason, nextpow is the default setting for now.
+
+        n = 2 ** (int(np.log2(n_org - 1)) + 1)
+    elif N == 'none':
+        # No padding
+        n = n_org
+    else:
+        raise ValueError("'{}' is an unknown N.".format(N))
+
+    output = signal.duplicate_with_new_array(
+        scipy.signal.hilbert(signal.magnitude, N=n, axis=0)[:n_org])
+    return output / output.units

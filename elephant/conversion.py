@@ -381,7 +381,7 @@ class BinnedSpikeTrain(object):
     calculated from given SpikeTrain objects (max start and min stop point).
     Missing parameter will also be calculated automatically.
     All parameters will be checked for consistency. A corresponding error will
-    be risen, if one of the four parameters does not match the consistency
+    be raised, if one of the four parameters does not match the consistency
     requirements.
 
     """
@@ -579,8 +579,9 @@ class BinnedSpikeTrain(object):
             are returned as a quantity array.
 
         """
-        return np.linspace(self.t_start, self.t_stop,
-                           self.num_bins + 1, endpoint=True)
+        return pq.Quantity(np.linspace(self.t_start, self.t_stop,
+                                       self.num_bins + 1, endpoint=True),
+                           units=self.binsize.units)
 
     @property
     def bin_centers(self):
@@ -777,16 +778,35 @@ class BinnedSpikeTrain(object):
            SpikeTrain object or from a list of SpikeTrain objects.
 
         """
-        lil_mat = sps.lil_matrix((self.matrix_rows, self.matrix_columns),
-                                 dtype=int)
+        from distutils.version import StrictVersion
+        # column
+        filled = []
+        # row
+        indices = []
+        # data
+        counts = []
+        # to be downwards compatible compare numpy versions, if the used
+        # version is smaller than v1.9 use different functions
+        smaller_version = StrictVersion(np.__version__) < '1.9.0'
         for idx, elem in enumerate(spiketrains):
             ev = elem.view(pq.Quantity)
             scale = np.array(((ev - self.t_start).rescale(
                 self.binsize.units) / self.binsize).magnitude, dtype=int)
             l = np.logical_and(ev >= self.t_start.rescale(self.binsize.units),
                                ev <= self.t_stop.rescale(self.binsize.units))
-            filled = scale[l]
-            filled = filled[filled < self.num_bins]
-            for inner_elem in filled:
-                lil_mat[idx, inner_elem] += 1
-        self._sparse_mat_u = lil_mat.tocsr()
+            filled_tmp = scale[l]
+            filled_tmp = filled_tmp[filled_tmp < self.num_bins]
+            if smaller_version:
+                f = np.unique(filled_tmp)
+                c = np.bincount(f.searchsorted(filled_tmp))
+            else:
+                f, c = np.unique(filled_tmp, return_counts=True)
+            filled.extend(f)
+            counts.extend(c)
+            indices.extend([idx] * len(f))
+        csr_matrix = sps.csr_matrix((counts, (indices, filled)),
+                                    shape=(self.matrix_rows,
+                                           self.matrix_columns),
+                                    dtype=int)
+        self._sparse_mat_u = csr_matrix
+

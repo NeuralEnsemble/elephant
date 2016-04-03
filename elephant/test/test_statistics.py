@@ -15,7 +15,8 @@ import quantities as pq
 import scipy.integrate as spint
 
 import elephant.statistics as es
-
+import elephant.kernels as kernels
+import warnings
 
 class isi_TestCase(unittest.TestCase):
     def setUp(self):
@@ -349,17 +350,26 @@ class RateEstimationTestCase(unittest.TestCase):
         st_num_spikes = np.random.poisson(self.st_rate*(self.st_dur-2*self.st_margin))
         spike_train = np.random.rand(st_num_spikes) * (self.st_dur-2*self.st_margin) + self.st_margin
         spike_train.sort()
-        
+
         # convert spike train into neo objects
         self.spike_train = neo.SpikeTrain(spike_train*pq.s,
                                           t_start=self.st_tr[0]*pq.s,
                                           t_stop=self.st_tr[1]*pq.s)
 
-    def test_instantaneous_rate(self):
+        # generation of a multiply used specific kernel
+        self.kernel = kernels.TriangularKernel(sigma = 0.03*pq.s)
+
+    def test_instantaneous_rate_and_warnings(self):
         st = self.spike_train
         sampling_period = 0.01*pq.s
-        inst_rate = es.instantaneous_rate(
-            st, sampling_period, 'TRI', 0.03*pq.s)
+        with warnings.catch_warnings(record=True) as w:
+            inst_rate = es.instantaneous_rate(
+                st, sampling_period, self.kernel, cutoff=0)
+            self.assertEqual("The width of the kernel was adjusted to a minimally "
+                             "allowed width.", str(w[-2].message))
+            self.assertEqual("Instantaneous firing rate approximation contains "
+                             "negative values, possibly caused due to machine "
+                             "precision errors.", str(w[-1].message))
         self.assertIsInstance(inst_rate, neo.core.AnalogSignalArray)
         self.assertEquals(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
@@ -369,101 +379,86 @@ class RateEstimationTestCase(unittest.TestCase):
 
     def test_error_instantaneous_rate(self):
         self.assertRaises(
-            AttributeError, es.instantaneous_rate,
-            spiketrain=[1,2,3]*pq.s, sampling_period=0.01*pq.ms, form='TRI',
-            sigma=0.03*pq.s)
+            TypeError, es.instantaneous_rate, spiketrain=[1,2,3]*pq.s,
+            sampling_period=0.01*pq.ms, kernel=self.kernel)
         self.assertRaises(
-            AttributeError, es.instantaneous_rate, spiketrain=[1,2,3],
-            sampling_period=0.01*pq.ms, form='TRI', sigma=0.03*pq.s)
+            TypeError, es.instantaneous_rate, spiketrain=[1,2,3],
+            sampling_period=0.01*pq.ms, kernel=self.kernel)
         st = self.spike_train
         self.assertRaises(
-            AttributeError, es.instantaneous_rate, spiketrain=st,
-            sampling_period=0.01, form='TRI', sigma=0.03*pq.s)
+            TypeError, es.instantaneous_rate, spiketrain=st,
+            sampling_period=0.01, kernel=self.kernel)
         self.assertRaises(
             ValueError, es.instantaneous_rate, spiketrain=st,
-            sampling_period=-0.01*pq.ms, form='TRI', sigma=0.03*pq.s)
+            sampling_period=-0.01*pq.ms, kernel=self.kernel)
         self.assertRaises(
-            AssertionError, es.instantaneous_rate, spiketrain=st,
-            sampling_period=0.01*pq.ms, form='NONE', sigma=0.03*pq.s)
+            TypeError, es.instantaneous_rate, spiketrain=st,
+            sampling_period=0.01*pq.ms, kernel='NONE')
+        self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
+            sampling_period=0.01*pq.s, kernel='wrong_string',
+            t_start=self.st_tr[0]*pq.s, t_stop=self.st_tr[1]*pq.s,
+            trim=False)
         self.assertRaises(
-            ValueError, es.instantaneous_rate, spiketrain=st,
-            sampling_period=0.01*pq.ms, form='TRI', sigma=-0.03*pq.s)
+            TypeError, es.instantaneous_rate, spiketrain=st,
+            sampling_period=0.01*pq.ms, kernel=self.kernel, cutoff=20*pq.ms)
+        self.assertRaises(
+            TypeError, es.instantaneous_rate, spiketrain=st,
+            sampling_period=0.01*pq.ms, kernel=self.kernel, t_start=2)
+        self.assertRaises(
+            TypeError, es.instantaneous_rate, spiketrain=st,
+            sampling_period=0.01*pq.ms, kernel=self.kernel, t_stop=20*pq.mV)
+        self.assertRaises(
+            TypeError, es.instantaneous_rate, spiketrain=st,
+            sampling_period=0.01*pq.ms, kernel=self.kernel, trim=1)
 
-
-    def test_re_consistency(self):
+    def test_rate_estimation_consistency(self):
         """
-        test, whether the integral of the rate estimation curve is (almost)
+        Test, whether the integral of the rate estimation curve is (almost)
         equal to the number of spikes of the spike train.
         """
-
-        shapes = ['GAU', 'gaussian', 'TRI', 'triangle', 'BOX', 'boxcar',
-                  'EPA', 'epanechnikov', 'ALP', 'alpha', 'EXP', 'exponential']
+        kernel_types = [obj for obj in kernels.__dict__.values()
+                        if isinstance(obj, type) and
+                        issubclass(obj, kernels.Kernel) and
+                        hasattr(obj, "_evaluate") and
+                        obj is not kernels.Kernel and
+                        obj is not kernels.SymmetricKernel]
+        kernel_list = [kernel_type(sigma=0.5*pq.s, invert=False)
+                       for kernel_type in kernel_types]
         kernel_resolution = 0.01*pq.s
-        for shape in shapes:
+        for kernel in kernel_list:
             rate_estimate_a0 = es.instantaneous_rate(self.spike_train,
-                                              form=shape,
-                                              sampling_period=kernel_resolution,
-                                              sigma='auto',
-                                              t_start=self.st_tr[0]*pq.s,
-                                              t_stop=self.st_tr[1]*pq.s,
-                                              trim=False,
-                                              acausal=False)
+                                            sampling_period=kernel_resolution,
+                                            kernel='auto',
+                                            t_start=self.st_tr[0]*pq.s,
+                                            t_stop=self.st_tr[1]*pq.s,
+                                            trim=False)
 
-            rate_estimate0 = es.instantaneous_rate(self.spike_train, form=shape,
-                                                  sampling_period=kernel_resolution,
-                                                  sigma=0.5*pq.s)
+            rate_estimate0 = es.instantaneous_rate(self.spike_train,
+                                            sampling_period=kernel_resolution,
+                                            kernel=kernel)
 
-            rate_estimate1 = es.instantaneous_rate(self.spike_train, form=shape,
-                                                   sampling_period=kernel_resolution,
-                                                   sigma=0.5*pq.s,
-                                                   t_start=self.st_tr[0]*pq.s,
-                                                   t_stop=self.st_tr[1]*pq.s,
-                                                   trim=False,
-                                                   acausal=False)
+            rate_estimate1 = es.instantaneous_rate(self.spike_train,
+                                            sampling_period=kernel_resolution,
+                                            kernel=kernel,
+                                            t_start=self.st_tr[0]*pq.s,
+                                            t_stop=self.st_tr[1]*pq.s,
+                                            trim=False)
 
-            rate_estimate2 = es.instantaneous_rate(self.spike_train, form=shape,
-                                                   sampling_period=kernel_resolution,
-                                                   sigma=0.5*pq.s,
-                                                   t_start=self.st_tr[0]*pq.s,
-                                                   t_stop=self.st_tr[1]*pq.s,
-                                                   trim=True,
-                                                   acausal=True)
-
-            rate_estimate3 = es.instantaneous_rate(self.spike_train, form=shape,
-                                                   sampling_period=kernel_resolution,
-                                                   sigma=0.5*pq.s,
-                                                   t_start=self.st_tr[0]*pq.s,
-                                                   t_stop=self.st_tr[1]*pq.s,
-                                                   trim=True,
-                                                   acausal=False)
-
-            rate_estimate4 = es.instantaneous_rate(self.spike_train, form=shape,
-                                                   sampling_period=kernel_resolution,
-                                                   sigma=0.5*pq.s,
-                                                   t_start=self.st_tr[0]*pq.s,
-                                                   t_stop=self.st_tr[1]*pq.s,
-                                                   trim=False,
-                                                   acausal=True)
-
-            kernel = es.make_kernel(form=shape, sampling_period=kernel_resolution,
-                                    sigma=0.5*pq.s, direction=-1)
-
-
+            rate_estimate2 = es.instantaneous_rate(self.spike_train,
+                                            sampling_period=kernel_resolution,
+                                            kernel=kernel,
+                                            t_start=self.st_tr[0]*pq.s,
+                                            t_stop=self.st_tr[1]*pq.s,
+                                            trim=True)
             ### test consistency
             rate_estimate_list = [rate_estimate0, rate_estimate1,
-                                  rate_estimate2, rate_estimate3,
-                                  rate_estimate4, rate_estimate_a0]
+                                  rate_estimate2, rate_estimate_a0]
 
             for rate_estimate in rate_estimate_list:
                 num_spikes = len(self.spike_train)
-                auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0], x=rate_estimate.times.rescale('s').magnitude)[-1]
-
-                self.assertAlmostEqual(num_spikes, auc, delta=0.01*num_spikes)
-
-        self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
-                          form='GAU', sampling_period=kernel_resolution,
-                          sigma='wrong_string', t_start=self.st_tr[0]*pq.s,
-                          t_stop=self.st_tr[1]*pq.s, trim=False, acausal=True)
+                auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0],
+                                     x=rate_estimate.times.rescale('s').magnitude)[-1]
+                self.assertAlmostEqual(num_spikes, auc, delta=0.05*num_spikes)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
@@ -526,6 +521,32 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertRaises(ValueError, es.time_histogram, self.spiketrains,
                           binsize=pq.s, output=' ')
 
+
+class ComplexityPdfTestCase(unittest.TestCase):
+    def setUp(self):
+        self.spiketrain_a = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_b = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrain_c = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        self.spiketrains = [
+            self.spiketrain_a, self.spiketrain_b, self.spiketrain_c]
+
+    def tearDown(self):
+        del self.spiketrain_a
+        self.spiketrain_a = None
+        del self.spiketrain_b
+        self.spiketrain_b = None
+
+    def test_complexity_pdf(self):
+        targ = np.array([0.92, 0.01, 0.01, 0.06])
+        complexity = es.complexity_pdf(self.spiketrains, binsize=0.1*pq.s)
+        assert_array_equal(targ, complexity[:, 0].magnitude)
+        self.assertEqual(1, complexity[:, 0].magnitude.sum())
+        self.assertEqual(len(self.spiketrains)+1, len(complexity))
+        self.assertIsInstance(complexity, neo.AnalogSignalArray)
+        self.assertEqual(complexity.units, 1*pq.dimensionless)
 
 
 if __name__ == '__main__':
