@@ -4,13 +4,14 @@ of synchronous spiking events in parallel spike trains.
 Given a list `sts` of spike trains, the analysis comprises the following
 steps:
 
-1) Build the intersection matrix `imat` (optional) and the associated 
+1) Build the intersection matrix `imat` (optional) and the associated
    probability matrix `pmat` with the desired bin size:
 
        >>> binsize = 5 * pq.ms
        >>> dt = 1 * pq.s
        >>> imat, xedges, yedges = intersection_matrix(sts, binsize, dt, norm=2)
-       >>> pmat, xedges, yedges = probability_matrix_analytical(sts, binsize, dt)
+       >>> pmat, xedges, yedges = probability_matrix_analytical(
+               sts, binsize, dt)
 
 2) Compute the joint probability matrix jmat, using a suitable filter:
 
@@ -419,10 +420,12 @@ def intersection_matrix(
         type of normalization to be applied to each entry [i,j] of the
         intersection matrix. Given the sets s_i, s_j of neuron ids in the
         bins i, j respectively, the normalisation coefficient can be:
+        
             * norm = 0 or None: no normalisation (row counts)
             * norm = 1: len(intersection(s_i, s_j))
             * norm = 2: sqrt(len(s_1) * len(s_2))
             * norm = 3: len(union(s_i, s_j))
+            
         Default: None
 
     Returns
@@ -709,6 +712,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     a neighbourhood if at least one of them has a distance not larger than
     eps from the others, and if they are at least min. Overlapping
     neighborhoods form a cluster.
+    
         * Clusters are assigned integers from 1 to the total number k of
           clusters
         * Unclustered ("isolated") positive elements of mat are
@@ -723,7 +727,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     stretched by a factor
 
     .. math::
-             1 + (\mathtt{stretch} - 1.) * 
+             1 + (\mathtt{stretch} - 1.) *
              \\left|\\sin((\\pi / 4) - \\theta)\\right|,
 
     where :math:`\\theta` is the angle between the pixels and the 45deg
@@ -751,9 +755,9 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     -------
     cmat : numpy.ndarray of integers
         a matrix with the same shape of mat, each of whose elements is either
-        * a positive int (cluster id) if the element is part of a cluster
-        * 0 if the corresponding element in mat was non-positive
-        * -1 if the element does not belong to any cluster
+            * a positive int (cluster id) if the element is part of a cluster
+            * 0 if the corresponding element in mat was non-positive
+            * -1 if the element does not belong to any cluster
     '''
 
     # Don't do anything if mat is identically zero
@@ -796,7 +800,8 @@ def probability_matrix_montecarlo(
     The method produces surrogate spike trains (using one of several methods
     at disposal, see below) and calculates their intersection matrix M.
     For each entry (i, j), the intersection cdf P[i, j] is then given by:
-        P[i, j] = #(spike_train_surrogates such that M[i, j] < I[i, j]) /
+
+    .. centered::  P[i, j] = #(spike_train_surrogates such that M[i, j] < I[i, j]) /
                         #(spike_train_surrogates)
 
     If P[i, j] is large (close to 1), I[i, j] is statistically significant:
@@ -819,11 +824,13 @@ def probability_matrix_montecarlo(
         Default: None
     surr_method : str, optional
         the method to use to generate surrogate spike trains. Can be one of:
-        * 'train_shifting': see spike_train_surrogates.train_shifting() [dt needed]
-        * 'spike_dithering': see spike_train_surrogates.spike_dithering() [dt needed]
-        * 'spike_jittering': see spike_train_surrogates.spike_jittering() [dt needed]
-        * 'spike_time_rand': see spike_train_surrogates.spike_time_rand()
-        * 'isi_shuffling': see spike_train_surrogates.isi_shuffling()
+
+            * 'train_shifting': see spike_train_surrogates.train_shifting() [dt needed]
+            * 'spike_dithering': see spike_train_surrogates.spike_dithering() [dt needed]
+            * 'spike_jittering': see spike_train_surrogates.spike_jittering() [dt needed]
+            * 'spike_time_rand': see spike_train_surrogates.spike_time_rand()
+            * 'isi_shuffling': see spike_train_surrogates.isi_shuffling()
+
         Default: 'train_shifting'
     j : quantities.Quantity, optional
         For methods shifting spike times randomly around their original time
@@ -832,8 +839,8 @@ def probability_matrix_montecarlo(
         shift / window. For other methods, j is ignored.
         Default: None
     n_surr : int, optional
-        number of spike_train_surrogates to generate for the bootstrap procedure.
-        Default: 100
+        number of spike_train_surrogates to generate for the bootstrap
+        procedure. Default: 100
 
     Returns
     -------
@@ -890,18 +897,19 @@ def probability_matrix_analytical(
 
     The approximation is analytical and works under the assumptions that the
     input spike trains are independent and Poisson. It works as follows:
-
+    
         * Bin each spike train at the specified binsize: this yields a binary
           array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
-        * If required, estimate the rate profile of each spike train by convolving
-          the binned array with a boxcar kernel of user-defined length
+        * If required, estimate the rate profile of each spike train by 
+          convolving the binned array with a boxcar kernel of user-defined 
+          length
         * For each neuron k and each pair of bins i and j, compute the
           probability p_ijk that neuron k fired in both bins i and j.
         * Approximate the probability distribution of the intersection value
           at (i, j) by a Poisson distribution with mean parameter
-                                l = \sum_k (p_ijk),
-          justified by Le Cam's approximation of a sum of independent Bernouilli
-          random variables with a Poisson distribution.
+          l = \sum_k (p_ijk),
+          justified by Le Cam's approximation of a sum of independent 
+          Bernouilli random variables with a Poisson distribution.
 
     Parameters
     ----------
@@ -1071,13 +1079,17 @@ def _jsf_uniform_orderstat_3d(u, alpha, n):
     '''
     Considered n independent random variables X1, X2, ..., Xn all having
     uniform distribution in the interval (alpha, 1):
-                            Xi ~ Uniform(alpha, 1),
+    
+    .. centered::  Xi ~ Uniform(alpha, 1),
+    
     with alpha \in [0, 1), and given a 3D matrix U = (u_ijk) where each U_ij
     is an array of length d: U_ij = [u0, u1, ..., u_{d-1}] of
     quantiles, with u1 <= u2 <= ... <= un, computes the joint survival function
     (jsf) of the d highest order statistics (U_{n-d+1}, U_{n-d+2}, ..., U_n),
     where U_i := "i-th highest X's" at each u_ij, i.e.:
-                jsf(u_ij) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
+    
+    .. centered::  jsf(u_ij) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
+    
 
     Arguments
     ---------
@@ -1347,10 +1359,14 @@ def extract_sse(spiketrains, x_edges, y_edges, cmat, ids=None):
         a dictionary D of SSEs, where each SSE is a sub-dictionary Dk,
         k=1,...,K, where K is the max positive integer in cmat (the
         total number of clusters in cmat):
-                           D = {1: D1, 2: D2, ..., K: DK}
+
+        .. centered:: D = {1: D1, 2: D2, ..., K: DK}
+
         Each sub-dictionary Dk represents the k-th diagonal structure
         (i.e. the k-th cluster) in cmat, and is of the form
-                Dk = {(i1, j1): S1, (i2, j2): S2, ..., (iL, jL): SL}.
+
+        .. centered:: Dk = {(i1, j1): S1, (i2, j2): S2, ..., (iL, jL): SL}.
+
         The keys (i, j) represent the positions (time bin ids) of all
         elements in cmat that compose the SSE, i.e. that take value l (and
         therefore belong to the same cluster), and the values Sk are sets of
@@ -1399,16 +1415,19 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
     consisting of a pool of positions (iK, jK) of matrix entries and
     associated synchronous events SK, finds the intersection among them.
     The intersection can be performed 'pixelwise' or 'linkwise'.
-    * if 'pixelwise', it yields a new SSE which retains only events in sse1
-      whose pixel position matches a pixel position in sse2. This operation
-      is not symmetric: intersection(sse1, sse2) != intersection(sse2, sse1).
-    * if 'linkwise', an additional step is performed where each retained
-      synchronous event SK in sse1 is intersected with the corresponding
-      event in sse2. This yields a symmetric operation:
-      intersection(sse1, sse2) = intersection(sse2, sse1).
+        
+        * if 'pixelwise', it yields a new SSE which retains only events in sse1
+          whose pixel position matches a pixel position in sse2. This operation
+          is not symmetric: intersection(sse1, sse2) != intersection(sse2, sse1).
+        * if 'linkwise', an additional step is performed where each retained
+          synchronous event SK in sse1 is intersected with the corresponding
+          event in sse2. This yields a symmetric operation:
+          intersection(sse1, sse2) = intersection(sse2, sse1).
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-            {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
+    .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1429,7 +1448,6 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
         events of sse1 associated to keys present both in sse1 and sse2.
         If intersection = 'linkwise', such events are additionally
         intersected with the associated events in sse2 (see above).
-
     '''
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1457,17 +1475,21 @@ def sse_difference(sse1, sse2, difference='linkwise'):
     consisting of a pool of pixel positions and associated synchronous events
     (see below), computes the difference between sse1 and sse2.
     The difference can be performed 'pixelwise' or 'linkwise':
-    * if 'pixelwise', it yields a new SSE which contains all (and only) the
-      events in sse1 whose pixel position doesn't match any pixel in sse2.
-    * if 'linkwise', for each pixel (i, j) in sse1 and corresponding
-      synchronous event S1, if (i, j) is a pixel in sse2 corresponding to the
-      event S2, it retains the set difference S1 - S2. If (i, j) is not a
-      pixel in sse2, it retains the full set S1.
+
+        * if 'pixelwise', it yields a new SSE which contains all (and only) the
+          events in sse1 whose pixel position doesn't match any pixel in sse2.
+        * if 'linkwise', for each pixel (i, j) in sse1 and corresponding
+          synchronous event S1, if (i, j) is a pixel in sse2 corresponding to the
+          event S2, it retains the set difference S1 - S2. If (i, j) is not a
+          pixel in sse2, it retains the full set S1.
+
     Note that in either case the difference is a non-symmetric operation:
     intersection(sse1, sse2) != intersection(sse2, sse1).
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-            {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+
+    .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1513,7 +1535,9 @@ def _remove_empty_events(sse):
     copy of sse where all empty events have been removed.
 
     sse must be provided as a dictionary of type
-            {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
+    .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1547,7 +1571,9 @@ def sse_isequal(sse1, sse2):
     do not belong to sse1 (i.e. sse1 and sse2 are not identical)
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-            {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
+    .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1580,7 +1606,9 @@ def sse_isdisjoint(sse1, sse2):
     associated to common pixels are disjoint.
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-            {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
+    .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
+    
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
