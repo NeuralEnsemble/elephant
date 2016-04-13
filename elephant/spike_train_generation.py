@@ -1,10 +1,10 @@
+# -*- coding: utf-8 -*-
 """
 Functions to generate spike trains from analog signals,
 or to generate random spike trains.
 
-Most of these functions were adapted from the NeuroTools stgen module,
-which was mostly written by Eilif Muller,
-or from the NeuroTools signals.analogs module.
+Some functions are based on the NeuroTools stgen module, which was mostly
+written by Eilif Muller, or from the NeuroTools signals.analogs module.
 
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -17,7 +17,8 @@ from neo import SpikeTrain
 import random
 from elephant.spike_train_surrogates import dither_spike_train
 
-def threshold_detection(signal, threshold=0.0*mV, sign='above'):
+
+def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
     """
     Returns the times when the analog signal crosses a threshold.
     Usually used for extracting spike times from a membrane potential.
@@ -54,7 +55,7 @@ def threshold_detection(signal, threshold=0.0*mV, sign='above'):
     if len(cutout) <= 0:
         events = np.zeros(0)
     else:
-        take = np.where(np.diff(cutout) > 1)[0]+1
+        take = np.where(np.diff(cutout) > 1)[0] + 1
         take = np.append(0, take)
 
         time = signal.times
@@ -247,7 +248,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * ms, n=1):
             raise ValueError('rate must have non-negative elements.')
     sts = []
     for r in rates:
-        sts.append(homogeneous_poisson_process(r*Hz, t_start, t_stop))
+        sts.append(homogeneous_poisson_process(r * Hz, t_start, t_stop))
     return sts
 
 
@@ -335,7 +336,7 @@ def single_interaction_process(
 
     # Check if n is a positive integer
     if not (isinstance(n, int) and n > 0):
-            raise ValueError('n (=%s) must be a positive integer' % str(n))
+        raise ValueError('n (=%s) must be a positive integer' % str(n))
 
     # Assign time unit to jitter, or check that its existing unit is a time
     # unit
@@ -634,7 +635,7 @@ def _cpp_hom_stat(A, t_stop, rate, t_start=0 * ms):
     return trains
 
 
-def _cpp_het_stat(A, t_stop, rate, t_start=0.*ms):
+def _cpp_het_stat(A, t_stop, rate, t_start=0. * ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
@@ -710,9 +711,9 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
     ----------
     rate : quantities.Quantity
         Average rate of each spike train generated. Can be:
-        * a single value, all spike trains will have same rate rate
-        * an array of values (of length len(A)-1), each indicating the
-          firing rate of one process in output
+          - a single value, all spike trains will have same rate rate
+          - an array of values (of length len(A)-1), each indicating the
+            firing rate of one process in output
     A : array
         CPP's amplitude distribution. A[j] represents the probability of
         a synchronous event of size j among the generated spike trains.
@@ -739,7 +740,7 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
     [1] Staude, Rotter, Gruen (2010) J Comput Neurosci 29:327-350.
     """
     # Check A is a probability distribution (it sums to 1 and is positive)
-    if abs(sum(A)-1) > np.finfo('float').eps:
+    if abs(sum(A) - 1) > np.finfo('float').eps:
         raise ValueError(
             'A must be a probability vector, sum(A)= %f !=1' % (sum(A)))
     if any([a < 0 for a in A]):
@@ -751,8 +752,8 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
     # Return empty spike trains for specific parameters
     elif A[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
         return [
-            SpikeTrain([]*t_stop.units, t_stop=t_stop,
-                       t_start=t_start) for i in range(len(A)-1)]
+            SpikeTrain([] * t_stop.units, t_stop=t_stop,
+                       t_start=t_start) for i in range(len(A) - 1)]
     else:
         # Homogeneous rates
         if rate.ndim == 0:

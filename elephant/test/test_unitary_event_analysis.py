@@ -1,7 +1,8 @@
 """
-Various functions to test the ue_utils package
+Unit tests for the Unitary Events analysis
 
-@author: Vahid Rostami
+:copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
 """
 
 import unittest

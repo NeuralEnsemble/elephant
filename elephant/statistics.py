@@ -2,7 +2,7 @@
 """
 Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
 
-:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -139,12 +139,12 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
     if not axis or not found_t_start:
         return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
-                      axis=axis) / (t_stop-t_start)
+                      axis=axis) / (t_stop - t_start)
     else:
         # this is needed to handle broadcasting between spiketrain and t_stop
         t_stop_test = np.expand_dims(t_stop, axis)
         return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop_test),
-                      axis=axis) / (t_stop-t_start)
+                      axis=axis) / (t_stop - t_start)
 
 
 # we make `cv` an alias for scipy.stats.variation for the convenience
@@ -245,7 +245,7 @@ def lv(v):
 
     # calculate LV and return result
     # raise error if input is multi-dimensional
-    return 3.*np.mean(np.power(np.diff(v)/(v[:-1] + v[1:]), 2))
+    return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
 
 
 # sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
@@ -367,7 +367,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         form = forms_abbreviated[forms_verbose == form][0]
 
     assert form.upper() in ('BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'), \
-    "form must be one of either 'BOX','TRI','GAU','EPA','EXP' or 'ALP'!"
+        "form must be one of either 'BOX','TRI','GAU','EPA','EXP' or 'ALP'!"
 
     assert direction in (1, -1), "direction must be either 1 or -1"
 
@@ -378,7 +378,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     SI_sigma = sigma.rescale('s').magnitude
     SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
 
-    norm = 1./SI_time_stamp_resolution
+    norm = 1. / SI_time_stamp_resolution
 
     if form.upper() == 'BOX':
         w = 2.0 * SI_sigma * np.sqrt(3)
@@ -444,7 +444,6 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
                        acausal=True, trim=False):
-
     """
     Estimate instantaneous firing rate by kernel convolution.
 
@@ -527,14 +526,15 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        sigma = kw2sigma(form) * kernel_width*unit
+        sigma = kw2sigma(form) * kernel_width * unit
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
-                        ' Found: %s, value %s' %(type(sigma), str(sigma)))
+                        ' Found: %s, value %s' % (type(sigma), str(sigma)))
 
     kernel, norm, m_idx = make_kernel(form=form, sigma=sigma,
                                       sampling_period=sampling_period)
-    units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
+    units = pq.CompoundUnit(
+        "%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
         t_start = spiketrain.t_start
@@ -566,7 +566,7 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
             r = r[m_idx:-(kernel.size - m_idx)]
 
         elif trim:
-            r = r[2 * m_idx:-2*(kernel.size - m_idx)]
+            r = r[2 * m_idx:-2 * (kernel.size - m_idx)]
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
@@ -575,7 +575,7 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
             r = r[m_idx:-(kernel.size - m_idx)]
 
         elif trim:
-            r = r[2 * m_idx:-2*(kernel.size - m_idx)]
+            r = r[2 * m_idx:-2 * (kernel.size - m_idx)]
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
@@ -915,15 +915,15 @@ def complexity_pdf(spiketrains, binsize):
 
     # Computing the histogram of the entries of pophist (=Complexity histogram)
     complexity_hist = np.histogram(
-        pophist.magnitude, bins=range(0, len(spiketrains)+2))[0]
+        pophist.magnitude, bins=range(0, len(spiketrains) + 2))[0]
 
     # Normalization of the Complexity Histogram to 1 (probabilty distribution)
     complexity_hist = complexity_hist / complexity_hist.sum()
     # Convert the Complexity pdf to an neo.AnalogSignalArray
     complexity_distribution = neo.AnalogSignalArray(
         np.array(complexity_hist).reshape(len(complexity_hist), 1) *
-        pq.dimensionless, t_start=0*pq.dimensionless,
-        sampling_period=1*pq.dimensionless)
+        pq.dimensionless, t_start=0 * pq.dimensionless,
+        sampling_period=1 * pq.dimensionless)
 
     return complexity_distribution
 
@@ -939,12 +939,15 @@ This was translated into Python by Subhasis Ray, NCBS. Tue Jun 10
 23:01:43 IST 2014
 
 """
+
+
 def nextpow2(x):
     """ Return the smallest integral power of 2 that >= x """
     n = 2
     while n < x:
-        n = 2*n
+        n = 2 * n
     return n
+
 
 def fftkernel(x, w):
     """
@@ -973,19 +976,21 @@ def fftkernel(x, w):
     Lmax = L + 3 * w
     n = nextpow2(Lmax)
     X = np.fft.fft(x, n)
-    f = np.arange(0, n, 1.0)/n
-    f = np.concatenate((-f[:n/2], f[n/2:0:-1]))
-    K = np.exp(-0.5*(w*2*np.pi*f)**2)
+    f = np.arange(0, n, 1.0) / n
+    f = np.concatenate((-f[:n / 2], f[n / 2:0:-1]))
+    K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
     return y
 
+
 def logexp(x):
-    if x < 1e2 :
+    if x < 1e2:
         y = np.log(1 + np.exp(x))
     else:
         y = x
     return y
+
 
 def ilogexp(x):
     if x < 1e2:
@@ -993,6 +998,7 @@ def ilogexp(x):
     else:
         y = x
     return y
+
 
 def cost_function(x, N, w, dt):
     """
@@ -1002,12 +1008,14 @@ def cost_function(x, N, w, dt):
 
      """
     yh = np.abs(fftkernel(x, w / dt))  # density
-    #formula for density
-    C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * dt + 2 / np.sqrt(2 * np.pi) / w / N
+    # formula for density
+    C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * \
+               dt + 2 / np.sqrt(2 * np.pi) / w / N
     C = C * N * N
     # formula for rate
     # C = dt*sum( yh.^2 - 2*yh.*y_hist + 2/sqrt(2*pi)/w*y_hist )
     return C, yh
+
 
 def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     """
@@ -1051,7 +1059,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         dt = np.min(isi)
         tin = np.linspace(np.min(spiketimes),
                           np.max(spiketimes),
-                          min(int(time / dt + 0.5), 1000)) # The 1000 seems somewhat arbitrary
+                          min(int(time / dt + 0.5), 1000))  # The 1000 seems somewhat arbitrary
         t = tin
     else:
         time = np.max(tin) - np.min(tin)
@@ -1062,13 +1070,13 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         dt = np.min(isi)
         if dt > np.min(np.diff(tin)):
             t = np.linspace(np.min(tin), np.max(tin),
-                            min(int(time/dt + 0.5), 1000))
+                            min(int(time / dt + 0.5), 1000))
         else:
             t = tin
     dt = np.min(np.diff(tin))
-    yhist, bins = np.histogram(spiketimes, np.r_[t - dt/2, t[-1] + dt/2])
+    yhist, bins = np.histogram(spiketimes, np.r_[t - dt / 2, t[-1] + dt / 2])
     N = np.sum(yhist)
-    yhist = yhist / (N * dt) # density
+    yhist = yhist / (N * dt)  # density
     optw = None
     y = None
     if w is not None:
@@ -1084,11 +1092,11 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         # Golden section search on a log-exp scale
         wmin = 2 * dt
         wmax = max(spiketimes) - min(spiketimes)
-        imax = 20 # max iterations
+        imax = 20  # max iterations
         w = np.zeros(imax)
         C = np.zeros(imax)
         tolerance = 1e-5
-        phi = 0.5 * (np.sqrt(5) + 1) # The Golden ratio
+        phi = 0.5 * (np.sqrt(5) + 1)  # The Golden ratio
         a = ilogexp(wmin)
         b = ilogexp(wmax)
         c1 = (phi - 1) * a + (2 - phi) * b
@@ -1128,10 +1136,11 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         for ii in range(nbs):
             idx = np.floor(np.random.rand(N) * N).astype(int)
             xb = spiketimes[idx]
-            y_histb, bins = np.histogram(xb, np.r_[t - dt/2, t[-1]+dt/2]) / dt / N
+            y_histb, bins = np.histogram(
+                xb, np.r_[t - dt / 2, t[-1] + dt / 2]) / dt / N
             yb_buf = fftkernel(y_histb, optw / dt).real
             yb_buf = yb_buf / np.sum(yb_buf * dt)
-            yb[ii,:] = np.interp(tin, t, yb_buf)
+            yb[ii, :] = np.interp(tin, t, yb_buf)
         ybsort = np.sort(yb, axis=0)
         y95b = ybsort[np.floor(0.05 * nbs).astype(int), :]
         y95u = ybsort[np.floor(0.95 * nbs).astype(int), :]

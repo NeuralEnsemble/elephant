@@ -1,16 +1,21 @@
+# -*- coding: utf-8 -*-
 '''
 CuBIC is a statistical method for the detection of higher order of
 correlations in parallel spike trains based on the analysis of the
 cumulants of the population count.
 Given a list sts of SpikeTrains, the analysis comprises the following
 steps:
+
 1) compute the population histogram (PSTH) with the desired bin size
-   >>> binsize = 5 * pq.ms
-   >>> pop_count = elephant.statistics.time_histogram(sts, binsize)
+       >>> binsize = 5 * pq.ms
+       >>> pop_count = elephant.statistics.time_histogram(sts, binsize)
+
 2) apply CuBIC to the population count
-   >>> aplha = 0.05  # significance level of the tests used
-   >>> xi, p_val, k = cubic(data, ximax=100, alpha=0.05,\
-           errorval=4.):
+       >>> alpha = 0.05  # significance level of the tests used
+       >>> xi, p_val, k = cubic(data, ximax=100, alpha=0.05, errorval=4.):
+
+:copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
+:license: BSD, see LICENSE.txt for details.
 '''
 # -*- coding: utf-8 -*-
 from __future__ import division

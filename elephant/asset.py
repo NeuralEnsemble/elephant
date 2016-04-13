@@ -3,36 +3,45 @@ ASSET is a statistical method [1] for the detection of repeating sequences
 of synchronous spiking events in parallel spike trains.
 Given a list `sts` of spike trains, the analysis comprises the following
 steps:
-1) Build the intersection matrix `imat` (optional) and the associated
-   probability matrix `pmat` with the desired bin size:
-   `>>> binsize = 5 * pq.ms
-   >>> dt = 1 * pq.s
-   >>> imat, xedges, yedges = intersection_matrix(sts, binsize, dt, norm=2)
-   >>> pmat, xedges, yedges = probability_matrix_analytical(sts, binsize, dt)
-2) Compute the joint probability matrix jmat, using a suitable filter:
-   >>> filter_shape = (5,2)  # filter shape
-   >>> nr_neigh = 5  # nr of largest neighbors
-   >>> jmat = joint_probability_matrix(pmat, filter_shape, nr_neigh)
-3) Create from pmat and jmat a masked version of the intersection matrix:
-   >>> alpha1 = 0.99
-   >>> alpha2 = 0.99999
-   >>> mask = mask_matrices([pmat, jmat], [alpha1, alpha2])
-4) Cluster significant elements of imat into diagonal structures ("DSs"):
-   >>> epsilon = 10
-   >>> minsize = 2
-   >>> stretch = 5
-   >>> cmat = worms.cluster_matrix_entries(mask, epsilon, minsize, stretch)
-5) Extract sequences of synchronous events associated to each worm
-   >>> extract_sse(sts, x_edges, y_edges, cmat)
 
-References
-----------
-[1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted) ...
+1) Build the intersection matrix `imat` (optional) and the associated 
+   probability matrix `pmat` with the desired bin size:
+
+       >>> binsize = 5 * pq.ms
+       >>> dt = 1 * pq.s
+       >>> imat, xedges, yedges = intersection_matrix(sts, binsize, dt, norm=2)
+       >>> pmat, xedges, yedges = probability_matrix_analytical(sts, binsize, dt)
+
+2) Compute the joint probability matrix jmat, using a suitable filter:
+
+       >>> filter_shape = (5,2)  # filter shape
+       >>> nr_neigh = 5  # nr of largest neighbors
+       >>> jmat = joint_probability_matrix(pmat, filter_shape, nr_neigh)
+
+3) Create from pmat and jmat a masked version of the intersection matrix:
+
+       >>> alpha1 = 0.99
+       >>> alpha2 = 0.99999
+       >>> mask = mask_matrices([pmat, jmat], [alpha1, alpha2])
+
+4) Cluster significant elements of imat into diagonal structures ("DSs"):
+
+       >>> epsilon = 10
+       >>> minsize = 2
+       >>> stretch = 5
+       >>> cmat = worms.cluster_matrix_entries(mask, epsilon, minsize, stretch)
+
+5) Extract sequences of synchronous events associated to each worm
+
+       >>> extract_sse(sts, x_edges, y_edges, cmat)
+
+References:
+
+[1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted)
 """
 
 
 import numpy as np
-import scipy.sparse
 import scipy.spatial
 import scipy.stats
 import quantities as pq
@@ -45,7 +54,6 @@ from sklearn.cluster import dbscan as dbscan
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================
-
 
 
 def _xrange(x):
@@ -411,10 +419,10 @@ def intersection_matrix(
         type of normalization to be applied to each entry [i,j] of the
         intersection matrix. Given the sets s_i, s_j of neuron ids in the
         bins i, j respectively, the normalisation coefficient can be:
-        * norm = 0 or None: no normalisation (row counts)
-        * norm = 1: len(intersection(s_i, s_j))
-        * norm = 2: sqrt(len(s_1) * len(s_2))
-        * norm = 3: len(union(s_i, s_j))
+            * norm = 0 or None: no normalisation (row counts)
+            * norm = 1: len(intersection(s_i, s_j))
+            * norm = 2: sqrt(len(s_1) * len(s_2))
+            * norm = 3: len(union(s_i, s_j))
         Default: None
 
     Returns
@@ -692,7 +700,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     representing different cluster ids. Each cluster comprises close-by
     elements.
 
-    In WORMS analysis, mat is a thresholded ("masked") version of an
+    In ASSET analysis, mat is a thresholded ("masked") version of an
     intersection matrix imat, whose values are those of imat only if
     considered statistically significant, and zero otherwise.
 
@@ -701,9 +709,11 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     a neighbourhood if at least one of them has a distance not larger than
     eps from the others, and if they are at least min. Overlapping
     neighborhoods form a cluster.
-    * Clusters are assigned integers from 1 to the total number k of clusters
-    * Unclustered ("isolated") positive elements of mat are assigned value -1
-    * Non-positive elements are assigned the value 0.
+        * Clusters are assigned integers from 1 to the total number k of
+          clusters
+        * Unclustered ("isolated") positive elements of mat are
+          assigned value -1
+        * Non-positive elements are assigned the value 0.
 
     The distance between the positions of two positive elements in mat is
     given by an Euclidean metric which is stretched if the two positions are
@@ -711,11 +721,13 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     as more, with maximal stretching along the anti-diagonal. Specifically,
     the Euclidean distance between positions (i1, j1) and (i2, j2) is
     stretched by a factor
-    .. math::
 
-             1 + (stretch - 1.) * \\abs(\\sin((\\pi / 4) - \\theta)),
-    where \\theta is the angle between the pixels and the 45deg direction.
-    The stretching factor thus varies between 1 and stretch.
+    .. math::
+             1 + (\mathtt{stretch} - 1.) * 
+             \\left|\\sin((\\pi / 4) - \\theta)\\right|,
+
+    where :math:`\\theta` is the angle between the pixels and the 45deg
+    direction. The stretching factor thus varies between 1 and stretch.
 
     Parameters
     ----------
@@ -878,17 +890,18 @@ def probability_matrix_analytical(
 
     The approximation is analytical and works under the assumptions that the
     input spike trains are independent and Poisson. It works as follows:
-    * Bin each spike train at the specified binsize: this yields a binary
-      array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
-    * If required, estimate the rate profile of each spike train by convolving
-      the binned array with a boxcar kernel of user-defined length
-    * For each neuron k and each pair of bins i and j, compute the
-      probability p_ijk that neuron k fired in both bins i and j.
-    * Approximate the probability distribution of the intersection value
-      at (i, j) by a Poisson distribution with mean parameter
-                            l = \sum_k (p_ijk),
-      justified by Le Cam's approximation of a sum of independent Bernouilli
-      random variables with a Poisson distribution.
+
+        * Bin each spike train at the specified binsize: this yields a binary
+          array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
+        * If required, estimate the rate profile of each spike train by convolving
+          the binned array with a boxcar kernel of user-defined length
+        * For each neuron k and each pair of bins i and j, compute the
+          probability p_ijk that neuron k fired in both bins i and j.
+        * Approximate the probability distribution of the intersection value
+          at (i, j) by a Poisson distribution with mean parameter
+                                l = \sum_k (p_ijk),
+          justified by Le Cam's approximation of a sum of independent Bernouilli
+          random variables with a Poisson distribution.
 
     Parameters
     ----------

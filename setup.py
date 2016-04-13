@@ -14,7 +14,7 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
 
 setup(
     name="elephant",
-    version='0.2.1',
+    version='0.3.0',
     packages=['elephant', 'elephant.test'],
     install_requires=install_requires,
     extras_require=extras_require,

@@ -13,6 +13,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Detlef Holstein [2]
 * Eilif Muller [3, 4]
 * Emiliano Torre [1]
+* Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
 * Michael Denker [1]
@@ -33,5 +34,6 @@ contribution, and may not be the current affiliation of a contributor.
 5. NIH–NICHD, Laboratory of Cellular and Synaptic Physiology, Bethesda, Maryland 20892, USA
 6. Neural Information Processing Group, Institute of Software Engineering and Theoretical Computer Science, Technische Universität Berlin, Germany
 7. Arizona State University School of Life Sciences, USA
+8. Computational Neuroscience Research Group (CNRG), Waterloo Centre for Theoretical Neuroscience, Waterloo, Canada
 
 If we've somehow missed you off the list we're very sorry - please let us know.
