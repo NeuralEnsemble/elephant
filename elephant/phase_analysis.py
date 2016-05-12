@@ -1,0 +1,127 @@
+# -*- coding: utf-8 -*-
+"""
+Methods for performing phase analysis.
+
+:copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+
+import numpy as np
+
+
+def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
+    """
+    Calculate the set of spike-triggered phases of an AnalogSignal.
+
+    Parameters
+    ----------
+    spiketrains : Spiketrain or list of Spiketrain
+        Spiketrains on which to trigger hilbert_transform extraction
+    hilbert_transform : AnalogSignal or list of AnalogSignal
+        AnalogSignal of the complex analytic signal (e.g., returned by the
+        elephant.signal_processing.hilbert()). All spike trains are compared to
+        this signal, if only one signal is given. Otherwise, length of
+        hilbert_transform must match the length of spiketrains.
+    interpolate : bool
+        If True, the phases and amplitudes of hilbert_transform for spikes
+        falling between two samples of signal is interpolated. Otherwise, the
+        closest sample of hilbert_transform is used.
+
+    Returns
+    -------
+    phases : list
+        Spike-triggered phases. Entries in the list correspond to the
+        SpikeTrains in spiketrains. Each entry contains the spike-triggered
+        hilbert_transform of each spike.
+    amp : list
+        Corresponding spike-triggered amplitudes.
+    times : list
+        A list of times corresponding to the signal
+        Corresponding times (corresponds to the spike times).
+    """
+
+    # Convert inputs to lists
+    if type(spiketrains) is not list:
+        spiketrains = [spiketrains]
+
+    if type(hilbert_transform) is not list:
+        hilbert_transform = [hilbert_transform]
+
+    # Number of signals
+    num_spiketrains = len(spiketrains)
+    num_phase = len(hilbert_transform)
+
+    # For each trial, select the first input
+    start = [elem.t_start for elem in hilbert_transform]
+    stop = [elem.t_stop for elem in hilbert_transform]
+
+    result_phases = [[] for _ in range(num_spiketrains)]
+    result_amps = [[] for _ in range(num_spiketrains)]
+    result_times = [[] for _ in range(num_spiketrains)]
+
+    # Step through each signal
+    for spiketrain_i, spiketrain in enumerate(spiketrains):
+        # Check which hilbert_transform AnalogSignal to look at - if there is
+        # only one then all spike trains relate to this one, otherwise the two
+        # lists of spike trains and phases are matched up
+        if num_phase > 1:
+            phase_i = spiketrain_i
+        else:
+            phase_i = 0
+
+        # Take only spikes which lie directly within the signal segment -
+        # ignore spikes sitting on the last sample
+        sttimeind = np.where(np.logical_and(
+            spiketrain >= start[phase_i], spiketrain < stop[phase_i]))[0]
+
+        # Find index into signal for each spike
+        ind_at_spike = np.round(
+            (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
+            hilbert_transform[phase_i].sampling_period).magnitude.astype(int)
+
+        # Extract times for speed reasons
+        times = hilbert_transform[phase_i].times
+
+        # Step through all spikes
+        for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
+            # Difference vector between actual spike time and sample point,
+            # positive if spike time is later than sample point
+            dv = spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]
+
+            # Make sure ind_at_spike is to the left of the spike time
+            if dv < 0 and ind_at_spike_j > 0:
+                ind_at_spike_j = ind_at_spike_j - 1
+
+            if interpolate:
+                # Get relative spike occurrence between the two closest signal
+                # sample points
+                # if z->0 spike is more to the left sample
+                # if z->1 more to the right sample
+                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) /\
+                    hilbert_transform[phase_i].sampling_period
+
+                # Save hilbert_transform (interpolate on circle)
+                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
+                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
+                result_phases[spiketrain_i].append(
+                    np.angle(
+                        (1 - z) * np.exp(np.complex(0, p1)) +
+                        z * np.exp(np.complex(0, p2))))
+
+                # Save amplitude
+                result_amps[spiketrain_i].append(
+                    (1 - z) * np.abs(
+                        hilbert_transform[phase_i][ind_at_spike_j]) +
+                    z * np.abs(hilbert_transform[phase_i][ind_at_spike_j + 1]))
+            else:
+                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
+                result_phases[spiketrain_i].append(p1)
+
+                # Save amplitude
+                result_amps[spiketrain_i].append(
+                    np.abs(hilbert_transform[phase_i][ind_at_spike_j]))
+
+            # Save time
+            result_times[spiketrain_i].append(spiketrain[sttimeind[spike_i]])
+
+    return (result_phases, result_amps, result_times)
