@@ -581,7 +581,8 @@ class BinnedSpikeTrain(object):
             are returned as a quantity array.
 
         """
-        return pq.Quantity(np.linspace(self.t_start, self.t_stop,
+        return pq.Quantity(np.linspace(self.t_start.magnitude,
+                                       self.t_stop.magnitude,
                                        self.num_bins + 1, endpoint=True),
                            units=self.binsize.units)
 
