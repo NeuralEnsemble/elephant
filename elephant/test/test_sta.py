@@ -12,8 +12,8 @@ import numpy as np
 import scipy
 from numpy.testing import assert_array_equal
 from numpy.testing.utils import assert_array_almost_equal
-from neo import AnalogSignalArray, SpikeTrain
-from elephant.conversion import BinnedSpikeTrain
+import neo
+from neo import AnalogSignal, SpikeTrain
 import quantities as pq
 from quantities import ms, mV, Hz
 import elephant.sta as sta
@@ -22,14 +22,14 @@ import warnings
 class sta_TestCase(unittest.TestCase):
 
     def setUp(self):
-        self.asiga0 = AnalogSignalArray(np.array([
+        self.asiga0 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1))]).T, 
             units='mV', sampling_rate=10 / ms)
-        self.asiga1 = AnalogSignalArray(np.array([
+        self.asiga1 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)), 
             np.cos(np.arange(0, 20 * math.pi, 0.1))]).T, 
             units='mV', sampling_rate=10 / ms)
-        self.asiga2 = AnalogSignalArray(np.array([
+        self.asiga2 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)), 
             np.cos(np.arange(0, 20 * math.pi, 0.1)), 
             np.tan(np.arange(0, 20 * math.pi, 0.1))]).T, 
@@ -49,7 +49,7 @@ class sta_TestCase(unittest.TestCase):
         '''Signal should average to the input'''
         const = 13.8
         x = const * np.ones(201)
-        asiga = AnalogSignalArray(
+        asiga = AnalogSignal(
             np.array([x]).T, units='mV', sampling_rate=10 / ms)
         st = SpikeTrain([3, 5.6, 7, 7.1, 16, 16.3], units='ms', t_stop=20)
         window_starttime = -2 * ms
@@ -76,7 +76,7 @@ class sta_TestCase(unittest.TestCase):
         x = np.arange(0, 20, 0.1)
         y = x**2
         sr = 10 / ms
-        z = AnalogSignalArray(np.array([y]).T, units='mV', sampling_rate=sr)
+        z = AnalogSignal(np.array([y]).T, units='mV', sampling_rate=sr)
         spiketime = 8 * ms
         spiketime_in_ms = int((spiketime / ms).simplified)
         st = SpikeTrain([spiketime_in_ms], units='ms', t_stop=20)
@@ -103,7 +103,7 @@ class sta_TestCase(unittest.TestCase):
     #********* an exception or returns an error code ***********************
 
     def test_analog_signal_of_wrong_type(self):
-        '''Analog signal given as list, but must be AnalogSignalArray'''
+        '''Analog signal given as list, but must be AnalogSignal'''
         asiga = [0, 1, 2, 3, 4]
         self.assertRaises(TypeError, sta.spike_triggered_average, 
             asiga, self.st0, (-2 * ms, 2 * ms))
@@ -168,7 +168,7 @@ class sta_TestCase(unittest.TestCase):
     #********* vector or other container datatype). ************************
 
     def test_empty_analogsignal(self):
-        asiga = AnalogSignalArray([], units='mV', sampling_rate=10 / ms)
+        asiga = AnalogSignal([], units='mV', sampling_rate=10 / ms)
         st = SpikeTrain([5], units='ms', t_stop=10)
         self.assertRaises(ValueError, sta.spike_triggered_average, 
             asiga, st, (-1 * ms, 1 * ms))
@@ -180,7 +180,7 @@ class sta_TestCase(unittest.TestCase):
             units='ms', t_stop=self.asiga1.t_stop), 
             SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)]
         STA = sta.spike_triggered_average(self.asiga1, st, (-1 * ms, 1 * ms))
-        cmp_array = AnalogSignalArray(np.array([np.zeros(20, dtype=float)]).T,
+        cmp_array = AnalogSignal(np.array([np.zeros(20, dtype=float)]).T,
             units='mV', sampling_rate=10 / ms)
         cmp_array = cmp_array / 0.
         cmp_array.t_start = -1 * ms
@@ -198,7 +198,7 @@ class sta_TestCase(unittest.TestCase):
                              "for averaging", str(w[-1].message))
             nan_array = np.empty(20)
             nan_array.fill(np.nan)
-            cmp_array = AnalogSignalArray(np.array([nan_array, nan_array]).T,
+            cmp_array = AnalogSignal(np.array([nan_array, nan_array]).T,
                 units='mV', sampling_rate=10 / ms)
             assert_array_equal(STA, cmp_array)
 

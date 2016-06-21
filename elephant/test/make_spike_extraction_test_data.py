@@ -32,7 +32,7 @@ def main():
   run(300*ms)
   
   # Store results in neo format.  
-  vm = neo.core.AnalogSignal(M.v[0],units=pq.V,sampling_period=0.1*pq.ms)
+  vm = neo.core.AnalogSignal(M.v[0], units=pq.V, sampling_period=0.1*pq.ms)
   
   # Plot results.  
   plt.figure()

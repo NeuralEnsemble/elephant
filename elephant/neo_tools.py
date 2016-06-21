@@ -111,7 +111,7 @@ def _get_all_objs(container, classname):
         vals = container.list_children_by_class(classname)
     elif hasattr(container, 'values') and not hasattr(container, 'ndim'):
         vals = container.values()
-    elif hasattr(container, '__iter__'):
+    elif hasattr(container, '__iter__') and not hasattr(container, 'ndim'):
         vals = container
     else:
         raise ValueError('Cannot handle object of type %s' % type(container))
@@ -125,7 +125,7 @@ def get_all_spiketrains(container):
 
     The objects can be any list, dict, or other iterable or mapping containing
     spiketrains, as well as any neo object that can hold spiketrains:
-    `neo.Block`, `neo.RecordingChannelGroup`, `neo.Unit`, and `neo.Segment`.
+    `neo.Block`, `neo.ChannelIndex`, `neo.Unit`, and `neo.Segment`.
 
     Containers are searched recursively, so the objects can be nested
     (such as a list of blocks).
@@ -134,7 +134,7 @@ def get_all_spiketrains(container):
     ----------
 
     container : list, tuple, iterable, dict,
-                neo Block, neo Segment, neo Unit, neo RecordingChannelGroup
+                neo Block, neo Segment, neo Unit, neo ChannelIndex
                 The container for the spiketrains.
 
     Returns

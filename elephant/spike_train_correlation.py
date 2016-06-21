@@ -480,8 +480,8 @@ def cross_correlation_histogram(
         if kern is not None:
             # Smoothing
             counts = _kernel_smoothing(counts, kern, l, r)
-        # Transform the array count into an AnalogSignalArray
-        cch_result = neo.AnalogSignalArray(
+        # Transform the array count into an AnalogSignal
+        cch_result = neo.AnalogSignal(
             signal=counts.reshape(counts.size, 1),
             units=pq.dimensionless,
             t_start=(bin_ids[0] - 0.5) * binned_st1.binsize,
@@ -559,8 +559,8 @@ def cross_correlation_histogram(
         if kern is not None:
             # Smoothing
             counts = _kernel_smoothing(counts, kern, l, r)
-        # Transform the array count into an AnalogSignalArray
-        cch_result = neo.AnalogSignalArray(
+        # Transform the array count into an AnalogSignal
+        cch_result = neo.AnalogSignal(
             signal=counts.reshape(counts.size, 1),
             units=pq.dimensionless,
             t_start=(bin_ids[0] - 0.5) * binned_st1.binsize,
