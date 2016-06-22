@@ -95,9 +95,9 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 # pip install neo==0.3.3
-wget https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.tar.gz
-tar -xzvf snapshot-20150821.tar.gz
-pushd python-neo-snapshot-20150821
+wget https://github.com/apdavison/python-neo/archive/channelindex.tar.gz
+tar -xzvf channelindex.tar.gz
+pushd python-neo-channelindex
 python setup.py install
 popd
 
