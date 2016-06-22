@@ -310,7 +310,7 @@ def cross_correlation_histogram(
 
     Returns
     -------
-    cch : AnalogSignalArray
+    cch : AnalogSignal
         Containing the cross-correlation histogram between binned_st1 and binned_st2.
 
         The central bin of the histogram represents correlation at zero
@@ -325,7 +325,7 @@ def cross_correlation_histogram(
         binned_st2: 0 0 0 0 0 0 0 1 0 0 0
         Here, the CCH will have an entry of 1 at lag h=+3.
 
-        Consistent with the definition of AnalogSignalArrays, the time axis
+        Consistent with the definition of AnalogSignals, the time axis
         represents the left bin borders of each histogram bin. For example,
         the time axis might be:
         np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms

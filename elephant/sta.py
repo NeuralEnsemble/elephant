@@ -198,7 +198,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     Parameters
     ----------
-    signal : neo AnalogSignalArray object
+    signal : neo AnalogSignal object
         'signal' contains n analog signals.
     spiketrain : SpikeTrain or BinnedSpikeTrain
         Single spike train to perform the analysis on. The binsize of the
@@ -265,7 +265,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     # checks on analogsignal
     if not isinstance(signal, AnalogSignal):
         raise TypeError(
-            "Signal must be an AnalogSignalArray, not %s." % type(signal))
+            "Signal must be an AnalogSignal, not %s." % type(signal))
     if len(signal.shape) > 1:
         # num_signals: number of individual traces in the analog signal
         num_signals = signal.shape[1]

@@ -30,7 +30,7 @@ def zscore(signal, inplace=True):
     If a list of AnalogSignal objects is supplied, the mean and standard
     deviation are calculated across all objects of the list. Thus, all list
     elements are z-transformed by the same values of :math:`\\mu` and
-    :math:`\\sigma`. For AnalogSignalArrays, each signal of the array is
+    :math:`\\sigma`. For AnalogSignals, each signal of the array is
     treated separately across list elements. Therefore, the number of signals
     must be identical for each AnalogSignal of the list.
 
@@ -280,7 +280,7 @@ def hilbert(signal, N='nextpow'):
 
     >>> t = np.arange(0, 5000) * ms
     >>> f = 5. * Hz
-    >>> a = neo.AnalogSignalArray(
+    >>> a = neo.AnalogSignal(
     ...       np.array(
     ...           (1 + t.magnitude / t[-1].magnitude) * np.sin(
     ...               2. * np.pi * f * t.rescale(s))).reshape((-1,1))*mV,

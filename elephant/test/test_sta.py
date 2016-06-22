@@ -14,6 +14,7 @@ from numpy.testing import assert_array_equal
 from numpy.testing.utils import assert_array_almost_equal
 import neo
 from neo import AnalogSignal, SpikeTrain
+from elephant.conversion import BinnedSpikeTrain
 import quantities as pq
 from quantities import ms, mV, Hz
 import elephant.sta as sta
@@ -118,7 +119,7 @@ class sta_TestCase(unittest.TestCase):
         self.assertRaises(TypeError, sta.spike_triggered_average, 
             self.asiga0, st, (1 * ms, 2 * ms))
 
-    def test_forgotten_AnalogSignalArray_argument(self):
+    def test_forgotten_AnalogSignal_argument(self):
         self.assertRaises(TypeError, sta.spike_triggered_average, 
             self.st0, (-2 * ms, 2 * ms))
 
@@ -219,7 +220,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         t0 = np.arange(
             0, tlen0.rescale(pq.s).magnitude,
             fs0.rescale(pq.s).magnitude) * pq.s
-        self.anasig0 = AnalogSignalArray(
+        self.anasig0 = AnalogSignal(
             np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
         self.st0 = SpikeTrain(
@@ -233,7 +234,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
 
         # increased sampling frequency
         fs1 = 0.1 * pq.ms
-        self.anasig3 = AnalogSignalArray(
+        self.anasig3 = AnalogSignal(
             np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs1)
         self.bst1 = BinnedSpikeTrain(
@@ -241,7 +242,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
             binsize=fs1)
 
         # analogsignal containing multiple traces
-        self.anasig4 = AnalogSignalArray(
+        self.anasig4 = AnalogSignal(
             np.array([
                 np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
                 np.sin(4 * np.pi * (f0 * t0).simplified.magnitude)]).
@@ -397,7 +398,7 @@ class sfc_TestCase_old_scipy(unittest.TestCase):
         t0 = np.arange(
             0, tlen0.rescale(pq.s).magnitude,
             fs0.rescale(pq.s).magnitude) * pq.s
-        self.anasig0 = AnalogSignalArray(
+        self.anasig0 = AnalogSignal(
             np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
         self.st0 = SpikeTrain(

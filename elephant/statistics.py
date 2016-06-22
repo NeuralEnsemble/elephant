@@ -639,7 +639,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Returns
     -------
-    rate : neo.AnalogSignalArray
+    rate : neo.AnalogSignal
         Contains the rate estimation in unit hertz (Hz).
         Has a property 'rate.times' which contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
