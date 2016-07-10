@@ -5,39 +5,59 @@ import numpy as np
 from scipy.integrate import simps 
 from numpy import exp
 
+available_1d = ['KCSD1D']
+available_2d = ['KCSD2D', 'MoIKCSD']
+available_3d = ['KCSD3D']
+all_kernel_methods = ['KCSD1D', 'KCSD2D', 'KCSD3D', 'MoIKCSD']
 
-def CSD(analog_signals, coords=None, method='KCSD2D', params={}):
-    if coords==None:
+def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
+    if coords == None:
         coords = []
         for ii in analog_signals:
             coords.append(ii.recordingchannel.coordinate)
-    
+    if method == None:
+        raise ValueError('Must specify a method of CSD implementation')
     if len(coords) != len(analog_signals):
         raise ValueError('Number of signals and coords is not same')
-
     for ii in coords: # CHECK for Dimensionality of electrodes
-        if len(ii) != 2:
+        if len(ii) > 3:
             raise ValueError('Invalid number of coordinate positions')
+    dimension = len(coords[0])
+    print 'Dimensionality of the electrodes is: ', dimension
+    if dimension == 1 and (method not in available_1d):
+        raise ValueError('Invalid method, Available options are %s', % (available_1d))
+    if dimension == 2 and (method not in available_2d):
+        raise ValueError('Invalid method, Available options are %s', % (available_2d))
+    if dimension == 3 and (method not in available_3d):
+        raise ValueError('Invalid method, Available options are %s', % (available_3d))
 
-    input_array=np.zeros((len(analog_signals),analog_signals[0].magnitude.shape[0]))
+    input_array = np.zeros((len(analog_signals),analog_signals[0].magnitude.shape[0]))
     for ii,jj in enumerate(analog_signals):
-        input_array[ii,:]=jj.magnitude
-
-    if method == 'KCSD2D':
-        from current_source_density.KCSD2D import KCSD2D
-        from current_source_density.KCSD2D_Helpers import KCSD2D_params
-
-        if params == {}:
-            params = KCSD2D_params
-        k = KCSD2D(np.array(coords), input_array, params=params)
-        k.cross_validate(Rs=np.array((0.2,0.22,0.24)))
+        input_array[ii,:] = jj.magnitude
+    
+    if method in all_kernel_methods:
+        if method == 'KCSD1D':
+            from current_source_density.KCSD1D import KCSD1D as kernel_method
+        elif method == 'KCSD2D':
+            from current_source_density.KCSD2D import KCSD2D as kernel_method
+        elif method == 'MoIKCSD':
+            from current_source_density.MoIKCSD import MoIKCSD as kernel_method
+        elif method == 'KCSD3D':
+            from current_source_density.KCSD3D import KCSD3D as kernel_method
+        k = kernel_method(np.array(coords), input_array, **params)
+        if (method in all_kernel_methods) and bool(cv_params.items): #not empty then
+            k.cross_validate(**cv_params)
         csd = k.values()
         csd = np.rollaxis(csd, -1, 0)
-        output= neo.AnalogSignalArray(csd*pq.uA/pq.mm**3, t_start=analog_signals[0].t_start,
-                                     sampling_rate=analog_signals[0].sampling_rate)
-        output.annotate(x_coords=k.space_X, y_coords=k.space_Y)
-    else:
-        raise KeyError('Method not available')
+        output= neo.AnalogSignalArray(csd*pq.uA/pq.mm**dimension,
+                                      t_start=analog_signals[0].t_start,
+                                      sampling_rate=analog_signals[0].sampling_rate)
+        if dimension == 1:
+            output.annotate(x_coords=k.estm_x)
+        elif dimension == 2:
+            output.annotate(x_coords=k.estm_x, y_coords=k.estm_y)
+        elif dimension == 3:
+            output.annotate(x_coords=k.estm_x, y_coords=k.estm_y, z_coords=k.estm_z)
     return output
 
 def FWD(csd_profile, ele_xx, ele_yy, xlims=[0.,1.], ylims=[0.,1.], zlims=50):
@@ -48,15 +68,12 @@ def FWD(csd_profile, ele_xx, ele_yy, xlims=[0.,1.], ylims=[0.,1.], zlims=50):
         """
         X, Y = np.meshgrid(xlin, ylin)
         Ny = ylin.shape[0]
-        # construct 2-D integrand
         m = np.sqrt((x - X)**2 + (y - Y)**2)
-        m[m < 0.0000001] = 0.0000001 # I increased acuracy
-        y = np.arcsinh(2*h / m) * csd  # corrected
-        # do a 1-D integral over every row
+        m[m < 0.0000001] = 0.0000001
+        y = np.arcsinh(2*h / m) * csd 
         I = np.zeros(Ny)
         for i in xrange(Ny):
-            I[i] = simps(y[:, i], ylin)  # I changed the integral
-        # then an integral over the result
+            I[i] = simps(y[:, i], ylin)
         F = simps(I, xlin)
         return F 
     x = np.linspace(xlims[0], xlims[1], zlims)
