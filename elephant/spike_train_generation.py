@@ -17,6 +17,94 @@ from neo import SpikeTrain
 import random
 from elephant.spike_train_surrogates import dither_spike_train
 
+def spike_extraction(signal, threshold = 0.0 * mV, sign = 'above',
+                     time_stamps = None, extr_interval = (-2 * ms, 4 * ms)):
+    """
+    Return the peak times for all events that cross threshold and the waveforms.
+    Usually used for extracting spikes from a membrane potential to calculate
+    waveform properties
+    Similar to spike_train_generation.peak_detection.
+
+    Parameters
+    ----------
+    signal : neo AnalogSignal object
+        'signal' is an analog signal.
+    threshold : A quantity, e.g. in mV
+        'threshold' contains a value that must be reached for an event 
+        to be detected.
+    sign : 'above' or 'below'
+        'sign' determines whether to count thresholding crossings
+        that cross above or below the threshold.
+    spike_train: None, quantity array or Object with .times interface
+        if 'spike_train' is a quantity array or exposes a quantity array 
+        exposes the .times interface, it provides the time_stamps 
+        around which the waveform is extracted. If it is None, the function 
+        peak_detection is used to calculate the time_stamps from signal.
+    extr_interval: unpackable time quantities, len == 2
+        'extr_interval' specifies the time interval around the time_stamps
+        where the waveform is extracted. The default is an interval of 6 * ms.
+
+    Returns
+    -------
+    result_st : neo SpikeTrain object
+        'result_st' contains the time_stamps of each of the spikes and the 
+        waveforms in result_st.waveforms.
+    """
+    #Get spike time_stamps from calling peak_detection of from a passed spike_train
+    if time_stamps is None:
+        time_stamps = peak_detection(signal, threshold, sign = sign)
+    elif hasattr(time_stamps, 'times'):
+        time_stamps = time_stamps.times
+    elif type(time_stamps) is Quantity:
+        raise TypeError("time_stamps must be None, a quantity array or expose" +
+        " a quantity array through the .times interface")
+
+    if len(time_stamps) == 0:
+         return SpikeTrain(time_stamps, units = signal.times.units,
+                   t_start = signal.t_start, t_stop = signal.t_stop,
+                   waveforms = np.array([]), sampling_rate = signal.sampling_rate)
+
+    #Unpack the extraction interval from tuple or array
+    extr_left, extr_right = extr_interval
+    if extr_left > extr_right:
+        raise ValueError("extr_interval[0] must be < extr_interval[1]")
+
+    if any(np.diff(time_stamps) < extr_interval[1]):
+        print("WARNING: Waveforms overlap. This can cause errors during further analysis!")
+
+    data_left = ((extr_left * signal.sampling_rate).simplified).magnitude
+
+    data_right = ((extr_right * signal.sampling_rate).simplified).magnitude
+
+    data_stamps = (((time_stamps - signal.t_start) * signal.sampling_rate).simplified).magnitude
+
+    data_stamps = data_stamps.astype(int)
+
+    borders_left = data_stamps + data_left
+
+    borders_right = data_stamps + data_right
+
+    borders = np.dstack((borders_left, borders_right)).flatten()   
+
+    waveforms = np.array(np.split(np.array(signal), borders)[1::2]) * signal.units
+    
+    #len(np.shape(waveforms)) == 1 if the waveforms do not have the same width.
+    #this can occur when extr_interval indexes beyond the signal.
+    #Workaround: delete spikes shorter than the maximum length with 
+    if len(np.shape(waveforms)) == 1:
+        max_len = (np.array([len(x) for x in waveforms])).max()
+        to_delete = np.array([idx for idx, x in enumerate(waveforms) if len(x) < max_len])
+        waveforms = np.delete(waveforms, to_delete, axis = 0)
+        waveforms = np.array([x for x in waveforms])
+        print("WARNING: Waveforms " + ("{:d}, " * len(to_delete)).format(*to_delete) +
+        "exceeded signal and had to be deleted. Change extr_interval to keep.")
+
+    waveforms = waveforms[:,np.newaxis,:]
+
+    return SpikeTrain(time_stamps, units = signal.times.units,
+                       t_start = signal.t_start, t_stop = signal.t_stop,
+                       sampling_rate = signal.sampling_rate, waveforms = waveforms,
+                       left_sweep = extr_left)
 
 def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
     """
