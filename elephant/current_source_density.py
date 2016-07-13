@@ -4,6 +4,7 @@ import numpy as np
 
 from scipy.integrate import simps 
 from numpy import exp
+from current_source_density import KCSD
 
 available_1d = ['KCSD1D']
 available_2d = ['KCSD2D', 'MoIKCSD']
@@ -36,14 +37,7 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
         input_array[ii,:] = jj.magnitude
     
     if method in all_kernel_methods:
-        if method == 'KCSD1D':
-            from current_source_density.KCSD1D import KCSD1D as kernel_method
-        elif method == 'KCSD2D':
-            from current_source_density.KCSD2D import KCSD2D as kernel_method
-        elif method == 'MoIKCSD':
-            from current_source_density.MoIKCSD import MoIKCSD as kernel_method
-        elif method == 'KCSD3D':
-            from current_source_density.KCSD3D import KCSD3D as kernel_method
+        kernel_method = getattr(KCSD, method)
         k = kernel_method(np.array(coords), input_array, **params)
         if (method in all_kernel_methods) and bool(cv_params): #not empty then
             print 'Performing Cross Validation'
@@ -160,8 +154,8 @@ def generate_electrodes(dim, xlims=[0.1,0.9], ylims=[0.1,0.9], zlims=[0.1,0.9], 
         return ele_x, ele_y, ele_z
 
 def gauss_1d_dipole(x):
-    src = 0.5*np.exp(-((x-0.7)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
-    snk = -0.5*np.exp(-((x-0.3)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
+    src = 0.5*exp(-((x-0.7)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
+    snk = -0.5*exp(-((x-0.3)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
     f = src+snk
     return f
 
@@ -182,7 +176,7 @@ def small_source_2D(x, y):
         xp = x * np.cos(p[5]) - y * np.sin(p[5])
         yp = x * np.sin(p[5]) + y * np.cos(p[5])
 
-        g = p[4]*np.exp(-(((rcen_x-xp)/p[2])**2+
+        g = p[4]*exp(-(((rcen_x-xp)/p[2])**2+
                           ((rcen_y-yp)/p[3])**2)/2.)
         return g
     f1 = gauss2d(x,y,[0.3,0.7,0.038,0.058,0.5,0.])
@@ -197,8 +191,8 @@ def gauss_3d_dipole(x, y, z):
     x1, y1, z1 = 0.6, 0.5, 0.7
     sig_2 = 0.023
     A = (2*np.pi*sig_2)**-1
-    f1 = A*np.exp( (-(x-x0)**2 -(y-y0)**2 -(z-z0)**2) / (2*sig_2) )
-    f2 = -1*A*np.exp( (-(x-x1)**2 -(y-y1)**2 -(z-z1)**2) / (2*sig_2) )
+    f1 = A*exp( (-(x-x0)**2 -(y-y0)**2 -(z-z0)**2) / (2*sig_2) )
+    f2 = -1*A*exp( (-(x-x1)**2 -(y-y1)**2 -(z-z1)**2) / (2*sig_2) )
     f = f1+f2
     return f
     
