@@ -347,9 +347,17 @@ class CSD(object):
         csd : np.ndarrray * quantity.Quantity
             Array with the csd estimate
         '''
-        if not self.f_order > 0 and isinstance(self.f_order, int):
-            print('Filter order must be int > 0!')
-            raise
+        if self.f_type == 'gaussian':
+            try:
+                assert(len(self.f_order) == 2)
+            except AssertionError as ae:
+                raise ae('filter order f_order must be a tuple of length 2')
+        else:
+            try:
+                assert(self.f_order > 0 and isinstance(self.f_order, int))
+            except AssertionError as ae:
+                raise ae('Filter order must be int > 0!')
+                
 
         if self.f_type == 'boxcar':
             num = ss.boxcar(self.f_order)

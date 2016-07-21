@@ -166,9 +166,9 @@ def get_lfp_of_planes(z_j=np.arange(21)*1E-4*pq.m,
     density
     '''
     phi_j = np.zeros(z_j.size)*pq.V
-    for i, zi in enumerate(z_i):
+    for i, (zi, Ci) in enumerate(zip(z_i, C_i)):
         for j, zj in enumerate(z_j):
-            phi_j[j] += potential_of_plane(zj, zi, C_i[i], sigma)
+            phi_j[j] += potential_of_plane(zj, zi, Ci, sigma)
     
     #test plot
     if plot:
@@ -205,9 +205,9 @@ def get_lfp_of_disks(z_j=np.arange(21)*1E-4*pq.m,
     current source density
     '''
     phi_j = np.zeros(z_j.size)*pq.V
-    for i, zi in enumerate(z_i):
+    for i, (zi, Ci, Ri) in enumerate(zip(z_i, C_i, R_i)):
         for j, zj in enumerate(z_j):
-            phi_j[j] += potential_of_disk(zj, zi, C_i[i], R_i[i], sigma)
+            phi_j[j] += potential_of_disk(zj, zi, Ci, Ri, sigma)
     
     #test plot
     if plot:
@@ -245,9 +245,9 @@ def get_lfp_of_cylinders(z_j=np.arange(21)*1E-4*pq.m,
     current source density
     '''
     phi_j = np.zeros(z_j.size)*pq.V
-    for i, zi in enumerate(z_i):
+    for i, (zi, Ci, Ri, hi) in enumerate(zip(z_i, C_i, R_i, h_i)):
         for j, zj in enumerate(z_j):
-            phi_j[j] += potential_of_cylinder(zj, zi, C_i[i], R_i[i], h_i[i], sigma)
+            phi_j[j] += potential_of_cylinder(zj, zi, Ci, Ri, hi, sigma)
     
     #test plot
     if plot:
@@ -935,7 +935,7 @@ class TestICSD(unittest.TestCase):
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
-        z_i_i = np.linspace(z_i[0], z_i[-1], num_steps)*z_i.units
+        z_i_i = np.linspace(float(z_i[0]), float(z_i[-1]), num_steps)*z_i.units
         C_i_i = f_C(np.asarray(z_i_i))*C_i.units
         R_i_i = f_R(z_i_i)*R_i.units
 
@@ -997,7 +997,7 @@ class TestICSD(unittest.TestCase):
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
-        z_i_i = np.linspace(z_i[0], z_i[-1], num_steps)*z_i.units
+        z_i_i = np.linspace(float(z_i[0]), float(z_i[-1]), num_steps)*z_i.units
         C_i_i = f_C(np.asarray(z_i_i))*C_i.units
         R_i_i = f_R(z_i_i)*R_i.units
 
@@ -1059,7 +1059,7 @@ class TestICSD(unittest.TestCase):
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
-        z_i_i = np.linspace(z_i[0], z_i[-1], num_steps)*z_i.units
+        z_i_i = np.linspace(float(z_i[0]), float(z_i[-1]), num_steps)*z_i.units
         C_i_i = f_C(np.asarray(z_i_i))*C_i.units
         R_i_i = f_R(z_i_i)*R_i.units
 
@@ -1121,7 +1121,7 @@ class TestICSD(unittest.TestCase):
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
-        z_i_i = np.linspace(z_i[0], z_i[-1], num_steps)*z_i.units
+        z_i_i = np.linspace(float(z_i[0]), float(z_i[-1]), num_steps)*z_i.units
         C_i_i = f_C(np.asarray(z_i_i))*C_i.units
         R_i_i = f_R(z_i_i)*R_i.units
 
@@ -1183,7 +1183,7 @@ class TestICSD(unittest.TestCase):
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
-        z_i_i = np.linspace(z_i[0], z_i[-1], num_steps)*z_i.units
+        z_i_i = np.linspace(float(z_i[0]), float(z_i[-1]), num_steps)*z_i.units
         C_i_i = f_C(np.asarray(z_i_i))*C_i.units
         R_i_i = f_R(z_i_i)*R_i.units
 
