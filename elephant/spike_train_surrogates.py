@@ -30,8 +30,8 @@ the original data:
 [1] Louis et al (2010) Surrogate Spike Train Generation Through Dithering in
     Operational Time. Front Comput Neurosci. 2010; 4: 127.
 
-:original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
+:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -42,7 +42,7 @@ try:
     import elephant.statistics as es
     isi = es.isi
 except ImportError:
-    from .statistics import isi # Convenience when in elephant working dir.  
+    from .statistics import isi  # Convenience when in elephant working dir.
 
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
@@ -264,7 +264,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
     else:
         sts = []
-        empty_train = neo.SpikeTrain([]*spiketrain.units,
+        empty_train = neo.SpikeTrain([] * spiketrain.units,
                                      t_start=spiketrain.t_start,
                                      t_stop=spiketrain.t_stop)
         for i in range(n):

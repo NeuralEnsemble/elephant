@@ -7,7 +7,7 @@ What is Elephant?
 
 As a result of the complexity inherent in modern recording technologies that yield massively parallel data streams and in advanced analysis methods to explore such rich data sets, the need for more reproducible research in the neurosciences can no longer be ignored. Reproducibility rests on building workflows that may allow users to transparently trace their analysis steps from data acquisition to final publication. A key component of such a workflow is a set of defined analysis methods to perform the data processing.
 
-Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages. In addition to providing a common platform for analysis codes from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. Elephant is the direct successor to Neurotools [#f1]_ and maintains ties to complementary projects such as OpenElectrophy [#f2]_ and spykeviewer [#f3]_.
+Elephant (Electrophysiology Analysis Toolkit) is an emerging open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages. In addition to providing a common platform for analysis codes from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. Elephant is the direct successor to Neurotools [#f1]_ and maintains ties to complementary projects such as OpenElectrophy [#f2]_ and spykeviewer [#f3]_.
 
 * Analysis functions use consistent data formats and conventions as input arguments and outputs. Electrophysiological data will generally be represented by data models defined by the Neo_ [#f4]_ project.
 * Library functions are based on a set of core functions for commonly used operations, such as sliding windows, converting data to alternate representations, or the generation of surrogates for hypothesis testing.
@@ -17,23 +17,27 @@ Elephant (Electrophysiology Analysis Toolkit) is an open-source, community cente
 Elephant library structure
 ==========================
 
-Elephant is a standard python package and is structured into a number of submodules. The following is a sketch of the layout of the Elephant library (0.1.0 release).
+Elephant is a standard python package and is structured into a number of submodules. The following is a sketch of the layout of the Elephant library (0.3.0 release).
 
 .. figure:: images/elephant_structure.png
-    :width: 600 px
+    :width: 400 px
     :align: center
     :figwidth: 80 %
     
     Modules of the Elephant library. Modules containing analysis functions are colored in blue shades, core functionality in green shades.
    
 
-Conceptually, modules of the Elephant library can be divided into those related to a specific field of analysis methods, and core functions that provide a layer of various foundation and utility functions. All available modules are available directly on the the top level of the Elephant package in the ``elephant`` subdirectory to avoid unnecessary hierarchical clutter. Unit tests for all functions are located in the ``elephant/test`` subdirectory and are named according the module name. This documentation is located in the top level ``doc`` subdirectory.
+Conceptually, modules of the Elephant library can be divided into those related to a specific category of analysis methods, and supporting modules that provide a layer of various core utility functions. All available modules are available directly on the the top level of the Elephant package in the ``elephant`` subdirectory to avoid unnecessary hierarchical clutter. Unit tests for all functions are located in the ``elephant/test`` subdirectory and are named according the module name. This documentation is located in the top level ``doc`` subdirectory.
 
 In the following we provide a brief overview of the modules available in Elephant.
 
 
 Analysis modules
 ----------------
+
+``statistics``
+^^^^^^^^^^^^^^
+Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
 
 ``signal_processing``
 ^^^^^^^^^^^^^^^^^^^^^
@@ -43,25 +47,41 @@ Basic processing procedures for analog signals (e.g., performing a z-score of a 
 ^^^^^^^^^^^^
 Identification of spectral properties in analog signals (e.g., the power spectrum)
 
-``statistics``
+``kernels``
 ^^^^^^^^^^^^^^
-Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
+A class that provides representations for commonly used kernel functions.
+
+``spike_train_dissimilarity_measures``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Spike train metrics (e.g., the Victor-Purpura measure) to measure the (dis-)similarity between spike trains.
+
+``sta``
+^^^^^^^
+Calculate the spike-triggered average and spike-field-coherence of an analog signal.
 
 ``spike_train_correlation``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Functions to quantify correlations between sets of spike trains.
 
-``sta``
-^^^^^^^
-Calculate the spike-triggered average of an analog signal and related measures.
+``unitary_event_analysis``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Determine periods where neurons synchronize their activity beyond chance level.
+
+``cubic``
+^^^^^^^^^
+Implements the method Cumulant Based Inference of higher-order Correlation (CuBIC) to detect the presence of higher-order correlations in massively parallel data based on its complexity distribution.
+
+``asset``
+^^^^^^^^^
+Implementation of the Analysis of Sequences of Synchronous EvenTs (ASSET) to detect, in particular, syn-fire chain like activity.
 
 ``csd``
 ^^^^^^^
 Inverse and standard methods to estimate of current source density (CSD) of laminar LFP recordings.
 
 
-Core modules
-------------
+Supporting modules
+------------------
 
 ``conversion``
 ^^^^^^^^^^^^^^

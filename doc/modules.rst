@@ -1,6 +1,6 @@
-******************
-Function Reference
-******************
+****************************
+Function Reference by Module
+****************************
 
 .. toctree::
    :maxdepth: 2
@@ -8,12 +8,18 @@ Function Reference
    reference/statistics
    reference/signal_processing
    reference/spectral
-   reference/spike_triggered_average
+   reference/kernels
+   reference/spike_train_dissimilarity
+   reference/sta
    reference/spike_train_correlation
+   reference/unitary_event_analysis
+   reference/cubic
+   reference/asset
    reference/spike_train_generation
    reference/spike_train_surrogates
    reference/conversion
    reference/csd
-   
+   reference/neo_tools
+   reference/pandas_bridge
 
 

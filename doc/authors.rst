@@ -5,7 +5,7 @@ Authors and contributors
 ************************
 
 The following people have contributed code and/or ideas to the current version
-of elephant. The institutional affiliations are those at the time of the
+of Elephant. The institutional affiliations are those at the time of the
 contribution, and may not be the current affiliation of a contributor.
 
 * Alper Yegenoglu [1]
@@ -14,6 +14,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Eilif Muller [3, 4]
 * Emiliano Torre [1]
 * Espen Hagen [1]
+* Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
 * Michael Denker [1]
@@ -23,11 +24,17 @@ contribution, and may not be the current affiliation of a contributor.
 * Richard Meyes [1]
 * Vahid Rostami [1]
 * Subhasis Ray [5]
+* Robert Pröpper [6]
+* Richard C Gerkin [7]
+* Bartosz Telenczuk [2]
 
 1. Institute of Neuroscience and Medicine (INM-6), Computational and Systems Neuroscience & Institute for Advanced Simulation (IAS-6), Theoretical Neuroscience, Jülich Research Centre and JARA, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
 3. Electronic Visions Group, Kirchhoff-Institute for Physics, University of Heidelberg, Germany
 4. Brain-Mind Institute, Ecole Polytechnique Fédérale de Lausanne, Switzerland
-5. NIH–NICHD, Laboratory of Cellular and Synaptic Physiology, Bethesda, Maryland 20892
+5. NIH–NICHD, Laboratory of Cellular and Synaptic Physiology, Bethesda, Maryland 20892, USA
+6. Neural Information Processing Group, Institute of Software Engineering and Theoretical Computer Science, Technische Universität Berlin, Germany
+7. Arizona State University School of Life Sciences, USA
+8. Computational Neuroscience Research Group (CNRG), Waterloo Centre for Theoretical Neuroscience, Waterloo, Canada
 
 If we've somehow missed you off the list we're very sorry - please let us know.

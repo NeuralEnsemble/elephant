@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-docstring goes here.
+Bridge to the pandas library.
 
-:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

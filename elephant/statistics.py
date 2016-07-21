@@ -2,7 +2,7 @@
 """
 Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
 
-:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -13,8 +13,11 @@ import quantities as pq
 import scipy.stats
 import scipy.signal
 import neo
-import warnings
+from neo.core import SpikeTrain
 import elephant.conversion as conv
+import elephant.kernels as kernels
+import warnings
+# warnings.simplefilter('always', DeprecationWarning)
 
 
 def isi(spiketrain, axis=-1):
@@ -136,12 +139,12 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
     if not axis or not found_t_start:
         return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
-                      axis=axis) / (t_stop-t_start)
+                      axis=axis) / (t_stop - t_start)
     else:
         # this is needed to handle broadcasting between spiketrain and t_stop
         t_stop_test = np.expand_dims(t_stop, axis)
         return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop_test),
-                      axis=axis) / (t_stop-t_start)
+                      axis=axis) / (t_stop - t_start)
 
 
 # we make `cv` an alias for scipy.stats.variation for the convenience
@@ -242,10 +245,14 @@ def lv(v):
 
     # calculate LV and return result
     # raise error if input is multi-dimensional
-    return 3.*np.mean(np.power(np.diff(v)/(v[:-1] + v[1:]), 2))
+    return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
 
 
+# sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
+# to finally be taken out of Elephant
 def sigma2kw(form):
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     if form.upper() == 'BOX':
         coeff = 2.0 * np.sqrt(3)
     elif form.upper() == 'TRI':
@@ -261,9 +268,14 @@ def sigma2kw(form):
 
     return coeff
 
+
 def kw2sigma(form):
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     return 1/sigma2kw(form)
 
+
+# to finally be taken out of Elephant
 def make_kernel(form, sigma, sampling_period, direction=1):
     """
     Creates kernel functions for convolution.
@@ -346,6 +358,8 @@ def make_kernel(form, sigma, sampling_period, direction=1):
        J. Neurosci Meth 94: 81-92; 1999.
 
     """
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'])
     forms_verbose = np.array(['boxcar', 'triangle', 'gaussian', 'epanechnikov',
                      'exponential', 'alpha'])
@@ -353,7 +367,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         form = forms_abbreviated[forms_verbose == form][0]
 
     assert form.upper() in ('BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'), \
-    "form must be one of either 'BOX','TRI','GAU','EPA','EXP' or 'ALP'!"
+        "form must be one of either 'BOX','TRI','GAU','EPA','EXP' or 'ALP'!"
 
     assert direction in (1, -1), "direction must be either 1 or -1"
 
@@ -364,17 +378,17 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     SI_sigma = sigma.rescale('s').magnitude
     SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
 
-    norm = 1./SI_time_stamp_resolution
-
-    w = sigma2kw(form)
+    norm = 1. / SI_time_stamp_resolution
 
     if form.upper() == 'BOX':
+        w = 2.0 * SI_sigma * np.sqrt(3)
         # always odd number of bins
         width = 2 * np.floor(w / 2.0 / SI_time_stamp_resolution) + 1
         height = 1. / width
         kernel = np.ones((1, width)) * height  # area = 1
 
     elif form.upper() == 'TRI':
+        w = 2 * SI_sigma * np.sqrt(6)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         trileft = np.arange(1, halfwidth + 2)
         triright = np.arange(halfwidth, 0, -1)  # odd number of bins
@@ -382,6 +396,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = triangle / triangle.sum()  # area = 1
 
     elif form.upper() == 'EPA':
+        w = 2.0 * SI_sigma * np.sqrt(5)
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
         base = np.arange(-halfwidth, halfwidth + 1)
         parabula = base**2
@@ -389,13 +404,15 @@ def make_kernel(form, sigma, sampling_period, direction=1):
         kernel = epanech / epanech.sum()  # area = 1
 
     elif form.upper() == 'GAU':
+        w = 2.0 * SI_sigma * 2.7  # > 99% of distribution weight
         halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)  # always odd
         base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
         g = np.exp(
             -(base**2) / 2.0 / SI_sigma**2) / SI_sigma / np.sqrt(2.0 * np.pi)
-        kernel = g / g.sum() # area = 1
+        kernel = g / g.sum()  # area = 1
 
     elif form.upper() == 'ALP':
+        w = 5.0 * SI_sigma
         alpha = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -407,6 +424,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
             kernel = np.flipud(kernel)
 
     elif form.upper() == 'EXP':
+        w = 5.0 * SI_sigma
         expo = np.arange(
             1, (
                 2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
@@ -422,10 +440,10 @@ def make_kernel(form, sigma, sampling_period, direction=1):
     return kernel, norm, m_idx
 
 
-def instantaneous_rate(spiketrain, sampling_period, form,
+# to finally be taken out of Elephant
+def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
                        acausal=True, trim=False):
-
     """
     Estimate instantaneous firing rate by kernel convolution.
 
@@ -501,19 +519,22 @@ def instantaneous_rate(spiketrain, sampling_period, form,
     ----------
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
     """
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     if sigma == 'auto':
         form = 'GAU'
         unit = spiketrain.units
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
-        sigma = kw2sigma(form) * kernel_width*unit
+        sigma = kw2sigma(form) * kernel_width * unit
     elif not isinstance(sigma, pq.Quantity):
         raise TypeError('sigma must be either a quantities object or "auto".'
-                        ' Found: %s, value %s' %(type(sigma), str(sigma)))
+                        ' Found: %s, value %s' % (type(sigma), str(sigma)))
 
     kernel, norm, m_idx = make_kernel(form=form, sigma=sigma,
                                       sampling_period=sampling_period)
-    units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
+    units = pq.CompoundUnit(
+        "%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
         t_start = spiketrain.t_start
@@ -545,7 +566,7 @@ def instantaneous_rate(spiketrain, sampling_period, form,
             r = r[m_idx:-(kernel.size - m_idx)]
 
         elif trim:
-            r = r[2 * m_idx:-2*(kernel.size - m_idx)]
+            r = r[2 * m_idx:-2 * (kernel.size - m_idx)]
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
@@ -554,7 +575,7 @@ def instantaneous_rate(spiketrain, sampling_period, form,
             r = r[m_idx:-(kernel.size - m_idx)]
 
         elif trim:
-            r = r[2 * m_idx:-2*(kernel.size - m_idx)]
+            r = r[2 * m_idx:-2 * (kernel.size - m_idx)]
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
@@ -563,6 +584,191 @@ def instantaneous_rate(spiketrain, sampling_period, form,
                                  units=pq.Hz, t_start=t_start)
 
     return rate, sigma
+
+
+def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
+                       cutoff=5.0, t_start=None, t_stop=None, trim=False):
+
+    """
+    Estimates instantaneous firing rate by kernel convolution.
+
+    Parameters
+    -----------
+    spiketrain : 'neo.SpikeTrain'
+        Neo object that contains spike times, the unit of the time stamps
+        and t_start and t_stop of the spike train.
+    sampling_period : Time Quantity
+        Time stamp resolution of the spike times. The same resolution will
+        be assumed for the kernel
+    kernel : string 'auto' or callable object of :class:`Kernel` from module
+        'kernels.py'. Currently implemented kernel forms are rectangular,
+        triangular, epanechnikovlike, gaussian, laplacian, exponential,
+        and alpha function.
+        Example: kernel = kernels.RectangularKernel(sigma=10*ms, invert=False)
+        The kernel is used for convolution with the spike train and its
+        standard deviation determines the time resolution of the instantaneous
+        rate estimation.
+        Default: 'auto'. In this case, the optimized kernel width for the 
+        rate estimation is calculated according to [1] and with this width
+        a gaussian kernel is constructed. Automatized calculation of the 
+        kernel width is not available for other than gaussian kernel shapes.
+    cutoff : float
+        This factor determines the cutoff of the probability distribution of
+        the kernel, i.e., the considered width of the kernel in terms of 
+        multiples of the standard deviation sigma.
+        Default: 5.0
+    t_start : Time Quantity (optional)
+        Start time of the interval used to compute the firing rate. If None
+        assumed equal to spiketrain.t_start
+        Default: None
+    t_stop : Time Quantity (optional)
+        End time of the interval used to compute the firing rate (included).
+        If None assumed equal to spiketrain.t_stop
+        Default: None
+    trim : bool
+        if False, the output of the Fast Fourier Transformation being a longer
+        vector than the input vector by the size of the kernel is reduced back
+        to the original size of the considered time interval of the spiketrain
+        using the median of the kernel.
+        if True, only the region of the convolved signal is returned, where
+        there is complete overlap between kernel and spike train. This is
+        achieved by reducing the length of the output of the Fast Fourier
+        Transformation by a total of two times the size of the kernel, and
+        t_start and t_stop are adjusted.
+        Default: False
+
+    Returns
+    -------
+    rate : neo.AnalogSignalArray
+        Contains the rate estimation in unit hertz (Hz).
+        Has a property 'rate.times' which contains the time axis of the rate
+        estimate. The unit of this property is the same as the resolution that
+        is given via the argument 'sampling_period' to the function.
+
+    Raises
+    ------
+    TypeError:
+        If `spiketrain` is not an instance of :class:`SpikeTrain` of Neo.
+        If `sampling_period` is not a time quantity.
+        If `kernel` is neither instance of :class:`Kernel` or string 'auto'.
+        If `cutoff` is neither float nor int.
+        If `t_start` and `t_stop` are neither None nor a time quantity.
+        If `trim` is not bool.
+
+    ValueError:
+        If `sampling_period` is smaller than zero.
+
+    Example
+    --------
+    kernel = kernels.AlphaKernel(sigma = 0.05*s, invert = True)
+    rate = instantaneous_rate(spiketrain, sampling_period = 2*ms, kernel)
+
+    References
+    ----------
+    ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
+
+    """
+    # Checks of input variables:
+    if not isinstance(spiketrain, SpikeTrain):
+        raise TypeError(
+            "spiketrain must be instance of :class:`SpikeTrain` of Neo!\n"
+            "    Found: %s, value %s" % (type(spiketrain), str(spiketrain)))
+
+    if not (isinstance(sampling_period, pq.Quantity) and
+            sampling_period.dimensionality.simplified ==
+            pq.Quantity(1, "s").dimensionality):
+        raise TypeError(
+            "The sampling period must be a time quantity!\n"
+            "    Found: %s, value %s" % (type(sampling_period), str(sampling_period)))
+
+    if sampling_period.magnitude < 0:
+        raise ValueError("The sampling period must be larger than zero.")
+
+    if kernel == 'auto':
+        kernel_width = sskernel(spiketrain.magnitude, tin=None,
+                                bootstrap=True)['optw']
+        unit = spiketrain.units
+        sigma = 1/(2.0 * 2.7) * kernel_width * unit
+        # factor 2.0 connects kernel width with its half width,
+        # factor 2.7 connects half width of Gaussian distribution with
+        #             99% probability mass with its standard deviation.
+        kernel = kernels.GaussianKernel(sigma)
+    elif not isinstance(kernel, kernels.Kernel):
+        raise TypeError(
+            "kernel must be either instance of :class:`Kernel` "
+            "or the string 'auto'!\n"
+            "    Found: %s, value %s" % (type(kernel), str(kernel)))
+
+    if not (isinstance(cutoff, float) or isinstance(cutoff, int)):
+        raise TypeError("cutoff must be float or integer!")
+
+    if not (t_start is None or (isinstance(t_start, pq.Quantity) and
+            t_start.dimensionality.simplified ==
+            pq.Quantity(1, "s").dimensionality)):
+        raise TypeError("t_start must be a time quantity!")
+
+    if not (t_stop is None or (isinstance(t_stop, pq.Quantity) and
+            t_stop.dimensionality.simplified ==
+            pq.Quantity(1, "s").dimensionality)):
+        raise TypeError("t_stop must be a time quantity!")
+
+    if not (isinstance(trim, bool)):
+        raise TypeError("trim must be bool!")
+
+    # main function:
+    units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
+    spiketrain = spiketrain.rescale(units)
+    if t_start is None:
+        t_start = spiketrain.t_start
+    else:
+        t_start = t_start.rescale(spiketrain.units)
+
+    if t_stop is None:
+        t_stop = spiketrain.t_stop
+    else:
+        t_stop = t_stop.rescale(spiketrain.units)
+
+    time_vector = np.zeros(int((t_stop - t_start)) + 1)
+
+    spikes_slice = spiketrain.time_slice(t_start, t_stop) \
+        if len(spiketrain) else np.array([])
+
+    for spike in spikes_slice:
+        index = int((spike - t_start))
+        time_vector[index] += 1
+
+    if cutoff < kernel.min_cutoff:
+        cutoff = kernel.min_cutoff
+        warnings.warn("The width of the kernel was adjusted to a minimally "
+                      "allowed width.")
+
+    t_arr = np.arange(-cutoff * kernel.sigma.rescale(units).magnitude,
+                      cutoff * kernel.sigma.rescale(units).magnitude +
+                      sampling_period.rescale(units).magnitude,
+                      sampling_period.rescale(units).magnitude) * units
+
+    r = scipy.signal.fftconvolve(time_vector,
+                                 kernel(t_arr).rescale(pq.Hz).magnitude, 'full')
+    if np.any(r < 0):
+        warnings.warn("Instantaneous firing rate approximation contains "
+                      "negative values, possibly caused due to machine "
+                      "precision errors.")
+
+    if not trim:
+        r = r[kernel.median_index(t_arr):-(kernel(t_arr).size -
+                                           kernel.median_index(t_arr))]
+    elif trim:
+        r = r[2 * kernel.median_index(t_arr):-2 * (kernel(t_arr).size -
+                                                   kernel.median_index(t_arr))]
+        t_start += kernel.median_index(t_arr) * spiketrain.units
+        t_stop -= (kernel(t_arr).size -
+                   kernel.median_index(t_arr)) * spiketrain.units
+
+    rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
+                                 sampling_period=sampling_period,
+                                 units=pq.Hz, t_start=t_start, t_stop=t_stop)
+
+    return rate
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
@@ -709,15 +915,15 @@ def complexity_pdf(spiketrains, binsize):
 
     # Computing the histogram of the entries of pophist (=Complexity histogram)
     complexity_hist = np.histogram(
-        pophist.magnitude, bins=range(0, len(spiketrains)+2))[0]
+        pophist.magnitude, bins=range(0, len(spiketrains) + 2))[0]
 
     # Normalization of the Complexity Histogram to 1 (probabilty distribution)
     complexity_hist = complexity_hist / complexity_hist.sum()
     # Convert the Complexity pdf to an neo.AnalogSignalArray
     complexity_distribution = neo.AnalogSignalArray(
         np.array(complexity_hist).reshape(len(complexity_hist), 1) *
-        pq.dimensionless, t_start=0*pq.dimensionless,
-        sampling_period=1*pq.dimensionless)
+        pq.dimensionless, t_start=0 * pq.dimensionless,
+        sampling_period=1 * pq.dimensionless)
 
     return complexity_distribution
 
@@ -733,12 +939,15 @@ This was translated into Python by Subhasis Ray, NCBS. Tue Jun 10
 23:01:43 IST 2014
 
 """
+
+
 def nextpow2(x):
     """ Return the smallest integral power of 2 that >= x """
     n = 2
     while n < x:
-        n = 2*n
+        n = 2 * n
     return n
+
 
 def fftkernel(x, w):
     """
@@ -767,19 +976,21 @@ def fftkernel(x, w):
     Lmax = L + 3 * w
     n = nextpow2(Lmax)
     X = np.fft.fft(x, n)
-    f = np.arange(0, n, 1.0)/n
-    f = np.concatenate((-f[:n/2], f[n/2:0:-1]))
-    K = np.exp(-0.5*(w*2*np.pi*f)**2)
+    f = np.arange(0, n, 1.0) / n
+    f = np.concatenate((-f[:n / 2], f[n / 2:0:-1]))
+    K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
     return y
 
+
 def logexp(x):
-    if x < 1e2 :
+    if x < 1e2:
         y = np.log(1 + np.exp(x))
     else:
         y = x
     return y
+
 
 def ilogexp(x):
     if x < 1e2:
@@ -787,6 +998,7 @@ def ilogexp(x):
     else:
         y = x
     return y
+
 
 def cost_function(x, N, w, dt):
     """
@@ -796,12 +1008,14 @@ def cost_function(x, N, w, dt):
 
      """
     yh = np.abs(fftkernel(x, w / dt))  # density
-    #formula for density
-    C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * dt + 2 / np.sqrt(2 * np.pi) / w / N
+    # formula for density
+    C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * \
+               dt + 2 / np.sqrt(2 * np.pi) / w / N
     C = C * N * N
     # formula for rate
     # C = dt*sum( yh.^2 - 2*yh.*y_hist + 2/sqrt(2*pi)/w*y_hist )
     return C, yh
+
 
 def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     """
@@ -845,7 +1059,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         dt = np.min(isi)
         tin = np.linspace(np.min(spiketimes),
                           np.max(spiketimes),
-                          min(int(time / dt + 0.5), 1000)) # The 1000 seems somewhat arbitrary
+                          min(int(time / dt + 0.5), 1000))  # The 1000 seems somewhat arbitrary
         t = tin
     else:
         time = np.max(tin) - np.min(tin)
@@ -856,13 +1070,13 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         dt = np.min(isi)
         if dt > np.min(np.diff(tin)):
             t = np.linspace(np.min(tin), np.max(tin),
-                            min(int(time/dt + 0.5), 1000))
+                            min(int(time / dt + 0.5), 1000))
         else:
             t = tin
     dt = np.min(np.diff(tin))
-    yhist, bins = np.histogram(spiketimes, np.r_[t - dt/2, t[-1] + dt/2])
+    yhist, bins = np.histogram(spiketimes, np.r_[t - dt / 2, t[-1] + dt / 2])
     N = np.sum(yhist)
-    yhist = yhist / (N * dt) # density
+    yhist = yhist / (N * dt)  # density
     optw = None
     y = None
     if w is not None:
@@ -878,11 +1092,11 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         # Golden section search on a log-exp scale
         wmin = 2 * dt
         wmax = max(spiketimes) - min(spiketimes)
-        imax = 20 # max iterations
+        imax = 20  # max iterations
         w = np.zeros(imax)
         C = np.zeros(imax)
         tolerance = 1e-5
-        phi = 0.5 * (np.sqrt(5) + 1) # The Golden ratio
+        phi = 0.5 * (np.sqrt(5) + 1)  # The Golden ratio
         a = ilogexp(wmin)
         b = ilogexp(wmax)
         c1 = (phi - 1) * a + (2 - phi) * b
@@ -922,10 +1136,11 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         for ii in range(nbs):
             idx = np.floor(np.random.rand(N) * N).astype(int)
             xb = spiketimes[idx]
-            y_histb, bins = np.histogram(xb, np.r_[t - dt/2, t[-1]+dt/2]) / dt / N
+            y_histb, bins = np.histogram(
+                xb, np.r_[t - dt / 2, t[-1] + dt / 2]) / dt / N
             yb_buf = fftkernel(y_histb, optw / dt).real
             yb_buf = yb_buf / np.sum(yb_buf * dt)
-            yb[ii,:] = np.interp(tin, t, yb_buf)
+            yb[ii, :] = np.interp(tin, t, yb_buf)
         ybsort = np.sort(yb, axis=0)
         y95b = ybsort[np.floor(0.05 * nbs).astype(int), :]
         y95u = ybsort[np.floor(0.95 * nbs).astype(int), :]

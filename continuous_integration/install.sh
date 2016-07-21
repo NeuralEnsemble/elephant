@@ -32,11 +32,11 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
-    conda install libgfortran
+    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
-        conda install --yes mkl
+        conda install --yes --no-update-dependencies mkl
     else
         # Make sure that MKL is not used
         conda remove --yes --features mkl || echo "MKL not installed"
@@ -59,12 +59,13 @@ elif [[ "$DISTRIB" == "conda" ]]; then
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION
+        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
     source activate testenv
+    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
-        conda install --yes mkl
+        conda install --yes --no-update-dependencies mkl
     else
         # Make sure that MKL is not used
         conda remove --yes --features mkl || echo "MKL not installed"
@@ -74,6 +75,8 @@ elif [[ "$DISTRIB" == "conda" ]]; then
         pip install coveralls
     fi
 
+    python -c "import pandas; import os; assert os.getenv('PANDAS_VERSION') == pandas.__version__"
+
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     deactivate
     # Create a new virtualenv using system site packages for numpy and scipy
@@ -82,8 +85,8 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install nose
     pip install coverage
     pip install numpy==$NUMPY_VERSION
+    pip install scipy==$SCIPY_VERSION
     pip install six
-    pip install pandas==$PANDAS_VERSION
     pip install quantities
 fi
 
@@ -92,10 +95,14 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 # pip install neo==0.3.3
-wget https://github.com/NeuralEnsemble/python-neo/archive/apibreak.tar.gz
-tar -xzvf apibreak.tar.gz
-pushd python-neo-apibreak
+wget https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.tar.gz
+tar -xzvf snapshot-20150821.tar.gz
+pushd python-neo-snapshot-20150821
 python setup.py install
 popd
 
 pip install .
+
+
+python -c "import numpy; import os; assert os.getenv('NUMPY_VERSION') == numpy.__version__"
+python -c "import scipy; import os; assert os.getenv('SCIPY_VERSION') == scipy.__version__"
