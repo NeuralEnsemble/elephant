@@ -12,7 +12,7 @@ from . import (statistics,
                spectral,
                spike_train_surrogates,
                signal_processing,
-               current_source_density,
+               csd,
                sta,
                conversion,
                neo_tools)
@@ -20,7 +20,6 @@ from . import (statistics,
 try:
     from . import pandas_bridge
     from . import asset
-    from . import csd #current_source_density
 except ImportError:
     pass
 

@@ -149,26 +149,28 @@ class KCSD(CSD):
         -------
         None
         """
-        self.src_type = kwargs.get('src_type', 'gauss')
-        self.sigma = kwargs.get('sigma', 1.0)
-        self.h = kwargs.get('h', 1.0)
-        self.n_src_init = kwargs.get('n_src_init', 1000)
-        self.lambd = kwargs.get('lambd', 0.0)
-        self.R_init = kwargs.get('R_init', 0.23)
-        self.ext_x = kwargs.get('ext_x', 0.0)
-        self.xmin = kwargs.get('xmin', np.min(self.ele_pos[:, 0]))
-        self.xmax = kwargs.get('xmax', np.max(self.ele_pos[:, 0]))
-        self.gdx = kwargs.get('gdx', 0.01*(self.xmax - self.xmin)) 
+        self.src_type = kwargs.pop('src_type', 'gauss')
+        self.sigma = kwargs.pop('sigma', 1.0)
+        self.h = kwargs.pop('h', 1.0)
+        self.n_src_init = kwargs.pop('n_src_init', 1000)
+        self.lambd = kwargs.pop('lambd', 0.0)
+        self.R_init = kwargs.pop('R_init', 0.23)
+        self.ext_x = kwargs.pop('ext_x', 0.0)
+        self.xmin = kwargs.pop('xmin', np.min(self.ele_pos[:, 0]))
+        self.xmax = kwargs.pop('xmax', np.max(self.ele_pos[:, 0]))
+        self.gdx = kwargs.pop('gdx', 0.01*(self.xmax - self.xmin)) 
         if self.dim >= 2:
-            self.ext_y = kwargs.get('ext_y', 0.0)
-            self.ymin = kwargs.get('ymin', np.min(self.ele_pos[:, 1]))
-            self.ymax = kwargs.get('ymax', np.max(self.ele_pos[:, 1]))
-            self.gdy = kwargs.get('gdy', 0.01*(self.ymax - self.ymin))
+            self.ext_y = kwargs.pop('ext_y', 0.0)
+            self.ymin = kwargs.pop('ymin', np.min(self.ele_pos[:, 1]))
+            self.ymax = kwargs.pop('ymax', np.max(self.ele_pos[:, 1]))
+            self.gdy = kwargs.pop('gdy', 0.01*(self.ymax - self.ymin))
         if self.dim == 3:
-            self.ext_z = kwargs.get('ext_z', 0.0)
-            self.zmin = kwargs.get('zmin', np.min(self.ele_pos[:, 2]))
-            self.zmax = kwargs.get('zmax', np.max(self.ele_pos[:, 2]))
-            self.gdz = kwargs.get('gdz', 0.01*(self.zmax - self.zmin))
+            self.ext_z = kwargs.pop('ext_z', 0.0)
+            self.zmin = kwargs.pop('zmin', np.min(self.ele_pos[:, 2]))
+            self.zmax = kwargs.pop('zmax', np.max(self.ele_pos[:, 2]))
+            self.gdz = kwargs.pop('gdz', 0.01*(self.zmax - self.zmin))
+        if kwargs:
+            raise TypeError('Invalid keyword arguments:', kwargs.keys())
         return
         
     def estimate_at(self):
@@ -432,9 +434,8 @@ class KCSD(CSD):
                         V_est[:, tt] += beta_new[ii, tt] * B_test[:, ii]
                 err += np.linalg.norm(V_est-V_test)
             except LinAlgError:
-                print 'Encoutered Singular Matrix Error: try changing ele_pos'
                 #err = 10000. #singluar matrix errors!
-                raise
+                raise LinAlgError('Encoutered Singular Matrix Error: try changing ele_pos')
         return err
 
 class KCSD1D(KCSD):
@@ -543,8 +544,8 @@ class KCSD1D(KCSD):
         try:
             self.basis = basis.basis_1D[source_type]
         except:
-            print 'Invalid source_type for basis! available are:', basis.basis_1D.keys()
-            raise KeyError
+            raise KeyError('Invalid source_type for basis! available are:', 
+                           basis.basis_1D.keys())
         #Mesh where the source basis are placed is at self.src_x
         (self.src_x, self.R) = utils.distribute_srcs_1D(self.estm_x,
                                                         self.n_src_init,
@@ -740,8 +741,8 @@ class KCSD2D(KCSD):
         try:
             self.basis = basis.basis_2D[source_type]
         except:
-            print 'Invalid source_type for basis! available are:', basis.basis_2D.keys()
-            raise KeyError
+            raise KeyError('Invalid source_type for basis! available are:', 
+                           basis.basis_2D.keys())
         #Mesh where the source basis are placed is at self.src_x 
         (self.src_x, self.src_y, self.R) = utils.distribute_srcs_2D(self.estm_x,
                                                                     self.estm_y,
@@ -878,9 +879,9 @@ class MoIKCSD(KCSD2D):
         -------
         None
         """
-        self.MoI_iters = kwargs.get('MoI_iters', 20)
-        self.sigma_S = kwargs.get('sigma_S', 5.0)
-        self.sigma = kwargs.get('sigma', 1.0)
+        self.MoI_iters = kwargs.pop('MoI_iters', 20)
+        self.sigma_S = kwargs.pop('sigma_S', 5.0)
+        self.sigma = kwargs.pop('sigma', 1.0)
         #Eq 6, Ness (2015)
         W_TS = (self.sigma - self.sigma_S) / (self.sigma + self.sigma_S) 
         self.iters = np.arange(self.MoI_iters) + 1
@@ -1065,8 +1066,8 @@ class KCSD3D(KCSD):
         try:
             self.basis = basis.basis_3D[source_type]
         except:
-            print 'Invalid source_type for basis! available are:', basis.basis_3D.keys()
-            raise KeyError
+            raise KeyError('Invalid source_type for basis! available are:', 
+                           basis.basis_3D.keys())
         #Mesh where the source basis are placed is at self.src_x 
         (self.src_x, self.src_y, self.src_z, self.R) = utils.distribute_srcs_3D(self.estm_x,
                                                                                 self.estm_y,
@@ -1265,5 +1266,5 @@ if __name__ == '__main__':
                n_src_init=1000, src_type='gauss_lim')
     k.cross_validate()
 
-    print 'Invalid usage, use this an inheritable class only'
+    #print 'Invalid usage, use this an inheritable class only'
 

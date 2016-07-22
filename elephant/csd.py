@@ -24,7 +24,7 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
         if len(ii) > 3:
             raise ValueError('Invalid number of coordinate positions')
     dim = len(coords[0])
-    print 'Dimensionality of the electrode setup is: ', dim
+    #print 'Dimensionality of the electrode setup is: ', dim
     if dim==1 and (method not in available_1d):
         raise ValueError('Invalid method, Available options are:', available_1d)
     if dim==2 and (method not in available_2d):
@@ -37,14 +37,16 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
         input_array[ii,:] = jj.magnitude
     
     if method in all_kernel_methods:
-        kernel_method = getattr(KCSD, method)
+        kernel_method = getattr(KCSD, method) #fetch the class 'KCSD1D'
         k = kernel_method(np.array(coords), input_array, **params)
         if (method in all_kernel_methods) and bool(cv_params): #not empty then
-            print 'Performing Cross Validation'
+            #print 'Performing Cross Validation'
+            if len(cv_params.keys() and ['Rs', 'lambdas']) != 2:
+                raise TypeError('Invalid cv_params argument passed')
             k.cross_validate(**cv_params)
-        csd = k.values()
-        csd = np.rollaxis(csd, -1, 0)
-        output= neo.AnalogSignalArray(csd*pq.uA/pq.mm**dim,
+        estm_csd = k.values()
+        estm_csd = np.rollaxis(estm_csd, -1, 0)
+        output= neo.AnalogSignalArray(estm_csd*pq.uA/pq.mm**dim,
                                       t_start=analog_signals[0].t_start,
                                       sampling_rate=analog_signals[0].sampling_rate)
         if dim == 1:
@@ -199,7 +201,7 @@ def gauss_3d_dipole(x, y, z):
 if __name__ == '__main__':
     #tests
     #e < CS - csd
-    dim = 3
+    dim = 1
     if dim==1 :
         ele_pos = generate_electrodes(dim=1).reshape(5,1)
         pots = FWD(gauss_1d_dipole, ele_pos) 
@@ -229,8 +231,13 @@ if __name__ == '__main__':
         rc.analogsignals = [asig]
         rc.create_relationship()
         an_sigs.append(asig)
-   
     result = CSD(an_sigs, method=test_method, params=test_params, cv_params={'Rs':np.array((0.1,0.25,0.5))})
+
+    # from matplotlib import pyplot as plt
+    # plt.plot(result.annotations['x_coords'], result)
+    # plt.show()
+
+
     print result
     print result.t_start
     print result.sampling_rate
