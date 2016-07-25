@@ -10,6 +10,8 @@ Michal Czerwinski, Chaitanya Chintaluri
 Laboratory of Neuroinformatics,
 Nencki Institute of Experimental Biology, Warsaw.
 """
+from __future__ import division
+
 import numpy as np
 from scipy import interpolate
 
@@ -87,7 +89,8 @@ def distribute_srcs_2D(X, Y, n_src, ext_x, ext_y, R_init):
     X_src, Y_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):np.complex(0,nx),
                             (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):np.complex(0,ny)]
     d = round(R_init/ds)
-    R = d * ds
+    #R = d * ds
+    R = R_init
     return X_src, Y_src, R
 
 def get_src_params_2D(Lx, Ly, n_src):
@@ -166,7 +169,8 @@ def distribute_srcs_3D(X, Y, Z, n_src, ext_x, ext_y, ext_z, R_init):
                                    (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):np.complex(0,ny),
                                    (np.min(Z) - ext_z_n):(np.max(Z) + ext_z_n):np.complex(0,nz)]
     d = np.round(R_init/ds)
-    R = d * ds
+    #R = d * ds
+    R = R_init
     return (X_src, Y_src, Z_src, R)
 
 def get_src_params_3D(Lx, Ly, Lz, n_src):

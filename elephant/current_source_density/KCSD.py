@@ -1,6 +1,5 @@
-"""
-This script is used to generate Current Source Density Estimates, 
-using the kCSD method Jan et.al (2012).
+"""This script is used to generate Current Source Density Estimates, using the
+kCSD method Jan et.al (2012).
 
 This was written by :
 [1]Chaitanya Chintaluri, 
@@ -8,7 +7,10 @@ This was written by :
 Laboratory of Neuroinformatics,
 Nencki Institute of Exprimental Biology, Warsaw.
 KCSD1D[1][2], KCSD2D[1], KCSD3D[1], MoIKCSD[1]
+
 """
+from __future__ import division
+
 import numpy as np
 from scipy import special, integrate, interpolate
 from scipy.spatial import distance
@@ -23,8 +25,8 @@ from numpy.linalg import LinAlgError
 #     skmonaco_available = False
 skmonaco_available = False
 
-import utility_functions as utils
-import basis_functions as basis
+from . import utility_functions as utils
+from . import basis_functions as basis
 
 class CSD(object):
     """CSD - The base class for CSD methods."""
@@ -307,13 +309,13 @@ class KCSD(CSD):
         elif estimate == 'POT':
             estimation_table = self.k_interp_pot
         else:
-            print 'Invalid quantity to be measured, pass either CSD or POT'
+            print('Invalid quantity to be measured, pass either CSD or POT')
         k_inv = np.linalg.inv(self.k_pot + self.lambd *
                               np.identity(self.k_pot.shape[0]))
         estimation = np.zeros((self.n_estm, self.n_time))
-        for t in xrange(self.n_time):
+        for t in range(self.n_time):
             beta = np.dot(k_inv, self.pots[:, t])
-            for i in xrange(self.n_ele):
+            for i in range(self.n_ele):
                 estimation[:, t] += estimation_table[:, i] *beta[i] # C*(x) Eq 18
         return self.process_estimate(estimation)
 
@@ -376,7 +378,7 @@ class KCSD(CSD):
         Lambda : post cross validation
         """
         if lambdas is None:                           #when None
-            print 'No lambda given, using defaults'
+            print('No lambda given, using defaults')
             lambdas = np.logspace(-2,-25,25,base=10.) #Default multiple lambda
             lambdas = np.hstack((lambdas, np.array((0.0))))
         elif lambdas.size == 1:                       #resize when one entry
@@ -387,12 +389,12 @@ class KCSD(CSD):
         index_generator = []                          
         for ii in range(self.n_ele):
             idx_test = [ii]                           
-            idx_train = range(self.n_ele)
+            idx_train = list(range(self.n_ele))
             idx_train.remove(ii)                      #Leave one out
             index_generator.append((idx_train, idx_test))
         for R_idx,R in enumerate(Rs):                 #Iterate over R
             self.update_R(R)
-            print 'Cross validating R (all lambda) :', R
+            print('Cross validating R (all lambda) :', R)
             for lambd_idx,lambd in enumerate(lambdas): #Iterate over lambdas
                 errs[R_idx, lambd_idx] = self.compute_cverror(lambd, 
                                                               index_generator)
@@ -402,7 +404,7 @@ class KCSD(CSD):
         self.cv_error = np.min(errs)  #otherwise is None
         self.update_R(cv_R)           #Update solver
         self.update_lambda(cv_lambda)
-        print 'R, lambda :', cv_R, cv_lambda
+        print('R, lambda :', cv_R, cv_lambda)
         return cv_R, cv_lambda
 
     def compute_cverror(self, lambd, index_generator):
@@ -1230,15 +1232,16 @@ class KCSD3D(KCSD):
         return self.int_pot_3D(xp, yp, zp, x, R, h, basis_func)
 
 if __name__ == '__main__':
-    print 'Checking 1D'
+    print('Checking 1D')
     ele_pos = np.array(([-0.1],[0], [0.5], [1.], [1.4], [2.], [2.3]))
     pots = np.array([[-1], [-1], [-1], [0], [0], [1], [-1.5]])
     k = KCSD1D(ele_pos, pots,
                gdx=0.01, n_src_init=300,
                ext_x=0.0, src_type='gauss')
     k.cross_validate()
+    print(k.values())
 
-    print 'Checking 2D'
+    print('Checking 2D')
     ele_pos = np.array([[-0.2, -0.2],[0, 0], [0, 1], [1, 0], [1,1], [0.5, 0.5],
                         [1.2, 1.2]])
     pots = np.array([[-1], [-1], [-1], [0], [0], [1], [-1.5]])
@@ -1248,15 +1251,16 @@ if __name__ == '__main__':
                ymin=-2.0, ymax=2.0,
                src_type='gauss')
     k.cross_validate()
+    print(k.values())
     
-    print 'Checking MoIKCSD'
+    print('Checking MoIKCSD')
     k = MoIKCSD(ele_pos, pots,
                 gdx=0.05, gdy=0.05,
                 xmin=-2.0, xmax=2.0,
                 ymin=-2.0, ymax= 2.0)
     k.cross_validate()
 
-    print 'Checking KCSD3D'
+    print('Checking KCSD3D')
     ele_pos = np.array([(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0),
                         (0, 1, 1), (1, 1, 0), (1, 0, 1), (1, 1, 1),
                         (0.5, 0.5, 0.5)])
@@ -1265,6 +1269,6 @@ if __name__ == '__main__':
                gdx=0.02, gdy=0.02, gdz=0.02,
                n_src_init=1000, src_type='gauss_lim')
     k.cross_validate()
-
+    print(k.values())
     #print 'Invalid usage, use this an inheritable class only'
 
