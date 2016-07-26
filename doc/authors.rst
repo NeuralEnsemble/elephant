@@ -13,6 +13,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Detlef Holstein [2]
 * Eilif Muller [3, 4]
 * Emiliano Torre [1]
+* Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
 * Michael Denker [1]
@@ -25,8 +26,8 @@ contribution, and may not be the current affiliation of a contributor.
 * Robert Pröpper [6]
 * Richard C Gerkin [7]
 * Bartosz Telenczuk [2]
-* Chaitanya Chintaluri [8]
-* Michał Czerwiński [8]
+* Chaitanya Chintaluri [9]
+* Michał Czerwiński [9]
 
 1. Institute of Neuroscience and Medicine (INM-6), Computational and Systems Neuroscience & Institute for Advanced Simulation (IAS-6), Theoretical Neuroscience, Jülich Research Centre and JARA, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
@@ -35,6 +36,7 @@ contribution, and may not be the current affiliation of a contributor.
 5. NIH–NICHD, Laboratory of Cellular and Synaptic Physiology, Bethesda, Maryland 20892, USA
 6. Neural Information Processing Group, Institute of Software Engineering and Theoretical Computer Science, Technische Universität Berlin, Germany
 7. Arizona State University School of Life Sciences, USA
-8. Nencki Institute of Experimental Biology, Warsaw, Poland
+8. Computational Neuroscience Research Group (CNRG), Waterloo Centre for Theoretical Neuroscience, Waterloo, Canada
+9. Nencki Institute of Experimental Biology, Warsaw, Poland
 
 If we've somehow missed you off the list we're very sorry - please let us know.

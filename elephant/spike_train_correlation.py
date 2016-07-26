@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Spike train correlation
-
 This modules provides functions to calculate correlations between spike trains.
 
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
 import numpy as np
 import neo
-import warnings
 import quantities as pq
 
 

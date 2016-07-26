@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-docstring goes here.
+Unit tests for the spectral module.
+
 :copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """

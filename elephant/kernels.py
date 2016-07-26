@@ -5,16 +5,17 @@ in convolution, e.g., for data smoothing (low pass filtering) or
 firing rate estimation.
 
 Examples of usage:
-kernel1 = kernels.GaussianKernel(sigma=100*ms)
-kernel2 = kernels.ExponentialKernel(sigma=8*mm, invert=True)
-
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+    >>> kernel1 = kernels.GaussianKernel(sigma=100*ms)
+    >>> kernel2 = kernels.ExponentialKernel(sigma=8*mm, invert=True)
+    
+:copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 import quantities as pq
 import numpy as np
 import scipy.special
+
 
 def inherit_docstring(fromfunc, sep=""):
     """
@@ -33,22 +34,24 @@ def inherit_docstring(fromfunc, sep=""):
         return func
     return _decorator
 
+
 class Kernel(object):
     """
     This is the base class for commonly used kernels.
 
     General definition of kernel:
     A function :math:`K(x, y)` is called a kernel function if
-    :math:`\int K(x, y) g(x) g(y) dx dy \geq 0 \forall g \in L_2`.
+    :math:`\\int K(x, y) g(x) g(y)\\ \\textrm{d}x\\ \\textrm{d}y
+    \\ \\geq 0\\ \\ \\ \\forall\\ g \\in L_2`
 
     Currently implemented kernels are:
-    * rectangular
-    * triangular
-    * epanechnikovlike
-    * gaussian
-    * laplacian
-    * exponential (asymmetric)
-    * alpha function (asymmetric)
+        - rectangular
+        - triangular
+        - epanechnikovlike
+        - gaussian
+        - laplacian
+        - exponential (asymmetric)
+        - alpha function (asymmetric)
 
     In neuroscience a popular application of kernels is in performing smoothing
     operations via convolution. In this case, the kernel has the properties of
@@ -149,7 +152,7 @@ class Kernel(object):
         Returns
         -------
             Quantity scalar
-            Boundary of the kernel containing area :math:`fraction` under the
+            Boundary of the kernel containing area `fraction` under the
             kernel density.
         """
         self._check_fraction(fraction)
@@ -211,7 +214,7 @@ class Kernel(object):
         than the minimum in the array t.
         """
         return np.nonzero(self(t).cumsum() *
-                          (t[len(t)-1] - t[0]) / (len(t) - 1) >= 0.5)[0].min()
+                          (t[len(t) - 1] - t[0]) / (len(t) - 1) >= 0.5)[0].min()
 
     def is_symmetric(self):
         """
@@ -229,6 +232,7 @@ class SymmetricKernel(Kernel):
     Derived from:
     """
     __doc__ += Kernel.__doc__
+
     def is_symmetric(self):
         return True
 
@@ -237,9 +241,11 @@ class RectangularKernel(SymmetricKernel):
     """
     Class for rectangular kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} \frac{1}{2 \tau}, & |t| < \tau \\
-    0, & |t| \geq \tau \end{array} \right`
-    with :math:`\tau = \sqrt{3} \sigma` corresponding to the half width
+    .. math::
+        K(t) = \\left\\{\\begin{array}{ll} \\frac{1}{2 \\tau}, & |t| < \\tau \\\\
+        0, & |t| \\geq \\tau \\end{array} \\right.
+
+    with :math:`\\tau = \\sqrt{3} \\sigma` corresponding to the half width
     of the kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
@@ -270,10 +276,13 @@ class TriangularKernel(SymmetricKernel):
     """
     Class for triangular kernels
 
-    :math:`K(t) = \left\{ \begin{array}{ll} \frac{1}{\tau} (1
-    - \frac{|t|}{\tau}), & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right`
-    with :math:`\tau = \sqrt{6} \sigma` corresponding to the half width of the
-    kernel.
+    .. math::
+        K(t) = \\left\\{ \\begin{array}{ll} \\frac{1}{\\tau} (1
+        - \\frac{|t|}{\\tau}), & |t| < \\tau \\\\
+         0, & |t| \\geq \\tau \\end{array} \\right.
+
+    with :math:`\\tau = \\sqrt{6} \\sigma` corresponding to the half width of 
+    the kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `invert` needed for asymmetric kernels also exists without
@@ -305,13 +314,15 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     """
     Class for epanechnikov-like kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2),
-    & |t| < d \\
-    0, & |t| \geq d \end{array} \right`
-    with :math:`d = \sqrt{5} \sigma` being the half width of the kernel.
+    .. math::
+        K(t) = \\left\\{\\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2),
+        & |t| < d \\\\
+        0, & |t| \\geq d \\end{array} \\right.
+
+    with :math:`d = \\sqrt{5} \\sigma` being the half width of the kernel.
 
     The Epanechnikov kernel under full consideration of its axioms has a half
-    width of :math:`sqrt{5}`. Ignoring one axiom also the respective kernel
+    width of :math:`\\sqrt{5}`. Ignoring one axiom also the respective kernel
     with half width = 1 can be called Epanechnikov kernel.
     ( https://de.wikipedia.org/wiki/Epanechnikov-Kern )
     However, arbitrary width of this type of kernel is here preferred to be
@@ -345,11 +356,11 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         The implemented formulas are based on the solution of this problem
         given in https://en.wikipedia.org/wiki/Cubic_function,
         where the following 3 solutions are given:
-        :math:`u_1 = 1` :                  Solution on negative side
-        :math:`u_2 = \frac{-1 + i\sqrt{3}}{2}` : Solution for larger
-                            values than zero crossing of the density
-        :math:`u_3 = \frac{-1 - i\sqrt{3}}{2}` : Solution for smaller
-                            values than zero crossing of the density
+            - :math:`u_1 = 1`: Solution on negative side
+            - :math:`u_2 = \\frac{-1 + i\\sqrt{3}}{2}`: Solution for larger
+              values than zero crossing of the density
+            - :math:`u_3 = \\frac{-1 - i\\sqrt{3}}{2}`: Solution for smaller
+              values than zero crossing of the density
         The solution :math:`u_3` is the relevant one for the problem at hand,
         since it involves only positive area contributions.
         """
@@ -363,8 +374,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
                   self.sigma.units**3
         C = ((Delta_1 + (Delta_1**2.0 - 4.0 * Delta_0**3.0)**(1.0 / 2.0)) /
              2.0)**(1.0 / 3.0)
-        u_3 = complex(-1.0/2.0, -np.sqrt(3.0)/2.0)
-        b= -5.0 * self.sigma**2 * (u_3 * C + Delta_0 / (u_3 * C))
+        u_3 = complex(-1.0 / 2.0, -np.sqrt(3.0) / 2.0)
+        b = -5.0 * self.sigma**2 * (u_3 * C + Delta_0 / (u_3 * C))
         return b.real
 
 
@@ -372,9 +383,11 @@ class GaussianKernel(SymmetricKernel):
     """
     Class for gaussian kernels
 
-    :math:`K(t) = (\frac{1}{\sigma \sqrt{2 \pi}})
-    \exp(-\frac{t^2}{2 \sigma^2})`
-    with :math:`\sigma` being the standard deviation.
+    .. math::
+        K(t) = (\\frac{1}{\\sigma \\sqrt{2 \\pi}})
+        \\exp(-\\frac{t^2}{2 \\sigma^2})
+
+    with :math:`\\sigma` being the standard deviation.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `invert` needed for asymmetric kernels also exists without
@@ -404,8 +417,10 @@ class LaplacianKernel(SymmetricKernel):
     """
     Class for laplacian kernels
 
-    :math:`K(t) = \frac{1}{2 \tau} \exp(-|\frac{t}{\tau}|)`
-    with :math:`\tau = \sigma / \sqrt{2}`.
+    .. math::
+        K(t) = \\frac{1}{2 \\tau} \\exp(-|\\frac{t}{\\tau}|)
+
+    with :math:`\\tau = \\sigma / \\sqrt{2}`.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `invert` needed for asymmetric kernels also exists without
@@ -439,10 +454,12 @@ class ExponentialKernel(Kernel):
     """
     Class for exponential kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{-t / \tau},
-    & t > 0 \\
-    0, & t \leq 0 \end{array} \right`
-    with :math:`\tau = \sigma`.
+    .. math::
+        K(t) = \\left\\{\\begin{array}{ll} (1 / \\tau) \\exp{(-t / \\tau)},
+        & t > 0 \\\\
+        0, & t \\leq 0 \\end{array} \\right.
+
+    with :math:`\\tau = \\sigma`.
 
     Derived from:
     """
@@ -473,10 +490,12 @@ class AlphaKernel(Kernel):
     """
     Class for alpha kernels
 
-    :math:`K(t) = \left\{\begin{array}{ll} (1 / (\tau)^2) t \exp{-t / \tau},
-    & t > 0 \\
-    0, & t \leq 0 \end{array} \right`
-    with :math:`\tau = \sigma / \sqrt{2}`.
+    .. math::
+        K(t) = \\left\\{\\begin{array}{ll} (1 / \\tau^2)
+        \\ t\\ \\exp{(-t / \\tau)}, & t > 0 \\\\
+        0, & t \\leq 0 \\end{array} \\right.
+
+    with :math:`\\tau = \\sigma / \\sqrt{2}`.
 
     For the alpha kernel an analytical expression for the boundary of the
     integral as a function of the area under the alpha kernel function

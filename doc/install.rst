@@ -22,6 +22,8 @@ The following packages are required to use Elephant:
 The following packages are optional in order to run certain parts of Elephant:
     * For using the pandas_bridge module: 
         * pandas >= 0.14.1
+    * For using the ASSET analysis
+	* scikit-learn >= 0.15.1
     * For building the documentation:
         * numpydoc >= 0.5
         * sphinx >= 1.2.2
@@ -73,8 +75,8 @@ To download and install manually, download the latest package from http://pypi.p
 
 Then::
 
-    $ tar xzf elephant-0.2.1.tar.gz
-    $ cd elephant-0.2.1
+    $ tar xzf elephant-0.3.0.tar.gz
+    $ cd elephant-0.3.0
     $ python setup.py install
     
 or::

@@ -6,8 +6,8 @@ into other representations useful to perform calculations on the data.
 An example is the representation of a spike train as a sequence of 0-1 values
 (binned spike train).
 
-:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
-:license: CeCILL, see LICENSE.txt for details.
+:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
+:license: BSD, see LICENSE.txt for details.
 """
 
 from __future__ import division, print_function
@@ -111,7 +111,7 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
         t_stop = getattr(spiketrain, 't_stop', np.max(spiketrain))
 
     # we don't actually want the sampling rate, we want the sampling period
-    sampling_period = 1./sampling_rate
+    sampling_period = 1. / sampling_rate
 
     # figure out what units, if any, we are dealing with
     if hasattr(spiketrain, 'units'):
@@ -138,7 +138,7 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
         t_stop = t_stop.rescale(units).magnitude
 
     # figure out the bin edges
-    edges = np.arange(t_start-sampling_period/2, t_stop+sampling_period*3/2,
+    edges = np.arange(t_start - sampling_period / 2, t_stop + sampling_period * 3 / 2,
                       sampling_period)
     # we don't want to count any spikes before t_start or after t_stop
     if edges[-2] > t_stop:
@@ -155,9 +155,9 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
     if not return_times:
         return res
     elif units is None:
-        return res, np.arange(t_start, t_stop+sampling_period, sampling_period)
+        return res, np.arange(t_start, t_stop + sampling_period, sampling_period)
     else:
-        return res, pq.Quantity(np.arange(t_start, t_stop+sampling_period,
+        return res, pq.Quantity(np.arange(t_start, t_stop + sampling_period,
                                           sampling_period), units=units)
 
 ###########################################################################
@@ -166,6 +166,8 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 # number of bins
 #
 ###########################################################################
+
+
 def _calc_tstart(num_bins, binsize, t_stop):
     """
     Calculates the start point from given parameter.
@@ -549,7 +551,7 @@ class BinnedSpikeTrain(object):
                 'some spike trains are not defined in the time given '
                 'by t_start')
         elif num_bins != int((
-                    (t_stop - t_start).rescale(binsize.units) / binsize).magnitude):
+                (t_stop - t_start).rescale(binsize.units) / binsize).magnitude):
             raise ValueError(
                 "Inconsistent arguments t_start (%s), " % t_start +
                 "t_stop (%s), binsize (%d) " % (t_stop, binsize) +
@@ -579,7 +581,8 @@ class BinnedSpikeTrain(object):
             are returned as a quantity array.
 
         """
-        return pq.Quantity(np.linspace(self.t_start, self.t_stop,
+        return pq.Quantity(np.linspace(self.t_start.magnitude,
+                                       self.t_stop.magnitude,
                                        self.num_bins + 1, endpoint=True),
                            units=self.binsize.units)
 
@@ -809,4 +812,3 @@ class BinnedSpikeTrain(object):
                                            self.matrix_columns),
                                     dtype=int)
         self._sparse_mat_u = csr_matrix
-

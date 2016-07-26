@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-docstring goes here.
+Unit tests for the spike_train_generation module.
 
-:copyright: Copyright 2014 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
