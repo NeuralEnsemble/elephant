@@ -15,14 +15,7 @@ import numpy as np
 from scipy import special, integrate, interpolate
 from scipy.spatial import distance
 from numpy.linalg import LinAlgError
-### Dependencies of elephant!
-# try:
-#     from skmonaco import mcmiser
-#     skmonaco_available = True
-#     import multiprocessing
-#     num_cores = multiprocessing.cpu_count()
-# except ImportError:
-#     skmonaco_available = False
+
 skmonaco_available = False
 
 from . import utility_functions as utils
@@ -31,19 +24,6 @@ from . import basis_functions as basis
 class CSD(object):
     """CSD - The base class for CSD methods."""
     def __init__(self, ele_pos, pots):
-        """Initialize CSD Class.
-
-        Parameters
-        ----------
-        ele_pos : numpy array
-            positions of electrodes
-        pots : numpy array
-            potentials measured by electrodes
-
-        Returns
-        -------
-        None
-        """
         self.validate(ele_pos, pots)
         self.ele_pos = ele_pos
         self.pots = pots
@@ -51,7 +31,6 @@ class CSD(object):
         self.n_time = self.pots.shape[1]
         self.dim = self.ele_pos.shape[1]
         self.cv_error = None
-        return
 
     def validate(self, ele_pos, pots):
         """Basic checks to see if inputs are okay
@@ -76,33 +55,6 @@ class CSD(object):
         if utils.check_for_duplicated_electrodes(ele_pos) is False:
             raise Exception("Error! Duplicated electrode!")
         return
-
-    def method(self):
-        """Place holder for the actual method that computes the CSD.
-        
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
-        """
-        pass
-
-    def values(self):
-        """Place holder for obtaining CSD at the pos_csd locations, it uses the method
-        function to obtain the CSD.
-        
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
-        """
-        pass
 
     def sanity(self, true_csd, pos_csd):
         """Useful for comparing TrueCSD with reconstructed CSD. Computes, the RMS error
@@ -138,7 +90,6 @@ class KCSD(CSD):
         self.place_basis() 
         self.create_src_dist_tables()
         self.method()
-        return
 
     def parameters(self, **kwargs):
         """Defining the default values of the method passed as kwargs
@@ -174,15 +125,6 @@ class KCSD(CSD):
         if kwargs:
             raise TypeError('Invalid keyword arguments:', kwargs.keys())
         return
-        
-    def estimate_at(self):
-        pass
-
-    def place_basis(self):
-        pass
-
-    def create_src_dist_tables(self):
-        pass
 
     def method(self):
         """Actual sequence of methods called for KCSD
@@ -302,7 +244,8 @@ class KCSD(CSD):
 
         Returns
         -------
-        estimated quantity of shape (ngx, ngy, ngz, nt)
+        estimation : np.array
+            estimated quantity of shape (ngx, ngy, ngz, nt)
         """
         if estimate == 'CSD': #Maybe used for estimating the potentials also.
             estimation_table = self.k_interp_cross 
@@ -320,6 +263,18 @@ class KCSD(CSD):
         return self.process_estimate(estimation)
 
     def process_estimate(self, estimation):
+        """Function used to rearrange estimation according to dimension, to be
+        used by the fuctions values
+
+        Parameters
+        ----------
+        estimation : np.array
+
+        Returns
+        -------
+        estimation : np.array
+            estimated quantity of shape (ngx, ngy, ngz, nt)
+        """
         if self.dim == 1:
             estimation = estimation.reshape(self.ngx, self.n_time)
         elif self.dim == 2:
@@ -436,8 +391,7 @@ class KCSD(CSD):
                         V_est[:, tt] += beta_new[ii, tt] * B_test[:, ii]
                 err += np.linalg.norm(V_est-V_test)
             except LinAlgError:
-                #err = 10000. #singluar matrix errors!
-                raise LinAlgError('Encoutered Singular Matrix Error: try changing ele_pos')
+                raise LinAlgError('Encoutered Singular Matrix Error: try changing ele_pos slightly')
         return err
 
 class KCSD1D(KCSD):
@@ -499,7 +453,6 @@ class KCSD1D(KCSD):
             Basis function (src_type) not implemented. See basis_functions.py for available
         """
         super(KCSD1D, self).__init__(ele_pos, pots, **kwargs)
-        return
 
     def estimate_at(self):
         """Defines locations where the estimation is wanted
@@ -541,14 +494,12 @@ class KCSD1D(KCSD):
         -------
         None
         """
-        # check If valid basis source type passed:
         source_type = self.src_type
         try:
             self.basis = basis.basis_1D[source_type]
-        except:
+        except KeyError:
             raise KeyError('Invalid source_type for basis! available are:', 
                            basis.basis_1D.keys())
-        #Mesh where the source basis are placed is at self.src_x
         (self.src_x, self.R) = utils.distribute_srcs_1D(self.estm_x,
                                                         self.n_src_init,
                                                         self.ext_x,
@@ -626,7 +577,6 @@ class KCSD1D(KCSD):
         -------
         pot : float
         """
-        #1/2sigma normalization not here
         m = np.sqrt((x-xp)**2 + h**2) - abs(x-xp)
         m *= basis_func(abs(xp), R)  #xp is the distance
         return m
@@ -693,7 +643,6 @@ class KCSD2D(KCSD):
             Basis function (src_type) not implemented. See basis_functions.py for available
         """
         super(KCSD2D, self).__init__(ele_pos, pots, **kwargs)
-        return
         
     def estimate_at(self):
         """Defines locations where the estimation is wanted
@@ -710,10 +659,8 @@ class KCSD2D(KCSD):
         -------
         None
         """
-        #Number of points where estimation is to be made.
         nx = (self.xmax - self.xmin)/self.gdx
         ny = (self.ymax - self.ymin)/self.gdy
-        #Making a mesh of points where estimation is to be made.
         self.estm_x, self.estm_y = np.mgrid[self.xmin:self.xmax:np.complex(0,nx), 
                                             self.ymin:self.ymax:np.complex(0,ny)]
         self.n_estm = self.estm_x.size
@@ -742,10 +689,9 @@ class KCSD2D(KCSD):
         source_type = self.src_type
         try:
             self.basis = basis.basis_2D[source_type]
-        except:
+        except KeyError:
             raise KeyError('Invalid source_type for basis! available are:', 
                            basis.basis_2D.keys())
-        #Mesh where the source basis are placed is at self.src_x 
         (self.src_x, self.src_y, self.R) = utils.distribute_srcs_2D(self.estm_x,
                                                                     self.estm_y,
                                                                     self.n_src_init,
@@ -757,6 +703,16 @@ class KCSD2D(KCSD):
         return        
 
     def create_src_dist_tables(self):
+        """Creates distance tables between sources, electrode and estm points
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         src_loc = np.array((self.src_x.ravel(), self.src_y.ravel()))
         est_loc = np.array((self.estm_x.ravel(), self.estm_y.ravel()))
         self.src_ele_dists = distance.cdist(src_loc.T, self.ele_pos, 'euclidean')
@@ -884,12 +840,10 @@ class MoIKCSD(KCSD2D):
         self.MoI_iters = kwargs.pop('MoI_iters', 20)
         self.sigma_S = kwargs.pop('sigma_S', 5.0)
         self.sigma = kwargs.pop('sigma', 1.0)
-        #Eq 6, Ness (2015)
         W_TS = (self.sigma - self.sigma_S) / (self.sigma + self.sigma_S) 
-        self.iters = np.arange(self.MoI_iters) + 1
+        self.iters = np.arange(self.MoI_iters) + 1  #Eq 6, Ness (2015)
         self.iter_factor = W_TS**self.iters
         super(MoIKCSD, self).__init__(ele_pos, pots, **kwargs)
-        return
 
     def forward_model(self, x, R, h, sigma, src_type):
         """FWD model functions
@@ -1015,7 +969,6 @@ class KCSD3D(KCSD):
             Basis function (src_type) not implemented. See basis_functions.py for available
         """
         super(KCSD3D, self).__init__(ele_pos, pots, **kwargs)
-        return
 
     def estimate_at(self):
         """Defines locations where the estimation is wanted
@@ -1032,11 +985,9 @@ class KCSD3D(KCSD):
         -------
         None
         """
-        #Number of points where estimation is to be made.
         nx = (self.xmax - self.xmin)/self.gdx
         ny = (self.ymax - self.ymin)/self.gdy
         nz = (self.zmax - self.zmin)/self.gdz
-        #Making a mesh of points where estimation is to be made.
         self.estm_x, self.estm_y, self.estm_z = np.mgrid[self.xmin:self.xmax:np.complex(0,nx), 
                                                          self.ymin:self.ymax:np.complex(0,ny),
                                                          self.zmin:self.zmax:np.complex(0,nz)]
@@ -1063,14 +1014,12 @@ class KCSD3D(KCSD):
         -------
         None
         """
-        #If Valid basis source type passed?
         source_type = self.src_type
         try:
             self.basis = basis.basis_3D[source_type]
-        except:
+        except KeyError:
             raise KeyError('Invalid source_type for basis! available are:', 
                            basis.basis_3D.keys())
-        #Mesh where the source basis are placed is at self.src_x 
         (self.src_x, self.src_y, self.src_z, self.R) = utils.distribute_srcs_3D(self.estm_x,
                                                                                 self.estm_y,
                                                                                 self.estm_z,
@@ -1132,14 +1081,11 @@ class KCSD3D(KCSD):
             if x == 0: x=0.0001
             d = R/3.
             if x < R:
-                #4*pi*((1/a)*(integrate(r**2 * exp(-r**2 / (2*d**2)) *dr ) between 0 and a ) + 
-                #(integrate(r *exp(-r**2 / (2*d**2)) * dr) between a and 3*d))
                 e = np.exp(-(x/ (np.sqrt(2)*d))**2)
                 erf = special.erf(x / (np.sqrt(2)*d))
                 pot = 4* np.pi * ( (d**2)*(e - np.exp(-4.5)) +
                                    (1/x)*((np.sqrt(np.pi/2)*(d**3)*erf) - x*(d**2)*e))
             else:
-                #4*pi*integrate((r**2)*exp(-(r**2 / (2*d**2)))*dr) between 0 and 3*d
                 pot = 15.28828*(d)**3 / x 
             pot /= (np.sqrt(2*np.pi)*d)**3
         elif src_type.__name__ == "step_3D":
@@ -1270,5 +1216,4 @@ if __name__ == '__main__':
                n_src_init=1000, src_type='gauss_lim')
     k.cross_validate()
     print(k.values())
-    #print 'Invalid usage, use this an inheritable class only'
 

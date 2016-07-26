@@ -70,7 +70,6 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
         if len(ii) > 3:
             raise ValueError('Invalid number of coordinate positions')
     dim = len(coords[0])
-    #print 'Dimensionality of the electrode setup is: ', dim
     if dim==1 and (method not in available_1d):
         raise ValueError('Invalid method, Available options are:', available_1d)
     if dim==2 and (method not in available_2d):
@@ -86,7 +85,6 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
         kernel_method = getattr(KCSD, method) #fetch the class 'KCSD1D'
         k = kernel_method(np.array(coords), input_array, **params)
         if (method in all_kernel_methods) and bool(cv_params): #not empty then
-            #print 'Performing Cross Validation'
             if len(cv_params.keys() and ['Rs', 'lambdas']) != 2:
                 raise TypeError('Invalid cv_params argument passed')
             k.cross_validate(**cv_params)
@@ -138,10 +136,6 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
         -------
         Potentials : np.array
            The potetials created by the csd profile at the electrode positions
-    
-        Raises
-        ------
-        None 
     """
     def integrate_1D(x0, csd_x, csd, h):
         m = np.sqrt((csd_x-x0)**2 + h**2) - abs(csd_x-x0)
@@ -238,9 +232,6 @@ def generate_electrodes(dim, xlims=[0.1,0.9], ylims=[0.1,0.9], zlims=[0.1,0.9], 
         -------
         ele_x, ele_y, ele_z : flattened np.array of the electrode pos
         
-        Raises
-        ------
-        None
     """
     if dim == 1:
         ele_x = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res)]
@@ -262,14 +253,37 @@ def generate_electrodes(dim, xlims=[0.1,0.9], ylims=[0.1,0.9], zlims=[0.1,0.9], 
         return ele_x, ele_y, ele_z
 
 def gauss_1d_dipole(x):
-    """1D Gaussian source"""
+    """1D Gaussian dipole source is placed between 0 and 1
+       to be used to test the CSD 
+       
+       Parameters
+       ----------
+       x : np.array
+           Spatial pts. at which the true csd is evaluated 
+       
+       Returns
+       -------
+       f : np.array
+           The value of the csd at the requested points
+    """
     src = 0.5*exp(-((x-0.7)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
     snk = -0.5*exp(-((x-0.3)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
     f = src+snk
     return f
 
 def large_source_2D(x, y):
-    """2D Gaussian large source profile"""
+    """2D Gaussian large source profile - to use to test csd
+       Parameters
+       ----------
+       x : np.array
+           Spatial x pts. at which the true csd is evaluated 
+       y : np.array
+           Spatial y pts. at which the true csd is evaluated 
+       Returns
+       -------
+       f : np.array
+           The value of the csd at the requested points
+    """
     zz = [0.4, -0.3, -0.1, 0.6] 
     zs = [0.2, 0.3, 0.4, 0.2] 
     f1 = 0.5965*exp( (-1*(x-0.1350)**2 - (y-0.8628)**2) /0.4464)* exp(-(-zz[0])**2 / zs[0]) /exp(-(zz[0])**2/zs[0])
@@ -280,7 +294,18 @@ def large_source_2D(x, y):
     return f
 
 def small_source_2D(x, y):
-    """2D Gaussian small source profile"""
+    """2D Gaussian small source profile - to be used to test csd
+       Parameters
+       ----------
+       x : np.array
+           Spatial x pts. at which the true csd is evaluated 
+       y : np.array
+           Spatial y pts. at which the true csd is evaluated 
+       Returns
+       -------
+       f : np.array
+           The value of the csd at the requested points
+    """
     def gauss2d(x,y,p):
         rcen_x = p[0] * np.cos(p[5]) - p[1] * np.sin(p[5])
         rcen_y = p[0] * np.sin(p[5]) + p[1] * np.cos(p[5])
@@ -298,7 +323,20 @@ def small_source_2D(x, y):
     return f
 
 def gauss_3d_dipole(x, y, z):
-    """3D Gaussian dipole profile"""
+    """3D Gaussian dipole profile - to be used to test csd.
+       Parameters
+       ----------
+       x : np.array
+           Spatial x pts. at which the true csd is evaluated 
+       y : np.array
+           Spatial y pts. at which the true csd is evaluated 
+       z : np.array
+           Spatial z pts. at which the true csd is evaluated 
+       Returns
+       -------
+       f : np.array
+           The value of the csd at the requested points
+    """
     x0, y0, z0 = 0.3, 0.7, 0.3
     x1, y1, z1 = 0.6, 0.5, 0.7
     sig_2 = 0.023
@@ -309,8 +347,6 @@ def gauss_3d_dipole(x, y, z):
     return f
     
 if __name__ == '__main__':
-    #tests
-    #e < CS - csd
     dim = 1
     if dim==1 :
         ele_pos = generate_electrodes(dim=1).reshape(5,1)
@@ -321,7 +357,7 @@ if __name__ == '__main__':
     elif dim==2:
         xx_ele, yy_ele = generate_electrodes(dim=2)
         pots = FWD(large_source_2D, xx_ele, yy_ele) 
-        pots = np.reshape(pots, (-1,1)) #into a 2D - shady
+        pots = np.reshape(pots, (-1,1)) 
         ele_pos = np.vstack((xx_ele, yy_ele)).T
         test_method = 'KCSD2D'
         test_params = {'sigma':1.}
@@ -342,10 +378,6 @@ if __name__ == '__main__':
         rc.create_relationship()
         an_sigs.append(asig)
     result = CSD(an_sigs, method=test_method, params=test_params, cv_params={'Rs':np.array((0.1,0.25,0.5))})
-
-    # from matplotlib import pyplot as plt
-    # plt.plot(result.annotations['x_coords'], result)
-    # plt.show()
 
     print(result)
     print(result.t_start)
