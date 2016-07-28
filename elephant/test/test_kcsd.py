@@ -2,6 +2,11 @@
 """
 Unit tests for the kCSD methods
 
+This was written by :
+Chaitanya Chintaluri, 
+Laboratory of Neuroinformatics,
+Nencki Institute of Exprimental Biology, Warsaw.
+
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -14,7 +19,8 @@ import elephant.csd as CSD
 class KCSD1D_TestCase(unittest.TestCase):
     def setUp(self):
         self.ele_pos = CSD.generate_electrodes(dim=1).reshape(5,1)
-        pots = CSD.FWD(CSD.gauss_1d_dipole, self.ele_pos) 
+        self.csd_profile = CSD.gauss_1d_dipole
+        pots = CSD.FWD(self.csd_profile, self.ele_pos) 
         self.pots = np.reshape(pots, (-1,1))
         self.test_method = 'KCSD1D'
         self.test_params = {'h':50.}
@@ -30,11 +36,16 @@ class KCSD1D_TestCase(unittest.TestCase):
     def test_kcsd1d_estimate(self, cv_params={}):
         result = CSD.CSD(self.an_sigs, method=self.test_method, 
                          params=self.test_params, cv_params=cv_params)        
+        est_csd = result[0,:]
         self.assertEqual(result.t_start, 0.0*pq.s)
         self.assertEqual(result.sampling_rate, 1000*pq.Hz)
         self.assertEqual(result.times, [0.]*pq.s)
         self.assertEqual(len(result.annotations.keys()), 1)
-
+        true_csd = self.csd_profile(result.annotations['x_coords'])
+        rms = np.linalg.norm(np.array(result[0,:]) - true_csd)
+        rms /= np.linalg.norm(true_csd) 
+        self.assertLess(rms, 0.5, msg='RMS between trueCSD and estimate > 0.5')
+        
     def test_valid_inputs(self):
         self.test_method = 'InvalidMethodName'
         self.assertRaises(ValueError,  self.test_kcsd1d_estimate)
@@ -49,12 +60,16 @@ class KCSD1D_TestCase(unittest.TestCase):
 
 class KCSD2D_TestCase(unittest.TestCase):
     def setUp(self):
-        xx_ele, yy_ele = CSD.generate_electrodes(dim=2)
+        xx_ele, yy_ele = CSD.generate_electrodes(dim=2, res=9, 
+                                                 xlims=[0.05,0.95], 
+                                                 ylims=[0.05,0.95])
         self.ele_pos = np.vstack((xx_ele, yy_ele)).T
-        pots = CSD.FWD(CSD.small_source_2D, xx_ele, yy_ele) 
+        self.csd_profile = CSD.large_source_2D
+        pots = CSD.FWD(self.csd_profile, xx_ele, yy_ele, res=100) 
         self.pots = np.reshape(pots, (-1,1))
         self.test_method = 'KCSD2D'
-        self.test_params = {'gdx':0.2, 'gdy':0.2}
+        self.test_params = {'gdx':0.25, 'gdy':0.25, 'R_init':0.08, 'h':50.,
+                            'xmin':0.,'xmax':1., 'ymin':0.,'ymax':1.}
         self.an_sigs=[]
         for ii in range(len(self.pots)):
             rc = neo.RecordingChannel()
@@ -71,6 +86,11 @@ class KCSD2D_TestCase(unittest.TestCase):
         self.assertEqual(result.sampling_rate, 1000*pq.Hz)
         self.assertEqual(result.times, [0.]*pq.s)
         self.assertEqual(len(result.annotations.keys()), 2)
+        true_csd = self.csd_profile(result.annotations['x_coords'], 
+                                    result.annotations['y_coords'])
+        rms = np.linalg.norm(np.array(result[0,:]) - true_csd)
+        rms /= np.linalg.norm(true_csd)
+        self.assertLess(rms, 0.5, msg='RMS '+str(rms)+' between trueCSD and estimate > 0.5')
 
     def test_moi_estimate(self):
         result = CSD.CSD(self.an_sigs, method='MoIKCSD', 
@@ -94,12 +114,18 @@ class KCSD2D_TestCase(unittest.TestCase):
 
 class KCSD3D_TestCase(unittest.TestCase):
     def setUp(self):
-        xx_ele, yy_ele, zz_ele = CSD.generate_electrodes(dim=3, res=3)
+        xx_ele, yy_ele, zz_ele = CSD.generate_electrodes(dim=3, res=5,
+                                                         xlims=[0.15,0.85], 
+                                                         ylims=[0.15,0.85], 
+                                                         zlims=[0.15,0.85])
         self.ele_pos = np.vstack((xx_ele, yy_ele, zz_ele)).T
-        pots = CSD.FWD(CSD.gauss_3d_dipole, xx_ele, yy_ele, zz_ele) 
+        self.csd_profile = CSD.gauss_3d_dipole
+        pots = CSD.FWD(self.csd_profile, xx_ele, yy_ele, zz_ele) 
         self.pots = np.reshape(pots, (-1,1))
         self.test_method = 'KCSD3D'
-        self.test_params = {'gdx':0.3, 'gdy':0.3, 'gdz':0.3, 'src_type':'step'}
+        self.test_params = {'gdx':0.05, 'gdy':0.05, 'gdz':0.05, 'lambd':5.10896977451e-19,
+                            'src_type':'step', 'R_init':0.31, 
+                            'xmin':0.,'xmax':1., 'ymin':0., 'ymax':1., 'zmin':0., 'zmax':1.}
         self.an_sigs=[]
         for ii in range(len(self.pots)):
             rc = neo.RecordingChannel()
@@ -116,6 +142,12 @@ class KCSD3D_TestCase(unittest.TestCase):
         self.assertEqual(result.sampling_rate, 1000*pq.Hz)
         self.assertEqual(result.times, [0.]*pq.s)
         self.assertEqual(len(result.annotations.keys()), 3)
+        true_csd = self.csd_profile(result.annotations['x_coords'], 
+                                    result.annotations['y_coords'],
+                                    result.annotations['z_coords'])
+        rms = np.linalg.norm(np.array(result[0,:]) - true_csd)
+        rms /= np.linalg.norm(true_csd)
+        self.assertLess(rms, 0.5, msg='RMS '+str(rms)+' between trueCSD and estimate > 0.5')
 
     def test_valid_inputs(self):
         self.test_method = 'InvalidMethodName'
@@ -127,9 +159,6 @@ class KCSD3D_TestCase(unittest.TestCase):
         self.assertRaises(TypeError, self.test_kcsd3d_estimate)
         cv_params = {'InvalidCVArg':np.array((0.1,0.25,0.5))} 
         self.assertRaises(TypeError, self.test_kcsd3d_estimate, cv_params)
-
-
-
 
 if __name__ == '__main__':
     unittest.main()

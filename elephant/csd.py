@@ -53,16 +53,26 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
     
         Raises
         ------
+        AttributeError 
+            No units specified for electrode spatial coordinates 
         ValueError
             Invalid function arguments, wrong method name, or mismatching coordinates
         TypeError  
             Invalid cv_param argument passed
     """
-    if coords == None:
+    if coords is None:
         coords = []
         for ii in analog_signals:
-            coords.append(ii.recordingchannel.coordinate)
-    if method == None:
+            coords.append(ii.recordingchannel.coordinate.rescale(pq.mm))
+    else:
+        scaled_coords = []
+        for coord in coords:
+            try:
+                scaled_coords.append(coord.rescale(pq.mm))
+            except AttributeError:
+                raise AttributeError('No units given for electrode spatial coordinates')
+        coords = scaled_coords
+    if method is None:
         raise ValueError('Must specify a method of CSD implementation')
     if len(coords) != len(analog_signals):
         raise ValueError('Number of signals and coords is not same')
@@ -79,8 +89,7 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
 
     input_array = np.zeros((len(analog_signals),analog_signals[0].magnitude.shape[0]))
     for ii,jj in enumerate(analog_signals):
-        input_array[ii,:] = jj.magnitude
-    
+        input_array[ii,:] = jj.rescale(pq.mV).magnitude
     if method in all_kernel_methods:
         kernel_method = getattr(KCSD, method) #fetch the class 'KCSD1D'
         k = kernel_method(np.array(coords), input_array, **params)
@@ -143,8 +152,7 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
         I = simps(y, csd_x)
         return I
 
-    def integrate_2D(x, y, xlin, ylin, csd, h):
-        X, Y = np.meshgrid(xlin, ylin)
+    def integrate_2D(x, y, xlin, ylin, csd, h, X, Y):
         Ny = ylin.shape[0]
         m = np.sqrt((x - X)**2 + (y - Y)**2)
         m[m < 0.0000001] = 0.0000001
@@ -194,7 +202,7 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
                                   ylims[0]:ylims[1]:np.complex(0,res)]
         csd = csd_profile(chrg_x, chrg_y) 
         for ii in range(len(ele_xx)):
-            pots[ii] = integrate_2D(ele_xx[ii], ele_yy[ii], x, y, csd, h)
+            pots[ii] = integrate_2D(ele_xx[ii], ele_yy[ii], x, y, csd, h, chrg_x, chrg_y)
         pots /= 2*np.pi*sigma
     elif dim == 3:
         chrg_x, chrg_y, chrg_z = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res), 
@@ -373,7 +381,7 @@ if __name__ == '__main__':
     for ii in range(len(pots)):
         rc = neo.RecordingChannel()
         rc.coordinate = ele_pos[ii]*pq.mm
-        asig = neo.AnalogSignal(pots[ii]*pq.mV,sampling_rate=1000*pq.Hz)
+        asig = neo.AnalogSignal(pots[ii]*pq.mV, sampling_rate=1000*pq.Hz)
         rc.analogsignals = [asig]
         rc.create_relationship()
         an_sigs.append(asig)

@@ -372,8 +372,8 @@ class KCSD1D(KCSD):
                 basis function type ('gauss', 'step', 'gauss_lim')
                 Defaults to 'gauss'
             sigma : float
-                space conductance of the medium
-                Defaults to 1.
+                space conductance of the tissue in S/m
+                Defaults to 1 S/m
             n_src_init : int
                 requested number of sources
                 Defaults to 300
@@ -540,8 +540,8 @@ class KCSD2D(KCSD):
                 basis function type ('gauss', 'step', 'gauss_lim')
                 Defaults to 'gauss'
             sigma : float
-                space conductance of the medium
-                Defaults to 1.
+                space conductance of the tissue in S/m
+                Defaults to 1 S/m
             n_src_init : int
                 requested number of sources
                 Defaults to 1000
@@ -718,10 +718,10 @@ class MoIKCSD(KCSD2D):
                 basis function type ('gauss', 'step', 'gauss_lim')
                 Defaults to 'gauss'
             sigma : float
-                space conductance of the medium
-                Defaults to 1.
+                space conductance of the tissue in S/m
+                Defaults to 1 S/m
             sigma_S : float
-                conductance of the saline (medium)
+                conductance of the saline (medium) in S/m
                 Default is 5 S/m (5 times more conductive)
             n_src_init : int
                 requested number of sources
@@ -841,8 +841,8 @@ class KCSD3D(KCSD):
                 basis function type ('gauss', 'step', 'gauss_lim')
                 Defaults to 'gauss'
             sigma : float
-                space conductance of the medium
-                Defaults to 1.
+                space conductance of the tissue in S/m
+                Defaults to 1 S/m
             n_src_init : int
                 requested number of sources
                 Defaults to 1000
