@@ -17,6 +17,7 @@ from . import (statistics,
                spike_train_surrogates,
                signal_processing,
                sta,
+               csd,
                conversion,
                neo_tools)
 
