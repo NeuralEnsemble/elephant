@@ -338,7 +338,7 @@ class CSD(object):
         return csd * (self.f_matrix.units**-1*self.lfp.units).simplified
 
 
-    def filter_csd(self, csd):
+    def filter_csd(self, csd, filterfunction='convolve'):
         '''
         Spatial filtering of the CSD estimate, using an N-point filter
         
@@ -346,6 +346,9 @@ class CSD(object):
         ---------
         csd : np.ndarrray * quantity.Quantity
             Array with the csd estimate
+        filterfunction : str
+            'filtfilt' or 'convolve'. Apply spatial filter using
+            scipy.signal.filtfilt or scipy.signal.convolve.
         '''
         if self.f_type == 'gaussian':
             try:
@@ -357,7 +360,10 @@ class CSD(object):
                 assert(self.f_order > 0 and isinstance(self.f_order, int))
             except AssertionError as ae:
                 raise ae('Filter order must be int > 0!')
-                
+        try:
+            assert(filterfunction in ['filtfilt', 'convolve'])
+        except AssertionError as ae:
+            raise ae("{} not equal to 'filtfilt' or 'convolve'".format(filterfunction))
 
         if self.f_type == 'boxcar':
             num = ss.boxcar(self.f_order)
@@ -389,7 +395,13 @@ class CSD(object):
 
         print(('discrete filter coefficients: \nb = {}, \na = {}'.format(num_string, denom_string)))
 
-        return ss.filtfilt(num, denom, csd, axis=0) * csd.units
+        if filterfunction == 'filtfilt':
+            return ss.filtfilt(num, denom, csd, axis=0) * csd.units
+        elif filterfunction == 'convolve':
+            csdf = csd / csd.units
+            for i in range(csdf.shape[1]):
+                csdf[:, i] = ss.convolve(csdf[:, i], num/denom.sum(), 'same')
+            return csdf * csd.units
 
 
 class StandardCSD(CSD):
@@ -475,8 +487,7 @@ class StandardCSD(CSD):
         # be assigned manually
         csd_units = (self.f_inv_matrix.units * self.lfp.units).simplified
         csd = csd.magnitude * csd_units
-        self.lfp = self.lfp[1:-1, ]
-
+        
         return csd
 
 
