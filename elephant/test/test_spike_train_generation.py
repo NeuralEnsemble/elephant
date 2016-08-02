@@ -16,7 +16,7 @@ import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon
 from quantities import ms, second, Hz, kHz, mV, dimensionless
-
+import matplotlib.pyplot as plt
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
 
@@ -69,30 +69,36 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         except AttributeError: # If numpy version too old to have allclose
             self.assertTrue(np.array_equal(spike_train,spike_train))
 
+
 class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
-    
+
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
+        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
         iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
         data = iom2.read()
         self.vm = data[0].segments[0].analogsignals[0]
-        self.true_time_stamps = [0.0124,  0.0354,  0.0713,  0.1192,  0.1695,  
+        self.true_time_stamps = [0.0124,  0.0354,  0.0713,  0.1192,  0.1695,
                                  0.2201,  0.2711] * second
-        
-    def test_peak_detection(self):
-        #Test with default arguments
+
+    def test_peak_detection_time_stamps(self):
+        # Test with default arguments
         result = stgen.peak_detection(self.vm)
+        print(result)
+        plt.plot(self.vm)
         self.assertEqual(len(self.true_time_stamps), len(result))
         self.assertIsInstance(result, neo.core.SpikeTrain)
+
         try:
             assert_array_almost_equal(result, self.true_time_stamps)
         except AttributeError:
-            self.assertTrue(np.array_equal(spike_train, self.true_time_stamps))
-    def test_peak_detection(self):
-        #Test that the result is an empty SpikeTrain when threshold is too high
-        result = stgen.peak_detection(self.vm, threshold = 30 * mV)
+            self.assertTrue(np.array_equal(result, self.true_time_stamps))
+
+    def test_peak_detection_threshold(self):
+        # Test for empty SpikeTrain when threshold is too high
+        result = stgen.peak_detection(self.vm, threshold=30 * mV)
         self.assertEqual(len(result), 0)
+
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
