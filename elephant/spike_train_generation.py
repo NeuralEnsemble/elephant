@@ -17,12 +17,13 @@ from neo import SpikeTrain
 import random
 from elephant.spike_train_surrogates import dither_spike_train
 
-def spike_extraction(signal, threshold = 0.0 * mV, sign = 'above',
-                     time_stamps = None, extr_interval = (-2 * ms, 4 * ms)):
+
+def spike_extraction(signal, threshold=0.0 * mV, sign='above',
+                     time_stamps=None, extr_interval=(-2 * ms, 4 * ms)):
     """
-    Return the peak times for all events that cross threshold and the waveforms.
-    Usually used for extracting spikes from a membrane potential to calculate
-    waveform properties
+    Return the peak times for all events that cross threshold and the
+    waveforms. Usually used for extracting spikes from a membrane
+    potential to calculate waveform properties.
     Similar to spike_train_generation.peak_detection.
 
     Parameters
@@ -30,53 +31,57 @@ def spike_extraction(signal, threshold = 0.0 * mV, sign = 'above',
     signal : neo AnalogSignal object
         'signal' is an analog signal.
     threshold : A quantity, e.g. in mV
-        'threshold' contains a value that must be reached for an event 
+        'threshold' contains a value that must be reached for an event
         to be detected.
     sign : 'above' or 'below'
         'sign' determines whether to count thresholding crossings
         that cross above or below the threshold.
-    spike_train: None, quantity array or Object with .times interface
-        if 'spike_train' is a quantity array or exposes a quantity array 
-        exposes the .times interface, it provides the time_stamps 
-        around which the waveform is extracted. If it is None, the function 
-        peak_detection is used to calculate the time_stamps from signal.
+    time_stamps: None, quantity array or Object with .times interface
+        if 'spike_train' is a quantity array or exposes a quantity array
+        exposes the .times interface, it provides the time_stamps
+        around which the waveform is extracted. If it is None, the
+        function peak_detection is used to calculate the time_stamps
+        from signal.
     extr_interval: unpackable time quantities, len == 2
-        'extr_interval' specifies the time interval around the time_stamps
-        where the waveform is extracted. The default is an interval of 6 * ms.
+        'extr_interval' specifies the time interval around the
+        time_stamps where the waveform is extracted. The default is an
+        interval of 6 * ms.
 
     Returns
     -------
     result_st : neo SpikeTrain object
-        'result_st' contains the time_stamps of each of the spikes and the 
-        waveforms in result_st.waveforms.
+        'result_st' contains the time_stamps of each of the spikes and
+        the waveforms in result_st.waveforms.
     """
-    #Get spike time_stamps from calling peak_detection of from a passed spike_train
+    # Get spike time_stamps
     if time_stamps is None:
-        time_stamps = peak_detection(signal, threshold, sign = sign)
+        time_stamps = peak_detection(signal, threshold, sign=sign)
     elif hasattr(time_stamps, 'times'):
         time_stamps = time_stamps.times
     elif type(time_stamps) is Quantity:
-        raise TypeError("time_stamps must be None, a quantity array or expose" +
-        " a quantity array through the .times interface")
+        raise TypeError("time_stamps must be None, a quantity array or" +
+                        " expose the.times interface")
 
     if len(time_stamps) == 0:
-         return SpikeTrain(time_stamps, units = signal.times.units,
-                   t_start = signal.t_start, t_stop = signal.t_stop,
-                   waveforms = np.array([]), sampling_rate = signal.sampling_rate)
+        return SpikeTrain(time_stamps, units=signal.times.units,
+                          t_start=signal.t_start, t_stop=signal.t_stop,
+                          waveforms=np.array([]),
+                          sampling_rate=signal.sampling_rate)
 
-    #Unpack the extraction interval from tuple or array
+    # Unpack the extraction interval from tuple or array
     extr_left, extr_right = extr_interval
     if extr_left > extr_right:
         raise ValueError("extr_interval[0] must be < extr_interval[1]")
 
     if any(np.diff(time_stamps) < extr_interval[1]):
-        print("WARNING: Waveforms overlap. This can cause errors during further analysis!")
+        print("WARNING: Waveforms overlap")
 
     data_left = ((extr_left * signal.sampling_rate).simplified).magnitude
 
     data_right = ((extr_right * signal.sampling_rate).simplified).magnitude
 
-    data_stamps = (((time_stamps - signal.t_start) * signal.sampling_rate).simplified).magnitude
+    data_stamps = (((time_stamps - signal.t_start) *
+                    signal.sampling_rate).simplified).magnitude
 
     data_stamps = data_stamps.astype(int)
 
@@ -84,27 +89,32 @@ def spike_extraction(signal, threshold = 0.0 * mV, sign = 'above',
 
     borders_right = data_stamps + data_right
 
-    borders = np.dstack((borders_left, borders_right)).flatten()   
+    borders = np.dstack((borders_left, borders_right)).flatten()
 
-    waveforms = np.array(np.split(np.array(signal), borders)[1::2]) * signal.units
-    
-    #len(np.shape(waveforms)) == 1 if the waveforms do not have the same width.
-    #this can occur when extr_interval indexes beyond the signal.
-    #Workaround: delete spikes shorter than the maximum length with 
+    waveforms = np.array(
+                np.split(np.array(signal), borders)[1::2]) * signal.units
+
+    # len(np.shape(waveforms)) == 1 if waveforms do not have the same width.
+    # this can occur when extr_interval indexes beyond the signal.
+    # Workaround: delete spikes shorter than the maximum length with
     if len(np.shape(waveforms)) == 1:
         max_len = (np.array([len(x) for x in waveforms])).max()
-        to_delete = np.array([idx for idx, x in enumerate(waveforms) if len(x) < max_len])
-        waveforms = np.delete(waveforms, to_delete, axis = 0)
+        to_delete = np.array([idx for idx, x in enumerate(waveforms)
+                             if len(x) < max_len])
+        waveforms = np.delete(waveforms, to_delete, axis=0)
         waveforms = np.array([x for x in waveforms])
-        print("WARNING: Waveforms " + ("{:d}, " * len(to_delete)).format(*to_delete) +
-        "exceeded signal and had to be deleted. Change extr_interval to keep.")
+        print("WARNING: Waveforms " +
+              ("{:d}, " * len(to_delete)).format(*to_delete) +
+              "exceeded signal and had to be deleted" +
+              "Change extr_interval to keep.")
 
-    waveforms = waveforms[:,np.newaxis,:]
+    waveforms = waveforms[:, np.newaxis, :]
 
-    return SpikeTrain(time_stamps, units = signal.times.units,
-                       t_start = signal.t_start, t_stop = signal.t_stop,
-                       sampling_rate = signal.sampling_rate, waveforms = waveforms,
-                       left_sweep = extr_left)
+    return SpikeTrain(time_stamps, units=signal.times.units,
+                      t_start=signal.t_start, t_stop=signal.t_stop,
+                      sampling_rate=signal.sampling_rate, waveforms=waveforms,
+                      left_sweep=extr_left)
+
 
 def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
     """
@@ -159,31 +169,32 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
                            t_start=signal.t_start, t_stop=signal.t_stop)
     return result_st
 
-def peak_detection(signal, threshold = 0.0 * mV, sign = 'above', format = None):
+
+def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
     """
     Return the peak times for all events that cross threshold.
     Usually used for extracting spike times from a membrane potential.
-    Similar to spike_train_generation.threshold_detection. Returns 
+    Similar to spike_train_generation.threshold_detection. Returns
 
     Parameters
     ----------
     signal : neo AnalogSignal object
         'signal' is an analog signal.
     threshold : A quantity, e.g. in mV
-        'threshold' contains a value that must be reached 
+        'threshold' contains a value that must be reached
         for an event to be detected.
     sign : 'above' or 'below'
-        'sign' determines whether to count thresholding crossings that cross 
-        above or below the threshold.
+        'sign' determines whether to count thresholding crossings that
+        cross above or below the threshold.
     format : None or 'raw'
-        Whether to return as SpikeTrain (None)
-        or as a plain array of times ('raw').
+        Whether to return as SpikeTrain (None) or as a plain array
+        of times ('raw').
 
     Returns
     -------
     result_st : neo SpikeTrain object
-        'result_st' contains the spike times of each of the events (spikes)
-        extracted from the signal.
+        'result_st' contains the spike times of each of the events
+        (spikes) extracted from the signal.
     """
     assert threshold is not None, "A threshold must be provided"
 
@@ -194,28 +205,27 @@ def peak_detection(signal, threshold = 0.0 * mV, sign = 'above', format = None):
         cutout = np.where(signal < threshold)[0]
         peak_func = np.argmin
 
-    #cutout = np.sort(np.concatenate((cutout - 1, cutout + 1)))
-
     if len(cutout) <= 0:
         events_base = np.zeros(0)
     else:
-        #Select thr crossings lasting at least 2 dtps, np.diff(cutout) > 2
-        #This avoids empty slices
+        # Select thr crossings lasting at least 2 dtps, np.diff(cutout) > 2
+        # This avoids empty slices
         border_start = np.where(np.diff(cutout) > 2)[0]
         border_end = np.where(np.diff(cutout) > 2)[0] + 1
         borders = np.concatenate((border_start, border_end))
-        borders = np.append(0,borders)
+        borders = np.append(0, borders)
         borders = np.append(borders, len(cutout)-1)
         borders = np.sort(borders)
         true_borders = cutout[borders]
-        
-        #Workaround for a bug that occurs when signal goes below thr for 1 dtp,
-        #Workaround eliminates equal borders and thereby empy slices from np. split
-        backward_mask = np.absolute(np.ediff1d(true_borders, to_begin = 1)) > 0
-        forward_mask = np.absolute(np.ediff1d(true_borders[::-1], to_begin = 1)[::-1]) > 0
+
+        # Workaround for bug that occurs when signal goes below thr for 1 dtp,
+        # Workaround eliminates empy slices from np. split
+        backward_mask = np.absolute(np.ediff1d(true_borders, to_begin=1)) > 0
+        forward_mask = np.absolute(np.ediff1d(true_borders[::-1],
+                                              to_begin=1)[::-1]) > 0
         true_borders = true_borders[backward_mask * forward_mask]
         split_signal = np.split(np.array(signal), true_borders)[1::2]
-        
+
         maxima_idc_split = np.array([peak_func(x) for x in split_signal])
 
         max_idc = maxima_idc_split + true_borders[0::2]
@@ -229,12 +239,12 @@ def peak_detection(signal, threshold = 0.0 * mV, sign = 'above', format = None):
         events_base = np.array([event.base for event in events])  # Workaround
     if format is None:
         result_st = SpikeTrain(events_base, units=signal.times.units,
-                           t_start=signal.t_start, t_stop=signal.t_stop)
+                               t_start=signal.t_start, t_stop=signal.t_stop)
     elif 'raw':
         result_st = events_base
     else:
         raise ValueError("Format argument must be None or 'raw'")
-    
+
     return result_st
 
 
