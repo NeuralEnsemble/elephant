@@ -83,13 +83,13 @@ csd_dict = dict(
     delta_icsd = icsd.DeltaiCSD(**delta_input),
     step_icsd = icsd.StepiCSD(**step_input),
     spline_icsd = icsd.SplineiCSD(**spline_input),
-    std_csd = icsd.StandardCSD(**std_input), 
+    std_csd = icsd.StandardCSD(**std_input),
 )
 
 #plot
 for method, csd_obj in list(csd_dict.items()):
     fig, axes = plt.subplots(3,1, figsize=(8,8))
-    
+
     #plot LFP signal
     ax = axes[0]
     im = ax.imshow(np.array(lfp_data), origin='upper', vmin=-abs(lfp_data).max(), \
@@ -112,7 +112,7 @@ for method, csd_obj in list(csd_dict.items()):
     cb.set_label('CSD (%s)' % csd.dimensionality.string)
     ax.set_xticklabels([])
     ax.set_ylabel('ch #')
-    
+
     #plot spatially filtered csd estimate
     ax = axes[2]
     csd = csd_obj.filter_csd(csd)
@@ -181,17 +181,17 @@ csd_dict = dict(
     delta_icsd = icsd.estimate_csd(**delta_input),
     step_icsd = icsd.estimate_csd(**step_input),
     spline_icsd = icsd.estimate_csd(**spline_input),
-    std_csd = icsd.estimate_csd(**std_input), 
+    std_csd = icsd.estimate_csd(**std_input),
 )
 
 #plot
 for method, csd_obj in list(csd_dict.items()):
     fig, axes = plt.subplots(3,1, figsize=(8,8))
-    
+
     #plot LFP signal
     ax = axes[0]
     im = ax.imshow(lfp_data.magnitude.T, origin='upper',
-                   vmin=-abs(lfp_data.magnitude).max(), 
+                   vmin=-abs(lfp_data.magnitude).max(),
                    vmax=abs(lfp_data.magnitude).max(), cmap='jet_r',
                    interpolation='nearest')
     ax.axis(ax.axis('tight'))
@@ -205,7 +205,7 @@ for method, csd_obj in list(csd_dict.items()):
     csd = csd_obj[0]
     ax = axes[1]
     im = ax.imshow(csd.magnitude.T, origin='upper',
-                   vmin=-abs(csd.magnitude).max(), 
+                   vmin=-abs(csd.magnitude).max(),
                    vmax=abs(csd.magnitude).max(), cmap='jet_r',
                    interpolation='nearest')
     ax.axis(ax.axis('tight'))
@@ -214,12 +214,12 @@ for method, csd_obj in list(csd_dict.items()):
     cb.set_label('CSD (%s)' % csd.dimensionality.string)
     ax.set_xticklabels([])
     ax.set_ylabel('ch #')
-    
+
     #plot spatially filtered csd estimate
     ax = axes[2]
     csd = csd_obj[1]
     im = ax.imshow(csd.magnitude.T, origin='upper',
-                   vmin=-abs(csd.magnitude).max(), 
+                   vmin=-abs(csd.magnitude).max(),
                    vmax=abs(csd.magnitude).max(), cmap='jet_r',
                    interpolation='nearest')
     ax.axis(ax.axis('tight'))
@@ -232,3 +232,4 @@ for method, csd_obj in list(csd_dict.items()):
 
 
 plt.show()
+
