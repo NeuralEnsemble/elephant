@@ -210,13 +210,15 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
     else:
         # Select thr crossings lasting at least 2 dtps, np.diff(cutout) > 2
         # This avoids empty slices
-        border_start = np.where(np.diff(cutout) > 2)[0]
-        border_end = np.where(np.diff(cutout) > 2)[0] + 1
+        border_start = np.where(np.diff(cutout) > 1)[0]
+        border_end = np.where(np.diff(cutout) > 1)[0] + 1
         borders = np.concatenate((border_start, border_end))
         borders = np.append(0, borders)
         borders = np.append(borders, len(cutout)-1)
         borders = np.sort(borders)
         true_borders = cutout[borders]
+        right_borders = true_borders[1::2] + 1
+        true_borders = np.sort(np.append(true_borders[0::2], right_borders))
 
         # Workaround for bug that occurs when signal goes below thr for 1 dtp,
         # Workaround eliminates empy slices from np. split

@@ -84,8 +84,6 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
     def test_peak_detection_time_stamps(self):
         # Test with default arguments
         result = stgen.peak_detection(self.vm)
-        print(result)
-        plt.plot(self.vm)
         self.assertEqual(len(self.true_time_stamps), len(result))
         self.assertIsInstance(result, neo.core.SpikeTrain)
 
