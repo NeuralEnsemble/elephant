@@ -19,7 +19,8 @@ setup(
     packages=['elephant', 'elephant.test'],
     package_data = {'elephant' : [os.path.join('icsd', 'test_data.mat'),
                                   os.path.join('icsd', 'LICENSE'),
-                                  os.path.join('icsd', 'README.md')]},
+                                  os.path.join('icsd', 'README.md'),
+                                  os.path.join('icsd', '*.py')]},
     install_requires=install_requires,
     extras_require=extras_require,
 

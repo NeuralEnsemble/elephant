@@ -102,13 +102,13 @@ csd_dict = dict(
     delta_icsd = icsd.DeltaiCSD(**delta_input),
     step_icsd = icsd.StepiCSD(**step_input),
     spline_icsd = icsd.SplineiCSD(**spline_input),
-    std_csd = icsd.StandardCSD(**std_input), 
+    std_csd = icsd.StandardCSD(**std_input),
 )
 
 #plot
 for method, csd_obj in csd_dict.items():
     fig, axes = plt.subplots(3,1, figsize=(8,8))
-    
+
     #plot LFP signal
     ax = axes[0]
     im = ax.imshow(np.array(lfp_data), origin='upper', vmin=-abs(lfp_data).max(), \
@@ -131,7 +131,7 @@ for method, csd_obj in csd_dict.items():
     cb.set_label('CSD (%s)' % csd.dimensionality.string)
     ax.set_xticklabels([])
     ax.set_ylabel('ch #')
-    
+
     #plot spatially filtered csd estimate
     ax = axes[2]
     csd = csd_obj.filter_csd(csd)
@@ -221,17 +221,17 @@ csd_dict = dict(
     delta_icsd = icsd.estimate_csd(**delta_input),
     step_icsd = icsd.estimate_csd(**step_input),
     spline_icsd = icsd.estimate_csd(**spline_input),
-    std_csd = icsd.estimate_csd(**std_input), 
+    std_csd = icsd.estimate_csd(**std_input),
 )
 
 #plot
 for method, csd_obj in csd_dict.items():
     fig, axes = plt.subplots(3,1, figsize=(8,8))
-    
+
     #plot LFP signal
     ax = axes[0]
     im = ax.imshow(lfp_data.magnitude.T, origin='upper',
-                   vmin=-abs(lfp_data.magnitude).max(), 
+                   vmin=-abs(lfp_data.magnitude).max(),
                    vmax=abs(lfp_data.magnitude).max(), cmap='jet_r',
                    interpolation='nearest')
     ax.axis(ax.axis('tight'))
@@ -245,7 +245,7 @@ for method, csd_obj in csd_dict.items():
     csd = csd_obj[0]
     ax = axes[1]
     im = ax.imshow(csd.magnitude.T, origin='upper',
-                   vmin=-abs(csd.magnitude).max(), 
+                   vmin=-abs(csd.magnitude).max(),
                    vmax=abs(csd.magnitude).max(), cmap='jet_r',
                    interpolation='nearest')
     ax.axis(ax.axis('tight'))
@@ -254,12 +254,12 @@ for method, csd_obj in csd_dict.items():
     cb.set_label('CSD (%s)' % csd.dimensionality.string)
     ax.set_xticklabels([])
     ax.set_ylabel('ch #')
-    
+
     #plot spatially filtered csd estimate
     ax = axes[2]
     csd = csd_obj[1]
     im = ax.imshow(csd.magnitude.T, origin='upper',
-                   vmin=-abs(csd.magnitude).max(), 
+                   vmin=-abs(csd.magnitude).max(),
                    vmax=abs(csd.magnitude).max(), cmap='jet_r',
                    interpolation='nearest')
     ax.axis(ax.axis('tight'))
@@ -297,7 +297,7 @@ for symbol, prefix, definition, u_symbol in zip(
             symbol=symbol,
             u_symbol=u_symbol))
     lastdefinition = definition
-    
+
 
 class CSD(object):
     '''Base iCSD class'''
@@ -338,14 +338,17 @@ class CSD(object):
         return csd * (self.f_matrix.units**-1*self.lfp.units).simplified
 
 
-    def filter_csd(self, csd):
+    def filter_csd(self, csd, filterfunction='convolve'):
         '''
         Spatial filtering of the CSD estimate, using an N-point filter
-        
+
         Arguments
         ---------
         csd : np.ndarrray * quantity.Quantity
             Array with the csd estimate
+        filterfunction : str
+            'filtfilt' or 'convolve'. Apply spatial filter using
+            scipy.signal.filtfilt or scipy.signal.convolve.
         '''
         if self.f_type == 'gaussian':
             try:
@@ -357,7 +360,10 @@ class CSD(object):
                 assert(self.f_order > 0 and isinstance(self.f_order, int))
             except AssertionError as ae:
                 raise ae('Filter order must be int > 0!')
-                
+        try:
+            assert(filterfunction in ['filtfilt', 'convolve'])
+        except AssertionError as ae:
+            raise ae("{} not equal to 'filtfilt' or 'convolve'".format(filterfunction))
 
         if self.f_type == 'boxcar':
             num = ss.boxcar(self.f_order)
@@ -389,7 +395,13 @@ class CSD(object):
 
         print(('discrete filter coefficients: \nb = {}, \na = {}'.format(num_string, denom_string)))
 
-        return ss.filtfilt(num, denom, csd, axis=0) * csd.units
+        if filterfunction == 'filtfilt':
+            return ss.filtfilt(num, denom, csd, axis=0) * csd.units
+        elif filterfunction == 'convolve':
+            csdf = csd / csd.units
+            for i in range(csdf.shape[1]):
+                csdf[:, i] = ss.convolve(csdf[:, i], num/denom.sum(), 'same')
+            return csdf * csd.units
 
 
 class StandardCSD(CSD):
@@ -426,7 +438,7 @@ class StandardCSD(CSD):
         self.coord_electrode = coord_electrode
         self.sigma = sigma
         self.vaknin_el = vaknin_el
-        
+
         try:
             assert(np.all(np.diff(np.diff(coord_electrode)))==0)
         except AssertionError as ae:
@@ -437,7 +449,7 @@ class StandardCSD(CSD):
             #extend array of lfps by duplicating potential at endpoint contacts
             if lfp.ndim == 1:
                 self.lfp = np.empty((lfp.shape[0]+2, )) * lfp.units
-            else:                
+            else:
                 self.lfp = np.empty((lfp.shape[0]+2, lfp.shape[1])) * lfp.units
             self.lfp[0, ] = lfp[0, ]
             self.lfp[1:-1, ] = lfp
@@ -451,7 +463,7 @@ class StandardCSD(CSD):
     def get_f_inv_matrix(self):
         '''Calculate the inverse F-matrix for the standard CSD method'''
         h_val = abs(np.diff(self.coord_electrode)[0])
-        
+
         f_inv = -np.eye(self.lfp.shape[0])
 
         #Inner matrix elements  is just the discrete laplacian coefficients
@@ -464,7 +476,7 @@ class StandardCSD(CSD):
     def get_csd(self):
         '''
         Perform the iCSD calculation, i.e: iCSD=F_inv*LFP
-        
+
         Returns
         -------
         csd : np.ndarray * quantity.Quantity
@@ -475,7 +487,6 @@ class StandardCSD(CSD):
         # be assigned manually
         csd_units = (self.f_inv_matrix.units * self.lfp.units).simplified
         csd = csd.magnitude * csd_units
-        self.lfp = self.lfp[1:-1, ]
 
         return csd
 
@@ -564,11 +575,11 @@ class DeltaiCSD(CSD):
                 f_matrix[j, i] = ((np.sqrt((self.coord_electrode[j] -
                                             self.coord_electrode[i])**2 +
                     (self.diam[j] / 2)**2) - abs(self.coord_electrode[j] -
-                                              self.coord_electrode[i])) + 
+                                              self.coord_electrode[i])) +
                     (self.sigma - self.sigma_top) / (self.sigma +
                                                      self.sigma_top) *
                     (np.sqrt((self.coord_electrode[j] +
-                              self.coord_electrode[i])**2 + (self.diam[j] / 2)**2)- 
+                              self.coord_electrode[i])**2 + (self.diam[j] / 2)**2)-
                     abs(self.coord_electrode[j] + self.coord_electrode[i])))
 
         f_matrix /= (2 * self.sigma)
@@ -618,7 +629,7 @@ class StepiCSD(CSD):
         except AssertionError as ae:
             print('units of coord_electrode ({}) and diam ({}) differ'.format(coord_electrode.units,
                                                                                   diam.units))
-            raise ae            
+            raise ae
         try:
             assert(np.all(np.diff(coord_electrode) > 0))
         except AssertionError as ae:
@@ -805,7 +816,7 @@ class SplineiCSD(CSD):
                                              float(self.sigma),
                                              float(self.diam[j])),
                                        epsabs=self.tol)[0]
-                
+
                 # image technique if conductivity not constant:
                 if self.sigma != self.sigma_top:
                     f_mat0[j, i] = f_mat0[j, i] + (self.sigma-self.sigma_top) / \
@@ -831,7 +842,7 @@ class SplineiCSD(CSD):
                                       float(self.diam[j])), epsabs=self.tol)[0]
 
         e_mat0, e_mat1, e_mat2, e_mat3 = self._calc_e_matrices()
-        
+
         # Calculate the F-matrix
         f_matrix = np.eye(el_len+2)
         f_matrix[1:-1, :] = np.dot(f_mat0, e_mat0) + \
@@ -845,13 +856,13 @@ class SplineiCSD(CSD):
     def get_csd(self):
         '''
         Calculate the iCSD using the spline iCSD method
-        
+
         Returns
         -------
         csd : np.ndarray * quantity.Quantity
             Array with csd estimate
-        
-        
+
+
         '''
         e_mat = self._calc_e_matrices()
 
@@ -867,16 +878,16 @@ class SplineiCSD(CSD):
                                 np.zeros(self.lfp.shape[1])))
             csd = np.zeros((self.num_steps, self.lfp.shape[1]))
         cs_lfp *= self.lfp.units
-        
+
         # CSD coefficients
         csd_coeff = np.linalg.solve(self.f_matrix, cs_lfp)
-        
+
         # The cubic spline polynomial coefficients
         a_mat0 = np.dot(e_mat[0], csd_coeff)
         a_mat1 = np.dot(e_mat[1], csd_coeff)
         a_mat2 = np.dot(e_mat[2], csd_coeff)
         a_mat3 = np.dot(e_mat[3], csd_coeff)
-        
+
         # Extend electrode coordinates in both end by min contact interdistance
         h = np.diff(self.coord_electrode).min()
         z_js = np.zeros(el_len + 2)
@@ -886,7 +897,7 @@ class SplineiCSD(CSD):
 
         # create high res spatial grid
         out_zs = np.linspace(z_js[1], z_js[-2], self.num_steps)
-        
+
         # Calculate iCSD estimate on grid from polynomial coefficients.
         i = 0
         for j in range(self.num_steps):
@@ -896,7 +907,7 @@ class SplineiCSD(CSD):
                             (out_zs[j] - z_js[i]) +\
                 a_mat2[i, :] * (out_zs[j] - z_js[i])**2 + \
                 a_mat3[i, :] * (out_zs[j] - z_js[i])**3
-        
+
         csd_unit = (self.f_matrix.units**-1 * self.lfp.units).simplified
 
         return csd * csd_unit
@@ -927,20 +938,20 @@ class SplineiCSD(CSD):
         '''Calculate the K-matrix used by to calculate E-matrices'''
         el_len = self.coord_electrode.size
         h = float(np.diff(self.coord_electrode).min())
-        
+
         c_jm1 = np.eye(el_len+2, k=0) / h
         c_jm1[0, 0] = 0
-        
+
         c_j0 = np.eye(el_len+2) / h
         c_j0[-1, -1] = 0
-        
+
         c_jall = c_j0
         c_jall[0, 0] = 1
         c_jall[-1, -1] = 1
 
         tjp1 = np.eye(el_len+2, k=1)
         tjm1 = np.eye(el_len+2, k=-1)
-        
+
         tj0 = np.eye(el_len+2)
         tj0[0, 0] = 0
         tj0[-1, -1] = 0
@@ -964,15 +975,15 @@ class SplineiCSD(CSD):
 
         ## Define transformation matrices
         c_mat3 = np.eye(el_len+1) / h
-        
+
         # Get K-matrix
         k_matrix = self._calc_k_matrix()
 
         # Define matrixes for C to A transformation:
         tja = np.eye(el_len+2)[:-1, ]
         tjp1a = np.eye(el_len+2, k=1)[:-1, ]
-        
-        
+
+
         # Define spline coefficients
         e_mat0 = tja
         e_mat1 = np.dot(tja, k_matrix)
@@ -980,7 +991,7 @@ class SplineiCSD(CSD):
                             np.dot(np.dot(c_mat3, (tjp1a + 2 * tja)), k_matrix)
         e_mat3 = 2 * np.dot(c_mat3**3, (tja-tjp1a)) + \
                             np.dot(np.dot(c_mat3**2, (tjp1a + tja)), k_matrix)
-        
+
         return e_mat0, e_mat1, e_mat2, e_mat3
 
 
