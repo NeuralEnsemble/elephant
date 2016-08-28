@@ -16,7 +16,6 @@ import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon
 from quantities import ms, second, Hz, kHz, mV, dimensionless
-import matplotlib.pyplot as plt
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
 
