@@ -42,81 +42,53 @@ Miscellaneous utilities for time series analysis.
 from __future__ import print_function
 import warnings
 import numpy as np
-import scipy.linalg as linalg
-import scipy.signal as sig
 import scipy.fftpack as fftpack
 import scipy.signal.signaltools as signaltools
+# import scipy.linalg as linalg
+# import scipy.signal as sig
 
-# import matplotlib as mpl
-from matplotlib import pyplot as plt
 
-
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Stats utils
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# used only by the unused jackknife_coh_variance
+# def normalize_coherence(x, dof, copy=True):
+#     """
+#     The generally accepted choice to transform coherence measures into
+#     a more normal distribution
+#
+#     Parameters
+#     ----------
+#     x : ndarray, real
+#        square-root of magnitude-square coherence measures
+#     dof : int
+#        number of degrees of freedom in the multitaper model
+#     copy : bool
+#         Copy or return inplace modified x.
+#
+#     Returns
+#     -------
+#     y : ndarray, real
+#         The transformed array.
+#     """
+#     if copy:
+#         x = x.copy()
+#     np.arctanh(x, x)
+#     x *= np.sqrt(dof)
+#     return x
 
-def normalize_coherence(x, dof, copy=True):
-    """
-    The generally accepted choice to transform coherence measures into
-    a more normal distribution
-
-    Parameters
-    ----------
-    x : ndarray, real
-       square-root of magnitude-square coherence measures
-    dof : int
-       number of degrees of freedom in the multitaper model
-    copy : bool
-        Copy or return inplace modified x.
-
-    Returns
-    -------
-    y : ndarray, real
-        The transformed array.
-    """
-    if copy:
-        x = x.copy()
-    np.arctanh(x, x)
-    x *= np.sqrt(dof)
-    return x
-
-
-def normal_coherence_to_unit(y, dof, out=None):
-    """
-    The inverse transform of the above normalization
-    """
-    if out is None:
-        x = y / np.sqrt(dof)
-    else:
-        y /= np.sqrt(dof)
-        x = y
-    np.tanh(x, x)
-    return x
-
-
-def expected_jk_variance(K):
-    """Compute the expected value of the jackknife variance estimate
-    over K windows below. This expected value formula is based on the
-    asymptotic expansion of the trigamma function derived in
-    [Thompson_1994]
-
-    Paramters
-    ---------
-
-    K : int
-      Number of tapers used in the multitaper method
-
-    Returns
-    -------
-
-    evar : float
-      Expected value of the jackknife variance estimator
-
-    """
-
-    kf = float(K)
-    return ((1 / kf) * (kf - 1) / (kf - 0.5) *
-            ((kf - 1) / (kf - 2)) ** 2 * (kf - 3) / (kf - 2))
+#  Not used either.
+# def normal_coherence_to_unit(y, dof, out=None):
+#     """
+#     The inverse transform of the above normalization
+#     """
+#     if out is None:
+#         x = y / np.sqrt(dof)
+#     else:
+#         y /= np.sqrt(dof)
+#         x = y
+#     np.tanh(x, x)
+#     return x
 
 
 def jackknifed_sdf_variance(yk, eigvals, sides='onesided', adaptive=True):
@@ -156,7 +128,7 @@ def jackknifed_sdf_variance(yk, eigvals, sides='onesided', adaptive=True):
     """
     K = yk.shape[0]
 
-    from nitime.algorithms import mtm_cross_spectrum
+    from multitaper_spectral import mtm_cross_spectrum
 
     # the samples {S_k} are defined, with or without weights, as
     # S_k = | x_k |**2
@@ -200,81 +172,81 @@ def jackknifed_sdf_variance(yk, eigvals, sides='onesided', adaptive=True):
     jk_var *= f
     return jk_var
 
+# Not actually used
+# def jackknifed_coh_variance(tx, ty, eigvals, adaptive=True):
+#     """
+#     Returns the variance of the coherency between x and y, estimated
+#     through jack-knifing the tapered samples in {tx, ty}.
+#
+#     Parameters
+#     ----------
+#
+#     tx : ndarray, (K, L)
+#        The K complex spectra of tapered timeseries x
+#     ty : ndarray, (K, L)
+#        The K complex spectra of tapered timeseries y
+#     eigvals : ndarray (K,)
+#        The eigenvalues associated with the K DPSS tapers
+#
+#     Returns
+#     -------
+#
+#     jk_var : ndarray
+#        The variance computed in the transformed domain (see
+#        normalize_coherence)
+#     """
+#
+#     K = tx.shape[0]
+#
+#     # calculate leave-one-out estimates of MSC (magnitude squared coherence)
+#     jk_coh = []
+#     # coherence is symmetric (right??)
+#     sides = 'onesided'
+#     all_orders = set(range(K))
+#
+#     import multitaper_spectral as alg
+#
+#     # get the leave-one-out estimates
+#     for i in range(K):
+#         items = list(all_orders.difference([i]))
+#         tx_i = np.take(tx, items, axis=0)
+#         ty_i = np.take(ty, items, axis=0)
+#         eigs_i = np.take(eigvals, items)
+#         if adaptive:
+#             wx, _ = adaptive_weights(tx_i, eigs_i, sides=sides)
+#             wy, _ = adaptive_weights(ty_i, eigs_i, sides=sides)
+#         else:
+#             wx = wy = eigs_i[:, None]
+#         # The CSD
+#         sxy_i = alg.mtm_cross_spectrum(tx_i, ty_i, (wx, wy), sides=sides)
+#         # The PSDs
+#         sxx_i = alg.mtm_cross_spectrum(tx_i, tx_i, wx, sides=sides)
+#         syy_i = alg.mtm_cross_spectrum(ty_i, ty_i, wy, sides=sides)
+#         # these are the | c_i | samples
+#         msc = np.abs(sxy_i)
+#         msc /= np.sqrt(sxx_i * syy_i)
+#         jk_coh.append(msc)
+#
+#     jk_coh = np.array(jk_coh)
+#     # now normalize the coherence estimates and take the mean
+#     normalize_coherence(jk_coh, 2 * K - 2, copy=False)  # inplace
+#     jk_avg = np.mean(jk_coh, axis=0)
+#
+#     jk_var = (jk_coh - jk_avg)
+#     np.power(jk_var, 2, jk_var)
+#     jk_var = jk_var.sum(axis=0)
+#
+#     # Do/Don't use the alternative scaling here??
+#     f = float(K - 1) / K
+#
+#     jk_var *= f
+#
+#     return jk_var
 
-def jackknifed_coh_variance(tx, ty, eigvals, adaptive=True):
-    """
-    Returns the variance of the coherency between x and y, estimated
-    through jack-knifing the tapered samples in {tx, ty}.
 
-    Parameters
-    ----------
-
-    tx : ndarray, (K, L)
-       The K complex spectra of tapered timeseries x
-    ty : ndarray, (K, L)
-       The K complex spectra of tapered timeseries y
-    eigvals : ndarray (K,)
-       The eigenvalues associated with the K DPSS tapers
-
-    Returns
-    -------
-
-    jk_var : ndarray
-       The variance computed in the transformed domain (see
-       normalize_coherence)
-    """
-
-    K = tx.shape[0]
-
-    # calculate leave-one-out estimates of MSC (magnitude squared coherence)
-    jk_coh = []
-    # coherence is symmetric (right??)
-    sides = 'onesided'
-    all_orders = set(range(K))
-
-    import nitime.algorithms as alg
-
-    # get the leave-one-out estimates
-    for i in range(K):
-        items = list(all_orders.difference([i]))
-        tx_i = np.take(tx, items, axis=0)
-        ty_i = np.take(ty, items, axis=0)
-        eigs_i = np.take(eigvals, items)
-        if adaptive:
-            wx, _ = adaptive_weights(tx_i, eigs_i, sides=sides)
-            wy, _ = adaptive_weights(ty_i, eigs_i, sides=sides)
-        else:
-            wx = wy = eigs_i[:, None]
-        # The CSD
-        sxy_i = alg.mtm_cross_spectrum(tx_i, ty_i, (wx, wy), sides=sides)
-        # The PSDs
-        sxx_i = alg.mtm_cross_spectrum(tx_i, tx_i, wx, sides=sides)
-        syy_i = alg.mtm_cross_spectrum(ty_i, ty_i, wy, sides=sides)
-        # these are the | c_i | samples
-        msc = np.abs(sxy_i)
-        msc /= np.sqrt(sxx_i * syy_i)
-        jk_coh.append(msc)
-
-    jk_coh = np.array(jk_coh)
-    # now normalize the coherence estimates and take the mean
-    normalize_coherence(jk_coh, 2 * K - 2, copy=False)  # inplace
-    jk_avg = np.mean(jk_coh, axis=0)
-
-    jk_var = (jk_coh - jk_avg)
-    np.power(jk_var, 2, jk_var)
-    jk_var = jk_var.sum(axis=0)
-
-    # Do/Don't use the alternative scaling here??
-    f = float(K - 1) / K
-
-    jk_var *= f
-
-    return jk_var
-
-
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Multitaper utils
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
     r"""
     Perform an iterative procedure to find the optimal weights for K
@@ -311,7 +283,7 @@ def adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
     and the degrees of freedom are 2*K
 
     """
-    from nitime.algorithms import mtm_cross_spectrum
+    from multitaper_spectral import mtm_cross_spectrum
     K = len(eigvals)
     if len(eigvals) < 3:
         print("""
@@ -384,7 +356,7 @@ def adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
     else:  # If you have reached maximum number of iterations
         # Issue a warning and return non-converged weights:
         e_s = 'Breaking due to iterative meltdown in '
-        e_s += 'nitime.utils.adaptive_weights.'
+        e_s += 'multitaper_utils.adaptive_weights.'
         warnings.warn(e_s, RuntimeWarning)
     weights = np.zeros( (K,L) )
     weights[:,adaptiv_weights] = d_k
@@ -393,9 +365,9 @@ def adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
     return weights, nu
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Eigensystem utils
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # If we can get it, we want the cythonized version
 try:
@@ -490,9 +462,16 @@ def tridi_inverse_iteration(d, e, w, x0=None, rtol=1e-8):
         x0 /= norm_x
     return x0
 
-# #-----------------------------------------------------------------------------
+# # -----------------------------------------------------------------------------
 # # Correlation/Covariance utils
-# #-----------------------------------------------------------------------------
+# # -----------------------------------------------------------------------------
+
+
+def circle_to_hz(omega, Fsamp):
+    """For a frequency grid spaced on the unit circle of an imaginary plane,
+    return the corresponding freqency grid in Hz.
+    """
+    return Fsamp * omega / (2 * np.pi)
 
 
 def remove_bias(x, axis):
@@ -503,7 +482,7 @@ def remove_bias(x, axis):
     return x - mn[tuple(padded_slice)]
 
 
-def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True):
+def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True, corr= True):
     """Returns the crosscovariance sequence between two ndarrays.
     This is performed by calling fftconvolve on x, y[::-1]
 
@@ -520,6 +499,9 @@ def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True):
     debias : {True/False}
        Always removes an estimate of the mean along the axis, unless
        told not to (eg X and Y are known zero-mean)
+    corr : {True/False}
+        Compute the crosscovariance via the correlation of the input ndarrays.
+        Only possible if removal of bias allowed.
 
     Returns
     -------
@@ -542,63 +524,78 @@ def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True):
     functions.
 
     """
-    if x.shape[axis] != y.shape[axis]:
-        raise ValueError(
-            'crosscov() only works on same-length sequences for now'
-            )
-    if debias:
-        x = remove_bias(x, axis)
-        y = remove_bias(y, axis)
-    slicing = [slice(d) for d in x.shape]
-    slicing[axis] = slice(None, None, -1)
-    cxy = fftconvolve(x, y[tuple(slicing)].conj(), axis=axis, mode='full')
-    N = x.shape[axis]
-    if normalize:
-        cxy /= N
-    if all_lags:
-        return cxy
-    slicing[axis] = slice(N - 1, 2 * N - 1)
-    return cxy[tuple(slicing)]
+    if not corr:
+        if x.shape[axis] != y.shape[axis]:
+            raise ValueError(
+                'crosscov() only works on same-length sequences for now'
+                )
+        if debias:
+            x = remove_bias(x, axis)
+            y = remove_bias(y, axis)
+        slicing = [slice(d) for d in x.shape]
+        slicing[axis] = slice(None, None, -1)
+        cxy = fftconvolve(x, y[tuple(slicing)].conj(), axis=axis, mode='full')
+        N = x.shape[axis]
+        if normalize:
+            cxy /= N
+        if all_lags:
+            return cxy
+        slicing[axis] = slice(N - 1, 2 * N - 1)
+        return cxy[tuple(slicing)]
+    elif corr:
+        if not debias:
+            warnings.warn("Incompatible arguments for crosscov: debias and corr. Removing bias.")
+        # Computes sxy[k] = E{x[n]*y[n+k]}
+        x = remove_bias(x, 0)
+        y = remove_bias(y, 0)
+        lx, ly = len(x), len(y)
+        pad_len = lx + ly - 1
+        sxy = np.correlate(x, y, mode='full') / lx
+        if all_lags:
+            return sxy
+        c_idx = pad_len // 2
+        return sxy[c_idx:]
 
 
-def crosscorr(x, y, **kwargs):
-    """
-    Returns the crosscorrelation sequence between two ndarrays.
-    This is performed by calling fftconvolve on x, y[::-1]
-
-    Parameters
-    ----------
-
-    x : ndarray
-    y : ndarray
-    axis : time axis
-    all_lags : {True/False}
-       whether to return all nonzero lags, or to clip the length of r_xy
-       to be the length of x and y. If False, then the zero lag correlation
-       is at index 0. Otherwise, it is found at (len(x) + len(y) - 1)/2
-
-    Returns
-    -------
-
-    rxy : ndarray
-       The crosscorrelation function
-
-    Notes
-    -----
-
-    cross correlation is defined as
-
-    .. math::
-
-    R_{xy}[k]=E\{X[n+k]Y^{*}[n]\}
-
-    where X and Y are discrete, stationary (ergodic) random processes
-    """
-    # just make the same computation as the crosscovariance,
-    # but without subtracting the mean
-    kwargs['debias'] = False
-    rxy = crosscov(x, y, **kwargs)
-    return rxy
+# REMOVE due to not being used
+# def crosscorr(x, y, **kwargs):
+#     """
+#     Returns the crosscorrelation sequence between two ndarrays.
+#     This is performed by calling fftconvolve on x, y[::-1]
+#
+#     Parameters
+#     ----------
+#
+#     x : ndarray
+#     y : ndarray
+#     axis : time axis
+#     all_lags : {True/False}
+#        whether to return all nonzero lags, or to clip the length of r_xy
+#        to be the length of x and y. If False, then the zero lag correlation
+#        is at index 0. Otherwise, it is found at (len(x) + len(y) - 1)/2
+#
+#     Returns
+#     -------
+#
+#     rxy : ndarray
+#        The crosscorrelation function
+#
+#     Notes
+#     -----
+#
+#     cross correlation is defined as
+#
+#     .. math::
+#
+#     R_{xy}[k]=E\{X[n+k]Y^{*}[n]\}
+#
+#     where X and Y are discrete, stationary (ergodic) random processes
+#     """
+#     # just make the same computation as the crosscovariance,
+#     # but without subtracting the mean
+#     kwargs['debias'] = False
+#     rxy = crosscov(x, y, **kwargs)
+#     return rxy
 
 
 def autocov(x, **kwargs):
@@ -719,241 +716,3 @@ def fftconvolve(in1, in2, mode="full", axis=None):
         return signaltools._centered(ret, osize)
     elif mode == "valid":
         return signaltools._centered(ret, abs(s2 - s1) + 1)
-
-
-
-
-#----------goodness of fit utilities ----------------------------------------
-
-def akaike_information_criterion(ecov, p, m, Ntotal, corrected=False):
-
-    """
-
-    A measure of the goodness of fit of an auto-regressive model based on the
-    model order and the error covariance.
-
-    Parameters
-    ----------
-
-    ecov : float array
-        The error covariance of the system
-    p
-        the number of channels
-    m : int
-        the model order
-    Ntotal
-        the number of total time-points (across channels)
-    corrected : boolean (optional)
-        Whether to correct for small sample size
-
-    Returns
-    -------
-
-    AIC : float
-        The value of the AIC
-
-
-    Notes
-    -----
-    This is an implementation of equation (50) in Ding et al. (2006):
-
-    M Ding and Y Chen and S Bressler (2006) Granger Causality: Basic Theory and
-    Application to Neuroscience. http://arxiv.org/abs/q-bio/0608035v1
-
-
-    Correction for small sample size is taken from:
-    http://en.wikipedia.org/wiki/Akaike_information_criterion.
-
-    """
-
-    AIC = (2 * (np.log(linalg.det(ecov))) +
-           ((2 * (p ** 2) * m) / (Ntotal)))
-
-    if corrected is None:
-        return AIC
-    else:
-        return AIC + (2 * m * (m + 1)) / (Ntotal - m - 1)
-
-
-def bayesian_information_criterion(ecov, p, m, Ntotal):
-    """The Bayesian Information Criterion, also known as the Schwarz criterion
-     is a measure of goodness of fit of a statistical model, based on the
-     number of model parameters and the likelihood of the model
-
-    Parameters
-    ----------
-    ecov : float array
-        The error covariance of the system
-
-    p : int
-        the system size (how many variables).
-
-    m : int
-        the model order.
-
-    corrected : boolean (optional)
-        Whether to correct for small sample size
-
-
-    Returns
-    -------
-
-    BIC : float
-        The value of the BIC
-    a
-        the resulting autocovariance vector
-
-    Notes
-    -----
-    This is an implementation of equation (51) in Ding et al. (2006):
-
-    .. math ::
-
-    BIC(m) = 2 log(|\Sigma|) + \frac{2p^2 m log(N_{total})}{N_{total}},
-
-    where $\Sigma$ is the noise covariance matrix. In auto-regressive model
-    estimation, this matrix will contain in $\Sigma_{i,j}$ the residual
-    variance in estimating time-series $i$ from $j$, $p$ is the dimensionality
-    of the data, $m$ is the number of parameters in the model and $N_{total}$
-    is the number of time-points.
-
-    M Ding and Y Chen and S Bressler (2006) Granger Causality: Basic Theory and
-    Application to Neuroscience. http://arxiv.org/abs/q-bio/0608035v1
-
-
-    See http://en.wikipedia.org/wiki/Schwarz_criterion
-
-    """
-
-    BIC = (2 * (np.log(linalg.det(ecov))) +
-            ((2 * (p ** 2) * m * np.log(Ntotal)) / (Ntotal)))
-
-    return BIC
-
-#-----------------------------------------------------------------------------
-# testing utils
-#-----------------------------------------------------------------------------
-
-
-def circle_to_hz(omega, Fsamp):
-    """For a frequency grid spaced on the unit circle of an imaginary plane,
-    return the corresponding freqency grid in Hz.
-    """
-    return Fsamp * omega / (2 * np.pi)
-
-
-def ar_generator(N=512, sigma=1., coefs=None, drop_transients=0, v=None):
-    """
-    This generates a signal u(n) = a1*u(n-1) + a2*u(n-2) + ... + v(n)
-    where v(n) is a stationary stochastic process with zero mean
-    and variance = sigma. XXX: confusing variance notation
-
-    Parameters
-    ----------
-
-    N : int
-      sequence length
-    sigma : float
-      power of the white noise driving process
-    coefs : sequence
-      AR coefficients for k = 1, 2, ..., P
-    drop_transients : int
-      number of initial IIR filter transient terms to drop
-    v : ndarray
-      custom noise process
-
-    Parameters
-    ----------
-
-    N : float
-       The number of points in the AR process generated. Default: 512
-    sigma : float
-       The variance of the noise in the AR process. Default: 1
-    coefs : list or array of floats
-       The AR model coefficients. Default: [2.7607, -3.8106, 2.6535, -0.9238],
-       which is a sequence shown to be well-estimated by an order 8 AR system.
-    drop_transients : float
-       How many samples to drop from the beginning of the sequence (the
-       transient phases of the process), so that the process can be considered
-       stationary.
-    v : float array
-       Optionally, input a specific sequence of noise samples (this over-rides
-       the sigma parameter). Default: None
-
-    Returns
-    -------
-
-    u : ndarray
-       the AR sequence
-    v : ndarray
-       the unit-variance innovations sequence
-    coefs : ndarray
-       feedback coefficients from k=1,len(coefs)
-
-    The form of the feedback coefficients is a little different than
-    the normal linear constant-coefficient difference equation. Therefore
-    the transfer function implemented in this method is
-
-    H(z) = sigma**0.5 / ( 1 - sum_k coefs(k)z**(-k) )    1 <= k <= P
-
-    Examples
-    --------
-
-    >>> import nitime.algorithms as alg
-    >>> ar_seq, nz, alpha = ar_generator()
-    >>> fgrid, hz = alg.freq_response(1.0, a=np.r_[1, -alpha])
-    >>> sdf_ar = (hz * hz.conj()).real
-
-    """
-    if coefs is None:
-        # this sequence is shown to be estimated well by an order 8 AR system
-        coefs = np.array([2.7607, -3.8106, 2.6535, -0.9238])
-    else:
-        coefs = np.asarray(coefs)
-
-    # The number of terms we generate must include the dropped transients, and
-    # then at the end we cut those out of the returned array.
-    N += drop_transients
-
-    # Typically uses just pass sigma in, but optionally they can provide their
-    # own noise vector, case in which we use it
-    if v is None:
-        v = np.random.normal(size=N)
-        v -= v[drop_transients:].mean()
-
-    b = [sigma ** 0.5]
-    a = np.r_[1, -coefs]
-    u = sig.lfilter(b, a, v)
-
-    # Only return the data after the drop_transients terms
-    return u[drop_transients:], v[drop_transients:], coefs
-
-# -----------------------------------------  COPIED from VIZ: Plotting function ----------------------------------------
-
-
-def plot_spectral_estimate(f, sdf, sdf_ests, limits=None, elabels=()):
-    """
-    Plot an estimate of a spectral transform against the ground truth.
-
-    Utility file used in building the documentation
-    """
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    ax_limits = (sdf.min() - 2*np.abs(sdf.min()),
-                 sdf.max() + 1.25*np.abs(sdf.max()))
-    ax.plot(f, sdf, 'c', label='True S(f)')
-
-    if not elabels:
-        elabels = ('',) * len(sdf_ests)
-    colors = 'bgkmy'
-    for e, l, c in zip(sdf_ests, elabels, colors):
-        ax.plot(f, e, color=c, linewidth=2, label=l)
-
-    if limits is not None:
-        ax.fill_between(f, limits[0], y2=limits[1], color=(1, 0, 0, .3),
-                        alpha=0.5)
-
-    ax.set_ylim(ax_limits)
-    ax.legend()
-    return fig
-

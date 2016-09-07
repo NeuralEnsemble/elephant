@@ -42,8 +42,37 @@ Tests utilities for multitapered spectral time series analysis.
 
 import unittest
 import numpy as np
-import numpy.testing as npt
+import numpy.random as npr
 from elephant import multitaper_utils as mtu
+# from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
+
+
+# TODO: function to test the jackknife procedure
+def expected_jk_variance(K):
+    """Compute the expected value of the jackknife variance estimate
+    over K windows below. This expected value formula is based on the
+    asymptotic expansion of the trigamma function derived in
+    [Thompson_1994]
+
+    Paramters
+    ---------
+
+    K : int
+      Number of tapers used in the multitaper method
+
+    Returns
+    -------
+
+    evar : float
+      Expected value of the jackknife variance estimator
+
+    """
+
+    kf = float(K)
+    return ((1 / kf) * (kf - 1) / (kf - 0.5) *
+            ((kf - 1) / (kf - 2)) ** 2 * (kf - 3) / (kf - 2))
+
+
 
 
 class MultitaperUtilityTests(unittest.TestCase):
@@ -88,33 +117,21 @@ class MultitaperUtilityTests(unittest.TestCase):
 
         # also test orthonormality of the eigenvectors
         ident = np.dot(E, E.T)
-        npt.assert_almost_equal(ident, np.eye(K))
+        self.assertAlmostEqual(ident, np.eye(K))
 
-    def test_debias(self):
+    def test_remove_bias(self):
         x = np.arange(64).reshape(4, 4, 4)
         x0 = mtu.remove_bias(x, axis=1)
-        npt.assert_equal((x0.mean(axis=1) == 0).all(), True)
-
-    def ref_crosscov(self, x, y, all_lags=True):
-        "Computes sxy[k] = E{x[n]*y[n+k]}"
-        x = mtu.remove_bias(x, 0)
-        y = mtu.remove_bias(y, 0)
-        lx, ly = len(x), len(y)
-        pad_len = lx + ly - 1
-        sxy = np.correlate(x, y, mode='full') / lx
-        if all_lags:
-            return sxy
-        c_idx = pad_len // 2
-        return sxy[c_idx:]
+        self.assertEqual((x0.mean(axis=1) == 0).all(), True)
 
     def test_crosscov(self):
         N = 128
-        ar_seq1, _, _ = mtu.ar_generator(N=N)
-        ar_seq2, _, _ = mtu.ar_generator(N=N)
+        ar_seq1, _, _ = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))
+        ar_seq2, _, _ = npr.randn(N) + np.cos(np.linspace(0., 2.*np.pi, 128))
 
         for all_lags in (True, False):
             sxy = mtu.crosscov(ar_seq1, ar_seq2, all_lags=all_lags)
-            sxy_ref = self.ref_crosscov(ar_seq1, ar_seq2, all_lags=all_lags)
+            sxy_ref = mtu.crosscov(ar_seq1, ar_seq2, debias=True, all_lags=all_lags, corr=True)
             err = sxy_ref - sxy
             mse = np.dot(err, err) / N
             self.assertTrue(mse < 1e-12, \
@@ -122,7 +139,7 @@ class MultitaperUtilityTests(unittest.TestCase):
 
     def test_autocorr(self):
         N = 128
-        ar_seq, _, _ = mtu.ar_generator(N=N)
+        ar_seq, _, _ = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))  # mtu.ar_generator(N=N)
         rxx = mtu.autocorr(ar_seq)
         self.assertTrue(rxx[0] == rxx.max(), \
                     'Zero lag autocorrelation is not maximum autocorrelation')

@@ -133,7 +133,7 @@ def get_spectra(time_series, method=None):
 
         # If there is only 1 channel in the time-series:
         if len(time_series.shape) == 1 or time_series.shape[0] == 1:
-            temp, f = sectral._welch( # mlab.csd(
+            temp, f = spectral._welch( # mlab.csd(
                 time_series, time_series,
                 fs=Fs, window=window, noverlap=noverlap,
                 nfft=NFFT, detrend=detrend) # scale_by_freq=True)
