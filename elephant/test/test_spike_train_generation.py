@@ -28,7 +28,7 @@ def pdiff(a, b):
     return abs((a - b)/a)
 
 
-class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
+class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
         pass
@@ -96,6 +96,37 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
         result = stgen.peak_detection(self.vm, threshold=30 * mV)
         self.assertEqual(len(result), 0)
 
+class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
+    
+    def setUp(self):
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
+        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
+        data = iom2.read()
+        self.vm = data[0].segments[0].analogsignals[0]
+        self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
+                                     -0.03392689, -0.03061474, -0.02650277,
+                                     -0.0212756, -0.01443531, -0.00515365,
+                                     0.00803962, 0.02797951, -0.07,
+                                     -0.06974495, -0.06950466, -0.06927778,
+                                     -0.06906314, -0.06885969, -0.06866651,
+                                     -0.06848277, -0.06830773, -0.06814071,
+                                     -0.06798113, -0.06782843, -0.06768213,
+                                     -0.06754178, -0.06740699, -0.06727737,
+                                     -0.06715259, -0.06703235, -0.06691635])
+    
+    def test_spike_extraction_waveform(self):
+        spike_train = stgen.spike_extraction(self.vm,
+                                             extr_interval = (-1*ms, 2*ms))
+        try:
+            assert_array_almost_equal(spike_train.waveforms[0][0].magnitude,
+                                      self.first_spike)
+        except AttributeError:
+            self.assertTrue(
+                np.array_equal(spike_train.waveforms[0][0].magnitude,
+                               self.first_spike))
+
+        
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
