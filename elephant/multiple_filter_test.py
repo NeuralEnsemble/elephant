@@ -5,11 +5,6 @@ Created on Wed Aug 17 13:20:45 2016
 @author: emanuele
 """
 
-"""
-Created on Fri Aug  5 10:10:38 2016
-
-@author: emanuele
-"""
 
 import numpy as np
 import quantities as pq
