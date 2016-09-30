@@ -995,200 +995,199 @@ class SplineiCSD(CSD):
         return e_mat0, e_mat1, e_mat2, e_mat3
 
 
-def estimate_csd(lfp, coord_electrode, sigma, method='standard', diam=None,
-                 h=None, sigma_top=None, tol=1E-6, num_steps=200,
-                 f_type='identity', f_order=None):
-    """
-    Estimates current source density (CSD) from local field potential (LFP)
-    recordings from multiple depths of the cortex.
+# def estimate_csd(lfp, coord_electrode, sigma, method='standard', diam=None,
+#                  h=None, sigma_top=None, tol=1E-6, num_steps=200,
+#                  f_type='identity', f_order=None):
+#     """
+#     Estimates current source density (CSD) from local field potential (LFP)
+#     recordings from multiple depths of the cortex.
 
-    Parameters
-    ----------
-    lfp : neo.AnalogSignalArray
-        LFP signals from which CSD is estimated.
-    coord_electrode : Quantity array
-        Depth of evenly spaced electrode contact points.
-    sigma : Quantity float
-        Conductivity of tissue.
-    method : string
-        CSD estimation method, either of 'standard': the standard
-        double-derivative method, 'delta': delta-iCSD method, 'step':
-        step-iCSD method, 'spline': spline-iCSD method. Default is 'standard'
-    diam : Quantity float
-        Diamater of the assumed circular planar current sources centered at
-        each contact, required by iCSD methods (= 'delta', 'step',
-        'spline'). Default is `None`.
-    h : float or np.ndarray * quantity.Quantity
-        assumed thickness of the source cylinders at all or each contact
-    sigma_top : Quantity float
-        Conductivity on top of tissue. When set to `None`, the same value as
-        sigma: is used. Default is `None`.
-    tol : float
-        Tolerance of numerical integration, required by step- and
-        spline-iCSD methods. Default is 1E-6.
-    num_steps : int
-        Number of data points for the spatially upsampled LFP/CSD data,
-        required by spline-iCSD method. Default is 200.
-    f_type : string
-        Type of spatial filter used for smoothing of the result, either of
-        'boxcar' (uses `scipy.signal.baxcar()`), 'hamming' (
-        `scipy.signal.hamming()`), 'triangular' (`scipy.signal.tri()`),
-        'gaussian' (`scipy.signal.gaussian`), 'identity' (no smoothing is
-        applied). Default is 'identity'.
-    f_order : float tuple
-        Parameters to be passed to the scipy.signal function associated with
-        the specified filter type.
-
-
-    Returns
-    -------
-    tuple : (csd, csd_filtered)
-        csd : neo.AnalogSignalArray
-            Estimated CSD
-        csd_filtered : neo.AnalogSignalArray
-            Estimated CSD, spatially filtered
+#     Parameters
+#     ----------
+#     lfp : neo.AnalogSignalArray
+#         LFP signals from which CSD is estimated.
+#     coord_electrode : Quantity array
+#         Depth of evenly spaced electrode contact points.
+#     sigma : Quantity float
+#         Conductivity of tissue.
+#     method : string
+#         CSD estimation method, either of 'standard': the standard
+#         double-derivative method, 'delta': delta-iCSD method, 'step':
+#         step-iCSD method, 'spline': spline-iCSD method. Default is 'standard'
+#     diam : Quantity float
+#         Diamater of the assumed circular planar current sources centered at
+#         each contact, required by iCSD methods (= 'delta', 'step',
+#         'spline'). Default is `None`.
+#     h : float or np.ndarray * quantity.Quantity
+#         assumed thickness of the source cylinders at all or each contact
+#     sigma_top : Quantity float
+#         Conductivity on top of tissue. When set to `None`, the same value as
+#         sigma: is used. Default is `None`.
+#     tol : float
+#         Tolerance of numerical integration, required by step- and
+#         spline-iCSD methods. Default is 1E-6.
+#     num_steps : int
+#         Number of data points for the spatially upsampled LFP/CSD data,
+#         required by spline-iCSD method. Default is 200.
+#     f_type : string
+#         Type of spatial filter used for smoothing of the result, either of
+#         'boxcar' (uses `scipy.signal.baxcar()`), 'hamming' (
+#         `scipy.signal.hamming()`), 'triangular' (`scipy.signal.tri()`),
+#         'gaussian' (`scipy.signal.gaussian`), 'identity' (no smoothing is
+#         applied). Default is 'identity'.
+#     f_order : float tuple
+#         Parameters to be passed to the scipy.signal function associated with
+#         the specified filter type.
 
 
-    Example
-    -------
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from scipy import io
-    import quantities as pq
-    import neo
-
-    import icsd
+#     Returns
+#     -------
+#     tuple : (csd, csd_filtered)
+#         csd : neo.AnalogSignalArray
+#             Estimated CSD
+#         csd_filtered : neo.AnalogSignalArray
+#             Estimated CSD, spatially filtered
 
 
-    #loading test data
-    test_data = io.loadmat('test_data.mat')
+#     Example
+#     -------
+#     import numpy as np
+#     import matplotlib.pyplot as plt
+#     from scipy import io
+#     import quantities as pq
+#     import neo
 
-    #prepare lfp data for use, by changing the units to SI and append
-    #quantities, along with electrode geometry and conductivities
-    lfp_data = test_data['pot1'] * 1E-3 * pq.V        # [mV] -> [V]
-    z_data = np.linspace(100E-6, 2300E-6, 23) * pq.m  # [m]
-    diam = 500E-6 * pq.m                              # [m]
-    sigma = 0.3 * pq.S / pq.m                         # [S/m] or [1/(ohm*m)]
-    sigma_top = 0. * pq.S / pq.m                      # [S/m] or [1/(ohm*m)]
+#     import icsd
 
-    lfp = neo.AnalogSignalArray(lfp_data.T, sampling_rate=2.0*pq.kHz)
 
-    # Input dictionaries for each method
-    params = {}
-    params['delta'] = {
-        'method': 'delta',
-        'lfp' : lfp,
-        'coord_electrode' : z_data,
-        'diam' : diam,        # source diameter
-        'sigma' : sigma,           # extracellular conductivity
-        'sigma_top' : sigma,       # conductivity on top of cortex
-    }
-    params['step'] = {
-        'method': 'step',
-        'lfp' : lfp,
-        'coord_electrode' : z_data,
-        'diam' : diam,
-        'sigma' : sigma,
-        'sigma_top' : sigma,
-        'tol' : 1E-12,          # Tolerance in numerical integration
-        }
-    params['spline'] = {
-        'method': 'spline',
-        'lfp' : lfp,
-        'coord_electrode' : z_data,
-        'diam' : diam,
-        'sigma' : sigma,
-        'sigma_top' : sigma,
-        'num_steps' : 201,      # Spatial CSD upsampling to N steps
-        'tol' : 1E-12,
-        }
-    params['standard'] = {
-        'method': 'standard',
-        'lfp' : lfp,
-        'coord_electrode' : z_data,
-        'sigma' : sigma,
-        }
+#     #loading test data
+#     test_data = io.loadmat('test_data.mat')
 
-    #plot LFP signal
-    fig, axes = plt.subplots(len(params)+1, 1, figsize=(6, 8))
-    ax = axes[0]
-    im = ax.imshow(lfp.magnitude.T, origin='upper', vmin=-abs(lfp).max(),
-                   vmax=abs(lfp).max(), cmap='jet_r', interpolation='nearest')
-    ax.axis(ax.axis('tight'))
-    cb = plt.colorbar(im, ax=ax)
-    cb.set_label('LFP (%s)' % lfp_data.dimensionality.string)
-    ax.set_xticklabels([])
-    ax.set_title('LFP')
-    ax.set_ylabel('ch #')
-    i_ax = 1
-    for method, param in params.items():
-        ax = axes[i_ax]
-        i_ax += 1
-        csd = icsd.estimate_csd(**param)
-        im = ax.imshow(csd.magnitude.T, origin='upper', vmin=-abs(csd).max(),
-                       vmax=abs(csd).max(), cmap='jet_r',
-                       interpolation='nearest')
-        ax.axis(ax.axis('tight'))
-        ax.set_title(method)
-        cb = plt.colorbar(im, ax=ax)
-        cb.set_label('CSD (%s)' % csd.dimensionality.string)
-        ax.set_xticklabels([])
-        ax.set_ylabel('ch #')
+#     #prepare lfp data for use, by changing the units to SI and append
+#     #quantities, along with electrode geometry and conductivities
+#     lfp_data = test_data['pot1'] * 1E-3 * pq.V        # [mV] -> [V]
+#     z_data = np.linspace(100E-6, 2300E-6, 23) * pq.m  # [m]
+#     diam = 500E-6 * pq.m                              # [m]
+#     sigma = 0.3 * pq.S / pq.m                         # [S/m] or [1/(ohm*m)]
+#     sigma_top = 0. * pq.S / pq.m                      # [S/m] or [1/(ohm*m)]
 
-    plt.show()
-    """
+#     lfp = neo.AnalogSignalArray(lfp_data.T, sampling_rate=2.0*pq.kHz)
 
-    supported_methods = ('standard', 'delta', 'step', 'spline')
-    icsd_methods = ('delta', 'step', 'spline')
+#     # Input dictionaries for each method
+#     params = {}
+#     params['delta'] = {
+#         'method': 'delta',
+#         'lfp' : lfp,
+#         'coord_electrode' : z_data,
+#         'diam' : diam,        # source diameter
+#         'sigma' : sigma,           # extracellular conductivity
+#         'sigma_top' : sigma,       # conductivity on top of cortex
+#     }
+#     params['step'] = {
+#         'method': 'step',
+#         'lfp' : lfp,
+#         'coord_electrode' : z_data,
+#         'diam' : diam,
+#         'sigma' : sigma,
+#         'sigma_top' : sigma,
+#         'tol' : 1E-12,          # Tolerance in numerical integration
+#         }
+#     params['spline'] = {
+#         'method': 'spline',
+#         'lfp' : lfp,
+#         'coord_electrode' : z_data,
+#         'diam' : diam,
+#         'sigma' : sigma,
+#         'sigma_top' : sigma,
+#         'num_steps' : 201,      # Spatial CSD upsampling to N steps
+#         'tol' : 1E-12,
+#         }
+#     params['standard'] = {
+#         'method': 'standard',
+#         'lfp' : lfp,
+#         'coord_electrode' : z_data,
+#         'sigma' : sigma,
+#         }
 
-    if method not in supported_methods:
-        print("Pamareter `method` must be either of {}".format(
-            ", ".join(supported_methods)))
-        raise ValueError
-    elif method in icsd_methods and diam is None:
-        print("Parameter `diam` must be specified for iCSD methods: {}".format(
-              ", ".join(icsd_methods)))
-        raise ValueError
+#     #plot LFP signal
+#     fig, axes = plt.subplots(len(params)+1, 1, figsize=(6, 8))
+#     ax = axes[0]
+#     im = ax.imshow(lfp.magnitude.T, origin='upper', vmin=-abs(lfp).max(),
+#                    vmax=abs(lfp).max(), cmap='jet_r', interpolation='nearest')
+#     ax.axis(ax.axis('tight'))
+#     cb = plt.colorbar(im, ax=ax)
+#     cb.set_label('LFP (%s)' % lfp_data.dimensionality.string)
+#     ax.set_xticklabels([])
+#     ax.set_title('LFP')
+#     ax.set_ylabel('ch #')
+#     i_ax = 1
+#     for method, param in params.items():
+#         ax = axes[i_ax]
+#         i_ax += 1
+#         csd = icsd.estimate_csd(**param)
+#         im = ax.imshow(csd.magnitude.T, origin='upper', vmin=-abs(csd).max(),
+#                        vmax=abs(csd).max(), cmap='jet_r',
+#                        interpolation='nearest')
+#         ax.axis(ax.axis('tight'))
+#         ax.set_title(method)
+#         cb = plt.colorbar(im, ax=ax)
+#         cb.set_label('CSD (%s)' % csd.dimensionality.string)
+#         ax.set_xticklabels([])
+#         ax.set_ylabel('ch #')
 
-    if not isinstance(lfp, neo.AnalogSignalArray):
-        print('Parameter `lfp` must be neo.AnalogSignalArray')
-        raise TypeError
+#     plt.show()
+#     """
 
-    if f_type is not 'identity' and f_order is None:
-        print("The order of {} filter must be specified".format(f_type))
-        raise ValueError
+#     supported_methods = ('standard', 'delta', 'step', 'spline')
+#     icsd_methods = ('delta', 'step', 'spline')
 
-    lfp_pqarr = lfp.magnitude.T * lfp.units
-    if sigma_top is None:
-        sigma_top = sigma
+#     if method not in supported_methods:
+#         print("Pamareter `method` must be either of {}".format(
+#             ", ".join(supported_methods)))
+#         raise ValueError
+#     elif method in icsd_methods and diam is None:
+#         print("Parameter `diam` must be specified for iCSD methods: {}".format(
+#               ", ".join(icsd_methods)))
+#         raise ValueError
 
-    arg_dict = {'lfp': lfp_pqarr,
-                'coord_electrode': coord_electrode,
-                'sigma': sigma,
-                'f_type': f_type,
-                'f_order': f_order,
-                }
-    if method == 'standard':
-        csd_estimator = StandardCSD(**arg_dict)
-    else:
-        arg_dict['diam'] = diam
-        arg_dict['sigma_top'] = sigma_top
-        if method == 'delta':
-            csd_estimator = DeltaiCSD(**arg_dict)
-        else:
-            arg_dict['tol'] = tol
-            if method == 'step':
-                arg_dict['h'] = h
-                csd_estimator = StepiCSD(**arg_dict)
-            else:
-                arg_dict['num_steps'] = num_steps
-                csd_estimator = SplineiCSD(**arg_dict)
-    csd_pqarr = csd_estimator.get_csd()
-    csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
-    csd = neo.AnalogSignalArray(csd_pqarr.T, t_start=lfp.t_start,
-                                         sampling_rate=lfp.sampling_rate)
-    csd_filtered = neo.AnalogSignalArray(csd_pqarr_filtered.T, t_start=lfp.t_start,
-                                         sampling_rate=lfp.sampling_rate)
+#     if not isinstance(lfp, neo.AnalogSignalArray):
+#         print('Parameter `lfp` must be neo.AnalogSignalArray')
+#         raise TypeError
 
-    return csd, csd_filtered
+#     if f_type is not 'identity' and f_order is None:
+#         print("The order of {} filter must be specified".format(f_type))
+#         raise ValueError
 
+#     lfp_pqarr = lfp.magnitude.T * lfp.units
+#     if sigma_top is None:
+#         sigma_top = sigma
+
+#     arg_dict = {'lfp': lfp_pqarr,
+#                 'coord_electrode': coord_electrode,
+#                 'sigma': sigma,
+#                 'f_type': f_type,
+#                 'f_order': f_order,
+#                 }
+#     if method == 'standard':
+#         csd_estimator = StandardCSD(**arg_dict)
+#     else:
+#         arg_dict['diam'] = diam
+#         arg_dict['sigma_top'] = sigma_top
+#         if method == 'delta':
+#             csd_estimator = DeltaiCSD(**arg_dict)
+#         else:
+#             arg_dict['tol'] = tol
+#             if method == 'step':
+#                 arg_dict['h'] = h
+#                 csd_estimator = StepiCSD(**arg_dict)
+#             else:
+#                 arg_dict['num_steps'] = num_steps
+#                 csd_estimator = SplineiCSD(**arg_dict)
+#     csd_pqarr = csd_estimator.get_csd()
+#     csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
+#     csd = neo.AnalogSignalArray(csd_pqarr.T, t_start=lfp.t_start,
+#                                          sampling_rate=lfp.sampling_rate)
+#     csd_filtered = neo.AnalogSignalArray(csd_pqarr_filtered.T, t_start=lfp.t_start,
+#                                          sampling_rate=lfp.sampling_rate)
+
+#     return csd, csd_filtered
