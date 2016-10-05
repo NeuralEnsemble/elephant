@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This script is used to generate basis sources for the
 kCSD method Jan et.al (2012) for 3D case.
@@ -12,7 +13,26 @@ from __future__ import division
 
 import numpy as np
 from numpy import exp
+import quantities as pq
 
+
+def patch_quantities():
+    """patch quantities with the SI unit Siemens if it does not exist"""
+    for symbol, prefix, definition, u_symbol in zip(
+        ['siemens', 'S', 'mS', 'uS', 'nS', 'pS'],
+        ['', '', 'milli', 'micro', 'nano', 'pico'],
+        [pq.A / pq.V, pq.A / pq.V, 'S', 'mS', 'uS', 'nS'],
+        [None, None, None, None, u'µS', None]):
+        if type(definition) is str:
+            definition = lastdefinition / 1000
+        if not hasattr(pq, symbol):
+            setattr(pq, symbol, pq.UnitQuantity(
+                prefix + 'siemens',
+                definition,
+                symbol=symbol,
+                u_symbol=u_symbol))
+        lastdefinition = definition
+    return
 
 def check_for_duplicated_electrodes(elec_pos):
     """Checks for duplicate electrodes
@@ -47,9 +67,11 @@ def distribute_srcs_1D(X, n_src, ext_x, R_init):
     R : float
         effective radius of the basis element
     """
-    X_src = np.mgrid[(np.min(X)-ext_x):(np.max(X)+ext_x):np.complex(0,n_src)]
+    X_src = np.mgrid[(np.min(X) - ext_x):(np.max(X) + ext_x):
+                     np.complex(0, n_src)]
     R = R_init
     return X_src, R
+
 
 def distribute_srcs_2D(X, Y, n_src, ext_x, ext_y, R_init):
     """Distribute n_src's in the given area evenly
@@ -80,8 +102,10 @@ def distribute_srcs_2D(X, Y, n_src, ext_x, ext_y, R_init):
     [nx, ny, Lx_nn, Ly_nn, ds] = get_src_params_2D(Lx_n, Ly_n, n_src)
     ext_x_n = (Lx_nn - Lx) / 2
     ext_y_n = (Ly_nn - Ly) / 2
-    X_src, Y_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):np.complex(0,nx),
-                            (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):np.complex(0,ny)]
+    X_src, Y_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):
+                            np.complex(0, nx),
+                            (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):
+                            np.complex(0, ny)]
     # d = round(R_init / ds)
     R = R_init  # R = d * ds
     return X_src, Y_src, R
@@ -111,8 +135,8 @@ def get_src_params_2D(Lx, Ly, n_src):
     rts = np.roots(coeff)
     r = [r for r in rts if type(r) is not complex and r > 0]
     nx = r[0]
-    ny = n_src/nx
-    ds = Lx/(nx-1)
+    ny = n_src / nx
+    ds = Lx / (nx - 1)
     nx = np.floor(nx) + 1
     ny = np.floor(ny) + 1
     Lx_n = (nx - 1) * ds
@@ -148,22 +172,26 @@ def distribute_srcs_3D(X, Y, Z, n_src, ext_x, ext_y, ext_z, R_init):
     Lx = np.max(X) - np.min(X)
     Ly = np.max(Y) - np.min(Y)
     Lz = np.max(Z) - np.min(Z)
-    Lx_n = Lx + 2*ext_x
-    Ly_n = Ly + 2*ext_y
-    Lz_n = Lz + 2*ext_z
+    Lx_n = Lx + 2 * ext_x
+    Ly_n = Ly + 2 * ext_y
+    Lz_n = Lz + 2 * ext_z
     (nx, ny, nz, Lx_nn, Ly_nn, Lz_nn, ds) = get_src_params_3D(Lx_n,
                                                               Ly_n,
                                                               Lz_n,
                                                               n_src)
-    ext_x_n = (Lx_nn - Lx)/2
-    ext_y_n = (Ly_nn - Ly)/2
-    ext_z_n = (Lz_nn - Lz)/2
-    X_src, Y_src, Z_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):np.complex(0,nx),
-                                   (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):np.complex(0,ny),
-                                   (np.min(Z) - ext_z_n):(np.max(Z) + ext_z_n):np.complex(0,nz)]
-    d = np.round(R_init/ds)
+    ext_x_n = (Lx_nn - Lx) / 2
+    ext_y_n = (Ly_nn - Ly) / 2
+    ext_z_n = (Lz_nn - Lz) / 2
+    X_src, Y_src, Z_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):
+                                   np.complex(0, nx),
+                                   (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):
+                                   np.complex(0, ny),
+                                   (np.min(Z) - ext_z_n):(np.max(Z) + ext_z_n):
+                                   np.complex(0, nz)]
+    # d = np.round(R_init / ds)
     R = R_init
     return (X_src, Y_src, Z_src, R)
+
 
 def get_src_params_3D(Lx, Ly, Lz, n_src):
     """Helps to evenly distribute n_src sources in a cuboid of size Lx * Ly * Lz
@@ -185,20 +213,21 @@ def get_src_params_3D(Lx, Ly, Lz, n_src):
     ds : float
         spacing between the sources (grid nodes)
     """
-    V = Lx*Ly*Lz
+    V = Lx * Ly * Lz
     V_unit = V / n_src
-    L_unit = V_unit**(1./3.)
+    L_unit = V_unit**(1. / 3.)
     nx = np.ceil(Lx / L_unit)
     ny = np.ceil(Ly / L_unit)
     nz = np.ceil(Lz / L_unit)
-    ds = Lx / (nx-1)
-    Lx_n = (nx-1) * ds
-    Ly_n = (ny-1) * ds
-    Lz_n = (nz-1) * ds
+    ds = Lx / (nx - 1)
+    Lx_n = (nx - 1) * ds
+    Ly_n = (ny - 1) * ds
+    Lz_n = (nz - 1) * ds
     return (nx, ny, nz, Lx_n, Ly_n, Lz_n, ds)
 
 
-def generate_electrodes(dim, xlims=[0.1, 0.9], ylims=[0.1, 0.9], zlims=[0.1, 0.9], res=5):
+def generate_electrodes(dim, xlims=[0.1, 0.9], ylims=[0.1, 0.9],
+                        zlims=[0.1, 0.9], res=5):
     """Generates electrodes, helpful for FWD funtion.
         Parameters
         ----------
@@ -218,23 +247,24 @@ def generate_electrodes(dim, xlims=[0.1, 0.9], ylims=[0.1, 0.9], zlims=[0.1, 0.9
 
     """
     if dim == 1:
-        ele_x = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res)]
+        ele_x = np.mgrid[xlims[0]: xlims[1]: np.complex(0, res)]
         ele_x = ele_x.flatten()
         return ele_x
     elif dim == 2:
-        ele_x, ele_y = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res),
-                                ylims[0]:ylims[1]:np.complex(0,res)]
+        ele_x, ele_y = np.mgrid[xlims[0]: xlims[1]: np.complex(0, res),
+                                ylims[0]: ylims[1]: np.complex(0, res)]
         ele_x = ele_x.flatten()
         ele_y = ele_y.flatten()
         return ele_x, ele_y
     elif dim == 3:
-        ele_x, ele_y, ele_z = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res),
-                                       ylims[0]:ylims[1]:np.complex(0,res),
-                                       zlims[0]:zlims[1]:np.complex(0,res)]
+        ele_x, ele_y, ele_z = np.mgrid[xlims[0]: xlims[1]: np.complex(0, res),
+                                       ylims[0]: ylims[1]: np.complex(0, res),
+                                       zlims[0]: zlims[1]: np.complex(0, res)]
         ele_x = ele_x.flatten()
         ele_y = ele_y.flatten()
         ele_z = ele_z.flatten()
         return ele_x, ele_y, ele_z
+
 
 def gauss_1d_dipole(x):
     """1D Gaussian dipole source is placed between 0 and 1
