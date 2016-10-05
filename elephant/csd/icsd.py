@@ -391,10 +391,7 @@ class StandardCSD(CSD):
     Standard CSD method with and without Vaknin electrodes
     '''
 
-    def __init__(self, lfp,
-                 coord_electrode=np.linspace(0, 1400E-6, 15) * pq.m,
-                 sigma=0.3 * pq.S / pq.m, vaknin_el=True, f_type='gaussian',
-                 f_order=(3, 1)):
+    def __init__(self, lfp, coord_electrode, **kwargs):
         '''
         Initialize standard CSD method class with & without Vaknin electrodes.
 
@@ -407,40 +404,58 @@ class StandardCSD(CSD):
             (# contacts, ) in units of m, must be monotonously increasing
         sigma : float * quantity.Quantity
             conductivity of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S/m
         vaknin_el : bool
             flag for using method of Vaknin to endpoint electrodes
+            Defaults to True
         f_type : str
             type of spatial filter, must be a scipy.signal filter design method
+            Defaults to 'gaussian'
         f_order : list
             settings for spatial filter, arg passed to  filter design function
+            Defaults to (3,1) for the gaussian
         '''
-        CSD.__init__(self, lfp, f_type, f_order)
+        self.parameters(**kwargs)
+        CSD.__init__(self, lfp, self.f_type, self.f_order)
 
-        self.name = 'Standard CSD method'
-        self.coord_electrode = coord_electrode
-        self.sigma = sigma
-        self.vaknin_el = vaknin_el
-
+        diff_diff_coord = np.diff(np.diff(coord_electrode, axis=0), axis=0).magnitude
+        zeros_ddc = np.zeros_like(diff_diff_coord)
         try:
-            assert(np.all(np.diff(np.diff(coord_electrode, axis=0), axis=0)))
+            assert(np.all(np.isclose(diff_diff_coord, zeros_ddc, atol=1e-12)))
         except AssertionError as ae:
             print('coord_electrode not monotonously varying')
             raise ae
 
-        if vaknin_el:
+        if self.vaknin_el:
             # extend lfps array by duplicating potential at endpoint contacts
             if lfp.ndim == 1:
                 self.lfp = np.empty((lfp.shape[0] + 2, )) * lfp.units
             else:
-                self.lfp = np.empty((lfp.shape[0] + 2, lfp.shape[1])) * \
-                                     lfp.units
+                self.lfp = np.empty((lfp.shape[0] + 2, lfp.shape[1])) * lfp.units
             self.lfp[0, ] = lfp[0, ]
             self.lfp[1:-1, ] = lfp
             self.lfp[-1, ] = lfp[-1, ]
         else:
             self.lfp = lfp
 
+        self.name = 'Standard CSD method'
+        self.coord_electrode = coord_electrode
+
         self.f_inv_matrix = self.get_f_inv_matrix()
+
+    def parameters(self, **kwargs):
+        '''Defining the default values of the method passed as kwargs
+        Parameters
+        ----------
+        **kwargs
+            Same as those passed to initialize the Class
+        '''
+        self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
+        self.vaknin_el = kwargs.pop('vaknin_el', True)
+        self.f_type = kwargs.pop('f_type', 'gaussian')
+        self.f_order = kwargs.pop('f_order', (3, 1))
+        if kwargs:
+            raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_inv_matrix(self):
         '''Calculate the inverse F-matrix for the standard CSD method'''
@@ -474,12 +489,7 @@ class DeltaiCSD(CSD):
     '''
     delta-iCSD method
     '''
-    def __init__(self, lfp,
-                 coord_electrode=np.linspace(0, 1400E-6, 15) * pq.m,
-                 diam=500E-6 * pq.m,
-                 sigma=0.3 * pq.S / pq.m,
-                 sigma_top=0.3 * pq.S / pq.m,
-                 f_type='gaussian', f_order=(3, 1)):
+    def __init__(self, lfp, coord_electrode, **kwargs):
         '''
         Initialize the delta-iCSD method class object
 
@@ -493,23 +503,28 @@ class DeltaiCSD(CSD):
         diam : float * quantity.Quantity
             diamater of the assumed circular planar current sources centered
             at each contact
+            Defaults to 500E-6 meters
         sigma : float * quantity.Quantity
             conductivity of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S / m
         sigma_top : float * quantity.Quantity
             conductivity on top of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S / m
         f_type : str
             type of spatial filter, must be a scipy.signal filter design method
+            Defaults to 'gaussian'
         f_order : list
             settings for spatial filter, arg passed to  filter design function
-
+            Defaults to (3,1) for gaussian
         '''
-        CSD.__init__(self, lfp)
+        self.parameters(**kwargs)
+        CSD.__init__(self, lfp, self.f_type, self.f_order)
 
-        try:
-            assert(diam.units == coord_electrode.units)
+        try:  # Should the class not take care of this?!
+            assert(self.diam.units == coord_electrode.units)
         except AssertionError as ae:
             print('units of coord_electrode ({}) and diam ({}) differ'
-                  .format(coord_electrode.units, diam.units))
+                  .format(coord_electrode.units, self.diam.units))
             raise ae
 
         try:
@@ -519,30 +534,40 @@ class DeltaiCSD(CSD):
             raise ae
 
         try:
-            assert(diam.size == 1 or diam.size == coord_electrode.size)
-            if diam.size == coord_electrode.size:
-                assert(np.all(diam > 0 * diam.units))
+            assert(self.diam.size == 1 or self.diam.size == coord_electrode.size)
+            if self.diam.size == coord_electrode.size:
+                assert(np.all(self.diam > 0 * self.diam.units))
             else:
-                assert(diam > 0 * diam.units)
+                assert(self.diam > 0 * self.diam.units)
         except AssertionError as ae:
             print('diam must be positive scalar or of same shape \
                    as coord_electrode')
             raise ae
-        if diam.size == 1:
-            diam = np.ones(coord_electrode.size) * diam
+        if self.diam.size == 1:
+            self.diam = np.ones(coord_electrode.size) * self.diam
 
         self.name = 'delta-iCSD method'
         self.coord_electrode = coord_electrode
-        self.diam = diam
-        self.sigma = sigma
-        self.sigma_top = sigma_top
-        self.f_type = f_type
-        self.f_order = f_order
 
         # initialize F- and iCSD-matrices
         self.f_matrix = np.empty((self.coord_electrode.size,
                                   self.coord_electrode.size))
         self.f_matrix = self.get_f_matrix()
+
+    def parameters(self, **kwargs):
+        '''Defining the default values of the method passed as kwargs
+        Parameters
+        ----------
+        **kwargs
+            Same as those passed to initialize the Class
+        '''
+        self.diam = kwargs.pop('diam', 500E-6 * pq.m)
+        self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
+        self.sigma_top = kwargs.pop('sigma_top', 0.3 * pq.S / pq.m)
+        self.f_type = kwargs.pop('f_type', 'gaussian')
+        self.f_order = kwargs.pop('f_order', (3, 1))
+        if kwargs:
+            raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_matrix(self):
         '''Calculate the F-matrix'''
@@ -566,13 +591,8 @@ class DeltaiCSD(CSD):
 
 class StepiCSD(CSD):
     '''step-iCSD method'''
-    def __init__(self, lfp,
-                 coord_electrode=np.linspace(0, 1400E-6, 15) * pq.m,
-                 diam=500E-6 * pq.m,
-                 h=np.ones(15) * 100E-6 * pq.m,
-                 sigma=0.3 * pq.S / pq.m, sigma_top=0.3 * pq.S / pq.m,
-                 tol=1E-6,
-                 f_type='gaussian', f_order=(3, 1)):
+    def __init__(self, lfp, coord_electrode, **kwargs):
+
         '''
         Initializing step-iCSD method class object
 
@@ -586,27 +606,34 @@ class StepiCSD(CSD):
         diam : float or np.ndarray * quantity.Quantity
             diameter(s) of the assumed circular planar current sources centered
             at each contact
+            Defaults to 500E-6 meters
         h : float or np.ndarray * quantity.Quantity
             assumed thickness of the source cylinders at all or each contact
+            Defaults to np.ones(15) * 100E-6 * pq.m
         sigma : float * quantity.Quantity
             conductivity of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S / m
         sigma_top : float * quantity.Quantity
             conductivity on top of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S / m
         tol : float
             tolerance of numerical integration
+            Defaults 1e-6
         f_type : str
             type of spatial filter, must be a scipy.signal filter design method
+            Defaults to 'gaussian'
         f_order : list
             settings for spatial filter, arg passed to  filter design function
-
+            Defaults to (3,1) for the gaussian
         '''
-        CSD.__init__(self, lfp, f_type, f_order)
+        self.parameters(**kwargs)
+        CSD.__init__(self, lfp, self.f_type, self.f_order)
 
-        try:
-            assert(diam.units == coord_electrode.units)
+        try:  # Should the class not take care of this?
+            assert(self.diam.units == coord_electrode.units)
         except AssertionError as ae:
             print('units of coord_electrode ({}) and diam ({}) differ'
-                  .format(coord_electrode.units, diam.units))
+                  .format(coord_electrode.units, self.diam.units))
             raise ae
         try:
             assert(np.all(np.diff(coord_electrode) > 0))
@@ -615,37 +642,50 @@ class StepiCSD(CSD):
             raise ae
 
         try:
-            assert(diam.size == 1 or diam.size == coord_electrode.size)
-            if diam.size == coord_electrode.size:
-                assert(np.all(diam > 0 * diam.units))
+            assert(self.diam.size == 1 or self.diam.size == coord_electrode.size)
+            if self.diam.size == coord_electrode.size:
+                assert(np.all(self.diam > 0 * self.diam.units))
             else:
-                assert(diam > 0 * diam.units)
+                assert(self.diam > 0 * self.diam.units)
         except AssertionError as ae:
             print('diam must be positive scalar or of same shape \
                    as coord_electrode')
             raise ae
-        if diam.size == 1:
-            diam = np.ones(coord_electrode.size) * diam
+        if self.diam.size == 1:
+            self.diam = np.ones(coord_electrode.size) * self.diam
         try:
-            assert(h.size == 1 or h.size == coord_electrode.size)
-            if h.size == coord_electrode.size:
-                assert(np.all(h > 0 * h.units))
+            assert(self.h.size == 1 or self.h.size == coord_electrode.size)
+            if self.h.size == coord_electrode.size:
+                assert(np.all(self.h > 0 * self.h.units))
         except AssertionError as ae:
             print('h must be scalar or of same shape as coord_electrode')
             raise ae
-        if h.size == 1:
-            h = np.ones(coord_electrode.size) * h
+        if self.h.size == 1:
+            self.h = np.ones(coord_electrode.size) * self.h
 
         self.name = 'step-iCSD method'
         self.coord_electrode = coord_electrode
-        self.diam = diam
-        self.h = h
-        self.sigma = sigma
-        self.sigma_top = sigma_top
-        self.tol = tol
 
         # compute forward-solution matrix
         self.f_matrix = self.get_f_matrix()
+
+    def parameters(self, **kwargs):
+        '''Defining the default values of the method passed as kwargs
+        Parameters
+        ----------
+        **kwargs
+            Same as those passed to initialize the Class
+        '''
+
+        self.diam = kwargs.pop('diam', 500E-6 * pq.m)
+        self.h = kwargs.pop('h', np.ones(15) * 100E-6 * pq.m)
+        self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
+        self.sigma_top = kwargs.pop('sigma_top', 0.3 * pq.S / pq.m)
+        self.tol = kwargs.pop('tol', 1e-6)
+        self.f_type = kwargs.pop('f_type', 'gaussian')
+        self.f_order = kwargs.pop('f_order', (3, 1))
+        if kwargs:
+            raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_matrix(self):
         '''Calculate F-matrix for step iCSD method'''
@@ -687,11 +727,8 @@ class StepiCSD(CSD):
 
 class SplineiCSD(CSD):
     '''spline iCSD method'''
-    def __init__(self, lfp,
-                 coord_electrode=np.linspace(0, 1400E-6, 15) * pq.m,
-                 diam=500E-6 * pq.m, sigma=0.3 * pq.S / pq.m,
-                 sigma_top=0.3 * pq.S / pq.m, tol=1E-6,
-                 f_type='gaussian', f_order=(3, 1), num_steps=200):
+    def __init__(self, lfp, coord_electrode, **kwargs):
+
         '''
         Initializing spline-iCSD method class object
 
@@ -705,27 +742,34 @@ class SplineiCSD(CSD):
         diam : float * quantity.Quantity
             diamater of the assumed circular planar current sources centered
             at each contact
+            Defaults to 500E-6 meters
         sigma : float * quantity.Quantity
             conductivity of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S / m
         sigma_top : float * quantity.Quantity
             conductivity on top of tissue in units of S/m or 1/(ohm*m)
+            Defaults to 0.3 S / m
         tol : float
             tolerance of numerical integration
+            Defaults 1e-6
         f_type : str
             type of spatial filter, must be a scipy.signal filter design method
+            Defaults to 'gaussian'
         f_order : list
             settings for spatial filter, arg passed to  filter design function
+            Defaults to (3,1) for the gaussian
         num_steps : int
             number of data points for the spatially upsampled LFP/CSD data
-
+            Defaults to 200
         '''
-        CSD.__init__(self, lfp, f_type, f_order)
+        self.parameters(**kwargs)
+        CSD.__init__(self, lfp, self.f_type, self.f_order)
 
-        try:
-            assert(diam.units == coord_electrode.units)
+        try:  # Should the class not take care of this?!
+            assert(self.diam.units == coord_electrode.units)
         except AssertionError as ae:
             print('units of coord_electrode ({}) and diam ({}) differ'
-                  .format(coord_electrode.units, diam.units))
+                  .format(coord_electrode.units, self.diam.units))
             raise
         try:
             assert(np.all(np.diff(coord_electrode) > 0))
@@ -734,25 +778,37 @@ class SplineiCSD(CSD):
             raise ae
 
         try:
-            assert(diam.size == 1 or diam.size == coord_electrode.size)
-            if diam.size == coord_electrode.size:
-                assert(np.all(diam > 0 * diam.units))
+            assert(self.diam.size == 1 or self.diam.size == coord_electrode.size)
+            if self.diam.size == coord_electrode.size:
+                assert(np.all(self.diam > 0 * self.diam.units))
         except AssertionError as ae:
             print('diam must be scalar or of same shape as coord_electrode')
             raise ae
-        if diam.size == 1:
-            diam = np.ones(coord_electrode.size) * diam
+        if self.diam.size == 1:
+            self.diam = np.ones(coord_electrode.size) * self.diam
 
         self.name = 'spline-iCSD method'
         self.coord_electrode = coord_electrode
-        self.diam = diam
-        self.sigma = sigma
-        self.sigma_top = sigma_top
-        self.tol = tol
-        self.num_steps = num_steps
 
         # compute stuff
         self.f_matrix = self.get_f_matrix()
+
+    def parameters(self, **kwargs):
+        '''Defining the default values of the method passed as kwargs
+        Parameters
+        ----------
+        **kwargs
+            Same as those passed to initialize the Class
+        '''
+        self.diam = kwargs.pop('diam', 500E-6 * pq.m)
+        self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
+        self.sigma_top = kwargs.pop('sigma_top', 0.3 * pq.S / pq.m)
+        self.tol = kwargs.pop('tol', 1e-6)
+        self.num_steps = kwargs.pop('num_steps', 200)
+        self.f_type = kwargs.pop('f_type', 'gaussian')
+        self.f_order = kwargs.pop('f_order', (3, 1))
+        if kwargs:
+            raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_matrix(self):
         '''Calculate the F-matrix for cubic spline iCSD method'''
@@ -877,7 +933,7 @@ class SplineiCSD(CSD):
             if out_zs[j] >= z_js[i + 1]:
                 i += 1
             csd[j, ] = a_mat0[i, :] + a_mat1[i, :] * \
-                             (out_zs[j] - z_js[i]) +\
+                             (out_zs[j] - z_js[i]) + \
                 a_mat2[i, :] * (out_zs[j] - z_js[i])**2 + \
                 a_mat3[i, :] * (out_zs[j] - z_js[i])**3
 

@@ -26,7 +26,7 @@ available_3d = ['KCSD3D']
 kernel_methods = ['KCSD1D', 'KCSD2D', 'KCSD3D', 'MoIKCSD']
 icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
-espen_implented = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
+espen_implemented = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
 
 def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
@@ -126,13 +126,13 @@ def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
         elif dim == 3:
             output.annotate(x_coords=k.estm_x, y_coords=k.estm_y,
                             z_coords=k.estm_z)
-    elif method in espen_implented:
+    elif method in espen_implemented:
 
         coords = np.array(coords) * coords[0].units  # MOVE TO ICSD?
         if method in icsd_methods:
             try:
                 coords = coords.rescale(params['diam'].units)
-            except KeyError:
+            except KeyError:  # Then why specify as a default in icsd?
                 print("Parameter diam must be specified for iCSD \
                       methods: {}".format(", ".join(icsd_methods)))
                 raise ValueError
@@ -146,11 +146,6 @@ def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
         lfp = neo.AnalogSignalArray(np.asarray(lfp).T, units=lfp[0].units,
                                     sampling_rate=lfp[0].sampling_rate)
         lfp_pqarr = lfp.magnitude.T * lfp.units
-
-        # This belongs somewhere in ICSD!
-        # if params['sigma_top'] is None: # SOMETHING is off here!
-        #    params['sigma_top'] = sigma
-
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
         csd_estimator = csd_method(lfp_pqarr, coords, **params)
         csd_pqarr = csd_estimator.get_csd()
@@ -164,7 +159,6 @@ def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
         # MISSING ANNOTATIONS! At which points is this the CSD!
         output = neo.AnalogSignalArray(csd_pqarr.T, t_start=lfp.t_start,
                                        sampling_rate=lfp.sampling_rate)
-
     return output
 
 
@@ -295,7 +289,7 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
     return lfp
 
 if __name__ == '__main__':
-    dim = 3
+    dim = 1
     if dim == 1:
         ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
         lfp = generate_lfp(utils.gauss_1d_dipole, ele_pos)
@@ -316,9 +310,9 @@ if __name__ == '__main__':
         # test_method = 'StandardCSD'
         # test_params = {'f_type': 'gaussian', 'f_order': (3, 1)}
 
-        # test_method = 'DeltaiCSD'
-        # test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
-        #                'diam': 500E-6 * pq.m}
+        test_method = 'DeltaiCSD'
+        test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
+                       'diam': 500E-6 * pq.m}
 
         # test_method = 'StepiCSD'
         # test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
@@ -328,8 +322,8 @@ if __name__ == '__main__':
         # test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
         #                'diam': 500E-6 * pq.m}
 
-        test_method = 'KCSD1D'
-        test_params = {'h': 50.}
+        # test_method = 'KCSD1D'
+        # test_params = {'h': 50.}
     elif dim == 2:
         xx_ele, yy_ele = utils.generate_electrodes(dim=2)
         lfp = generate_lfp(utils.large_source_2D, xx_ele, yy_ele)
@@ -344,7 +338,7 @@ if __name__ == '__main__':
     if test_method in kernel_methods:
         result = estimate_csd(lfp, method=test_method, params=test_params,
                               cv_params={'Rs': np.array((0.1, 0.25, 0.5))})
-    elif test_method in espen_implented:
+    elif test_method in espen_implemented:
         result = estimate_csd(lfp, method=test_method, params=test_params)
 
     print(result)
