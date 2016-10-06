@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Identification of spectral properties in analog signals (e.g., the power spectrum)
+Identification of spectral properties in analog signals (e.g., the power
+spectrum).
 
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -131,7 +132,7 @@ def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
         nperseg = win.shape[0]
 
     if scaling == 'density':
-        scale = 1.0 / (fs * (win*win).sum())
+        scale = 1.0 / (fs * (win * win).sum())
     elif scaling == 'spectrum':
         scale = 1.0 / win.sum()**2
     else:
@@ -160,23 +161,23 @@ def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
         detrend_func = detrend
 
     step = nperseg - noverlap
-    indices = np.arange(0, x.shape[-1]-nperseg+1, step)
+    indices = np.arange(0, x.shape[-1] - nperseg + 1, step)
 
     for k, ind in enumerate(indices):
-        x_dt = detrend_func(x[..., ind:ind+nperseg])
-        xft = fftpack.fft(x_dt*win, nfft)
+        x_dt = detrend_func(x[..., ind:ind + nperseg])
+        xft = fftpack.fft(x_dt * win, nfft)
         if same_data:
             yft = xft
         else:
-            y_dt = detrend_func(y[..., ind:ind+nperseg])
-            yft = fftpack.fft(y_dt*win, nfft)
+            y_dt = detrend_func(y[..., ind:ind + nperseg])
+            yft = fftpack.fft(y_dt * win, nfft)
         if k == 0:
             Pxy = (xft * yft.conj())
         else:
-            Pxy *= k/(k+1.0)
-            Pxy += (xft * yft.conj()) / (k+1.0)
+            Pxy *= k / (k + 1.0)
+            Pxy += (xft * yft.conj()) / (k + 1.0)
     Pxy *= scale
-    f = fftpack.fftfreq(nfft, 1.0/fs)
+    f = fftpack.fftfreq(nfft, 1.0 / fs)
 
     if axis != -1:
         Pxy = np.rollaxis(Pxy, -1, axis)
