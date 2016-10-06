@@ -121,6 +121,7 @@ def estimate_csd(lfp, coords=None, method=None, **kwargs):
         output = neo.AnalogSignalArray(estm_csd * pq.uA / pq.mm**3,
                                        t_start=lfp[0].t_start,
                                        sampling_rate=lfp[0].sampling_rate)
+
         if dim == 1:
             output.annotate(x_coords=k.estm_x)
         elif dim == 2:
@@ -179,7 +180,7 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
             3D : gauss_3d_dipole
         ele_xx : np.array
             Positions of the x coordinates of the electrodes
-        ele_yy : np.array (Optional)
+        ele_yy : np.array
             Positions of the y coordinates of the electrodes
             Defaults ot None, use in 2D or 3D cases only
         ele_zz : np.array
@@ -197,6 +198,7 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         res : int
             The resolution of the integration
             Defaults to 50
+
         Returns
         -------
         LFP : list(neo.AnalogSignal type objects)
@@ -296,7 +298,7 @@ if __name__ == '__main__':
     dim = 1
 
     if dim == 1:
-        test_method = 'StandardCSD'
+        test_method = 'KCSD1D'
         params = {}  # Input dictionaries for each method
         params['DeltaiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
                                'diam': 500E-6 * pq.m}
