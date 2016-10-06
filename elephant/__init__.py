@@ -18,6 +18,7 @@ from . import (statistics,
                signal_processing,
                csd,
                sta,
+               csd,
                conversion,
                neo_tools)
 

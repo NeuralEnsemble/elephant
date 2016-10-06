@@ -1,7 +1,7 @@
+#!/usr/bin/env python
 """This script is used to generate Current Source Density Estimates
-
 This was written by :
-Chaitanya Chintaluri, 
+Chaitanya Chintaluri,
 Laboratory of Neuroinformatics,
 Nencki Institute of Exprimental Biology, Warsaw.
 """
@@ -10,59 +10,69 @@ from __future__ import division
 import neo
 import quantities as pq
 import numpy as np
+from scipy import io
+from scipy.integrate import simps
 
-from scipy.integrate import simps 
-from numpy import exp
-from elephant.current_source_density import KCSD
+from elephant.csd import KCSD
+from elephant.csd import icsd
+import elephant.csd.utility_functions as utils
 
-available_1d = ['KCSD1D']
+utils.patch_quantities()
+
+available_1d = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD', 'KCSD1D']
 available_2d = ['KCSD2D', 'MoIKCSD']
 available_3d = ['KCSD3D']
-all_kernel_methods = ['KCSD1D', 'KCSD2D', 'KCSD3D', 'MoIKCSD']
 
-def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
-    """Fuction call to compute the current source density. 
+kernel_methods = ['KCSD1D', 'KCSD2D', 'KCSD3D', 'MoIKCSD']
+icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
+py_iCSD_toolbox = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
+
+
+def estimate_csd(lfp, coords=None, method=None, **kwargs):
+    """Fuction call to compute the current source density.
         Parameters
         ----------
-        analog_signals : list(neo.AnalogSignal type objects)
-            positions of electrodes can be added as neo.RecordingChannel 
+        lfp : list(neo.AnalogSignal type objects)
+            positions of electrodes can be added as neo.RecordingChannel
             coordinate or sent externally as a func argument (See coords)
         coords : [Optional] corresponding spatial coordinates of the electrodes
             Defaults to None
+            Otherwise looks for RecordingChannels coordinate
         method : string
             Pick a method corresonding to the setup, in this implenetation
-            for Laminar probe style (1D), use 'KCSD1D' 
-            for MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
-            for array of laminar probes (3D), use 'KCSD3D'
+            For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
+             or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
+            For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
+            For array of laminar probes (3D), use 'KCSD3D'
             Defaults to None
-        params : dict
+        kwargs : parameters to each method
             The parameters corresponding to the method chosen
             See the documentation of the individual method
-            Default is {} - picks the best parameters, 
-        cv_params : dict
-            The kernel methods have the Crossvalidation possibility, and
-            the parameters can be pass here.
-            Default is {} - CV only over lambda in this case.
+            Default is {} - picks the best parameters,
 
         Returns
         -------
         Estimated CSD
            neo.AnalogSignalArray Object
            annotated with the spatial coordinates
-    
+
         Raises
         ------
-        AttributeError 
-            No units specified for electrode spatial coordinates 
+        AttributeError
+            No units specified for electrode spatial coordinates
         ValueError
-            Invalid function arguments, wrong method name, or mismatching coordinates
-        TypeError  
+            Invalid function arguments, wrong method name, or
+            mismatching coordinates
+        TypeError
             Invalid cv_param argument passed
     """
+    if not isinstance(lfp[0], neo.AnalogSignal):
+        print('Parameter `lfp` must be a list(neo.AnalogSignal type objects)')
+        raise TypeError
     if coords is None:
         coords = []
-        for ii in analog_signals:
+        for ii in lfp:
             coords.append(ii.recordingchannel.coordinate.rescale(pq.mm))
     else:
         scaled_coords = []
@@ -70,53 +80,101 @@ def CSD(analog_signals, coords=None, method=None, params={}, cv_params={}):
             try:
                 scaled_coords.append(coord.rescale(pq.mm))
             except AttributeError:
-                raise AttributeError('No units given for electrode spatial coordinates')
+                raise AttributeError('No units given for electrode spatial \
+                coordinates')
         coords = scaled_coords
     if method is None:
         raise ValueError('Must specify a method of CSD implementation')
-    if len(coords) != len(analog_signals):
+    if len(coords) != len(lfp):
         raise ValueError('Number of signals and coords is not same')
-    for ii in coords: # CHECK for Dimensionality of electrodes
+    for ii in coords:  # CHECK for Dimensionality of electrodes
         if len(ii) > 3:
             raise ValueError('Invalid number of coordinate positions')
-    dim = len(coords[0])
-    if dim==1 and (method not in available_1d):
-        raise ValueError('Invalid method, Available options are:', available_1d)
-    if dim==2 and (method not in available_2d):
-        raise ValueError('Invalid method, Available options are:', available_2d)
-    if dim==3 and (method not in available_3d):
-        raise ValueError('Invalid method, Available options are:', available_3d)
+    dim = len(coords[0])  # TODO : Generic co-ordinates!
+    if dim == 1 and (method not in available_1d):
+        raise ValueError('Invalid method, Available options are:',
+                         available_1d)
+    if dim == 2 and (method not in available_2d):
+        raise ValueError('Invalid method, Available options are:',
+                         available_2d)
+    if dim == 3 and (method not in available_3d):
+        raise ValueError('Invalid method, Available options are:',
+                         available_3d)
 
-    input_array = np.zeros((len(analog_signals),analog_signals[0].magnitude.shape[0]))
-    for ii,jj in enumerate(analog_signals):
-        input_array[ii,:] = jj.rescale(pq.mV).magnitude
-    if method in all_kernel_methods:
-        kernel_method = getattr(KCSD, method) #fetch the class 'KCSD1D'
-        k = kernel_method(np.array(coords), input_array, **params)
-        if (method in all_kernel_methods) and bool(cv_params): #not empty then
+    if method in kernel_methods:
+        cv_params = {}
+        if 'Rs' in kwargs:
+            cv_params['Rs'] = kwargs.pop('Rs')
+        if 'lambdas' in kwargs:
+            cv_params['lambdas'] = kwargs.pop('lambdas')
+        input_array = np.zeros((len(lfp), lfp[0].magnitude.shape[0]))
+        for ii, jj in enumerate(lfp):
+            input_array[ii, :] = jj.rescale(pq.mV).magnitude
+        kernel_method = getattr(KCSD, method)  # fetch the class 'KCSD1D'
+        k = kernel_method(np.array(coords), input_array, **kwargs)
+        if bool(cv_params):  # not empty then
             if len(cv_params.keys() and ['Rs', 'lambdas']) != 2:
                 raise TypeError('Invalid cv_params argument passed')
             k.cross_validate(**cv_params)
         estm_csd = k.values()
         estm_csd = np.rollaxis(estm_csd, -1, 0)
-        output= neo.AnalogSignalArray(estm_csd*pq.uA/pq.mm**dim,
-                                      t_start=analog_signals[0].t_start,
-                                      sampling_rate=analog_signals[0].sampling_rate)
+        output = neo.AnalogSignalArray(estm_csd * pq.uA / pq.mm**3,
+                                       t_start=lfp[0].t_start,
+                                       sampling_rate=lfp[0].sampling_rate)
+
         if dim == 1:
             output.annotate(x_coords=k.estm_x)
         elif dim == 2:
             output.annotate(x_coords=k.estm_x, y_coords=k.estm_y)
         elif dim == 3:
-            output.annotate(x_coords=k.estm_x, y_coords=k.estm_y, z_coords=k.estm_z)
+            output.annotate(x_coords=k.estm_x, y_coords=k.estm_y,
+                            z_coords=k.estm_z)
+    elif method in py_iCSD_toolbox:
+        filter_csd = kwargs.pop('filter_csd', False)  # Default no filtering
+        coords = np.array(coords) * coords[0].units  # MOVE TO ICSD?
+
+        if method in icsd_methods:
+            try:
+                coords = coords.rescale(kwargs['diam'].units)
+            except KeyError:  # Then why specify as a default in icsd?
+                print("Parameter diam must be specified for iCSD \
+                      methods: {}".format(", ".join(icsd_methods)))
+                raise ValueError
+
+        if 'f_type' in kwargs:
+            if (kwargs['f_type'] is not 'identity') and  \
+               (kwargs['f_order'] is None):
+                print("The order of {} filter must be \
+                      specified".format(kwargs['f_type']))
+                raise ValueError
+
+        lfp = neo.AnalogSignalArray(np.asarray(lfp).T, units=lfp[0].units,
+                                    sampling_rate=lfp[0].sampling_rate)
+        lfp_pqarr = lfp.magnitude.T * lfp.units
+        csd_method = getattr(icsd, method)  # fetch class from icsd.py file
+        csd_estimator = csd_method(lfp_pqarr, coords.flatten(), **kwargs)
+        csd_pqarr = csd_estimator.get_csd()
+
+        if filter_csd:
+            csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
+            output = neo.AnalogSignalArray(csd_pqarr_filtered.T,
+                                           t_start=lfp.t_start,
+                                           sampling_rate=lfp.sampling_rate)
+        else:
+            output = neo.AnalogSignalArray(csd_pqarr.T, t_start=lfp.t_start,
+                                           sampling_rate=lfp.sampling_rate)
+        output.annotate(x_coords=coords)
     return output
 
-def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,1.], zlims=[0.,1.], res=50):
+
+def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
+                 xlims=[0., 1.], ylims=[0., 1.], zlims=[0., 1.], res=50):
     """Forward modelling for the getting the potentials for testing CSD
-    
+
         Parameters
         ----------
         csd_profile : fuction that computes True CSD profile
-            Available options are
+            Available options are (see ./csd/utility_functions.py)
             1D : gauss_1d_dipole
             2D : large_source_2D and small_source_2D
             3D : gauss_3d_dipole
@@ -143,12 +201,13 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
 
         Returns
         -------
-        Potentials : np.array
-           The potetials created by the csd profile at the electrode positions
+        LFP : list(neo.AnalogSignal type objects)
+           The potentials created by the csd profile at the electrode positions
+           The electrode postions are attached as RecordingChannel's coordinate
     """
     def integrate_1D(x0, csd_x, csd, h):
-        m = np.sqrt((csd_x-x0)**2 + h**2) - abs(csd_x-x0)
-        y = csd * m 
+        m = np.sqrt((csd_x - x0)**2 + h**2) - abs(csd_x - x0)
+        y = csd * m
         I = simps(y, csd_x)
         return I
 
@@ -156,14 +215,15 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
         Ny = ylin.shape[0]
         m = np.sqrt((x - X)**2 + (y - Y)**2)
         m[m < 0.0000001] = 0.0000001
-        y = np.arcsinh(2*h / m) * csd 
+        y = np.arcsinh(2 * h / m) * csd
         I = np.zeros(Ny)
         for i in range(Ny):
             I[i] = simps(y[:, i], ylin)
         F = simps(I, xlin)
-        return F 
-        
-    def integrate_3D(x, y, z, xlim, ylim, zlim, csd, xlin, ylin, zlin, X, Y, Z):
+        return F
+
+    def integrate_3D(x, y, z, xlim, ylim, zlim, csd, xlin, ylin, zlin,
+                     X, Y, Z):
         Nz = zlin.shape[0]
         Ny = ylin.shape[0]
         m = np.sqrt((x - X)**2 + (y - Y)**2 + (z - Z)**2)
@@ -171,9 +231,9 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
         z = csd / m
         Iy = np.zeros(Ny)
         for j in range(Ny):
-            Iz = np.zeros(Nz)                        
+            Iz = np.zeros(Nz)
             for i in range(Nz):
-                Iz[i] = simps(z[:,j,i], zlin)
+                Iz[i] = simps(z[:, j, i], zlin)
             Iy[j] = simps(Iz, ylin)
         F = simps(Iy, xlin)
         return F
@@ -183,11 +243,10 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
     elif ele_yy is not None:
         dim = 2
     x = np.linspace(xlims[0], xlims[1], res)
-    if dim >= 2 :
+    if dim >= 2:
         y = np.linspace(ylims[0], ylims[1], res)
-    if dim == 3: 
+    if dim == 3:
         z = np.linspace(zlims[0], zlims[1], res)
-
     sigma = 1.0
     h = 50.
     pots = np.zeros(len(ele_xx))
@@ -196,198 +255,92 @@ def FWD(csd_profile, ele_xx, ele_yy=None, ele_zz=None, xlims=[0.,1.], ylims=[0.,
         csd = csd_profile(chrg_x)
         for ii in range(len(ele_xx)):
             pots[ii] = integrate_1D(ele_xx[ii], chrg_x, csd, h)
-        pots /= 2.*sigma #eq.: 26 from Potworowski et al
+        pots /= 2. * sigma  # eq.: 26 from Potworowski et al
+        ele_pos = ele_xx
     elif dim == 2:
-        chrg_x, chrg_y = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res), 
-                                  ylims[0]:ylims[1]:np.complex(0,res)]
-        csd = csd_profile(chrg_x, chrg_y) 
+        chrg_x, chrg_y = np.mgrid[xlims[0]:xlims[1]:np.complex(0, res),
+                                  ylims[0]:ylims[1]:np.complex(0, res)]
+        csd = csd_profile(chrg_x, chrg_y)
         for ii in range(len(ele_xx)):
-            pots[ii] = integrate_2D(ele_xx[ii], ele_yy[ii], x, y, csd, h, chrg_x, chrg_y)
-        pots /= 2*np.pi*sigma
+            pots[ii] = integrate_2D(ele_xx[ii], ele_yy[ii],
+                                    x, y, csd, h, chrg_x, chrg_y)
+        pots /= 2 * np.pi * sigma
+        ele_pos = np.vstack((ele_xx, ele_yy)).T
     elif dim == 3:
-        chrg_x, chrg_y, chrg_z = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res), 
-                                          ylims[0]:ylims[1]:np.complex(0,res),
-                                          zlims[0]:zlims[1]:np.complex(0,res)]
+        chrg_x, chrg_y, chrg_z = np.mgrid[xlims[0]:xlims[1]:np.complex(0, res),
+                                          ylims[0]:ylims[1]:np.complex(0, res),
+                                          zlims[0]:zlims[1]:np.complex(0, res)]
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
-        xlin = chrg_x[:,0,0]
-        ylin = chrg_y[0,:,0]
-        zlin = chrg_z[0,0,:]
+        xlin = chrg_x[:, 0, 0]
+        ylin = chrg_y[0, :, 0]
+        zlin = chrg_z[0, 0, :]
         for ii in range(len(ele_xx)):
             pots[ii] = integrate_3D(ele_xx[ii], ele_yy[ii], ele_zz[ii],
-                                    xlims, ylims, zlims, csd, 
-                                    xlin, ylin, zlin, 
+                                    xlims, ylims, zlims, csd,
+                                    xlin, ylin, zlin,
                                     chrg_x, chrg_y, chrg_z)
-        pots /= 4*np.pi*sigma
-    return pots
-
-def generate_electrodes(dim, xlims=[0.1,0.9], ylims=[0.1,0.9], zlims=[0.1,0.9], res=5):
-    """Generates electrodes, helpful for FWD funtion.
-
-        Parameters
-        ----------
-        dim : int
-            Dimensionality of the electrodes, 1,2 or 3
-        xlims : [start, end]
-            Spatial limits of the electrodes
-        ylims : [start, end]
-            Spatial limits of the electrodes
-        zlims : [start, end]
-            Spatial limits of the electrodes
-        res : int
-            How many electrodes in each dimension   
-
-        Returns
-        -------
-        ele_x, ele_y, ele_z : flattened np.array of the electrode pos
-        
-    """
-    if dim == 1:
-        ele_x = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res)]
-        ele_x = ele_x.flatten()
-        return ele_x
-    elif dim == 2:
-        ele_x, ele_y = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res), 
-                                ylims[0]:ylims[1]:np.complex(0,res)]
-        ele_x = ele_x.flatten()
-        ele_y = ele_y.flatten()
-        return ele_x, ele_y
-    elif dim == 3:
-        ele_x, ele_y, ele_z = np.mgrid[xlims[0]:xlims[1]:np.complex(0,res), 
-                                       ylims[0]:ylims[1]:np.complex(0,res),
-                                       zlims[0]:zlims[1]:np.complex(0,res)]
-        ele_x = ele_x.flatten()
-        ele_y = ele_y.flatten()
-        ele_z = ele_z.flatten()
-        return ele_x, ele_y, ele_z
-
-def gauss_1d_dipole(x):
-    """1D Gaussian dipole source is placed between 0 and 1
-       to be used to test the CSD 
-       
-       Parameters
-       ----------
-       x : np.array
-           Spatial pts. at which the true csd is evaluated 
-       
-       Returns
-       -------
-       f : np.array
-           The value of the csd at the requested points
-    """
-    src = 0.5*exp(-((x-0.7)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
-    snk = -0.5*exp(-((x-0.3)**2)/(2.*0.3))*(2*np.pi*0.3)**-0.5
-    f = src+snk
-    return f
-
-def large_source_2D(x, y):
-    """2D Gaussian large source profile - to use to test csd
-       Parameters
-       ----------
-       x : np.array
-           Spatial x pts. at which the true csd is evaluated 
-       y : np.array
-           Spatial y pts. at which the true csd is evaluated 
-       Returns
-       -------
-       f : np.array
-           The value of the csd at the requested points
-    """
-    zz = [0.4, -0.3, -0.1, 0.6] 
-    zs = [0.2, 0.3, 0.4, 0.2] 
-    f1 = 0.5965*exp( (-1*(x-0.1350)**2 - (y-0.8628)**2) /0.4464)* exp(-(-zz[0])**2 / zs[0]) /exp(-(zz[0])**2/zs[0])
-    f2 = -0.9269*exp( (-2*(x-0.1848)**2 - (y-0.0897)**2) /0.2046)* exp(-(-zz[1])**2 / zs[1]) /exp(-(zz[1])**2/zs[1]);
-    f3 = 0.5910*exp( (-3*(x-1.3189)**2 - (y-0.3522)**2) /0.2129)* exp(-(-zz[2])**2 / zs[2]) /exp(-(zz[2])**2/zs[2]);
-    f4 = -0.1963*exp( (-4*(x-1.3386)**2 - (y-0.5297)**2) /0.2507)* exp(-(-zz[3])**2 / zs[3]) /exp(-(zz[3])**2/zs[3]);
-    f = f1+f2+f3+f4
-    return f
-
-def small_source_2D(x, y):
-    """2D Gaussian small source profile - to be used to test csd
-       Parameters
-       ----------
-       x : np.array
-           Spatial x pts. at which the true csd is evaluated 
-       y : np.array
-           Spatial y pts. at which the true csd is evaluated 
-       Returns
-       -------
-       f : np.array
-           The value of the csd at the requested points
-    """
-    def gauss2d(x,y,p):
-        rcen_x = p[0] * np.cos(p[5]) - p[1] * np.sin(p[5])
-        rcen_y = p[0] * np.sin(p[5]) + p[1] * np.cos(p[5])
-        xp = x * np.cos(p[5]) - y * np.sin(p[5])
-        yp = x * np.sin(p[5]) + y * np.cos(p[5])
-
-        g = p[4]*exp(-(((rcen_x-xp)/p[2])**2+
-                          ((rcen_y-yp)/p[3])**2)/2.)
-        return g
-    f1 = gauss2d(x,y,[0.3,0.7,0.038,0.058,0.5,0.])
-    f2 = gauss2d(x,y,[0.3,0.6,0.038,0.058,-0.5,0.])
-    f3 = gauss2d(x,y,[0.45,0.7,0.038,0.058,0.5,0.])
-    f4 = gauss2d(x,y,[0.45,0.6,0.038,0.058,-0.5,0.])
-    f = f1+f2+f3+f4
-    return f
-
-def gauss_3d_dipole(x, y, z):
-    """3D Gaussian dipole profile - to be used to test csd.
-       Parameters
-       ----------
-       x : np.array
-           Spatial x pts. at which the true csd is evaluated 
-       y : np.array
-           Spatial y pts. at which the true csd is evaluated 
-       z : np.array
-           Spatial z pts. at which the true csd is evaluated 
-       Returns
-       -------
-       f : np.array
-           The value of the csd at the requested points
-    """
-    x0, y0, z0 = 0.3, 0.7, 0.3
-    x1, y1, z1 = 0.6, 0.5, 0.7
-    sig_2 = 0.023
-    A = (2*np.pi*sig_2)**-1
-    f1 = A*exp( (-(x-x0)**2 -(y-y0)**2 -(z-z0)**2) / (2*sig_2) )
-    f2 = -1*A*exp( (-(x-x1)**2 -(y-y1)**2 -(z-z1)**2) / (2*sig_2) )
-    f = f1+f2
-    return f
-    
-if __name__ == '__main__':
-    dim = 1
-    if dim==1 :
-        ele_pos = generate_electrodes(dim=1).reshape(5,1)
-        pots = FWD(gauss_1d_dipole, ele_pos) 
-        pots = np.reshape(pots, (-1,1))
-        test_method = 'KCSD1D'
-        test_params = {'h':50.}
-    elif dim==2:
-        xx_ele, yy_ele = generate_electrodes(dim=2)
-        pots = FWD(large_source_2D, xx_ele, yy_ele) 
-        pots = np.reshape(pots, (-1,1)) 
-        ele_pos = np.vstack((xx_ele, yy_ele)).T
-        test_method = 'KCSD2D'
-        test_params = {'sigma':1.}
-    elif dim==3:
-        xx_ele, yy_ele, zz_ele = generate_electrodes(dim=3, res=3)
-        pots = FWD(gauss_3d_dipole, xx_ele, yy_ele, zz_ele) 
-        pots = np.reshape(pots, (-1,1))
-        ele_pos = np.vstack((xx_ele, yy_ele, zz_ele)).T
-        test_method = 'KCSD3D'
-        test_params = {'gdx':0.1, 'gdy':0.1, 'gdz':0.1, 'src_type':'step'}
-        
-    an_sigs=[]
+        pots /= 4 * np.pi * sigma
+        ele_pos = np.vstack((ele_xx, ele_yy, ele_zz)).T
+    pots = np.reshape(pots, (-1, 1)) * pq.mV
+    ele_pos = ele_pos * pq.mm
+    lfp = []
     for ii in range(len(pots)):
         rc = neo.RecordingChannel()
-        rc.coordinate = ele_pos[ii]*pq.mm
-        asig = neo.AnalogSignal(pots[ii]*pq.mV, sampling_rate=1000*pq.Hz)
+        rc.coordinate = ele_pos[ii]
+        asig = neo.AnalogSignal(pots[ii], sampling_rate=pq.kHz)
         rc.analogsignals = [asig]
         rc.create_relationship()
-        an_sigs.append(asig)
-    result = CSD(an_sigs, method=test_method, params=test_params, cv_params={'Rs':np.array((0.1,0.25,0.5))})
+        lfp.append(asig)
+    # lfp = neo.AnalogSignalArray(lfp, sampling_rate=1000*pq.Hz, units='mV')
+    return lfp
+
+if __name__ == '__main__':
+    dim = 1
+
+    if dim == 1:
+        test_method = 'KCSD1D'
+        params = {}  # Input dictionaries for each method
+        params['DeltaiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
+                               'diam': 500E-6 * pq.m}
+        params['StepiCSD'] = {'sigma_top': 0. * pq.S / pq.m, 'tol': 1E-12,
+                              'diam': 500E-6 * pq.m}
+        params['SplineiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
+                                'num_steps': 201, 'tol': 1E-12,
+                                'diam': 500E-6 * pq.m}
+        params['StandardCSD'] = {}
+        params['KCSD1D'] = {'h': 50., 'Rs': np.array((0.1, 0.25, 0.5))}
+        if test_method in py_iCSD_toolbox:
+            test_data = io.loadmat('./csd/test_data.mat')
+            lfp_data = test_data['pot1'] * 1e-2 * pq.V
+            z_data = np.linspace(100E-6, 2300E-6, 23).reshape(23, 1) * pq.m
+            lfp = []
+            for ii in range(lfp_data.shape[0]):
+                rc = neo.RecordingChannel()
+                rc.coordinate = z_data[ii]
+                asig = neo.AnalogSignal(lfp_data[ii, :], sampling_rate=2.0 *
+                                        pq.kHz)
+                rc.analogsignals = [asig]
+                rc.create_relationship()
+                lfp.append(asig)
+        elif test_method in kernel_methods:
+            ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
+            lfp = generate_lfp(utils.gauss_1d_dipole, ele_pos)
+        test_params = params[test_method]
+    elif dim == 2:
+        xx_ele, yy_ele = utils.generate_electrodes(dim=2)
+        lfp = generate_lfp(utils.large_source_2D, xx_ele, yy_ele)
+        test_method = 'KCSD2D'
+        test_params = {'sigma': 1., 'Rs': np.array((0.1, 0.25, 0.5))}
+    elif dim == 3:
+        xx_ele, yy_ele, zz_ele = utils.generate_electrodes(dim=3, res=3)
+        lfp = generate_lfp(utils.gauss_3d_dipole, xx_ele, yy_ele, zz_ele)
+        test_method = 'KCSD3D'
+        test_params = {'gdx': 0.1, 'gdy': 0.1, 'gdz': 0.1, 'src_type': 'step',
+                       'Rs': np.array((0.1, 0.25, 0.5))}
+
+    result = estimate_csd(lfp, method=test_method, **test_params)
 
     print(result)
     print(result.t_start)
     print(result.sampling_rate)
-    print(result.times)
+    print(len(result.times))
