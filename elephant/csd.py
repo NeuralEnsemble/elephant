@@ -13,9 +13,9 @@ import numpy as np
 from scipy import io
 from scipy.integrate import simps
 
-from elephant.csd import KCSD
-from elephant.csd import icsd
-import elephant.csd.utility_functions as utils
+from elephant.csd_methods import KCSD
+from elephant.csd_methods import icsd
+import elephant.csd_methods.utility_functions as utils
 
 utils.patch_quantities()
 

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-This script is used to generate basis sources for the
-kCSD method Jan et.al (2012) for 3D case.
+These are some useful functions used in CSD methods,
+They include CSD source profiles to be used as ground truths,
+placement of electrodes in 1D, 2D and 3D., etc
 These scripts are based on Grzegorz Parka's,
 Google Summer of Code 2014, INFC/pykCSD
 This was written by :

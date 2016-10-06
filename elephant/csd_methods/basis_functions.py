@@ -1,6 +1,9 @@
+#!/usr/bin/env python
 """
 This script is used to generate basis sources for the
-kCSD method Jan et.al (2012) for 3D case.
+kCSD method Jan et.al (2012) for 1D,2D and 3D cases.
+Two 'types' are described here, gaussian and step source,
+These can be easily extended.
 These scripts are based on Grzegorz Parka's,
 Google Summer of Code 2014, INFC/pykCSD
 This was written by :
