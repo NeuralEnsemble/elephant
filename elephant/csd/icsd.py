@@ -418,7 +418,7 @@ class StandardCSD(CSD):
         self.parameters(**kwargs)
         CSD.__init__(self, lfp, self.f_type, self.f_order)
 
-        diff_diff_coord = np.diff(np.diff(coord_electrode, axis=0), axis=0).magnitude
+        diff_diff_coord = np.diff(np.diff(coord_electrode)).magnitude
         zeros_ddc = np.zeros_like(diff_diff_coord)
         try:
             assert(np.all(np.isclose(diff_diff_coord, zeros_ddc, atol=1e-12)))
@@ -459,7 +459,7 @@ class StandardCSD(CSD):
 
     def get_f_inv_matrix(self):
         '''Calculate the inverse F-matrix for the standard CSD method'''
-        h_val = abs(np.diff(self.coord_electrode, axis=0)[0])
+        h_val = abs(np.diff(self.coord_electrode)[0])
         f_inv = -np.eye(self.lfp.shape[0])
 
         # Inner matrix elements  is just the discrete laplacian coefficients
@@ -678,7 +678,7 @@ class StepiCSD(CSD):
         '''
 
         self.diam = kwargs.pop('diam', 500E-6 * pq.m)
-        self.h = kwargs.pop('h', np.ones(15) * 100E-6 * pq.m)
+        self.h = kwargs.pop('h', np.ones(23) * 100E-6 * pq.m)
         self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
         self.sigma_top = kwargs.pop('sigma_top', 0.3 * pq.S / pq.m)
         self.tol = kwargs.pop('tol', 1e-6)
@@ -814,8 +814,8 @@ class SplineiCSD(CSD):
         '''Calculate the F-matrix for cubic spline iCSD method'''
         el_len = self.coord_electrode.size
         z_js = np.zeros(el_len + 1)
-        z_js[:-1] = np.array(self.coord_electrode)[:, 0]
-        z_js[-1] = z_js[-2] + float(np.diff(self.coord_electrode, axis=0).mean())
+        z_js[:-1] = np.array(self.coord_electrode)
+        z_js[-1] = z_js[-2] + float(np.diff(self.coord_electrode).mean())
 
         # Define integration matrixes
         f_mat0 = np.zeros((el_len, el_len + 1))
@@ -857,7 +857,7 @@ class SplineiCSD(CSD):
                                     epsabs=self.tol)[0]
                     f_mat1[j, i] = f_mat1[j, i] + (self.sigma-self.sigma_top) / \
                         (self.sigma + self.sigma_top) * \
-                            si.quad(self.f_mat1, a=z_js[i], b=z_js[i+1], \
+                            si.quad(self._f_mat1, a=z_js[i], b=z_js[i+1], \
                                 args=(-z_js[j+1], z_js[i], float(self.sigma),
                                       float(self.diam[j])), epsabs=self.tol)[0]
                     f_mat2[j, i] = f_mat2[j, i] + (self.sigma-self.sigma_top) / \
@@ -918,10 +918,10 @@ class SplineiCSD(CSD):
         a_mat3 = np.dot(e_mat[3], csd_coeff)
 
         # Extend electrode coordinates in both end by min contact interdistance
-        h = np.diff(self.coord_electrode, axis=0).min()
+        h = np.diff(self.coord_electrode).min()
         z_js = np.zeros(el_len + 2)
         z_js[0] = self.coord_electrode[0] - h
-        z_js[1: -1] = self.coord_electrode[:, 0]
+        z_js[1: -1] = self.coord_electrode
         z_js[-1] = self.coord_electrode[-1] + h
 
         # create high res spatial grid
@@ -961,7 +961,7 @@ class SplineiCSD(CSD):
     def _calc_k_matrix(self):
         '''Calculate the K-matrix used by to calculate E-matrices'''
         el_len = self.coord_electrode.size
-        h = float(np.diff(self.coord_electrode, axis=0).min())
+        h = float(np.diff(self.coord_electrode).min())
 
         c_jm1 = np.eye(el_len + 2, k=0) / h
         c_jm1[0, 0] = 0
@@ -994,7 +994,7 @@ class SplineiCSD(CSD):
         '''Calculate the E-matrices used by cubic spline iCSD method'''
         el_len = self.coord_electrode.size
         # expanding electrode grid
-        h = float(np.diff(self.coord_electrode, axis=0).min())
+        h = float(np.diff(self.coord_electrode).min())
 
         # Define transformation matrices
         c_mat3 = np.eye(el_len + 1) / h

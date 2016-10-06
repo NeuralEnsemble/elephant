@@ -10,9 +10,9 @@ from __future__ import division
 import neo
 import quantities as pq
 import numpy as np
-
 from scipy import io
 from scipy.integrate import simps
+
 from elephant.csd import KCSD
 from elephant.csd import icsd
 import elephant.csd.utility_functions as utils
@@ -26,10 +26,10 @@ available_3d = ['KCSD3D']
 kernel_methods = ['KCSD1D', 'KCSD2D', 'KCSD3D', 'MoIKCSD']
 icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
-espen_implemented = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
+py_iCSD_toolbox = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
 
-def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
+def estimate_csd(lfp, coords=None, method=None, **kwargs):
     """Fuction call to compute the current source density.
         Parameters
         ----------
@@ -46,14 +46,11 @@ def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
             For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
             For array of laminar probes (3D), use 'KCSD3D'
             Defaults to None
-        params : dict
+        kwargs : parameters to each method
             The parameters corresponding to the method chosen
             See the documentation of the individual method
             Default is {} - picks the best parameters,
-        cv_params : dict
-            The kernel methods have the Crossvalidation possibility, and
-            the parameters can be pass here.
-            Default is {} - CV only over lambda in this case.
+
         Returns
         -------
         Estimated CSD
@@ -105,11 +102,16 @@ def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
                          available_3d)
 
     if method in kernel_methods:
+        cv_params = {}
+        if 'Rs' in kwargs:
+            cv_params['Rs'] = kwargs.pop('Rs')
+        if 'lambdas' in kwargs:
+            cv_params['lambdas'] = kwargs.pop('lambdas')
         input_array = np.zeros((len(lfp), lfp[0].magnitude.shape[0]))
         for ii, jj in enumerate(lfp):
             input_array[ii, :] = jj.rescale(pq.mV).magnitude
         kernel_method = getattr(KCSD, method)  # fetch the class 'KCSD1D'
-        k = kernel_method(np.array(coords), input_array, **params)
+        k = kernel_method(np.array(coords), input_array, **kwargs)
         if bool(cv_params):  # not empty then
             if len(cv_params.keys() and ['Rs', 'lambdas']) != 2:
                 raise TypeError('Invalid cv_params argument passed')
@@ -126,39 +128,41 @@ def estimate_csd(lfp, coords=None, method=None, params={}, cv_params={}):
         elif dim == 3:
             output.annotate(x_coords=k.estm_x, y_coords=k.estm_y,
                             z_coords=k.estm_z)
-    elif method in espen_implemented:
-
+    elif method in py_iCSD_toolbox:
+        filter_csd = kwargs.pop('filter_csd', False)  # Default no filtering
         coords = np.array(coords) * coords[0].units  # MOVE TO ICSD?
+
         if method in icsd_methods:
             try:
-                coords = coords.rescale(params['diam'].units)
+                coords = coords.rescale(kwargs['diam'].units)
             except KeyError:  # Then why specify as a default in icsd?
                 print("Parameter diam must be specified for iCSD \
                       methods: {}".format(", ".join(icsd_methods)))
                 raise ValueError
 
-        if 'f_type' in params:
-            if (params['f_type'] is not 'identity') and (params['f_order'] is
-                                                         None):
+        if 'f_type' in kwargs:
+            if (kwargs['f_type'] is not 'identity') and  \
+               (kwargs['f_order'] is None):
                 print("The order of {} filter must be \
-                      specified".format(params['f_type']))
+                      specified".format(kwargs['f_type']))
                 raise ValueError
+
         lfp = neo.AnalogSignalArray(np.asarray(lfp).T, units=lfp[0].units,
                                     sampling_rate=lfp[0].sampling_rate)
         lfp_pqarr = lfp.magnitude.T * lfp.units
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
-        csd_estimator = csd_method(lfp_pqarr, coords, **params)
+        csd_estimator = csd_method(lfp_pqarr, coords.flatten(), **kwargs)
         csd_pqarr = csd_estimator.get_csd()
 
-        # What to do of the csd_filtered!
-        csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
-        csd_filtered = neo.AnalogSignalArray(csd_pqarr_filtered.T,
-                                             t_start=lfp[0].t_start,
-                                             sampling_rate=lfp[0].sampling_rate)
-
-        # MISSING ANNOTATIONS! At which points is this the CSD!
-        output = neo.AnalogSignalArray(csd_pqarr.T, t_start=lfp.t_start,
-                                       sampling_rate=lfp.sampling_rate)
+        if filter_csd:
+            csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
+            output = neo.AnalogSignalArray(csd_pqarr_filtered.T,
+                                           t_start=lfp.t_start,
+                                           sampling_rate=lfp.sampling_rate)
+        else:
+            output = neo.AnalogSignalArray(csd_pqarr.T, t_start=lfp.t_start,
+                                           sampling_rate=lfp.sampling_rate)
+        output.annotate(x_coords=coords)
     return output
 
 
@@ -169,13 +173,13 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         Parameters
         ----------
         csd_profile : fuction that computes True CSD profile
-            Available options are
+            Available options are (see ./csd/utility_functions.py)
             1D : gauss_1d_dipole
             2D : large_source_2D and small_source_2D
             3D : gauss_3d_dipole
         ele_xx : np.array
             Positions of the x coordinates of the electrodes
-        ele_yy : np.array
+        ele_yy : np.array (Optional)
             Positions of the y coordinates of the electrodes
             Defaults ot None, use in 2D or 3D cases only
         ele_zz : np.array
@@ -290,56 +294,49 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
 
 if __name__ == '__main__':
     dim = 1
+
     if dim == 1:
-        ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
-        lfp = generate_lfp(utils.gauss_1d_dipole, ele_pos)
-
-        # test_data = io.loadmat('./csd/test_data.mat')
-        # lfp_data = test_data['pot1'] * 1e-2 * pq.V
-        # z_data = np.linspace(100E-6, 2300E-6, 23).reshape(23, 1) * pq.m
-        # lfp = []
-        # for ii in range(lfp_data.shape[0]):
-        #     rc = neo.RecordingChannel()
-        #     rc.coordinate = z_data[ii]
-        #     asig = neo.AnalogSignal(lfp_data[ii, :], sampling_rate=2.0 *
-        #                             pq.kHz)
-        #     rc.analogsignals = [asig]
-        #     rc.create_relationship()
-        #     lfp.append(asig)
-
-        # test_method = 'StandardCSD'
-        # test_params = {'f_type': 'gaussian', 'f_order': (3, 1)}
-
-        test_method = 'DeltaiCSD'
-        test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
-                       'diam': 500E-6 * pq.m}
-
-        # test_method = 'StepiCSD'
-        # test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
-        #                'diam': 500E-6 * pq.m, 'h': 1e-4 * pq.m }
-
-        # test_method = 'SplineiCSD'
-        # test_params = {'f_type': 'gaussian', 'f_order': (3, 1),
-        #                'diam': 500E-6 * pq.m}
-
-        # test_method = 'KCSD1D'
-        # test_params = {'h': 50.}
+        test_method = 'StandardCSD'
+        params = {}  # Input dictionaries for each method
+        params['DeltaiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
+                               'diam': 500E-6 * pq.m}
+        params['StepiCSD'] = {'sigma_top': 0. * pq.S / pq.m, 'tol': 1E-12,
+                              'diam': 500E-6 * pq.m}
+        params['SplineiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
+                                'num_steps': 201, 'tol': 1E-12,
+                                'diam': 500E-6 * pq.m}
+        params['StandardCSD'] = {}
+        params['KCSD1D'] = {'h': 50., 'Rs': np.array((0.1, 0.25, 0.5))}
+        if test_method in py_iCSD_toolbox:
+            test_data = io.loadmat('./csd/test_data.mat')
+            lfp_data = test_data['pot1'] * 1e-2 * pq.V
+            z_data = np.linspace(100E-6, 2300E-6, 23).reshape(23, 1) * pq.m
+            lfp = []
+            for ii in range(lfp_data.shape[0]):
+                rc = neo.RecordingChannel()
+                rc.coordinate = z_data[ii]
+                asig = neo.AnalogSignal(lfp_data[ii, :], sampling_rate=2.0 *
+                                        pq.kHz)
+                rc.analogsignals = [asig]
+                rc.create_relationship()
+                lfp.append(asig)
+        elif test_method in kernel_methods:
+            ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
+            lfp = generate_lfp(utils.gauss_1d_dipole, ele_pos)
+        test_params = params[test_method]
     elif dim == 2:
         xx_ele, yy_ele = utils.generate_electrodes(dim=2)
         lfp = generate_lfp(utils.large_source_2D, xx_ele, yy_ele)
         test_method = 'KCSD2D'
-        test_params = {'sigma': 1.}
+        test_params = {'sigma': 1., 'Rs': np.array((0.1, 0.25, 0.5))}
     elif dim == 3:
         xx_ele, yy_ele, zz_ele = utils.generate_electrodes(dim=3, res=3)
         lfp = generate_lfp(utils.gauss_3d_dipole, xx_ele, yy_ele, zz_ele)
         test_method = 'KCSD3D'
-        test_params = {'gdx': 0.1, 'gdy': 0.1, 'gdz': 0.1, 'src_type': 'step'}
+        test_params = {'gdx': 0.1, 'gdy': 0.1, 'gdz': 0.1, 'src_type': 'step',
+                       'Rs': np.array((0.1, 0.25, 0.5))}
 
-    if test_method in kernel_methods:
-        result = estimate_csd(lfp, method=test_method, params=test_params,
-                              cv_params={'Rs': np.array((0.1, 0.25, 0.5))})
-    elif test_method in espen_implemented:
-        result = estimate_csd(lfp, method=test_method, params=test_params)
+    result = estimate_csd(lfp, method=test_method, **test_params)
 
     print(result)
     print(result.t_start)
