@@ -11,6 +11,7 @@ Nencki Institute of Exprimental Biology, Warsaw.
 """
 
 import unittest
+import numpy as np
 import quantities as pq
 from elephant import csd
 import elephant.csd_methods.utility_functions as utils
@@ -45,40 +46,94 @@ class LFP_TestCase(unittest.TestCase):
         self.assertEqual(xx_ele.shape[0], len(lfp))
 
 
-# class CSD1D_TestCase(unittest.TestCase):
-#     def setUp(self):
-#         self.ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
-#         self.lfp = csd.generate_lfp(utils.gauss_1d_dipole, self.ele_pos)
-#         self.params = {}  # Input dictionaries for each method
-#         self.params['DeltaiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
-#                                     'diam': 500E-6 * pq.m}
-#         self.params['StepiCSD'] = {'sigma_top': 0. * pq.S / pq.m, 'tol': 1E-12,
-#                                    'diam': 500E-6 * pq.m}
-#         self.params['SplineiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
-#                                      'num_steps': 201, 'tol': 1E-12,
-#                                      'diam': 500E-6 * pq.m}
-#         self.params['StandardCSD'] = {}
-#         self.params['KCSD1D'] = {'h': 50., 'Rs': np.array((0.1, 0.25, 0.5))}
+class CSD1D_TestCase(unittest.TestCase):
+    def setUp(self):
+        self.ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
+        self.lfp = csd.generate_lfp(utils.gauss_1d_dipole, self.ele_pos)
+        self.csd_method = csd.estimate_csd
+    
+        self.params = {}  # Input dictionaries for each method
+        self.params['DeltaiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
+                                    'diam': 500E-6 * pq.m}
+        self.params['StepiCSD'] = {'sigma_top': 0. * pq.S / pq.m, 'tol': 1E-12,
+                                   'diam': 500E-6 * pq.m}
+        self.params['SplineiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
+                                     'num_steps': 201, 'tol': 1E-12,
+                                     'diam': 500E-6 * pq.m}
+        self.params['StandardCSD'] = {}
+        self.params['KCSD1D'] = {'h': 50., 'Rs': np.array((0.1, 0.25, 0.5))}
 
-#     def test_valid_method(self):
-#         self.assert
+    def test_validate_inputs(self):
+        self.assertRaises(TypeError, self.csd_method, lfp=[[1],[2],[3]] )
+        self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, coords=self.ele_pos * pq.mm)
+        self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, coords=[1,2,3,4]*pq.mm, method='StandardCSD')  # inconsistent number of electrodes
+        self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, method='InvalidMethodName')  # bad method name
+        self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, method='KCSD2D')
+        self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, method='KCSD3D')                          
+                          
+    def test_inputs_standardcsd(self):
+        method = 'StandardCSD'
+        result = self.csd_method(self.lfp, method=method)
+        self.assertEqual(result.t_start, 0.0 *pq.s)
+        self.assertEqual(result.sampling_rate, 1000 *pq.Hz)
+        self.assertEqual(len(result.times), 1)
 
-#     def test_valid_inputs(self):
-#         self.params[.update({})
-#         self.assertRaises(ValueError,  self.test_kcsd3d_estimate)
-#         self.test_method = 'KCSD3D'
-#         self.test_params = {'src_type':22}
-#         self.assertRaises(KeyError, self.test_kcsd3d_estimate)
-#         self.test_params = {'InvalidKwarg':21}
-#         self.assertRaises(TypeError, self.test_kcsd3d_estimate)
-#         cv_params = {'InvalidCVArg':np.array((0.1,0.25,0.5))}
-#         self.assertRaises(TypeError, self.test_kcsd3d_estimate, cv_params)
+    def test_inputs_deltasplineicsd(self):
+        methods = ['DeltaiCSD', 'SplineiCSD']
+        for method in methods:
+            self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, method=method) 
+            result = self.csd_method(self.lfp, method=method, **self.params[method])
+            self.assertEqual(result.t_start, 0.0 *pq.s)
+            self.assertEqual(result.sampling_rate, 1000 *pq.Hz)
+            self.assertEqual(len(result.times), 1)
 
-#     def test_method(self, method='StandardCSD'):
-#         result = csd.estimate_csd(self.lfp, method=method, **self.params[method])
-#         self.assertEqual(result.t_start, 0.0)
-#         self.assertEqual(len(result.times), 1)
+    def test_inputs_stepicsd(self):
+        method = 'StepiCSD'
+        self.assertRaises(ValueError, self.csd_method, lfp=self.lfp, method=method) 
+        self.assertRaises(AssertionError, self.csd_method, lfp=self.lfp, method=method, **self.params[method])
+        self.params['StepiCSD'].update({'h':np.ones(5) * 100E-6 * pq.m})
+        result = self.csd_method(self.lfp, method=method, **self.params[method])
+        self.assertEqual(result.t_start, 0.0 *pq.s)
+        self.assertEqual(result.sampling_rate, 1000 *pq.Hz)
+        self.assertEqual(len(result.times), 1)
+        
+    def test_inuts_kcsd(self):
+        method = 'KCSD1D'
+        result = self.csd_method(self.lfp, method=method, **self.params[method])
+        self.assertEqual(result.t_start, 0.0 *pq.s)
+        self.assertEqual(result.sampling_rate, 1000 *pq.Hz)
+        self.assertEqual(len(result.times), 1)
 
+        
+class CSD2D_TestCase(unittest.TestCase):
+    def setUp(self):
+        xx_ele, yy_ele = utils.generate_electrodes(dim=2)
+        self.lfp = csd.generate_lfp(utils.large_source_2D, xx_ele, yy_ele)
+        self.params = {}  # Input dictionaries for each method
+        self.params['KCSD2D'] = {'sigma': 1., 'Rs': np.array((0.1, 0.25, 0.5))}
 
+    def test_kcsd2d_init(self):
+        method = 'KCSD2D'
+        result = csd.estimate_csd(lfp=self.lfp, method=method, **self.params[method])
+        self.assertEqual(result.t_start, 0.0 *pq.s)
+        self.assertEqual(result.sampling_rate, 1000 *pq.Hz)
+        self.assertEqual(len(result.times), 1)
+
+class CSD3D_TestCase(unittest.TestCase):
+    def setUp(self):
+        xx_ele, yy_ele, zz_ele = utils.generate_electrodes(dim=3)
+        self.lfp = csd.generate_lfp(utils.gauss_3d_dipole, xx_ele, yy_ele, zz_ele)
+        self.params = {}
+        self.params['KCSD3D'] = {'gdx': 0.1, 'gdy': 0.1, 'gdz': 0.1, 'src_type': 'step',
+                                 'Rs': np.array((0.1, 0.25, 0.5))}
+
+    def test_kcsd2d_init(self):
+        method = 'KCSD3D'
+        result = csd.estimate_csd(lfp=self.lfp, method=method, **self.params[method])
+        self.assertEqual(result.t_start, 0.0 *pq.s)
+        self.assertEqual(result.sampling_rate, 1000 *pq.Hz)
+        self.assertEqual(len(result.times), 1)
+
+        
 if __name__ == '__main__':
     unittest.main()

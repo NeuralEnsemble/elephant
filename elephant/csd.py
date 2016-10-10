@@ -29,7 +29,7 @@ icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 py_iCSD_toolbox = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
 
-def estimate_csd(lfp, coords=None, method=None, **kwargs):
+def estimate_csd(lfp, coords=None, method=None, process_estimate=True, **kwargs):
     """Fuction call to compute the current source density.
         Parameters
         ----------
@@ -46,6 +46,12 @@ def estimate_csd(lfp, coords=None, method=None, **kwargs):
             For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
             For array of laminar probes (3D), use 'KCSD3D'
             Defaults to None
+        process_estimate : bool
+            In the py_iCSD_toolbox this corresponds to the filter_csd - the parameters
+            are passed as kwargs here ie., f_type and f_order
+            In the kcsd methods this corresponds to cross_validate - the parameters
+            are passed as kwargs here ie., lambdas and Rs
+            Defaults to True
         kwargs : parameters to each method
             The parameters corresponding to the method chosen
             See the documentation of the individual method
@@ -68,8 +74,7 @@ def estimate_csd(lfp, coords=None, method=None, **kwargs):
             Invalid cv_param argument passed
     """
     if not isinstance(lfp[0], neo.AnalogSignal):
-        print('Parameter `lfp` must be a list(neo.AnalogSignal type objects)')
-        raise TypeError
+        raise TypeError('Parameter `lfp` must be a list(neo.AnalogSignal type objects')
     if coords is None:
         coords = []
         for ii in lfp:
@@ -100,22 +105,15 @@ def estimate_csd(lfp, coords=None, method=None, **kwargs):
     if dim == 3 and (method not in available_3d):
         raise ValueError('Invalid method, Available options are:',
                          available_3d)
-
     if method in kernel_methods:
-        cv_params = {}
-        if 'Rs' in kwargs:
-            cv_params['Rs'] = kwargs.pop('Rs')
-        if 'lambdas' in kwargs:
-            cv_params['lambdas'] = kwargs.pop('lambdas')
         input_array = np.zeros((len(lfp), lfp[0].magnitude.shape[0]))
         for ii, jj in enumerate(lfp):
             input_array[ii, :] = jj.rescale(pq.mV).magnitude
         kernel_method = getattr(KCSD, method)  # fetch the class 'KCSD1D'
         k = kernel_method(np.array(coords), input_array, **kwargs)
-        if bool(cv_params):  # not empty then
-            if len(cv_params.keys() and ['Rs', 'lambdas']) != 2:
-                raise TypeError('Invalid cv_params argument passed')
-            k.cross_validate(**cv_params)
+        if process_estimate:
+            k.cross_validate(kwargs.pop('lambdas', None),
+                             kwargs.pop('Rs', None))
         estm_csd = k.values()
         estm_csd = np.rollaxis(estm_csd, -1, 0)
         output = neo.AnalogSignalArray(estm_csd * pq.uA / pq.mm**3,
@@ -130,7 +128,7 @@ def estimate_csd(lfp, coords=None, method=None, **kwargs):
             output.annotate(x_coords=k.estm_x, y_coords=k.estm_y,
                             z_coords=k.estm_z)
     elif method in py_iCSD_toolbox:
-        filter_csd = kwargs.pop('filter_csd', False)  # Default no filtering
+
         coords = np.array(coords) * coords[0].units  # MOVE TO ICSD?
 
         if method in icsd_methods:
@@ -155,7 +153,7 @@ def estimate_csd(lfp, coords=None, method=None, **kwargs):
         csd_estimator = csd_method(lfp_pqarr, coords.flatten(), **kwargs)
         csd_pqarr = csd_estimator.get_csd()
 
-        if filter_csd:
+        if process_estimate:
             csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
             output = neo.AnalogSignalArray(csd_pqarr_filtered.T,
                                            t_start=lfp.t_start,
