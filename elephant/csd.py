@@ -29,7 +29,8 @@ icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 py_iCSD_toolbox = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
 
-def estimate_csd(lfp, coords=None, method=None, process_estimate=True, **kwargs):
+def estimate_csd(lfp, coords=None, method=None,
+                 process_estimate=True, **kwargs):
     """Fuction call to compute the current source density.
         Parameters
         ----------
@@ -47,10 +48,10 @@ def estimate_csd(lfp, coords=None, method=None, process_estimate=True, **kwargs)
             For array of laminar probes (3D), use 'KCSD3D'
             Defaults to None
         process_estimate : bool
-            In the py_iCSD_toolbox this corresponds to the filter_csd - the parameters
-            are passed as kwargs here ie., f_type and f_order
-            In the kcsd methods this corresponds to cross_validate - the parameters
-            are passed as kwargs here ie., lambdas and Rs
+            In the py_iCSD_toolbox this corresponds to the filter_csd -
+            the parameters are passed as kwargs here ie., f_type and f_order
+            In the kcsd methods this corresponds to cross_validate -
+            the parameters are passed as kwargs here ie., lambdas and Rs
             Defaults to True
         kwargs : parameters to each method
             The parameters corresponding to the method chosen
@@ -74,7 +75,8 @@ def estimate_csd(lfp, coords=None, method=None, process_estimate=True, **kwargs)
             Invalid cv_param argument passed
     """
     if not isinstance(lfp[0], neo.AnalogSignal):
-        raise TypeError('Parameter `lfp` must be a list(neo.AnalogSignal type objects')
+        raise TypeError('Parameter `lfp` must be a list(neo.AnalogSignal \
+                         type objects')
     if coords is None:
         coords = []
         for ii in lfp:
@@ -110,10 +112,11 @@ def estimate_csd(lfp, coords=None, method=None, process_estimate=True, **kwargs)
         for ii, jj in enumerate(lfp):
             input_array[ii, :] = jj.rescale(pq.mV).magnitude
         kernel_method = getattr(KCSD, method)  # fetch the class 'KCSD1D'
+        lambdas = kwargs.pop('lambdas', None)
+        Rs = kwargs.pop('Rs', None)
         k = kernel_method(np.array(coords), input_array, **kwargs)
         if process_estimate:
-            k.cross_validate(kwargs.pop('lambdas', None),
-                             kwargs.pop('Rs', None))
+            k.cross_validate(lambdas, Rs)
         estm_csd = k.values()
         estm_csd = np.rollaxis(estm_csd, -1, 0)
         output = neo.AnalogSignalArray(estm_csd * pq.uA / pq.mm**3,
