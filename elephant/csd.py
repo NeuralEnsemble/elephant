@@ -26,53 +26,57 @@ available_3d = ['KCSD3D']
 kernel_methods = ['KCSD1D', 'KCSD2D', 'KCSD3D', 'MoIKCSD']
 icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 
-py_iCSD_toolbox = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD']
+py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 
 
 def estimate_csd(lfp, coords=None, method=None,
                  process_estimate=True, **kwargs):
-    """Fuction call to compute the current source density.
-        Parameters
-        ----------
-        lfp : list(neo.AnalogSignal type objects)
-            positions of electrodes can be added as neo.RecordingChannel
-            coordinate or sent externally as a func argument (See coords)
-        coords : [Optional] corresponding spatial coordinates of the electrodes
-            Defaults to None
-            Otherwise looks for RecordingChannels coordinate
-        method : string
-            Pick a method corresonding to the setup, in this implenetation
-            For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
-             or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
-            For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
-            For array of laminar probes (3D), use 'KCSD3D'
-            Defaults to None
-        process_estimate : bool
-            In the py_iCSD_toolbox this corresponds to the filter_csd -
-            the parameters are passed as kwargs here ie., f_type and f_order
-            In the kcsd methods this corresponds to cross_validate -
-            the parameters are passed as kwargs here ie., lambdas and Rs
-            Defaults to True
-        kwargs : parameters to each method
-            The parameters corresponding to the method chosen
-            See the documentation of the individual method
-            Default is {} - picks the best parameters,
+    """
+    Fuction call to compute the current source density (CSD) from extracellular
+    potential recordings (local-field potentials - LFP) using laminar electrodes
+    or multi-contact electrodes with 2D or 3D geometries.
 
-        Returns
-        -------
-        Estimated CSD
-           neo.AnalogSignalArray Object
-           annotated with the spatial coordinates
+    Parameters
+    ----------
+    lfp : list(neo.AnalogSignal type objects)
+        positions of electrodes can be added as neo.RecordingChannel
+        coordinate or sent externally as a func argument (See coords)
+    coords : [Optional] corresponding spatial coordinates of the electrodes
+        Defaults to None
+        Otherwise looks for RecordingChannels coordinate
+    method : string
+        Pick a method corresonding to the setup, in this implementation
+        For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
+         or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
+        For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
+        For array of laminar probes (3D), use 'KCSD3D'
+        Defaults to None
+    process_estimate : bool
+        In the py_iCSD_toolbox this corresponds to the filter_csd -
+        the parameters are passed as kwargs here ie., f_type and f_order
+        In the kcsd methods this corresponds to cross_validate -
+        the parameters are passed as kwargs here ie., lambdas and Rs
+        Defaults to True
+    kwargs : parameters to each method
+        The parameters corresponding to the method chosen
+        See the documentation of the individual method
+        Default is {} - picks the best parameters,
 
-        Raises
-        ------
-        AttributeError
-            No units specified for electrode spatial coordinates
-        ValueError
-            Invalid function arguments, wrong method name, or
-            mismatching coordinates
-        TypeError
-            Invalid cv_param argument passed
+    Returns
+    -------
+    Estimated CSD
+       neo.AnalogSignalArray Object
+       annotated with the spatial coordinates
+
+    Raises
+    ------
+    AttributeError
+        No units specified for electrode spatial coordinates
+    ValueError
+        Invalid function arguments, wrong method name, or
+        mismatching coordinates
+    TypeError
+        Invalid cv_param argument passed
     """
     if not isinstance(lfp[0], neo.AnalogSignal):
         raise TypeError('Parameter `lfp` must be a list(neo.AnalogSignal \
@@ -132,28 +136,34 @@ def estimate_csd(lfp, coords=None, method=None,
                             z_coords=k.estm_z)
     elif method in py_iCSD_toolbox:
 
-        coords = np.array(coords) * coords[0].units  # MOVE TO ICSD?
+        coords = np.array(coords) * coords[0].units
 
         if method in icsd_methods:
             try:
                 coords = coords.rescale(kwargs['diam'].units)
             except KeyError:  # Then why specify as a default in icsd?
+                              # All iCSD methods explicitly assume a source
+                              # diameter in contrast to the stdCSD  that
+                              # implicitly assume infinite source radius
                 print("Parameter diam must be specified for iCSD \
                       methods: {}".format(", ".join(icsd_methods)))
                 raise ValueError
-
+            
+            
         if 'f_type' in kwargs:
             if (kwargs['f_type'] is not 'identity') and  \
                (kwargs['f_order'] is None):
                 print("The order of {} filter must be \
                       specified".format(kwargs['f_type']))
                 raise ValueError
-
+        
+        
         lfp = neo.AnalogSignalArray(np.asarray(lfp).T, units=lfp[0].units,
                                     sampling_rate=lfp[0].sampling_rate)
-        lfp_pqarr = lfp.magnitude.T * lfp.units
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
-        csd_estimator = csd_method(lfp_pqarr, coords.flatten(), **kwargs)
+        csd_estimator = csd_method(lfp=lfp.magnitude.T * lfp.units,
+                                   coord_electrode=coords.flatten(),
+                                   **kwargs)
         csd_pqarr = csd_estimator.get_csd()
 
         if process_estimate:
