@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup
+import os
 
 long_description = open("README.rst").read()
 install_requires = ['neo>0.3.3',
@@ -16,6 +17,11 @@ setup(
     name="elephant",
     version='0.3.0',
     packages=['elephant', 'elephant.test'],
+    package_data = {'elephant' : [os.path.join('csd_methods', 'test_data.mat'),
+                                  os.path.join('csd_methods', 'LICENSE'),
+                                  os.path.join('csd_methods', 'README.md'),
+                                  os.path.join('csd_methods', '*.py')]},
+    
     install_requires=install_requires,
     extras_require=extras_require,
 

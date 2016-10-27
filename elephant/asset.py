@@ -30,7 +30,7 @@ steps:
        >>> epsilon = 10
        >>> minsize = 2
        >>> stretch = 5
-       >>> cmat = worms.cluster_matrix_entries(mask, epsilon, minsize, stretch)
+       >>> cmat = asset.cluster_matrix_entries(mask, epsilon, minsize, stretch)
 
 5) Extract sequences of synchronous events associated to each worm
 
@@ -57,15 +57,15 @@ from sklearn.cluster import dbscan as dbscan
 # =============================================================================
 
 
-def _xrange(x):
+def _xrange(x, *args):
     '''
     Auxiliary function to use both in python 3 and python 2 to have a range
     function as a generator.
     '''
     try:
-        return xrange(x)
+        return xrange(x, *args)
     except NameError:
-        return range(x)
+        return range(x, *args)
 
 
 def _signals_same_tstart(signals):
@@ -244,7 +244,7 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
         trains, binsize=binsize, t_start=start, t_stop=stop)
     Nbins = binned.num_bins
 
-    filled_bins = binned.spike_indices()
+    filled_bins = binned.spike_indices
 
     # Compute and return the transaction list
     return [[train_id for train_id, b in zip(ids, filled_bins)
@@ -788,7 +788,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
 
 def probability_matrix_montecarlo(
         spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
-        surr_method='train_shifting', j=None, n_surr=100, verbose=False):
+        surr_method='dither_spike_train', j=None, n_surr=100, verbose=False):
     '''
     Given a list of parallel spike trains, estimate the cumulative probability
      of each entry in their intersection matrix (see: intersection_matrix())
@@ -825,13 +825,13 @@ def probability_matrix_montecarlo(
     surr_method : str, optional
         the method to use to generate surrogate spike trains. Can be one of:
 
-            * 'train_shifting': see spike_train_surrogates.train_shifting() [dt needed]
+            * 'dither_spike_train': see spike_train_surrogates.train_shifting() [dt needed]
             * 'spike_dithering': see spike_train_surrogates.spike_dithering() [dt needed]
             * 'spike_jittering': see spike_train_surrogates.spike_jittering() [dt needed]
             * 'spike_time_rand': see spike_train_surrogates.spike_time_rand()
             * 'isi_shuffling': see spike_train_surrogates.isi_shuffling()
 
-        Default: 'train_shifting'
+        Default: 'dither_spike_train'
     j : quantities.Quantity, optional
         For methods shifting spike times randomly around their original time
         (spike dithering, train shifting) or replacing them randomly within a
@@ -1020,8 +1020,8 @@ def probability_matrix_analytical(
         fir_rate_y = [_time_slice(signal, bsts_y.t_start, bsts_y.t_stop)
                       for signal in fir_rates]
         # Interpolate in the time bins and convert to Quantities
-        times_x = bsts_x.edges[:-1]
-        times_y = bsts_y.edges[:-1]
+        times_x = bsts_x.bin_edges[:-1]
+        times_y = bsts_y.bin_edges[:-1]
         fir_rate_x = pq.Hz * np.vstack([_analog_signal_step_interp(
             signal, times_x).rescale('Hz').magnitude for signal in fir_rates])
         fir_rate_y = pq.Hz * np.vstack([_analog_signal_step_interp(

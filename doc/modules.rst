@@ -18,6 +18,7 @@ Function Reference by Module
    reference/spike_train_generation
    reference/spike_train_surrogates
    reference/conversion
+   reference/csd
    reference/neo_tools
    reference/pandas_bridge
 

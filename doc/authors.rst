@@ -13,6 +13,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Detlef Holstein [2]
 * Eilif Muller [3, 4]
 * Emiliano Torre [1]
+* Espen Hagen [1]
 * Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
