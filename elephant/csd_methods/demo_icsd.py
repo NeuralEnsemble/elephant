@@ -6,22 +6,6 @@ import icsd
 from scipy import io
 import quantities as pq
 
-#patch quantities with the SI unit Siemens if it does not exist
-for symbol, prefix, definition, u_symbol in zip(
-    ['siemens', 'S', 'mS', 'uS', 'nS', 'pS'],
-    ['', '', 'milli', 'micro', 'nano', 'pico'],
-    [pq.A/pq.V, pq.A/pq.V, 'S', 'mS', 'uS', 'nS'],
-    [None, None, None, None, u'µS', None]):
-    if type(definition) is str:
-        definition = lastdefinition / 1000
-    if not hasattr(pq, symbol):
-        setattr(pq, symbol, pq.UnitQuantity(
-            prefix + 'siemens',
-            definition,
-            symbol=symbol,
-            u_symbol=u_symbol))
-    lastdefinition = definition
-
 #loading test data
 test_data = io.loadmat('test_data.mat')
 
