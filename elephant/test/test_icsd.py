@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-'''icsd testing suite'''
+'''
+iCSD testing suite
+'''
 
 import os
 import numpy as np
