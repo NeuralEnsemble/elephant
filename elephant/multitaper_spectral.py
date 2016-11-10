@@ -114,7 +114,7 @@ def get_spectra(time_series, method=None):
         method = {'this_method': 'multi_taper_csd'}  # The default
     # If no choice of method was explicitly set, but other parameters were
     # passed, assume that the method is multitapering:
-        this_method = method.get('this_method', 'multi_taper_csd')
+    this_method = method.get('this_method', 'multi_taper_csd')
 
     if this_method == 'welch':
         NFFT = method.get('NFFT', default_nfft)

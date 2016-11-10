@@ -47,50 +47,6 @@ import scipy.signal.signaltools as signaltools
 # import scipy.linalg as linalg
 # import scipy.signal as sig
 
-
-# -----------------------------------------------------------------------------
-# Stats utils
-# -----------------------------------------------------------------------------
-# used only by the unused jackknife_coh_variance
-# def normalize_coherence(x, dof, copy=True):
-#     """
-#     The generally accepted choice to transform coherence measures into
-#     a more normal distribution
-#
-#     Parameters
-#     ----------
-#     x : ndarray, real
-#        square-root of magnitude-square coherence measures
-#     dof : int
-#        number of degrees of freedom in the multitaper model
-#     copy : bool
-#         Copy or return inplace modified x.
-#
-#     Returns
-#     -------
-#     y : ndarray, real
-#         The transformed array.
-#     """
-#     if copy:
-#         x = x.copy()
-#     np.arctanh(x, x)
-#     x *= np.sqrt(dof)
-#     return x
-
-#  Not used either.
-# def normal_coherence_to_unit(y, dof, out=None):
-#     """
-#     The inverse transform of the above normalization
-#     """
-#     if out is None:
-#         x = y / np.sqrt(dof)
-#     else:
-#         y /= np.sqrt(dof)
-#         x = y
-#     np.tanh(x, x)
-#     return x
-
-
 def jackknifed_sdf_variance(yk, eigvals, sides='onesided', adaptive=True):
     r"""
     Returns the variance of the log-sdf estimated through jack-knifing
@@ -172,76 +128,6 @@ def jackknifed_sdf_variance(yk, eigvals, sides='onesided', adaptive=True):
     jk_var *= f
     return jk_var
 
-# Not actually used
-# def jackknifed_coh_variance(tx, ty, eigvals, adaptive=True):
-#     """
-#     Returns the variance of the coherency between x and y, estimated
-#     through jack-knifing the tapered samples in {tx, ty}.
-#
-#     Parameters
-#     ----------
-#
-#     tx : ndarray, (K, L)
-#        The K complex spectra of tapered timeseries x
-#     ty : ndarray, (K, L)
-#        The K complex spectra of tapered timeseries y
-#     eigvals : ndarray (K,)
-#        The eigenvalues associated with the K DPSS tapers
-#
-#     Returns
-#     -------
-#
-#     jk_var : ndarray
-#        The variance computed in the transformed domain (see
-#        normalize_coherence)
-#     """
-#
-#     K = tx.shape[0]
-#
-#     # calculate leave-one-out estimates of MSC (magnitude squared coherence)
-#     jk_coh = []
-#     # coherence is symmetric (right??)
-#     sides = 'onesided'
-#     all_orders = set(range(K))
-#
-#     import multitaper_spectral as alg
-#
-#     # get the leave-one-out estimates
-#     for i in range(K):
-#         items = list(all_orders.difference([i]))
-#         tx_i = np.take(tx, items, axis=0)
-#         ty_i = np.take(ty, items, axis=0)
-#         eigs_i = np.take(eigvals, items)
-#         if adaptive:
-#             wx, _ = adaptive_weights(tx_i, eigs_i, sides=sides)
-#             wy, _ = adaptive_weights(ty_i, eigs_i, sides=sides)
-#         else:
-#             wx = wy = eigs_i[:, None]
-#         # The CSD
-#         sxy_i = alg.mtm_cross_spectrum(tx_i, ty_i, (wx, wy), sides=sides)
-#         # The PSDs
-#         sxx_i = alg.mtm_cross_spectrum(tx_i, tx_i, wx, sides=sides)
-#         syy_i = alg.mtm_cross_spectrum(ty_i, ty_i, wy, sides=sides)
-#         # these are the | c_i | samples
-#         msc = np.abs(sxy_i)
-#         msc /= np.sqrt(sxx_i * syy_i)
-#         jk_coh.append(msc)
-#
-#     jk_coh = np.array(jk_coh)
-#     # now normalize the coherence estimates and take the mean
-#     normalize_coherence(jk_coh, 2 * K - 2, copy=False)  # inplace
-#     jk_avg = np.mean(jk_coh, axis=0)
-#
-#     jk_var = (jk_coh - jk_avg)
-#     np.power(jk_var, 2, jk_var)
-#     jk_var = jk_var.sum(axis=0)
-#
-#     # Do/Don't use the alternative scaling here??
-#     f = float(K - 1) / K
-#
-#     jk_var *= f
-#
-#     return jk_var
 
 
 # -----------------------------------------------------------------------------
@@ -371,11 +257,11 @@ def adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
 
 # If we can get it, we want the cythonized version
 try:
-    from _utils import tridisolve
+    from _utils import _tridisolve
 
 # If that doesn't work, we define it here:
 except ImportError:
-    def tridisolve(d, e, b, overwrite_b=True):
+    def _tridisolve(d, e, b, overwrite_b=True):
         """
         Symmetric tridiagonal system solver,
         from Golub and Van Loan, Matrix Computations pg 157
@@ -422,7 +308,7 @@ except ImportError:
             return x
 
 
-def tridi_inverse_iteration(d, e, w, x0=None, rtol=1e-8):
+def tridi_inverse_iteration(d, e, w, x0=None, rtol=1e-6):
     """Perform an inverse iteration to find the eigenvector corresponding
     to the given eigenvalue in a symmetric tridiagonal system.
 
@@ -457,14 +343,14 @@ def tridi_inverse_iteration(d, e, w, x0=None, rtol=1e-8):
     x0 /= norm_x
     while np.linalg.norm(np.abs(x0) - np.abs(x_prev)) > rtol:
         x_prev = x0.copy()
-        tridisolve(eig_diag, e, x0)
+        _tridisolve(eig_diag, e, x0)
         norm_x = np.linalg.norm(x0)
         x0 /= norm_x
     return x0
 
-# # -----------------------------------------------------------------------------
+# # ---------------------------------------------------------------------------
 # # Correlation/Covariance utils
-# # -----------------------------------------------------------------------------
+# # ---------------------------------------------------------------------------
 
 
 def circle_to_hz(omega, Fsamp):
@@ -482,7 +368,8 @@ def remove_bias(x, axis):
     return x - mn[tuple(padded_slice)]
 
 
-def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True, corr= True):
+def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True,
+             corr=False):
     """Returns the crosscovariance sequence between two ndarrays.
     This is performed by calling fftconvolve on x, y[::-1]
 
@@ -524,37 +411,23 @@ def crosscov(x, y, axis=-1, all_lags=False, debias=True, normalize=True, corr= T
     functions.
 
     """
-    if not corr:
-        if x.shape[axis] != y.shape[axis]:
-            raise ValueError(
-                'crosscov() only works on same-length sequences for now'
-                )
-        if debias:
-            x = remove_bias(x, axis)
-            y = remove_bias(y, axis)
-        slicing = [slice(d) for d in x.shape]
-        slicing[axis] = slice(None, None, -1)
-        cxy = fftconvolve(x, y[tuple(slicing)].conj(), axis=axis, mode='full')
-        N = x.shape[axis]
-        if normalize:
-            cxy /= N
-        if all_lags:
-            return cxy
-        slicing[axis] = slice(N - 1, 2 * N - 1)
-        return cxy[tuple(slicing)]
-    elif corr:
-        if not debias:
-            warnings.warn("Incompatible arguments for crosscov: debias and corr. Removing bias.")
-        # Computes sxy[k] = E{x[n]*y[n+k]}
-        x = remove_bias(x, 0)
-        y = remove_bias(y, 0)
-        lx, ly = len(x), len(y)
-        pad_len = lx + ly - 1
-        sxy = np.correlate(x, y, mode='full') / lx
-        if all_lags:
-            return sxy
-        c_idx = pad_len // 2
-        return sxy[c_idx:]
+    if x.shape[ axis ] != y.shape[ axis ]:
+        raise ValueError(
+            'crosscov() only works on same-length sequences for now'
+        )
+    if debias:
+        x = remove_bias(x, axis)
+        y = remove_bias(y, axis)
+    slicing = [slice(d) for d in x.shape]
+    slicing[axis] = slice(None, None, -1)
+    cxy = fftconvolve(x, y[tuple(slicing)].conj(), axis=axis, mode='full')
+    N = x.shape[axis]
+    if normalize:
+        cxy /= N
+    if all_lags:
+        return cxy
+    slicing[axis] = slice(N - 1, 2 * N - 1)
+    return cxy[tuple(slicing)]
 
 
 # REMOVE due to not being used

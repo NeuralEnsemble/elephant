@@ -42,7 +42,7 @@ Tests multitaperes spectral time series analysis.
 import os
 import unittest
 import numpy as np
-from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_allclose
 import numpy.testing.decorators as dec
 import elephant
 from elephant import multitaper_spectral as mts
@@ -53,17 +53,17 @@ test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')
 
 class MultitaperSpectralTests(unittest.TestCase):
     def test_dpss_windows(self):
-        "Are the eigenvalues representing spectral concentration near unity"
+        """Are eigenvalues representing spectral concentration near unity?"""
         # these values from Percival and Walden 1993
         _, l = mts.dpss_windows(31, 6, 4)
         unos = np.ones(4)
-        assert_array_almost_equal(l, unos)
+        assert_allclose(l, unos)
         _, l = mts.dpss_windows(31, 7, 4)
-        assert_array_almost_equal(l, unos)
+        assert_allclose(l, unos)
         _, l = mts.dpss_windows(31, 8, 4)
-        assert_array_almost_equal(l, unos)
+        assert_allclose(l, unos)
         _, l = mts.dpss_windows(31, 8, 4.2)
-        assert_array_almost_equal(l, unos)
+        assert_allclose(l, unos)
 
     def test_dpss_matlab(self):
         """Do the dpss windows resemble the equivalent matlab result
@@ -73,46 +73,34 @@ class MultitaperSpectralTests(unittest.TestCase):
         """
         a, _ = mts.dpss_windows(100, 2, 4)
         b = np.loadtxt(os.path.join(test_dir_path, 'dpss_testdata1.txt'))
-        self.assertAlmostEqual(a, b.T)
+        assert_allclose(a, b.T)
 
     def test_get_spectra(self):
         """Testing get_spectra"""
-        # TODO: this should be adapted to include the welchs_psd from elephant
+        # adapt this to include the welchs_psd from elephant?
         t = np.linspace(0, 16 * np.pi, 2 ** 10)
         x = (np.sin(t) + np.sin(2 * t) + np.sin(3 * t) +
              0.1 * np.random.rand(t.shape[ -1 ]))
 
-        # First test for 1-d data:
-        NFFT = 64
         N = x.shape[ -1 ]
-        # f_welch = mts.get_spectra(x, method={'this_method': 'welch',
-        # 'NFFT': NFFT})
-        # f_periodogram = mts.get_spectra(x, method={'this_method':
-        # 'periodogram_csd'})
-        f_multi_taper = mts.get_spectra(x, method={'this_method': 'multi_taper_csd'})
+        f_multi_taper = mts.get_spectra(x, method={
+            'this_method': 'multi_taper_csd'})
 
-        # npt.assert_equal(f_welch[0].shape, (NFFT // 2 + 1,))
-        # npt.assert_equal(f_periodogram[0].shape, (N // 2 + 1,))
         self.assertEqual(f_multi_taper[ 0 ].shape, (N // 2 + 1,))
 
         # Test for multi-channel data
         x = np.reshape(x, (2, x.shape[ -1 ] // 2))
         N = x.shape[ -1 ]
 
-        # Make sure you get back the expected shape for different spectra:
-        NFFT = 64
-        # f_welch = mts.get_spectra(x, method={'this_method': 'welch',
-        # 'NFFT': NFFT})
-        # f_periodogram = mts.get_spectra(x, method={'this_method': 'periodogram_csd'})
-        f_multi_taper = mts.get_spectra(x, method={'this_method': 'multi_taper_csd'})
+        f_multi_taper = mts.get_spectra(x, method={
+            'this_method': 'multi_taper_csd'})
 
-        # npt.assert_equal(f_welch[0].shape[0], NFFT / 2 + 1)
-        # npt.assert_equal(f_periodogram[0].shape[0], N / 2 + 1)
         self.assertEqual(f_multi_taper[ 0 ].shape[ 0 ], N / 2 + 1)
 
     @dec.slow
     def test_long_dpss_win(self):
-        """ Test that very long dpss windows can be generated (using interpolation)"""
+        """ Test that very long dpss windows can be generated (using
+        interpolation)"""
 
         # This one is generated using interpolation:
         a1, e = mts.dpss_windows(166800, 4, 8, interp_from=4096)
@@ -121,7 +109,7 @@ class MultitaperSpectralTests(unittest.TestCase):
         a2, e = mts.dpss_windows(166800, 4, 8)
 
         # They should be very similar:
-        self.assertAlmostEqual(a1, a2, decimal=5)
+        assert_allclose(a1, a2, atol=1e-5)
 
         # They should both be very similar to the same one calculated in matlab
         # (using 'a = dpss(166800, 4, 8)').
@@ -130,9 +118,9 @@ class MultitaperSpectralTests(unittest.TestCase):
             os.path.join(test_dir_path, 'dpss_testdata2.npy'))
         # We only have the first window to compare against:
         # Both for the interpolated case:
-        self.assertAlmostEqual(a1[ 0 ], matlab_long_dpss, decimal=5)
+        assert_allclose(a1[ 0 ], matlab_long_dpss, atol=1e-5)
         # As well as the calculated case:
-        self.assertAlmostEqual(a1[ 0 ], matlab_long_dpss, decimal=5)
+        assert_allclose(a1[ 0 ], matlab_long_dpss, atol=1e-5)
 
 
 def suite():

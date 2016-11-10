@@ -43,9 +43,10 @@ Tests utilities for multitapered spectral time series analysis.
 import unittest
 import numpy as np
 import numpy.random as npr
+import warnings
 from elephant import multitaper_utils as mtu
-# from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
-
+from numpy.testing import assert_allclose
+import numpy.linalg as la
 
 # TODO: function to test the jackknife procedure
 def expected_jk_variance(K):
@@ -117,7 +118,7 @@ class MultitaperUtilityTests(unittest.TestCase):
 
         # also test orthonormality of the eigenvectors
         ident = np.dot(E, E.T)
-        self.assertAlmostEqual(ident, np.eye(K))
+        assert_allclose(ident, np.eye(K), rtol=0.0, atol=1e-12)
 
     def test_remove_bias(self):
         x = np.arange(64).reshape(4, 4, 4)
@@ -126,26 +127,61 @@ class MultitaperUtilityTests(unittest.TestCase):
 
     def test_crosscov(self):
         N = 128
-        ar_seq1, _, _ = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))
-        ar_seq2, _, _ = npr.randn(N) + np.cos(np.linspace(0., 2.*np.pi, 128))
+        ar_seq1 = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))
+        ar_seq2 = npr.randn(N) + np.cos(np.linspace(0., 2.*np.pi, 128))
+
+        def corr(x, y, all_lags=True):
+            # Computes sxy[k] = E{x[n]*y[n+k]}
+            x = mtu.remove_bias(x, 0)
+            y = mtu.remove_bias(y, 0)
+            lx, ly = len(x), len(y)
+            pad_len = lx + ly - 1
+            sxy = np.correlate(x, y, mode='full') / lx
+            if all_lags:
+                return sxy
+            c_idx = pad_len // 2
+            return sxy[c_idx:]
 
         for all_lags in (True, False):
             sxy = mtu.crosscov(ar_seq1, ar_seq2, all_lags=all_lags)
-            sxy_ref = mtu.crosscov(ar_seq1, ar_seq2, debias=True, all_lags=all_lags, corr=True)
+            # catch the given warning about wrong arguments
+            sxy_ref = corr(ar_seq1, ar_seq2, all_lags=all_lags)
             err = sxy_ref - sxy
             mse = np.dot(err, err) / N
-            self.assertTrue(mse < 1e-12, \
+            self.assertTrue(mse < 1e-12,
                 'Large mean square error w.r.t. reference cross covariance')
+            print(mse)
 
     def test_autocorr(self):
         N = 128
-        ar_seq, _, _ = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))  # mtu.ar_generator(N=N)
+        ar_seq = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))
         rxx = mtu.autocorr(ar_seq)
-        self.assertTrue(rxx[0] == rxx.max(), \
+        self.assertTrue(rxx[0] == rxx.max(),
                     'Zero lag autocorrelation is not maximum autocorrelation')
         rxx = mtu.autocorr(ar_seq, all_lags=True)
-        self.assertTrue(rxx[127] == rxx.max(), \
+        self.assertTrue(rxx[127] == rxx.max(),
                     'Zero lag autocorrelation is not maximum autocorrelation')
+
+    def test_tridisolve(self):
+        N = 4
+        line1 = np.ones(N)
+        line1[ 0 ] = 0.
+        line2 = np.ones(N)
+        b = 2 * np.ones(N)
+        b[ -1 ] = 1.
+
+        mtu._tridisolve(line1, line2, b, overwrite_b=True)
+        assert_allclose(b, line2)
+        print(x, b)
+
+        # bandmat = eye(N)
+        # eigvals = la.eig_banded(bandmat, eigvals_only=True)
+        # bandmatvec = np.diag(bandmat)
+        # mtu._tridisolve(line1, line2, b, overwrite_b=True)
+        # eigvals = la.eig_banded(np.vstack((line1, line2)), eigvals_only=True)
+
+
+        # TODO: can we enforce the Import_Error to use the implemented version?
 
 
 def suite():
