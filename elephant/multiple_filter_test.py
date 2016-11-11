@@ -261,7 +261,8 @@ def Gth(t,h,spk):
     except:
         raise ValueError ("h must be a time scalar")
     hm = h_sec.magnitude   
-    
+
+#TODO: remove useless np.where    
     N_ri = spk[np.where((tm < spk) & (spk < tm+hm))]#cut spike-train on the right
     N_le = spk[np.where((tm-hm < spk) & (spk < tm))]#cut spike-train on the left
     
@@ -427,6 +428,6 @@ def MultipleFilterAlgorithm(H,spk,T,alfa,Num_sim,Q=None,Emp_param=None,dt=None):
         
         if dt == h/20.:
             dt = None
-            
+# TODO: decide whether to change shape of output            
             
     return C
