@@ -47,6 +47,7 @@ from numpy.testing import assert_allclose
 import numpy.testing.decorators as dec
 import elephant
 from elephant import multitaper_spectral as mts
+# from elephant import multitaper_utils as mtu
 
 # Define globally
 test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')
@@ -81,11 +82,11 @@ class MultitaperSpectralTests(unittest.TestCase):
             # Cause all warnings to always be triggered.
             warnings.simplefilter("always")
             # Trigger a warning.
-            mtu.tapered_spectra(s=np.ones((2, 1)),
-                                tapers=(0, 2),
-                                NFFT=1,
+            mts.tapered_spectra(s=np.ones((2, 4)),
+                                tapers=(1, 2),
+                                NFFT=3,
                                 low_bias=False)
-            self.assertTrue(len(w) == 3)
+            self.assertTrue(len(w) == 1)
 
 
     def test_get_spectra(self):
