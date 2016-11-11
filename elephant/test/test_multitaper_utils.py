@@ -46,6 +46,7 @@ import numpy.random as npr
 import warnings
 from elephant import multitaper_utils as mtu
 from numpy.testing import assert_allclose
+from numpy.testing import assert_almost_equal
 import numpy.linalg as la
 
 # TODO: function to test the jackknife procedure
@@ -77,14 +78,25 @@ def expected_jk_variance(K):
 
 
 class MultitaperUtilityTests(unittest.TestCase):
+    def test_adaptive_weights(self):
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            mtu._adaptive_weights(np.ones(1), np.ones(1), 'three_sided', -1)
+            self.assertTrue(len(w) == 3)
+
+
     def test_tridi_inverse_iteration(self):
         import scipy.linalg as la
+        import time as time
         from scipy.sparse import spdiags
         # set up a spectral concentration eigenvalue problem for testing
         N = 2000
         NW = 4
         K = 8
         W = float(NW) / N
+        start = time.time()
         nidx = np.arange(N, dtype='d')
         ab = np.zeros((2, N), 'd')
         # store this separately for tridisolve later
@@ -105,7 +117,7 @@ class MultitaperUtilityTests(unittest.TestCase):
         A = spdiags(sp_data, [-1, 0, 1], N, N)
         E = np.zeros((K, N), 'd')
         for j in range(K):
-            e = mtu.tridi_inverse_iteration(
+            e = mtu._tridi_inverse_iteration(
                 ab[1], sup_diag, w[j], x0=np.sin((j + 1) * t)
             )
             b = A * e
@@ -118,11 +130,14 @@ class MultitaperUtilityTests(unittest.TestCase):
 
         # also test orthonormality of the eigenvectors
         ident = np.dot(E, E.T)
-        assert_allclose(ident, np.eye(K), rtol=0.0, atol=1e-12)
+        stop = time.time()
+        assert_allclose(ident, np.eye(K), rtol=0.0, atol=1e-12,
+                        err_msg='Result incorrect for unity.')
+        self.assertTrue(stop-start <= 10.0, 'Running time too high.')
 
     def test_remove_bias(self):
         x = np.arange(64).reshape(4, 4, 4)
-        x0 = mtu.remove_bias(x, axis=1)
+        x0 = mtu._remove_bias(x, axis=1)
         self.assertEqual((x0.mean(axis=1) == 0).all(), True)
 
     def test_crosscov(self):
@@ -132,8 +147,8 @@ class MultitaperUtilityTests(unittest.TestCase):
 
         def corr(x, y, all_lags=True):
             # Computes sxy[k] = E{x[n]*y[n+k]}
-            x = mtu.remove_bias(x, 0)
-            y = mtu.remove_bias(y, 0)
+            x = mtu._remove_bias(x, 0)
+            y = mtu._remove_bias(y, 0)
             lx, ly = len(x), len(y)
             pad_len = lx + ly - 1
             sxy = np.correlate(x, y, mode='full') / lx
@@ -150,7 +165,6 @@ class MultitaperUtilityTests(unittest.TestCase):
             mse = np.dot(err, err) / N
             self.assertTrue(mse < 1e-12,
                 'Large mean square error w.r.t. reference cross covariance')
-            print(mse)
 
     def test_autocorr(self):
         N = 128

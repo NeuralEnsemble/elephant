@@ -50,6 +50,7 @@ import scipy.signal as sig
 import scipy.interpolate as interpolate
 import scipy.fftpack as fftpack
 import spectral as spectral
+import warnings
 
 import multitaper_utils as utils
 
@@ -160,7 +161,7 @@ def get_spectra(time_series, method=None):
         mdict = method.copy()
         func = eval(mdict.pop('this_method'))
         freqs, fxy = func(time_series, **mdict)
-        f = utils.circle_to_hz(freqs, mdict.get('Fs', 2 * np.pi))
+        f = utils._circle_to_hz(freqs, mdict.get('Fs', 2 * np.pi))
 
     else:
         raise ValueError("Unknown method provided")
@@ -313,7 +314,7 @@ def dpss_windows(N, NW, Kmax, interp_from=None, interp_kind='linear'):
         t = np.linspace(0, np.pi, N)
         dpss = np.zeros((Kmax, N), 'd')
         for k in range(Kmax):
-            dpss[ k ] = utils.tridi_inverse_iteration(
+            dpss[ k ] = utils._tridi_inverse_iteration(
                 diagonal, off_diag, w[ k ], x0=np.sin((k + 1) * t)
             )
 
@@ -375,13 +376,16 @@ def tapered_spectra(s, tapers, NFFT=None, low_bias=True):
     N = s.shape[ -1 ]
     # XXX: don't allow NFFT < N -- not every implementation is so restrictive!
     if NFFT is None or NFFT < N:
+        if NFFT is not None:
+            warnings.warn('More NFFT bins to compute than datapoints',
+                          UserWarning)
         NFFT = N
     rest_of_dims = s.shape[ :-1 ]
     M = int(np.product(rest_of_dims))
 
     s = s.reshape(int(np.product(rest_of_dims)), N)
     # de-mean this sucker
-    s = utils.remove_bias(s, axis=-1)
+    s = utils._remove_bias(s, axis=-1)
 
     if not isinstance(tapers, np.ndarray):
         # then tapers is (NW, K)
@@ -450,8 +454,6 @@ def mtm_cross_spectrum(tx, ty, weights, sides='twosided'):
     N = tx.shape[ -1 ]
     if ty.shape != tx.shape:
         raise ValueError('shape mismatch between tx, ty')
-
-    # pshape = list(tx.shape)
 
     if isinstance(weights, (list, tuple)):
         autospectrum = False
@@ -604,7 +606,7 @@ def multi_taper_psd(
     if adaptive:
         weights = np.empty((M, K, last_freq))
         for i in range(M):
-            weights[ i ], nu[ i ] = utils.adaptive_weights(
+            weights[ i ], nu[ i ] = utils._adaptive_weights(
                 spectra[ i ], eigvals, sides=sides
             )
     else:
@@ -744,7 +746,7 @@ def multi_taper_csd(s, Fs=2 * np.pi, NW=None, BW=None, low_bias=True,
         w = np.empty((M, K, last_freq))
         nu = np.empty((M, last_freq))
         for i in range(M):
-            w[ i ], nu[ i ] = utils.adaptive_weights(
+            w[ i ], nu[ i ] = utils._adaptive_weights(
                 spectra[ i ], eigvals, sides=sides
             )
     else:
