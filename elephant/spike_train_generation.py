@@ -87,7 +87,7 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
     if number < 100:
         number = min(5 + np.ceil(2 * n), 100)
     assert number > 4  # if positive, number cannot be less than 5
-    isi = rescale(interval_generator(*args, size=number))
+    isi = rescale(interval_generator(*args, size=int(number)))
     spikes = np.cumsum(isi)
     spikes += t_start
 
