@@ -9,7 +9,7 @@ import numpy.testing as nt
 import quantities as pq
 import scipy.integrate as si
 from scipy.interpolate import interp1d
-from elephant.csd import icsd
+from elephant.current_source_density import icsd
 import unittest
 
 #patch quantities with the SI unit Siemens if it does not exist

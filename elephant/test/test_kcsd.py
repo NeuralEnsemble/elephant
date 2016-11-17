@@ -14,8 +14,8 @@ import unittest
 import neo
 import numpy as np
 import quantities as pq
-from elephant import csd as CSD
-import elephant.csd_methods.utility_functions as utils
+from elephant import current_source_density as CSD
+import elephant.current_source_density_src.utility_functions as utils
 
 
 class KCSD1D_TestCase(unittest.TestCase):

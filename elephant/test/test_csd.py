@@ -13,8 +13,8 @@ Nencki Institute of Exprimental Biology, Warsaw.
 import unittest
 import numpy as np
 import quantities as pq
-from elephant import csd
-import elephant.csd_methods.utility_functions as utils
+from elephant import current_source_density as csd
+import elephant.current_source_density_src.utility_functions as utils
 
 available_1d = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD', 'KCSD1D']
 available_2d = ['KCSD2D', 'MoIKCSD']
