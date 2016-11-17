@@ -17,10 +17,11 @@ setup(
     name="elephant",
     version='0.3.0',
     packages=['elephant', 'elephant.test'],
-    package_data = {'elephant' : [os.path.join('icsd', 'test_data.mat'),
-                                  os.path.join('icsd', 'LICENSE'),
-                                  os.path.join('icsd', 'README.md'),
-                                  os.path.join('icsd', '*.py')]},
+    package_data = {'elephant' : [os.path.join('csd_methods', 'test_data.mat'),
+                                  os.path.join('csd_methods', 'LICENSE'),
+                                  os.path.join('csd_methods', 'README.md'),
+                                  os.path.join('csd_methods', '*.py')]},
+    
     install_requires=install_requires,
     extras_require=extras_require,
 

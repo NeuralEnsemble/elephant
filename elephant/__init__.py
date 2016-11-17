@@ -16,8 +16,8 @@ from . import (statistics,
                spike_train_dissimilarity,
                spike_train_surrogates,
                signal_processing,
+               current_source_density,
                sta,
-               csd,
                conversion,
                neo_tools)
 
