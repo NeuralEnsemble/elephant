@@ -32,20 +32,20 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
         'signal' is an analog signal.
     threshold : A quantity, e.g. in mV
         'threshold' contains a value that must be reached for an event
-        to be detected.
+        to be detected. Default: 0.0 * mV.
     sign : 'above' or 'below'
         'sign' determines whether to count thresholding crossings
-        that cross above or below the threshold.
+        that cross above or below the threshold. Default: 'above'.
     time_stamps: None, quantity array or Object with .times interface
         if 'spike_train' is a quantity array or exposes a quantity array
         exposes the .times interface, it provides the time_stamps
         around which the waveform is extracted. If it is None, the
         function peak_detection is used to calculate the time_stamps
-        from signal.
+        from signal. Default: None.
     extr_interval: unpackable time quantities, len == 2
         'extr_interval' specifies the time interval around the
         time_stamps where the waveform is extracted. The default is an
-        interval of 6 * ms.
+        interval of '6 ms'. Default: (-2 * ms, 4 * ms).
 
     Returns
     -------
@@ -128,7 +128,7 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
         'signal' is an analog signal.
     threshold : A quantity, e.g. in mV
         'threshold' contains a value that must be reached
-        for an event to be detected.
+        for an event to be detected. Default: 0.0 * mV.
     sign : 'above' or 'below'
         'sign' determines whether to count thresholding crossings
         that cross above or below the threshold.
@@ -174,7 +174,7 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
     """
     Return the peak times for all events that cross threshold.
     Usually used for extracting spike times from a membrane potential.
-    Similar to spike_train_generation.threshold_detection. Returns
+    Similar to spike_train_generation.threshold_detection.
 
     Parameters
     ----------
@@ -185,10 +185,10 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
         for an event to be detected.
     sign : 'above' or 'below'
         'sign' determines whether to count thresholding crossings that
-        cross above or below the threshold.
+        cross above or below the threshold. Default: 'above'.
     format : None or 'raw'
         Whether to return as SpikeTrain (None) or as a plain array
-        of times ('raw').
+        of times ('raw'). Default: None.
 
     Returns
     -------
@@ -204,6 +204,8 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
     elif sign in 'below':
         cutout = np.where(signal < threshold)[0]
         peak_func = np.argmin
+    else:
+        raise ValueError("sign must be 'above' or 'below'")
 
     if len(cutout) <= 0:
         events_base = np.zeros(0)
@@ -211,7 +213,7 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
         # Select thr crossings lasting at least 2 dtps, np.diff(cutout) > 2
         # This avoids empty slices
         border_start = np.where(np.diff(cutout) > 1)[0]
-        border_end = np.where(np.diff(cutout) > 1)[0] + 1
+        border_end = border_start + 1
         borders = np.concatenate((border_start, border_end))
         borders = np.append(0, borders)
         borders = np.append(borders, len(cutout)-1)
