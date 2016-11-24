@@ -26,13 +26,13 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
     export PATH=/home/travis/miniconda/bin:$PATH
     conda config --set always_yes yes
     conda update --yes conda
+    conda install libgfortran
 
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
-    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
@@ -55,13 +55,14 @@ elif [[ "$DISTRIB" == "conda" ]]; then
     export PATH=/home/travis/miniconda/bin:$PATH
     conda config --set always_yes yes
     conda update --yes conda
+    conda install libgfortran
+
 
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
     source activate testenv
-    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
