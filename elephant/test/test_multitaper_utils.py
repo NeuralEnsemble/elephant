@@ -177,25 +177,13 @@ class MultitaperUtilityTests(unittest.TestCase):
                     'Zero lag autocorrelation is not maximum autocorrelation')
 
     def test_tridisolve(self):
+        """ Test the banded matrix algorithm on the identity matrix """
         N = 4
         line1 = np.ones(N)
-        line1[ 0 ] = 0.
-        line2 = np.ones(N)
-        b = 2 * np.ones(N)
-        b[ -1 ] = 1.
-
+        line2 = np.zeros(N)
+        b = np.ones(N)
         mtu._tridisolve(line1, line2, b, overwrite_b=True)
-        assert_allclose(b, line2)
-        print(x, b)
-
-        # bandmat = eye(N)
-        # eigvals = la.eig_banded(bandmat, eigvals_only=True)
-        # bandmatvec = np.diag(bandmat)
-        # mtu._tridisolve(line1, line2, b, overwrite_b=True)
-        # eigvals = la.eig_banded(np.vstack((line1, line2)), eigvals_only=True)
-
-
-        # TODO: can we enforce the Import_Error to use the implemented version?
+        assert_allclose(b, line1)
 
 
 def suite():

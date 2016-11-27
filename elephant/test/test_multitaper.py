@@ -53,6 +53,183 @@ from elephant import multitaper_spectral as mts
 test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')
 
 
+# include the following for testing multi_taper_psc/csd:
+def dB(x, out=None):
+    if out is None:
+        return 10 * np.log10(x)
+    else:
+        np.log10(x, out)
+        np.multiply(out, 10, out)
+
+
+def periodogram(s, Fs=2 * np.pi, Sk=None, N=None,
+                sides='default', normalize=True):
+    """Takes an N-point periodogram estimate of the PSD function. The
+    number of points N, or a precomputed FFT Sk may be provided. By default,
+    the PSD function returned is normalized so that the integral of the PSD
+    is equal to the mean squared amplitude (mean energy) of s (see Notes).
+    Parameters
+    ----------
+    s : ndarray
+        Signal(s) for which to estimate the PSD, time dimension in the last
+        axis
+    Fs : float (optional)
+       The sampling rate. Defaults to 2*pi
+    Sk : ndarray (optional)
+        Precomputed FFT of s
+    N : int (optional)
+        Indicates an N-point FFT where N != s.shape[-1]
+    sides : str (optional) [ 'default' | 'onesided' | 'twosided' ]
+         This determines which sides of the spectrum to return.
+         For complex-valued inputs, the default is two-sided, for real-valued
+         inputs, default is one-sided Indicates whether to return a one-sided
+         or two-sided
+    PSD normalize : boolean (optional, default=True) Normalizes the PSD
+    Returns
+    -------
+    (f, psd) : tuple
+       f: The central frequencies for the frequency bands
+       PSD estimate for each row of s
+    """
+    import scipy.fftpack as fftpack
+
+    if Sk is not None:
+        N = Sk.shape[ -1 ]
+    else:
+        N = s.shape[ -1 ] if not N else N
+        Sk = fftpack.fft(s, n=N)
+    pshape = list(Sk.shape)
+
+    # if the time series is a complex vector, a one sided PSD is invalid:
+    if (sides == 'default' and np.iscomplexobj(s)) or sides == 'twosided':
+        sides = 'twosided'
+    elif sides in ('default', 'onesided'):
+        sides = 'onesided'
+
+    if sides == 'onesided':
+        # putative Nyquist freq
+        Fn = N // 2 + 1
+        # last duplicate freq
+        Fl = (N + 1) // 2
+        pshape[ -1 ] = Fn
+        P = np.zeros(pshape, 'd')
+        freqs = np.linspace(0, Fs // 2, Fn)
+        P[ ..., 0 ] = (Sk[ ..., 0 ] * Sk[ ..., 0 ].conj()).real
+        P[ ..., 1:Fl ] = 2 * (Sk[ ..., 1:Fl ] * Sk[ ..., 1:Fl ].conj()).real
+        if Fn > Fl:
+            P[ ..., Fn - 1 ] = (
+            Sk[ ..., Fn - 1 ] * Sk[ ..., Fn - 1 ].conj()).real
+    else:
+        P = (Sk * Sk.conj()).real
+        freqs = np.linspace(0, Fs, N, endpoint=False)
+    if normalize:
+        P /= (Fs * s.shape[ -1 ])
+    return freqs, P
+
+
+def ar_generator(N=512, sigma=1., coefs=None, drop_transients=0, v=None):
+    """
+    This generates a signal u(n) = a1*u(n-1) + a2*u(n-2) + ... + v(n)
+    where v(n) is a stationary stochastic process with zero mean
+    and variance = sigma. XXX: confusing variance notation
+    Parameters
+    ----------
+    N : int
+      sequence length
+    sigma : float
+      power of the white noise driving process
+    coefs : sequence
+      AR coefficients for k = 1, 2, ..., P
+    drop_transients : int
+      number of initial IIR filter transient terms to drop
+    v : ndarray
+      custom noise process
+    Parameters
+    ----------
+    N : float
+       The number of points in the AR process generated. Default: 512
+    sigma : float
+       The variance of the noise in the AR process. Default: 1
+    coefs : list or array of floats
+       The AR model coefficients. Default: [2.7607, -3.8106, 2.6535, -0.9238],
+       which is a sequence shown to be well-estimated by an order 8 AR system.
+    drop_transients : float
+       How many samples to drop from the beginning of the sequence (the
+       transient phases of the process), so that the process can be considered
+       stationary.
+    v : float array
+       Optionally, input a specific sequence of noise samples (this over-rides
+       the sigma parameter). Default: None
+    Returns
+    -------
+    u : ndarray
+       the AR sequence
+    v : ndarray
+       the unit-variance innovations sequence
+    coefs : ndarray
+       feedback coefficients from k=1,len(coefs)
+    The form of the feedback coefficients is a little different than
+    the normal linear constant-coefficient difference equation. Therefore
+    the transfer function implemented in this method is
+    H(z) = sigma**0.5 / ( 1 - sum_k coefs(k)z**(-k) )    1 <= k <= P
+    Examples
+    --------
+    >>> import nitime.algorithms as alg
+    >>> ar_seq, nz, alpha = ar_generator()
+    >>> fgrid, hz = alg.freq_response(1.0, a=np.r_[1, -alpha])
+    >>> sdf_ar = (hz * hz.conj()).real
+    """
+    from scipy.signal import lfilter
+    if coefs is None:
+        # this sequence is shown to be estimated well by an order 8 AR system
+        coefs = np.array([ 2.7607, -3.8106, 2.6535, -0.9238 ])
+    else:
+        coefs = np.asarray(coefs)
+
+    # The number of terms we generate must include the dropped transients, and
+    # then at the end we cut those out of the returned array.
+    N += drop_transients
+
+    # Typically uses just pass sigma in, but optionally they can provide their
+    # own noise vector, case in which we use it
+    if v is None:
+        v = np.random.normal(size=N)
+        v -= v[ drop_transients: ].mean()
+
+    b = [ sigma**0.5 ]
+    a = np.r_[ 1, -coefs ]
+    u = sig.lfilter(b, a, v)
+
+    # Only return the data after the drop_transients terms
+    return u[ drop_transients: ], v[ drop_transients: ], coefs
+
+
+def freq_response(b, a=1., n_freqs=1024, sides='onesided'):
+    """
+    Returns the frequency response of the IIR or FIR filter described
+    by beta and alpha coefficients.
+    Parameters
+    ----------
+    b : beta sequence (moving average component)
+    a : alpha sequence (autoregressive component)
+    n_freqs : size of frequency grid
+    sides : {'onesided', 'twosided'}
+       compute frequencies between [-PI,PI), or from [0, PI]
+    Returns
+    -------
+    fgrid, H(e^jw)
+    Notes
+    -----
+    For a description of the linear constant-coefficient difference equation,
+    see
+    http://en.wikipedia.org/wiki/Z-transform
+    """
+    # transitioning to scipy freqz
+    from scipy.signal import freqz
+    real_n = n_freqs // 2 + 1 if sides == 'onesided' else n_freqs
+    return freqz(b, a=a, worN=real_n, whole=sides != 'onesided')
+
+
 class MultitaperSpectralTests(unittest.TestCase):
     def test_dpss_windows_short(self):
         """Are eigenvalues representing spectral concentration near unity?"""
@@ -78,6 +255,7 @@ class MultitaperSpectralTests(unittest.TestCase):
         assert_allclose(a, b.T)
 
     def test_tapered_spectra(self):
+        """ Testing, if wrong input to tapered_spectra triggers warnings. """
         with warnings.catch_warnings(record=True) as w:
             # Cause all warnings to always be triggered.
             warnings.simplefilter("always")
@@ -87,7 +265,6 @@ class MultitaperSpectralTests(unittest.TestCase):
                                 NFFT=3,
                                 low_bias=False)
             self.assertTrue(len(w) == 1)
-
 
     def test_get_spectra(self):
         """Testing get_spectra"""
@@ -111,8 +288,8 @@ class MultitaperSpectralTests(unittest.TestCase):
 
         self.assertEqual(f_multi_taper[ 0 ].shape[ 0 ], N / 2 + 1)
 
-
     def test_mtm_cross_spectrum(self):
+        """ Testing mtm_cross_spectrum with incompatible inputs. """
         tx = np.ones(400)
         ty = np.ones(401)
         weights = tx
@@ -120,7 +297,16 @@ class MultitaperSpectralTests(unittest.TestCase):
             mts.mtm_cross_spectrum(tx, ty, weights, sides='twosided')
             self.assertTrue('shape mismatch' in context.exception)
 
+    def test_multi_taper_psd(self):
+        """ Power spectral estimates for a sequence with known spectre. """
+        # generate the multi-tapered estimate of the spectrum:
+        ar_seq = np.ones(512)
+        f, psd_mt, nu = mts.multi_taper_psd(
+                ar_seq, adaptive=True, jackknife=True)
 
+        # compare:
+        print(psd_mt)
+        self.assertAlmostEqual(0.0, psd_mt.mean())
 
     @dec.slow
     def test_dpss_windows_long(self):
