@@ -305,8 +305,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     # duplicate spike trains
     spiketrain_array = np.zeros((1, len_signals))
     spiketrain_array[0, left_edge:right_edge] = spiketrain.to_array()
-    spiketrains_array = np.squeeze(
-        np.repeat(spiketrain_array, repeats=num_signals, axis=0)).transpose()
+    spiketrains_array = np.repeat(spiketrain_array, repeats=num_signals, axis=0).transpose()
 
     # calculate coherence
     frequencies, sfc = scipy.signal.coherence(

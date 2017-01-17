@@ -315,7 +315,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         s_single, f_single = sta.spike_field_coherence(self.anasig0, self.bst0)
 
         self.assertEqual(len(f_single.shape), 1)
-        self.assertEqual(len(s_single.shape), 1)
+        self.assertEqual(len(s_single.shape), 2)
 
         # multiple analogsignal traces and single spike train
         s_multi, f_multi = sta.spike_field_coherence(self.anasig4, self.bst0)
@@ -328,7 +328,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         assert_array_equal(f_single, f_multi)
         # coherences of s_single and first signal in s_multi are identical,
         # since first analogsignal trace in anasig4 is same as in anasig0
-        assert_array_equal(s_single, s_multi[:, 0])
+        assert_array_equal(s_single[:, 0], s_multi[:, 0])
 
     def test_non_binned_spiketrain_input(self):
         s, f = sta.spike_field_coherence(self.anasig0, self.st0)
