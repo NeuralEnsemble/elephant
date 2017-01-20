@@ -301,12 +301,13 @@ class MultitaperSpectralTests(unittest.TestCase):
         """ Power spectral estimates for a sequence with known spectre. """
         # generate the multi-tapered estimate of the spectrum:
         N = 2048.
+        BW = 4.0
         array = np.linspace(0., 1., N)
         ar_seq = np.sin(35. * np.pi * array) + np.ones_like(array)
         f, psd_mt, nu = mts.multi_taper_psd(
                 ar_seq, Fs=N, adaptive=True, jackknife=False, sides='onesided',
-                NW=2., BW=4.)
-        self.assertAlmostEqual(np.sum(psd_mt >= 1e-3) <= 4)
+                BW=BW)
+        self.assertTrue(np.sum(psd_mt >= 1e-3) <= BW)
 
     @dec.slow
     def test_dpss_windows_long(self):

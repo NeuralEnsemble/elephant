@@ -172,7 +172,7 @@ def _adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
 	"""
 	from multitaper_spectral import mtm_cross_spectrum
 	K = len(eigvals)
-	if sides not in [ 'one_sided', 'two_sided' ]:
+	if sides not in [ 'onesided', 'twosided' ]:
 		warnings.warn('Warning: strange input: sides', UserWarning)
 	if max_iter <= 0:
 		warnings.warn('Warning: strange input: iterations', UserWarning)
