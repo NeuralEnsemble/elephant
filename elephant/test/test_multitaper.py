@@ -300,13 +300,13 @@ class MultitaperSpectralTests(unittest.TestCase):
     def test_multi_taper_psd(self):
         """ Power spectral estimates for a sequence with known spectre. """
         # generate the multi-tapered estimate of the spectrum:
-        ar_seq = np.ones(512)
+        N = 2048.
+        array = np.linspace(0., 1., N)
+        ar_seq = np.sin(35. * np.pi * array) + np.ones_like(array)
         f, psd_mt, nu = mts.multi_taper_psd(
-                ar_seq, adaptive=True, jackknife=True)
-
-        # compare:
-        print(psd_mt)
-        self.assertAlmostEqual(0.0, psd_mt.mean())
+                ar_seq, Fs=N, adaptive=True, jackknife=False, sides='onesided',
+                NW=2., BW=4.)
+        self.assertAlmostEqual(np.sum(psd_mt >= 1e-3) <= 4)
 
     @dec.slow
     def test_dpss_windows_long(self):
@@ -337,6 +337,24 @@ class MultitaperSpectralTests(unittest.TestCase):
 def suite():
     suite = unittest.makeSuite(MultitaperSpectralTests, 'test')
     return suite
+
+# def shortprint():
+#     import matplotlib.pyplot as plt
+#     import scipy.signal as sig
+#     N = 512.
+#     array = np.linspace(0., 1., N)
+#     ar_seq = np.sin(20 * np.pi * array) + np.ones_like(array)
+#     f, psd_mt, nu = mts.multi_taper_psd(
+#             ar_seq, Fs=N, adaptive=True, jackknife=False, sides='onesided', NW=2., BW=4.)
+#
+#     fig = plt.figure()
+#     ax1 = fig.add_subplot(211)
+#     ax1.plot(np.linspace(0, 1., ar_seq.shape[ 0 ]), ar_seq)
+#     ax2 = fig.add_subplot(212)
+#     ax2.plot(f, psd_mt[ 0:f.shape[ 0 ] ], marker='.', c='r')
+#     freqs, array2 = sig.welch(ar_seq, fs=N)
+#     ax2.plot(freqs, array2[ 0:freqs.shape[ 0 ] ], marker='.', c='g')
+#     plt.show()
 
 
 if __name__ == "__main__":
