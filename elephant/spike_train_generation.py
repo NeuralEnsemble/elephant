@@ -16,6 +16,7 @@ from quantities import ms, mV, Hz, Quantity, dimensionless
 from neo import SpikeTrain
 import random
 from elephant.spike_train_surrogates import dither_spike_train
+import warnings
 
 
 def spike_extraction(signal, threshold=0.0 * mV, sign='above',
@@ -74,7 +75,7 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
         raise ValueError("extr_interval[0] must be < extr_interval[1]")
 
     if any(np.diff(time_stamps) < extr_interval[1]):
-        print("WARNING: Waveforms overlap")
+        warnings.warn("Waveforms overlap.", UserWarning)
 
     data_left = ((extr_left * signal.sampling_rate).simplified).magnitude
 
@@ -103,10 +104,10 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
                              if len(x) < max_len])
         waveforms = np.delete(waveforms, to_delete, axis=0)
         waveforms = np.array([x for x in waveforms])
-        print("WARNING: Waveforms " +
-              ("{:d}, " * len(to_delete)).format(*to_delete) +
-              "exceeded signal and had to be deleted" +
-              "Change extr_interval to keep.")
+        warnings.warn("Waveforms " +
+                      ("{:d}, " * len(to_delete)).format(*to_delete) +
+                      "exceeded signal and had to be deleted. " +
+                      "Change extr_interval to keep.")
 
     waveforms = waveforms[:, np.newaxis, :]
 
