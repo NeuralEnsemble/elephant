@@ -8,7 +8,7 @@ install_requires = ['neo>0.3.3',
                     'numpy>=1.8.2',
                     'quantities>=0.10.1',
                     'scipy>=0.14.0',
-                    'six']
+                    'six>=1.10.0']
 extras_require = {'pandas': ['pandas>=0.14.1'],
                   'docs': ['numpydoc>=0.5',
                            'sphinx>=1.2.2'],
