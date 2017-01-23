@@ -29,8 +29,8 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
 
     # Configure the conda environment and put it in the path using the
     # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
+        six=$SIX_VERSION numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
     conda install libgfortran=1
 
@@ -58,7 +58,7 @@ elif [[ "$DISTRIB" == "conda" ]]; then
 
     # Configure the conda environment and put it in the path using the
     # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six=$SIX_VERSION \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
     source activate testenv
     conda install libgfortran=1
@@ -86,7 +86,7 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install coverage
     pip install numpy==$NUMPY_VERSION
     pip install scipy==$SCIPY_VERSION
-    pip install six
+    pip install six==$SIX_VERSION
     pip install quantities
 fi
 
