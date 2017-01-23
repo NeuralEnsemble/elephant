@@ -44,7 +44,6 @@ transforms.
 """
 
 import numpy as np
-# import matplotlib.mlab as mlab
 import scipy.linalg as linalg
 import scipy.signal as sig
 import scipy.interpolate as interpolate
@@ -269,12 +268,8 @@ def dpss_windows(N, NW, Kmax, interp_from=None, interp_kind='linear'):
         for this_d in d:
             x = np.arange(this_d.shape[ -1 ])
             I = interpolate.interp1d(x, this_d, kind=interp_kind)
-            d_temp = I(np.arange(0, this_d.shape[ -1 ] - 1,
-                                 float(this_d.shape[ -1 ] - 1) / N))
-
-            # Rescale:
-            d_temp = d_temp / np.sqrt(np.sum(d_temp ** 2))
-
+            d_temp = I(
+                np.linspace(0, this_d.shape[ -1 ] - 1, N, endpoint=False))
             dpss.append(d_temp)
 
         dpss = np.array(dpss)
