@@ -262,7 +262,7 @@ def _adaptive_weights(yk, eigvals, sides='onesided', max_iter=150):
 
 # If we can get it, we want the cythonized version
 try:
-	from _utils import _tridisolve
+	from _cython_utils import _tridisolve
 	print('cython version of tridisolve imported')
 
 # If that doesn't work, we define it here:

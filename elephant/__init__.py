@@ -13,6 +13,7 @@ from . import (statistics,
                cubic,
                spectral,
                kernels,
+               multitaper_spectral,
                spike_train_dissimilarity,
                spike_train_surrogates,
                signal_processing,
@@ -24,6 +25,8 @@ from . import (statistics,
 try:
     from . import pandas_bridge
     from . import asset
+    from . import _cython_utils
+
 except ImportError:
     pass
 

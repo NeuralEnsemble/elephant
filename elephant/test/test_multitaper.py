@@ -43,165 +43,26 @@ import os
 import unittest
 import warnings
 import numpy as np
+import scipy.signal as sig
 from numpy.testing import assert_allclose
+from numpy.testing import assert_almost_equal
 import numpy.testing.decorators as dec
 import elephant
 from elephant import multitaper_spectral as mts
-# from elephant import multitaper_utils as mtu
 
 # Define globally
 test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')
 
-
 # include the following for testing multi_taper_psc/csd:
+
+
 def dB(x, out=None):
+    """convert to decibel"""
     if out is None:
         return 10 * np.log10(x)
     else:
         np.log10(x, out)
         np.multiply(out, 10, out)
-
-
-def periodogram(s, Fs=2 * np.pi, Sk=None, N=None,
-                sides='default', normalize=True):
-    """Takes an N-point periodogram estimate of the PSD function. The
-    number of points N, or a precomputed FFT Sk may be provided. By default,
-    the PSD function returned is normalized so that the integral of the PSD
-    is equal to the mean squared amplitude (mean energy) of s (see Notes).
-    Parameters
-    ----------
-    s : ndarray
-        Signal(s) for which to estimate the PSD, time dimension in the last
-        axis
-    Fs : float (optional)
-       The sampling rate. Defaults to 2*pi
-    Sk : ndarray (optional)
-        Precomputed FFT of s
-    N : int (optional)
-        Indicates an N-point FFT where N != s.shape[-1]
-    sides : str (optional) [ 'default' | 'onesided' | 'twosided' ]
-         This determines which sides of the spectrum to return.
-         For complex-valued inputs, the default is two-sided, for real-valued
-         inputs, default is one-sided Indicates whether to return a one-sided
-         or two-sided
-    PSD normalize : boolean (optional, default=True) Normalizes the PSD
-    Returns
-    -------
-    (f, psd) : tuple
-       f: The central frequencies for the frequency bands
-       PSD estimate for each row of s
-    """
-    import scipy.fftpack as fftpack
-
-    if Sk is not None:
-        N = Sk.shape[ -1 ]
-    else:
-        N = s.shape[ -1 ] if not N else N
-        Sk = fftpack.fft(s, n=N)
-    pshape = list(Sk.shape)
-
-    # if the time series is a complex vector, a one sided PSD is invalid:
-    if (sides == 'default' and np.iscomplexobj(s)) or sides == 'twosided':
-        sides = 'twosided'
-    elif sides in ('default', 'onesided'):
-        sides = 'onesided'
-
-    if sides == 'onesided':
-        # putative Nyquist freq
-        Fn = N // 2 + 1
-        # last duplicate freq
-        Fl = (N + 1) // 2
-        pshape[ -1 ] = Fn
-        P = np.zeros(pshape, 'd')
-        freqs = np.linspace(0, Fs // 2, Fn)
-        P[ ..., 0 ] = (Sk[ ..., 0 ] * Sk[ ..., 0 ].conj()).real
-        P[ ..., 1:Fl ] = 2 * (Sk[ ..., 1:Fl ] * Sk[ ..., 1:Fl ].conj()).real
-        if Fn > Fl:
-            P[ ..., Fn - 1 ] = (
-            Sk[ ..., Fn - 1 ] * Sk[ ..., Fn - 1 ].conj()).real
-    else:
-        P = (Sk * Sk.conj()).real
-        freqs = np.linspace(0, Fs, N, endpoint=False)
-    if normalize:
-        P /= (Fs * s.shape[ -1 ])
-    return freqs, P
-
-
-def ar_generator(N=512, sigma=1., coefs=None, drop_transients=0, v=None):
-    """
-    This generates a signal u(n) = a1*u(n-1) + a2*u(n-2) + ... + v(n)
-    where v(n) is a stationary stochastic process with zero mean
-    and variance = sigma. XXX: confusing variance notation
-    Parameters
-    ----------
-    N : int
-      sequence length
-    sigma : float
-      power of the white noise driving process
-    coefs : sequence
-      AR coefficients for k = 1, 2, ..., P
-    drop_transients : int
-      number of initial IIR filter transient terms to drop
-    v : ndarray
-      custom noise process
-    Parameters
-    ----------
-    N : float
-       The number of points in the AR process generated. Default: 512
-    sigma : float
-       The variance of the noise in the AR process. Default: 1
-    coefs : list or array of floats
-       The AR model coefficients. Default: [2.7607, -3.8106, 2.6535, -0.9238],
-       which is a sequence shown to be well-estimated by an order 8 AR system.
-    drop_transients : float
-       How many samples to drop from the beginning of the sequence (the
-       transient phases of the process), so that the process can be considered
-       stationary.
-    v : float array
-       Optionally, input a specific sequence of noise samples (this over-rides
-       the sigma parameter). Default: None
-    Returns
-    -------
-    u : ndarray
-       the AR sequence
-    v : ndarray
-       the unit-variance innovations sequence
-    coefs : ndarray
-       feedback coefficients from k=1,len(coefs)
-    The form of the feedback coefficients is a little different than
-    the normal linear constant-coefficient difference equation. Therefore
-    the transfer function implemented in this method is
-    H(z) = sigma**0.5 / ( 1 - sum_k coefs(k)z**(-k) )    1 <= k <= P
-    Examples
-    --------
-    >>> import nitime.algorithms as alg
-    >>> ar_seq, nz, alpha = ar_generator()
-    >>> fgrid, hz = alg.freq_response(1.0, a=np.r_[1, -alpha])
-    >>> sdf_ar = (hz * hz.conj()).real
-    """
-    from scipy.signal import lfilter
-    if coefs is None:
-        # this sequence is shown to be estimated well by an order 8 AR system
-        coefs = np.array([ 2.7607, -3.8106, 2.6535, -0.9238 ])
-    else:
-        coefs = np.asarray(coefs)
-
-    # The number of terms we generate must include the dropped transients, and
-    # then at the end we cut those out of the returned array.
-    N += drop_transients
-
-    # Typically uses just pass sigma in, but optionally they can provide their
-    # own noise vector, case in which we use it
-    if v is None:
-        v = np.random.normal(size=N)
-        v -= v[ drop_transients: ].mean()
-
-    b = [ sigma**0.5 ]
-    a = np.r_[ 1, -coefs ]
-    u = sig.lfilter(b, a, v)
-
-    # Only return the data after the drop_transients terms
-    return u[ drop_transients: ], v[ drop_transients: ], coefs
 
 
 def freq_response(b, a=1., n_freqs=1024, sides='onesided'):
@@ -230,6 +91,38 @@ def freq_response(b, a=1., n_freqs=1024, sides='onesided'):
     return freqz(b, a=a, worN=real_n, whole=sides != 'onesided')
 
 
+def ar_generator(N=512, sigma=1., coefs=None, drop_transients=0, v=None):
+    """
+    This generates a signal u(n) = a1*u(n-1) + a2*u(n-2) + ... + v(n)
+    where v(n) is a stationary stochastic process with zero mean
+    and variance = sigma.
+    Parameters
+    ----------
+    N : int
+      sequence length
+    sigma : float
+      power of the white noise driving process
+    coefs : sequence
+      AR coefficients for k = 1, 2, ..., P
+    drop_transients : int
+      number of initial IIR filter transient terms to drop
+    v : ndarray
+      custom noise process
+    """
+    if coefs is None:
+        coefs = np.array([ 2.7607, -3.8106, 2.6535, -0.9238 ])
+    else:
+        coefs = np.asarray(coefs)
+    N += drop_transients
+    if v is None:
+        v = np.random.normal(size=N)
+        v -= v[ drop_transients: ].mean()
+    b = [ sigma**0.5 ]
+    a = np.r_[ 1, -coefs ]
+    u = sig.lfilter(b, a, v)
+    return u[ drop_transients: ], v[ drop_transients: ], coefs
+
+
 class MultitaperSpectralTests(unittest.TestCase):
     def test_dpss_windows_short(self):
         """Are eigenvalues representing spectral concentration near unity?"""
@@ -247,9 +140,7 @@ class MultitaperSpectralTests(unittest.TestCase):
     def test_dpss_windows_with_matlab(self):
         """Do the dpss windows resemble the equivalent matlab result
         The variable b is read in from a text file generated by issuing:
-        dpss(100,2)
-        in matlab
-        """
+        dpss(100,2) in matlab """
         a, _ = mts.dpss_windows(100, 2, 4)
         b = np.loadtxt(os.path.join(test_dir_path, 'dpss_testdata1.txt'))
         assert_allclose(a, b.T)
@@ -288,13 +179,12 @@ class MultitaperSpectralTests(unittest.TestCase):
 
         self.assertEqual(f_multi_taper[ 0 ].shape[ 0 ], N / 2 + 1)
 
-    def test_mtm_cross_spectrum(self):
-        """ Testing mtm_cross_spectrum with incompatible inputs. """
-        tx = np.ones(400)
-        ty = np.ones(401)
-        weights = tx
+    def test_get_spectra_unknown_method(self):
+        """ Test that providing an unknown method to get_spectra rasies a
+        ValueError """
+        tseries = np.array([ [ 1, 2, 3 ], [ 4, 5, 6 ] ])
         with self.assertRaises(Exception) as context:
-            mts.mtm_cross_spectrum(tx, ty, weights, sides='twosided')
+            mts.get_spectra(tseries, method=dict(this_method='foo'))
             self.assertTrue('shape mismatch' in context.exception)
 
     def test_multi_taper_psd(self):
@@ -309,54 +199,193 @@ class MultitaperSpectralTests(unittest.TestCase):
                 BW=BW)
         self.assertTrue(np.sum(psd_mt >= 1e-3) <= BW)
 
+    def test_mtm_cross_spectrum(self):
+        """ Testing mtm_cross_spectrum with incompatible inputs. """
+        tx = np.ones(400)
+        ty = np.ones(401)
+        weights = tx
+        with self.assertRaises(Exception) as context:
+            mts.mtm_cross_spectrum(tx, ty, weights, sides='twosided')
+            self.assertTrue('shape mismatch' in context.exception)
+
+    def test_mtm_lin_combo(self):
+        """Test the functionality of cross and autospectrum MTM combinations"""
+        spec1 = np.random.randn(5, 100) + 1j * np.random.randn(5, 100)
+        spec2 = np.random.randn(5, 100) + 1j * np.random.randn(5, 100)
+        # test on both broadcasted weights and per-point weights
+        for wshape in ((2, 5, 1), (2, 5, 100)):
+            weights = np.random.randn(*wshape)
+            sides = 'onesided'
+            mtm_cross = mts.mtm_cross_spectrum(
+                    spec1, spec2, (weights[ 0 ], weights[ 1 ]), sides=sides
+            )
+            self.assertTrue(mtm_cross.dtype in np.sctypes[ 'complex' ],
+                        'Wrong dtype for crossspectrum')
+            self.assertTrue(len(mtm_cross) == 51,
+                        'Wrong length for halfband spectrum')
+            sides = 'twosided'
+            mtm_cross = mts.mtm_cross_spectrum(
+                    spec1, spec2, (weights[ 0 ], weights[ 1 ]), sides=sides
+            )
+            self.assertTrue(len(mtm_cross) == 100,
+                        'Wrong length for fullband spectrum')
+            sides = 'onesided'
+            mtm_auto = mts.mtm_cross_spectrum(
+                    spec1, spec1, weights[ 0 ], sides=sides
+            )
+            self.assertTrue(mtm_auto.dtype in np.sctypes[ 'float' ],
+                        'Wrong dtype for autospectrum')
+            self.assertTrue(len(mtm_auto) == 51,
+                        'Wrong length for halfband spectrum')
+            sides = 'twosided'
+            mtm_auto = mts.mtm_cross_spectrum(
+                    spec1, spec2, weights[ 0 ], sides=sides
+            )
+            self.assertTrue(len(mtm_auto) == 100,
+                        'Wrong length for fullband spectrum')
+
+    def test_hermitian_multitaper_csd(self):
+        """ Make sure CSD matrices returned by various methods have
+        Hermitian symmetry. """
+        sig = np.random.randn(4, 256)
+        _, csd1 = mts.multi_taper_csd(sig, adaptive=False)
+        for i in range(4):
+            for j in range(i + 1):
+                xc1 = csd1[ i, j ]
+                xc2 = csd1[ j, i ]
+                assert_allclose(xc1, xc2.conj(), atol=1e-5,
+                        err_msg='MTM CSD not Hermitian')
+        _, psd, _ = mts.multi_taper_psd(sig, adaptive=False)
+        for i in range(4):
+            assert_allclose(psd[ i ], csd1[ i, i ].real, atol=1e-5,
+                    err_msg='MTM CSD diagonal inconsistent with real PSD')
+
+    def test_multitaper_spectral_normalization(self):
+        """ Check that the spectral estimators are normalized in the
+        correct Watts/Hz fashion """
+        x = np.random.randn(1024)
+        f1, Xp1, _ = mts.multi_taper_psd(x)
+        f2, Xp2, _ = mts.multi_taper_psd(x, Fs=100)
+        f3, Xp3, _ = mts.multi_taper_psd(x, NFFT=2**12)
+
+        p1 = np.sum(Xp1) * 2 * np.pi / 2**10
+        p2 = np.sum(Xp2) * 100 / 2**10
+        p3 = np.sum(Xp3) * 2 * np.pi / 2**12
+        self.assertTrue(np.abs(p1 - p2) < 1e-14,
+                    'Inconsistent frequency normalization in MTM PSD (1)')
+        self.assertTrue(np.abs(p3 - p2) < 1e-8,
+                    'Inconsistent frequency normalization in MTM PSD (2)')
+
+        td_var = np.var(x)
+        # assure that the estimators are at least in the same
+        # order of magnitude as the time-domain variance
+        self.assertTrue(np.abs(np.log10(p1 / td_var)) < 1,
+                    'Incorrect frequency normalization in MTM PSD')
+
+        # check the freq vector while we're here
+        self.assertTrue(f2.max() == 50, 'MTM PSD returns wrong frequency bins')
+
     @dec.slow
     def test_dpss_windows_long(self):
         """ Test that very long dpss windows can be generated (using
         interpolation)"""
-
         # This one is generated using interpolation:
         a1, e = mts.dpss_windows(166800, 4, 8, interp_from=4096)
 
         # This one is calculated:
         a2, e = mts.dpss_windows(166800, 4, 8)
 
-        # They should be very similar:
-        assert_allclose(a1, a2, atol=1e-5)
-
-        # They should both be very similar to the same one calculated in matlab
+        # They should both be very similar to the same one calculated in
+        #  matlab
         # (using 'a = dpss(166800, 4, 8)').
-        test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')
         matlab_long_dpss = np.load(
-            os.path.join(test_dir_path, 'dpss_testdata2.npy'))
-        # We only have the first window to compare against:
-        # Both for the interpolated case:
-        assert_allclose(a1[ 0 ], matlab_long_dpss, atol=1e-5)
-        # As well as the calculated case:
-        assert_allclose(a1[ 0 ], matlab_long_dpss, atol=1e-5)
+                os.path.join(test_dir_path, 'dpss_testdata2.npy'))
+        try:
+            from elephant._cython_utils import _tridisolve
+            print('Cython version of tridisolve imported')
+            # They should be very similar:
+            assert_almost_equal(a1, a2, decimal=5)
+
+            # We only have the first window to compare against:
+            # Both for the interpolated case:
+            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=5)
+            # As well as the calculated case:
+            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=5)
+        except ImportError:
+            print('Cython import failed')
+            pass
+            assert_almost_equal(a1, a2, decimal=-1)
+            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=1)
+            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=1)
+
+    @dec.slow
+    def test_multi_taper_psd_csd(self):
+        """ Test the multi taper psd and csd estimation functions. Based on
+         the example in doc/examples/multi_taper_spectral_estimation.py """
+        N = 2**10
+        n_reps = 10
+        psd = [ ]
+        est_psd = [ ]
+        est_csd = [ ]
+        for jk in [ True, False ]:
+            for k in range(n_reps):
+                for adaptive in [ True, False ]:
+                    ar_seq, nz, alpha = ar_generator(N=N, drop_transients=10)
+                    ar_seq -= ar_seq.mean()
+                    fgrid, hz = freq_response(
+                        1.0, a=np.r_[ 1, -alpha ], n_freqs=N)
+                    psd.append(2 * (hz * hz.conj()).real)
+                    f, psd_mt, nu = mts.multi_taper_psd(
+                        ar_seq, adaptive=adaptive, jackknife=jk)
+                    est_psd.append(psd_mt)
+                    f, csd_mt = mts.multi_taper_csd(
+                        np.vstack([ ar_seq, ar_seq ]), adaptive=adaptive)
+                    # Symmetrical in this case, so take one element out:
+                    est_csd.append(csd_mt[ 0 ][ 1 ])
+
+            fxx = np.mean(psd, axis=0)
+            fxx_est1 = np.mean(est_psd, axis=0)
+            fxx_est2 = np.mean(est_csd, axis=0)
+
+            # Tests the psd:
+            psd_ratio1 = np.mean(fxx_est1 / fxx)
+            assert_allclose(psd_ratio1, 1, rtol=10.)
+            # Tests the csd:
+            psd_ratio2 = np.mean(fxx_est2 / fxx)
+            assert_allclose(psd_ratio2, 1, rtol=10.)
+
+    @dec.slow
+    def test_dpss_properties(self):
+        """ Test conventions of Slepian eigenvectors """
+        N = 2000
+        NW = 200
+        d, lam = mts.dpss_windows(N, NW, 2 * NW - 2)
+        # 2NW-2 lamdas should be all > 0.9
+        self.assertTrue(
+                (lam > 0.9).all(),
+                'Eigenvectors show poor spectral concentration'
+        )
+        # test orthonomality
+        err = np.linalg.norm(d.dot(d.T) - np.eye(2 * NW - 2), ord='fro')
+        self.assertTrue(err**2 < 1e-16,
+                        'Eigenvectors not numerically orthonormal')
+        # test positivity of even functions
+        self.assertTrue(
+                (d[ ::2 ].sum(axis=1) > 0).all(),
+                'Even Slepian sequences should have positive DC'
+        )
+        # test positive initial slope of odd functions
+        # (this tests the sign of a linear slope)
+        pk = np.argmax(np.abs(d[ 1::2, :N // 2 ]), axis=1)
+        t = True
+        for p, f in zip(pk, d[ 1::2 ]):
+            t = t and np.sum(np.arange(1, p + 1) * f[ :p ]) >= 0
+        self.assertTrue(t, 'Odd Slepians should begin positive-going')
 
 
 def suite():
     suite = unittest.makeSuite(MultitaperSpectralTests, 'test')
     return suite
-
-# def shortprint():
-#     import matplotlib.pyplot as plt
-#     import scipy.signal as sig
-#     N = 512.
-#     array = np.linspace(0., 1., N)
-#     ar_seq = np.sin(20 * np.pi * array) + np.ones_like(array)
-#     f, psd_mt, nu = mts.multi_taper_psd(
-#             ar_seq, Fs=N, adaptive=True, jackknife=False, sides='onesided', NW=2., BW=4.)
-#
-#     fig = plt.figure()
-#     ax1 = fig.add_subplot(211)
-#     ax1.plot(np.linspace(0, 1., ar_seq.shape[ 0 ]), ar_seq)
-#     ax2 = fig.add_subplot(212)
-#     ax2.plot(f, psd_mt[ 0:f.shape[ 0 ] ], marker='.', c='r')
-#     freqs, array2 = sig.welch(ar_seq, fs=N)
-#     ax2.plot(freqs, array2[ 0:freqs.shape[ 0 ] ], marker='.', c='g')
-#     plt.show()
-
 
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)
