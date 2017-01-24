@@ -13,6 +13,19 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
                            'sphinx>=1.2.2'],
                   'tests': ['nose>=1.3.3']}
 
+try:
+    from distutils.extension import Extension
+    from Cython.Distutils import build_ext as build_pyx_ext
+    from numpy import get_include
+    # add Cython extensions to the setup options
+    exts = [Extension('elephant._cython_utils', ['elephant/_cython_utils.pyx'],
+                      include_dirs=[get_include()])]
+except ImportError:
+    exts = []
+    # no loop for you!
+    pass
+
+
 setup(
     name="elephant",
     version='0.3.0',
@@ -21,7 +34,8 @@ setup(
                                   os.path.join('icsd', 'LICENSE'),
                                   os.path.join('icsd', 'README.md'),
                                   os.path.join('test', 'dpss_testdata1.txt'),
-                                  os.path.join('test', 'dpss_testdata2.npy')]},
+                                  os.path.join('test', 'dpss_testdata2.npy'),
+                                  ]},
     install_requires=install_requires,
     extras_require=extras_require,
 
@@ -39,5 +53,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Topic :: Scientific/Engineering']
+        'Topic :: Scientific/Engineering'],
+    cmdclass=dict(build_ext=build_pyx_ext),
+    ext_modules=exts
 )
