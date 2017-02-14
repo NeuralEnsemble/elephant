@@ -47,7 +47,7 @@ def cubic(data, ximax=100, alpha=0.05):
 
     Parameters
     ----------
-    data : neo.AnalogSignalArray
+    data : neo.AnalogSignal
         The population histogram (count of spikes per time bin) of the entire
         population of neurons.
     ximax : int
