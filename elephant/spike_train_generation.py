@@ -93,7 +93,7 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
     borders = np.dstack((borders_left, borders_right)).flatten()
 
     waveforms = np.array(
-                np.split(np.array(signal), borders)[1::2]) * signal.units
+                np.split(np.array(signal), borders.astype(int))[1::2]) * signal.units
 
     # len(np.shape(waveforms)) == 1 if waveforms do not have the same width.
     # this can occur when extr_interval indexes beyond the signal.
@@ -317,6 +317,10 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
                If True, a NumPy array of sorted spikes is returned,
                rather than a SpikeTrain object.
 
+    Raises
+    ------
+    ValueError : If `t_start` and `t_stop` are not of type `pq.Quantity`.
+
     Examples
     --------
         >>> from quantities import Hz, ms
@@ -325,7 +329,10 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
             20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
-    mean_interval = 1 / rate
+    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
+        raise ValueError("t_start and t_stop must be of type pq.Quantity")
+    rate = rate.rescale((1 / t_start).units)
+    mean_interval = 1 / rate.magnitude
     return _homogeneous_process(
         np.random.exponential, (mean_interval,), rate, t_start, t_stop,
         as_array)
@@ -355,6 +362,10 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms,
                If True, a NumPy array of sorted spikes is returned,
                rather than a SpikeTrain object.
 
+    Raises
+    ------
+    ValueError : If `t_start` and `t_stop` are not of type `pq.Quantity`.
+
     Examples
     --------
         >>> from quantities import Hz, ms
@@ -363,8 +374,11 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms,
                 5.0, 20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
+    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
+        raise ValueError("t_start and t_stop must be of type pq.Quantity")
+    b = b.rescale((1 / t_start).units).simplified
     rate = b / a
-    k, theta = a, (1 / b)
+    k, theta = a, (1 / b.magnitude)
     return _homogeneous_process(np.random.gamma, (k, theta), rate, t_start, t_stop, as_array)
 
 
