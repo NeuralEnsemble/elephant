@@ -321,14 +321,12 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
     pots = np.reshape(pots, (-1, 1)) * pq.mV
     ele_pos = ele_pos * pq.mm
     lfp = []
-    coordinates = []
     ch = neo.ChannelIndex(index=range(len(pots)))
     for ii in range(len(pots)):
-        coordinates.append(ele_pos[ii])
         lfp.append(pots[ii])
     # lfp = neo.AnalogSignal(lfp, sampling_rate=1000*pq.Hz, units='mV')
     asig = neo.AnalogSignal(lfp, sampling_rate=pq.kHz, units='mV')
-    ch.coordinates = coordinates
+    ch.coordinates = ele_pos
     ch.analogsignals.append(asig)
     ch.create_relationship()
     return asig
