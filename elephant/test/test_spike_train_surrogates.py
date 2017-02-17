@@ -12,6 +12,7 @@ import numpy as np
 import quantities as pq
 import neo
 
+np.random.seed(0)
 
 class SurrogatesTestCase(unittest.TestCase):
 
