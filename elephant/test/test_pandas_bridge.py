@@ -84,7 +84,8 @@ def _convert_levels(levels):
             levels[i] = pd.Index([])
             continue
 
-        levels[i] = pd.Index([level])
+        # pd.Index around pd.Index to convert to Index structure if MultiIndex
+        levels[i] = pd.Index(pd.Index([level]))
     return levels
 
 
@@ -403,7 +404,6 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
 
         self.assertEqual(keys, res0.columns.names)
         self.assertEqual(keys, res1.columns.names)
-
         for value, level in zip(values, res0.columns.levels):
             assert_index_equal(value, level)
         for value, level in zip(values, res1.columns.levels):

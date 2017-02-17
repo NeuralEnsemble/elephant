@@ -977,7 +977,7 @@ def fftkernel(x, w):
     n = nextpow2(Lmax)
     X = np.fft.fft(x, n)
     f = np.arange(0, n, 1.0) / n
-    f = np.concatenate((-f[:n / 2], f[n / 2:0:-1]))
+    f = np.concatenate((-f[:int(n / 2)], f[int(n / 2):0:-1]))
     K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
