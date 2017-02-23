@@ -49,17 +49,20 @@ class SurrogatesTestCase(unittest.TestCase):
 
         nr_surr = 2
         dither = 10 * pq.ms
+        np.random.seed(42)
         surrs = surr.dither_spikes(st, dither=dither, decimals=3, n=nr_surr)
 
+        np.random.seed(42)
+        dither_values = np.random.random_sample((nr_surr, len(st)))
+        expected_non_dithered = np.sum(dither_values==0)
+
+        observed_non_dithered = 0
         for surrog in surrs:
             for i in range(len(surrog)):
-                import warnings
-                warnings.warn(
-                    "Original surrogate {0}: {1}".format(i, surrog[i]))
-                warnings.warn(
-                    "Surrogate integer {0}: {1}".format(i, int(surrog[i])))
-                self.assertNotEqual(surrog[i] - int(surrog[i]) * pq.ms,
-                                    surrog[i] - surrog[i])
+                if surrog[i] - int(surrog[i]) * pq.ms == surrog[i] - surrog[i]:
+                    observed_non_dithered += 1
+
+        self.assertEqual(observed_non_dithered, expected_non_dithered)
 
     def test_dither_spikes_false_edges(self):
 
