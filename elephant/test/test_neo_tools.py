@@ -23,8 +23,10 @@ ARRAY_ATTRS = ['waveforms',
                'times',
                'durations',
                'labels',
-               'channel_indexes',
-               'channel_names'
+               'index',
+               'channel_names',
+               'channel_ids',
+               'coordinates'
                ]
 
 
@@ -444,6 +446,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__epoch_parents_empty_array(self):
         obj = fake_neo('Epoch', seed=0)
         targ = get_fake_values('Epoch', seed=0)
+        del targ['times']
 
         res000 = nt.extract_neo_attrs(obj, parents=False)
         res100 = nt.extract_neo_attrs(obj, parents=False, child_first=True)
@@ -478,6 +481,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__event_parents_empty_array(self):
         obj = fake_neo('Event', seed=0)
         targ = get_fake_values('Event', seed=0)
+        del targ['times']
 
         res000 = nt.extract_neo_attrs(obj, parents=False)
         res100 = nt.extract_neo_attrs(obj, parents=False, child_first=True)
@@ -612,6 +616,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__epoch_noparents_array(self):
         obj = self.block.list_children_by_class('Epoch')[0]
         targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
+        del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=False, skip_array=False)
         res10 = nt.extract_neo_attrs(obj, parents=False, skip_array=False,
@@ -645,6 +650,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__event_noparents_array(self):
         obj = self.block.list_children_by_class('Event')[0]
         targ = get_fake_values('Event', seed=obj.annotations['seed'])
+        del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=False, skip_array=False)
         res10 = nt.extract_neo_attrs(obj, parents=False, skip_array=False,
@@ -679,12 +685,12 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.recordingchannelgroups[0]
-        unit = self.block.recordingchannelgroups[0].units[0]
+        rcg = self.block.channel_indexes[0]
+        unit = self.block.channel_indexes[0].units[0]
 
         targ = get_fake_values('Block', seed=blk.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('RecordingChannelGroup',
+        targ.update(get_fake_values('ChannelIndex',
                                     seed=rcg.annotations['seed']))
         targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
         targ.update(get_fake_values('SpikeTrain',
@@ -699,6 +705,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
+        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        del res1['index']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -721,6 +729,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
+        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        del res1['index']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -743,6 +753,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
+        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        del res1['index']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -751,12 +763,12 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.recordingchannelgroups[0]
-        unit = self.block.recordingchannelgroups[0].units[0]
+        rcg = self.block.channel_indexes[0]
+        unit = self.block.channel_indexes[0].units[0]
 
         targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
         targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('RecordingChannelGroup',
+        targ.update(get_fake_values('ChannelIndex',
                                     seed=rcg.annotations['seed']))
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
@@ -767,6 +779,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         del res0['i']
         del res0['j']
+        del res0['index']  # name clash between Block.index and ChannelIndex.index
 
         self.assertEqual(targ, res0)
 
@@ -785,6 +798,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         del res0['i']
         del res0['j']
+        del res0['index']  # name clash between Block.index and ChannelIndex.index
 
         self.assertEqual(targ, res0)
 
@@ -803,6 +817,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         del res0['i']
         del res0['j']
+        del res0['index']  # name clash between Block.index and ChannelIndex.index
 
         self.assertEqual(targ, res0)
 
@@ -810,11 +825,11 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.recordingchannelgroups[0]
-        unit = self.block.recordingchannelgroups[0].units[0]
+        rcg = self.block.channel_indexes[0]
+        unit = self.block.channel_indexes[0].units[0]
 
         targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('RecordingChannelGroup',
+        targ.update(get_fake_values('ChannelIndex',
                                     seed=rcg.annotations['seed']))
         targ['channel_names'] = rcg.channel_names
         targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
@@ -851,6 +866,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ = get_fake_values('Block', seed=blk.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
+        del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=True, skip_array=False)
         res10 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,
@@ -880,6 +896,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ = get_fake_values('Block', seed=blk.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Event', seed=obj.annotations['seed']))
+        del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=True, skip_array=False)
         res10 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,
@@ -905,17 +922,17 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.recordingchannelgroups[0]
-        unit = self.block.recordingchannelgroups[0].units[0]
+        rcg = self.block.channel_indexes[0]
+        unit = self.block.channel_indexes[0].units[0]
 
         targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('RecordingChannelGroup',
+        targ.update(get_fake_values('ChannelIndex',
                                     seed=rcg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
         del targ['times']
-        del targ['channel_indexes']
+        del targ['index']
         del targ['channel_names']
 
         res0 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,
@@ -926,8 +943,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
-        del res0['channel_indexes']
-        del res1['channel_indexes']
+        del res0['index']
+        del res1['index']
         del res0['channel_names']
         del res1['channel_names']
 
@@ -942,6 +959,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        del targ['times']
 
         res0 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,
                                     child_first=False)
@@ -963,6 +981,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ = get_fake_values('Event', seed=obj.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        del targ['times']
 
         res0 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,
                                     child_first=False)
@@ -1016,10 +1035,10 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 
     def test__get_all_spiketrains__block(self):
         obj = fake_neo('Block', seed=0, n=3)
-        iobj1 = obj.recordingchannelgroups[0].units[0]
-        obj.recordingchannelgroups[0].units.append(iobj1)
-        iobj2 = obj.recordingchannelgroups[0].units[2].spiketrains[1]
-        obj.recordingchannelgroups[1].units[1].spiketrains.append(iobj2)
+        iobj1 = obj.channel_indexes[0].units[0]
+        obj.channel_indexes[0].units.append(iobj1)
+        iobj2 = obj.channel_indexes[0].units[2].spiketrains[1]
+        obj.channel_indexes[1].units[1].spiketrains.append(iobj2)
         res0 = nt.get_all_spiketrains(obj)
 
         targ = fake_neo('Block', seed=0, n=3)
@@ -1034,10 +1053,10 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__list(self):
         obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
-        iobj1 = obj[2].recordingchannelgroups[0].units[0]
-        obj[2].recordingchannelgroups[0].units.append(iobj1)
-        iobj2 = obj[1].recordingchannelgroups[1].units[2].spiketrains[1]
-        obj[2].recordingchannelgroups[0].units[1].spiketrains.append(iobj2)
+        iobj1 = obj[2].channel_indexes[0].units[0]
+        obj[2].channel_indexes[0].units.append(iobj1)
+        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
+        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
         res0 = nt.get_all_spiketrains(obj)
 
@@ -1054,10 +1073,10 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__tuple(self):
         obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
-        iobj1 = obj[2].recordingchannelgroups[0].units[0]
-        obj[2].recordingchannelgroups[0].units.append(iobj1)
-        iobj2 = obj[1].recordingchannelgroups[1].units[2].spiketrains[1]
-        obj[2].recordingchannelgroups[0].units[1].spiketrains.append(iobj2)
+        iobj1 = obj[2].channel_indexes[0].units[0]
+        obj[2].channel_indexes[0].units.append(iobj1)
+        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
+        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
         obj.append(obj[0])
         res0 = nt.get_all_spiketrains(tuple(obj))
 
@@ -1074,10 +1093,10 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__iter(self):
         obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
-        iobj1 = obj[2].recordingchannelgroups[0].units[0]
-        obj[2].recordingchannelgroups[0].units.append(iobj1)
-        iobj2 = obj[1].recordingchannelgroups[1].units[2].spiketrains[1]
-        obj[2].recordingchannelgroups[0].units[1].spiketrains.append(iobj2)
+        iobj1 = obj[2].channel_indexes[0].units[0]
+        obj[2].channel_indexes[0].units.append(iobj1)
+        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
+        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
         obj.append(obj[1])
         res0 = nt.get_all_spiketrains(iter(obj))
 
@@ -1094,10 +1113,10 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__dict(self):
         obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
-        iobj1 = obj[2].recordingchannelgroups[0].units[0]
-        obj[2].recordingchannelgroups[0].units.append(iobj1)
-        iobj2 = obj[1].recordingchannelgroups[1].units[2].spiketrains[1]
-        obj[2].recordingchannelgroups[0].units[1].spiketrains.append(iobj2)
+        iobj1 = obj[2].channel_indexes[0].units[0]
+        obj[2].channel_indexes[0].units.append(iobj1)
+        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
+        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
         obj.append(obj[1])
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_spiketrains(obj)

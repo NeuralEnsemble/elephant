@@ -370,7 +370,7 @@ class RateEstimationTestCase(unittest.TestCase):
             self.assertEqual("Instantaneous firing rate approximation contains "
                              "negative values, possibly caused due to machine "
                              "precision errors.", str(w[-1].message))
-        self.assertIsInstance(inst_rate, neo.core.AnalogSignalArray)
+        self.assertIsInstance(inst_rate, neo.core.AnalogSignal)
         self.assertEquals(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
         self.assertEquals(inst_rate.simplified.units, pq.Hz)
@@ -478,31 +478,31 @@ class TimeHistogramTestCase(unittest.TestCase):
     def test_time_histogram(self):
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = es.time_histogram(self.spiketrains, binsize=pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_binary(self):
         targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = es.time_histogram(self.spiketrains, binsize=pq.s,
                                       binary=True)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_tstart_tstop(self):
         # Start, stop short range
         targ = np.array([2, 1])
         histogram = es.time_histogram(self.spiketrains, binsize=pq.s,
                                       t_start=5 * pq.s, t_stop=7 * pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
         # Test without t_stop
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = es.time_histogram(self.spiketrains, binsize=1 * pq.s,
                                       t_start=0 * pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
         # Test without t_start
         histogram = es.time_histogram(self.spiketrains, binsize=1 * pq.s,
                                       t_stop=10 * pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_output(self):
         # Normalization mean
@@ -542,10 +542,10 @@ class ComplexityPdfTestCase(unittest.TestCase):
     def test_complexity_pdf(self):
         targ = np.array([0.92, 0.01, 0.01, 0.06])
         complexity = es.complexity_pdf(self.spiketrains, binsize=0.1*pq.s)
-        assert_array_equal(targ, complexity[:, 0].magnitude)
-        self.assertEqual(1, complexity[:, 0].magnitude.sum())
+        assert_array_equal(targ, complexity.magnitude[:, 0])
+        self.assertEqual(1, complexity.magnitude[:, 0].sum())
         self.assertEqual(len(self.spiketrains)+1, len(complexity))
-        self.assertIsInstance(complexity, neo.AnalogSignalArray)
+        self.assertIsInstance(complexity, neo.AnalogSignal)
         self.assertEqual(complexity.units, 1*pq.dimensionless)
 
 

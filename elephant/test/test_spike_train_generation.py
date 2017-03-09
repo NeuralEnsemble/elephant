@@ -116,10 +116,10 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
                                      -0.06715259, -0.06703235, -0.06691635])
     
     def test_spike_extraction_waveform(self):
-        spike_train = stgen.spike_extraction(self.vm,
+        spike_train = stgen.spike_extraction(self.vm.reshape(-1),
                                              extr_interval = (-1*ms, 2*ms))
         try:
-            assert_array_almost_equal(spike_train.waveforms[0][0].magnitude,
+            assert_array_almost_equal(spike_train.waveforms[0][0].magnitude.reshape(-1),
                                       self.first_spike)
         except AttributeError:
             self.assertTrue(

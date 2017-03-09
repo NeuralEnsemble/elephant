@@ -499,7 +499,7 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
 
     Returns
     -------
-    rate : neo.AnalogSignalArray
+    rate : neo.AnalogSignal
         Contains the rate estimation in unit hertz (Hz).
         Has a property 'rate.times' which contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
@@ -579,7 +579,7 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
             t_start = t_start + m_idx * spiketrain.units
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
-    rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
+    rate = neo.AnalogSignal(signal=r.reshape(r.size, 1),
                                  sampling_period=sampling_period,
                                  units=pq.Hz, t_start=t_start)
 
@@ -639,7 +639,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Returns
     -------
-    rate : neo.AnalogSignalArray
+    rate : neo.AnalogSignal
         Contains the rate estimation in unit hertz (Hz).
         Has a property 'rate.times' which contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
@@ -764,9 +764,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         t_stop -= (kernel(t_arr).size -
                    kernel.median_index(t_arr)) * spiketrain.units
 
-    rate = neo.AnalogSignalArray(signal=r.reshape(r.size, 1),
-                                 sampling_period=sampling_period,
-                                 units=pq.Hz, t_start=t_start, t_stop=t_stop)
+    rate = neo.AnalogSignal(signal=r.reshape(r.size, 1),
+                            sampling_period=sampling_period,
+                            units=pq.Hz, t_start=t_start, t_stop=t_stop)
 
     return rate
 
@@ -806,8 +806,8 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
     Returns
     -------
-    time_hist : neo.AnalogSignalArray
-        A neo.AnalogSignalArray object containing the histogram values.
+    time_hist : neo.AnalogSignal
+        A neo.AnalogSignal object containing the histogram values.
         `AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
@@ -868,7 +868,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     else:
         raise ValueError('Parameter output is not valid.')
 
-    return neo.AnalogSignalArray(signal=bin_hist.reshape(bin_hist.size, 1),
+    return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
                                  sampling_period=binsize, units=bin_hist.units,
                                  t_start=t_start)
 
@@ -893,8 +893,8 @@ def complexity_pdf(spiketrains, binsize):
 
     Returns
     -------
-    time_hist : neo.AnalogSignalArray
-    A neo.AnalogSignalArray object containing the histogram values.
+    time_hist : neo.AnalogSignal
+    A neo.AnalogSignal object containing the histogram values.
     `AnalogSignal[j]` is the histogram computed between .
 
     See also
@@ -919,8 +919,8 @@ def complexity_pdf(spiketrains, binsize):
 
     # Normalization of the Complexity Histogram to 1 (probabilty distribution)
     complexity_hist = complexity_hist / complexity_hist.sum()
-    # Convert the Complexity pdf to an neo.AnalogSignalArray
-    complexity_distribution = neo.AnalogSignalArray(
+    # Convert the Complexity pdf to an neo.AnalogSignal
+    complexity_distribution = neo.AnalogSignal(
         np.array(complexity_hist).reshape(len(complexity_hist), 1) *
         pq.dimensionless, t_start=0 * pq.dimensionless,
         sampling_period=1 * pq.dimensionless)
@@ -977,7 +977,7 @@ def fftkernel(x, w):
     n = nextpow2(Lmax)
     X = np.fft.fft(x, n)
     f = np.arange(0, n, 1.0) / n
-    f = np.concatenate((-f[:n / 2], f[n / 2:0:-1]))
+    f = np.concatenate((-f[:int(n / 2)], f[int(n / 2):0:-1]))
     K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
