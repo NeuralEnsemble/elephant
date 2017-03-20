@@ -15,7 +15,7 @@ The following packages are required to use Elephant:
     * numpy_ >= 1.8.2
     * scipy_ >= 0.14.0
     * quantities_ >= 0.10.1
-    * neo_ == 0.5.0
+    * neo_ >= 0.5.0
 
 The following packages are optional in order to run certain parts of Elephant:
     * For using the pandas_bridge module: 

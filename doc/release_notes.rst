@@ -16,7 +16,7 @@ New functions
 
 API changes
 ===========
-* Interoperability between Neo 0.5.0beta1 and Elephant
+* Interoperability between Neo 0.5.0 and Elephant
     * Elephant has adapted its functions to the changes in Neo 0.5.0,
       most of the functionality behaves as before
     * See Neo documentation for recent changes: http://neo.readthedocs.io/en/latest/whatisnew.html
