@@ -2,6 +2,14 @@
 Release Notes
 *************
 
+Elephant 0.4.1 release notes
+============================
+March 23rd 2017
+
+Other changes
+=============
+* Fix in `setup.py` to correctly import the current source density module
+
 Elephant 0.4.0 release notes
 ============================
 March 22nd 2017
