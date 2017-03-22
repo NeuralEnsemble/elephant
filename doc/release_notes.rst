@@ -4,7 +4,7 @@ Release Notes
 
 Elephant 0.4.0 release notes
 ============================
-March 20th 2017
+March 22nd 2017
 
 New functions
 =============
