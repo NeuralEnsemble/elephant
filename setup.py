@@ -16,12 +16,12 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
 
 setup(
     name="elephant",
-    version='0.4.0',
+    version='0.4.1',
     packages=['elephant', 'elephant.test'],
-    package_data = {'elephant' : [os.path.join('csd_methods', 'test_data.mat'),
-                                  os.path.join('csd_methods', 'LICENSE'),
-                                  os.path.join('csd_methods', 'README.md'),
-                                  os.path.join('csd_methods', '*.py')]},
+    package_data = {'elephant' : [os.path.join('current_source_density_src', 'test_data.mat'),
+                                  os.path.join('current_source_density_src', 'LICENSE'),
+                                  os.path.join('current_source_density_src', 'README.md'),
+                                  os.path.join('current_source_density_src', '*.py')]},
     
     install_requires=install_requires,
     extras_require=extras_require,

@@ -40,7 +40,7 @@ For Debian/Ubuntu, we recommend to install numpy and scipy as system packages us
 Further packages are found on the Python package index (pypi) and should be installed with pip_::
     
     $ pip install quantities
-    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
+    $ pip install neo
 
 We highly recommend to install these packages using a virtual environment provided by virtualenv_ or locally in the home directory using the ``--user`` option of pip (e.g., ``pip install --user quantities``), neither of which require administrator privileges.
 
@@ -52,7 +52,7 @@ On non-Linux operating systems we recommend using the Anaconda_ Python distribut
     $ conda create -n neuroscience python numpy scipy pip six
     $ source activate neuroscience
     $ pip install quantities
-    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
+    $ pip install neo
 
 
 Installation
@@ -73,8 +73,8 @@ To download and install manually, download the latest package from http://pypi.p
 
 Then::
 
-    $ tar xzf elephant-0.4.0.tar.gz
-    $ cd elephant-0.4.0
+    $ tar xzf elephant-0.4.1.tar.gz
+    $ cd elephant-0.4.1
     $ python setup.py install
     
 or::
