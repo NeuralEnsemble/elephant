@@ -126,7 +126,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = (spiketrain.t_start / spiketrain.units).base, \
                         (spiketrain.t_stop / spiketrain.units).base
-        surr = [s[np.all([s >= tstart, s < tstop], axis=0)] * spiketrain.units
+        surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * spiketrain.units
                 for s in surr.base]
 
     # Return the surrogates as SpikeTrains
