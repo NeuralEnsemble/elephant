@@ -812,3 +812,4 @@ class BinnedSpikeTrain(object):
                                            self.matrix_columns),
                                     dtype=int)
         self._sparse_mat_u = csr_matrix
+
