@@ -44,12 +44,14 @@ import unittest
 import numpy as np
 import numpy.random as npr
 import warnings
-from elephant import multitaper_utils as mtu
+import elephant.multitaper_utils as mtu
 from numpy.testing import assert_allclose
 from numpy.testing import assert_almost_equal
 import numpy.linalg as la
 
 # TODO: function to test the jackknife procedure
+
+
 def expected_jk_variance(K):
     """Compute the expected value of the jackknife variance estimate
     over K windows below. This expected value formula is based on the
@@ -75,9 +77,8 @@ def expected_jk_variance(K):
             ((kf - 1) / (kf - 2)) ** 2 * (kf - 3) / (kf - 2))
 
 
-
-
 class MultitaperUtilityTests(unittest.TestCase):
+
     def test_adaptive_weights(self):
         with warnings.catch_warnings(record=True) as w:
             # Cause all warnings to always be triggered.
@@ -85,7 +86,6 @@ class MultitaperUtilityTests(unittest.TestCase):
             # Trigger a warning.
             mtu._adaptive_weights(np.ones(1), np.ones(1), 'three_sided', -1)
             self.assertTrue(len(w) == 3)
-
 
     def test_tridi_inverse_iteration(self):
         import scipy.linalg as la
@@ -123,7 +123,7 @@ class MultitaperUtilityTests(unittest.TestCase):
             b = A * e
             self.assertTrue(
                 np.linalg.norm(np.abs(b) - np.abs(w[j] * e)) < 1e-8,
-                'Inverse iteration eigenvector solution is inconsistent with '\
+                'Inverse iteration eigenvector solution is inconsistent with '
                 'given eigenvalue'
             )
             E[j] = e
@@ -133,7 +133,7 @@ class MultitaperUtilityTests(unittest.TestCase):
         stop = time.time()
         assert_allclose(ident, np.eye(K), rtol=0.0, atol=1e-12,
                         err_msg='Result incorrect for unity.')
-        self.assertTrue(stop-start <= 10.0, 'Running time too high.')
+        self.assertTrue(stop - start <= 10.0, 'Running time too high.')
 
     def test_remove_bias(self):
         x = np.arange(64).reshape(4, 4, 4)
@@ -142,8 +142,8 @@ class MultitaperUtilityTests(unittest.TestCase):
 
     def test_crosscov(self):
         N = 128
-        ar_seq1 = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))
-        ar_seq2 = npr.randn(N) + np.cos(np.linspace(0., 2.*np.pi, 128))
+        ar_seq1 = npr.randn(N) + np.sin(np.linspace(0., 2. * np.pi, 128))
+        ar_seq2 = npr.randn(N) + np.cos(np.linspace(0., 2. * np.pi, 128))
 
         def corr(x, y, all_lags=True):
             # Computes sxy[k] = E{x[n]*y[n+k]}
@@ -164,17 +164,17 @@ class MultitaperUtilityTests(unittest.TestCase):
             err = sxy_ref - sxy
             mse = np.dot(err, err) / N
             self.assertTrue(mse < 1e-12,
-                'Large mean square error w.r.t. reference cross covariance')
+                            'Large mean square error w.r.t. reference cross covariance')
 
     def test_autocorr(self):
         N = 128
-        ar_seq = npr.randn(N) + np.sin(np.linspace(0., 2.*np.pi, 128))
+        ar_seq = npr.randn(N) + np.sin(np.linspace(0., 2. * np.pi, 128))
         rxx = mtu.autocorr(ar_seq)
         self.assertTrue(rxx[0] == rxx.max(),
-                    'Zero lag autocorrelation is not maximum autocorrelation')
+                        'Zero lag autocorrelation is not maximum autocorrelation')
         rxx = mtu.autocorr(ar_seq, all_lags=True)
         self.assertTrue(rxx[127] == rxx.max(),
-                    'Zero lag autocorrelation is not maximum autocorrelation')
+                        'Zero lag autocorrelation is not maximum autocorrelation')
 
     def test_tridisolve(self):
         """ Test the banded matrix algorithm on the identity matrix """

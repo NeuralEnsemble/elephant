@@ -48,10 +48,10 @@ import scipy.linalg as linalg
 import scipy.signal as sig
 import scipy.interpolate as interpolate
 import scipy.fftpack as fftpack
-import spectral as spectral
+import elephant.spectral as spectral
 import warnings
 
-import multitaper_utils as utils
+import elephant.multitaper_utils as utils
 
 # Set global variables for the default NFFT to be used in spectral analysis and
 # the overlap:
@@ -119,8 +119,8 @@ def get_spectra(time_series, method=None):
     if this_method == 'welch':
         NFFT = method.get('NFFT', default_nfft)
         Fs = method.get('Fs', 2 * np.pi)
-        detrend = method.get('detrend', 'constant') #mlab.detrend_none)
-        window = method.get('window', 'hanning') #mlab.window_hanning)
+        detrend = method.get('detrend', 'constant')  # mlab.detrend_none)
+        window = method.get('window', 'hanning')  # mlab.window_hanning)
         noverlap = method.get('noverlap', int(np.ceil(NFFT / 2)))
         scaling = method.get('scaling', 'spectrum')
 
@@ -133,10 +133,10 @@ def get_spectra(time_series, method=None):
 
         # If there is only 1 channel in the time-series:
         if len(time_series.shape) == 1 or time_series.shape[0] == 1:
-            temp, f = spectral._welch( # mlab.csd(
+            temp, f = spectral._welch(  # mlab.csd(
                 time_series, time_series,
                 fs=Fs, window=window, noverlap=noverlap,
-                nfft=NFFT, detrend=detrend) # scale_by_freq=True)
+                nfft=NFFT, detrend=detrend)  # scale_by_freq=True)
 
             fxy = temp.squeeze()  # the output of mlab.csd has a weird shape
         else:
@@ -146,16 +146,16 @@ def get_spectra(time_series, method=None):
 
             for i in range(time_series.shape[0]):
                 for j in range(i, time_series.shape[0]):
-                    #Notice funny indexing, in order to conform to the
-                    #convconventions of the other methods:
+                    # Notice funny indexing, in order to conform to the
+                    # convconventions of the other methods:
                     temp, f = spectral._welch(time_series[j], time_series[i],
                                               fs=Fs, window=window,
                                               noverlap=noverlap,
                                               nfft=NFFT, detrend=detrend)
-                                       # scale_by_freq=True)
+                    # scale_by_freq=True)
 
                     fxy[i][j] = temp.squeeze()  # the output of mlab.csd has a
-                                                # weird shape
+                    # weird shape
     if this_method == 'multi_taper_csd':
         mdict = method.copy()
         func = eval(mdict.pop('this_method'))
@@ -195,9 +195,9 @@ def get_spectra_bi(x, y, method=None):
 
     """
     f, fij = get_spectra(np.vstack((x, y)), method=method)
-    fxx = fij[ 0, 0 ].real
-    fyy = fij[ 1, 1 ].real
-    fxy = fij[ 0, 1 ]
+    fxx = fij[0, 0].real
+    fyy = fij[1, 1].real
+    fxy = fij[0, 1]
     return f, fxx, fyy, fxy
 
 
@@ -263,13 +263,13 @@ def dpss_windows(N, NW, Kmax, interp_from=None, interp_kind='linear'):
             e_s += 'and N is: %s. ' % N
             e_s += 'Please enter interp_from smaller than N.'
             raise ValueError(e_s)
-        dpss = [ ]
+        dpss = []
         d, e = dpss_windows(interp_from, NW, Kmax)
         for this_d in d:
-            x = np.arange(this_d.shape[ -1 ])
+            x = np.arange(this_d.shape[-1])
             I = interpolate.interp1d(x, this_d, kind=interp_kind)
             d_temp = I(
-                np.linspace(0, this_d.shape[ -1 ] - 1, N, endpoint=False))
+                np.linspace(0, this_d.shape[-1] - 1, N, endpoint=False))
             dpss.append(d_temp)
 
         dpss = np.array(dpss)
@@ -295,43 +295,43 @@ def dpss_windows(N, NW, Kmax, interp_from=None, interp_kind='linear'):
         # [see Percival and Walden, 1993]
         diagonal = ((N - 1 - 2 * nidx) / 2.) ** 2 * np.cos(2 * np.pi * W)
         off_diag = np.zeros_like(nidx)
-        off_diag[ :-1 ] = nidx[ 1: ] * (N - nidx[ 1: ]) / 2.
+        off_diag[:-1] = nidx[1:] * (N - nidx[1:]) / 2.
         # put the diagonals in LAPACK "packed" storage
         ab = np.zeros((2, N), 'd')
-        ab[ 1 ] = diagonal
-        ab[ 0, 1: ] = off_diag[ :-1 ]
+        ab[1] = diagonal
+        ab[0, 1:] = off_diag[:-1]
         # only calculate the highest Kmax eigenvalues
         w = linalg.eigvals_banded(ab, select='i',
                                   select_range=(N - Kmax, N - 1))
-        w = w[ ::-1 ]
+        w = w[::-1]
 
         # find the corresponding eigenvectors via inverse iteration
         t = np.linspace(0, np.pi, N)
         dpss = np.zeros((Kmax, N), 'd')
         for k in range(Kmax):
-            dpss[ k ] = utils._tridi_inverse_iteration(
-                diagonal, off_diag, w[ k ], x0=np.sin((k + 1) * t)
+            dpss[k] = utils._tridi_inverse_iteration(
+                diagonal, off_diag, w[k], x0=np.sin((k + 1) * t)
             )
 
     # By convention (Percival and Walden, 1993 pg 379)
     # * symmetric tapers (k=0,2,4,...) should have a positive average.
     # * antisymmetric tapers should begin with a positive lobe
-    fix_symmetric = (dpss[ 0::2 ].sum(axis=1) < 0)
+    fix_symmetric = (dpss[0::2].sum(axis=1) < 0)
     for i, f in enumerate(fix_symmetric):
         if f:
-            dpss[ 2 * i ] *= -1
+            dpss[2 * i] *= -1
     # rather than test the sign of one point, test the sign of the
     # linear slope up to the first (largest) peak
-    pk = np.argmax(np.abs(dpss[ 1::2, :N // 2 ]), axis=1)
+    pk = np.argmax(np.abs(dpss[1::2, :N // 2]), axis=1)
     for i, p in enumerate(pk):
-        if np.sum(dpss[ 2 * i + 1, :p ]) < 0:
-            dpss[ 2 * i + 1 ] *= -1
+        if np.sum(dpss[2 * i + 1, :p]) < 0:
+            dpss[2 * i + 1] *= -1
 
     # Now find the eigenvalues of the original spectral concentration problem
     # Use the autocorr sequence technique from Percival and Walden, 1993 pg 390
     dpss_rxx = utils.autocorr(dpss) * N
     r = 4 * W * np.sinc(2 * W * nidx)
-    r[ 0 ] = 2 * W
+    r[0] = 2 * W
     eigvals = np.dot(dpss_rxx, r)
 
     return dpss, eigvals
@@ -368,14 +368,14 @@ def tapered_spectra(s, tapers, NFFT=None, low_bias=True):
       The eigenvalues are also returned if DPSS are calculated here.
 
     """
-    N = s.shape[ -1 ]
+    N = s.shape[-1]
     # XXX: don't allow NFFT < N -- not every implementation is so restrictive!
     if NFFT is None or NFFT < N:
         if NFFT is not None:
             warnings.warn('More NFFT bins to compute than datapoints',
                           UserWarning)
         NFFT = N
-    rest_of_dims = s.shape[ :-1 ]
+    rest_of_dims = s.shape[:-1]
     M = int(np.product(rest_of_dims))
 
     s = s.reshape(int(np.product(rest_of_dims)), N)
@@ -388,17 +388,17 @@ def tapered_spectra(s, tapers, NFFT=None, low_bias=True):
         dpss, eigvals = dpss_windows(*args)
         if low_bias:
             keepers = (eigvals > 0.9)
-            dpss = dpss[ keepers ]
-            eigvals = eigvals[ keepers ]
+            dpss = dpss[keepers]
+            eigvals = eigvals[keepers]
         tapers = dpss
     else:
         eigvals = None
-    K = tapers.shape[ 0 ]
-    sig_sl = [ slice(None) ] * len(s.shape)
+    K = tapers.shape[0]
+    sig_sl = [slice(None)] * len(s.shape)
     sig_sl.insert(len(s.shape) - 1, np.newaxis)
 
     # tapered.shape is (M, Kmax, N)
-    tapered = s[ sig_sl ] * tapers
+    tapered = s[sig_sl] * tapers
 
     # compute the y_{i,k}(f) -- full FFT takes ~1.5x longer, but unpacking
     # results of real-valued FFT eats up memory
@@ -446,14 +446,14 @@ def mtm_cross_spectrum(tx, ty, weights, sides='twosided'):
     d_k^x(f)^2]^{\frac{1}{2}}[\sum_k d_k^y(f)^2]^{\frac{1}{2}}}`
 
     """
-    N = tx.shape[ -1 ]
+    N = tx.shape[-1]
     if ty.shape != tx.shape:
         raise ValueError('shape mismatch between tx, ty')
 
     if isinstance(weights, (list, tuple)):
         autospectrum = False
-        weights_x = weights[ 0 ]
-        weights_y = weights[ 1 ]
+        weights_x = weights[0]
+        weights_y = weights[1]
         denom = (np.abs(weights_x) ** 2).sum(axis=0) ** 0.5
         denom *= (np.abs(weights_y) ** 2).sum(axis=0) ** 0.5
     else:
@@ -465,16 +465,16 @@ def mtm_cross_spectrum(tx, ty, weights, sides='twosided'):
     if sides == 'onesided':
         # where the nyq freq should be
         Fn = N // 2 + 1
-        truncated_slice = [ slice(None) ] * len(tx.shape)
-        truncated_slice[ -1 ] = slice(0, Fn)
+        truncated_slice = [slice(None)] * len(tx.shape)
+        truncated_slice[-1] = slice(0, Fn)
         tsl = tuple(truncated_slice)
-        tx = tx[ tsl ]
-        ty = ty[ tsl ]
+        tx = tx[tsl]
+        ty = ty[tsl]
         # if weights.shape[-1] > 1 then make sure weights are truncated too
-        if weights_x.shape[ -1 ] > 1:
-            weights_x = weights_x[ tsl ]
-            weights_y = weights_y[ tsl ]
-            denom = denom[ tsl[ 1: ] ]
+        if weights_x.shape[-1] > 1:
+            weights_x = weights_x[tsl]
+            weights_y = weights_y[tsl]
+            denom = denom[tsl[1:]]
 
     sf = weights_x * tx
     sf *= (weights_y * ty).conj()
@@ -484,9 +484,9 @@ def mtm_cross_spectrum(tx, ty, weights, sides='twosided'):
     if sides == 'onesided':
         # dbl power at duplicated freqs
         Fl = (N + 1) // 2
-        sub_slice = [ slice(None) ] * len(sf.shape)
-        sub_slice[ -1 ] = slice(1, Fl)
-        sf[ tuple(sub_slice) ] *= 2
+        sub_slice = [slice(None)] * len(sf.shape)
+        sub_slice[-1] = slice(1, Fl)
+        sf[tuple(sub_slice)] *= 2
 
     if autospectrum:
         return sf.real
@@ -564,8 +564,8 @@ def multi_taper_psd(
 
     """
     # have last axis be time series for now
-    N = s.shape[ -1 ]
-    M = int(np.product(s.shape[ :-1 ]))
+    N = s.shape[-1]
+    M = int(np.product(s.shape[:-1]))
 
     if BW is not None:
         # BW wins in a contest (since it was the original implementation)
@@ -589,7 +589,7 @@ def multi_taper_psd(
     spectra, eigvals = tapered_spectra(
         s, (NW, Kmax), NFFT=NFFT, low_bias=low_bias
     )
-    NFFT = spectra.shape[ -1 ]
+    NFFT = spectra.shape[-1]
     K = len(eigvals)
     # collapse spectra's shape back down to 3 dimensions
     spectra.shape = (M, K, NFFT)
@@ -601,8 +601,8 @@ def multi_taper_psd(
     if adaptive:
         weights = np.empty((M, K, last_freq))
         for i in range(M):
-            weights[ i ], nu[ i ] = utils._adaptive_weights(
-                spectra[ i ], eigvals, sides=sides
+            weights[i], nu[i] = utils._adaptive_weights(
+                spectra[i], eigvals, sides=sides
             )
     else:
         # let the weights simply be the square-root of the eigenvalues.
@@ -613,8 +613,8 @@ def multi_taper_psd(
     if jackknife:
         jk_var = np.empty_like(nu)
         for i in range(M):
-            jk_var[ i ] = utils.jackknifed_sdf_variance(
-                spectra[ i ], eigvals, sides=sides, adaptive=adaptive
+            jk_var[i] = utils.jackknifed_sdf_variance(
+                spectra[i], eigvals, sides=sides, adaptive=adaptive
             )
 
     # Compute the unbiased spectral estimator for S(f) as the sum of
@@ -634,7 +634,7 @@ def multi_taper_psd(
     else:
         freqs = np.linspace(0, Fs, NFFT, endpoint=False)
 
-    out_shape = s.shape[ :-1 ] + (len(freqs),)
+    out_shape = s.shape[:-1] + (len(freqs),)
     sdf_est.shape = out_shape
     if jackknife:
         jk_var.shape = out_shape
@@ -704,8 +704,8 @@ def multi_taper_csd(s, Fs=2 * np.pi, NW=None, BW=None, low_bias=True,
 
     """
     # have last axis be time series for now
-    N = s.shape[ -1 ]
-    M = int(np.product(s.shape[ :-1 ]))
+    N = s.shape[-1]
+    M = int(np.product(s.shape[:-1]))
 
     if BW is not None:
         # BW wins in a contest (since it was the original implementation)
@@ -729,7 +729,7 @@ def multi_taper_csd(s, Fs=2 * np.pi, NW=None, BW=None, low_bias=True,
     spectra, eigvals = tapered_spectra(
         s, (NW, Kmax), NFFT=NFFT, low_bias=low_bias
     )
-    NFFT = spectra.shape[ -1 ]
+    NFFT = spectra.shape[-1]
     K = len(eigvals)
     # collapse spectra's shape back down to 3 dimensions
     spectra.shape = (M, K, NFFT)
@@ -741,8 +741,8 @@ def multi_taper_csd(s, Fs=2 * np.pi, NW=None, BW=None, low_bias=True,
         w = np.empty((M, K, last_freq))
         nu = np.empty((M, last_freq))
         for i in range(M):
-            w[ i ], nu[ i ] = utils._adaptive_weights(
-                spectra[ i ], eigvals, sides=sides
+            w[i], nu[i] = utils._adaptive_weights(
+                spectra[i], eigvals, sides=sides
             )
     else:
         weights = np.sqrt(eigvals).reshape(K, 1)
@@ -750,23 +750,23 @@ def multi_taper_csd(s, Fs=2 * np.pi, NW=None, BW=None, low_bias=True,
     csd_pairs = np.zeros((M, M, last_freq), 'D')
     for i in range(M):
         if adaptive:
-            wi = w[ i ]
+            wi = w[i]
         else:
             wi = weights
         for j in range(i + 1):
             if adaptive:
-                wj = w[ j ]
+                wj = w[j]
             else:
                 wj = weights
-            ti = spectra[ i ]
-            tj = spectra[ j ]
-            csd_pairs[ i, j ] = mtm_cross_spectrum(ti, tj, (wi, wj),
-                                                   sides=sides)
+            ti = spectra[i]
+            tj = spectra[j]
+            csd_pairs[i, j] = mtm_cross_spectrum(ti, tj, (wi, wj),
+                                                 sides=sides)
 
     csdfs = csd_pairs.transpose(1, 0, 2).conj()
     csdfs += csd_pairs
     diag_idc = (np.arange(M), np.arange(M))
-    csdfs[ diag_idc ] /= 2
+    csdfs[diag_idc] /= 2
     csdfs /= Fs
 
     if sides == 'onesided':
