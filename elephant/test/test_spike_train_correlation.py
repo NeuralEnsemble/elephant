@@ -309,7 +309,7 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         assert_array_equal(
             target_numpy, np.squeeze(cch_clipped.magnitude))
 
-        # Check the time axis and bin IDs of the resulting AnalogSignalArray
+        # Check the time axis and bin IDs of the resulting AnalogSignal
         assert_array_almost_equal(
             (bin_ids_clipped - 0.5) * self.binned_st1.binsize,
             cch_unclipped.times)
@@ -365,7 +365,7 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         assert_array_equal(
             target_numpy, np.squeeze(cch_clipped.magnitude))
 
-        # Check the time axis and bin IDs of the resulting AnalogSignalArray
+        # Check the time axis and bin IDs of the resulting AnalogSignal
         assert_array_equal(
             (bin_ids_clipped - 0.5) * self.binned_st1.binsize,
             cch_unclipped.times)

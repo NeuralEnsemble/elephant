@@ -2,6 +2,40 @@
 Release Notes
 *************
 
+Elephant 0.4.1 release notes
+============================
+March 23rd 2017
+
+Other changes
+=============
+* Fix in `setup.py` to correctly import the current source density module
+
+Elephant 0.4.0 release notes
+============================
+March 22nd 2017
+
+New functions
+=============
+* `spike_train_generation` module:
+    * peak detection: **peak_detection()**
+* Modules for Current Source Density: `current_source_density_src`
+    * Module Current Source Density: `KCSD.py`
+    * Module for Inverse Current Source Density: `icsd.py`
+
+API changes
+===========
+* Interoperability between Neo 0.5.0 and Elephant
+    * Elephant has adapted its functions to the changes in Neo 0.5.0,
+      most of the functionality behaves as before
+    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/latest/whatisnew.html
+
+Other changes
+=============
+* Fixes to travis and setup configuration files.
+* Minor bug fixes.
+* Added module `six` for Python 2.7 backwards compatibility
+
+
 Elephant 0.3.0 release notes
 ============================
 April 12st 2016

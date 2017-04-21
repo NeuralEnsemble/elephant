@@ -214,7 +214,7 @@ def n_emp_mat_sum_trial(mat, N, pattern_hash):
 
     Parameters:
     -----------
-    mat: 3d numpy array or elephant BinndedSpikeTrain object
+    mat: 3d numpy array or elephant BinnedSpikeTrain object
            Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
            segmented into trials. Trials should contain an identical number of neurons and 
            an identical number of time bins.
@@ -299,7 +299,7 @@ def _n_exp_mat_analytic(mat, N, pattern_hash):
     # multipyling the marginal probability of neurons with regard to the
     # pattern
     pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) +\
-           np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
+        np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
     return np.prod(pmat, axis=0) * float(np.shape(mat)[1])
 
 
@@ -392,14 +392,15 @@ def n_exp_mat(mat, N, pattern_hash, method='analytic', n_surr=1):
         return _n_exp_mat_surrogate(mat, N, pattern_hash, n_surr)
 
 
-def n_exp_mat_sum_trial(mat, N, pattern_hash, method='analytic_TrialByTrial', **kwargs):
+def n_exp_mat_sum_trial(
+        mat, N, pattern_hash, method='analytic_TrialByTrial', **kwargs):
     """
     Calculates the expected joint probability
     for each spike pattern sum over trials
 
     Parameters:
     -----------
-    mat: 3d numpy array or elephant BinndedSpikeTrain object
+    mat: 3d numpy array or elephant BinnedSpikeTrain object
            Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
            segmented into trials. Trials should contain an identical number of neurons and 
            an identical number of time bins.
@@ -478,7 +479,8 @@ def n_exp_mat_sum_trial(mat, N, pattern_hash, method='analytic_TrialByTrial', **
     return n_exp
 
 
-def gen_pval_anal(mat, N, pattern_hash, method='analytic_TrialByTrial', **kwargs):
+def gen_pval_anal(
+        mat, N, pattern_hash, method='analytic_TrialByTrial', **kwargs):
     """
     computes the expected coincidences and a function to calculate
     p-value for given empirical coincidences
@@ -490,7 +492,7 @@ def gen_pval_anal(mat, N, pattern_hash, method='analytic_TrialByTrial', **kwargs
 
     Parameters:
     -----------
-    mat: 3d numpy array or elephant BinndedSpikeTrain object
+    mat: 3d numpy array or elephant BinnedSpikeTrain object
            Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
            segmented into trials. Trials should contain an identical number of neurons and 
            an identical number of time bins.
@@ -653,6 +655,7 @@ def _UE(mat, N, pattern_hash, method='analytic_TrialByTrial', **kwargs):
             n_surr = 1
         dist_exp, n_exp = gen_pval_anal(
             mat, N, pattern_hash, method, n_surr=n_surr)
+        n_exp = np.mean(n_exp)
     elif method == 'analytic_TrialByTrial' or method == 'analytic_TrialAverage':
         dist_exp, n_exp = gen_pval_anal(mat, N, pattern_hash, method)
     pval = dist_exp(n_emp)
@@ -674,11 +677,11 @@ def jointJ_window_analysis(
                                         0-axis --> Trials
                                         1-axis --> Neurons
                                         2-axis --> Spike times
-    binsize: Qunatity scalar with dimension time
+    binsize: Quantity scalar with dimension time
            size of bins for descritizing spike trains
-    winsize: Qunatity scalar with dimension time
+    winsize: Quantity scalar with dimension time
            size of the window of analysis
-    winstep: Qunatity scalar with dimension time
+    winstep: Quantity scalar with dimension time
            size of the window step
     pattern_hash: list of integers
            list of interested patterns in hash values
@@ -718,7 +721,7 @@ def jointJ_window_analysis(
                  shape: different pattern hash --> 0-axis
                         different window --> 1-axis
           indices: list of list of integers
-                 list of indices of pattern whithin each window
+                 list of indices of pattern within each window
                  shape: different pattern hash --> 0-axis
                         different window --> 1-axis
           n_emp: list of integers

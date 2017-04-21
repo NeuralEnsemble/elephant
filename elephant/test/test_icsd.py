@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-'''icsd testing suite'''
+'''
+iCSD testing suite
+'''
 
 import os
 import numpy as np
@@ -7,7 +9,7 @@ import numpy.testing as nt
 import quantities as pq
 import scipy.integrate as si
 from scipy.interpolate import interp1d
-from elephant.icsd import icsd
+from elephant.current_source_density import icsd
 import unittest
 
 #patch quantities with the SI unit Siemens if it does not exist
@@ -32,8 +34,8 @@ def potential_of_plane(z_j, z_i=0.*pq.m,
                       sigma=0.3*pq.S/pq.m):
     '''
     Return potential of infinite horizontal plane with constant
-    current source density at a vertical offset z_j. 
-    
+    current source density at a vertical offset z_j.
+
     Arguments
     ---------
     z_j : float*pq.m
@@ -49,7 +51,7 @@ def potential_of_plane(z_j, z_i=0.*pq.m,
     -----
     The potential is 0 at the plane, as the potential goes to infinity for
     large distances
-    
+
     '''
     try:
         assert(z_j.units == z_i.units)
@@ -57,7 +59,7 @@ def potential_of_plane(z_j, z_i=0.*pq.m,
         print('units of z_j ({}) and z_i ({}) not equal'.format(z_j.units,
                                                                     z_i.units))
         raise ae
-    
+
     return -C_i/(2*sigma)*abs(z_j-z_i).simplified
 
 
@@ -68,8 +70,8 @@ def potential_of_disk(z_j,
                       sigma=0.3*pq.S/pq.m):
     '''
     Return potential of circular disk in horizontal plane with constant
-    current source density at a vertical offset z_j. 
-    
+    current source density at a vertical offset z_j.
+
     Arguments
     ---------
     z_j : float*pq.m
@@ -89,7 +91,7 @@ def potential_of_disk(z_j,
         print('units of z_j ({}), z_i ({}) and R_i ({}) not equal'.format(
             z_j.units, z_i.units, R_i.units))
         raise ae
-    
+
     return C_i/(2*sigma)*(np.sqrt((z_j-z_i)**2 + R_i**2) - abs(z_j-z_i)).simplified
 
 
@@ -102,8 +104,8 @@ def potential_of_cylinder(z_j,
                           ):
     '''
     Return potential of cylinder in horizontal plane with constant homogeneous
-    current source density at a vertical offset z_j. 
-    
+    current source density at a vertical offset z_j.
+
 
     Arguments
     ---------
@@ -124,9 +126,9 @@ def potential_of_cylinder(z_j,
     -----
     Sympy can't deal with eq. 11 in Pettersen et al 2006, J neurosci Meth,
     so we numerically evaluate it in this function.
-    
+
     Tested with
-    
+
     >>>from sympy import *
     >>>C_i, z_i, h, z_j, z_j, sigma, R = symbols('C_i z_i h z z_j sigma R')
     >>>C_i*integrate(1/(2*sigma)*(sqrt((z-z_j)**2 + R**2) - abs(z-z_j)), (z, z_i-h/2, z_i+h/2))
@@ -149,9 +151,9 @@ def potential_of_cylinder(z_j,
     #evaluate integrand using quad
     def integrand(z):
         return 1/(2*_sigma)*(np.sqrt((z-_z_j)**2 + _R_i**2) - abs(z-_z_j))
-        
+
     phi_j, abserr = C_i*si.quad(integrand, z_i-h_i/2, z_i+h_i/2)
-    
+
     return (phi_j * z_i.units**2 / sigma.units)
 
 
@@ -169,7 +171,7 @@ def get_lfp_of_planes(z_j=np.arange(21)*1E-4*pq.m,
     for i, (zi, Ci) in enumerate(zip(z_i, C_i)):
         for j, zj in enumerate(z_j):
             phi_j[j] += potential_of_plane(zj, zi, Ci, sigma)
-    
+
     #test plot
     if plot:
         import matplotlib.pyplot as plt
@@ -183,14 +185,14 @@ def get_lfp_of_planes(z_j=np.arange(21)*1E-4*pq.m,
         ax.set_ylabel('z_j ({})'.format(z_j.units))
         ax.set_xlabel('C_i ({})'.format(C_i.units))
         ax.set_title('planar CSD')
-    
+
         plt.subplot(122)
         ax = plt.gca()
         ax.plot(phi_j, z_j, 'r-o')
         ax.set_ylim(z_j.min(), z_j.max())
         ax.set_xlabel('phi_j ({})'.format(phi_j.units))
         ax.set_title('LFP')
-    
+
     return phi_j, C_i
 
 
@@ -208,7 +210,7 @@ def get_lfp_of_disks(z_j=np.arange(21)*1E-4*pq.m,
     for i, (zi, Ci, Ri) in enumerate(zip(z_i, C_i, R_i)):
         for j, zj in enumerate(z_j):
             phi_j[j] += potential_of_disk(zj, zi, Ci, Ri, sigma)
-    
+
     #test plot
     if plot:
         import matplotlib.pyplot as plt
@@ -222,16 +224,16 @@ def get_lfp_of_disks(z_j=np.arange(21)*1E-4*pq.m,
         ax.set_ylabel('z_j ({})'.format(z_j.units))
         ax.set_xlabel('C_i ({})'.format(C_i.units))
         ax.set_title('disk CSD\nR={}'.format(R_i))
-    
+
         plt.subplot(122)
         ax = plt.gca()
         ax.plot(phi_j, z_j, 'r-o')
         ax.set_ylim(z_j.min(), z_j.max())
         ax.set_xlabel('phi_j ({})'.format(phi_j.units))
         ax.set_title('LFP')
-    
+
     return phi_j, C_i
-    
+
 
 def get_lfp_of_cylinders(z_j=np.arange(21)*1E-4*pq.m,
                          z_i=np.array([8E-4, 10E-4, 12E-4])*pq.m,
@@ -248,7 +250,7 @@ def get_lfp_of_cylinders(z_j=np.arange(21)*1E-4*pq.m,
     for i, (zi, Ci, Ri, hi) in enumerate(zip(z_i, C_i, R_i, h_i)):
         for j, zj in enumerate(z_j):
             phi_j[j] += potential_of_cylinder(zj, zi, Ci, Ri, hi, sigma)
-    
+
     #test plot
     if plot:
         import matplotlib.pyplot as plt
@@ -263,16 +265,16 @@ def get_lfp_of_cylinders(z_j=np.arange(21)*1E-4*pq.m,
         ax.set_ylabel('z_j ({})'.format(z_j.units))
         ax.set_xlabel('C_i ({})'.format(C_i.units))
         ax.set_title('cylinder CSD\nR={}'.format(R_i))
-    
+
         plt.subplot(122)
         ax = plt.gca()
         ax.plot(phi_j, z_j, 'r-o')
         ax.set_ylim(z_j.min(), z_j.max())
         ax.set_xlabel('phi_j ({})'.format(phi_j.units))
         ax.set_title('LFP')
-    
+
     return phi_j, C_i
-    
+
 
 
 
@@ -283,27 +285,27 @@ class TestICSD(unittest.TestCase):
     Set of test functions for each CSD estimation method comparing
     estimate to LFPs calculated with known ground truth CSD
     '''
-    
+
     def test_StandardCSD_00(self):
         '''test using standard SI units'''
         #set some parameters for ground truth csd and csd estimates.
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-                
+
         #uniform conductivity
         sigma = 0.3*pq.S/pq.m
-        
+
         #flag for debug plots
         plot = False
-        
+
         #get LFP and CSD at contacts
         phi_j, C_i = get_lfp_of_planes(z_j, z_i, C_i, sigma, plot)
         std_input = {
@@ -315,31 +317,31 @@ class TestICSD(unittest.TestCase):
         }
         std_csd = icsd.StandardCSD(**std_input)
         csd = std_csd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
-    
+
 
     def test_StandardCSD_01(self):
         '''test using non-standard SI units 1'''
         #set some parameters for ground truth csd and csd estimates.
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*1E3*pq.A/pq.m**2
-                
+
         #uniform conductivity
         sigma = 0.3*pq.S/pq.m
-        
+
         #flag for debug plots
         plot = False
-        
+
         #get LFP and CSD at contacts
         phi_j, C_i = get_lfp_of_planes(z_j, z_i, C_i, sigma, plot)
         std_input = {
@@ -351,7 +353,7 @@ class TestICSD(unittest.TestCase):
         }
         std_csd = icsd.StandardCSD(**std_input)
         csd = std_csd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
@@ -359,23 +361,23 @@ class TestICSD(unittest.TestCase):
     def test_StandardCSD_02(self):
         '''test using non-standard SI units 2'''
         #set some parameters for ground truth csd and csd estimates.
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-                
+
         #uniform conductivity
         sigma = 0.3*pq.S/pq.m
-        
+
         #flag for debug plots
         plot = False
-        
+
         #get LFP and CSD at contacts
         phi_j, C_i = get_lfp_of_planes(z_j, z_i, C_i, sigma, plot)
         std_input = {
@@ -387,31 +389,31 @@ class TestICSD(unittest.TestCase):
         }
         std_csd = icsd.StandardCSD(**std_input)
         csd = std_csd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
-        
-        
+
+
     def test_StandardCSD_03(self):
         '''test using non-standard SI units 3'''
         #set some parameters for ground truth csd and csd estimates.
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-                
+
         #uniform conductivity
         sigma = 0.3*pq.mS/pq.m
-        
+
         #flag for debug plots
         plot = False
-        
+
         #get LFP and CSD at contacts
         phi_j, C_i = get_lfp_of_planes(z_j, z_i, C_i, sigma, plot)
         std_input = {
@@ -423,33 +425,33 @@ class TestICSD(unittest.TestCase):
         }
         std_csd = icsd.StandardCSD(**std_input)
         csd = std_csd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
-        
-    
+
+
     def test_DeltaiCSD_00(self):
         '''test using standard SI units'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -465,10 +467,10 @@ class TestICSD(unittest.TestCase):
             'f_type' : 'gaussian',  # gaussian filter
             'f_order' : (3, 1),     # 3-point filter, sigma = 1.
         }
-        
+
         delta_icsd = icsd.DeltaiCSD(**delta_input)
         csd = delta_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
@@ -477,24 +479,24 @@ class TestICSD(unittest.TestCase):
         '''test using non-standard SI units 1'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -510,10 +512,10 @@ class TestICSD(unittest.TestCase):
             'f_type' : 'gaussian',  # gaussian filter
             'f_order' : (3, 1),     # 3-point filter, sigma = 1.
         }
-        
+
         delta_icsd = icsd.DeltaiCSD(**delta_input)
         csd = delta_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
@@ -522,24 +524,24 @@ class TestICSD(unittest.TestCase):
         '''test using non-standard SI units 2'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -555,10 +557,10 @@ class TestICSD(unittest.TestCase):
             'f_type' : 'gaussian',  # gaussian filter
             'f_order' : (3, 1),     # 3-point filter, sigma = 1.
         }
-        
+
         delta_icsd = icsd.DeltaiCSD(**delta_input)
         csd = delta_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
@@ -567,24 +569,24 @@ class TestICSD(unittest.TestCase):
         '''test using non-standard SI units 3'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -600,10 +602,10 @@ class TestICSD(unittest.TestCase):
             'f_type' : 'gaussian',  # gaussian filter
             'f_order' : (3, 1),     # 3-point filter, sigma = 1.
         }
-        
+
         delta_icsd = icsd.DeltaiCSD(**delta_input)
         csd = delta_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
@@ -612,24 +614,24 @@ class TestICSD(unittest.TestCase):
         '''test non-continous z_j array'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**2
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**2
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_j.size)*1E-3*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -646,39 +648,39 @@ class TestICSD(unittest.TestCase):
             'f_type' : 'gaussian',  # gaussian filter
             'f_order' : (3, 1),     # 3-point filter, sigma = 1.
         }
-        
+
         delta_icsd = icsd.DeltaiCSD(**delta_input)
         csd = delta_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i[inds], csd)
 
-    
+
     def test_StepiCSD_units_00(self):
         '''test using standard SI units'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -699,36 +701,36 @@ class TestICSD(unittest.TestCase):
         }
         step_icsd = icsd.StepiCSD(**step_input)
         csd = step_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
-            
+
 
     def test_StepiCSD_01(self):
         '''test using non-standard SI units 1'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -749,36 +751,36 @@ class TestICSD(unittest.TestCase):
         }
         step_icsd = icsd.StepiCSD(**step_input)
         csd = step_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
-        
+
     def test_StepiCSD_02(self):
         '''test using non-standard SI units 2'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -799,7 +801,7 @@ class TestICSD(unittest.TestCase):
         }
         step_icsd = icsd.StepiCSD(**step_input)
         csd = step_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
@@ -808,27 +810,27 @@ class TestICSD(unittest.TestCase):
         '''test using non-standard SI units 3'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -849,36 +851,36 @@ class TestICSD(unittest.TestCase):
         }
         step_icsd = icsd.StepiCSD(**step_input)
         csd = step_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd)
 
-        
+
     def test_StepiCSD_units_04(self):
         '''test non-continous z_j array'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-        
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
-        
+
         #flag for debug plots
         plot = False
 
@@ -899,7 +901,7 @@ class TestICSD(unittest.TestCase):
         }
         step_icsd = icsd.StepiCSD(**step_input)
         csd = step_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i[inds], csd)
 
@@ -908,30 +910,30 @@ class TestICSD(unittest.TestCase):
         '''test using standard SI units'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-                
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
 
         #construct interpolators, spline method assume underlying source
         #pattern generating LFPs that are cubic spline interpolates between
-        #contacts so we generate CSD data relying on the same assumption 
+        #contacts so we generate CSD data relying on the same assumption
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
@@ -940,7 +942,7 @@ class TestICSD(unittest.TestCase):
         R_i_i = f_R(z_i_i)*R_i.units
 
         h_i_i = np.ones(z_i_i.size)*np.diff(z_i_i).min()
-        
+
         #flag for debug plots
         plot = False
 
@@ -961,7 +963,7 @@ class TestICSD(unittest.TestCase):
         }
         spline_icsd = icsd.SplineiCSD(**spline_input)
         csd = spline_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
@@ -970,30 +972,30 @@ class TestICSD(unittest.TestCase):
         '''test using standard SI units, deep electrode coordinates'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(10, 31)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-                
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
 
         #construct interpolators, spline method assume underlying source
         #pattern generating LFPs that are cubic spline interpolates between
-        #contacts so we generate CSD data relying on the same assumption 
+        #contacts so we generate CSD data relying on the same assumption
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
@@ -1002,7 +1004,7 @@ class TestICSD(unittest.TestCase):
         R_i_i = f_R(z_i_i)*R_i.units
 
         h_i_i = np.ones(z_i_i.size)*np.diff(z_i_i).min()
-        
+
         #flag for debug plots
         plot = False
 
@@ -1023,7 +1025,7 @@ class TestICSD(unittest.TestCase):
         }
         spline_icsd = icsd.SplineiCSD(**spline_input)
         csd = spline_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
@@ -1032,30 +1034,30 @@ class TestICSD(unittest.TestCase):
         '''test using non-standard SI units'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-                
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
 
         #construct interpolators, spline method assume underlying source
         #pattern generating LFPs that are cubic spline interpolates between
-        #contacts so we generate CSD data relying on the same assumption 
+        #contacts so we generate CSD data relying on the same assumption
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
@@ -1064,7 +1066,7 @@ class TestICSD(unittest.TestCase):
         R_i_i = f_R(z_i_i)*R_i.units
 
         h_i_i = np.ones(z_i_i.size)*np.diff(z_i_i).min()
-        
+
         #flag for debug plots
         plot = False
 
@@ -1085,7 +1087,7 @@ class TestICSD(unittest.TestCase):
         }
         spline_icsd = icsd.SplineiCSD(**spline_input)
         csd = spline_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
@@ -1094,30 +1096,30 @@ class TestICSD(unittest.TestCase):
         '''test using standard SI units'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-                
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
 
         #construct interpolators, spline method assume underlying source
         #pattern generating LFPs that are cubic spline interpolates between
-        #contacts so we generate CSD data relying on the same assumption 
+        #contacts so we generate CSD data relying on the same assumption
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
@@ -1126,7 +1128,7 @@ class TestICSD(unittest.TestCase):
         R_i_i = f_R(z_i_i)*R_i.units
 
         h_i_i = np.ones(z_i_i.size)*np.diff(z_i_i).min()
-        
+
         #flag for debug plots
         plot = False
 
@@ -1147,39 +1149,39 @@ class TestICSD(unittest.TestCase):
         }
         spline_icsd = icsd.SplineiCSD(**spline_input)
         csd = spline_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
-        
+
 
     def test_SplineiCSD_04(self):
         '''test using standard SI units'''
         #set some parameters for ground truth csd and csd estimates., e.g.,
         #we will use same source diameter as in ground truth
-        
+
         #contact point coordinates
         z_j = np.arange(21)*1E-4*pq.m
-        
+
         #source coordinates
         z_i = z_j
-        
+
         #current source density magnitude
         C_i = np.zeros(z_i.size)*pq.A/pq.m**3
         C_i[7:12:2] += np.array([-.5, 1., -.5])*pq.A/pq.m**3
-                
+
         #source radius (delta, step)
         R_i = np.ones(z_i.size)*1E-3*pq.m
-        
+
         #source height (cylinder)
         h_i = np.ones(z_i.size)*1E-4*pq.m
-        
+
         #conductivity, use same conductivity for top layer (z_j < 0)
         sigma = 0.3*pq.S/pq.m
         sigma_top = sigma
 
         #construct interpolators, spline method assume underlying source
         #pattern generating LFPs that are cubic spline interpolates between
-        #contacts so we generate CSD data relying on the same assumption 
+        #contacts so we generate CSD data relying on the same assumption
         f_C = interp1d(z_i, C_i, kind='cubic')
         f_R = interp1d(z_i, R_i)
         num_steps = 201
@@ -1188,7 +1190,7 @@ class TestICSD(unittest.TestCase):
         R_i_i = f_R(z_i_i)*R_i.units
 
         h_i_i = np.ones(z_i_i.size)*np.diff(z_i_i).min()
-        
+
         #flag for debug plots
         plot = False
 
@@ -1209,25 +1211,25 @@ class TestICSD(unittest.TestCase):
         }
         spline_icsd = icsd.SplineiCSD(**spline_input)
         csd = spline_icsd.get_csd()
-        
+
         self.assertEqual(C_i.units, csd.units)
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
-                
+
 #def suite(verbosity=2):
 #    '''
 #    Run unittests for the CSD toolbox
-#    
-#    
+#
+#
 #    Arguments
 #    ---------
 #    verbosity : int
 #        verbosity level
-#        
+#
 #    '''
 #    suite = unittest.TestLoader().loadTestsFromTestCase(TestICSD)
 #    unittest.TextTestRunner(verbosity=verbosity).run(suite)
-#    
+#
 #
 #
 #if __name__ == '__main__':

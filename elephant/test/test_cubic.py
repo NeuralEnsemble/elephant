@@ -17,7 +17,7 @@ class CubicTestCase(unittest.TestCase):
     '''
     This test is constructed to check the implementation of the CuBIC
     method [1].
-    In the setup function is constructed an neo.AnalogSignalArray, that
+    In the setup function is constructed an neo.AnalogSignal, that
     represents the Population Histogram of a population of neurons with order
     of correlation equal to ten. Since the population contu is either equal to
     0 or 10 means that the embedded order of correlation is exactly 10.
@@ -32,7 +32,7 @@ class CubicTestCase(unittest.TestCase):
         n2 = 300
         n0 = 100000-n2
         self.xi = 10
-        self.data_signal = neo.AnalogSignalArray(
+        self.data_signal = neo.AnalogSignal(
             numpy.array([self.xi] * n2 + [0] * n0).reshape(n0 + n2, 1) *
             pq.dimensionless, sampling_period=1*pq.s)
         self.data_array = numpy.array([self.xi] * n2 + [0] * n0)
@@ -118,11 +118,11 @@ class CubicTestCase(unittest.TestCase):
 
         # Empty signal
         self.assertRaises(
-            ValueError, cubic.cubic, neo.AnalogSignalArray(
+            ValueError, cubic.cubic, neo.AnalogSignal(
                 []*pq.dimensionless, sampling_period=10*pq.ms))
 
         # Multidimensional array
-        self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignalArray(
+        self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
             [[1, 2, 3], [1, 2, 3]] * pq.dimensionless,
             sampling_period=10 * pq.ms))
         self.assertRaises(ValueError, cubic.cubic, numpy.array(
@@ -136,7 +136,7 @@ class CubicTestCase(unittest.TestCase):
 
         # Checking case in which the second cumulant of the signal is smaller
         # than the first cumulant (analitycal constrain of the method)
-        self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignalArray(
+        self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
             numpy.array([1]*1000).reshape(1000, 1), units=pq.dimensionless,
             sampling_period=10*pq.ms), alpha=self.alpha)
 
