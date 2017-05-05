@@ -46,7 +46,11 @@ def isi(spiketrain, axis=-1):
     """
     if axis is None:
         axis = -1
-    intervals = np.diff(spiketrain, axis=axis)
+    if isinstance(spiketrain, neo.SpikeTrain):
+        intervals = np.diff(
+            np.sort(spiketrain.times.view(pq.Quantity)), axis=axis)
+    else:
+        intervals = np.diff(np.sort(spiketrain), axis=axis)
     if hasattr(spiketrain, 'waveforms'):
         intervals = pq.Quantity(intervals.magnitude, units=spiketrain.units)
     return intervals
