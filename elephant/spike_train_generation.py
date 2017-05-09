@@ -97,15 +97,17 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
 
     # len(np.shape(waveforms)) == 1 if waveforms do not have the same width.
     # this can occur when extr_interval indexes beyond the signal.
-    # Workaround: delete spikes shorter than the maximum length with
+    # Workaround: set incomplete waveforms to arrays of None
     if len(np.shape(waveforms)) == 1:
         max_len = (np.array([len(x) for x in waveforms])).max()
-        to_delete = np.array([idx for idx, x in enumerate(waveforms)
+        incomplete_wfs = np.array([idx for idx, x in enumerate(waveforms)
                              if len(x) < max_len])
-        waveforms = np.delete(waveforms, to_delete, axis=0)
+        for incomplete_wf in incomplete_wfs:
+            waveforms[incomplete_wf] = np.full((max_len), None) * signal.units
+        # waveforms = np.delete(waveforms, to_delete, axis=0)
         waveforms = np.array([x for x in waveforms])
         warnings.warn("Waveforms " +
-                      ("{:d}, " * len(to_delete)).format(*to_delete) +
+                      ("{:d}, " * len(incomplete_wfs)).format(*incomplete_wfs) +
                       "exceeded signal and had to be deleted. " +
                       "Change extr_interval to keep.")
 

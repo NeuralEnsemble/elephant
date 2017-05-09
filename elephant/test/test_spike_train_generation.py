@@ -10,6 +10,7 @@ from __future__ import division
 import unittest
 import os
 import warnings
+import math
 
 import neo
 import numpy as np
@@ -126,7 +127,10 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
                 np.array_equal(spike_train.waveforms[0][0].magnitude,
                                self.first_spike))
 
-        
+    def test_protruding_waveform_extraction_window(self):
+        stgen.spike_extraction(self.vm.reshape(-1),
+                               extr_interval = (-50*ms, 50*ms))
+
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
