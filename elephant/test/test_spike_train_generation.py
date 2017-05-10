@@ -131,6 +131,10 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         stgen.spike_extraction(self.vm.reshape(-1),
                                extr_interval = (-50*ms, 50*ms))
 
+        # Testing with multidimensional array
+        stgen.spike_extraction(self.vm,
+                               extr_interval = (-50*ms, 50*ms))
+
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 

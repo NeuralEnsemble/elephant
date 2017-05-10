@@ -99,11 +99,14 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
     # this can occur when extr_interval indexes beyond the signal.
     # Workaround: set incomplete waveforms to arrays of None
     if len(np.shape(waveforms)) == 1:
-        max_len = (np.array([len(x) for x in waveforms])).max()
+        arraylengths = np.array([len(x) for x in waveforms])
+        max_len = (arraylengths).max()
+        max_len_arg = arraylengths.argmax()
         incomplete_wfs = np.array([idx for idx, x in enumerate(waveforms)
                              if len(x) < max_len])
         for incomplete_wf in incomplete_wfs:
-            waveforms[incomplete_wf] = np.full((max_len), None) * signal.units
+            waveforms[incomplete_wf] = np.full(waveforms[max_len_arg].shape,
+                                               None) * signal.units
         # waveforms = np.delete(waveforms, to_delete, axis=0)
         waveforms = np.array([x for x in waveforms])
         warnings.warn("Waveforms " +
