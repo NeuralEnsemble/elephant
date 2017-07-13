@@ -288,7 +288,6 @@ def cv2(v):
         Only vector inputs are supported.  If a matrix is passed to the
         function an AttributeError will be raised.
 
-
     References
     ----------
     ..[1] Holt, G. R., Softky, W. R., Koch, C., & Douglas, R. J. (1996). 
