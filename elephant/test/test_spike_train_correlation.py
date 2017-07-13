@@ -302,6 +302,31 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         assert_array_equal(
             target_numpy, np.squeeze(cch_unclipped.magnitude))
 
+
+        # Check cross correlation function Note: Use Elephant corrcoeff to
+        # verify result for several displacements tau
+        tau = [-25.0, 0.0, 13.0] # in ms
+        for t in tau:
+            st_1shift = neo.SpikeTrain(self.st_1.magnitude+t, units='ms',
+                                       t_start = self.st_1.t_start+t*pq.ms,
+                                       t_stop = self.st_1.t_stop+t*pq.ms)
+            ## STILL PROBLEMS WITH TSTART AND TSTOP:
+            # 'some spike trains are not defined in the time given '
+            # ValueError: some spike trains are not defined in the time given by t_start                          
+            t0 = np.min([st_1shift.t_start, self.st_2.t_start])
+            t1 = np.max([st_1shift.t_stop, self.st_2.t_stop])
+            binned_sts = conv.BinnedSpikeTrain([st_1shift, self.st_2],
+                                               binsize=1*pq.ms,
+                                               t_start = t0*pq.ms,
+                                               t_stop = t1*pq.ms)
+            l = - binned_sts.num_bins + 1
+            corrcoef = sc.corrcoef(binned_sts)[1,0]
+            CCHcoef, _  = sc.cch(self.binned_st1, self.binned_st2, 
+                               cross_corr_coef=True)
+            tau_bin = int(t/float(binned_sts.binsize.magnitude))
+            assert_array_equal(corrcoef, CCHcoef[tau_bin-l])
+            
+
         # Check correlation using binary spike trains
         mat1 = np.array(self.binned_st1.to_bool_array()[0], dtype=int)
         mat2 = np.array(self.binned_st2.to_bool_array()[0], dtype=int)

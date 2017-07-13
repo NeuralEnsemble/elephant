@@ -250,7 +250,7 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm):
 
 def cross_correlation_histogram(
         binned_st1, binned_st2, window='full', border_correction=False, binary=False,
-        kernel=None, method='speed', cross_corr_coeff=False):
+        kernel=None, method='speed', cross_corr_coef=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains binned_st1 and binned_st2.
@@ -307,7 +307,7 @@ def cross_correlation_histogram(
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
         Default: "speed"
-    cross_corr_coeff : bool (optional)
+    cross_corr_coef : bool (optional)
         Normalizes the CCH to obtain the cross-correlation  coefficient 
         function ranging from -1 to 1 according to Equation (5.10) in 
         "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7
@@ -374,7 +374,7 @@ def cross_correlation_histogram(
     cch
     """
         
-    def _cross_corr_coeff(cch_result, binned_st1, binned_st2):
+    def _cross_corr_coef(cch_result, binned_st1, binned_st2):
         # Normalizes the CCH to obtain the cross-correlation 
         # coefficient function ranging from -1 to 1
         N  = max(binned_st1.num_bins, binned_st2.num_bins)
@@ -611,8 +611,8 @@ def cross_correlation_histogram(
             binned_st1, binned_st2, window, border_correction, binary,
             kernel)
 
-    if cross_corr_coeff:
-        cch_result = _cross_corr_coeff(cch_result, binned_st1, binned_st2)
+    if cross_corr_coef:
+        cch_result = _cross_corr_coef(cch_result, binned_st1, binned_st2)
 
     return cch_result, bin_ids
 
