@@ -8,7 +8,7 @@ REMAINING TODOS:
 Dependency tree:
 Function					Used? Tested?
 
-freq_response       		+  (+)	*sig, multi_taper_csd, tapered_spectra, utils.adaptive_weights, mtm_cross_spectrum
+freq_response       		+  (-)	*sig, multi_taper_csd, tapered_spectra, utils.adaptive_weights, mtm_cross_spectrum
 multi_taper_psd     		+	*	tapered_spectra, utils.adaptive_weights, utils.jackknifed_sdf_variance, mtm_cross_spectrum
 multi_taper_csd     		+	*	tapered_spectra, utils.adaptive_weights, utils.jackknifed_sdf_variance, mtm_cross_spectrum
 mtm_cross_spectrum			+	+
