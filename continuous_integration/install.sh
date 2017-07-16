@@ -29,8 +29,8 @@ if [[ "$DISTRIB" == "conda_min" ]]; then
 
     # Configure the conda environment and put it in the path using the
     # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
+        six=$SIX_VERSION numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
     source activate testenv
     conda install libgfortran=1
 
@@ -58,10 +58,9 @@ elif [[ "$DISTRIB" == "conda" ]]; then
 
     # Configure the conda environment and put it in the path using the
     # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six \
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six=$SIX_VERSION \
         numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
     source activate testenv
-    conda install libgfortran=1
 
     if [[ "$INSTALL_MKL" == "true" ]]; then
         # Make sure that MKL is used
@@ -86,7 +85,7 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     pip install coverage
     pip install numpy==$NUMPY_VERSION
     pip install scipy==$SCIPY_VERSION
-    pip install six
+    pip install six==$SIX_VERSION
     pip install quantities
 fi
 
@@ -95,9 +94,9 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 # pip install neo==0.3.3
-wget https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.tar.gz
-tar -xzvf snapshot-20150821.tar.gz
-pushd python-neo-snapshot-20150821
+wget https://github.com/NeuralEnsemble/python-neo/archive/master.tar.gz
+tar -xzvf master.tar.gz
+pushd python-neo-master
 python setup.py install
 popd
 

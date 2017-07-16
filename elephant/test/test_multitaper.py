@@ -51,7 +51,7 @@ import elephant
 import elephant.multitaper_spectral as mts
 
 # Define globally
-test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')
+test_dir_path = os.path.join(elephant.__path__[0], 'test')
 
 # include the following for testing multi_taper_psc/csd:
 
@@ -110,20 +110,21 @@ def ar_generator(N=512, sigma=1., coefs=None, drop_transients=0, v=None):
       custom noise process
     """
     if coefs is None:
-        coefs = np.array([ 2.7607, -3.8106, 2.6535, -0.9238 ])
+        coefs = np.array([2.7607, -3.8106, 2.6535, -0.9238])
     else:
         coefs = np.asarray(coefs)
     N += drop_transients
     if v is None:
         v = np.random.normal(size=N)
-        v -= v[ drop_transients: ].mean()
-    b = [ sigma**0.5 ]
-    a = np.r_[ 1, -coefs ]
+        v -= v[drop_transients:].mean()
+    b = [sigma ** 0.5]
+    a = np.r_[1, -coefs]
     u = sig.lfilter(b, a, v)
-    return u[ drop_transients: ], v[ drop_transients: ], coefs
+    return u[drop_transients:], v[drop_transients:], coefs
 
 
 class MultitaperSpectralTests(unittest.TestCase):
+
     def test_dpss_windows_short(self):
         """Are eigenvalues representing spectral concentration near unity?"""
         # these values from Percival and Walden 1993
@@ -162,27 +163,27 @@ class MultitaperSpectralTests(unittest.TestCase):
         # adapt this to include the welchs_psd from elephant?
         t = np.linspace(0, 16 * np.pi, 2 ** 10)
         x = (np.sin(t) + np.sin(2 * t) + np.sin(3 * t) +
-             0.1 * np.random.rand(t.shape[ -1 ]))
+             0.1 * np.random.rand(t.shape[-1]))
 
-        N = x.shape[ -1 ]
+        N = x.shape[-1]
         f_multi_taper = mts.get_spectra(x, method={
             'this_method': 'multi_taper_csd'})
 
-        self.assertEqual(f_multi_taper[ 0 ].shape, (N // 2 + 1,))
+        self.assertEqual(f_multi_taper[0].shape, (N // 2 + 1,))
 
         # Test for multi-channel data
-        x = np.reshape(x, (2, x.shape[ -1 ] // 2))
-        N = x.shape[ -1 ]
+        x = np.reshape(x, (2, x.shape[-1] // 2))
+        N = x.shape[-1]
 
         f_multi_taper = mts.get_spectra(x, method={
             'this_method': 'multi_taper_csd'})
 
-        self.assertEqual(f_multi_taper[ 0 ].shape[ 0 ], N / 2 + 1)
+        self.assertEqual(f_multi_taper[0].shape[0], N / 2 + 1)
 
     def test_get_spectra_unknown_method(self):
         """ Test that providing an unknown method to get_spectra rasies a
         ValueError """
-        tseries = np.array([ [ 1, 2, 3 ], [ 4, 5, 6 ] ])
+        tseries = np.array([[1, 2, 3], [4, 5, 6]])
         with self.assertRaises(Exception) as context:
             mts.get_spectra(tseries, method=dict(this_method='foo'))
             self.assertTrue('shape mismatch' in context.exception)
@@ -195,8 +196,8 @@ class MultitaperSpectralTests(unittest.TestCase):
         array = np.linspace(0., 1., N)
         ar_seq = np.sin(35. * np.pi * array) + np.ones_like(array)
         f, psd_mt, nu = mts.multi_taper_psd(
-                ar_seq, Fs=N, adaptive=True, jackknife=False, sides='onesided',
-                BW=BW)
+            ar_seq, Fs=N, adaptive=True, jackknife=False, sides='onesided',
+            BW=BW)
         self.assertTrue(np.sum(psd_mt >= 1e-3) <= BW)
 
     def test_mtm_cross_spectrum(self):
@@ -217,32 +218,32 @@ class MultitaperSpectralTests(unittest.TestCase):
             weights = np.random.randn(*wshape)
             sides = 'onesided'
             mtm_cross = mts.mtm_cross_spectrum(
-                    spec1, spec2, (weights[ 0 ], weights[ 1 ]), sides=sides
+                spec1, spec2, (weights[0], weights[1]), sides=sides
             )
-            self.assertTrue(mtm_cross.dtype in np.sctypes[ 'complex' ],
-                        'Wrong dtype for crossspectrum')
+            self.assertTrue(mtm_cross.dtype in np.sctypes['complex'],
+                            'Wrong dtype for crossspectrum')
             self.assertTrue(len(mtm_cross) == 51,
-                        'Wrong length for halfband spectrum')
+                            'Wrong length for halfband spectrum')
             sides = 'twosided'
             mtm_cross = mts.mtm_cross_spectrum(
-                    spec1, spec2, (weights[ 0 ], weights[ 1 ]), sides=sides
+                spec1, spec2, (weights[0], weights[1]), sides=sides
             )
             self.assertTrue(len(mtm_cross) == 100,
-                        'Wrong length for fullband spectrum')
+                            'Wrong length for fullband spectrum')
             sides = 'onesided'
             mtm_auto = mts.mtm_cross_spectrum(
-                    spec1, spec1, weights[ 0 ], sides=sides
+                spec1, spec1, weights[0], sides=sides
             )
-            self.assertTrue(mtm_auto.dtype in np.sctypes[ 'float' ],
-                        'Wrong dtype for autospectrum')
+            self.assertTrue(mtm_auto.dtype in np.sctypes['float'],
+                            'Wrong dtype for autospectrum')
             self.assertTrue(len(mtm_auto) == 51,
-                        'Wrong length for halfband spectrum')
+                            'Wrong length for halfband spectrum')
             sides = 'twosided'
             mtm_auto = mts.mtm_cross_spectrum(
-                    spec1, spec2, weights[ 0 ], sides=sides
+                spec1, spec2, weights[0], sides=sides
             )
             self.assertTrue(len(mtm_auto) == 100,
-                        'Wrong length for fullband spectrum')
+                            'Wrong length for fullband spectrum')
 
     def test_hermitian_multitaper_csd(self):
         """ Make sure CSD matrices returned by various methods have
@@ -251,14 +252,14 @@ class MultitaperSpectralTests(unittest.TestCase):
         _, csd1 = mts.multi_taper_csd(sig, adaptive=False)
         for i in range(4):
             for j in range(i + 1):
-                xc1 = csd1[ i, j ]
-                xc2 = csd1[ j, i ]
+                xc1 = csd1[i, j]
+                xc2 = csd1[j, i]
                 assert_allclose(xc1, xc2.conj(), atol=1e-5,
-                        err_msg='MTM CSD not Hermitian')
+                                err_msg='MTM CSD not Hermitian')
         _, psd, _ = mts.multi_taper_psd(sig, adaptive=False)
         for i in range(4):
-            assert_allclose(psd[ i ], csd1[ i, i ].real, atol=1e-5,
-                    err_msg='MTM CSD diagonal inconsistent with real PSD')
+            assert_allclose(psd[i], csd1[i, i].real, atol=1e-5,
+                            err_msg='MTM CSD diagonal inconsistent with real PSD')
 
     def test_multitaper_spectral_normalization(self):
         """ Check that the spectral estimators are normalized in the
@@ -266,21 +267,21 @@ class MultitaperSpectralTests(unittest.TestCase):
         x = np.random.randn(1024)
         f1, Xp1, _ = mts.multi_taper_psd(x)
         f2, Xp2, _ = mts.multi_taper_psd(x, Fs=100)
-        f3, Xp3, _ = mts.multi_taper_psd(x, NFFT=2**12)
+        f3, Xp3, _ = mts.multi_taper_psd(x, NFFT=2 ** 12)
 
-        p1 = np.sum(Xp1) * 2 * np.pi / 2**10
-        p2 = np.sum(Xp2) * 100 / 2**10
-        p3 = np.sum(Xp3) * 2 * np.pi / 2**12
+        p1 = np.sum(Xp1) * 2 * np.pi / 2 ** 10
+        p2 = np.sum(Xp2) * 100 / 2 ** 10
+        p3 = np.sum(Xp3) * 2 * np.pi / 2 ** 12
         self.assertTrue(np.abs(p1 - p2) < 1e-14,
-                    'Inconsistent frequency normalization in MTM PSD (1)')
+                        'Inconsistent frequency normalization in MTM PSD (1)')
         self.assertTrue(np.abs(p3 - p2) < 1e-8,
-                    'Inconsistent frequency normalization in MTM PSD (2)')
+                        'Inconsistent frequency normalization in MTM PSD (2)')
 
         td_var = np.var(x)
         # assure that the estimators are at least in the same
         # order of magnitude as the time-domain variance
         self.assertTrue(np.abs(np.log10(p1 / td_var)) < 1,
-                    'Incorrect frequency normalization in MTM PSD')
+                        'Incorrect frequency normalization in MTM PSD')
 
         # check the freq vector while we're here
         self.assertTrue(f2.max() == 50, 'MTM PSD returns wrong frequency bins')
@@ -299,7 +300,7 @@ class MultitaperSpectralTests(unittest.TestCase):
         #  matlab
         # (using 'a = dpss(166800, 4, 8)').
         matlab_long_dpss = np.load(
-                os.path.join(test_dir_path, 'dpss_testdata2.npy'))
+            os.path.join(test_dir_path, 'dpss_testdata2.npy'))
         try:
             from elephant._cython_utils import _tridisolve
             print('Cython version of tridisolve imported')
@@ -308,40 +309,40 @@ class MultitaperSpectralTests(unittest.TestCase):
 
             # We only have the first window to compare against:
             # Both for the interpolated case:
-            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=5)
+            assert_almost_equal(a1[0], matlab_long_dpss, decimal=5)
             # As well as the calculated case:
-            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=5)
+            assert_almost_equal(a1[0], matlab_long_dpss, decimal=5)
         except ImportError:
             print('Cython import failed')
             pass
             assert_almost_equal(a1, a2, decimal=-1)
-            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=1)
-            assert_almost_equal(a1[ 0 ], matlab_long_dpss, decimal=1)
+            assert_almost_equal(a1[0], matlab_long_dpss, decimal=1)
+            assert_almost_equal(a1[0], matlab_long_dpss, decimal=1)
 
     @dec.slow
     def test_multi_taper_psd_csd(self):
         """ Test the multi taper psd and csd estimation functions. Based on
          the example in doc/examples/multi_taper_spectral_estimation.py """
-        N = 2**10
+        N = 2 ** 10
         n_reps = 10
-        psd = [ ]
-        est_psd = [ ]
-        est_csd = [ ]
-        for jk in [ True, False ]:
+        psd = []
+        est_psd = []
+        est_csd = []
+        for jk in [True, False]:
             for k in range(n_reps):
-                for adaptive in [ True, False ]:
+                for adaptive in [True, False]:
                     ar_seq, nz, alpha = ar_generator(N=N, drop_transients=10)
                     ar_seq -= ar_seq.mean()
                     fgrid, hz = freq_response(
-                        1.0, a=np.r_[ 1, -alpha ], n_freqs=N)
+                        1.0, a=np.r_[1, -alpha], n_freqs=N)
                     psd.append(2 * (hz * hz.conj()).real)
                     f, psd_mt, nu = mts.multi_taper_psd(
                         ar_seq, adaptive=adaptive, jackknife=jk)
                     est_psd.append(psd_mt)
                     f, csd_mt = mts.multi_taper_csd(
-                        np.vstack([ ar_seq, ar_seq ]), adaptive=adaptive)
+                        np.vstack([ar_seq, ar_seq]), adaptive=adaptive)
                     # Symmetrical in this case, so take one element out:
-                    est_csd.append(csd_mt[ 0 ][ 1 ])
+                    est_csd.append(csd_mt[0][1])
 
             fxx = np.mean(psd, axis=0)
             fxx_est1 = np.mean(est_psd, axis=0)
@@ -362,24 +363,24 @@ class MultitaperSpectralTests(unittest.TestCase):
         d, lam = mts.dpss_windows(N, NW, 2 * NW - 2)
         # 2NW-2 lamdas should be all > 0.9
         self.assertTrue(
-                (lam > 0.9).all(),
-                'Eigenvectors show poor spectral concentration'
+            (lam > 0.9).all(),
+            'Eigenvectors show poor spectral concentration'
         )
         # test orthonomality
         err = np.linalg.norm(d.dot(d.T) - np.eye(2 * NW - 2), ord='fro')
-        self.assertTrue(err**2 < 1e-16,
+        self.assertTrue(err ** 2 < 1e-16,
                         'Eigenvectors not numerically orthonormal')
         # test positivity of even functions
         self.assertTrue(
-                (d[ ::2 ].sum(axis=1) > 0).all(),
-                'Even Slepian sequences should have positive DC'
+            (d[::2].sum(axis=1) > 0).all(),
+            'Even Slepian sequences should have positive DC'
         )
         # test positive initial slope of odd functions
         # (this tests the sign of a linear slope)
-        pk = np.argmax(np.abs(d[ 1::2, :N // 2 ]), axis=1)
+        pk = np.argmax(np.abs(d[1::2, :N // 2]), axis=1)
         t = True
-        for p, f in zip(pk, d[ 1::2 ]):
-            t = t and np.sum(np.arange(1, p + 1) * f[ :p ]) >= 0
+        for p, f in zip(pk, d[1::2]):
+            t = t and np.sum(np.arange(1, p + 1) * f[:p]) >= 0
         self.assertTrue(t, 'Odd Slepians should begin positive-going')
 
 
