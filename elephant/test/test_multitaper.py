@@ -48,7 +48,7 @@ from numpy.testing import assert_allclose
 from numpy.testing import assert_almost_equal
 import numpy.testing.decorators as dec
 import elephant
-from elephant import multitaper_spectral as mts
+import elephant.multitaper_spectral as mts
 
 # Define globally
 test_dir_path = os.path.join(elephant.__path__[ 0 ], 'test')

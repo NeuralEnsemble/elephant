@@ -11,16 +11,17 @@ install_requires = ['neo>0.3.3',
 extras_require = {'pandas': ['pandas>=0.14.1'],
                   'docs': ['numpydoc>=0.5',
                            'sphinx>=1.2.2'],
-                  'tests': ['nose>=1.3.3']}
+                  'tests': ['nose>=1.3.3'],
+                  'cython': ['cython>=0.24.1']}
 
 try:
     from distutils.extension import Extension
     from Cython.Distutils import build_ext as build_pyx_ext
     from numpy import get_include
     # add Cython extensions to the setup options
-    exts = [Extension('elephant._cython_utils', ['elephant/_cython_utils.pyx'],
-                      include_dirs=[get_include()])]
+    exts = [Extension('_cython_utils', ['elephant/_cython_utils.pyx'])]
 except ImportError:
+    build_pyx_ext = None
     exts = []
     # no loop for you!
     pass
@@ -34,6 +35,7 @@ setup(
                                   os.path.join('icsd', 'LICENSE'),
                                   os.path.join('icsd', 'README.md'),
                                   os.path.join('test', 'dpss_testdata1.txt'),
+                                  os.path.join('.', '_cython_utils.pyx'),
                                   os.path.join('test', 'dpss_testdata2.npy'),
                                   ]},
     install_requires=install_requires,
