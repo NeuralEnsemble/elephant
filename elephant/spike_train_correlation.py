@@ -380,8 +380,13 @@ def cross_correlation_histogram(
         N  = max(binned_st1.num_bins, binned_st2.num_bins)
         Nx = len(binned_st1.spike_indices[0])
         Ny = len(binned_st2.spike_indices[0])
-        print N, Nx, Ny, np.sqrt( (Nx-Nx**2./N)*(Ny-Ny**2./N))
-        rho_xy = (cch_result - Nx*Ny/N) / np.sqrt( (Nx-Nx**2./N)*(Ny-Ny**2./N) )
+        spmat = [binned_st1.to_sparse_array(), binned_st2.to_sparse_array()]
+        bin_counts_unique = []
+        for s in spmat:
+            bin_counts_unique.append(s.data)
+        ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
+        jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
+        rho_xy = (cch_result - Nx*Ny/N) / np.sqrt( (ii-Nx**2./N)*(jj-Ny**2./N) )
         return rho_xy
         
         
