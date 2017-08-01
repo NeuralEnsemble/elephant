@@ -27,7 +27,7 @@ import quantities as pq
 import warnings
 try:
     from mpi4py import MPI  # for parallelized routines
-    HAVE_MPI = False
+    HAVE_MPI = True
 except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
@@ -830,7 +830,7 @@ def pvalue_spectrum(
             # Find all pattern signatures in the current surrogate data set
             surr_sgnt = [
                 (a, b) for (a, b, c) in concepts_mining(
-                    surrs, 2, winlen, min_spikes=min_spikes,
+                    surrs, binsize, winlen, min_spikes=min_spikes,
                     min_occ=min_occ, min_neu=min_neu, report='#')[0]]
             # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
             # current surrogate, and add it to the list of all signatures
