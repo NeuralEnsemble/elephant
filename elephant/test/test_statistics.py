@@ -34,7 +34,8 @@ class isi_TestCase(unittest.TestCase):
         self.targ_array_1d = self.targ_array_2d_1[0, :]
 
     def test_isi_with_spiketrain(self):
-        st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
+        st = neo.SpikeTrain(
+            self.test_array_1d, units='ms', t_stop=10.0, t_start=0.29)
         target = pq.Quantity(self.targ_array_1d, 'ms')
         res = es.isi(st)
         assert_array_almost_equal(res, target, decimal=9)
