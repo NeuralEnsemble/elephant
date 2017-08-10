@@ -197,15 +197,15 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
         rank = 0
     output = {}
     time_mining = time.time()
-    # Mine the data for extraction of concepts
-    concepts, rel_matrix = concepts_mining(data, binsize, winlen,
-                                           min_spikes=min_spikes,
-                                           min_occ=min_occ, min_neu=min_neu,
-                                           report='a')
-    time_mining = time.time() - time_mining
-    print("Time for data mining: {}".format(time_mining))
     # Decide if compute the approximated stability
     if n_subsets > 0:
+        # Mine the data for extraction of concepts
+        concepts, rel_matrix = concepts_mining(data, binsize, winlen,
+                                               min_spikes=min_spikes,
+                                               min_occ=min_occ, min_neu=min_neu,
+                                               report='a')
+        time_mining = time.time() - time_mining
+        print("Time for data mining: {}".format(time_mining))
         # Computing the approximated stability of all the concepts
         time_stability = time.time()
         concepts = approximate_stability(concepts, rel_matrix, n_subsets,
@@ -219,6 +219,15 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
     elif stability_thresh is not None:
         warnings.warn('Stability_thresh not None but stability has not been '
                       'computed (n_subsets==0)')
+    elif rank == 0:
+        # Mine the data for extraction of concepts
+        concepts, rel_matrix = concepts_mining(data, binsize, winlen,
+                                               min_spikes=min_spikes,
+                                               min_occ=min_occ,
+                                               min_neu=min_neu,
+                                               report='a')
+        time_mining = time.time() - time_mining
+        print("Time for data mining: {}".format(time_mining))
     # Decide whether compute pvalue spectrum
     if n_surr > 0:
         # Compute pvalue spectrum
@@ -268,18 +277,18 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
                                                  l=psr_param[2],
                                                  min_spikes=min_spikes,
                                                  min_occ=min_occ)
-    # Storing patterns
-    if output_format == 'patterns' and n_surr > 0:
-        # If the p-value spectra it was not computed it is set to an empty list
-        if n_surr == 0:
-            pv_spec = []
-        # Transfroming concepts to dictionary containing pattern informations
-        output['patterns'] = concept_output_to_patterns(concepts, pv_spec,
-                                                        winlen, binsize,
-                                                        data[0].t_start)
-    else:
-        output['patterns'] = concepts
-    return output
+        # Storing patterns
+        if output_format == 'patterns' and n_surr > 0:
+            # If the p-value spectra was not computed, is set to an empty list
+            if n_surr == 0:
+                pv_spec = []
+            # Transfroming concepts to dictionary containing pattern infos
+            output['patterns'] = concept_output_to_patterns(concepts, pv_spec,
+                                                            winlen, binsize,
+                                                            data[0].t_start)
+        else:
+            output['patterns'] = concepts
+        return output
 
 
 def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
@@ -583,10 +592,13 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             concepts.append((intent, extent))
             if report == '#':
                 spec_matrix[len(intent), supp] += 1
+        del fpgrowth_output
         # Computing spectrum
         if report == '#':
+            del concepts
             for (z, c) in np.transpose(np.where(spec_matrix != 0)):
                 spectrum.append((z, c, int(spec_matrix[z, c])))
+            del spec_matrix
             return spectrum
         else:
             return concepts
@@ -843,6 +855,7 @@ def pvalue_spectrum(
     # Collecting results on the first PCU
     if rank != 0:  # pragma: no cover
         comm.send(surr_sgnts, dest=0)
+        del surr_sgnts
     if rank == 0:
         for i in range(1, size):
             recv_list = comm.recv(source=i)
