@@ -255,12 +255,12 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
                 ns_sgnt = test_signature_significance(pv_spec, alpha,
                                                       corr=stat_corr,
                                                       report='e')
-                # Storing non-significant entries of the pvalue spectrum
-                output['non_sgnf_sgnt'] = ns_sgnt
-                # Filter concepts with pvalue spectrum (psf)
-                concepts = list(filter(
-                    lambda c: _pattern_spectrum_filter(
-                        c, ns_sgnt, winlen), concepts))
+            # Storing non-significant entries of the pvalue spectrum
+            output['non_sgnf_sgnt'] = ns_sgnt
+            # Filter concepts with pvalue spectrum (psf)
+            concepts = list(filter(
+                lambda c: _pattern_spectrum_filter(
+                    c, ns_sgnt, winlen), concepts))
         # Decide whether filter the concepts using psr
         if psr_param is not None:
             # Filter using conditional tests (psr)
