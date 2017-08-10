@@ -858,7 +858,7 @@ def pvalue_spectrum(
     for (z, c, l) in surr_sgnts:
         pv_spec[(z, c, l)] += 1
     scale = 1. / n_surr
-    pv_spec = [(a, b, c, d * scale) for (a, b, d), c in pv_spec.items()]
+    pv_spec = [(a, b, c, d * scale) for (a, b, c), d in pv_spec.items()]
     return pv_spec
 
 
