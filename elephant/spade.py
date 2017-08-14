@@ -861,15 +861,15 @@ def pvalue_spectrum(
             recv_list = comm.recv(source=i)
             surr_sgnts.extend(recv_list)
 
-    # Compute the p-value spectrum, and return it
-    pv_spec = {}
-    for (z, c) in surr_sgnts:
-        pv_spec[(z, c)] = 0
-    for (z, c) in surr_sgnts:
-        pv_spec[(z, c)] += 1
-    scale = 1. / n_surr
-    pv_spec = [(a, b, c * scale) for (a, b), c in pv_spec.items()]
-    return pv_spec
+        # Compute the p-value spectrum, and return it
+        pv_spec = {}
+        for (z, c) in surr_sgnts:
+            pv_spec[(z, c)] = 0
+        for (z, c) in surr_sgnts:
+            pv_spec[(z, c)] += 1
+        scale = 1. / n_surr
+        pv_spec = [(a, b, c * scale) for (a, b), c in pv_spec.items()]
+        return pv_spec
 
 
 def _stability_filter(c, stab_thr):
