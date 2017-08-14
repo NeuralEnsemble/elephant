@@ -1352,12 +1352,16 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                     supp_diff = count2 - count1 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size1 - size2 + k
-                    reject_sub = (size2, supp_diff) in excluded \
+                    len_sub = max(
+                        np.abs(np.diff(np.array(conc2) % winlen)))
+                    reject_sub = (size2, supp_diff, len_sub) in excluded \
                                  or supp_diff < min_occ
 
                     # Determine whether the superset (conc1_new) should be
                     # rejected according to the test for excess items
-                    reject_sup = (size_diff, count1) in excluded \
+                    len_sup = max(
+                        np.abs(np.diff(np.array(conc1_new) % winlen)))
+                    reject_sup = (size_diff, count1, len_sup) in excluded \
                                  or size_diff < min_spikes
                     # Reject the superset and/or the subset accordingly:
                     if reject_sub and not reject_sup:
@@ -1383,12 +1387,17 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                     supp_diff = count1 - count2 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size2 - size1 + k
-                    reject_sub = (size2, supp_diff) in excluded \
+                    len_sub = max(
+                        np.abs(np.diff(np.array(conc1) % winlen)))
+                    reject_sub = (size2, supp_diff, len_sub) in excluded \
                                  or supp_diff < min_occ
 
                     # Determine whether the superset (conc1_new) should be
                     # rejected according to the test for excess items
-                    reject_sup = (size_diff, count1) in excluded \
+                    len_sup = max(
+                        np.abs(np.diff(np.array(conc2) % winlen)))
+
+                    reject_sup = (size_diff, count1, len_sup) in excluded \
                                  or size_diff < min_spikes
                     # Reject the superset and/or the subset accordingly:
                     if reject_sub and not reject_sup:
@@ -1408,13 +1417,21 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                     else:
                         continue
                 else:
+                    print ('1', conc1_new)
+                    print('2', conc2)
                     size1, size2 = len(conc1_new), len(conc2)
-                    inter_size = len(set(conc1_new) & set(conc2))
+                    inter_set = set(conc1_new) & set(conc2)
+                    inter_size = len(inter_set)
+                    len_1 = max(
+                        np.abs(np.diff(np.array(conc1_new) % winlen)))
+                    len_2 = max(
+                        np.abs(np.diff(np.array(conc2) % winlen)))
                     reject_1 = (
-                        size1 - inter_size + k,
-                        count1) in excluded or size1 - inter_size + k < min_spikes
+                        size1 - inter_size + k, count1,
+                        len_1) in excluded or \
+                               size1 - inter_size + k < min_spikes
                     reject_2 = (
-                        size2 - inter_size + k, count2) in excluded or \
+                        size2 - inter_size + k, count2, len_2) in excluded or \
                         size2 - inter_size + k < min_spikes
                     # Reject accordingly:
                     if reject_2 and not reject_1:
