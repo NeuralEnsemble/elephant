@@ -289,7 +289,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
         else:
             output['patterns'] = concepts
         return output
-
+    else:
+        return []
 
 def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
                     max_spikes=None, max_occ=None, min_neu=1, report='a'):
@@ -856,6 +857,7 @@ def pvalue_spectrum(
     if rank != 0:  # pragma: no cover
         comm.send(surr_sgnts, dest=0)
         del surr_sgnts
+        return []
     if rank == 0:
         for i in range(1, size):
             recv_list = comm.recv(source=i)
