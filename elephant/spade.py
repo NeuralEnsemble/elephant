@@ -871,7 +871,7 @@ def pvalue_spectrum(
             pv_spec[(z, c)] += 1
         scale = 1. / n_surr
         pv_spec = [(a, b, c * scale) for (a, b), c in pv_spec.items()]
-    return pv_spec
+        return pv_spec
 
 
 def _stability_filter(c, stab_thr):
