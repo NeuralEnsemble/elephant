@@ -592,7 +592,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         concepts.append((intent, extent))
         if report == '#':
             spec_matrix[len(intent), supp, max(
-                np.diff(np.array(intent)%winlen))] += 1
+                np.abs(np.diff(np.array(intent) % winlen)))] += 1
     # Computing spectrum
     if report == '#':
         del concepts
@@ -980,7 +980,7 @@ def _pattern_spectrum_filter(concept, ns_signature, winlen):
     '''Filter to select concept which signature is significant 
     '''
     keep_concept = (len(concept[0]), len(concept[1]), max(
-        np.diff(np.array(concept[0])%winlen))) not in ns_signature
+        np.abs(np.diff(np.array(concept[0])%winlen)))) not in ns_signature
     return keep_concept
 
 
