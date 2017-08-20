@@ -49,9 +49,6 @@ from numpy.testing import assert_allclose
 from numpy.testing import assert_almost_equal
 import numpy.linalg as la
 
-# TODO: function to test the jackknife procedure
-
-
 def expected_jk_variance(K):
     """Compute the expected value of the jackknife variance estimate
     over K windows below. This expected value formula is based on the

@@ -48,16 +48,16 @@ def _tridisolve(cnp.ndarray[cnp.npy_double, ndim=1] d,
         x = b
     else:
         x = b.copy()
-    for k in xrange(1, N):
+    for k in range(1, N):
         # e^(k-1) = e(k-1) / d(k-1)
         # d(k) = d(k) - e^(k-1)e(k-1) / d(k-1)
         t = ew[k - 1]
         ew[k - 1] = t / dw[k - 1]
         dw[k] = dw[k] - t * ew[k - 1]
-    for k in xrange(1, N):
+    for k in range(1, N):
         x[k] = x[k] - ew[k - 1] * x[k - 1]
     x[N - 1] = x[N - 1] / dw[N - 1]
-    for k in xrange(N - 2, -1, -1):
+    for k in range(N - 2, -1, -1):
         x[k] = x[k] / dw[k] - ew[k] * x[k + 1]
 
     if not overwrite_b:

@@ -75,7 +75,8 @@ def freq_response(b, a=1., n_freqs=1024, sides='onesided'):
     a : alpha sequence (autoregressive component)
     n_freqs : size of frequency grid
     sides : {'onesided', 'twosided'}
-       compute frequencies between [-PI,PI), or from [0, PI]
+        (compute frequencies between [ -PI, PI ), or from [ 0, PI ])
+
     Returns
     -------
     fgrid, H(e^jw)
