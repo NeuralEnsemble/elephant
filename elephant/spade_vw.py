@@ -1490,27 +1490,38 @@ def concept_output_to_patterns(concepts, pvalue_spectrum, winlen, binsize,
     :param binsize: 
 
     '''
-    patterns = concepts
-    pvalue_spectrum = pvalue_spectrum
     pvalue_dict = {}
+    # Creating a dictionary for the pvalue spectrum
     for entry in pvalue_spectrum:
-        pvalue_dict[(entry[0], entry[1])] = entry[-1]
+        pvalue_dict[(entry[0], entry[1], entry[2])] = entry[-1]
+    # Initializing list containing all the patterns
     output = []
-    for patt in patterns:
+    for conc in concepts:
+        # Vocabulary for each of the patterns
         output_dict = {}
-        bin_ids = sorted(np.array(patt[0]) % winlen)
+        # Bins relative to the sliding window in which the spikes of patt fall
+        bin_ids = sorted(np.array(conc[0]) % winlen)
+        # id of the neurons forming the pattern
         output_dict['neurons'] = sorted(
-            np.array(patt[0])[np.argsort(bin_ids)] // winlen)
+            np.array(conc[0])[np.argsort(bin_ids)] // winlen)
+        # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
-        output_dict['times'] = sorted(patt[1]) * binsize + bin_ids[0] * \
-                                                           binsize + t_start
-        output_dict['signature'] = (len(patt[0]), len(patt[1]))
+        # Times (in binsize units) in which the pattern occurres
+        output_dict['times'] = sorted(conc[1]) * binsize + bin_ids[0] * \
+            binsize + t_start
+        # Signature (size, n occ) of the pattern
+        output_dict['signature'] = (len(conc[0]), len(conc[1]))
+        # If an empty list is given in input to the pval spectrum the pvalue
+        # is set to -1 (pvalue spectrum not available)
         if len(pvalue_spectrum) == 0:
             output_dict['pvalue'] = -1
+        # Pvalue assigned to the pattern from the pvalue spectrum
         else:
             try:
-                output_dict['pvalue'] = pvalue_dict[(len(patt[0]), len(patt[1]))]
+                output_dict['pvalue'] = pvalue_dict[
+                    (len(conc[0]), len(conc[1]), bin_ids[-1] - bin_ids[0])]
             except KeyError:
                 output_dict['pvalue'] = 0.0
+        # pattern dictionary appended to the output
         output.append(output_dict)
     return output
