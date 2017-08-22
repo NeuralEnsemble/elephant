@@ -1495,13 +1495,17 @@ def concept_output_to_patterns(concepts, pvalue_spectrum, winlen, binsize,
         output_dict['neurons'] = sorted(
             np.array(patt[0])[np.argsort(bin_ids)] // winlen)
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
-        output_dict['times'] = sorted(patt[1]) * binsize - bin_ids[0] * \
+        output_dict['times'] = sorted(patt[1]) * binsize + bin_ids[0] * \
                                                            binsize + t_start
         # print output_dict['times']
         output_dict['signature'] = (len(patt[0]), len(patt[1]))
-        try:
-            output_dict['pvalue'] = pvalue_dict[(len(patt[0]), len(patt[1]))]
-        except KeyError:
+        if len(pvalue_spectrum) == 0:
             output_dict['pvalue'] = -1
+        else:
+            try:
+                output_dict['pvalue'] = pvalue_dict[(len(patt[0]), len(patt[1]))]
+            except KeyError:
+                output_dict['pvalue'] = 0.0
+
         output.append(output_dict)
     return output
