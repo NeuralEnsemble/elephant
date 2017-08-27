@@ -160,7 +160,7 @@ class MultitaperSpectralTests(unittest.TestCase):
                                     low_bias=False)
             except:
                 pass
-            self.assertTrue(len(w) == 1)
+            self.assertTrue(len(w) > 0)
 
     def test_get_spectra(self):
         """Testing get_spectra"""
