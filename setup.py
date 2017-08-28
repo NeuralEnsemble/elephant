@@ -21,7 +21,7 @@ setup(
     package_data = {'elephant' : [os.path.join('current_source_density_src', 'test_data.mat'),
                                   os.path.join('current_source_density_src', 'LICENSE'),
                                   os.path.join('current_source_density_src', 'README.md'),
-                                  os.path.join('current_source_density_src', '*.py')
+                                  os.path.join('current_source_density_src', '*.py'),
                                   os.path.join('test', 'dpss_testdata1.txt'),
                                   os.path.join('test', 'dpss_testdata2.npy')]},
     
