@@ -10,9 +10,9 @@ jcunnin @ stanford.edu
 import numpy as np
 import neo
 
-from neural_trajectory_src.gpfa import gpfa_engine, exact_inference_with_ll, \
-    two_stage_engine
-from neural_trajectory_src import util
+from elephant.neural_trajectory_src.gpfa import gpfa_engine, \
+    exact_inference_with_ll, two_stage_engine
+from elephant.neural_trajectory_src import util
 
 
 def neural_trajectory(data, method='gpfa', bin_size=20, num_folds=0, x_dim=3):

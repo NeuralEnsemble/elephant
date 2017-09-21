@@ -19,7 +19,8 @@ from . import (statistics,
                current_source_density,
                sta,
                conversion,
-               neo_tools)
+               neo_tools,
+               neural_trajectory)
 
 try:
     from . import pandas_bridge

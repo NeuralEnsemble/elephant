@@ -2,6 +2,7 @@
 
 from setuptools import setup
 import os
+from os import listdir
 
 long_description = open("README.rst").read()
 install_requires = ['neo>0.3.3',
@@ -14,15 +15,15 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
                            'sphinx>=1.2.2'],
                   'tests': ['nose>=1.3.3']}
 
+package_dirs = ['current_source_density_src', 'neural_trajectory_src']
 setup(
     name="elephant",
     version='0.4.1',
     packages=['elephant', 'elephant.test'],
-    package_data = {'elephant' : [os.path.join('current_source_density_src', 'test_data.mat'),
-                                  os.path.join('current_source_density_src', 'LICENSE'),
-                                  os.path.join('current_source_density_src', 'README.md'),
-                                  os.path.join('current_source_density_src', '*.py')]},
-    
+    package_data={
+        'elephant': [os.path.join(i, j) for i in package_dirs for j in
+                     listdir(i) if
+                     j.endswith(('.py', '.md', 'mat', 'LICENSE'))]},
     install_requires=install_requires,
     extras_require=extras_require,
 
