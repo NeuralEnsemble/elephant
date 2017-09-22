@@ -159,9 +159,9 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, num_folds=0,
             result = two_stage_engine(seqTrain, seqTest, typ=method, xDim=x_dim,
                                       binWidth=bin_size)
             raise NotImplementedError
-
-        var_names = ['method', 'cvf', 'hasSpikesBool', 'minVarFrac', 'bin_size']
-        result.update(dict([(x, locals()[x]) for x in var_names]))
+        result.update(
+            {'method': method, 'cvf': cvf, 'hasSpikesBool': hasSpikesBool,
+             'min_var_frac': minVarFrac, 'bin_size': bin_size})
 
     return result
 

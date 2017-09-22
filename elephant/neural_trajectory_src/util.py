@@ -332,7 +332,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     """
     if blk_size_vert is None:
         blk_size_vert = blk_size
-
+    n_blocks = int(n_blocks)
     Nh = blk_size * n_blocks
     Nv = blk_size_vert * n_blocks
     Thalf = np.int(np.floor(n_blocks / 2.0))
