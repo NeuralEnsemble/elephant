@@ -1417,8 +1417,6 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                     else:
                         continue
                 else:
-                    print ('1', conc1_new)
-                    print('2', conc2)
                     size1, size2 = len(conc1_new), len(conc2)
                     inter_set = set(conc1_new) & set(conc2)
                     inter_size = len(inter_set)
