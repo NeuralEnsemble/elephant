@@ -960,7 +960,7 @@ def segment_by_trial(seq, x, fn):
     if np.sum(seq['T']) != x.shape[1]:
         raise(ValueError, 'size of X incorrect.')
 
-    dtype_new = [(x, seq[x].dtype) for x in seq.dtype.names]
+    dtype_new = [(i, seq[i].dtype) for i in seq.dtype.names]
     dtype_new.append((fn, np.object))
     seq_new = np.empty(len(seq), dtype=dtype_new)
     for dtype_name in seq.dtype.names:

@@ -9,13 +9,15 @@ jcunnin @ stanford.edu
 
 import numpy as np
 import neo
+import quantities as pq
 
 from elephant.neural_trajectory_src.gpfa import gpfa_engine, \
     exact_inference_with_ll, two_stage_engine
 from elephant.neural_trajectory_src import util
 
 
-def neural_trajectory(data, method='gpfa', bin_size=20, num_folds=0, x_dim=3):
+def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, num_folds=0, 
+                      x_dim=3):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -23,9 +25,9 @@ def neural_trajectory(data, method='gpfa', bin_size=20, num_folds=0, x_dim=3):
     ----------
 
     data: list containing following structure
-          list of spike trains in different trials
-                                        0-axis --> Trials
-                                        1-axis --> Neurons
+          list of tuple of trial ids and spike trains 
+                                        0-axis --> Trial IDs
+                                        1-axis --> List or array of neurons
                                         2-axis --> Spike times
     method: string,
         Method for extracting neural trajectories
@@ -80,9 +82,9 @@ def neural_trajectory(data, method='gpfa', bin_size=20, num_folds=0, x_dim=3):
         * hasSpikesBool: Indicates if a neuron has any spikes across trials
         * method: String, method name
     """
-    if not isinstance(data[0][1], neo.SpikeTrain):
+    if not isinstance(data[0][1][0], neo.SpikeTrain):
         raise ValueError("structure of the data is not correct: 0-axis should "
-                         "be trials, 1-axis neo spike trains "
+                         "be trials, 1-axis list of neo spike trains "
                          "and 2-axis spike times")
     # Obtain binned spike counts
     seq = util.get_seq(data, bin_size)
@@ -151,7 +153,7 @@ def neural_trajectory(data, method='gpfa', bin_size=20, num_folds=0, x_dim=3):
         # The following does the heavy lifting.
         if method == 'gpfa':
             result = gpfa_engine(seqTrain, seqTest, x_dim=x_dim,
-                                 bin_width=bin_size, min_var_frac=minVarFrac)
+                                 bin_width=bin_size.magnitude, min_var_frac=minVarFrac)
         elif method in ['fa', 'ppca', 'pca']:
             # TODO
             result = two_stage_engine(seqTrain, seqTest, typ=method, xDim=x_dim,
@@ -211,12 +213,12 @@ def postprocess(ws, kern_sd=[]):
             if not k:
                 raise ValueError('Selected kernSD not found')
     if ws['method'] == 'gpfa':
-        C = ws['estParams']['C']
+        C = ws['parameter_estimates']['C']
         X = np.hstack(ws['seqTrain']['xsm'])
         Xorth, Corth, _ = util.orthogonalize(X, C)
         seqTrain = util.segment_by_trial(ws['seqTrain'], Xorth, 'xorth')
 
-        estParams = ws['estParams']
+        estParams = ws['parameter_estimates']
         estParams['Corth'] = Corth
 
         if 'seqTest' in ws:
