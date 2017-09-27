@@ -23,7 +23,7 @@ except ImportError:
     HAVE_FIM = False
 
 class SpadeTestCase(unittest.TestCase):
-
+# TODO: reformulate test to check neuron order
     def setUp(self):
         # Spade parameters
         self.binsize = 1 * pq.ms
