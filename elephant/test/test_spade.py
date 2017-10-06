@@ -23,7 +23,6 @@ except ImportError:
     HAVE_FIM = False
 
 class SpadeTestCase(unittest.TestCase):
-# TODO: reformulate test to check neuron order
     def setUp(self):
         # Spade parameters
         self.binsize = 1 * pq.ms
@@ -39,7 +38,7 @@ class SpadeTestCase(unittest.TestCase):
         # Tet data parameters
         # Number of patterns' occurrences
         self.n_occ1 = 10
-        self.n_occ2 = 10
+        self.n_occ2 = 12
         self.n_occ3 = 15
         # Patterns lags
         self.lags1 = [2]
