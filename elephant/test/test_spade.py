@@ -42,9 +42,9 @@ class SpadeTestCase(unittest.TestCase):
         self.n_occ2 = 10
         self.n_occ3 = 15
         # Patterns lags
-        self.lags1 = [0, 2]
-        self.lags2 = [0, 1, 1]
-        self.lags3 = [0, 1, 1, 2, 2, 3]
+        self.lags1 = [2]
+        self.lags2 = [1, 2]
+        self.lags3 = [1, 2, 3, 4, 5]
         # Length of the spiketrain
         self.t_stop = 3000
         # Patterns times

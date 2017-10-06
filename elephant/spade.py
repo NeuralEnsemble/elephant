@@ -1496,8 +1496,8 @@ def concept_output_to_patterns(concepts, pvalue_spectrum, winlen, binsize,
         bin_ids_unsort = np.array(conc[0]) % winlen
         bin_ids = sorted(np.array(conc[0]) % winlen)
         # id of the neurons forming the pattern
-        output_dict['neurons'] = np.array(
-            conc[0])[np.argsort(bin_ids_unsort)] // winlen
+        output_dict['neurons'] = list(np.array(
+            conc[0])[np.argsort(bin_ids_unsort)] // winlen)
         # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
         # Times (in binsize units) in which the pattern occurres
