@@ -3,7 +3,10 @@
 from setuptools import setup
 import os
 import sys
-from urllib.request import urlretrieve
+try:
+    from urllib.request import urlretrieve
+except ImportError:
+    from urllib import urlretrieve
 
 long_description = open("README.rst").read()
 install_requires = ['neo>0.3.3',
