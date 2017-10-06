@@ -329,6 +329,8 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
             20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
+    if t_start < t_stop:
+        pass
     if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
         raise ValueError("t_start and t_stop must be of type pq.Quantity")
     rate = rate.rescale((1 / t_start).units)
