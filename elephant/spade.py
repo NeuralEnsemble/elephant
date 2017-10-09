@@ -1062,8 +1062,22 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
 
     Parameters
     ----------
-    concepts: ???
-    rel_matrix: ???
+    concepts: list
+        All the pattern candidates (concepts) found in the data. Each
+        pattern is represented as a tuple containing (spike IDs, 
+        discrete times (window position)
+        of the  occurrences of the pattern). The spike IDs are defined as:
+        spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
+        bin_id in [0, winlen].
+    rel_matrix: numpy.array
+        A binary matrix with shape (number of windows, winlen*len(data)). Each
+        row corresponds to a window (order according to their position in
+        time). Each column correspond to one bin and one neuron and it is 0 if
+        no spikes or 1 if one or more spikes occurred in that bin for that
+        particular neuron. For example, the entry [0,0] of this matrix
+        corresponds to the first bin of the first window position for the first
+        neuron, the entry [0,winlen] to the first bin of the first window
+        position for the second neuron.
     n_subsets: int
         Number of subsets of a concept used to approximate its stability. If
         n_subset is set to 0 the stability is not computed. If, however,
@@ -1084,8 +1098,16 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
 
     Output
     ------
-    stability: list
-        List containing the stability of patterns
+    output: list
+        List of all the pattern candidates (concepts) given in input, each with 
+        the correspondent intensional and extensional stability. Each
+        pattern is represented as a tuple containing:
+         (spike IDs, 
+        discrete times of the  occurrences of the pattern, intensional 
+        stability of the pattern, extensional stability of the pattern). 
+        The spike IDs are defined as:
+        spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
+        bin_id in [0, winlen].
 
     Notes
     -----
