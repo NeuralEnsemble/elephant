@@ -8,6 +8,7 @@ Function Reference by Module
    reference/statistics
    reference/signal_processing
    reference/spectral
+   reference/current_source_density
    reference/kernels
    reference/spike_train_dissimilarity
    reference/sta

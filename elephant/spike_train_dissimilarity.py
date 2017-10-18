@@ -210,9 +210,11 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
     min_dim, max_dim = train_b.size, train_a.size + 1
     cost = np.asfortranarray(np.tile(np.arange(float(max_dim)), (2, 1)))
     decreasing_sequence = np.asfortranarray(cost[:, ::-1])
-    k = 1 - 2 * np.asfortranarray(((np.sqrt(6.0) * kernel.sigma) * kernel(
-        (np.atleast_2d(train_a).T - train_b).view(
-            type=pq.Quantity))).simplified)
+    kern = kernel((np.atleast_2d(train_a).T.view(type=pq.Quantity) -
+                   train_b.view(type=pq.Quantity)))
+    as_fortran = np.asfortranarray(
+        ((np.sqrt(6.0) * kernel.sigma) * kern).simplified)
+    k = 1 - 2 * as_fortran
 
     for i in xrange(min_dim):
         # determine G[i, i] == accumulated_min[:, 0]

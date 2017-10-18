@@ -16,6 +16,7 @@ from . import (statistics,
                spike_train_dissimilarity,
                spike_train_surrogates,
                signal_processing,
+               current_source_density,
                sta,
                conversion,
                neo_tools)
@@ -26,4 +27,4 @@ try:
 except ImportError:
     pass
 
-__version__ = "0.3.0"
+__version__ = "0.4.1"

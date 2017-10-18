@@ -5,7 +5,8 @@ Unit tests for the statistics module.
 :copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-
+from __future__ import division
+    
 import unittest
 
 import neo
@@ -17,6 +18,7 @@ import scipy.integrate as spint
 import elephant.statistics as es
 import elephant.kernels as kernels
 import warnings
+
 
 class isi_TestCase(unittest.TestCase):
     def setUp(self):
@@ -34,7 +36,8 @@ class isi_TestCase(unittest.TestCase):
         self.targ_array_1d = self.targ_array_2d_1[0, :]
 
     def test_isi_with_spiketrain(self):
-        st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
+        st = neo.SpikeTrain(
+            self.test_array_1d, units='ms', t_stop=10.0, t_start=0.29)
         target = pq.Quantity(self.targ_array_1d, 'ms')
         res = es.isi(st)
         assert_array_almost_equal(res, target, decimal=9)
@@ -338,6 +341,40 @@ class LVTestCase(unittest.TestCase):
         self.assertRaises(ValueError, es.lv, np.array([seq, seq]))
 
 
+class CV2TestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_seq = [1, 28,  4, 47,  5, 16,  2,  5, 21, 12,
+                         4, 12, 59,  2,  4, 18, 33, 25,  2, 34,
+                         4,  1,  1, 14,  8,  1, 10,  1,  8, 20,
+                         5,  1,  6,  5, 12,  2,  8,  8,  2,  8,
+                         2, 10,  2,  1,  1,  2, 15,  3, 20,  6,
+                         11, 6, 18,  2,  5, 17,  4,  3, 13,  6,
+                         1, 18,  1, 16, 12,  2, 52,  2,  5,  7,
+                         6, 25,  6,  5,  3, 15,  4,  3, 16,  3,
+                         6,  5, 24, 21,  3,  3,  4,  8,  4, 11,
+                         5,  7,  5,  6,  8, 11, 33, 10,  7,  4]
+
+        self.target = 1.0022235296529176
+
+    def test_cv2_with_quantities(self):
+        seq = pq.Quantity(self.test_seq, units='ms')
+        assert_array_almost_equal(es.cv2(seq), self.target, decimal=9)
+
+    def test_cv2_with_plain_array(self):
+        seq = np.array(self.test_seq)
+        assert_array_almost_equal(es.cv2(seq), self.target, decimal=9)
+
+    def test_cv2_with_list(self):
+        seq = self.test_seq
+        assert_array_almost_equal(es.cv2(seq), self.target, decimal=9)
+
+    def test_cv2_raise_error(self):
+        seq = self.test_seq
+        self.assertRaises(AttributeError, es.cv2, [])
+        self.assertRaises(AttributeError, es.cv2, 1)
+        self.assertRaises(AttributeError, es.cv2, np.array([seq, seq]))
+
+
 class RateEstimationTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -370,7 +407,7 @@ class RateEstimationTestCase(unittest.TestCase):
             self.assertEqual("Instantaneous firing rate approximation contains "
                              "negative values, possibly caused due to machine "
                              "precision errors.", str(w[-1].message))
-        self.assertIsInstance(inst_rate, neo.core.AnalogSignalArray)
+        self.assertIsInstance(inst_rate, neo.core.AnalogSignal)
         self.assertEquals(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
         self.assertEquals(inst_rate.simplified.units, pq.Hz)
@@ -478,31 +515,31 @@ class TimeHistogramTestCase(unittest.TestCase):
     def test_time_histogram(self):
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = es.time_histogram(self.spiketrains, binsize=pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_binary(self):
         targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = es.time_histogram(self.spiketrains, binsize=pq.s,
                                       binary=True)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_tstart_tstop(self):
         # Start, stop short range
         targ = np.array([2, 1])
         histogram = es.time_histogram(self.spiketrains, binsize=pq.s,
                                       t_start=5 * pq.s, t_stop=7 * pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
         # Test without t_stop
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = es.time_histogram(self.spiketrains, binsize=1 * pq.s,
                                       t_start=0 * pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
         # Test without t_start
         histogram = es.time_histogram(self.spiketrains, binsize=1 * pq.s,
                                       t_stop=10 * pq.s)
-        assert_array_equal(targ, histogram[:, 0].magnitude)
+        assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_output(self):
         # Normalization mean
@@ -542,10 +579,10 @@ class ComplexityPdfTestCase(unittest.TestCase):
     def test_complexity_pdf(self):
         targ = np.array([0.92, 0.01, 0.01, 0.06])
         complexity = es.complexity_pdf(self.spiketrains, binsize=0.1*pq.s)
-        assert_array_equal(targ, complexity[:, 0].magnitude)
-        self.assertEqual(1, complexity[:, 0].magnitude.sum())
+        assert_array_equal(targ, complexity.magnitude[:, 0])
+        self.assertEqual(1, complexity.magnitude[:, 0].sum())
         self.assertEqual(len(self.spiketrains)+1, len(complexity))
-        self.assertIsInstance(complexity, neo.AnalogSignalArray)
+        self.assertIsInstance(complexity, neo.AnalogSignal)
         self.assertEqual(complexity.units, 1*pq.dimensionless)
 
 
