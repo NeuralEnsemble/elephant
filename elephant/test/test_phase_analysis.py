@@ -9,7 +9,7 @@ from __future__ import division, print_function
 
 import unittest
 
-from neo import SpikeTrain, AnalogSignalArray
+from neo import SpikeTrain, AnalogSignal
 import numpy as np
 import quantities as pq
 
@@ -27,7 +27,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         t0 = np.arange(
             0, tlen0.rescale(pq.s).magnitude,
             fs0.rescale(pq.s).magnitude) * pq.s
-        self.anasig0 = AnalogSignalArray(
+        self.anasig0 = AnalogSignal(
             np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
         self.st0 = SpikeTrain(
@@ -105,6 +105,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # interpolation with a spike slightly to the right
         self.assertEqual(phases_noint[0][2], phases_int[0][0])
         self.assertEqual(phases_noint[0][4], phases_int[0][0])
+
 
 if __name__ == '__main__':
     unittest.main()

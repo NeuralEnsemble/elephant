@@ -2,7 +2,7 @@
 """
 Methods for performing phase analysis.
 
-:copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2017 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
