@@ -32,8 +32,8 @@ def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
     -------
     phases : list of arrays
         Spike-triggered phases. Entries in the list correspond to the
-        SpikeTrains in spiketrains. Each entry contains the spike-triggered
-        angles of the signal.
+        SpikeTrains in spiketrains. Each entry contains an array with the
+        spike-triggered angles (in rad) of the signal.
     amp : list of arrays
         Corresponding spike-triggered amplitudes.
     times : list of arrays
