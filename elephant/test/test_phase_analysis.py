@@ -45,7 +45,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
         assert_allclose(phases[0], - np.pi / 2.)
         assert_allclose(amps[0], 1, atol=0.1)
-        assert_allclose(times[0], self.st0.magnitude)
+        assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
         self.assertEqual(len(times[0]), len(self.st0))
@@ -59,7 +59,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
         assert_allclose(phases[0], -np.pi / 2.)
         assert_allclose(amps[0], 1, atol=0.1)
-        assert_allclose(times[0], self.st0.magnitude)
+        assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
         self.assertEqual(len(times[0]), len(self.st0))
@@ -72,7 +72,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
         assert_allclose(phases[0], -np.pi / 2.)
         assert_allclose(amps[0], 1, atol=0.1)
-        assert_allclose(times[0], self.st0.magnitude)
+        assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
         self.assertEqual(len(times[0]), len(self.st0))
