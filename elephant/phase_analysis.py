@@ -7,6 +7,7 @@ Methods for performing phase analysis.
 """
 
 import numpy as np
+import quantities as pq
 
 
 def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
@@ -29,15 +30,39 @@ def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
 
     Returns
     -------
-    phases : list
+    phases : list of arrays
         Spike-triggered phases. Entries in the list correspond to the
         SpikeTrains in spiketrains. Each entry contains the spike-triggered
-        hilbert_transform of each spike.
-    amp : list
+        angles of the signal.
+    amp : list of arrays
         Corresponding spike-triggered amplitudes.
-    times : list
+    times : list of arrays
         A list of times corresponding to the signal
         Corresponding times (corresponds to the spike times).
+
+    Example
+    -------
+    Create a 20 Hz oscillatory signal sampled at 1 kHz and a random Poisson
+    spike train:
+
+    >>> f_osc = 20. * pq.Hz
+    >>> f_sampling = 1 * pq.ms
+    >>> tlen = 100 * pq.s
+    >>> time_axis = np.arange(
+            0, tlen.rescale(pq.s).magnitude,
+            f_sampling.rescale(pq.s).magnitude) * pq.s
+    >>> analogsignal = AnalogSignal(
+            np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
+            units=pq.mV, t_start=0 * pq.ms, sampling_period=f_sampling)
+    >>> spiketrain = elephant.spike_train_generation.
+            homogeneous_poisson_process(
+                50 * pq.Hz, t_start=0.0 * ms, t_stop=tlen.rescale(pq.ms))
+
+    Calculate spike-triggered phases and amplitudes of the oscillation:
+    >>> phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
+            spiketrain,
+            elephant.signal_processing.hilbert(analogsignal),
+            interpolate=True)
     """
 
     # Convert inputs to lists
@@ -123,5 +148,13 @@ def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
 
             # Save time
             result_times[spiketrain_i].append(spiketrain[sttimeind[spike_i]])
+
+    # Convert outputs to arrays
+    for i, entry in enumerate(result_phases):
+        result_phases[i] = np.array(entry).flatten()
+    for i, entry in enumerate(result_amps):
+        result_amps[i] = pq.Quantity(entry, units=entry[0].units).flatten()
+    for i, entry in enumerate(result_times):
+        result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
 
     return (result_phases, result_amps, result_times)
