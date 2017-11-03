@@ -1,7 +1,7 @@
+dist: precise
 language: python
 sudo: false
-virtualenv:
-  system_site_packages: true
+
 addons:
    apt:
       packages:
@@ -12,6 +12,9 @@ addons:
       - gfortran
       - python-scipy
 
+python:
+  - 2.7.13     
+      
 env:
   matrix:
     # This environment tests the newest supported anaconda env
