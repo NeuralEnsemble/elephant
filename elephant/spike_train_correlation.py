@@ -250,7 +250,7 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm):
 
 def cross_correlation_histogram(
         binned_st1, binned_st2, window='full', border_correction=False, binary=False,
-        kernel=None, method='speed'):
+        kernel=None, method='speed', cross_corr_coef=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains binned_st1 and binned_st2.
@@ -307,6 +307,10 @@ def cross_correlation_histogram(
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
         Default: "speed"
+    cross_corr_coef : bool (optional)
+        Normalizes the CCH to obtain the cross-correlation  coefficient 
+        function ranging from -1 to 1 according to Equation (5.10) in 
+        "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7
 
     Returns
     -------
@@ -369,6 +373,23 @@ def cross_correlation_histogram(
     -----
     cch
     """
+        
+    def _cross_corr_coef(cch_result, binned_st1, binned_st2):
+        # Normalizes the CCH to obtain the cross-correlation 
+        # coefficient function ranging from -1 to 1
+        N  = max(binned_st1.num_bins, binned_st2.num_bins)
+        Nx = len(binned_st1.spike_indices[0])
+        Ny = len(binned_st2.spike_indices[0])
+        spmat = [binned_st1.to_sparse_array(), binned_st2.to_sparse_array()]
+        bin_counts_unique = []
+        for s in spmat:
+            bin_counts_unique.append(s.data)
+        ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
+        jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
+        rho_xy = (cch_result - Nx*Ny/N) / np.sqrt( (ii-Nx**2./N)*(jj-Ny**2./N) )
+        return rho_xy
+        
+        
     def _border_correction(counts, max_num_bins, l, r):
         # Correct the values taking into account lacking contributes
         # at the edges
@@ -594,6 +615,9 @@ def cross_correlation_histogram(
         cch_result, bin_ids = _cch_speed(
             binned_st1, binned_st2, window, border_correction, binary,
             kernel)
+
+    if cross_corr_coef:
+        cch_result = _cross_corr_coef(cch_result, binned_st1, binned_st2)
 
     return cch_result, bin_ids
 
