@@ -342,7 +342,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
                                                  min_spikes=min_spikes,
                                                  min_occ=min_occ)
         # Storing patterns
-        if output_format == 'patterns' and n_surr > 0:
+        if output_format == 'patterns':
             # If the p-value spectra was not computed, is set to an empty list
             if n_surr == 0:
                 pv_spec = []
