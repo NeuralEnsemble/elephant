@@ -13,7 +13,7 @@ python -c "import numpy; print('numpy %s' % numpy.__version__)"
 python -c "import scipy; print('scipy %s' % scipy.__version__)"
 
 if [[ "$COVERAGE" == "true" ]]; then
-    if [["$MPI == true" ]]; then
+    if [["$MPI == "true" ]]; then
 	mpiexec -n 2 nosetests --with-coverage --cover-package=elephant
     else
 	nosetests --with-coverage --cover-package=elephant
