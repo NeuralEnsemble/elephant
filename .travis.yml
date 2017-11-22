@@ -36,7 +36,7 @@ env:
     # This environment tests for mpi
     - DISTRIB="mpi" PYTHON_VERSION="3.5" INSTALL_MKL="false"
       NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.16.1" SIX_VERSION="1.10.0"
-      MPI_VERSION="2.0.0" COVERAGE="true"
+      MPI_VERSION="2.0.0" COVERAGE="true" MPI="true"
 
 install: source continuous_integration/install.sh
 script: bash continuous_integration/test_script.sh
