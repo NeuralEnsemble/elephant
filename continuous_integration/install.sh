@@ -76,6 +76,38 @@ elif [[ "$DISTRIB" == "conda" ]]; then
 
     python -c "import pandas; import os; assert os.getenv('PANDAS_VERSION') == pandas.__version__"
 
+elif [[ "$DISTRIB" == "mpi" ]]; then
+    # Deactivate the travis-provided virtual environment and setup a
+    # conda-based environment instead
+    deactivate
+
+    # Use the miniconda installer for faster download / install of conda
+    # itself
+    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
+        -O miniconda.sh
+    chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
+    export PATH=/home/travis/miniconda/bin:$PATH
+    conda config --set always_yes yes
+    conda update --yes conda
+
+    # Configure the conda environment and put it in the path using the
+    # provided versions
+    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six=$SIX_VERSION \
+        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION scikit-learn mpi4py=$MPI_VERSION
+    source activate testenv
+
+    if [[ "$INSTALL_MKL" == "true" ]]; then
+        # Make sure that MKL is used
+        conda install --yes --no-update-dependencies mkl
+    else
+        # Make sure that MKL is not used
+        conda remove --yes --features mkl || echo "MKL not installed"
+    fi
+
+    if [[ "$COVERAGE" == "true" ]]; then
+        pip install coveralls
+    fi
+
 elif [[ "$DISTRIB" == "ubuntu" ]]; then
     # deactivate
     # Create a new virtualenv using system site packages for numpy and scipy
