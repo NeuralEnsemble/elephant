@@ -651,18 +651,30 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 extent = tuple(np.where(
                     np.prod(rel_matrix[:, intent], axis=1) == 1)[0])
             concepts.append((intent, extent))
+            # Computing 2d spectrum
             if report == '#':
                 spec_matrix[len(intent), supp] += 1
+            # Computing 3d spectrum
+            if report == '3d#':
+                spec_matrix[len(intent), supp, max(
+                    np.abs(np.diff(np.array(intent) % winlen)))] += 1
         del fpgrowth_output
-        # Computing spectrum
+        # Computing 2d spectrum
         if report == '#':
             del concepts
             for (z, c) in np.transpose(np.where(spec_matrix != 0)):
                 spectrum.append((z, c, int(spec_matrix[z, c])))
             del spec_matrix
             return spectrum
+        # Computing 2d spectrum
+        elif report == '3d#':
+            del concepts
+            for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
+                spectrum.append((z, c, l, int(spec_matrix[z, c, l])))
+            del spec_matrix
         else:
             return concepts
+    # Computing 2d spectrum as output of FIM
     elif report == '#' and min_neu == 1:
         spectrum = fim.fpgrowth(
             tracts=transactions,
@@ -768,12 +780,22 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         # computing spectrum
         if report == '#':
             spec_matrix[len(intent), len(extent)] += 1
-    if report != '#':
+        if report == '3d#':
+            spec_matrix[len(intent), len(extent), max(
+                np.diff(np.array(intent) % winlen))] += 1
+    if report == 'a':
         return concepts
+    elif report == '3d#':
+        del concepts
+        for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append((z, c, l, int(spec_matrix[z, c])))
+        del spec_matrix
+        return spectrum
     else:
-        # returning spectrum
+        del concepts
         for (z, c) in np.transpose(np.where(spec_matrix != 0)):
             spectrum.append((z, c, int(spec_matrix[z, c])))
+        del spec_matrix
         return spectrum
 
 
