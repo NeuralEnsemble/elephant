@@ -1483,8 +1483,8 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                 if len(set(conc1_new) & set(conc2)) == 0 or (
                         not selected[id1] or not selected[id2]):
                     continue
-                if set(conc1_new).issuperset(conc2) and count1\
-                        - count2 < min_occ:
+                if set(conc1_new).issuperset(conc2) and count2\
+                        - count1 < min_occ:
                     selected[id2] = False
                     continue
                 if set(conc2).issuperset(conc1_new) and count1\
