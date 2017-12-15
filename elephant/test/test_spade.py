@@ -49,15 +49,15 @@ class SpadeTestCase(unittest.TestCase):
         # Patterns times
         self.patt1_times = neo.SpikeTrain(
             np.arange(
-                0, 1000, 1000//self.n_occ1) *
+                0, 1000, 1000//self.n_occ1)[:-1] *
             pq.ms, t_stop=self.t_stop*pq.ms)
         self.patt2_times = neo.SpikeTrain(
             np.arange(
-                1000, 2000, 1000 // self.n_occ2) *
+                1000, 2000, 1000 // self.n_occ2)[:-1] *
             pq.ms, t_stop=self.t_stop * pq.ms)
         self.patt3_times = neo.SpikeTrain(
             np.arange(
-                2000, 3000, 1000 // self.n_occ3) *
+                2000, 3000, 1000 // self.n_occ3)[:-1] *
             pq.ms, t_stop=self.t_stop * pq.ms)
         # Patterns
         self.patt1 = [self.patt1_times] + [neo.SpikeTrain(
@@ -91,6 +91,7 @@ class SpadeTestCase(unittest.TestCase):
         self.occ_msip = [
             list(self.occ1), list(self.occ2), list(self.occ3)]
         self.lags_msip = [self.lags1, self.lags2, self.lags3]
+        self.patt_psr = self.patt3 + [self.patt3[-1][:3]]
 
     # Testing with multiple patterns input
     def test_spade_msip(self):
@@ -184,6 +185,91 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(sorted(mining_results_ffca[0][1]), sorted(
             mining_results_fpg[0][1]))
 
+    # Tests 3d spectrum
+    # Testing with multiple patterns input
+    def test_spade_msip_3d(self):
+        output_msip = spade.spade(self.msip, self.binsize,
+                                  self.winlen,
+                                  n_subsets=self.n_subset,
+                                  stability_thresh=self.stability_thresh,
+                                  n_surr=self.n_surr, alpha=self.alpha,
+                                  psr_param=self.psr_param, spectrum='3d#',
+                                  output_format='patterns')['patterns']
+        elements_msip = []
+        occ_msip = []
+        lags_msip = []
+        # collecting spade output
+        for out in output_msip:
+            elements_msip.append(out['neurons'])
+            occ_msip.append(list(out['times'].magnitude))
+            lags_msip.append(list(out['lags'].magnitude))
+        elements_msip = sorted(elements_msip, key=lambda d: len(d))
+        occ_msip = sorted(occ_msip, key=lambda d: len(d))
+        lags_msip = sorted(lags_msip, key=lambda d: len(d))
+        # check neurons in the patterns
+        assert_array_equal(elements_msip, self.elements_msip)
+        # check the occurrences time of the patters
+        assert_array_equal(occ_msip, self.occ_msip)
+        # check the lags
+        assert_array_equal(lags_msip, self.lags_msip)
+
+    # test under different configuration of parameters than the default one
+    def test_parameters_3d(self):
+        # test min_spikes parameter
+        output_msip_min_spikes = spade.spade(self.msip, self.binsize,
+                                        self.winlen,
+                                        n_subsets=self.n_subset,
+                                        n_surr=self.n_surr, alpha=self.alpha,
+                                        min_spikes=self.min_spikes,
+                                        psr_param=self.psr_param,
+                                        spectrum='3d#',
+                                        output_format='patterns')['patterns']
+        # collecting spade output
+        elements_msip_min_spikes= []
+        for out in output_msip_min_spikes:
+            elements_msip_min_spikes.append(out['neurons'])
+        elements_msip_min_spikes = sorted(elements_msip_min_spikes, key=lambda d: len(d))
+        lags_msip_min_spikes= []
+        for out in output_msip_min_spikes:
+            lags_msip_min_spikes.append(list(out['lags'].magnitude))
+        lags_msip_min_spikes = sorted(lags_msip_min_spikes, key=lambda d: len(d))
+        # check the lags
+        assert_array_equal(lags_msip_min_spikes, [
+            l for l in self.lags_msip if len(l)+1>=self.min_spikes])
+        # check the neurons in the patterns
+        assert_array_equal(elements_msip_min_spikes, [
+            el for el in self.elements_msip if len(el)>=self.min_neu and len(
+                el)>=self.min_spikes])
+
+        # test min_occ parameter
+        output_msip_min_occ = spade.spade(self.msip, self.binsize,
+                                        self.winlen,
+                                        n_subsets=self.n_subset,
+                                        n_surr=self.n_surr, alpha=self.alpha,
+                                        min_occ=self.min_occ,
+                                        psr_param=self.psr_param,
+                                        spectrum = '3d#',
+                                        output_format='patterns')['patterns']
+        # collect spade output
+        occ_msip_min_occ= []
+        for out in output_msip_min_occ:
+            occ_msip_min_occ.append(list(out['times'].magnitude))
+        occ_msip_min_occ = sorted(occ_msip_min_occ, key=lambda d: len(d))
+        # test occurrences time
+        assert_array_equal(occ_msip_min_occ, [
+            occ for occ in self.occ_msip if len(occ)>=self.min_occ])
+
+    # Test computation spectrum
+    def test_spectrum(self):
+        # test 2d spectrum
+        spectrum = spade.concepts_mining(self.patt3, self.binsize,
+                                        self.winlen, report='#')[0][-1]
+        # test 3d spectrum
+        assert_array_equal(spectrum, [len(self.lags3)+1, self.n_occ3])
+        spectrum_3d = spade.concepts_mining(self.patt3, self.binsize,
+                                            self.winlen, report='3d#')[0][-1]
+        assert_array_equal(spectrum_3d, [len(self.lags3) + 1, self.n_occ3, max(
+            self.lags3)])
     # test the errors raised
     def test_spade_raise_error(self):
         self.assertRaises(TypeError, spade.spade, [[1,2,3],[3,4,5]], 1*pq.ms, 4)
@@ -201,6 +287,30 @@ class SpadeTestCase(unittest.TestCase):
             (2, 3, 0.2), (2, 4, 0.1)), 0.01, corr='try')
         self.assertRaises(AttributeError, spade.approximate_stability, (),
         np.array([]), n_subsets=-3)
+    # test psr
+    def test_pattern_set_reduction(self):
+        output_msip = spade.spade(self.patt_psr, self.binsize,
+                                  self.winlen,
+                                  n_subsets=self.n_subset,
+                                  stability_thresh=self.stability_thresh,
+                                  n_surr=self.n_surr, alpha=self.alpha,
+                                  psr_param=self.psr_param, spectrum='3d#',
+                                  output_format='patterns')['patterns']
+        elements_msip = []
+        occ_msip = []
+        lags_msip = []
+        # collecting spade output
+        for out in output_msip:
+            elements_msip.append(sorted(out['neurons']))
+            occ_msip.append(list(out['times'].magnitude))
+            lags_msip.append(list(out['lags'].magnitude))
+        elements_msip = sorted(elements_msip, key=lambda d: len(d))
+        occ_msip = sorted(occ_msip, key=lambda d: len(d))
+        lags_msip = sorted(lags_msip, key=lambda d: len(d))
+        # check neurons in the patterns
+        assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
+        # check the occurrences time of the patters
+        assert_array_equal(len(occ_msip[0]), self.n_occ3)
 
 
 def suite():
