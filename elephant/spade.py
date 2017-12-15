@@ -633,7 +633,10 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             raise AttributeError('min_neu must be an integer >=1')
         # Inizializing outputs
         concepts = []
-        spec_matrix = np.zeros((max_z, max_c))
+        if report == '#':
+            spec_matrix = np.zeros((max_z, max_c))
+        if report == '3d#':
+            spec_matrix = np.zeros((max_z, max_c, winlen))
         spectrum = []
         # Mining the data with fpgrowth algorithm
         fpgrowth_output = fim.fpgrowth(
@@ -1445,7 +1448,6 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
       that are significant according to combined filtering.
     '''
     conc = []
-    print excluded
     # Extracting from the extent and intent the spike and window times
     for concept in concepts:
         intent = concept[0]
