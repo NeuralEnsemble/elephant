@@ -1385,7 +1385,8 @@ def _give_random_idx(r_unique, n):
         return _give_random_idx(r_unique, n)
 
 
-def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=2, min_occ=2):
+def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
+                          min_spikes=2, min_occ=2):
     '''
     Takes a list concepts and performs  pattern set reduction (PSR).
     Same as psr(), but compares each concept A in concepts_psf to each other
@@ -1444,6 +1445,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
       that are significant according to combined filtering.
     '''
     conc = []
+    print excluded
     # Extracting from the extent and intent the spike and window times
     for concept in concepts:
         intent = concept[0]
@@ -1470,31 +1472,52 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                     np.abs(sorted_time_diff) < winlen]:
                 conc1_new = [
                     t_old - time_diff for t_old in conc1]
-                winds1_new = [w_old - time_diff for w_old in winds1]
                 # if conc1 is  of conc2 are disjointed or they have both been
                 # already de-selected, skip the step
                 if set(conc1_new) == set(
-                    conc2) and id1 != id2 and selected[
-                        id1] and selected[id2]:
+                    conc2) and selected[id1] and selected[id2]:
                     selected[id2] = False
                     continue
                 if len(set(conc1_new) & set(conc2)) == 0 or (
-                        not selected[id1] or not selected[id2]) or id1 == id2:
+                        not selected[id1] or not selected[id2]):
+                    continue
+                if set(conc1_new).issuperset(conc2) and count1\
+                        - count2 < min_occ:
+                    selected[id2] = False
+                    continue
+                if set(conc2).issuperset(conc1_new) and count1\
+                        - count2 < min_occ:
+                    selected[id1] = False
+                    continue
+                if len(excluded) == 0:
                     continue
                 # Test the case con1 is a superset of con2
                 if set(conc1_new).issuperset(conc2):
-                    # Determine whether the subset (conc2) should be rejected
-                    # according to the test for excess occurrences
                     supp_diff = count2 - count1 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size1 - size2 + k
-                    reject_sub = (size2, supp_diff) in excluded \
-                        or supp_diff < min_occ
-
-                    # Determine whether the superset (conc1_new) should be
-                    # rejected according to the test for excess items
-                    reject_sup = (size_diff, count1) in excluded \
-                        or size_diff < min_spikes
+                    if len(excluded[0]) == 2:
+                        # Determine whether the subset (conc2) should be rejected
+                        # according to the test for excess occurrences
+                        reject_sub = (size2, supp_diff) in excluded \
+                            or supp_diff < min_occ
+                        # Determine whether the superset (conc1_new) should be
+                        # rejected according to the test for excess items
+                        reject_sup = (size_diff, count1) in excluded \
+                            or size_diff < min_spikes
+                    if len(excluded[0]) == 3:
+                        # Determine whether the subset (conc2) should be rejected
+                        # according to the test for excess occurrences
+                        len_sub = max(
+                            np.abs(np.diff(np.array(conc2) % winlen)))
+                        reject_sub = (size2, supp_diff, len_sub) in excluded \
+                                     or supp_diff < min_occ
+                        # Determine whether the superset (conc1_new) should be
+                        # rejected according to the test for excess items
+                        len_sup = max(
+                            np.abs(np.diff(np.array(conc1_new) % winlen)))
+                        reject_sup = (size_diff, count1, len_sup) in excluded \
+                                     or size_diff < min_spikes
                     # Reject the superset and/or the subset accordingly:
                     if reject_sub and not reject_sup:
                         selected[id2] = False
@@ -1512,20 +1535,33 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                     # if both sets are significant given the other, keep both
                     else:
                         continue
-
                 elif set(conc2).issuperset(conc1_new):
-                    # Determine whether the subset (conc2) should be rejected
-                    # according to the test for excess occurrences
                     supp_diff = count1 - count2 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size2 - size1 + k
-                    reject_sub = (size2, supp_diff) in excluded \
-                        or supp_diff < min_occ
+                    if len(excluded[0]) == 2:
+                        # Determine whether the subset (conc2) should be rejected
+                        # according to the test for excess occurrences
+                        reject_sub = (size2, supp_diff) in excluded \
+                            or supp_diff < min_occ
+                        # Determine whether the superset (conc1_new) should be
+                        # rejected according to the test for excess items
+                        reject_sup = (size_diff, count1) in excluded \
+                            or size_diff < min_spikes
+                    if len(excluded[0]) == 3:
+                        # Determine whether the subset (conc2) should be rejected
+                        # according to the test for excess occurrences
+                        len_sub = max(
+                            np.abs(np.diff(np.array(conc1) % winlen)))
+                        reject_sub = (size2, supp_diff, len_sub) in excluded \
+                                     or supp_diff < min_occ
+                        # Determine whether the superset (conc1_new) should be
+                        # rejected according to the test for excess items
+                        len_sup = max(
+                            np.abs(np.diff(np.array(conc2) % winlen)))
 
-                    # Determine whether the superset (conc1_new) should be
-                    # rejected according to the test for excess items
-                    reject_sup = (size_diff, count1) in excluded \
-                        or size_diff < min_spikes
+                        reject_sup = (size_diff, count1, len_sup) in excluded \
+                                     or size_diff < min_spikes
                     # Reject the superset and/or the subset accordingly:
                     if reject_sub and not reject_sup:
                         selected[id1] = False
@@ -1546,13 +1582,27 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
                 else:
                     size1, size2 = len(conc1_new), len(conc2)
                     inter_size = len(set(conc1_new) & set(conc2))
-                    reject_1 = (
-                        size1 - inter_size + k,
-                        count1) in \
-                        excluded or size1 - inter_size + k < min_spikes
-                    reject_2 = (
-                        size2 - inter_size + k, count2) in excluded or \
-                        size2 - inter_size + k < min_spikes
+                    if len(excluded[0]) == 2:
+                        reject_1 = (
+                            size1 - inter_size + k,
+                            count1) in \
+                            excluded or size1 - inter_size + k < min_spikes
+                        reject_2 = (
+                            size2 - inter_size + k, count2) in excluded or \
+                            size2 - inter_size + k < min_spikes
+                    if len(excluded[0]) == 3:
+                        len_1 = max(
+                            np.abs(np.diff(np.array(conc1_new) % winlen)))
+                        len_2 = max(
+                            np.abs(np.diff(np.array(conc2) % winlen)))
+                        reject_1 = (
+                            size1 - inter_size + k, count1,
+                            len_1) in excluded or \
+                                   size1 - inter_size + k < min_spikes
+                        reject_2 = (
+                            size2 - inter_size + k, count2, len_2) in excluded or \
+                            size2 - inter_size + k < min_spikes
+
                     # Reject accordingly:
                     if reject_2 and not reject_1:
                         selected[id2] = False
