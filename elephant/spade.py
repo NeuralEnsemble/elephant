@@ -73,8 +73,8 @@ from elephant.spade_src import fast_fca
 
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
           n_subsets=0, delta=0, epsilon=0, stability_thresh=None, n_surr=0,
-          dither=15*pq.ms, alpha=1, stat_corr='fdr', psr_param=None,
-          output_format='concepts'):
+          dither=15*pq.ms, spectrum='#', alpha=1, stat_corr='fdr',
+          psr_param=None, output_format='concepts'):
     """
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
@@ -298,7 +298,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
         time_pvalue_spectrum = time.time()
         pv_spec = pvalue_spectrum(data, binsize, winlen, dither=dither,
                                   n_surr=n_surr, min_spikes=min_spikes,
-                                  min_occ=min_occ, min_neu=min_neu)
+                                  min_occ=min_occ, min_neu=min_neu,
+                                  spectrum=spectrum)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
         print("Time for pvalue spectrum computation: {}".format(
             time_pvalue_spectrum))
@@ -317,13 +318,14 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
                 # the statistical correction
                 ns_sgnt = test_signature_significance(pv_spec, alpha,
                                                       corr=stat_corr,
-                                                      report='e')
+                                                      report='e',
+                                                      spectrum=spectrum)
             # Storing non-significant entries of the pvalue spectrum
             output['non_sgnf_sgnt'] = ns_sgnt
             # Filter concepts with pvalue spectrum (psf)
             concepts = list(filter(
                 lambda c: _pattern_spectrum_filter(
-                    c, ns_sgnt), concepts))
+                    c, ns_sgnt, spectrum, winlen), concepts))
         # Decide whether filter the concepts using psr
         if psr_param is not None:
             # Filter using conditional tests (psr)
@@ -659,21 +661,13 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 spec_matrix[len(intent), supp, max(
                     np.abs(np.diff(np.array(intent) % winlen)))] += 1
         del fpgrowth_output
-        # Computing 2d spectrum
-        if report == '#':
+        if report == 'a':
+            return concepts
+        else:
             del concepts
-            for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-                spectrum.append((z, c, int(spec_matrix[z, c])))
+            spectrum = np.transpose(np.where(spec_matrix != 0))
             del spec_matrix
             return spectrum
-        # Computing 2d spectrum
-        elif report == '3d#':
-            del concepts
-            for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
-                spectrum.append((z, c, l, int(spec_matrix[z, c, l])))
-            del spec_matrix
-        else:
-            return concepts
     # Computing 2d spectrum as output of FIM
     elif report == '#' and min_neu == 1:
         spectrum = fim.fpgrowth(
@@ -684,7 +678,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             max=max_z,
             report=report,
             algo='s')
-        return spectrum
+        return [(z,c) for (z,c,count) in spectrum]
     else:
         raise AttributeError('min_neu must be an integer >=1')
 
@@ -785,16 +779,9 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
                 np.diff(np.array(intent) % winlen))] += 1
     if report == 'a':
         return concepts
-    elif report == '3d#':
-        del concepts
-        for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
-            spectrum.append((z, c, l, int(spec_matrix[z, c])))
-        del spec_matrix
-        return spectrum
     else:
         del concepts
-        for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-            spectrum.append((z, c, int(spec_matrix[z, c])))
+        spectrum = np.transpose(np.where(spec_matrix != 0))
         del spec_matrix
         return spectrum
 
@@ -814,7 +801,7 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
 
 def pvalue_spectrum(
         data, binsize, winlen, dither, n_surr,
-        min_spikes=2, min_occ=2, min_neu=1):
+        min_spikes=2, min_occ=2, min_neu=1, spectrum = '#'):
     '''
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -891,29 +878,23 @@ def pvalue_spectrum(
         for i in range(len_partition + len_remainder):
             surrs = [surr.dither_spikes(
                 xx, dither=dither, n=1)[0] for xx in data]
-
             # Find all pattern signatures in the current surrogate data set
-            surr_sgnt = [
-                (a,
-                 b) for (
-                    a,
-                    b,
-                    c) in concepts_mining(
-                    surrs,
-                    binsize,
-                    winlen,
-                    min_spikes=min_spikes,
-                    min_occ=min_occ,
-                    min_neu=min_neu,
-                    report='#')[0]]
-
+            surr_sgnt = concepts_mining(
+                surrs, binsize, winlen, min_spikes=min_spikes,
+                min_occ=min_occ, min_neu=min_neu, report=spectrum)[0]
             # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
             # current surrogate, and add it to the list of all signatures
             filled_sgnt = []
-            for (z, c) in surr_sgnt:
-                for j in range(min_spikes, z + 1):
-                    for k in range(min_occ, c + 1):
-                        filled_sgnt.append((j, k))
+            if spectrum == '#':
+                for sgnt in surr_sgnt:
+                    for j in range(min_spikes, sgnt[0] + 1):
+                        for k in range(min_occ, sgnt[1] + 1):
+                            filled_sgnt.append((j, k))
+            if spectrum == '3d#':
+                for sgnt in surr_sgnt:
+                    for j in range(min_spikes, sgnt[0] + 1):
+                        for k in range(min_occ, sgnt[1] + 1):
+                            filled_sgnt.append((j, k, sgnt[2]))
             surr_sgnts.extend(list(set(filled_sgnt)))
     # Same procedure on different PCU
     else:  # pragma: no cover
@@ -921,17 +902,22 @@ def pvalue_spectrum(
             surrs = [surr.dither_spikes(
                 xx, dither=dither, n=1)[0] for xx in data]
             # Find all pattern signatures in the current surrogate data set
-            surr_sgnt = [
-                (a, b) for (a, b, c) in concepts_mining(
+            surr_sgnt = concepts_mining(
                     surrs, binsize, winlen, min_spikes=min_spikes,
-                    min_occ=min_occ, min_neu=min_neu, report='#')[0]]
+                    min_occ=min_occ, min_neu=min_neu, report=spectrum)[0]
             # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
             # current surrogate, and add it to the list of all signatures
             filled_sgnt = []
-            for (z, c) in surr_sgnt:
-                for j in range(min_spikes, z + 1):
-                    for k in range(min_occ, c + 1):
-                        filled_sgnt.append((j, k))
+            if spectrum == '#':
+                for sgnt in surr_sgnt:
+                    for j in range(min_spikes, sgnt[0] + 1):
+                        for k in range(min_occ, sgnt[1] + 1):
+                            filled_sgnt.append((j, k))
+            if spectrum == '3d#':
+                for sgnt in surr_sgnt:
+                    for j in range(min_spikes, sgnt[0] + 1):
+                        for k in range(min_occ, sgnt[1] + 1):
+                            filled_sgnt.append((j, k, sgnt[2]))
             surr_sgnts.extend(list(set(filled_sgnt)))
     # Collecting results on the first PCU
     if rank != 0:  # pragma: no cover
@@ -944,14 +930,17 @@ def pvalue_spectrum(
             surr_sgnts.extend(recv_list)
 
         # Compute the p-value spectrum, and return it
-        pv_spec = {}
-        for (z, c) in surr_sgnts:
-            pv_spec[(z, c)] = 0
-        for (z, c) in surr_sgnts:
-            pv_spec[(z, c)] += 1
-        scale = 1. / n_surr
-        pv_spec = [(a, b, c * scale) for (a, b), c in pv_spec.items()]
+        pv_spec = []
+        for sgnt in set(surr_sgnts):
+            sgnt=list(sgnt)
+            sgnt.append((sum(np.prod(np.array(surr_sgnts)==sgnt, axis=1)) / float(n_surr)))
+            pv_spec.append(sgnt)
         return pv_spec
+        # for (z, c) in surr_sgnts:
+        #     pv_spec[(z, c)] += 1
+        # scale = 1. / n_surr
+        # pv_spec = [(a, b, c * scale) for (a, b), c in pv_spec.items()]
+
 
 
 def _stability_filter(c, stab_thr):
@@ -1006,7 +995,8 @@ def _fdr(pvalues, alpha):
     return pvalues <= thresh, thresh, m - i - 1 + stop
 
 
-def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#'):
+def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#',
+                                spectrum='#'):
     '''
     Compute the significance spectrum of a pattern spectrum.
 
@@ -1054,26 +1044,42 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#'):
     elif corr in ['f', 'fdr']:  # or with FDR correction
         tests, pval, rank = _fdr(x_array[:, -1], alpha=alpha)
     else:
-        raise AttributeError("corr must be either '', 'b'('bonf') or 'f'('fdr')")
-
+        raise AttributeError(
+            "corr must be either '', 'b'('bonf') or 'f'('fdr')")
     # Return the specified results:
-    if report == '#':
-        return [(size, supp, test)
-                for (size, supp, pv), test in zip(pvalue_spectrum, tests)]
-    elif report == 's':
-        return [(size, supp) for ((size, supp, pv), test)
-                in zip(pvalue_spectrum, tests) if test]
-    elif report == 'e':
-        return [
-            (size, supp) for ((size, supp, pv), test) in zip(
-                pvalue_spectrum, tests) if not test]
+    if spectrum == '#':
+        if report == '#':
+            return [(size, supp, test)
+                    for (size, supp, pv), test in zip(pvalue_spectrum, tests)]
+        elif report == 's':
+            return [(size, supp) for ((size, supp, pv), test)
+                    in zip(pvalue_spectrum, tests) if test]
+        elif report == 'e':
+            return [
+                (size, supp) for ((size, supp, pv), test) in zip(
+                    pvalue_spectrum, tests) if not test]
+    elif spectrum == '3d#':
+        if report == '#':
+            return [(size, supp, l, test)
+                    for (size, supp, l, pv), test in zip(pvalue_spectrum, tests)]
+        elif report == 's':
+            return [(size, supp, l) for ((size, supp, l, pv), test)
+                    in zip(pvalue_spectrum, tests) if test]
+        elif report == 'e':
+            return [
+                (size, supp, l) for ((size, supp, l, pv), test) in zip(
+                    pvalue_spectrum, tests) if not test]
     else:
         raise AttributeError("report must be either '#' or 's'.")
 
 
-def _pattern_spectrum_filter(concept, ns_signature):
+def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     '''Filter to select concept which signature is significant'''
-    keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
+    if spectrum == '#':
+        keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
+    if spectrum == '3d#':
+        keep_concept = (len(concept[0]), len(concept[1]), max(
+            np.abs(np.diff(np.array(concept[0])%winlen)))) not in ns_signature
     return keep_concept
 
 
