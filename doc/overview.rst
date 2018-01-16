@@ -75,6 +75,10 @@ Implements the method Cumulant Based Inference of higher-order Correlation (CuBI
 ^^^^^^^^^
 Implementation of the Analysis of Sequences of Synchronous EvenTs (ASSET) to detect, in particular, syn-fire chain like activity.
 
+``csd``
+^^^^^^^
+Inverse and standard methods to estimate of current source density (CSD) of laminar LFP recordings.
+
 
 Supporting modules
 ------------------
