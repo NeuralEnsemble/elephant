@@ -14,7 +14,7 @@ This algorithm is to determinate if a spike train can be considerate stationary
 the rate increases or decreases). In case of nonstationary, the output is a list of detected 
 Changing Points (CP).
 Essentialy, a two-side window of width h (Rh(t)) slide over the time of the spike train [h,T-h].
-This generates a 'filter derivative processes' that at each time t assigns the difference 
+This generates a 'filter derivative process' that at each time t assigns the difference 
 between  spike lying in the right and left window. If at any time t this difference is large 
 'enough', it is assumed the presence of a rate Change Point in a neighborhood of t.
 A treshold Q for the maximum of the filter dervative process (max difference of spike
@@ -142,7 +142,7 @@ def CalcolateTresh(H, T, alfa, Num_sim, dt):
     
     Return
     ------
-        Q:          scalar,Asyntotic treshold
+        Q:          scalar, Asyntotic treshold
         Emp_param:  matrix, frist row list of h, second row Empirical means and third
                     row variances of the limit processes Lh. It will be used to 
                     normalize the number of elements inside the windows of differnt width h
@@ -187,7 +187,7 @@ def CalcolateTresh(H, T, alfa, Num_sim, dt):
             mh_star = []
             simu = LtH(H,T,dt)
             for i,h in enumerate(Hm):
-                m_h = np.max(simu[i])#max over T of the i-th limit process
+                m_h = np.max(simu[i]) #max over T of the i-th limit process
                 mh_star.append(m_h)
             a.append(mh_star)
                 
