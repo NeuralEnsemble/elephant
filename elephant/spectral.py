@@ -211,7 +211,7 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     Parameters
     ----------
-    signal: Neo AnalogSignalArray or Quantity array or Numpy ndarray
+    signal: Neo AnalogSignal or Quantity array or Numpy ndarray
         Time series data, of which PSD is estimated. When a Quantity array or
         Numpy ndarray is given, sampling frequency should be given through the
         keyword argument `fs`, otherwise the default value (`fs=1.0`) is used.
@@ -232,7 +232,7 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         overlap) and 1 (complete overlap). Default is 0.5 (half-overlapped).
     fs: Quantity array or float, optional
         Specifies the sampling frequency of the input time series. When the
-        input is given as an AnalogSignalArray, the sampling frequency is taken
+        input is given as an AnalogSignal, the sampling frequency is taken
         from its attribute and this parameter is ignored. Default is 1.0.
     window, nfft, detrend, return_onesided, scaling, axis: optional
         These arguments are directly passed on to scipy.signal.welch(). See the
@@ -244,12 +244,12 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     freqs: Quantity array or Numpy ndarray
         Frequencies associated with the power estimates in `psd`. `freqs` is
         always a 1-dimensional array irrespective of the shape of the input
-        data. Quantity array is returned if `signal` is AnalogSignalArray or
+        data. Quantity array is returned if `signal` is AnalogSignal or
         Quantity array. Otherwise Numpy ndarray containing frequency in Hz is
         returned.
     psd: Quantity array or Numpy ndarray
         PSD estimates of the time series in `signal`. Quantity array is
-        returned if `data` is AnalogSignalArray or Quantity array. Otherwise
+        returned if `data` is AnalogSignal or Quantity array. Otherwise
         Numpy ndarray is returned.
     """
 
@@ -259,14 +259,14 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
               'detrend': detrend, 'return_onesided': return_onesided,
               'scaling': scaling, 'axis': axis}
 
-    # add the input data to params. When the input is AnalogSignalArray, the
+    # add the input data to params. When the input is AnalogSignal, the
     # data is added after rolling the axis for time index to the last
     data = np.asarray(signal)
-    if isinstance(signal, neo.AnalogSignalArray):
+    if isinstance(signal, neo.AnalogSignal):
         data = np.rollaxis(data, 0, len(data.shape))
     params['x'] = data
 
-    # if the data is given as AnalogSignalArray, use its attribute to specify
+    # if the data is given as AnalogSignal, use its attribute to specify
     # the sampling frequency
     if hasattr(signal, 'sampling_rate'):
         params['fs'] = signal.sampling_rate.rescale('Hz').magnitude
@@ -335,10 +335,10 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     Parameters
     ----------
-    x, y: Neo AnalogSignalArray or Quantity array or Numpy ndarray
+    x, y: Neo AnalogSignal or Quantity array or Numpy ndarray
         A pair of time series data, between which coherence is computed. The
         shapes and the sampling frequencies of `x` and `y` must be identical.
-        When `x` and `y` are not of AnalogSignalArray, sampling frequency
+        When `x` and `y` are not of AnalogSignal, sampling frequency
         should be specified through the keyword argument `fs`, otherwise the
         default value (`fs=1.0`) is used.
     num_seg: int, optional
@@ -358,7 +358,7 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         overlap) and 1 (complete overlap). Default is 0.5 (half-overlapped).
     fs: Quantity array or float, optional
         Specifies the sampling frequency of the input time series. When the
-        input time series are given as AnalogSignalArray, the sampling
+        input time series are given as AnalogSignal, the sampling
         frequency is taken from their attribute and this parameter is ignored.
         Default is 1.0.
     window, nfft, detrend, scaling, axis: optional
@@ -372,7 +372,7 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         Frequencies associated with the estimates of coherency and phase lag.
         `freqs` is always a 1-dimensional array irrespective of the shape of
         the input data. Quantity array is returned if `x` and `y` are of
-        AnalogSignalArray or Quantity array. Otherwise Numpy ndarray containing
+        AnalogSignal or Quantity array. Otherwise Numpy ndarray containing
         frequency in Hz is returned.
     coherency: Numpy ndarray
         Estimate of coherency between the input time series. For each frequency
@@ -380,13 +380,13 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         perfect coherence, respectively. When the input arrays `x` and `y` are
         multi-dimensional, `coherency` is of the same shape as the inputs and
         frequency is indexed along either the first or the last axis depending
-        on the type of the input: when the input is AnalogSignalArray, the
+        on the type of the input: when the input is AnalogSignal, the
         first axis indexes frequency, otherwise the last axis does.
     phase_lag: Quantity array or Numpy ndarray
         Estimate of phase lag in radian between the input time series. For each
         frequency phase lag takes a value between -PI and PI, positive values
         meaning phase precession of `x` ahead of `y` and vice versa. Quantity
-        array is returned if `x` and `y` are of AnalogSignalArray or Quantity
+        array is returned if `x` and `y` are of AnalogSignal or Quantity
         array. Otherwise Numpy ndarray containing phase lag in radian is
         returned. The axis for frequency index is determined in the same way as
         for `coherency`.
@@ -397,15 +397,15 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     params = {'window': window, 'nfft': nfft,
               'detrend': detrend, 'scaling': scaling, 'axis': axis}
 
-    # When the input is AnalogSignalArray, the axis for time index is rolled to
+    # When the input is AnalogSignal, the axis for time index is rolled to
     # the last
     xdata = np.asarray(x)
     ydata = np.asarray(y)
-    if isinstance(x, neo.AnalogSignalArray):
+    if isinstance(x, neo.AnalogSignal):
         xdata = np.rollaxis(xdata, 0, len(xdata.shape))
         ydata = np.rollaxis(ydata, 0, len(ydata.shape))
 
-    # if the data is given as AnalogSignalArray, use its attribute to specify
+    # if the data is given as AnalogSignal, use its attribute to specify
     # the sampling frequency
     if hasattr(x, 'sampling_rate'):
         params['fs'] = x.sampling_rate.rescale('Hz').magnitude
@@ -458,9 +458,9 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         freqs = freqs * pq.Hz
         phase_lag = phase_lag * pq.rad
 
-    # When the input is AnalogSignalArray, the axis for frequency index is
+    # When the input is AnalogSignal, the axis for frequency index is
     # rolled to the first to comply with the Neo convention about time axis
-    if isinstance(x, neo.AnalogSignalArray):
+    if isinstance(x, neo.AnalogSignal):
         coherency = np.rollaxis(coherency, -1)
         phase_lag = np.rollaxis(phase_lag, -1)
 

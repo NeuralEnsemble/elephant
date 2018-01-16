@@ -373,7 +373,7 @@ def multi_spiketrains_to_dataframe(container,
 
     The objects can be any list, dict, or other iterable or mapping containing
     spiketrains, as well as any neo object that can hold spiketrains:
-    `neo.Block`, `neo.RecordingChannelGroup`, `neo.Unit`, and `neo.Segment`.
+    `neo.Block`, `neo.ChannelIndex`, `neo.Unit`, and `neo.Segment`.
     Objects are searched recursively, so the objects can be nested (such as a
     list of blocks).
 
@@ -389,7 +389,7 @@ def multi_spiketrains_to_dataframe(container,
     ----------
 
     container : list, tuple, iterable, dict,
-                neo Block, neo Segment, neo Unit, neo RecordingChannelGroup
+                neo Block, neo Segment, neo Unit, neo ChannelIndex
                 The container for the spiketrains to convert.
     parents : bool, optional
               Also include attributes and annotations from parent neo

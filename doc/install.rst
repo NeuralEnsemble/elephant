@@ -15,15 +15,13 @@ The following packages are required to use Elephant:
     * numpy_ >= 1.8.2
     * scipy_ >= 0.14.0
     * quantities_ >= 0.10.1
-    * neo_ == 0.4.0
-
-.. note:: at the time of writing Neo 0.4.0 has not been released. You should therefore use `this snapshot`_.
+    * neo_ >= 0.5.0
 
 The following packages are optional in order to run certain parts of Elephant:
     * For using the pandas_bridge module: 
         * pandas >= 0.14.1
     * For using the ASSET analysis
-	* scikit-learn >= 0.15.1
+    * scikit-learn >= 0.15.1
     * For building the documentation:
         * numpydoc >= 0.5
         * sphinx >= 1.2.2
@@ -42,7 +40,7 @@ For Debian/Ubuntu, we recommend to install numpy and scipy as system packages us
 Further packages are found on the Python package index (pypi) and should be installed with pip_::
     
     $ pip install quantities
-    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
+    $ pip install neo
 
 We highly recommend to install these packages using a virtual environment provided by virtualenv_ or locally in the home directory using the ``--user`` option of pip (e.g., ``pip install --user quantities``), neither of which require administrator privileges.
 
@@ -54,7 +52,7 @@ On non-Linux operating systems we recommend using the Anaconda_ Python distribut
     $ conda create -n neuroscience python numpy scipy pip six
     $ source activate neuroscience
     $ pip install quantities
-    $ pip install git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
+    $ pip install neo
 
 
 Installation
@@ -75,8 +73,8 @@ To download and install manually, download the latest package from http://pypi.p
 
 Then::
 
-    $ tar xzf elephant-0.3.0.tar.gz
-    $ cd elephant-0.3.0
+    $ tar xzf elephant-0.4.1.tar.gz
+    $ cd elephant-0.4.1
     $ python setup.py install
     
 or::

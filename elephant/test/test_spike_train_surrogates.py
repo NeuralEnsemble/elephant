@@ -12,6 +12,8 @@ import numpy as np
 import quantities as pq
 import neo
 
+np.random.seed(0)
+
 
 class SurrogatesTestCase(unittest.TestCase):
 
@@ -47,12 +49,20 @@ class SurrogatesTestCase(unittest.TestCase):
 
         nr_surr = 2
         dither = 10 * pq.ms
+        np.random.seed(42)
         surrs = surr.dither_spikes(st, dither=dither, decimals=3, n=nr_surr)
 
+        np.random.seed(42)
+        dither_values = np.random.random_sample((nr_surr, len(st)))
+        expected_non_dithered = np.sum(dither_values==0)
+
+        observed_non_dithered = 0
         for surrog in surrs:
             for i in range(len(surrog)):
-                self.assertNotEqual(surrog[i] - int(surrog[i]) * pq.ms,
-                                    surrog[i] - surrog[i])
+                if surrog[i] - int(surrog[i]) * pq.ms == surrog[i] - surrog[i]:
+                    observed_non_dithered += 1
+
+        self.assertEqual(observed_non_dithered, expected_non_dithered)
 
     def test_dither_spikes_false_edges(self):
 
@@ -203,7 +213,8 @@ class SurrogatesTestCase(unittest.TestCase):
 
         nr_surr = 2
         shift = 10 * pq.ms
-        surrs = surr.dither_spike_train(st, shift=shift, n=nr_surr, edges=False)
+        surrs = surr.dither_spike_train(
+            st, shift=shift, n=nr_surr, edges=False)
 
         for surrog in surrs:
             for i in range(len(surrog)):
@@ -270,7 +281,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
         nr_surr = 2
-        surrs = surr.surrogates(st, dt=3*pq.ms, n=nr_surr,
+        surrs = surr.surrogates(st, dt=3 * pq.ms, n=nr_surr,
                                 surr_method='shuffle_isis', edges=False)
 
         self.assertRaises(ValueError, surr.surrogates, st, n=1,
@@ -279,7 +290,7 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertTrue(len(surrs) == nr_surr)
 
         nr_surr2 = 4
-        surrs2 = surr.surrogates(st, dt=5*pq.ms, n=nr_surr2,
+        surrs2 = surr.surrogates(st, dt=5 * pq.ms, n=nr_surr2,
                                  surr_method='dither_spike_train', edges=True)
 
         for surrog in surrs:
