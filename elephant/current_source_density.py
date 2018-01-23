@@ -112,8 +112,6 @@ def estimate_csd(lfp, coords=None, method=None,
         raise TypeError('Parameter `lfp` must be a neo.AnalogSignal object')
     if coords is None:
         coords = lfp.channel_index.coordinates
-        # for ii in lfp:
-        #     coords.append(ii.channel_index.coordinate.rescale(pq.mm))
     else:
         scaled_coords = []
         for coord in coords:
