@@ -29,21 +29,21 @@ class LFP_TestCase(unittest.TestCase):
         ele_pos = utils.generate_electrodes(dim=1).reshape(5, 1)
         lfp = csd.generate_lfp(utils.gauss_1d_dipole, ele_pos)
         self.assertEqual(ele_pos.shape[1], 1)
-        self.assertEqual(ele_pos.shape[0], len(lfp))
+        self.assertEqual(ele_pos.shape[0], lfp.shape[1])
 
     def test_lfp2d_electrodes(self):
         ele_pos = utils.generate_electrodes(dim=2)
         xx_ele, yy_ele = ele_pos
         lfp = csd.generate_lfp(utils.large_source_2D, xx_ele, yy_ele)
         self.assertEqual(len(ele_pos), 2)
-        self.assertEqual(xx_ele.shape[0], len(lfp))
+        self.assertEqual(xx_ele.shape[0], lfp.shape[1])
 
     def test_lfp3d_electrodes(self):
         ele_pos = utils.generate_electrodes(dim=3, res=3)
         xx_ele, yy_ele, zz_ele = ele_pos
         lfp = csd.generate_lfp(utils.gauss_3d_dipole, xx_ele, yy_ele, zz_ele)
         self.assertEqual(len(ele_pos), 3)
-        self.assertEqual(xx_ele.shape[0], len(lfp))
+        self.assertEqual(xx_ele.shape[0], lfp.shape[1])
 
 
 class CSD1D_TestCase(unittest.TestCase):
@@ -83,7 +83,7 @@ class CSD1D_TestCase(unittest.TestCase):
         result = self.csd_method(self.lfp, method=method)
         self.assertEqual(result.t_start, 0.0 * pq.s)
         self.assertEqual(result.sampling_rate, 1000 * pq.Hz)
-        self.assertEqual(len(result.times), 1)
+        self.assertEqual(result.shape[0], 1)
 
     def test_inputs_deltasplineicsd(self):
         methods = ['DeltaiCSD', 'SplineiCSD']
@@ -94,7 +94,7 @@ class CSD1D_TestCase(unittest.TestCase):
                                      **self.params[method])
             self.assertEqual(result.t_start, 0.0 * pq.s)
             self.assertEqual(result.sampling_rate, 1000 * pq.Hz)
-            self.assertEqual(len(result.times), 1)
+            self.assertEqual(result.times.shape[0], 1)
 
     def test_inputs_stepicsd(self):
         method = 'StepiCSD'
@@ -107,7 +107,7 @@ class CSD1D_TestCase(unittest.TestCase):
                                  **self.params[method])
         self.assertEqual(result.t_start, 0.0 * pq.s)
         self.assertEqual(result.sampling_rate, 1000 * pq.Hz)
-        self.assertEqual(len(result.times), 1)
+        self.assertEqual(result.times.shape[0], 1)
 
     def test_inuts_kcsd(self):
         method = 'KCSD1D'

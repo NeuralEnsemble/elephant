@@ -186,7 +186,7 @@ def estimate_csd(lfp, coords=None, method=None,
         lfp = neo.AnalogSignal(np.asarray(lfp).T, units=lfp.units,
                                     sampling_rate=lfp.sampling_rate)
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
-        csd_estimator = csd_method(lfp=lfp.magnitude.T * lfp.units,
+        csd_estimator = csd_method(lfp=lfp.magnitude * lfp.units,
                                    coord_electrode=coords.flatten(),
                                    **kwargs)
         csd_pqarr = csd_estimator.get_csd()
@@ -323,8 +323,7 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
     ch = neo.ChannelIndex(index=range(len(pots)))
     for ii in range(len(pots)):
         lfp.append(pots[ii])
-    # lfp = neo.AnalogSignal(lfp, sampling_rate=1000*pq.Hz, units='mV')
-    asig = neo.AnalogSignal(lfp, sampling_rate=pq.kHz, units='mV')
+    asig = neo.AnalogSignal(np.array(lfp).T, sampling_rate=pq.kHz, units='mV')
     ch.coordinates = ele_pos
     ch.analogsignals.append(asig)
     ch.create_relationship()
