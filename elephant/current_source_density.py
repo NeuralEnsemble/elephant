@@ -68,7 +68,7 @@ def estimate_csd(lfp, coords=None, method=None,
 
     Parameters
     ----------
-    lfp : list(neo.AnalogSignal type objects)
+    lfp : neo.AnalogSignal
         positions of electrodes can be added as neo.RecordingChannel
         coordinate or sent externally as a func argument (See coords)
     coords : [Optional] corresponding spatial coordinates of the electrodes
@@ -109,8 +109,7 @@ def estimate_csd(lfp, coords=None, method=None,
         Invalid cv_param argument passed
     """
     if not isinstance(lfp, neo.AnalogSignal):
-        raise TypeError('Parameter `lfp` must be a list(neo.AnalogSignal \
-                         type objects')
+        raise TypeError('Parameter `lfp` must be a neo.AnalogSignal object')
     if coords is None:
         coords = lfp.channel_index.coordinates
         # for ii in lfp:
@@ -126,7 +125,7 @@ def estimate_csd(lfp, coords=None, method=None,
         coords = scaled_coords
     if method is None:
         raise ValueError('Must specify a method of CSD implementation')
-    if len(coords) != len(lfp):
+    if len(coords) != lfp.shape[1]:
         raise ValueError('Number of signals and coords is not same')
     for ii in coords:  # CHECK for Dimensionality of electrodes
         if len(ii) > 3:
@@ -148,7 +147,7 @@ def estimate_csd(lfp, coords=None, method=None,
         kernel_method = getattr(KCSD, method)  # fetch the class 'KCSD1D'
         lambdas = kwargs.pop('lambdas', None)
         Rs = kwargs.pop('Rs', None)
-        k = kernel_method(np.array(coords), input_array, **kwargs)
+        k = kernel_method(np.array(coords), input_array.T, **kwargs)
         if process_estimate:
             k.cross_validate(lambdas, Rs)
         estm_csd = k.values()
