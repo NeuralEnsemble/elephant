@@ -76,19 +76,23 @@ def Brownian(Tin, Tfin, Xin, dt):
 
 def LtH(H, T, dt):
     '''
-    Generate the limit processes (depending only on T and h), one for each h.
+    Generate the limit processes (depending only on T and h), one for each h in H.
     The distribution of the maxima of these processes is used to derive the threshold Q.
 
     Parameters
     ---------
-        H:      list, set of windows' size 
-        T:      scalar, Final time of the spike
-        dt:     scalar, steps 
+        H:      list of quantities, 
+                set of windows' size 
+        T:      quantity, F
+                end of limit process
+        dt:     quantities, 
+                resolution 
     
     Return
     ------
-        Lp:    list, contaning the limit processes for each h,
-               evaluated in [h,T.h] with steps dt
+        Lp:    list of array
+               each entries contains the limit processes for each h,
+               evaluated in [h,T-h] with steps dt
     '''    
     Lp = []
     
@@ -113,6 +117,8 @@ def LtH(H, T, dt):
         if dt is None:   #automatic setting of dt
             dtm = h/20.
             dt_sec = dtm * pq.s
+        else:
+            dtm = dt.magnitude
                     
         T = T_sec-T_sec%(dt_sec)
         w = Brownian(0*pq.s,T,0,dtm)    
@@ -143,15 +149,21 @@ def CalcolateTresh(H, T, alfa, Num_sim, dt):
 
     Parameters
     ----------
-        H:        list, set of windows' size 
-        T:        scalar, Final time of the spike
-        alfa:     integer, alfa-quantile
-        Num_sim:  integer, numbers of simulated limit processes
-        dt:       scalar, steps 
+        H:        list of quantities,
+                  set of windows' size 
+        T:        quantity, 
+                  final time of the spike
+        alfa:     integer, 
+                  alfa-quantile
+        Num_sim:  integer,
+                  numbers of simulated limit processes
+        dt:       quantity,
+                  resolution
     
     Return
     ------
-        Q:          scalar, Asyntotic treshold
+        Q:          scalar,
+                    Asyntotic treshold for the maximum of the filter derivative process
         Emp_param:  matrix, frist row list of h, second row Empirical means and third
                     row variances of the limit processes Lh. It will be used to 
                     normalize the number of elements inside the windows of differnt width h
@@ -239,13 +251,17 @@ def Gth(t ,h ,spk):
 
     Parameters
     ---------
-        h:     scalar, window's size 
-        T:     scalar,time on which the window is centered
-        spk:   scalar,spike train in analisys
+        h:     quantity,
+               window's size 
+        t:     quantity,
+               time on which the window is centered
+        spk:   list, array or SpikeTrain,
+               spike train in analisys
     
     Return
     ------
-        g:  scalar, difference of spike count normalized by its variance
+        g:  scalar, 
+            difference of spike count normalized by its variance
 
     '''
     u = 1*pq.s
@@ -312,10 +328,14 @@ def Rth(dt, h, spk, T, Emp_param):
 
     Parameters
     ---------
-        h:          scalar,window's size 
-        T:          scalar,time on which the window is centered
-        spk:        spike train in analisys
-        dt:         scalar,steps
+        h:          quantiy,
+                    window's size 
+        T:          quantity,
+                    time on which the window is centered
+        spk:        list, array or SpikeTrain,
+                    spike train in analisys
+        dt:         quantity,
+                    resolution
         Emp_param:  matrix, frist row list of h, second row Empirical means and third
                     row variances of the limit processes Lh, 
                     used to normalize the number of elements inside the windows
@@ -366,20 +386,26 @@ def MultipleFilterAlgorithm(H, spk, T, alfa, Num_sim, Q = None, Emp_param = None
     '''      
     Parameters
     ----------
-        H:          list, set of windows' size 
-        spk:        spike train in analisys
-        T:          scalar, Final time of the spike
-        alfa:       integer, alfa-quantile
+        H:          list of quantities,
+                    set of windows' size 
+        spk:        list, array or SpikeTrain,
+                    spike train in analisys
+        T:          quantity, 
+                    Final time of the spike train to be analysed
+        alfa:       integer, 
+                    alfa-quantile
         Num_sim:    integer, numbers of simulated limit processes
-        dt:         scalar, steps 
-        Q:          scalar,Asyntotic treshold
+        dt:         quantity, 
+                    resolution
+        Q:          scalar,
+                    Asyntotic treshold
         Emp_param:  matrix, frist row list of h, second row Empirical means and third
                     row variances of the limit processes Lh. It will be used to 
                     normalize the number of elements inside the windows of differnt width h
     Return
     ------
-        C:          list of lists, one list for each h in increasing order contaning
-                    the points detected with each window h!
+        C:          list of lists: one list for each h in increasing order contaning
+                    the points detected with each window h.
     '''
     if (Q is None)&(Emp_param is None):
         Q,Emp_param = CalcolateTresh(H,T,alfa,Num_sim,dt)
