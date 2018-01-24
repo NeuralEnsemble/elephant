@@ -417,7 +417,8 @@ def MultipleFilterAlgorithm(H, spk, T, alfa, Num_sim, Q = None, Emp_param = None
     C = []      # List of list of dected point, to be returned
   
     for i,h in enumerate(H):
-        if dt is None:   #automatic setting of dt     
+        if dt is None:   #automatic setting of dt
+            was_none = True
             dt = h/20.
             
         t,r = Rth(dt,h,spk,T,Emp_param) #Process of the sliding window h
@@ -435,20 +436,26 @@ def MultipleFilterAlgorithm(H, spk, T, alfa, Num_sim, Q = None, Emp_param = None
 # The list of Change Points detected with the smallest window is first given as output.
 # Then for the list of increasing window size h, only those whose h-neighborhood does
 # not include other CPs already listed (with smaller hs) are given as output
-            ok = 1
+            #ok = 1
+            neighfree = True
             if i == 0:
                 Ch.append(ci)
             else: 
                 for j in range(i):   #control on previous filter h
-                    for c_pre in C[j]: #control on prev.det.point with that h above
+                    for c_pre in C[j]: #control if previous detected points fall in h neighbourhood
                         if (c_pre-h < ci < c_pre+h):
-                            ok = 0
+                            #ok = 0
+                            neighfree = False
                             break
-                if (ok == 1):
+                if neighfree: # if none of the previous detected points fall in the h neighbourhood
                     Ch.append(ci)         
         C.append(Ch)
-        
+        '''
         if dt == h/20.:
             dt = None
+        '''
+        if was_none:
+            dt = None
+        
 # TODO: decide whether to change shape of output                  
     return C
