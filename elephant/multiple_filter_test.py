@@ -10,7 +10,7 @@ import quantities as pq
 
 '''
 This algorithm is to determinate if a spike train can be considerate stationary
-(costant rate) or not stationaty (i.e. presence of one or more points at which the 
+(costant rate) or not stationary (i.e. presence of one or more points at which the 
 the rate increases or decreases). In case of nonstationary, the output is a list of detected 
 Changing Points (CP).
 Essentialy, a two-side window of width h (Rh(t)) slide over the time of the spike train [h,T-h].
@@ -37,29 +37,38 @@ def Brownian(Tin, Tfin, Xin, dt):
 
     Parameters
     ----------
-        Tin:    scalar, initial time
-        Tfin:   scalar, final time
-        Xin:    scalar, initial point
-        dt:     scalar, steps
+        Tin:    quantities, 
+                initial time
+        Tfin:   qiantities,
+                final time
+        Xin:    quantities,
+                initial point
+        dt:     quantities, 
+                resolution
         Return
         ------
-        Browniam motion on Tin-Tfin
+        Browniam motion on Tin-Tfin, with time step dt
     '''
     u = 1*pq.s
     try:
         Tin_sec = Tin.rescale(u)
     except:
-        raise ValueError ("Tin must be a time scalar")
+        raise ValueError ("Tin must be a time quantity")
     Tin_m = Tin_sec.magnitude
     try:
         Tfin_sec = Tfin.rescale(u)
     except:
-        raise ValueError ("Tfin must be a time scalar")
+        raise ValueError ("Tfin must be a time quantity")
+    Tfin_m = Tfin_sec.magnitude
+    try:
+        dt_sec = dt.rescale(u)
+    except:
+        raise ValueError ("dt must be a time quantity")
     Tfin_m = Tfin_sec.magnitude
     
     x = []
-    for i in range(int((Tfin_m - Tin_m)/dt)):
-        x.append(np.random.normal(0,  np.sqrt(dt)))
+    for i in range(int((Tfin_m - Tin_m)/dt_sec)):
+        x.append(np.random.normal(0,  np.sqrt(dt_sec)))
         
     s = np.cumsum(x)
     return s + Xin
