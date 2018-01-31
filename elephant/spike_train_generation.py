@@ -337,6 +337,96 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
         np.random.exponential, (mean_interval,), rate, t_start, t_stop,
         as_array)
 
+def inhomogeneous_poisson_process(rate, as_array=False):
+    '''
+    Returns a spike train whose spikes are a realization of an inhomogeneous
+    Poisson process with the given rate profile.
+
+    Parameters
+    -----
+    rate : neo.AnalogSignal
+        A neo.AnalogSignal representing the rate profile evolving over time. 
+        Its values have all to be >=0. The output spiketrain will have 
+        t_start = rate.t_start and t_stop = rate.t_stop
+    as_array : bool
+           If True, a NumPy array of sorted spikes is returned,
+           rather than a SpikeTrain object.
+    Output
+    -----
+    Poisson SpikeTrain with profile rate lambda(t)= rate_signal
+    '''
+    if any(rate < 0) or not rate.size:
+        raise ValueError(
+            'rate must be a positive non empty signal, representing the'
+            'rate at time t')
+    # Define the interpolation method
+    else:
+        #Generate n hidden Poisson SpikeTrains with rate equal to the peak rate
+        max_rate = max(rate)
+        homogeneous_poiss = homogeneous_poisson_process(
+            rate=max_rate, t_stop=rate.t_stop, t_start=rate.t_start)
+        # Compute the rate profile at each spike time by interpolation
+        rate_interpolated = _analog_signal_linear_interp(
+            signal=rate, times=homogeneous_poiss.magnitude *
+                               homogeneous_poiss.units)
+        # Accept each spike at time t with probability rate(t)/max_rate
+        u = np.random.uniform(size=len(homogeneous_poiss)) * max_rate
+        spikes = homogeneous_poiss[u < rate_interpolated.flatten()]
+        if as_array:
+            spikes = spikes.magnitude
+        return spikes
+
+
+def _analog_signal_linear_interp(signal, times):
+    '''
+    Compute the linear interpolation of a signal at desired times.
+
+    Given a signal (e.g. an AnalogSignal) AS taking value s0 and s1 at two
+    consecutive time points t0 and t1 (t0 < t1), the value s of the linear
+    interpolation at time t: t0 <= t < t1 is given by:
+
+                s = ((s1 - s0) / (t1 - t0)) * t + s0,
+    for any time t between AS.t_start and AS.t_stop
+
+    NOTE: If AS has sampling period dt, its values are defined at times
+    t[i] = s.t_start + i * dt. The last of such times is lower than s.t_stop:
+    t[-1] = s.t_stop - dt. For the interpolation at times t such that
+    t[-1] <= t <= AS.t_stop, the value of AS at AS.t_stop is taken to be that
+    at time t[-1].
+
+
+    Parameters
+    -----
+    times : Quantity vector(time)
+        The time points for which the interpolation is computed
+
+    signal : neo.core.AnalogSignal
+        The analog signal containing the discretization of the funtion to
+        interpolate
+    Output
+    -----
+    Quantity array representing the values of the interpolated signal at the
+    times given by times
+    '''
+    dt = signal.sampling_period
+    t_start = signal.t_start.rescale(signal.times.units)
+    t_stop = signal.t_stop.rescale(signal.times.units)
+
+    # Extend the signal (as a dimensionless array) copying the last value
+    # one time, and extend its times to t_stop
+    signal_extended = np.vstack([signal.magnitude, signal[-1].magnitude]).flatten()
+    times_extended = np.hstack([signal.times, t_stop]) * signal.times.units
+    time_ids = np.floor(((times - t_start) / dt).rescale(
+        dimensionless).magnitude).astype('i')
+
+    # Compute the slope m of the signal at each time in times
+    y1 = signal_extended[time_ids]
+    y2 = signal_extended[time_ids + 1]
+    m = (y2 - y1) / dt
+
+    # Interpolate the signal at each time in times by linear interpolation
+    out = (y1 + m * (times - times_extended[time_ids])) * signal.units
+    return out.rescale(signal.units)
 
 def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms,
                               as_array=False):
