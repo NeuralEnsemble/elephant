@@ -95,7 +95,7 @@ def estimate_csd(lfp, coords=None, method=None,
     Returns
     -------
     Estimated CSD
-       neo.AnalogSignal Object
+       neo.AnalogSignal object
        annotated with the spatial coordinates
 
     Raises
@@ -235,7 +235,7 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
 
         Returns
         -------
-        LFP : list(neo.AnalogSignal type objects)
+        LFP : neo.AnalogSignal object
            The potentials created by the csd profile at the electrode positions
            The electrode postions are attached as RecordingChannel's coordinate
     """
