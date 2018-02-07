@@ -15,7 +15,7 @@ import elephant.multiple_filter_test as mft
 
   
 
-class Gth_TestCase(unittest.TestCase):
+class Filter_TestCase(unittest.TestCase):
    def setUp(self):       
        self.test_array = [0.4, 0.5, 0.65, 0.7,    0.9, 1.15, 1.2, 1.9]
        '''
@@ -33,19 +33,19 @@ class Gth_TestCase(unittest.TestCase):
    def test_Gth_with_spiketrain_h05(self):
        st = neo.SpikeTrain(self.test_array, units='s', t_stop = 2.0)
        target = self.targ_t08_h05
-       res = mft.Gth(0.8 *pq.s, 0.5*pq.s, st)
+       res = mft._filter(0.8 *pq.s, 0.5*pq.s, st)
        assert_array_almost_equal(res, target, decimal=9)
            
    def test_isi_with_quantities_h05(self):
        st = pq.Quantity(self.test_array, units='s')
        target = self.targ_t08_h05
-       res = mft.Gth(0.8 *pq.s, 0.5*pq.s, st)
+       res = mft._filter(0.8 *pq.s, 0.5*pq.s, st)
        assert_array_almost_equal(res, target, decimal=9)
    
    def test_isi_with_plain_array_h05(self):
        st = self.test_array
        target = self.targ_t08_h05
-       res = mft.Gth(0.8 *pq.s, 0.5*pq.s, st*pq.s)
+       res = mft._filter(0.8 *pq.s, 0.5*pq.s, st*pq.s)
        assert not isinstance(res, pq.Quantity)
        assert_array_almost_equal(res, target, decimal=9)
    
@@ -53,19 +53,19 @@ class Gth_TestCase(unittest.TestCase):
    def test_Gth_with_spiketrain_h025(self):
        st = neo.SpikeTrain(self.test_array, units='s', t_stop = 2.0)
        target = self.targ_t08_h025
-       res = mft.Gth(0.8 *pq.s, 0.25*pq.s, st)
+       res = mft._filter(0.8 *pq.s, 0.25*pq.s, st)
        assert_array_almost_equal(res, target, decimal=9)
        
    def test_Gth_with_quantities_h025(self):
        st = pq.Quantity(self.test_array, units='s')
        target = self.targ_t08_h025
-       res = mft.Gth(0.8 *pq.s, 0.25*pq.s, st)
+       res = mft._filter(0.8 *pq.s, 0.25*pq.s, st)
        assert_array_almost_equal(res, target, decimal=9)
    
    def test_Gth_with_plain_array_h025(self):
        st = self.test_array
        target = self.targ_t08_h025
-       res = mft.Gth(0.8 *pq.s, 0.25*pq.s, st*pq.s)
+       res = mft._filter(0.8 *pq.s, 0.25*pq.s, st*pq.s)
        assert_array_almost_equal(res, target, decimal=9)
     
 class Rth_TestCase(unittest.TestCase):
@@ -77,19 +77,19 @@ class Rth_TestCase(unittest.TestCase):
    def test_Rth_with_spiketrain_h05(self):
        st = neo.SpikeTrain(self.test_array, units='s', t_stop = 2.1)
        target = self.targ_h05
-       res = mft.Rth(0.5*pq.s, 0.5*pq.s, st, 2.01*pq.s,np.array([[0.5],[1.7],[0.4]]))
+       res = mft._filter_process(0.5*pq.s, 0.5*pq.s, st, 2.01*pq.s,np.array([[0.5],[1.7],[0.4]]))
        assert_array_almost_equal(res[1], target[1], decimal=3)
            
    def test_Rth_with_quantities_h05(self):
        st = pq.Quantity(self.test_array, units='s')
        target = self.targ_h05
-       res = mft.Rth(0.5*pq.s, 0.5*pq.s, st, 2.01*pq.s,np.array([[0.5],[1.7],[0.4]]))
+       res = mft._filter_process(0.5*pq.s, 0.5*pq.s, st, 2.01*pq.s,np.array([[0.5],[1.7],[0.4]]))
        assert_array_almost_equal(res[0], target[0], decimal=3)
            
    def test_Rth_with_plain_array_h05(self):
        st = self.test_array
        target = self.targ_h05
-       res = mft.Rth(0.5*pq.s, 0.5*pq.s, st*pq.s,2.01*pq.s,np.array([[0.5],[1.7],[0.4]]))
+       res = mft._filter_process(0.5*pq.s, 0.5*pq.s, st*pq.s,2.01*pq.s,np.array([[0.5],[1.7],[0.4]]))
        assert not isinstance(res, pq.Quantity)
        assert_array_almost_equal(res, target, decimal=3) 
        
@@ -108,13 +108,13 @@ class MultipleFilterAlgorithm_TestCase(unittest.TestCase):
    def test_MultipleFilterAlgorithm_with_quantities_h05(self):
        st = pq.Quantity(self.test_array, units='s')
        target = [self.targ_h05_dt05]
-       res = mft.MultipleFilterAlgorithm([0.5]*pq.s, st, 2.1*pq.s, 5, 10000, dt = 0.5*pq.s)
+       res = mft.multiple_filter_test([0.5]*pq.s, st, 2.1*pq.s, 5, 10000, dt = 0.5*pq.s)
        assert_array_almost_equal(res, target, decimal=9)
            
    def test_MultipleFilterAlgorithm_with_plain_array_h05(self):
        st = self.test_array
        target = [self.targ_h05_dt05]
-       res = mft.MultipleFilterAlgorithm([0.5]*pq.s, st*pq.s, 2.1*pq.s, 5, 10000, dt = 0.5*pq.s)
+       res = mft.multiple_filter_test([0.5]*pq.s, st*pq.s, 2.1*pq.s, 5, 10000, dt = 0.5*pq.s)
        assert not isinstance(res, pq.Quantity)
        assert_array_almost_equal(res, target, decimal=9)
 
