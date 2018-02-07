@@ -29,7 +29,7 @@ class Gth_TestCase(unittest.TestCase):
        self.targ_t08_h025 = 0
        self.targ_t08_h05 = (3 - 4)/ np.sqrt((sigma_ri/mu_ri**(3))*0.5 + (sigma_le/mu_le**(3))*0.5)
        
-       ### Window Large ####
+    ### Window Large ####
    def test_Gth_with_spiketrain_h05(self):
        st = neo.SpikeTrain(self.test_array, units='s', t_stop = 2.0)
        target = self.targ_t08_h05
@@ -102,7 +102,7 @@ class MultipleFilterAlgorithm_TestCase(unittest.TestCase):
    def test_MultipleFilterAlgorithm_with_spiketrain_h05(self):
        st = neo.SpikeTrain(self.test_array, units='s', t_stop = 2.1)
        target = [self.targ_h05_dt05]
-       res = mft.MultipleFilterAlgorithm([0.5]*pq.s, st, 2.1*pq.s, 5, 10000, dt = 0.5*pq.s)
+       res = mft.multiple_filter_test([0.5]*pq.s, st, 2.1*pq.s, 5, 10000, dt = 0.5*pq.s)
        assert_array_almost_equal(res, target, decimal=9)
            
    def test_MultipleFilterAlgorithm_with_quantities_h05(self):

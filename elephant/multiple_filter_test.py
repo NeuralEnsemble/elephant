@@ -1,111 +1,201 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 17 13:20:45 2016
 
-@author: emanuele
+"""
+This algorithm is to determine if a spike train can be considerate stationary 
+(costant firing rate) or not stationary (i.e. presence of one or more points at 
+which the rate increases or decreases). In case of nonstationarity, the output 
+is a list of detected  Change Points (CPs).
+Essentialy, a two-side window of width 'h' ('_filter(t, h, spk)') slide over the 
+time of the spike train '[h,t_final-h]'. This generates a '_filter_process' that 
+at each time t assigns the difference between  spike lying in the right and left 
+window. If at any time t this difference is large 'enough', it is assumed the 
+presence of a rate Change Point in a neighborhood of t. A treshold 'test_quantile' 
+for the maximum of the filter_process (max difference of spike count between the
+left and right window) is derived based on asymptotic considerations.
+The procedure is repeated for an arbitrary set of windows, with different size h.
+
+Example 
+
+Reference:
+--------- 
+Michael Messer, Marietta Kirchner, Julia Schiemann, Jochen Roeper,
+Ralph Neininger, and Gaby Schneider. 'A multiple filter test for the
+detection of rate changes in renewal processes with varying variance.'
+Annals of Applied Statistics, 8(4):2027–2067, 12 2014.
+
+### Adapted from published R implementation... ###
 """
 
 import numpy as np
 import quantities as pq
 
-'''
-This algorithm is to determinate if a spike train can be considerate stationary
-(costant rate) or not stationary (i.e. presence of one or more points at which the 
-the rate increases or decreases). In case of nonstationary, the output is a list of detected 
-Changing Points (CP).
-Essentialy, a two-side window of width h (Rh(t)) slide over the time of the spike train [h,T-h].
-This generates a 'filter derivative process' that at each time t assigns the difference 
-between  spike lying in the right and left window. If at any time t this difference is large 
-'enough', it is assumed the presence of a rate Change Point in a neighborhood of t.
-A treshold Q for the maximum of the filter dervative process (max difference of spike
-count between the left and right window) is derived based on asymptotic consideration.
-The procedure is repeated for an arbitrary set of windows, with different size h.
 
-Reference:
----------
-Michael Messer, Marietta Kirchner, Julia Schiemann, Jochen Roeper,
-Ralph Neininger, and Gaby Schneider. 'A multiple filter test for the
-detection of rate changes in renewal processes with varying variance.'
-Annals of Applied Statistics, 8(4):2027–2067, 12 2014.
-'''
-
-### Based on the published R implementation ###
-
-def Brownian(Tin, Tfin, Xin, dt):
+def multiple_filter_test(window_sizes, spk, t_final, alfa, n_surrogates,
+                             test_quantile = None, test_param = None, dt = None):
+ 
+    '''      
+    Parameter
+    ---------
+        window_sizes : list of quantities,
+                    set of windows' size 
+        spk : list, array or SpikeTrain,
+           spike train in analisys
+        t_final : quantity, 
+               final time of the spike train to be analysed
+        alfa : integer, 
+            alfa-quantile
+        n_surrogates : integer, 
+                    numbers of simulated limit processes
+        dt : quantity, 
+          resolution
+        n_surrogates : scalar,
+                    asyntotic treshold
+        test_param : matrix, frist row list of h, second row empirical means and 
+                 third row variances of the limit processes. They will be used to 
+                 normalize the filter_processes for different h
+                      
+    Returns:
+    --------
+        cps : list of list
+           one list for each h in increasing order of size 
+           contaning the points detected with each window h.
     '''
-    Generate a BM.
+    
+    if (test_quantile is None)&(test_param is None):
+        test_quantile, test_param = null_parameters(window_sizes, t_final,
+                                                        alfa, n_surrogates, dt)
+    elif test_quantile is None:
+        test_quantile = null_parameters(window_sizes, t_final, alfa, 
+                                                           n_surrogates, dt)[0]
+    elif test_param is None:
+        test_param = null_parameters(window_sizes, t_final, alfa,
+                                                           n_surrogates, dt)[1]
+        
+    cps = []      # List of list of dected point, to be returned
+  
+    for i, h in enumerate(window_sizes):
+        dt_temp = dt
+        if dt_temp is None:  # automatic setting of dt
+            dt_temp = h/20.
+        # filter_process for window of size h    
+        t, differences = _filter_process(dt_temp, h, spk, t_final, test_param) 
+        time_index = np.arange(len(differences))
+     
+        cps_window = [] #Point detected by window h
+        while (np.max(differences) > test_quantile):
+            cp_index = np.argmax(differences)
+            cp = cp_index*dt_temp + h #from index to time
+            print "detected point {0}".format(cp), "with filter {0}".format(h)
+            # before to repet the procedure the h-neighbourg of 'cp' detected is
+            # cut, because rate changes within it are alredy explained by cp 
+            differences[np.where((time_index > cp_index-int(h/dt_temp.rescale(h.units))) 
+                    & (time_index < cp_index+int(h/dt_temp.rescale(h.units))))[0]] = 0 
+                 
+     
+# The output consist in a list of lists: first being a list of deteced cps with 
+# the first window h, then appending list of cps detected with other windows of 
+# different size h. N.B.: only cps whose h-neighborhood does not include previously
+# detected cps (with smaller window h) are added to the list. Same reason as l:101
+            neighbourhood_free = True
+            if i == 0:
+                cps_window.append(cp)
+            else: 
+                # iterate on lists of cps detected with smaller window
+                for j in range(i):   
+                    # iterating on cps detected with the j^th samllest window
+                    for c_pre in cps[j]: 
+                        if (c_pre-h< cp < c_pre+h):
+                            #ok = 0
+                            neighbourhood_free = False
+                            break
+                #if none of the previous detected cp falls in the h neighbourhood
+                if neighbourhood_free: 
+                    cps_window.append(cp) # add the point to the list      
+        cps.append(cps_window) # add the list to the list
+                 
+    return cps
+    
+    
+def _brownian_motion(t_in, t_fin, x_in, dt):
+    
+    '''
+    Generate a Brownian Motion.
 
-    Parameters
-    ----------
-        Tin:    quantities, 
+    Parameter
+    ---------
+        t_in:    quantities, 
                 initial time
-        Tfin:   qiantities,
+        t_fin:   qiantities,
                 final time
-        Xin:    quantities,
-                initial point
+        x_in:    quantities,
+                initial point of the process: _brownian_motio(0) = x_in
         dt:     quantities, 
                 resolution
-        Return
-        ------
-        Browniam motion on Tin-Tfin, with time step dt
+    Returns:
+    --------
+    Browniam motion on t_in-t_fin, with resolution dt and initial state x_in
     '''
+    
     u = 1*pq.s
     try:
-        Tin_sec = Tin.rescale(u)
+        t_in_sec = t_in.rescale(u)
     except:
-        raise ValueError ("Tin must be a time quantity")
-    Tin_m = Tin_sec.magnitude
+        raise ValueError ("t_in must be a time quantity")
+    t_in_m = t_in_sec.magnitude
     try:
-        Tfin_sec = Tfin.rescale(u)
+        t_fin_sec = t_fin.rescale(u)
     except:
-        raise ValueError ("Tfin must be a time quantity")
-    Tfin_m = Tfin_sec.magnitude
+        raise ValueError ("t_fin must be a time quantity")
+    t_fin_m = t_fin_sec.magnitude
     try:
         dt_sec = dt.rescale(u)
     except:
         raise ValueError ("dt must be a time quantity")
-    Tfin_m = Tfin_sec.magnitude
+    t_fin_m = t_fin_sec.magnitude
     
     x = []
-    for i in range(int((Tfin_m - Tin_m)/dt_sec)):
+    for i in range(int((t_fin_m - t_in_m)/dt_sec)):
         x.append(np.random.normal(0,  np.sqrt(dt_sec)))
         
     s = np.cumsum(x)
-    return s + Xin
+    return s + x_in
 
 
-def LtH(H, T, dt):
-    '''
-    Generate the limit processes (depending only on T and h), one for each h in H.
-    The distribution of the maxima of these processes is used to derive the threshold Q.
-
-    Parameters
-    ---------
-        H:      list of quantities, 
-                set of windows' size 
-        T:      quantity, F
-                end of limit process
-        dt:     quantities, 
-                resolution 
+def _limit_processes(window_sizes, t_final, dt):
     
-    Return
-    ------
-        Lp:    list of array
-               each entries contains the limit processes for each h,
-               evaluated in [h,T-h] with steps dt
+    '''
+    Generate the limit processes (depending only on t_final and h), one for each 
+    h in H. The distribution of maxima of these processes is used to derive the
+    threshold 'test_quantile' and the parameters 'test_param'.
+
+    Parameter
+    ---------
+        window_sizes:      list of quantities, 
+                           set of windows' size 
+        T:                 quantity, F
+                           end of limit process
+        dt:                quantities, 
+                           resolution 
+    
+    Returns:
+    --------
+        limit_processes : list of array
+                        each entries contains the limit processes for each h,
+                        evaluated in [h,T-h] with steps dt
     '''    
-    Lp = []
+    
+    limit_processes = []
     
     u = 1*pq.s
     try:
-        H_sec = H.rescale(u)
+        window_sizes_sec = window_sizes.rescale(u)
     except:
         raise ValueError ("H must be a list of times")
-    Hm = H_sec.magnitude
+    window_sizes_mag = window_sizes_sec.magnitude
     try:
-        T_sec = T.rescale(u)
+        t_final_sec = t_final.rescale(u)
     except:
-        raise ValueError ("T must be a time scalar")
+        raise ValueError ("t_fin must be a time scalar")
     if dt is not None:
         try:
             dt_sec = dt.rescale(u)
@@ -113,157 +203,156 @@ def LtH(H, T, dt):
         except:
             raise ValueError ("dt must be a time scalar")
     
-    for h in Hm: 
+    for h in window_sizes_mag : 
         if dt is None:   #automatic setting of dt
             dtm = h/20.
             dt_sec = dtm * pq.s
         else:
             dtm = dt.magnitude
                     
-        T = T_sec-T_sec%(dt_sec)
-        w = Brownian(0*pq.s,T,0,dtm)    
+        T = t_final_sec-t_final_sec%(dt_sec)
+        w =  _brownian_motion(0*pq.s, T, 0, dtm*u)    
         
-        w_plus = w[int(2*h/dtm):]   #BM on [h,T-h], shifted in time t-->t+h
-        w_meno = w[:int(-2*h/dtm)]  #BM on [h,T-h], shifted in time t-->t-h
-        ww = w[int(h/dtm):int(-h/dtm)]    #BM on [h,T-h]
+        brownian_right = w[int(2*h/dtm):] #BM on [h,T-h], shifted in time t-->t+h
+        brownian_left = w[:int(-2*h/dtm)] #BM on [h,T-h], shifted in time t-->t-h
+        brownian_center = w[int(h/dtm):int(-h/dtm)]    #BM on [h,T-h]
       
-        modul = (w_plus + w_meno - 2*ww)
-        L = modul/(np.sqrt(2*h))
-        Lp.append(L) 
-#        
-#        if dt == h/20.:
-#            dt = None    
-    return Lp
-
-def CalcolateTresh(H, T, alfa, Num_sim, dt):    
-    '''
-    Generate the threshold.
-    The Rh process has been proved to converge (for T,h-->infinity) to a continuous 
-    funcional of a BM, called Lh.
-    Simulating many of these limit processes (Num_sim), the maxima are collected:
-        - fixed h in H, the maximum of Lh,t over t in [h,T-h] (called m_h) is taken
-        - for each simulation the maximum of m_h over h in H is then taken
-
-    The threshold will be considered the alfa quantile of this set of maxima.
-    ----- Q := alfa quantile of {max(h in H)[max(t in T)Lh,t]} --------
-
-    Parameters
-    ----------
-        H:        list of quantities,
-                  set of windows' size 
-        T:        quantity, 
-                  final time of the spike
-        alfa:     integer, 
-                  alfa-quantile
-        Num_sim:  integer,
-                  numbers of simulated limit processes
-        dt:       quantity,
-                  resolution
+        modul = (brownian_right + brownian_left - 2*brownian_center)
+        limit_process_h = modul/(np.sqrt(2*h))
+        limit_processes.append(limit_process_h) 
+  
+    return limit_processes
     
-    Return
-    ------
-        Q:          scalar,
-                    Asyntotic treshold for the maximum of the filter derivative process
-        Emp_param:  matrix, frist row list of h, second row Empirical means and third
-                    row variances of the limit processes Lh. It will be used to 
-                    normalize the number of elements inside the windows of differnt width h
+
+def null_parameters(window_sizes, t_final, alfa, n_surrogates, dt):    
+    
+    '''
+    This function generates the threshold and the null parameters.
+    The '_filter_process' has been proved to converge (for t_fin, h-->infinity) 
+    to a continuous funcional of a Brownaian motion ('limit_process').
+    Using a MonteCarlo techinique, maxima of these limit_processes are collected.
+  
+    The threshold is defined as the alfa quantile of this set of maxima. Namely:
+    test_quantile := alpha quantile of {max_(h in window_size)[
+                                 max_(t in [h, t_final-h])_limit_process_h(t)]}
+                                 
+    Parameter
+    ---------
+        window_sizes : list of quantities,
+                    set of windows' size 
+        t_final : quantity, 
+               final time of the spike
+        alfa : integer, 
+            alfa-quantile
+        n_surrogates : integer,
+                    numbers of simulated limit processes
+        dt : quantity,
+          resolution
+    
+    Returns:
+    --------
+        test_quantile : scalar,
+                    threshold for the maximum of the filter derivative process
+        test_param : matrix, frist row list of h, second row Empirical means and third
+                 row variances of the limit processes Lh. It will be used to 
+                 normalize the number of elements inside the windows of differnt width h
  
     '''
+    
     u = 1*pq.s
     try:
-        H_sec = H.rescale(u)
+        window_sizes_sec = window_sizes.rescale(u)
     except:
         raise ValueError ("H must be a list of times")
-    Hm = H_sec.magnitude
+    window_sizes_mag = window_sizes_sec.magnitude
     try:
-        T_sec = T.rescale(u)
+        t_final_sec = t_final.rescale(u)
     except:
         raise ValueError ("T must be a time scalar")
-    Tm = T_sec.magnitude
+    t_final_mag = t_final_sec.magnitude
         
-    if Tm <= 0:
+    if t_final_mag <= 0:
         raise ValueError ("T needs to be stricktly poisitive")
     if alfa*(100 - alfa) < 0:
         raise ValueError ("alfa needs to be in (0,100)")
-    if not isinstance(Num_sim,int):
+    if not isinstance(n_surrogates,int):
         raise TypeError ("numba of simulation needs to be integer")
-    if np.min(Hm) <= 0:
+    if np.min(window_sizes_mag) <= 0:
         raise ValueError ("window's size needs to be stricktly poisitive")
-    if np.max(Hm) >= T/2:
+    if np.max(window_sizes_mag) >= t_final/2:
         raise ValueError ("window's size tooo large")
     if dt != None:
         try:
             dt = dt.rescale(u)
         except:
             raise ValueError ("dt must be a time scalar")        
-        for h in Hm:
+        for h in window_sizes_mag:
             if (h/dt).magnitude - int(h/dt)!=0:     
                 raise ValueError("Every window size h must be a multiple of dt")
 
-    a = []
-#Generate a matrix with rows represent n = Num_sim realization 
-# of the random variable M*_h, i.e. the variable max(t in T)Lh,t
-#each row for each h in H. 
-    for i in range(Num_sim):
+    maxima_matrix = [] 
+    #Generate a matrix: n X m where n = n_surrogates is the number of simulated 
+    # limit processes and m is the number of choosen window size. Entrances are: 
+    # M*(n,h) = max(t in T)[limit_process_h(t)], for each h in H and surrogate n. 
+ 
+    for i in range(n_surrogates):
             mh_star = []
-            simu = LtH(H,T,dt)
-            for i,h in enumerate(Hm):
-                m_h = np.max(simu[i]) #max over T of the i-th limit process
+            simu = _limit_processes(window_sizes, t_final, dt)
+            for i,h in enumerate(window_sizes_mag):
+                m_h = np.max(simu[i]) #max over time of the i-th limit process
                 mh_star.append(m_h)
-            a.append(mh_star)
-                
-    Mt = np.asanyarray(a)
-    M = Mt.T
+            maxima_matrix .append(mh_star)
+               
+    maxima_matrix = np.asanyarray(maxima_matrix)
+    matrix = maxima_matrix.T
+
+    # matrix normalization by mean and variance of the limit process, in order
+    # to give, for every h, the same impact on the global maximum
+    matrix_normalized = []
+    null_mean = [] # these parameters will be used to normalize both the +
+    null_var = [] # limit_processes (H0) and the filter_rocesses (H1)
     
-###Generate a matrix with rows represent n=Num_sim realization 
-#  of the process M*_h, each row for each h in H.
-#NORMALIZED for every h by the mean and the variance of its limit process 
-    b = []
-    Emp_mean = []  #These will be needed to normalize Rth
-    Emp_var = []    
+    for i,h in enumerate(window_sizes_mag):
+        mean = np.mean(matrix, axis = 1)[i]
+        var = np.var(matrix, axis = 1)[i]
+        matrix_normalized.append((matrix [i] - mean)/np.sqrt(var))
+        null_mean.append(mean)
+        null_var.append(var)
+        #print("Window {0}: Emp_mean {1}".format(h, mean))
+        #print("Window {0}: Emp_var {1}".format(h, var))
+    matrix_normalized = np.asanyarray(matrix_normalized) 
     
-    for i,h in enumerate(Hm):
-        mean = np.mean(M, axis = 1)[i]
-        var = np.var(M, axis = 1)[i]
-        b.append((M[i]-mean)/np.sqrt(var))
-        Emp_mean.append(mean)
-        Emp_var.append(var)
-        print("Window {0}: Emp_mean {1}".format(h, mean))
-        print("Window {0}: Emp_var {1}".format(h, var))
-    M_norm = np.asanyarray(b) 
+    great_maxs = np.max(matrix_normalized, axis = 0) # max over row   
+    test_quantile = np.percentile(great_maxs, 100 - alfa)
+    null_parameters= [window_sizes, null_mean, null_var]    
+    test_param = np.asanyarray(null_parameters)
     
-### n=Num_sim REALIZATION of the random variable M* 
-#i.e. max(h in H)[max(t in T)Lh,t]!
-    
-    MSTAR = np.max(M_norm, axis = 0) #max over row   
-    Q = np.percentile(MSTAR,100 - alfa)
-    Emp = [H,Emp_mean,Emp_var]    
-    Emp_param = np.asanyarray(Emp)
-    
-    return Q, Emp_param
+    return test_quantile, test_param
 
 
-def Gth(t ,h ,spk):
+def _filter(t, h, spk):
     '''
-    Calculates the difference of spikes count in the left and right side of the window;
-    normalized by the variance of this count. This variance is obtained as a combination
-    of mean and var of the I.S.I.(Internal-spike-interval) lying inside the window.
+    This function calculates the difference of spikes count in the left and right
+    side of a window of size h centered in t. Normalized by its variance. 
+    The variance of this count can be expressed as a combination of mean and var 
+    of the I.S.I. lying inside the window.
 
-    Parameters
+    Parameter
     ---------
-        h:     quantity,
-               window's size 
-        t:     quantity,
-               time on which the window is centered
-        spk:   list, array or SpikeTrain,
-               spike train in analisys
+        h : quantity,
+         window's size 
+        t : quantity,
+         time on which the window is centered
+        spk : ist, array or SpikeTrain,
+         spike train in analisys
     
-    Return
-    ------
-        g:  scalar, 
-            difference of spike count normalized by its variance
+    Returns
+    -------
+        difference : scalar, 
+                  difference of spike count normalized by its variance
 
     '''
+    
     u = 1*pq.s
     try:
         t_sec = t.rescale(u)
@@ -280,182 +369,115 @@ def Gth(t ,h ,spk):
     except:
         raise ValueError ("Spk must be a list (array) of times or a neo spiketrain")
     
-#TODO: remove useless np.where    
-    N_ri = spk[np.where((tm < spk) & (spk < tm+hm))]#cut spike-train on the right
-    N_le = spk[np.where((tm-hm < spk) & (spk < tm))]#cut spike-train on the left
-    
-    n_ri = spk[np.where((tm < spk) & (spk < tm+hm))].size#count spikes in the right side
-    n_le = spk[np.where((tm-hm < spk) & (spk < tm))].size#'''
+    # cut spike-train on the right
+    train_right = spk[np.where((tm < spk) & (spk < tm+hm))]
+    # cut spike-train on the left
+    train_left = spk[np.where((tm-hm < spk) & (spk < tm)) ]
+    # spike count in the right side
+    count_right = spk[np.where((tm < spk) & (spk < tm+hm))].size
+    # spike count in the left side
+    count_left = spk[np.where((tm-hm < spk) & (spk < tm))].size
 
-    gamma_ri = np.diff(N_ri)#form spikes to I.S.I
-    gamma_le = np.diff(N_le)
+    isi_right = np.diff(train_right) # form spikes to I.S.I
+    isi_left = np.diff(train_left) 
     
     mu_le=0
     mu_ri=0
     
-    if gamma_ri.size==0:
+    if isi_right.size == 0:
         mu_ri = 0
         sigma_ri = 0
     else:
-        mu_ri = np.mean(gamma_ri) #mean of I.S.I inside the window
-        sigma_ri = np.var(gamma_ri) #var of I.S.I inside the windo
+        mu_ri = np.mean(isi_right) #mean of I.S.I inside the window
+        sigma_ri = np.var(isi_right) #var of I.S.I inside the windo
         
-    if gamma_le.size==0:
+    if isi_left.size==0:
         mu_le = 0
         sigma_le= 0
     else:     
-        mu_le = np.mean(gamma_le)
-        sigma_le = np.var(gamma_le)
+        mu_le = np.mean(isi_left)
+        sigma_le = np.var(isi_left)
     
       #if ((mu_le>0) & (mu_ri>0)):  
     if ((sigma_le > 0) & (sigma_ri > 0)): #sigma>0 imply also mu>0
-        Squad = [(sigma_ri/mu_ri**(3))*h + (sigma_le/mu_le**(3))*h]
+        s_quad = [(sigma_ri/mu_ri**(3))*h + (sigma_le/mu_le**(3))*h]
     else:
-        Squad = 0
+        s_quad = 0
     
-    if Squad <= 0:
-        g = 0
+    if s_quad <= 0:
+        difference = 0
     else:
-        g = (n_ri - n_le) /  np.sqrt(Squad)
+        difference = (count_right - count_left) /  np.sqrt(s_quad)
     
-    return g
+    return difference
     
+ 
+def _filter_process(dt, h, spk, t_final, test_param): 
     
-def Rth(dt, h, spk, T, Emp_param): 
     '''
-    Given a spike train and a window size h generate the 'filter derivative process',
-    by evaluating the function Gth above, at steps dt.
+    Given a spike train ìspk' and a window size h, this function generates the 
+    'filter derivative process', by evaluating the function '_filter, in steps dt.
 
-    Parameters
+    Parameter
     ---------
-        h:          quantiy,
-                    window's size 
-        T:          quantity,
-                    time on which the window is centered
-        spk:        list, array or SpikeTrain,
-                    spike train in analisys
-        dt:         quantity,
-                    resolution
-        Emp_param:  matrix, frist row list of h, second row Empirical means and third
-                    row variances of the limit processes Lh, 
-                    used to normalize the number of elements inside the windows
+        h : quantiy,
+         window's size 
+        t_final : quantity,
+               time on which the window is centered
+        spk : list, array or SpikeTrain,
+           spike train in analisys
+        dt : quantity,
+          resolution
+        test_param : matrix, frist row list of h, second row Empirical means and third
+                  row variances of the limit processes Lh, 
+                  used to normalize the number of elements inside the windows
                 
-    Return
-    ------
-        tauh: array, time domain of the 'filter derivative process'
-        Rh: array, values of the 'filter derviative process'
+    Returns:
+    --------
+        time_domain : array, 
+                   time domain of the 'filter derivative process'
+        filter_process : array, 
+                      values of the 'filter derviative process'
     '''
+    
     u = 1*pq.s 
+    
     try:
         h_sec = h.rescale(u)
     except:
         raise ValueError ("h must be a time scalar")
     hm = h_sec.magnitude 
     try:
-        T_sec = T.rescale(u)
+        t_final_sec = t_final.rescale(u)
     except:
-        raise ValueError ("T must be a time scalar")   
+        raise ValueError ("t_final must be a time scalar")   
     try:
         dt_sec = dt.rescale(u)
     except:
         raise ValueError ("dt must be a time scalar")
+    ''' Control on lower level: _filter
     try:
         spk = spk.rescale(u)
     except:
         raise ValueError ("Spk must be a list (array) of times or a neo spiketrain")
-    
-    tauh = np.arange(h_sec,T_sec-h_sec,dt_sec) #domain of the process
-    tauh_sec = tauh*pq.s
-    traiet_gh = []
-   
-    Emp_meanh = Emp_param[1][np.where(Emp_param[0]==hm)] #taken from the function
-    Emp_varh =  Emp_param[2][np.where(Emp_param[0]==hm)] #used to generate the threshold
-    
-    for t in tauh_sec:
-        traiet_gh.append(Gth(t,h,spk))
-        
-    gh = np.asanyarray(traiet_gh)
-    Rh = (np.abs(gh) - Emp_meanh) / np.sqrt(Emp_varh)#Normailztion in orded
-                     #to give each window the same impact on the max
-
-    return  tauh, Rh
-    
-### °*°*°*° $|$ Multiple Filter Algorithm $|$ °*°*°*° ###
-
-def MultipleFilterAlgorithm(H, spk, T, alfa, Num_sim, Q = None, Emp_param = None, dt = None):
-    '''      
-    Parameters
-    ----------
-        H:          list of quantities,
-                    set of windows' size 
-        spk:        list, array or SpikeTrain,
-                    spike train in analisys
-        T:          quantity, 
-                    Final time of the spike train to be analysed
-        alfa:       integer, 
-                    alfa-quantile
-        Num_sim:    integer, numbers of simulated limit processes
-        dt:         quantity, 
-                    resolution
-        Q:          scalar,
-                    Asyntotic treshold
-        Emp_param:  matrix, frist row list of h, second row Empirical means and third
-                    row variances of the limit processes Lh. It will be used to 
-                    normalize the number of elements inside the windows of differnt width h
-    Return
-    ------
-        C:          list of lists: one list for each h in increasing order contaning
-                    the points detected with each window h.
     '''
-    if (Q is None)&(Emp_param is None):
-        Q,Emp_param = CalcolateTresh(H,T,alfa,Num_sim,dt)
-    elif Q is None:
-        Q = CalcolateTresh(H,T,alfa,Num_sim,dt)[0]
-    elif Emp_param is None:
-        Emp_param = CalcolateTresh(H,T,alfa,Num_sim,dt)[1]
+    time_domain = np.arange(h_sec, t_final_sec - h_sec, dt_sec) #domain of the process
+    time_domain_sec = time_domain*pq.s
+    filter_trajectrory = []
+   
+    emp_mean_h = test_param[1][np.where(test_param[0]==hm)] #taken from the function
+    emp_var_h =  test_param[2][np.where(test_param[0]==hm)] #used to generate the threshold
+    
+    for t in time_domain_sec:
+        filter_trajectrory.append(_filter(t, h, spk))
         
-    C = []      # List of list of dected point, to be returned
-  
-    for i,h in enumerate(H):
-        if dt is None:   #automatic setting of dt
-            was_none = True
-            dt = h/20.
-            
-        t,r = Rth(dt,h,spk,T,Emp_param) #Process of the sliding window h
-        times = np.where(r<1000)[0] #just to take ALL times
-     
-        Ch = [] #Point detected by window h
-        while (np.max(r) > Q):
-            cci = np.argmax(r)
-            ci = cci*dt + h #from index to time
-            print "detected point {0}".format(ci), "with filter {0}".format(h)
-            r[np.where((times > cci-int(h/dt.rescale(h.units))) & (times < cci+int(h/dt.rescale(h.units))))[0]] = 0 
-            #before to repet the procedure cut the h-neighbourg of the point  
-            #just detected 'cause the change in rate inside it is alredy explained            
-            
-# The list of Change Points detected with the smallest window is first given as output.
-# Then for the list of increasing window size h, only those whose h-neighborhood does
-# not include other CPs already listed (with smaller hs) are given as output
-            #ok = 1
-            neighfree = True
-            if i == 0:
-                Ch.append(ci)
-            else: 
-                for j in range(i):   #control on previous filter h
-                    for c_pre in C[j]: #control if previous detected points fall in h neighbourhood
-                        if (c_pre-h < ci < c_pre+h):
-                            #ok = 0
-                            neighfree = False
-                            break
-                if neighfree: # if none of the previous detected points fall in the h neighbourhood
-                    Ch.append(ci)         
-        C.append(Ch)
-        '''
-        if dt == h/20.:
-            dt = None
-        '''
-        if was_none:
-            dt = None
-        
-# TODO: decide whether to change shape of output                  
-    return C
+    filter_trajectrory = np.asanyarray(filter_trajectrory)
+    #Normailztion in orded to give each window the same impact on the max
+    # which will be used as statistic
+    filter_process = (np.abs(filter_trajectrory) - emp_mean_h) / np.sqrt(emp_var_h)
+    
+    return  time_domain, filter_process 
+    
+
+
+
