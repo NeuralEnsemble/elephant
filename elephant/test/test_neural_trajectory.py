@@ -79,6 +79,8 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         self.assertEqual(result['cvf'], 0)
         self.assertEqual(result['bin_size'], 20 * pq.ms)
         assert_array_equal(result['hasSpikesBool'], np.array([True] * 4))
+        self.assertAlmostEqual(result['log_likelihood'], -26.504094758661424)
+        self.assertEqual(result['min_var_frac'], 0.01)
 
 
 def suite():
