@@ -448,7 +448,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # By default, set maximum number of occurrences to number of non-empty
     # windows
     if max_occ is None:
-        max_occ = (np.sum(np.sum(rel_matrix, axis=1)>0))
+        max_occ = int(np.sum(np.sum(rel_matrix, axis=1)>0))
     # Check if fim.so available and use it
     if HAVE_FIM:
         # Return the output
