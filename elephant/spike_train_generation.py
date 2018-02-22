@@ -395,9 +395,9 @@ def _analog_signal_linear_interp(signal, times):
     signal : neo.core.AnalogSignal
         The analog signal containing the discretization of the function to
         interpolate
-    Output
+    Returns
     ------
-    Quantity array representing the values of the interpolated signal at the
+    out: Quantity array representing the values of the interpolated signal at the
     times given by times
 
     Notes
