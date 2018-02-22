@@ -338,28 +338,28 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
         as_array)
 
 def inhomogeneous_poisson_process(rate, as_array=False):
-    '''
+    """
     Returns a spike train whose spikes are a realization of an inhomogeneous
     Poisson process with the given rate profile.
 
     Parameters
-    -----
+    ----------
     rate : neo.AnalogSignal
-        A neo.AnalogSignal representing the rate profile evolving over time. 
-        Its values have all to be >=0. The output spiketrain will have 
-        t_start = rate.t_start and t_stop = rate.t_stop
+        A `neo.AnalogSignal` representing the rate profile evolving over time. 
+        Its values have all to be `>=0`. The output spiketrain will have 
+        `t_start = rate.t_start` and `t_stop = rate.t_stop`
     as_array : bool
            If True, a NumPy array of sorted spikes is returned,
            rather than a SpikeTrain object.
-    Output
-    -----
-    Poisson SpikeTrain with profile rate lambda(t)= rate_signal
-    '''
+    Raises
+    ------
+    ValueError : If `rate` contains any negative value.
+    """
+    # Check rate contains only positive values
     if any(rate < 0) or not rate.size:
         raise ValueError(
             'rate must be a positive non empty signal, representing the'
             'rate at time t')
-    # Define the interpolation method
     else:
         #Generate n hidden Poisson SpikeTrains with rate equal to the peak rate
         max_rate = max(rate)
@@ -381,32 +381,34 @@ def _analog_signal_linear_interp(signal, times):
     '''
     Compute the linear interpolation of a signal at desired times.
 
-    Given a signal (e.g. an AnalogSignal) AS taking value s0 and s1 at two
-    consecutive time points t0 and t1 (t0 < t1), the value s of the linear
-    interpolation at time t: t0 <= t < t1 is given by:
-
-                s = ((s1 - s0) / (t1 - t0)) * t + s0,
-    for any time t between AS.t_start and AS.t_stop
-
-    NOTE: If AS has sampling period dt, its values are defined at times
-    t[i] = s.t_start + i * dt. The last of such times is lower than s.t_stop:
-    t[-1] = s.t_stop - dt. For the interpolation at times t such that
-    t[-1] <= t <= AS.t_stop, the value of AS at AS.t_stop is taken to be that
-    at time t[-1].
-
+    Given the `signal` (neo.AnalogSignal) taking value `s0` and `s1` at two
+    consecutive time points `t0` and `t1` `(t0 < t1)`, for every time `t` in 
+    `times`, such that `t0<t<=t1` is returned the value of the linear 
+    interpolation, given by:
+                `s = ((s1 - s0) / (t1 - t0)) * t + s0`.
 
     Parameters
-    -----
+    ----------
     times : Quantity vector(time)
         The time points for which the interpolation is computed
 
     signal : neo.core.AnalogSignal
-        The analog signal containing the discretization of the funtion to
+        The analog signal containing the discretization of the function to
         interpolate
     Output
-    -----
+    ------
     Quantity array representing the values of the interpolated signal at the
     times given by times
+
+    Notes
+    -----
+    If `signal` has sampling period `dt=signal.sampling_period`, its values 
+    are defined at `t=signal.times`, such that `t[i] = signal.t_start + i * dt` 
+    The last of such times is lower than 
+    signal.t_stop`:t[-1] = signal.t_stop - dt`. 
+    For the interpolation at times t such that `t[-1] <= t <= signal.t_stop`,
+    the value of `signal` at `signal.t_stop` is taken to be that
+    at time `t[-1]`.
     '''
     dt = signal.sampling_period
     t_start = signal.t_start.rescale(signal.times.units)
@@ -414,7 +416,8 @@ def _analog_signal_linear_interp(signal, times):
 
     # Extend the signal (as a dimensionless array) copying the last value
     # one time, and extend its times to t_stop
-    signal_extended = np.vstack([signal.magnitude, signal[-1].magnitude]).flatten()
+    signal_extended = np.vstack(
+        [signal.magnitude, signal[-1].magnitude]).flatten()
     times_extended = np.hstack([signal.times, t_stop]) * signal.times.units
     time_ids = np.floor(((times - t_start) / dt).rescale(
         dimensionless).magnitude).astype('i')
