@@ -1,50 +1,52 @@
 # -*- coding: utf-8 -*-
 
 """
-This algorithm is to determine if a spike train can be considerate stationary
-(costant firing rate) or not stationary (i.e. presence of one or more points at
-which the rate increases or decreases). In case of nonstationarity, the output
-is a list of detected  Change Points (CPs).
-Essentialy, a two-side window of width `h` (`_filter(t, h, spk)`) slide over the
-time of the spike train `[h,t_final-h]`. This generates a `_filter_process` that
-at each time t assigns the difference between spike lying in the right and left
-window. If at any time t this difference is large `enough`, it is assumed the
-presence of a rate Change Point in a neighborhood of t. A treshold `test_quantile`
-for the maximum of the filter_process (max difference of spike count between the
-left and right window) is derived based on asymptotic considerations.
-The procedure is repeated for an arbitrary set of windows, with different size h.
+This algorithm determines if a spike train can be considered as a stationary
+process (constant firing rate) or not as a stationary process (i.e. presence of
+one or more points at which the rate increases or decreases). In case of
+non-stationarity, the output is a list of detected Change Points (CPs).
+Essentially, a two-sided window of width `h` (`_filter(t, h, spk)`) slides over
+the spike train within the time `[h,t_final-h]`. This generates a
+`_filter_process` that assigns at each time `t` the difference between a spike
+lying in the right and left window. If at any time `t` this difference is large
+'enough' the presence of a rate Change Point in a neighborhood of `t` is assumed.
+A threshold `test_quantile` for the maximum of the filter_process
+(max difference of spike count between the left and right window) is derived
+based on asymptotic considerations. The procedure is repeated for an arbitrary
+set of windows, with different size `h`.
 
 
 Example
 -------
 The following applies multiple_filter_test to a spike trains. 
-    
-    >>> import elephant.multiple_filter_test
+
     >>> import quantities as pq
     >>> import neo
+    >>> from elephant.multiple_filter_test import multiple_filter_test
+
     
     >>> test_array = [1.1,1.2,1.4,   1.6,1.7,1.75,1.8,1.85,1.9,1.95]
     >>> st = neo.SpikeTrain(test_array, units='s', t_stop = 2.1)
     >>> window_size = [0.5]*pq.s
     >>> t_fin = 2.1*pq.s
-    >>> aplha = 5
+    >>> alpha = 5
     >>> num_surrogates = 10000
-    >>> change_points = multiple_filter_test(window_size, st, t_fin, alpha, 
-                                                 num_surrogates, dt = 0.5*pq.s)
+    >>> change_points = multiple_filter_test(window_size, st, t_fin, alpha,
+                        num_surrogates, dt = 0.5*pq.s)
 
 
-from elephant import multiple_filter_test
-import quantities as pq
-import neo
+>>> from elephant.multiple_filter_test import multiple_filter_test
+>>> import quantities as pq
+>>> import neo
 
-test_array = [1.1,1.2,1.4,  1.6,1.7,1.75,1.8,1.85,1.9,1.95]
-st = neo.SpikeTrain(test_array, units='s', t_stop = 2.1)
-window_size = [0.5]*pq.s
-t_fin = 2.1*pq.s
-alpha = 5
-num_surrogates = 10000
-change_points = multiple_filter_test(window_size, st, t_fin, alpha, 
-                                                 num_surrogates, dt = 0.5*pq.s)
+>>> test_array = [1.1,1.2,1.4,  1.6,1.7,1.75,1.8,1.85,1.9,1.95]
+>>> st = neo.SpikeTrain(test_array, units=pq.s, t_stop = 2.1 * pq.s)
+>>> window_size = [0.5] * pq.s
+>>> t_fin = 2.1*pq.s
+>>> alpha = 5
+>>> num_surrogates = 10000
+>>> change_points = multiple_filter_test(window_size, st, t_fin, alpha,
+                    num_surrogates, dt = 0.5*pq.s)
 
 
 Reference:
@@ -56,7 +58,7 @@ processes with varying variance. The Annals of Applied Statistics, 8(4), 2027-20
 
 Original code
 -------------
-Adapted from published R implementation:
+Adapted from the published R implementation:
 DOI: 10.1214/14-AOAS782SUPP;.r
 
 """
@@ -67,7 +69,7 @@ import quantities as pq
 
 def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
                          test_quantile=None, test_param=None, dt=None):
-    '''
+    """
     Detection of change points.
 
     Parameter
@@ -75,7 +77,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
         window_sizes : list of quantities objects,
                     set of windows' size
         spiketrain : neo.SpikeTrain, array or list
-                  spike train in analisys
+                  spike train to analyze
         t_final : quantity,
                final time of the spike train to be analysed
         alpha : integer,
@@ -85,17 +87,17 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
         dt : quantity,
           resolution
         n_surrogates : scalar,
-                    asyntotic treshold
-        test_param : matrix, frist row list of h, second row empirical means and
-                 third row variances of the limit processes. They will be used to
-                 normalize the filter_processes for different h
+                    asymptotic threshold
+        test_param : matrix, first row list of h, second row empirical means
+                 and third row variances of the limit processes. They will be
+                 used to normalize the filter_processes for different h
 
     Returns:
     --------
         cps : list of list
            one list for each h in increasing order of size
-           contaning the points detected with each window h.
-    '''
+           containing the points detected with each window h.
+    """
 
     if (test_quantile is None) & (test_param is None):
         test_quantile, test_param = empirical_parameters(window_sizes, t_final,
@@ -109,7 +111,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
                                           
     spk = spiketrain
     
-    # List of list of dected point, to be returned
+    # List of list of detected point, to be returned
     cps = []  
     
     for i, h in enumerate(window_sizes):
@@ -124,7 +126,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
         while (np.max(differences) > test_quantile):
             cp_index = np.argmax(differences)
             cp = cp_index * dt_temp + h  # from index to time
-            print "detected point {0}".format(cp), "with filter {0}".format(h)
+            print("detected point {0}".format(cp), "with filter {0}".format(h))
             # before to repet the procedure the h-neighbourg of 'cp' detected is
             # cut, because rate changes within it are alredy explained by cp
             differences[np.where((time_index > cp_index - int(h / dt_temp.rescale(h.units)))
@@ -143,10 +145,11 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
                 for j in range(i):
                     # iterating on cps detected with the j^th samllest window
                     for c_pre in cps[j]:
-                        if (c_pre - h < cp < c_pre + h):
+                        if c_pre - h < cp < c_pre + h:
                             neighbourhood_free = False
                             break
-                # if none of the previous detected cp falls in the h neighbourhood
+                # if none of the previous detected cp falls in the h
+                # neighbourhood
                 if neighbourhood_free:
                     # add the point to the list
                     cps_window.append(cp) 
@@ -172,23 +175,23 @@ def _brownian_motion(t_in, t_fin, x_in, dt):
           resolution
     Returns:
     --------
-    Browniam motion on t_in-t_fin, with resolution dt and initial state x_in
+    Brownian motion on t_in-t_fin, with resolution dt and initial state x_in
     '''
 
     u = 1 * pq.s
     try:
         t_in_sec = t_in.rescale(u)
-    except:
+    except ValueError:
         raise ValueError("t_in must be a time quantity")
     t_in_m = t_in_sec.magnitude
     try:
         t_fin_sec = t_fin.rescale(u)
-    except:
+    except ValueError:
         raise ValueError("t_fin must be a time quantity")
     t_fin_m = t_fin_sec.magnitude
     try:
         dt_sec = dt.rescale(u)
-    except:
+    except ValueError:
         raise ValueError("dt must be a time quantity")
     t_fin_m = t_fin_sec.magnitude
 
@@ -294,9 +297,9 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt):
     --------
         test_quantile : scalar,
                     threshold for the maximum of the filter derivative process
-        test_param : matrix, frist row list of h, second row Empirical means and 
-                 third row variances of the limit processes Lh. It will be used 
-                 to normalize the number of elements inside the windows
+        test_param : matrix, first row list of h, second row Empirical means
+                 and third row variances of the limit processes Lh. It will be
+                 used to normalize the number of elements inside the windows
     '''
 
     u = 1 * pq.s
@@ -331,9 +334,10 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt):
                 raise ValueError(
                     "Every window size h must be a multiple of dt")
 
-    # Generate a matrix: n X m where n = n_surrogates is the number of simulated
-    # limit processes and m is the number of choosen window size. Entrances are:
-    # M*(n,h) = max(t in T)[limit_process_h(t)], for each h in H and surrogate n
+    # Generate a matrix: n X m where n = n_surrogates is the number of
+    # simulated limit processes and m is the number of choosen window size.
+    # Entrances are: M*(n,h) = max(t in T)[limit_process_h(t)],
+    # for each h in H and surrogate n
     maxima_matrix = []
 
     for i in range(n_surrogates):
@@ -368,7 +372,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt):
     test_quantile = np.percentile(great_maxs, 100 - alpha)
     null_parameters = [window_sizes, null_mean, null_var]
     test_param = np.asanyarray(null_parameters)
-    print 'Q', test_quantile
+    print('Q', test_quantile)
 
     return test_quantile, test_param
 
@@ -443,12 +447,12 @@ def _filter(t, h, spk):
         mu_le = np.mean(isi_left)
         sigma_le = np.var(isi_left)
 
-    if ((sigma_le > 0) & (sigma_ri > 0)):
-        s_quad = [(sigma_ri / mu_ri**(3)) * h + (sigma_le / mu_le**(3)) * h]
+    if (sigma_le > 0) & (sigma_ri > 0):
+        s_quad = [(sigma_ri / mu_ri**3) * h + (sigma_le / mu_le**3) * h]
     else:
-        s_quad = 0
+        s_quad = [0]
 
-    if s_quad <= 0:
+    if s_quad[0] <= 0:
         difference = 0
     else:
         difference = (count_right - count_left) / np.sqrt(s_quad)
@@ -458,45 +462,47 @@ def _filter(t, h, spk):
 
 def _filter_process(dt, h, spk, t_final, test_param):
     '''
-    Given a spike train ìspk' and a window size h, this function generates the
-    'filter derivative process', by evaluating the function '_filter, in steps dt.
+    Given a spike train `spk` and a window size `h`, this function generates
+    the `filter derivative process`, by evaluating the function `_filter`
+    in steps of `dt`.
 
     Parameter
     ---------
-        h : quantiy,
+        h : quantity,
          window's size
         t_final : quantity,
                time on which the window is centered
         spk : list, array or SpikeTrain,
-           spike train in analisys
+           spike train to analyze
         dt : quantity,
           resolution
-        test_param : matrix, frist row list of h, second row Empirical means and third
-                  row variances of the limit processes Lh,
-                  used to normalize the number of elements inside the windows
+        test_param : matrix, the means of the first row list of `h`,
+                    the second row Empirical and the third row variances of
+                    the limit processes `Lh` are used to normalize the number
+                    of elements inside the windows
 
     Returns:
     --------
         time_domain : array,
-                   time domain of the 'filter derivative process'
+                   time domain of the `filter derivative process`
         filter_process : array,
-                      values of the 'filter derviative process'
+                      values of the `filter derivative process`
     '''
 
     u = 1 * pq.s
 
     try:
         h_sec = h.rescale(u)
-    except:
+    except AttributeError:
         raise ValueError("h must be a time scalar")
     hm = h_sec.magnitude
     try:
         t_final_sec = t_final.rescale(u)
-    except:
+    except AttributeError:
         raise ValueError("t_final must be a time scalar")
     try:
         dt_sec = dt.rescale(u)
-    except:
+    except AttributeError:
         raise ValueError("dt must be a time scalar")
     # domain of the process
     time_domain = np.arange(h_sec, t_final_sec - h_sec, dt_sec)
