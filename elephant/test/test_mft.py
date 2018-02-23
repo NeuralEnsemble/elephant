@@ -35,7 +35,7 @@ class Filter_TestCase(unittest.TestCase):
        target = self.targ_t08_h05
        res = mft._filter(0.8 *pq.s, 0.5*pq.s, st)
        assert_array_almost_equal(res, target, decimal=9)
-           
+       
    def test_isi_with_quantities_h05(self):
        st = pq.Quantity(self.test_array, units='s')
        target = self.targ_t08_h05
@@ -155,7 +155,7 @@ class MultipleFilterAlgorithm_TestCase(unittest.TestCase):
            for c in result[i]:
                result_concatenated = np.hstack([result_concatenated, c])
        result_concatenated = np.sort(result_concatenated) 
-       assert_allclose(result_concatenated, target, rtol=0, atol=11)
+       assert_allclose(result_concatenated, target, rtol=0, atol=11)   
 
 def suite():
     suite = unittest.makeSuite(FilterProcess_TestCase, 'test')
