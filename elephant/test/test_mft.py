@@ -7,7 +7,7 @@ import unittest
 import elephant.multiple_filter_test as mft
 from numpy.testing.utils import assert_array_almost_equal, assert_allclose
                                      
-
+                                     
 np.random.seed(13)
 
 class FilterTestCase(unittest.TestCase):
@@ -32,8 +32,11 @@ class FilterTestCase(unittest.TestCase):
         target = self.targ_t08_h05
         res = mft._filter(0.8 * pq.s, 0.5 * pq.s, st)
         assert_array_almost_equal(res, target, decimal=9)
+        self.assertRaises(ValueError, mft._filter, 0.8 , 0.5 * pq.s, st)
+        self.assertRaises(ValueError, mft._filter, 0.8 *pq.s , 0.5, st)
+        self.assertRaises(ValueError, mft._filter, 0.8 *pq.s , 0.5*pq.s,
+                                                               self.test_array)
         
-
     # Window Small #
     def test_filter_with_spiketrain_h025(self):
         st = neo.SpikeTrain(self.test_array, units='s', t_stop=2.0)
@@ -63,7 +66,6 @@ class FilterTestCase(unittest.TestCase):
         st = self.test_array
         target = self.targ_t08_h05
         res = mft._filter(0.8 * pq.s, 0.5 * pq.s, st * pq.s)
-        assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
 
 
@@ -82,7 +84,15 @@ class FilterProcessTestCase(unittest.TestCase):
         res = mft._filter_process(0.5 * pq.s, 0.5 * pq.s, st, 2.01 * pq.s,
                                   np.array([[0.5], [1.7], [0.4]]))
         assert_array_almost_equal(res[1], target[1], decimal=3)
-
+        print res, st.t_start
+        self.assertRaises(ValueError, mft._filter_process, 0.5 , 0.5 * pq.s,
+                              st, 2.01 * pq.s, np.array([[0.5], [1.7], [0.4]]))
+        self.assertRaises(ValueError, mft._filter_process, 0.5 * pq.s, 0.5,
+                              st, 2.01 * pq.s, np.array([[0.5], [1.7], [0.4]]))
+        self.assertRaises(ValueError, mft._filter_process, 0.5 * pq.s, 
+                                      0.5 * pq.s, self.test_array, 2.01 * pq.s, 
+                                               np.array([[0.5], [1.7], [0.4]]))                               
+      
     def test_filter_proces_with_quantities_h05(self):
         st = pq.Quantity(self.test_array, units='s')
         target = self.targ_h05
@@ -125,7 +135,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
                                        100, dt=0.5 * pq.s)
         assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
-
+ 
     def test_MultipleFilterAlgorithm_with_published_data(self):
         
         def gammatrain(k, teta, Tmax):
@@ -163,9 +173,9 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         for i in result:
             result_concatenated = np.hstack([result_concatenated, i])
         result_concatenated = np.sort(result_concatenated)*pq.s
-        print result_concatenated
+           
         assert_allclose(result_concatenated[:3], target[:3], rtol=0, atol=5*pq.s)
-
+      
 
 '''
 def suite():
