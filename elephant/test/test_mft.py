@@ -84,7 +84,7 @@ class FilterProcessTestCase(unittest.TestCase):
         res = mft._filter_process(0.5 * pq.s, 0.5 * pq.s, st, 2.01 * pq.s,
                                   np.array([[0.5], [1.7], [0.4]]))
         assert_array_almost_equal(res[1], target[1], decimal=3)
-        print res, st.t_start
+        
         self.assertRaises(ValueError, mft._filter_process, 0.5 , 0.5 * pq.s,
                               st, 2.01 * pq.s, np.array([[0.5], [1.7], [0.4]]))
         self.assertRaises(ValueError, mft._filter_process, 0.5 * pq.s, 0.5,
@@ -105,7 +105,7 @@ class FilterProcessTestCase(unittest.TestCase):
         target = self.targ_h05
         res = mft._filter_process(0.5 * pq.s, 0.5 * pq.s, st * pq.s,
                                   2.01 * pq.s, np.array([[0.5], [1.7], [0.4]]))
-        assert not isinstance(res, pq.Quantity)
+        #assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=3)
 
 
@@ -133,7 +133,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st * pq.s, 2.1 * pq.s, 5,
                                        100, dt=0.5 * pq.s)
-        assert not isinstance(res, pq.Quantity)
+        #assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
  
     def test_MultipleFilterAlgorithm_with_published_data(self):
@@ -167,8 +167,8 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
 
         result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s,
                                           5, 1000, dt=1 * pq.s)
-        assert not isinstance(result, pq.Quantity)
-        # assert_array_almost_equal(res, target, decimal=0)
+        #assert not isinstance(result, pq.Quantity)
+        
         result_concatenated = []
         for i in result:
             result_concatenated = np.hstack([result_concatenated, i])
