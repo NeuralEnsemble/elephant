@@ -399,12 +399,12 @@ def _filter(t, h, spk):
     u = 1 * pq.s
     try:
         t_sec = t.rescale(u)
-    except ValueError:
-        raise ValueError("t must be a quanitities object")
+    except AttributeError:
+        raise ValueError("t must be a quantities object")
     tm = t_sec.magnitude
     try:
         h_sec = h.rescale(u)
-    except ValueError:
+    except AttributeError:
         raise ValueError("h must be a time scalar")
     hm = h_sec.magnitude
     try:
