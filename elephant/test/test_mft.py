@@ -167,7 +167,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         target = self.target_points
 
         result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s,
-                                          5, 1000, dt=1 * pq.s)
+                                          5, 10000, dt=1 * pq.s)
         self.assertNotIsInstance(result, pq.Quantity)
         # assert_array_almost_equal(res, target, decimal=0)
 
@@ -177,7 +177,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         result_concatenated = np.sort(result_concatenated)*pq.s
         assert_allclose(result_concatenated[:3], target[:3], rtol=0,
                         atol=5*pq.s)
-
-
+                        
+                        
 if __name__ == '__main__':
     unittest.main()
