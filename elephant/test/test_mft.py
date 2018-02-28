@@ -134,9 +134,9 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st * pq.s, 2.1 * pq.s, 5,
                                        100, dt=0.5 * pq.s)
-        #assert not isinstance(res, pq.Quantity)
+        self.assertNotIsInstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
- 
+
     def test_MultipleFilterAlgorithm_with_published_data(self):
         
         def gamma_train(k, teta, tmax):
@@ -169,7 +169,6 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s,
                                           5, 10000, dt=1 * pq.s)
         self.assertNotIsInstance(result, pq.Quantity)
-        # assert_array_almost_equal(res, target, decimal=0)
 
         result_concatenated = []
         for i in result:

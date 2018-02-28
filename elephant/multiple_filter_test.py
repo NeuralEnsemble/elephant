@@ -405,12 +405,14 @@ def _filter(t, h, spk):
     try:
         t_sec = t.rescale(u)
     except AttributeError:
-        raise ValueError("t must be a quanitities object")
+
+        raise ValueError("t must be a quantities object")
     tm = t_sec.magnitude
     try:
         h_sec = h.rescale(u)
     except AttributeError:
-        raise ValueError("h must be a time quantity")
+
+        raise ValueError("h must be a time scalar")
     hm = h_sec.magnitude
     try:
         spk = spk.rescale(u)
