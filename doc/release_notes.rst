@@ -4,7 +4,7 @@ Release Notes
 
 Elephant 0.4.2 release notes
 ===========================
-February 27rd 2018
+March 1st 2018
 
 New functions
 =============
