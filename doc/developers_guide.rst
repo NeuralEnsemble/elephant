@@ -184,6 +184,8 @@ Making a release
 First check that the version string (in :file:`elephant/__init__.py`, :file:`setup.py`,
 :file:`doc/conf.py` and :file:`doc/install.rst`) is correct.
 
+Second check that the copyright statement (in :file:`LICENCE.txt`, :file:`doc/conf.py`) is correct.
+
 To build a source package::
 
     $ python setup.py sdist
