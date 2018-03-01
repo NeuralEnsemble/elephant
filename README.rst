@@ -19,5 +19,5 @@ Code status
    :target: https://readthedocs.org/projects/elephant/?badge=latest
    :alt: Documentation Status
 
-:copyright: Copyright 2014-2015 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2018 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD License, see LICENSE.txt for details.
