@@ -7,6 +7,15 @@ Given a list of Neo Spiketrain objects, assumed to be recorded in parallel, the
 SPADE analysis can be applied as demonstrated in this short toy example of 10
 artificial spike trains of exhibiting fully synchronous events of order 10.
 
+This modules relies on the implementation of the fp-growth algorithm contained
+in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
+and should be available in the spade_src folder (elephant/spade_src/).
+If the fim.so module is not present in the correct location or cannot be 
+imported (only available for linux OS) SPADE will make use of a python 
+implementation of the fast fca algorithm contained in 
+elephant/spade_src/fast_fca.py, which is about 10 times slower.
+
+
 import elephant.spade
 import elephant.spike_train_generation
 import quantities as pq
@@ -68,7 +77,9 @@ try:
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
     HAVE_FIM = False
-    warnings.warn('You are using the python implementation of fast fca')
+    warnings.warn(
+        'fim.so not found in elephant/spade_src folder,' +
+        'you are using the python implementation of fast fca')
 from elephant.spade_src import fast_fca
 
 
