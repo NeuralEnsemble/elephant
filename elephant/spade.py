@@ -7,6 +7,15 @@ Given a list of Neo Spiketrain objects, assumed to be recorded in parallel, the
 SPADE analysis can be applied as demonstrated in this short toy example of 10
 artificial spike trains of exhibiting fully synchronous events of order 10.
 
+This modules relies on the implementation of the fp-growth algorithm contained
+in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
+and should be available in the spade_src folder (elephant/spade_src/).
+If the fim.so module is not present in the correct location or cannot be 
+imported (only available for linux OS) SPADE will make use of a python 
+implementation of the fast fca algorithm contained in 
+elephant/spade_src/fast_fca.py, which is about 10 times slower.
+
+
 import elephant.spade
 import elephant.spike_train_generation
 import quantities as pq
@@ -56,6 +65,7 @@ import numpy as np
 import time
 import quantities as pq
 import warnings
+warnings.simplefilter('once', UserWarning)
 try:
     from mpi4py import MPI  # for parallelized routines
     HAVE_MPI = True
@@ -65,9 +75,11 @@ except ImportError:  # pragma: no cover
 try:
     from elephant.spade_src import fim
     HAVE_FIM = True
-    # raise ImportError
 except ImportError:  # pragma: no cover
     HAVE_FIM = False
+    warnings.warn(
+        'fim.so not found in elephant/spade_src folder,' +
+        'you are using the python implementation of fast fca')
 from elephant.spade_src import fast_fca
 
 
@@ -446,7 +458,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # By default, set the maximum pattern size to the maximum number of
     # spikes in a window
     if max_spikes is None:
-        max_spikes = int(np.max(np.sum(rel_matrix, axis=1)))
+        max_spikes = np.max((int(np.max(np.sum(rel_matrix, axis=1))),
+                            min_spikes + 1))
     # By default, set maximum number of occurrences to number of non-empty
     # windows
     if max_occ is None:
@@ -539,7 +552,7 @@ def _build_context(binary_matrix, winlen):
         rel_matrix[w, :] = times
         # appending to the transactions spike idx (fast_fca input) of the
         # current window (fpgrowth input)
-        transactions.append(attributes[times])
+        transactions.append(list(attributes[times]))
     # Return context and rel_matrix
     return context, transactions, rel_matrix
 
@@ -626,29 +639,33 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     '''
     # By default, set the maximum pattern size to the number of spiketrains
     if max_z is None:
-        max_z = np.max([len(tr) for tr in transactions]) + 1
+        max_z = np.max((np.max([len(tr) for tr in transactions]), min_z + 1))
     # By default set maximum number of data to number of bins
     if max_c is None:
-        max_c = len(transactions) + 1
-    if report != '#' or min_neu > 1:
+        max_c = len(transactions)
+    if min_neu >= 1:
         if min_neu < 1:
             raise AttributeError('min_neu must be an integer >=1')
         # Inizializing outputs
         concepts = []
         if report == '#':
-            spec_matrix = np.zeros((max_z, max_c))
+            spec_matrix = np.zeros((max_z + 1, max_c + 1))
         if report == '3d#':
-            spec_matrix = np.zeros((max_z, max_c, winlen))
+            spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
         spectrum = []
         # Mining the data with fpgrowth algorithm
-        fpgrowth_output = fim.fpgrowth(
-            tracts=transactions,
-            target=target,
-            supp=-min_c,
-            min=min_z,
-            max=max_z,
-            report='a',
-            algo='s')
+        if np.unique(transactions, return_counts=True)[1][0] == len(
+                transactions):
+            fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
+        else:
+            fpgrowth_output = fim.fpgrowth(
+                tracts=transactions,
+                target=target,
+                supp=-min_c,
+                zmin=min_z,
+                zmax=max_z,
+                report='a',
+                algo='s')
         # Applying min/max conditions and computing extent (window positions)
         fpgrowth_output = list(filter(
             lambda c: _fpgrowth_filter(
@@ -673,17 +690,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             spectrum = np.transpose(np.where(spec_matrix != 0))
             del spec_matrix
             return spectrum
-    # Computing 2d spectrum as output of FIM
-    elif report == '#' and min_neu == 1:
-        spectrum = fim.fpgrowth(
-            tracts=transactions,
-            target=target,
-            supp=-min_c,
-            min=min_z,
-            max=max_z,
-            report=report,
-            algo='s')
-        return [(z,c) for (z,c,count) in spectrum]
     else:
         raise AttributeError('min_neu must be an integer >=1')
 
@@ -696,7 +702,7 @@ def _fpgrowth_filter(concept, winlen, max_c, min_neu):
     keep_concepts = len(
         np.unique(
             np.array(
-                concept[0]) // winlen)) >= min_neu and concept[1][0] <= max_c
+                concept[0]) // winlen)) >= min_neu and concept[1] <= max_c
     return keep_concepts
 
 

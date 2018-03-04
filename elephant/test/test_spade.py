@@ -6,22 +6,21 @@ Unit tests for the spade module.
 """
 from __future__ import division
 import unittest
-import os
-import warnings
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
+from numpy.testing.utils import assert_array_equal
 import quantities as pq
-import elephant.spike_train_generation as stg
 import elephant.spade as spade
 import elephant.conversion as conv
 import elephant.spike_train_generation as stg
+
 try:
-    import fim
+    from elephant.spade_src import fim
     HAVE_FIM = True
 except ImportError:
     HAVE_FIM = False
+
 
 class SpadeTestCase(unittest.TestCase):
     def setUp(self):

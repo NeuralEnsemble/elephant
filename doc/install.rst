@@ -73,8 +73,8 @@ To download and install manually, download the latest package from http://pypi.p
 
 Then::
 
-    $ tar xzf elephant-0.4.2.tar.gz
-    $ cd elephant-0.4.2
+    $ tar xzf elephant-0.4.3.tar.gz
+    $ cd elephant-0.4.3
     $ python setup.py install
     
 or::
