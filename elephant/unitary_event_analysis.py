@@ -564,7 +564,7 @@ def gen_pval_anal(
             if len(n_emp) > 1:
                 raise ValueError(
                     'in surrogate method the p_value can be calculated only for one pattern!')
-            return np.sum(exp_dist[n_emp[0]:])
+            return np.sum(exp_dist[int(n_emp[0]):])
 
     return pval, n_exp
 

@@ -30,7 +30,7 @@ class KCSD1D_TestCase(unittest.TestCase):
         temp_signals = []
         for ii in range(len(self.pots)):
             temp_signals.append(self.pots[ii])
-        self.an_sigs = neo.AnalogSignal(temp_signals * pq.mV,
+        self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
                                        sampling_rate=1000 * pq.Hz)
         chidx = neo.ChannelIndex(range(len(self.pots)))
         chidx.analogsignals.append(self.an_sigs)
@@ -80,7 +80,7 @@ class KCSD2D_TestCase(unittest.TestCase):
         temp_signals = []
         for ii in range(len(self.pots)):
             temp_signals.append(self.pots[ii])
-        self.an_sigs = neo.AnalogSignal(temp_signals * pq.mV,
+        self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
                                        sampling_rate=1000 * pq.Hz)
         chidx = neo.ChannelIndex(range(len(self.pots)))
         chidx.analogsignals.append(self.an_sigs)
@@ -144,7 +144,7 @@ class KCSD3D_TestCase(unittest.TestCase):
         temp_signals = []
         for ii in range(len(self.pots)):
             temp_signals.append(self.pots[ii])
-        self.an_sigs = neo.AnalogSignal(temp_signals * pq.mV,
+        self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
                                        sampling_rate=1000 * pq.Hz)
         chidx = neo.ChannelIndex(range(len(self.pots)))
         chidx.analogsignals.append(self.an_sigs)

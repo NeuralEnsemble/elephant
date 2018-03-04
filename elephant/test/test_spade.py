@@ -16,6 +16,7 @@ import quantities as pq
 import elephant.spike_train_generation as stg
 import elephant.spade as spade
 import elephant.conversion as conv
+import elephant.spike_train_generation as stg
 try:
     import fim
     HAVE_FIM = True
@@ -35,7 +36,11 @@ class SpadeTestCase(unittest.TestCase):
         self.min_occ = 4
         self.min_spikes = 4
         self.min_neu = 4
-        # Tet data parameters
+        # Test data parameters
+        # CPP parameters
+        self.n_neu = 100
+        self.amplitude = [0] * self.n_neu + [1]
+        self.cpp = stg.cpp(rate=3*pq.Hz, A=self.amplitude, t_stop=5*pq.s)
         # Number of patterns' occurrences
         self.n_occ1 = 10
         self.n_occ2 = 12
@@ -92,6 +97,26 @@ class SpadeTestCase(unittest.TestCase):
             list(self.occ1), list(self.occ2), list(self.occ3)]
         self.lags_msip = [self.lags1, self.lags2, self.lags3]
         self.patt_psr = self.patt3 + [self.patt3[-1][:3]]
+
+    # Testing cpp
+    def test_spade_cpp(self):
+        output_cpp = spade.spade(self.cpp, self.binsize,
+                                  1,
+                                  n_subsets=self.n_subset,
+                                  stability_thresh=self.stability_thresh,
+                                  n_surr=self.n_surr, alpha=self.alpha,
+                                  psr_param=self.psr_param,
+                                  output_format='patterns')['patterns']
+        elements_cpp = []
+        lags_cpp = []
+        # collecting spade output
+        for out in output_cpp:
+            elements_cpp.append(sorted(out['neurons']))
+            lags_cpp.append(list(out['lags'].magnitude))
+        # check neurons in the patterns
+        assert_array_equal(elements_cpp, [range(self.n_neu)])
+        # check the lags
+        assert_array_equal(lags_cpp, [np.array([0]*(self.n_neu - 1))])
 
     # Testing with multiple patterns input
     def test_spade_msip(self):

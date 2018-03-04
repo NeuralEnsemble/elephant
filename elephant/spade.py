@@ -63,7 +63,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    import fim
+    from elephant.spade_src import fim
     HAVE_FIM = True
     # raise ImportError
 except ImportError:  # pragma: no cover
@@ -443,13 +443,15 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
     context, transactions, rel_matrix = _build_context(binary_matrix, winlen)
-    # By default, set the maximum pattern size to the number of spiketrains
+    # By default, set the maximum pattern size to the maximum number of
+    # spikes in a window
     if max_spikes is None:
-        max_spikes = np.max(np.sum(binary_matrix, axis=-1)) + 1
-    # By default set maximum number of data to number of bins
+        max_spikes = int(np.max(np.sum(rel_matrix, axis=1)))
+    # By default, set maximum number of occurrences to number of non-empty
+    # windows
     if max_occ is None:
-        max_occ = np.max(np.sum(binary_matrix, axis=1)) + 1
-    # check if fim.so available and use it
+        max_occ = int(np.sum(np.sum(rel_matrix, axis=1)>0))
+    # Check if fim.so available and use it
     if HAVE_FIM:
         # Return the output
         mining_results = _fpgrowth(
