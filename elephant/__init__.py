@@ -20,7 +20,7 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               neural_trajectory,)
+               neural_trajectory,
                spade)
 
 try:
