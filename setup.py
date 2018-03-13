@@ -3,12 +3,10 @@
 from setuptools import setup
 import os
 import sys
-from os import listdir
 try:
     from urllib.request import urlretrieve
 except ImportError:
     from urllib import urlretrieve
-
 
 long_description = open("README.rst").read()
 install_requires = ['neo>=0.5.0',
@@ -20,10 +18,6 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
                   'docs': ['numpydoc>=0.5',
                            'sphinx>=1.2.2'],
                   'tests': ['nose>=1.3.3']}
-
-package_dirs = ['current_source_density_src', 
-                'neural_trajectory_src', 
-                'spade_src']
 
 # spade specific
 is_64bit = sys.maxsize > 2 ** 32
@@ -43,14 +37,23 @@ else:
     else:
         urlretrieve('http://www.borgelt.net/bin32/py2/fim.so',
                     'elephant/spade_src/fim.so')
+
 setup(
     name="elephant",
     version='0.4.3',
     packages=['elephant', 'elephant.test'],
-    package_data={
-        'elephant': [os.path.join(i, j) for i in package_dirs for j in
-                     listdir(i) if
-                     j.endswith(('.py', '.md', 'mat', 'LICENSE', '.so'))]},
+    package_data={'elephant': [
+        os.path.join('current_source_density_src', 'test_data.mat'),
+        os.path.join('current_source_density_src', 'LICENSE'),
+        os.path.join('current_source_density_src', 'README.md'),
+        os.path.join('current_source_density_src', '*.py'),
+        os.path.join('spade_src', '*.py'),
+        os.path.join('spade_src', 'LICENSE'),
+        os.path.join('spade_src', '*.so')
+        os.path.join('neural_trajectory_src',  '*.py'),
+        os.path.join('neural_trajectory_src',  '*.md')
+    ]},
+    
     install_requires=install_requires,
     extras_require=extras_require,
 
