@@ -4,6 +4,11 @@ from setuptools import setup
 import os
 import sys
 from os import listdir
+try:
+    from urllib.request import urlretrieve
+except ImportError:
+    from urllib import urlretrieve
+
 
 long_description = open("README.rst").read()
 install_requires = ['neo>=0.5.0',
