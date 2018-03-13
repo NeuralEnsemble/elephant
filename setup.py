@@ -2,6 +2,7 @@
 
 from setuptools import setup
 import os
+import sys
 from os import listdir
 
 long_description = open("README.rst").read()
