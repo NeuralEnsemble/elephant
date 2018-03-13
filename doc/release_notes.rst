@@ -2,6 +2,40 @@
 Release Notes
 *************
 
+Elephant 0.4.3 release notes
+===========================
+March 2nd 2018
+
+Other changes
+=============
+* Bug fixes in `spade` module:
+  * Fixed an incompatibility with the latest version of an external library
+
+Elephant 0.4.2 release notes
+===========================
+March 1st 2018
+
+New functions
+=============
+* `spike_train_generation` module:
+  * **inhomogeneous_poisson()** function
+* Modules for Spatio Temporal Pattern Detection (SPADE) `spade_src`:
+  * Module SPADE: `spade.py`
+* Module `statistics.py`:
+  * Added CV2 (coefficient of variation for non-stationary time series)
+* Module `spike_train_correlation.py`:
+  * Added normalization in **cross-correlation histogram()** (CCH)
+
+Other changes
+=============
+* Adapted the `setup.py` to automatically install the spade modules including the compiled `C` files `fim.so`
+* Included testing environment for MPI in `travis.yml`
+* Changed function arguments  in `current_source_density.py` to `neo.AnalogSignal` instead list of `neo.AnalogSignal` objects
+* Fixes to travis and setup configuration files
+* Fixed bug in ISI function `isi()`, `statistics.py` module
+* Fixed bug in `dither_spikes()`, `spike_train_surrogates.py`
+* Minor bug fixes
+ 
 Elephant 0.4.1 release notes
 ============================
 March 23rd 2017

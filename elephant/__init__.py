@@ -20,7 +20,8 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               neural_trajectory)
+               neural_trajectory,)
+               spade)
 
 try:
     from . import pandas_bridge
@@ -28,4 +29,4 @@ try:
 except ImportError:
     pass
 
-__version__ = "0.4.1"
+__version__ = "0.4.3"

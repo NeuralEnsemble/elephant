@@ -5,7 +5,8 @@ Unit tests for the statistics module.
 :copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-
+from __future__ import division
+    
 import unittest
 
 import neo
@@ -17,6 +18,7 @@ import scipy.integrate as spint
 import elephant.statistics as es
 import elephant.kernels as kernels
 import warnings
+
 
 class isi_TestCase(unittest.TestCase):
     def setUp(self):
@@ -337,6 +339,40 @@ class LVTestCase(unittest.TestCase):
         self.assertRaises(AttributeError, es.lv, [])
         self.assertRaises(AttributeError, es.lv, 1)
         self.assertRaises(ValueError, es.lv, np.array([seq, seq]))
+
+
+class CV2TestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_seq = [1, 28,  4, 47,  5, 16,  2,  5, 21, 12,
+                         4, 12, 59,  2,  4, 18, 33, 25,  2, 34,
+                         4,  1,  1, 14,  8,  1, 10,  1,  8, 20,
+                         5,  1,  6,  5, 12,  2,  8,  8,  2,  8,
+                         2, 10,  2,  1,  1,  2, 15,  3, 20,  6,
+                         11, 6, 18,  2,  5, 17,  4,  3, 13,  6,
+                         1, 18,  1, 16, 12,  2, 52,  2,  5,  7,
+                         6, 25,  6,  5,  3, 15,  4,  3, 16,  3,
+                         6,  5, 24, 21,  3,  3,  4,  8,  4, 11,
+                         5,  7,  5,  6,  8, 11, 33, 10,  7,  4]
+
+        self.target = 1.0022235296529176
+
+    def test_cv2_with_quantities(self):
+        seq = pq.Quantity(self.test_seq, units='ms')
+        assert_array_almost_equal(es.cv2(seq), self.target, decimal=9)
+
+    def test_cv2_with_plain_array(self):
+        seq = np.array(self.test_seq)
+        assert_array_almost_equal(es.cv2(seq), self.target, decimal=9)
+
+    def test_cv2_with_list(self):
+        seq = self.test_seq
+        assert_array_almost_equal(es.cv2(seq), self.target, decimal=9)
+
+    def test_cv2_raise_error(self):
+        seq = self.test_seq
+        self.assertRaises(AttributeError, es.cv2, [])
+        self.assertRaises(AttributeError, es.cv2, 1)
+        self.assertRaises(AttributeError, es.cv2, np.array([seq, seq]))
 
 
 class RateEstimationTestCase(unittest.TestCase):

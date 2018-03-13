@@ -5,7 +5,7 @@ import os
 from os import listdir
 
 long_description = open("README.rst").read()
-install_requires = ['neo>0.3.3',
+install_requires = ['neo>=0.5.0',
                     'numpy>=1.8.2',
                     'quantities>=0.10.1',
                     'scipy>=0.14.0',
@@ -15,15 +15,34 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
                            'sphinx>=1.2.2'],
                   'tests': ['nose>=1.3.3']}
 
-package_dirs = ['current_source_density_src', 'neural_trajectory_src']
+package_dirs = ['current_source_density_src', 'neural_trajectory_src', 'spade_src']
+
+# spade specific
+is_64bit = sys.maxsize > 2 ** 32
+is_python3 = float(sys.version[0:3]) > 2.7
+
+if is_python3:
+    if is_64bit:
+        urlretrieve('http://www.borgelt.net/bin64/py3/fim.so',
+                    'elephant/spade_src/fim.so')
+    else:
+        urlretrieve('http://www.borgelt.net/bin32/py3/fim.so',
+                    'elephant/spade_src/fim.so')
+else:
+    if is_64bit:
+        urlretrieve('http://www.borgelt.net/bin64/py2/fim.so',
+                    'elephant/spade_src/fim.so')
+    else:
+        urlretrieve('http://www.borgelt.net/bin32/py2/fim.so',
+                    'elephant/spade_src/fim.so')
 setup(
     name="elephant",
-    version='0.4.1',
+    version='0.4.3',
     packages=['elephant', 'elephant.test'],
     package_data={
         'elephant': [os.path.join(i, j) for i in package_dirs for j in
                      listdir(i) if
-                     j.endswith(('.py', '.md', 'mat', 'LICENSE'))]},
+                     j.endswith(('.py', '.md', 'mat', 'LICENSE', '.so'))]},
     install_requires=install_requires,
     extras_require=extras_require,
 

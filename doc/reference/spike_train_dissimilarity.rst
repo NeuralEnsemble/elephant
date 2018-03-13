@@ -1,5 +1,5 @@
 =================================================
-Spike Train Dissimilarity / Spike Train Synchrony
+Spike train dissimilarity / spike train synchrony
 =================================================
 
 

@@ -181,8 +181,10 @@ Making a release
 
 .. Add a section in /doc/releases/<version>.rst for the release.
 
-First check that the version string (in :file:`elephant/__init__.py`, :file:`setup.py`,
-:file:`doc/conf.py` and :file:`doc/install.rst`) is correct.
+First, check that the version string (in :file:`elephant/__init__.py`, :file:`setup.py`,
+:file:`doc/conf.py`, and :file:`doc/install.rst`) is correct.
+
+Second, check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
 
 To build a source package::
 
