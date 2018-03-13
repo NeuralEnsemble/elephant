@@ -21,7 +21,9 @@ extras_require = {'pandas': ['pandas>=0.14.1'],
                            'sphinx>=1.2.2'],
                   'tests': ['nose>=1.3.3']}
 
-package_dirs = ['current_source_density_src', 'neural_trajectory_src', 'spade_src']
+package_dirs = ['elephant/current_source_density_src', 
+                'elephant/neural_trajectory_src', 
+                'elephant/spade_src']
 
 # spade specific
 is_64bit = sys.maxsize > 2 ** 32
