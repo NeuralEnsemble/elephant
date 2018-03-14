@@ -173,7 +173,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         result_concatenated = []
         for i in result:
             result_concatenated = np.hstack([result_concatenated, i])
-        result_concatenated = np.sort(result_concatenated)*pq.s
+        result_concatenated = np.sort(result_concatenated)*pq.s       
         assert_allclose(result_concatenated[:3], target[:3], rtol=0,
                         atol=5*pq.s)
                         
