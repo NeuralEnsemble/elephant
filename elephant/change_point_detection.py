@@ -124,7 +124,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
             cp_index = np.argmax(differences)
             # from index to time
             cp = cp_index * dt_temp + h  
-            print("detected point {0}".format(cp), "with filter {0}".format(h))
+            #print("detected point {0}".format(cp), "with filter {0}".format(h))
             # before to repet the procedure the h-neighbourg of 'cp' detected 
             # is cut, because rate changes within it are explained by this cp
             differences[np.where(
@@ -196,7 +196,7 @@ def _brownian_motion(t_in, t_fin, x_in, dt):
     return s + x_in
 
 
-def _limit_processes(window_sizes, t_final):
+def _limit_processes(window_sizes, t_final, dt):
     """
     Generate the limit processes (depending only on t_final and h), one for
     each `h` in H. The distribution of maxima of these processes is used to
@@ -230,18 +230,23 @@ def _limit_processes(window_sizes, t_final):
         t_final_sec = t_final.rescale(u)
     except ValueError:
         raise ValueError("t_fin must be a time quantity")
-         
+    
+    try:
+        dt_sec = dt.rescale(u)
+    except ValueError:
+        raise ValueError("dt must be a time quantity")
+    
     T = t_final_sec #- t_final_sec % (dt_sec)       
-    w = _brownian_motion(0 * pq.s, T, 0, 1 * u)
+    w = _brownian_motion(0 * pq.s, T, 0, dt)
     
     for h in window_sizes_mag:
         # BM on [h,T-h], shifted in time t-->t+h
-        brownian_right = w[int(2 * h):]
+        brownian_right = w[int(2 * h/dt_sec):]
         # BM on [h,T-h], shifted in time t-->t-h                     
-        brownian_left = w[:int(-2 * h)]
+        brownian_left = w[:int(-2 * h/dt_sec)]
         # BM on [h,T-h]                       
-        brownian_center = w[int(h):int(-h)]  
-
+        brownian_center = w[int(h/dt_sec):int(-h/dt_sec)]  
+        #print len(brownian_center), len(brownian_left), len(w), int(h), int(-h)
         modul = np.abs(brownian_right + brownian_left - 2 * brownian_center)
         limit_process_h = modul / (np.sqrt(2 * h))
         limit_processes.append(limit_process_h)
@@ -329,7 +334,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
 
     for i in range(n_surrogates):
             mh_star = []
-            simu = _limit_processes(window_sizes, t_final)
+            simu = _limit_processes(window_sizes, t_final, dt)
             for i, h in enumerate(window_sizes_mag):
                 # max over time of the limit process generated with window h
                 m_h = np.max(simu[i])
@@ -338,7 +343,6 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
 
     maxima_matrix = np.asanyarray(maxima_matrix)
     matrix = maxima_matrix.T
-
     # matrix normalization by mean and variance of the limit process, in order
     # to give, for every h, the same impact on the global maximum
     matrix_normalized = []
@@ -359,7 +363,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
     test_quantile = np.percentile(great_maxs, 100 - alpha)
     null_parameters = [window_sizes, null_mean, null_var]
     test_param = np.asanyarray(null_parameters)
-    print('Q', test_quantile)
+    #print('Q', test_quantile)
 
     return test_quantile, test_param
 

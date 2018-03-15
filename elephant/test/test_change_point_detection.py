@@ -4,12 +4,11 @@ import numpy as np
 import quantities as pq
 
 import unittest
-import elephant.multiple_filter_test as mft
+import elephant.change_point_detection as mft
 from numpy.testing.utils import assert_array_almost_equal, assert_allclose
                                      
                                      
-np.random.seed(13)
-
+#np.random.seed(13)
 
 class FilterTestCase(unittest.TestCase):
     def setUp(self):
@@ -136,9 +135,8 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
                                        100, dt=0.5 * pq.s)
         self.assertNotIsInstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
-	
- 
-    def test_MultipleFilterAlgorithm_with_published_data(self):
+	 
+    def test_MultipleFilterAlgorithm_with_longdata(self):
         
         def gamma_train(k, teta, tmax):
             x = np.random.gamma(k, teta, int(tmax * (k * teta) ** (-1) * 3))
@@ -155,16 +153,27 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
             s4 = gamma_train(k4, teta4, T) + c1 + c2 + c3
             return np.concatenate((s1, s2, s3, s4)), [s1[-1], s2[-1], s3[-1]]
 
-        st = self.h1 = alternative_hypothesis(1, 1 / 8., 150, 2, 1 / 26., 30,
-                                              1, 1 / 18., 320,
+        st = self.h1 = alternative_hypothesis(1, 1 / 4., 150, 2, 1 / 26., 30,
+                                              1, 1 / 36., 320,
                                               2, 1 / 33., 200)[0]
 
         window_size = [10, 25, 50, 75, 100, 125, 150] * pq.s
         self.target_points = [149, 182, 500] * pq.s
         target = self.target_points
-
-        result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s,
-                                          5, 10000, dt=1 * pq.s)
+        # to speed up the test, the following `test_param` and `test_quantile` 
+        # paramters have been calculated offline using the function:
+        # empirical_parameters([10, 25, 50, 75, 100, 125, 150]*pq.s,700*pq.s,5, 
+        #                                                                10000)
+        # the user should do the same, if the metohd as to be applied to several
+        # spike trains of the same length `T` and with the same set of window.
+        test_param = np.array([[10., 25.,  50.,  75.,   100., 125., 150.],
+                            [3.167, 2.955,  2.721, 2.548, 2.412, 2.293, 2.180],
+                            [0.150, 0.185, 0.224, 0.249, 0.269, 0.288, 0.301]])
+        test_quantile = 2.75
+                        
+        result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s, 5,
+        10000, test_quantile=test_quantile, test_param=test_param, dt=1 * pq.s)
+        
         self.assertNotIsInstance(result, pq.Quantity)
 
         result_concatenated = []
@@ -173,7 +182,8 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         result_concatenated = np.sort(result_concatenated)*pq.s       
         assert_allclose(result_concatenated[:3], target[:3], rtol=0,
                         atol=5*pq.s)
-                        
-                        
+        print 'detected {0} cps: {1}'.format(len(result_concatenated),
+                                                           result_concatenated)
+                                                
 if __name__ == '__main__':
     unittest.main()
