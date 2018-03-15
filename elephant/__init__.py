@@ -19,13 +19,13 @@ from . import (statistics,
                current_source_density,
                sta,
                conversion,
-               neo_tools,
-               neural_trajectory,
+               neo_tools,               
                spade)
 
 try:
     from . import pandas_bridge
     from . import asset
+    from . import neural_trajectory
 except ImportError:
     pass
 
