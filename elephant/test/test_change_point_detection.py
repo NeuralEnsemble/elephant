@@ -113,6 +113,17 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95]
         self.targ_h05_dt05 = [1.5 * pq.s]
+        
+        # to speed up the test, the following `test_param` and `test_quantile` 
+        # paramters have been calculated offline using the function:
+        # empirical_parameters([10, 25, 50, 75, 100, 125, 150]*pq.s,700*pq.s,5, 
+        #                                                                10000)
+        # the user should do the same, if the metohd as to be applied to several
+        # spike trains of the same length `T` and with the same set of window.
+        self.test_param = np.array([[10., 25.,  50.,  75.,   100., 125., 150.],
+                            [3.167, 2.955,  2.721, 2.548, 2.412, 2.293, 2.180],
+                            [0.150, 0.185, 0.224, 0.249, 0.269, 0.288, 0.301]])
+        self.test_quantile = 2.75
 
     def test_MultipleFilterAlgorithm_with_spiketrain_h05(self):
         st = neo.SpikeTrain(self.test_array, units='s', t_stop=2.1)
@@ -158,22 +169,12 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
                                               2, 1 / 33., 200)[0]
 
         window_size = [10, 25, 50, 75, 100, 125, 150] * pq.s
-        self.target_points = [149, 182, 500] * pq.s
+        self.target_points = [150, 180, 500] * pq.s
         target = self.target_points
-        # to speed up the test, the following `test_param` and `test_quantile` 
-        # paramters have been calculated offline using the function:
-        # empirical_parameters([10, 25, 50, 75, 100, 125, 150]*pq.s,700*pq.s,5, 
-        #                                                                10000)
-        # the user should do the same, if the metohd as to be applied to several
-        # spike trains of the same length `T` and with the same set of window.
-        test_param = np.array([[10., 25.,  50.,  75.,   100., 125., 150.],
-                            [3.167, 2.955,  2.721, 2.548, 2.412, 2.293, 2.180],
-                            [0.150, 0.185, 0.224, 0.249, 0.269, 0.288, 0.301]])
-        test_quantile = 2.75
                         
         result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s, 5,
-        10000, test_quantile=test_quantile, test_param=test_param, dt=1 * pq.s)
-        
+        10000, test_quantile=self.test_quantile, test_param=self.test_param, 
+                                                                   dt=1 * pq.s)
         self.assertNotIsInstance(result, pq.Quantity)
 
         result_concatenated = []

@@ -246,7 +246,7 @@ def _limit_processes(window_sizes, t_final, dt):
         brownian_left = w[:int(-2 * h/dt_sec)]
         # BM on [h,T-h]                       
         brownian_center = w[int(h/dt_sec):int(-h/dt_sec)]  
-        #print len(brownian_center), len(brownian_left), len(w), int(h), int(-h)
+        
         modul = np.abs(brownian_right + brownian_left - 2 * brownian_center)
         limit_process_h = modul / (np.sqrt(2 * h))
         limit_processes.append(limit_process_h)
