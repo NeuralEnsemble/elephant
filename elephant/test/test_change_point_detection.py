@@ -136,20 +136,17 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
                                        100, dt=0.5 * pq.s)
         self.assertNotIsInstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
-
+	
+ 
     def test_MultipleFilterAlgorithm_with_published_data(self):
         
         def gamma_train(k, teta, tmax):
-            x = []
-
-            for i in range(int(tmax * (k * teta) ** (-1) * 3)):
-                x.append(np.random.gamma(k, teta))
-
+            x = np.random.gamma(k, teta, int(tmax * (k * teta) ** (-1) * 3))
             s = np.cumsum(x)
             idx = np.where(s < tmax)
             s = s[idx]  # gamma process
             return s
-
+	
         def alternative_hypothesis(k1, teta1, c1, k2, teta2, c2, k3, teta3, c3,
                                    k4, teta4, T):
             s1 = gamma_train(k1, teta1, c1)

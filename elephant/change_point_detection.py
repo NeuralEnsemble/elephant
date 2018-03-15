@@ -191,15 +191,12 @@ def _brownian_motion(t_in, t_fin, x_in, dt):
         raise ValueError("dt must be a time quantity")
     t_fin_m = t_fin_sec.magnitude
 
-    x = []
-    for i in range(int((t_fin_m - t_in_m) / dt_sec)):
-        x.append(np.random.normal(0, np.sqrt(dt_sec)))
-
+    x = np.random.normal(0, np.sqrt(dt_sec), int((t_fin_m - t_in_m) / dt_sec))
     s = np.cumsum(x)
     return s + x_in
 
 
-def _limit_processes(window_sizes, t_final, dt):
+def _limit_processes(window_sizes, t_final):
     """
     Generate the limit processes (depending only on t_final and h), one for
     each `h` in H. The distribution of maxima of these processes is used to
@@ -233,38 +230,26 @@ def _limit_processes(window_sizes, t_final, dt):
         t_final_sec = t_final.rescale(u)
     except ValueError:
         raise ValueError("t_fin must be a time quantity")
-    if dt is not None:
-        try:
-            dt_sec = dt.rescale(u)
-            dtm = dt.magnitude
-        except ValueError:
-            raise ValueError("dt must be a time quantity")
-
+         
+    T = t_final_sec #- t_final_sec % (dt_sec)       
+    w = _brownian_motion(0 * pq.s, T, 0, 1 * u)
+    
     for h in window_sizes_mag:
-        # automatic setting of dt
-        if dt is None:
-            dtm = h / 20.
-            dt_sec = dtm * pq.s
-        else:
-            dtm = dt.magnitude
-
-        T = t_final_sec - t_final_sec % (dt_sec)
-        w = _brownian_motion(0 * pq.s, T, 0, dtm * u)
         # BM on [h,T-h], shifted in time t-->t+h
-        brownian_right = w[int(2 * h / dtm):]
+        brownian_right = w[int(2 * h):]
         # BM on [h,T-h], shifted in time t-->t-h                     
-        brownian_left = w[:int(-2 * h / dtm)]
+        brownian_left = w[:int(-2 * h)]
         # BM on [h,T-h]                       
-        brownian_center = w[int(h / dtm):int(-h / dtm)]  
+        brownian_center = w[int(h):int(-h)]  
 
-        modul = (brownian_right + brownian_left - 2 * brownian_center)
+        modul = np.abs(brownian_right + brownian_left - 2 * brownian_center)
         limit_process_h = modul / (np.sqrt(2 * h))
         limit_processes.append(limit_process_h)
 
     return limit_processes
 
 
-def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt):
+def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
     """
     This function generates the threshold and the null parameters.
     The`_filter_process_h` has been proved to converge (for t_fin, h-->infinity)
@@ -344,7 +329,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt):
 
     for i in range(n_surrogates):
             mh_star = []
-            simu = _limit_processes(window_sizes, t_final, dt)
+            simu = _limit_processes(window_sizes, t_final)
             for i, h in enumerate(window_sizes_mag):
                 # max over time of the limit process generated with window h
                 m_h = np.max(simu[i])
