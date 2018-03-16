@@ -116,6 +116,14 @@ class SpadeTestCase(unittest.TestCase):
         # check the lags
         assert_array_equal(lags_cpp, [np.array([0]*(self.n_neu - 1))])
 
+    # Testing spectrum cpp
+    def test_spade_cpp(self):
+        # Computing Spectrum
+        spectrum_cpp = spade.concepts_mining(self.cpp, self.binsize,
+                                  1,report='#')[0]
+        # Check spectrum
+        assert_array_equal(spectrum_cpp, [(len(self.cpp), len(self.cpp[0]), 1)])
+
     # Testing with multiple patterns input
     def test_spade_msip(self):
         output_msip = spade.spade(self.msip, self.binsize,
