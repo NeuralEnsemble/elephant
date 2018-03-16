@@ -313,7 +313,8 @@ def cv2(v):
 
 # sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
 # to finally be taken out of Elephant
-def sigma2kw(form):
+
+def sigma2kw(form): # pragma: no cover
     warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     if form.upper() == 'BOX':
@@ -332,14 +333,14 @@ def sigma2kw(form):
     return coeff
 
 
-def kw2sigma(form):
+def kw2sigma(form): # pragma: no cover
     warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     return 1/sigma2kw(form)
 
 
 # to finally be taken out of Elephant
-def make_kernel(form, sigma, sampling_period, direction=1):
+def make_kernel(form, sigma, sampling_period, direction=1): # pragma: no cover
     """
     Creates kernel functions for convolution.
 
@@ -506,7 +507,7 @@ def make_kernel(form, sigma, sampling_period, direction=1):
 # to finally be taken out of Elephant
 def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
                        sigma='auto', t_start=None, t_stop=None,
-                       acausal=True, trim=False):
+                       acausal=True, trim=False): # pragma: no cover
     """
     Estimate instantaneous firing rate by kernel convolution.
 
