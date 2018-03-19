@@ -118,7 +118,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         # paramters have been calculated offline using the function:
         # empirical_parameters([10, 25, 50, 75, 100, 125, 150]*pq.s,700*pq.s,5, 
         #                                                                10000)
-        # the user should do the same, if the metohd as to be applied to several
+        # the user should do the same, if the metohd has to be applied to several
         # spike trains of the same length `T` and with the same set of window.
         self.test_param = np.array([[10., 25.,  50.,  75.,   100., 125., 150.],
                             [3.167, 2.955,  2.721, 2.548, 2.412, 2.293, 2.180],
