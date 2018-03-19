@@ -183,8 +183,8 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         result_concatenated = np.sort(result_concatenated)*pq.s       
         assert_allclose(result_concatenated[:3], target[:3], rtol=0,
                         atol=5*pq.s)
-        print 'detected {0} cps: {1}'.format(len(result_concatenated),
-                                                           result_concatenated)
+        print('detected {0} cps: {1}'.format(len(result_concatenated),
+                                                           result_concatenated))
                                                 
 if __name__ == '__main__':
     unittest.main()
