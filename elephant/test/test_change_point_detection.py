@@ -169,7 +169,7 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
                                               2, 1 / 33., 200)[0]
 
         window_size = [10, 25, 50, 75, 100, 125, 150] * pq.s
-        self.target_points = [150, 180, 500] * pq.s
+        self.target_points = [150, 180, 500] 
         target = self.target_points
                         
         result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s, 5,
@@ -180,9 +180,9 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         result_concatenated = []
         for i in result:
             result_concatenated = np.hstack([result_concatenated, i])
-        result_concatenated = np.sort(result_concatenated)*pq.s       
+        result_concatenated = np.sort(result_concatenated)   
         assert_allclose(result_concatenated[:3], target[:3], rtol=0,
-                        atol=5*pq.s)
+                        atol=5)
         print('detected {0} cps: {1}'.format(len(result_concatenated),
                                                            result_concatenated))
                                                 
