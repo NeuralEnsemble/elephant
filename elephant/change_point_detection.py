@@ -16,8 +16,8 @@ window) is derived based on asymptotic considerations. The procedure is repeated
 for an arbitrary set of windows, with different size `h`.
 
 
-Example
--------
+Examples
+--------
 The following applies multiple_filter_test to a spike trains. 
 
     >>> import quantities as pq
@@ -36,8 +36,8 @@ The following applies multiple_filter_test to a spike trains.
 
 
 
-Reference
----------
+References
+----------
 Messer, M., Kirchner, M., Schiemann, J., Roeper, J., Neininger, R., & Schneider,
 G. (2014). A multiple filter test for the detection of rate changes in renewal
 processes with varying variance. The Annals of Applied Statistics, 8(4),2027-2067.
@@ -64,8 +64,8 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
     sliding the windows of step `dt`; at each step the difference between spike
     on the right and left window is calculated.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
         window_sizes : list of quantity objects
                     list that contains windows sizes
         spiketrain : neo.SpikeTrain, numpy array or list
@@ -157,8 +157,8 @@ def _brownian_motion(t_in, t_fin, x_in, dt):
     """
     Generate a Brownian Motion.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
         t_in : quantities,
             initial time
         t_fin : quantities,
@@ -198,8 +198,8 @@ def _limit_processes(window_sizes, t_final, dt):
     each window size `h` in H. The distribution of maxima of these processes
     is used to derive threshold `test_quantile` and parameters `test_param`.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
         window_sizes : list of quantities
             set of windows' size
         t_final : quantity object
@@ -256,8 +256,8 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
     test_quantile := alpha quantile of {max_(h in window_size)[
                                  max_(t in [h, t_final-h])_limit_process_h(t)]}
 
-    Parameter
-    ---------
+    Parameters
+    ----------
         window_sizes : list of quantity objects
             set of windows' size
         t_final : quantity object
@@ -360,8 +360,8 @@ def _filter(t, h, spk):
     The variance of this count can be expressed as a combination of mean and var
     of the I.S.I. lying inside the window.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
         h : quantity
             window's size
         t : quantity
@@ -439,8 +439,8 @@ def _filter_process(dt, h, spk, t_final, test_param):
     the `filter derivative process` by evaluating the function `_filter`
     in steps of `dt`.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
         h : quantity object
          window's size
         t_final : quantity,
@@ -454,8 +454,8 @@ def _filter_process(dt, h, spk, t_final, test_param):
                     the limit processes `Lh` are used to normalize the number
                     of elements inside the windows
 
-    Returns:
-    --------
+    Returns
+    -------
         time_domain : numpy array
                    time domain of the `filter derivative process`
         filter_process : array,
