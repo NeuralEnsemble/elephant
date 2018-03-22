@@ -359,8 +359,9 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
             if n_surr == 0:
                 pv_spec = []
             # Transfroming concepts to dictionary containing pattern infos
-            output['patterns'] = concept_output_to_patterns(concepts, pv_spec,
+            output['patterns'] = concept_output_to_patterns(concepts,
                                                             winlen, binsize,
+                                                            pv_spec,
                                                             data[0].t_start)
         else:
             output['patterns'] = concepts
@@ -671,13 +672,13 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                     np.prod(rel_matrix[:, intent], axis=1) == 1)[0])
             concepts.append((intent, extent))
             if report == '#':
-                spec_matrix[len(intent), supp] += 1
+                spec_matrix[len(intent) - 1, supp - 1] += 1
         del fpgrowth_output
         # Computing spectrum
         if report == '#':
             del concepts
             for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-                spectrum.append((z, c, int(spec_matrix[z, c])))
+                spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
             del spec_matrix
             return spectrum
         else:
@@ -776,13 +777,13 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         concepts.append((intent, extent))
         # computing spectrum
         if report == '#':
-            spec_matrix[len(intent), len(extent)] += 1
+            spec_matrix[len(intent) - 1, len(extent) - 1] += 1
     if report != '#':
         return concepts
     else:
         # returning spectrum
         for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-            spectrum.append((z, c, int(spec_matrix[z, c])))
+            spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
         return spectrum
 
 
@@ -1556,7 +1557,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0, min_spikes=
     return [p for i, p in enumerate(concepts) if selected[i]]
 
 
-def concept_output_to_patterns(concepts, pvalue_spectrum, winlen, binsize,
+def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
                                t_start=0 * pq.ms):
     '''
     Construction of dictionaries containing all the information about a pattern
@@ -1568,12 +1569,13 @@ def concept_output_to_patterns(concepts, pvalue_spectrum, winlen, binsize,
         Each element of the tuple correspond to a pattern and it is itself a
         tuple consisting of:
             ((spikes in the pattern), (occurrences of the patterns))
-    pvalue_spectrum: tuple
-        Contains a tuple of signatures and the corresponding p-value
     winlen: int
         Length (in bins) of the sliding window used for the analysis
-    t_start: int
-    t_start (in bins) of the analyzed spike trains
+    pvalue_spectrum: None or tuple
+        Contains a tuple of signatures and the corresponding p-value. If equal
+        to None all the pvalues are set to -1
+    t_start: Quantity 
+        t_start of the analyzed spike trains
 
     Returns
     --------
@@ -1615,9 +1617,9 @@ def concept_output_to_patterns(concepts, pvalue_spectrum, winlen, binsize,
             binsize + t_start
         # Signature (size, n occ) of the pattern
         output_dict['signature'] = (len(conc[0]), len(conc[1]))
-        # If an empty list is given in input to the pval spectrum the pvalue
+        # If None is given in input to the pval spectrum the pvalue
         # is set to -1 (pvalue spectrum not available)
-        if len(pvalue_spectrum) == 0:
+        if len(pvalue_spectrum) == None:
             output_dict['pvalue'] = -1
         # p-value assigned to the pattern from the pvalue spectrum
         else:
