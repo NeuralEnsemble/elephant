@@ -1617,7 +1617,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             binsize + t_start
         # Signature (size, n occ) of the pattern
         output_dict['signature'] = (len(conc[0]), len(conc[1]))
-        # If an empty list is given in input to the pval spectrum the pvalue
+        # If None is given in input to the pval spectrum the pvalue
         # is set to -1 (pvalue spectrum not available)
         if len(pvalue_spectrum) == None:
             output_dict['pvalue'] = -1
