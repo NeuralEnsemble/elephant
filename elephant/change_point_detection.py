@@ -29,7 +29,7 @@ The following applies multiple_filter_test to a spike trains.
     >>> st = neo.SpikeTrain(test_array, units='s', t_stop = 2.1)
     >>> window_size = [0.5]*pq.s
     >>> t_fin = 2.1*pq.s
-    >>> alpha = 5
+    >>> alpha = 5.0
     >>> num_surrogates = 10000
     >>> change_points = multiple_filter_test(window_size, st, t_fin, alpha,
                         num_surrogates, dt = 0.5*pq.s)
@@ -72,8 +72,9 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
             spiketrain objects to analyze
         t_final : quantity
             final time of the spike train which is to be analysed
-        alpha : integer
-            alpha-quantile for the set of maxima of the limit processes
+        alpha : float
+            alpha-quantile in range [0, 100] for the set of maxima of the limit
+            processes
         n_surrogates : integer
             numbers of simulated limit processes
         test_quantile : float
@@ -262,15 +263,15 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
             set of windows' size
         t_final : quantity object
             final time of the spike
-        alpha : integer
-            alpha-quantile
+        alpha : float
+            alpha-quantile in range [0, 100]
         n_surrogates : integer
             numbers of simulated limit processes
         dt : quantity object
             resolution, time step at which the windows are slided
 
-    Returns:
-    --------
+    Returns
+    -------
         test_quantile : float
             threshold for the maxima of the filter derivative processes, if any 
             of these maxima is larger than this value, it is assumed the 
@@ -305,7 +306,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
 
     if t_final <= 0:
         raise ValueError("t_final needs to be strictly positive")
-    if alpha * (100 - alpha) < 0:
+    if alpha * (100.0 - alpha) < 0:
         raise ValueError("alpha needs to be in (0,100)")
     if np.min(window_sizes) <= 0:
         raise ValueError("window size needs to be strictly positive")
@@ -345,10 +346,9 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
     matrix_normalized = (maxima_matrix - null_mean) / np.sqrt(null_var)
 
     great_maxs = np.max(matrix_normalized, axis=1)
-    test_quantile = np.percentile(great_maxs, 100 - alpha)
+    test_quantile = np.percentile(great_maxs, 100.0 - alpha)
     null_parameters = [window_sizes, null_mean, null_var]
     test_param = np.asanyarray(null_parameters)
-    #print('Q', test_quantile)
 
     return test_quantile, test_param
 
