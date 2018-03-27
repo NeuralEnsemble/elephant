@@ -19,7 +19,8 @@ from . import (statistics,
                current_source_density,
                sta,
                conversion,
-               neo_tools)
+               neo_tools,
+               spade)
 
 try:
     from . import pandas_bridge
@@ -27,4 +28,4 @@ try:
 except ImportError:
     pass
 
-__version__ = "0.4.1"
+__version__ = "0.4.3"

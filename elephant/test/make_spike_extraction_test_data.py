@@ -1,4 +1,4 @@
-def main():
+def main(): # pragma: no cover
   from brian2 import start_scope,mvolt,ms,NeuronGroup,StateMonitor,run
   import matplotlib.pyplot as plt
   import neo

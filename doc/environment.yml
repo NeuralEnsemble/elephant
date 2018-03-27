@@ -3,12 +3,12 @@ dependencies:
 - libgfortran=1.0=0
 - alabaster=0.7.7=py35_0
 - babel=2.2.0=py35_0
-- docutils=0.12=py35_0
+- docutils
 - jinja2=2.8=py35_0
 - markupsafe=0.23=py35_0
 - mkl=11.3.1=0
-- numpy=1.10.4=py35_0
-- numpydoc=0.5=py35_1
+- numpy
+- numpydoc
 - openssl=1.0.2g=0
 - pip=8.1.1=py35_0
 - pygments=2.1.1=py35_0
@@ -28,7 +28,7 @@ dependencies:
 - xz=5.0.5=1
 - zlib=1.2.8=0
 - pip:
-  - https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.zip
+  - neo
   - quantities
-  - sphinx-rtd-theme==0.1.9
+  - sphinx-rtd-theme
  

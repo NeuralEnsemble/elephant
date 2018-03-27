@@ -1,9 +1,9 @@
 # essential
--e git+https://github.com/NeuralEnsemble/python-neo.git@snapshot-20150821#egg=neo-snapshot-20150821
+neo>=0.5.0
 numpy>=1.8.2
 quantities>=0.10.1
 scipy>=0.14.0
-six
+six>=1.10.0
 # optional
 #pandas>=0.14.1
 # for building documentation

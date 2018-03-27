@@ -226,7 +226,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
-    >>> from quantities import ms, mV, Hz, kHz
+    >>> from quantities import s, ms, mV, Hz, kHz
     >>> import neo, elephant
 
     >>> t = pq.Quantity(range(10000),units='ms')
