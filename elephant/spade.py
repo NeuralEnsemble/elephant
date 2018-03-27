@@ -671,28 +671,46 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         fpgrowth_output = list(filter(
             lambda c: _fpgrowth_filter(
                 c, winlen, max_c, min_neu), fpgrowth_output))
+        # fpgrowth_output = list(filter(
+        #     lambda c: _fpgrowth_subset_filter(
+        #         c, fpgrowth_output, winlen), fpgrowth_output))
         for (intent, supp) in fpgrowth_output:
-            if rel_matrix is not None:
-                extent = tuple(np.where(
-                    np.prod(rel_matrix[:, intent], axis=1) == 1)[0])
-            concepts.append((intent, extent))
+            keep_concept = True
+            c_idx = 0
+            while keep_concept:
+                intent_comp, supp_comp = fpgrowth_output[c_idx]
+                if intent != intent_comp and supp == supp_comp and set(
+                                np.array(intent_comp) % winlen).issuperset(set(
+                            np.array(intent) % winlen)) and set(
+                            np.array(intent_comp) // winlen).issuperset(
+                    set(np.array(intent) // winlen)):
+                    keep_concept = False
+                c_idx += 1
+                if c_idx > len(fpgrowth_output) - 1:
+                    break
+            if not keep_concept:
+                continue
+            if report == 'a':
+                if rel_matrix is not None:
+                    extent = tuple(np.where(
+                        np.prod(rel_matrix[:, intent], axis=1) == 1)[0])
+                concepts.append((intent, extent))
             # Computing 2d spectrum
-            if report == '#':
+            elif report == '#':
                 spec_matrix[len(intent) - 1, supp - 1] += 1
             # Computing 3d spectrum
-            if report == '3d#':
+            elif report == '3d#':
                 spec_matrix[len(intent) - 1, supp - 1, max(
                     np.abs(np.diff(np.array(intent) % winlen))) - 1] += 1
         del fpgrowth_output
         if report == 'a':
             return concepts
         else:
-            del concepts
             if report == '#':
                 for (z, c) in np.transpose(np.where(spec_matrix != 0)):
                     spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
 
-            if report == '3d#':
+            elif report == '3d#':
                 for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
                     spectrum.append(
                         (z + 1, c + 1, l + 1, int(spec_matrix[z, c, l])))
@@ -705,12 +723,40 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
 def _fpgrowth_filter(concept, winlen, max_c, min_neu):
     """
     Filter for selecting closed frequent items set with a minimum number of
-    neurons and a maximum number of occurrences
+    neurons and a maximum number of occurrences and first spike in the first 
+    bin position
     """
     keep_concepts = len(
-        np.unique(
-            np.array(
-                concept[0]) // winlen)) >= min_neu and concept[1] <= max_c
+        np.unique(np.array(
+            concept[0]) // winlen)) >= min_neu and concept[1] <= max_c and min(
+                np.array(concept[0]) % winlen) == 0
+    return keep_concepts
+
+
+def _fpgrowth_subset_filter(concept, all_concepts, winlen):
+    """
+    Filter for selecting closed frequent items set with a minimum number of
+    neurons and a maximum number of occurrences and first spike in the first 
+    bin position
+    """
+    keep_concepts = True
+    intent, supp = concept
+    c_idx = 0
+    while keep_concepts:
+        # print(intent)
+        # print(all_concepts[c_idx][0])
+        # print(set(all_concepts[c_idx][0]).issuperset(
+        #         set(intent)) and intent != all_concepts[c_idx][0])
+        intent_comp, supp_comp = all_concepts[c_idx]
+        if intent != intent_comp and supp == supp_comp and set(
+            np.array(intent_comp)%winlen).issuperset(set(
+                np.array(intent)%winlen)) and set(
+                    np.array(intent_comp)//winlen).issuperset(
+                        set(np.array(intent)//winlen)):
+            keep_concepts = False
+        c_idx += 1
+        if c_idx > len(all_concepts) - 1:
+            break
     return keep_concepts
 
 
@@ -820,13 +866,14 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
 def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
     """
     Filter to select concepts with minimum/maximum number of spikes and
-    occurrences
+    occurrences and first spike in the first bin position
     """
     intent = tuple(concept.intent)
     extent = tuple(concept.extent)
     keep_concepts = len(intent) >= min_z and len(extent) >= min_c and len(
         intent) <= max_z and len(extent) <= max_c and len(
-            np.unique(np.array(intent) // winlen)) >= min_neu
+            np.unique(np.array(intent) // winlen)) >= min_neu and min(
+                np.array(intent) % winlen) == 0
     return keep_concepts
 
 

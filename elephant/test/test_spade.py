@@ -299,10 +299,11 @@ class SpadeTestCase(unittest.TestCase):
         # test 3d spectrum
         assert_array_equal(spectrum, [len(self.lags3)+1, self.n_occ3, 1])
         #TODO:fix 3d spectrum for subset
-        # spectrum_3d = spade.concepts_mining(self.patt3, self.binsize,
-        #                                     self.winlen, report='3d#')[0]
-        # assert_array_equal(spectrum_3d, [len(self.lags3) + 1, self.n_occ3, max(
-        #     self.lags3), 1])
+        spectrum_3d = spade.concepts_mining(self.patt3, self.binsize,
+                                            self.winlen, report='3d#')[0]
+        print('spec',spectrum_3d)
+        assert_array_equal(spectrum_3d, [
+            [len(self.lags3) + 1, self.n_occ3, max(self.lags3), 1]])
     # test the errors raised
     def test_spade_raise_error(self):
         self.assertRaises(TypeError, spade.spade, [[1,2,3],[3,4,5]], 1*pq.ms, 4)
