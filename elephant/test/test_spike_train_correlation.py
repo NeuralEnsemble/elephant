@@ -638,6 +638,10 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         # test for high value of dt
         self.assertEqual(sc.sttc(self.st_1, self.st_2, dt=5 * pq.s), 1.0)
 
+    def test_exist_alias(self):
+        # Test if alias cch still exists.
+        self.assertEqual(sc.spike_time_tiling_coefficient, sc.sttc)
+
 
 if __name__ == '__main__':
     unittest.main()
