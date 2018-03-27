@@ -624,9 +624,10 @@ def cross_correlation_histogram(
 # Alias for common abbreviation
 cch = cross_correlation_histogram
 
+
 def sttc(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
-    ''' Calculates the Spike Time Tiling Coefficient (STTC) as described in (Cutts & Eglen, 2014) following Cutts' 
-    implementation in C. 
+    ''' Calculates the Spike Time Tiling Coefficient (STTC) as described in (Cutts & Eglen, 2014) following Cutts'
+    implementation in C.
         The STTC is a piarwise measure of correlation between spike trains. It has been proposed as
     a replacement for the correlation index as it presents several advantages (e.g. it's not confounded by firing rate, 
     appropriately distinguishes lack of correlation from anti-correlation,  pediods of silence don't add to the correlation
@@ -689,7 +690,7 @@ def sttc(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
         if N == 1:  # for just one spike in train
             if spiketrain[0] - spiketrain.t_start < dt:
-                time_A = time_A - dt + sipketrain[0] - spiketrain.t_start
+                time_A = time_A - dt + spiketrain[0] - spiketrain.t_start
             elif spiketrain[0] + dt > spiketrain.t_stop:
                 time_A = time_A - dt - spiketrain[0] + spiketrain.t_stop
 
@@ -709,8 +710,8 @@ def sttc(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
             if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
                 time_A = time_A - spiketrain[-1] - dt + spiketrain.t_stop
 
-            T = (time_A / (spiketrain.t_stop - spiketrain.t_start)).item()
-            return T
+        T = (time_A / (spiketrain.t_stop - spiketrain.t_start)).item()
+        return T
 
     N1 = len(spiketrain_1)
     N2 = len(spiketrain_2)
@@ -724,5 +725,6 @@ def sttc(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         PA = PA / N1
         PB = run_P(spiketrain_2, spiketrain_1, N2, N1, dt)
         PB = PB / N2
-        index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (1 - PB * TA)
+        index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
+                    1 - PB * TA)
     return index
