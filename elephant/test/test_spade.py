@@ -295,10 +295,9 @@ class SpadeTestCase(unittest.TestCase):
     def test_spectrum(self):
         # test 2d spectrum
         spectrum = spade.concepts_mining(self.patt3, self.binsize,
-                                        self.winlen, report='#')[0][-1]
+                                        self.winlen, report='#')[0]
         # test 3d spectrum
-        assert_array_equal(spectrum, [len(self.lags3)+1, self.n_occ3, 1])
-        #TODO:fix 3d spectrum for subset
+        assert_array_equal(spectrum, [[len(self.lags3)+1, self.n_occ3, 1]])
         spectrum_3d = spade.concepts_mining(self.patt3, self.binsize,
                                             self.winlen, report='3d#')[0]
         print('spec',spectrum_3d)

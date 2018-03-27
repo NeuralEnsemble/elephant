@@ -671,15 +671,13 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         fpgrowth_output = list(filter(
             lambda c: _fpgrowth_filter(
                 c, winlen, max_c, min_neu), fpgrowth_output))
-        # fpgrowth_output = list(filter(
-        #     lambda c: _fpgrowth_subset_filter(
-        #         c, fpgrowth_output, winlen), fpgrowth_output))
         for (intent, supp) in fpgrowth_output:
+            # Removing subset occurring in different window positions
             keep_concept = True
             c_idx = 0
             while keep_concept:
                 intent_comp, supp_comp = fpgrowth_output[c_idx]
-                if intent != intent_comp and supp == supp_comp and set(
+                if intent != intent_comp and supp <= supp_comp and set(
                                 np.array(intent_comp) % winlen).issuperset(set(
                             np.array(intent) % winlen)) and set(
                             np.array(intent_comp) // winlen).issuperset(
@@ -701,7 +699,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             # Computing 3d spectrum
             elif report == '3d#':
                 spec_matrix[len(intent) - 1, supp - 1, max(
-                    np.abs(np.diff(np.array(intent) % winlen))) - 1] += 1
+                    np.array(intent) % winlen) - 1] += 1
         del fpgrowth_output
         if report == 'a':
             return concepts
@@ -730,33 +728,6 @@ def _fpgrowth_filter(concept, winlen, max_c, min_neu):
         np.unique(np.array(
             concept[0]) // winlen)) >= min_neu and concept[1] <= max_c and min(
                 np.array(concept[0]) % winlen) == 0
-    return keep_concepts
-
-
-def _fpgrowth_subset_filter(concept, all_concepts, winlen):
-    """
-    Filter for selecting closed frequent items set with a minimum number of
-    neurons and a maximum number of occurrences and first spike in the first 
-    bin position
-    """
-    keep_concepts = True
-    intent, supp = concept
-    c_idx = 0
-    while keep_concepts:
-        # print(intent)
-        # print(all_concepts[c_idx][0])
-        # print(set(all_concepts[c_idx][0]).issuperset(
-        #         set(intent)) and intent != all_concepts[c_idx][0])
-        intent_comp, supp_comp = all_concepts[c_idx]
-        if intent != intent_comp and supp == supp_comp and set(
-            np.array(intent_comp)%winlen).issuperset(set(
-                np.array(intent)%winlen)) and set(
-                    np.array(intent_comp)//winlen).issuperset(
-                        set(np.array(intent)//winlen)):
-            keep_concepts = False
-        c_idx += 1
-        if c_idx > len(all_concepts) - 1:
-            break
     return keep_concepts
 
 
@@ -839,13 +810,34 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     for fca_concept in fca_concepts:
         intent = tuple(fca_concept.intent)
         extent = tuple(fca_concept.extent)
+        supp = len(extent)
+        # Removing subset occurring in different window positions
+        keep_concept = True
+        c_idx = 0
+        while keep_concept:
+            intent_comp = tuple(fca_concepts[c_idx].intent)
+            supp_comp = len(tuple(fca_concepts[c_idx].extent))
+            # print(set(np.array(intent_comp) % winlen).issuperset(set(
+            #     np.array(intent) % winlen)))
+            if intent != intent_comp and supp <= supp_comp and set(
+                            np.array(intent_comp) % winlen).issuperset(set(
+                        np.array(intent) % winlen)) and set(
+                        np.array(intent_comp) // winlen).issuperset(
+                set(np.array(intent) // winlen)):
+                keep_concept = False
+            c_idx += 1
+            if c_idx > len(fca_concepts) - 1:
+                break
+        if not keep_concept:
+            continue
+
         concepts.append((intent, extent))
         # computing spectrum
         if report == '#':
             spec_matrix[len(intent) - 1, len(extent) - 1] += 1
         if report == '3d#':
             spec_matrix[len(intent) - 1, len(extent) - 1, max(
-                np.diff(np.array(intent) % winlen)) - 1] += 1
+                np.array(intent) % winlen) - 1] += 1
     if report == 'a':
         return concepts
     else:
