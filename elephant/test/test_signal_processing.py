@@ -585,11 +585,11 @@ class WaveletTestCase(unittest.TestCase):
         Tests if errors are raised as expected.
         """
         # too high center frequency
-        kwds = {'signal': self.test_data, 'freq': self.fs/2, 'nco': 3, 'Fs': self.fs}
+        kwds = {'signal': self.test_data, 'freq': self.fs/2, 'nco': 3, 'fs': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
         # nco is not positive
-        kwds = {'signal': self.test_data, 'freq': self.freq, 'nco': 0, 'Fs': self.fs}
+        kwds = {'signal': self.test_data, 'freq': self.freq, 'nco': 0, 'fs': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
