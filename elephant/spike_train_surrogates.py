@@ -30,15 +30,19 @@ the original data:
 [1] Louis et al (2010) Surrogate Spike Train Generation Through Dithering in
     Operational Time. Front Comput Neurosci. 2010; 4: 127.
 
-:original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
-:copyright: Copyright 2015 by the Elephant team, see AUTHORS.txt.
+Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
+:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 import numpy as np
 import quantities as pq
 import neo
-import elephant.statistics as es
+try:
+    import elephant.statistics as es
+    isi = es.isi
+except ImportError:
+    from .statistics import isi  # Convenience when in elephant working dir.
 
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
@@ -122,7 +126,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = (spiketrain.t_start / spiketrain.units).base, \
                         (spiketrain.t_stop / spiketrain.units).base
-        surr = [s[np.all([s >= tstart, s < tstop], axis=0)] * spiketrain.units
+        surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * spiketrain.units
                 for s in surr.base]
 
     # Return the surrogates as SpikeTrains
@@ -243,7 +247,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
     if len(spiketrain) > 0:
         isi0 = spiketrain[0] - spiketrain.t_start
-        ISIs = np.hstack([isi0, es.isi(spiketrain)])
+        ISIs = np.hstack([isi0, isi(spiketrain)])
 
         # Round the ISIs to decimal position, if requested
         if decimals is not None:
@@ -260,7 +264,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
     else:
         sts = []
-        empty_train = neo.SpikeTrain([]*spiketrain.units,
+        empty_train = neo.SpikeTrain([] * spiketrain.units,
                                      t_start=spiketrain.t_start,
                                      t_stop=spiketrain.t_stop)
         for i in range(n):
