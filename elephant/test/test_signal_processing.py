@@ -570,22 +570,72 @@ class HilbertTestCase(unittest.TestCase):
 
 class WaveletTestCase(unittest.TestCase):
     def setUp(self):
-        self.Fs = 2000.0
-        self.T = np.arange(0, 10*np.pi, 1/self.Fs)
-        self.dummy_signal = np.sin(self.T)
-        self.dummy_signal_pq = self.dummy_signal*pq.mV
-        self.dummy_signal_neo = neo.AnalogSignalArray(
-            self.dummy_signal_pq, t_start=self.T[0]*pq.s,
-            t_stop=self.T[-1]*pq.s, sampling_period=(1/self.Fs)*pq.s)
+        self.fs = 1000.0
+        self.freq = 10.0
+        self.times = np.arange(0, 10.0, 1/self.fs)
+        self.test_data = np.cos(2*np.pi*self.freq*self.times)
+        self.test_data_pq = self.test_data*pq.mV
+        self.test_data_neo = neo.AnalogSignal(
+            self.test_data_pq, t_start=self.times[0]*pq.s,
+            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+        self.true_phase = np.angle(self.test_data + 1j*np.sin(2*np.pi*self.freq*self.times))
+
+    def test_wavelet_errors(self):
+        """
+        Tests if errors are raised as expected.
+        """
+        # too high center frequency
+        kwds = {'signal': self.test_data, 'freq': self.fs/2, 'nco': 3, 'Fs': self.fs}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+        # nco is not positive
+        kwds = {'signal': self.test_data, 'freq': self.freq, 'nco': 0, 'Fs': self.fs}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
     def test_wavelet_io(self):
-        dummy_wavelet = elephant.signal_processing.wavelet_transform(self.dummy_signal, 3.14, 3, self.Fs)
-        dummy_wavelet_pq = elephant.signal_processing.wavelet_transform(self.dummy_signal_pq, 3.14, 3, self.Fs)
-        dummy_wavelet_neo = elephant.signal_processing.wavelet_transform(self.dummy_signal_neo, 3.14, 3, self.Fs)
+        """
+        Tests the data type of the output is consistent with that of the input, and also test the consistency between
+        the outputs of different types
+        """
+        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 3, self.fs)
+        wt_pq = elephant.signal_processing.wavelet_transform(self.test_data_pq, self.freq, 3, self.fs)
+        wt_neo = elephant.signal_processing.wavelet_transform(self.test_data_neo, self.freq, 3, self.fs)
 
-        print (isinstance(dummy_wavelet, type(self.dummy_signal)))
-        print (isinstance(dummy_wavelet_pq, type(self.dummy_signal_pq)))
-        print (isinstance(dummy_wavelet_neo, type(self.dummy_signal_neo)))
+        self.assertTrue(isinstance(wt, type(self.test_data)))
+        self.assertTrue(isinstance(wt_pq, type(self.test_data_pq)))
+        self.assertTrue(isinstance(wt_neo, type(self.test_data_neo)))
+
+        self.assertTrue(np.all(wt == wt_pq.magnitude))
+        self.assertTrue(np.all(wt == wt_neo.magnitude[:, 0]))
+
+    def test_wavelet_amplitude(self):
+        """
+        Tests amplitude properties of the obtained wavelet transform
+        """
+        # check that the amplitude of WT of a sinusoid is (almost) constant
+        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 3, self.fs)
+        amp = np.abs(wt[int(len(wt)/3):int(len(wt)//3*2)])  # take a middle segment in order to avoid edge effects
+        mean_amp = amp.mean()
+        assert_array_almost_equal((amp - mean_amp) / mean_amp, np.zeros_like(amp), decimal=6)
+
+        # check that the amplitude of WT is (almost) zero when center frequency is considerably different from signal
+        # frequency
+        wt_low = elephant.signal_processing.wavelet_transform(self.test_data, self.freq/10, 3, self.fs)
+        amp_low = np.abs(wt_low[int(len(wt)/3):int(len(wt)//3*2)])
+        assert_array_almost_equal(amp_low, np.zeros_like(amp), decimal=6)
+
+    def test_wavelet_phase(self):
+        """
+        Tests phase properties of the obtained wavelet transform
+        """
+        # check that the phase of WT is (almost) same as that of the original sinusoid
+        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 3, self.fs)
+        phase = np.angle(wt[int(len(wt)/3):int(len(wt)//3*2)])
+        true_phase = self.true_phase[int(len(wt)/3):int(len(wt)//3*2)]
+        assert_array_almost_equal(np.exp(1j*phase), np.exp(1j*true_phase), decimal=6)
+
+
 
 if __name__ == '__main__':
     unittest.main()
