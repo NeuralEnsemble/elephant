@@ -239,15 +239,16 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
-def wavelet_transform(signal, freq, nco, Fs):
-    '''
+def wavelet_transform(signal, freq, nco, fs):
+    """
     Compute the wavelet transform of a given signal with Morlet mother wavelet.
     The definition of the wavelet is based on Le van Quyen et al. J
     Neurosci Meth 111:83-98 (2001).
 
-    **Args**:
+    Parameters
+    ----------
     signal : 1D array_like
-        Signal to be transformed
+        Signal to be wavelet-transformed
     freq : float
         Center frequency of the Morlet wavelet.
     nco : float
@@ -255,13 +256,14 @@ def wavelet_transform(signal, freq, nco, Fs):
         wavelet). A larger nco value leads to a higher frequency resolution but
         a lower temporal resolution, and vice versa. Typically used values are
         in a range of 3 - 8.
-    Fs : float
+    fs : float
         Sampling rate of the signal.
 
-    **Return**:
-    signal_trans: 1D complex array
-        Transformed signal
-    '''
+    Returns
+    -------
+    signal_trans: 1D complex array_like
+        Wavelet-transformed signal
+    """
     # Morlet wavelet generator (c.f. Le van Quyen et al. J Neurosci Meth
     # 111:83-98 (2001))
     def _morlet_wavelet(freq, nco, Fs, N):
@@ -274,18 +276,22 @@ def wavelet_transform(signal, freq, nco, Fs):
         return np.sqrt(freq) * np.exp(
             -(t * t) / (2 * sigma ** 2) + 1j * 2 * np.pi * freq * t)
 
-    # When the input is AnalogSignalArray, the axis for time index (i.e. the
-    # first axis) needs to be rolled to the last
     data = np.asarray(signal)
-    if isinstance(signal, neo.AnalogSignalArray):
-        data = np.rollaxis(data, 0, len(data.shape))
+    # When the input is AnalogSignal, the axis for time index (i.e. the
+    # first axis) needs to be rolled to the last
+    if isinstance(signal, neo.AnalogSignal):
+        data = np.rollaxis(data, 0, len(data.shape))[0]
 
     # check whether the given central frequency is less than the Nyquist
     # frequency of the signal
-    if freq >= Fs / 2:
+    if freq >= fs / 2:
         raise ValueError(
             "freq must be less than the half of Fs "+
             "(sampling rate of the original signal)")
+
+    # check if nco is positive
+    if nco <= 0:
+        raise ValueError("nco must be positive")
 
     N = len(data)
     # the least power of 2 greater than N
@@ -296,12 +302,12 @@ def wavelet_transform(signal, freq, nco, Fs):
     tmpdata[0:N] = data
 
     # generate Morlet wavelet
-    wavelet = _morlet_wavelet(freq, nco, Fs, N_pow2)
+    wavelet = _morlet_wavelet(freq, nco, fs, N_pow2)
 
     # convolution of the signal with the wavelet
     signal_trans = np.fft.ifft(np.fft.fft(tmpdata) * np.fft.fft(wavelet))[0:N]
 
-    if isinstance(signal, neo.AnalogSignalArray):
+    if isinstance(signal, neo.AnalogSignal):
         return signal.duplicate_with_new_array(signal_trans.T)
     elif isinstance(signal, pq.quantity.Quantity):
         return signal_trans * signal.units
