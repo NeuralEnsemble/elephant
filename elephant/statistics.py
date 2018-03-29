@@ -833,7 +833,6 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                             units=pq.Hz, t_start=t_start, t_stop=t_stop)
 
     return rate
->>>>>>> c21de4b7b2777d27795cc3d769a64c6f5e986129
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
