@@ -83,10 +83,10 @@ except ImportError:  # pragma: no cover
 from elephant.spade_src import fast_fca
 
 
-def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
-          n_subsets=0, delta=0, epsilon=0, stability_thresh=None, n_surr=0,
-          dither=15*pq.ms, spectrum='#', alpha=1, stat_corr='fdr',
-          psr_param=None, output_format='concepts'):
+def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
+          max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
+          stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
+          alpha=1, stat_corr='fdr', psr_param=None, output_format='concepts'):
     """
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
@@ -264,6 +264,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
      Parallel Spike Train Data with SPADE.
     Frontiers in Computational Neuroscience, 11.
     '''
+    :param max_spikes: 
+    :param max_occ: 
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD   # create MPI communicator
@@ -271,6 +273,23 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
     else:
         rank = 0
     output = {}
+    # Decide whether compute pvalue spectrum
+    if n_surr > 0:
+        # Compute pvalue spectrum
+        time_pvalue_spectrum = time.time()
+        pv_spec = pvalue_spectrum(data, binsize, winlen, dither=dither,
+                                  n_surr=n_surr, min_spikes=min_spikes,
+                                  min_occ=min_occ, max_spikes=max_spikes,
+                                  max_occ=max_occ, min_neu=min_neu,
+                                  spectrum=spectrum)
+        time_pvalue_spectrum = time.time() - time_pvalue_spectrum
+        print("Time for pvalue spectrum computation: {}".format(
+            time_pvalue_spectrum))
+        # Storing pvalue spectrum
+        output['pvalue_spectrum'] = pv_spec
+    elif 0 < alpha < 1:
+        warnings.warn('0<alpha<1 but p-value spectrum has not been '
+                      'computed (n_surr==0)')
     time_mining = time.time()
     # Decide if compute the approximated stability
     if n_subsets > 0:
@@ -279,6 +298,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
                                                min_spikes=min_spikes,
                                                min_occ=min_occ,
                                                min_neu=min_neu,
+                                               max_spikes=max_spikes,
+                                               max_occ=max_occ,
                                                report='a')
         time_mining = time.time() - time_mining
         print("Time for data mining: {}".format(time_mining))
@@ -300,26 +321,12 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, min_neu=1,
         concepts, rel_matrix = concepts_mining(data, binsize, winlen,
                                                min_spikes=min_spikes,
                                                min_occ=min_occ,
+                                               max_spikes=max_spikes,
+                                               max_occ=max_occ,
                                                min_neu=min_neu,
                                                report='a')
         time_mining = time.time() - time_mining
         print("Time for data mining: {}".format(time_mining))
-    # Decide whether compute pvalue spectrum
-    if n_surr > 0:
-        # Compute pvalue spectrum
-        time_pvalue_spectrum = time.time()
-        pv_spec = pvalue_spectrum(data, binsize, winlen, dither=dither,
-                                  n_surr=n_surr, min_spikes=min_spikes,
-                                  min_occ=min_occ, min_neu=min_neu,
-                                  spectrum=spectrum)
-        time_pvalue_spectrum = time.time() - time_pvalue_spectrum
-        print("Time for pvalue spectrum computation: {}".format(
-            time_pvalue_spectrum))
-        # Storing pvalue spectrum
-        output['pvalue_spectrum'] = pv_spec
-    elif 0 < alpha < 1:
-        warnings.warn('0<alpha<1 but p-value spectrum has not been '
-                      'computed (n_surr==0)')
     if rank == 0:
         # Decide whether filter concepts with psf
         if 0 < alpha < 1 and n_surr > 0:
@@ -869,9 +876,9 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
     return keep_concepts
 
 
-def pvalue_spectrum(
-        data, binsize, winlen, dither, n_surr,
-        min_spikes=2, min_occ=2, min_neu=1, spectrum = '#'):
+def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
+                    min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
+                    spectrum='#'):
     '''
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -913,6 +920,14 @@ def pvalue_spectrum(
        Minimum number of occurrences of a sequence to be considered as a
        pattern.
        Default: 2
+    max_spikes: int (positive)
+        Maximum number of spikes of a sequence to be considered a pattern. If
+        None no maximal number of spikes is considered.
+        Default: None
+    max_occ: int (positive)
+        Maximum number of occurrences of a sequence to be considered as a
+        pattern. If None, no maximal number of occurrences is considered.
+        Default: None    
     min_neu: int (positive)
         Minimum number of neurons in a sequence to considered a pattern.
         Default: 1
@@ -924,6 +939,8 @@ def pvalue_spectrum(
         the corresponding p-value (fraction of surrogates containing signatures
         (z*,c*)>=(z,c)). Signatures whose empirical p-value is 0 are not
         listed.
+        :param max_spikes: 
+        :param max_occ: 
     '''
     # Initializing variables for parallel computing
     if HAVE_MPI:  # pragma: no cover
@@ -951,7 +968,8 @@ def pvalue_spectrum(
             # Find all pattern signatures in the current surrogate data set
             surr_sgnt = concepts_mining(
                 surrs, binsize, winlen, min_spikes=min_spikes,
-                min_occ=min_occ, min_neu=min_neu, report=spectrum)[0]
+                max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
+                min_neu=min_neu, report=spectrum)[0]
             # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
             # current surrogate, and add it to the list of all signatures
             filled_sgnt = []
@@ -1006,11 +1024,6 @@ def pvalue_spectrum(
             sgnt.append((sum(np.prod(np.array(surr_sgnts)==sgnt, axis=1)) / float(n_surr)))
             pv_spec.append(sgnt)
         return pv_spec
-        # for (z, c) in surr_sgnts:
-        #     pv_spec[(z, c)] += 1
-        # scale = 1. / n_surr
-        # pv_spec = [(a, b, c * scale) for (a, b), c in pv_spec.items()]
-
 
 
 def _stability_filter(c, stab_thr):
