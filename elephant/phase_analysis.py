@@ -76,6 +76,12 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     num_spiketrains = len(spiketrains)
     num_phase = len(hilbert_transform)
 
+    if num_spiketrains != 1 and num_phase != 1 and \
+            num_spiketrains != num_phase:
+        raise ValueError(
+            "Number of spike trains and number of phase signals"
+            "must match, or either of the two must be a single signal.")
+
     # For each trial, select the first input
     start = [elem.t_start for elem in hilbert_transform]
     stop = [elem.t_stop for elem in hilbert_transform]

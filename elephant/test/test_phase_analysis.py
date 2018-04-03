@@ -55,7 +55,22 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             [
                 elephant.signal_processing.hilbert(self.anasig0),
                 elephant.signal_processing.hilbert(self.anasig0)],
-            [self.st0, self.st0], 
+            [self.st0, self.st0],
+            interpolate=True)
+
+        assert_allclose(phases[0], -np.pi / 2.)
+        assert_allclose(amps[0], 1, atol=0.1)
+        assert_allclose(times[0].magnitude, self.st0.magnitude)
+        self.assertEqual(len(phases[0]), len(self.st0))
+        self.assertEqual(len(amps[0]), len(self.st0))
+        self.assertEqual(len(times[0]), len(self.st0))
+
+    def test_perfect_locking_one_spiketrains_many_signals(self):
+        phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
+            [
+                elephant.signal_processing.hilbert(self.anasig0),
+                elephant.signal_processing.hilbert(self.anasig0)],
+            [self.st0],
             interpolate=True)
 
         assert_allclose(phases[0], -np.pi / 2.)
@@ -106,6 +121,69 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # interpolation with a spike slightly to the right
         self.assertEqual(phases_noint[0][2], phases_int[0][0])
         self.assertEqual(phases_noint[0][4], phases_int[0][0])
+
+    def test_inconsistent_numbers_spiketrains_hilbert(self):
+        self.assertRaises(
+            ValueError, elephant.phase_analysis.spike_triggered_phase,
+            [
+                elephant.signal_processing.hilbert(self.anasig0),
+                elephant.signal_processing.hilbert(self.anasig0)],
+            [self.st0, self.st0, self.st0], False)
+
+        self.assertRaises(
+            ValueError, elephant.phase_analysis.spike_triggered_phase,
+            [
+                elephant.signal_processing.hilbert(self.anasig0),
+                elephant.signal_processing.hilbert(self.anasig0)],
+            [self.st0, self.st0, self.st0], False)
+
+    def test_spike_earlier_than_hilbert(self):
+        # This is a spike clearly outside the bounds
+        st = SpikeTrain(
+            [-50, 50],
+            units='s', t_start=-100*pq.s, t_stop=100*pq.s)
+        phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            st,
+            interpolate=False)
+        self.assertEqual(len(phases_noint[0]), 1)
+
+        # This is a spike right on the border (start of the signal is at 0s,
+        # spike sits at t=0s). By definition of intervals in
+        # Elephant (left borders inclusive, right borders exclusive), this
+        # spike is to be considered.
+        st = SpikeTrain(
+            [0, 50],
+            units='s', t_start=-100*pq.s, t_stop=100*pq.s)
+        phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            st,
+            interpolate=False)
+        self.assertEqual(len(phases_noint[0]), 2)
+
+    def test_spike_later_than_hilbert(self):
+        # This is a spike clearly outside the bounds
+        st = SpikeTrain(
+            [1, 250],
+            units='s', t_start=-1*pq.s, t_stop=300*pq.s)
+        phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            st,
+            interpolate=False)
+        self.assertEqual(len(phases_noint[0]), 1)
+
+        # This is a spike right on the border (length of the signal is 100s,
+        # spike sits at t=100s). However, by definition of intervals in
+        # Elephant (left borders inclusive, right borders exclusive), this
+        # spike is not to be considered.
+        st = SpikeTrain(
+            [1, 100],
+            units='s', t_start=-1*pq.s, t_stop=200*pq.s)
+        phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            st,
+            interpolate=False)
+        self.assertEqual(len(phases_noint[0]), 1)
 
 
 if __name__ == '__main__':
