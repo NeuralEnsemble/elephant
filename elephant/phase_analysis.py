@@ -2,7 +2,7 @@
 """
 Methods for performing phase analysis.
 
-:copyright: Copyright 2017 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2018 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -10,19 +10,19 @@ import numpy as np
 import quantities as pq
 
 
-def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
+def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
     Calculate the set of spike-triggered phases of an AnalogSignal.
 
     Parameters
     ----------
-    spiketrains : Spiketrain or list of Spiketrain
-        Spiketrains on which to trigger hilbert_transform extraction
     hilbert_transform : AnalogSignal or list of AnalogSignal
         AnalogSignal of the complex analytic signal (e.g., returned by the
         elephant.signal_processing.hilbert()). All spike trains are compared to
         this signal, if only one signal is given. Otherwise, length of
         hilbert_transform must match the length of spiketrains.
+    spiketrains : Spiketrain or list of Spiketrain
+        Spiketrains on which to trigger hilbert_transform extraction
     interpolate : bool
         If True, the phases and amplitudes of hilbert_transform for spikes
         falling between two samples of signal is interpolated. Otherwise, the
@@ -60,8 +60,8 @@ def spike_triggered_phase(spiketrains, hilbert_transform, interpolate):
 
     Calculate spike-triggered phases and amplitudes of the oscillation:
     >>> phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
-            spiketrain,
             elephant.signal_processing.hilbert(analogsignal),
+            spiketrain,
             interpolate=True)
     """
 

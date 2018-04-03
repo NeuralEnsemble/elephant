@@ -39,8 +39,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
     def test_perfect_locking_one_spiketrain_one_signal(self):
         phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
-            self.st0,
             elephant.signal_processing.hilbert(self.anasig0),
+            self.st0,
             interpolate=True)
 
         assert_allclose(phases[0], - np.pi / 2.)
@@ -52,9 +52,10 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
     def test_perfect_locking_many_spiketrains_many_signals(self):
         phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
-            [self.st0, self.st0], [
+            [
                 elephant.signal_processing.hilbert(self.anasig0),
                 elephant.signal_processing.hilbert(self.anasig0)],
+            [self.st0, self.st0], 
             interpolate=True)
 
         assert_allclose(phases[0], -np.pi / 2.)
@@ -66,8 +67,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
     def test_perfect_locking_many_spiketrains_one_signal(self):
         phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
-            [self.st0, self.st0],
             elephant.signal_processing.hilbert(self.anasig0),
+            [self.st0, self.st0],
             interpolate=True)
 
         assert_allclose(phases[0], -np.pi / 2.)
@@ -79,8 +80,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
 
     def test_interpolate(self):
         phases_int, _, _ = elephant.phase_analysis.spike_triggered_phase(
-            self.st1,
             elephant.signal_processing.hilbert(self.anasig0),
+            self.st1,
             interpolate=True)
 
         self.assertLess(phases_int[0][0], phases_int[0][1])
@@ -90,8 +91,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         self.assertLess(phases_int[0][4], phases_int[0][5])
 
         phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
-            self.st1,
             elephant.signal_processing.hilbert(self.anasig0),
+            self.st1,
             interpolate=False)
 
         self.assertEqual(phases_noint[0][0], phases_noint[0][1])
