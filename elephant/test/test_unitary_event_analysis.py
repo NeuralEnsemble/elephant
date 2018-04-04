@@ -338,6 +338,86 @@ class UETestCase(unittest.TestCase):
             UE_dic['indices']['trial26'],expected_indecis_tril26))
         self.assertTrue(np.allclose(
             UE_dic['indices']['trial4'],expected_indecis_tril4))
+        
+    # test if the result of newly implemented Unitary Events in
+    # Elephant is consistent with the result of
+    # Riehle et al 1997 Science
+    # (see Rostami et al (2016) [Re] Science, 3(1):1-17)
+    def test_Riehle_et_al_97_UE(self):
+        import sys
+        import os
+        from neo.rawio.tests.tools import (download_test_file,
+                                           create_local_temp_dir,
+                                           make_all_directories)
+        from neo.test.iotest.tools import (cleanup_test_file)
+        url = [
+            "https://raw.githubusercontent.com/ReScience-Archives/" +
+            "Rostami-Ito-Denker-Gruen-2017/master/data",
+            "https://raw.githubusercontent.com/ReScience-Archives/" +
+            "Rostami-Ito-Denker-Gruen-2017/master/data",
+            "https://raw.githubusercontent.com/ReScience-Archives/" +
+            "Rostami-Ito-Denker-Gruen-2017/master/code"]
+        shortname = "unitary_event_analysis_test_data"
+        local_test_dir = create_local_temp_dir(
+            shortname, os.environ.get("ELEPHANT_TEST_FILE_DIR"))
+        files_to_download = ["extracted_data.npy", "winny131_23.gdf",
+                             "utils.py"]
+        make_all_directories(files_to_download,
+                             local_test_dir)
+        for f_cnt, f in enumerate(files_to_download):
+            download_test_file(f, local_test_dir, url[f_cnt])
+
+        # load spike data of figure 2 of Riehle et al 1997
+        sys.path.append(local_test_dir)
+        from utils import load_gdf2Neo
+        file_name = '/winny131_23.gdf'
+        trigger = 'RS_4'
+        t_pre = 1799 * pq.ms
+        t_post = 300 * pq.ms
+        spiketrain = load_gdf2Neo(local_test_dir + file_name,
+                                  trigger, t_pre, t_post)
+
+        # calculating UE ...
+        winsize = 100 * pq.ms
+        binsize = 5 * pq.ms
+        winstep = 5 * pq.ms
+        pattern_hash = [3]
+        method = 'analytic_TrialAverage'
+        t_start = spiketrain[0][0].t_start
+        t_stop = spiketrain[0][0].t_stop
+        t_winpos = ue._winpos(t_start, t_stop, winsize, winstep)
+        significance_level = 0.05
+
+        UE = ue.jointJ_window_analysis(
+            spiketrain, binsize, winsize, winstep,
+            pattern_hash, method=method)
+        # load extracted data from figure 2 of Riehle et al 1997
+        extracted_data = np.load(
+            local_test_dir + '/extracted_data.npy', encoding='latin1').item()
+        Js_sig = ue.jointJ(significance_level)
+        sig_idx_win = np.where(UE['Js'] >= Js_sig)[0]
+        diff_UE_rep = []
+        y_cnt = 0
+        for tr in range(len(spiketrain)):
+            x_idx = np.sort(
+                np.unique(UE['indices']['trial' + str(tr)],
+                          return_index=True)[1])
+            x = UE['indices']['trial' + str(tr)][x_idx]
+            if len(x) > 0:
+                # choose only the significant coincidences
+                xx = []
+                for j in sig_idx_win:
+                    xx = np.append(xx, x[np.where(
+                        (x * binsize >= t_winpos[j]) &
+                        (x * binsize < t_winpos[j] + winsize))])
+                x_tmp = np.unique(xx) * binsize.magnitude
+                if len(x_tmp) > 0:
+                    ue_trial = np.sort(extracted_data['ue'][y_cnt])
+                    diff_UE_rep = np.append(
+                        diff_UE_rep, x_tmp - ue_trial)
+                    y_cnt += +1
+        np.testing.assert_array_less(np.abs(diff_UE_rep), 0.3)
+        cleanup_test_file('dir', local_test_dir)        
 def suite():
     suite = unittest.makeSuite(UETestCase, 'test')
     return suite
