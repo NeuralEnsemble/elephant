@@ -49,7 +49,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     >>> f_sampling = 1 * pq.ms
     >>> tlen = 100 * pq.s
     >>> time_axis = np.arange(
-            0, tlen.rescale(pq.s).magnitude,
+            0, tlen.magnitude,
             f_sampling.rescale(pq.s).magnitude) * pq.s
     >>> analogsignal = AnalogSignal(
             np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
@@ -66,10 +66,10 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
 
     # Convert inputs to lists
-    if type(spiketrains) is not list:
+    if not isinstance(spiketrains, list):
         spiketrains = [spiketrains]
 
-    if type(hilbert_transform) is not list:
+    if not isinstance(hilbert_transform, list):
         hilbert_transform = [hilbert_transform]
 
     # Number of signals
@@ -86,9 +86,9 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     start = [elem.t_start for elem in hilbert_transform]
     stop = [elem.t_stop for elem in hilbert_transform]
 
-    result_phases = [[] for _ in range(num_spiketrains)]
-    result_amps = [[] for _ in range(num_spiketrains)]
-    result_times = [[] for _ in range(num_spiketrains)]
+    result_phases = []
+    result_amps = []
+    result_times = []
 
     # Step through each signal
     for spiketrain_i, spiketrain in enumerate(spiketrains):
@@ -112,6 +112,11 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Extract times for speed reasons
         times = hilbert_transform[phase_i].times
+
+        # Append new list to the results for this spiketrain
+        result_phases.append([])
+        result_amps.append([])
+        result_times.append([])
 
         # Step through all spikes
         for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
@@ -163,4 +168,4 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     for i, entry in enumerate(result_times):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
 
-    return (result_phases, result_amps, result_times)
+    return result_phases, result_amps, result_times
