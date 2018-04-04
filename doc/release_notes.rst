@@ -19,9 +19,8 @@ New functions
   
 Other changes
 -------------
-* Bug fixes in `spade` module:
-  * Fixed an incompatibility with the latest version of an external library
-
+* Minor bug fixes
+  
   
 Elephant 0.4.3 release notes
 ===========================
