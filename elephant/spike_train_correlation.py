@@ -638,7 +638,8 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
     The STTC is calculated as follows:
 
-                    STTC = 1/2((PA - TB)/(1 - PA*TB) + (PB - TA)/(1 - PB*TA))
+    .. math::
+        STTC = 1/2((PA - TB)/(1 - PA*TB) + (PB - TA)/(1 - PB*TA))
 
     Where `PA` is the proportion of spikes from train 1 that lie within
     `[-dt, +dt]` of any spike of train 2 divided by the total number of spikes
@@ -664,15 +665,11 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     Returns
     -------
     index:  float
-        The Spike Time Tiling Coefficient (STTC)
-
-            np.nan
-        If any spike train is empty.
-
+        The spike time tiling coefficient (STTC). Returns np.nan if any spike
+        train is empty.
 
     References
     ----------
-
     Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations in
     Spike Trains: An Objective Comparison of Methods and Application to the
     Study of Retinal Waves. Journal of Neuroscience, 34(43), 14288–14303.
