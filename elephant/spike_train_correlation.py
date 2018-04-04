@@ -629,28 +629,27 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     """
     Calculates the Spike Time Tiling Coefficient (STTC) as described in
     (Cutts & Eglen, 2014) following Cutts' implementation in C.
-
     The STTC is a pairwise measure of correlation between spike trains.
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
     appropriately distinguishes lack of correlation from anti-correlation,
-    pediods of silence don't add to the correlation and it's sensible to
+    periods of silence don't add to the correlation and it's sensible to
     firing pattern).
-        
+
     The STTC is calculated as follows:
-            
+
                     STTC = 1/2((PA - TB)/(1 - PA*TB) + (PB - TA)/(1 - PB*TA))
-        
+
     Where `PA` is the proportion of spikes from train 1 that lie within
     `[-dt, +dt]` of any spike of train 2 divided by the total number of spikes
     in train 1, `PB` is the same proportion for the spikes in train 2;
     `TA` is the proportion of total recording time within `[-dt, +dt]` of any
     spike in train 1, TB is the same propotion for train 2.
-    
+
     This is a Python implementation compatible with the elephant library of
     the original code by C. Cutts written in C and avaiable at:
     (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/blob/master/spike_time_tiling_coefficient.c)
-    
+
     Parameters
     ----------
     spiketrain_1, spiketrain_2: neo.Spiketrain objects to cross-correlate.
@@ -658,26 +657,27 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     dt: Python Quantity.
         The synchronicity window is used for both: the quantification of the
         propotion of total recording time that lies [-dt, +dt] of each spike
-        in each train and the proportion of spikes in spiketrain_1 that lies
-        [-dt, +dt] of any spike in spiketrain_2.
+        in each train and the proportion of spikes in `spiketrain_1` that lies
+        `[-dt, +dt]` of any spike in `spiketrain_2`.
         Default : 0.005 * pq.s
-    
+
     Returns
     -------
     index:  float
         The Spike Time Tiling Coefficient (STTC)
-        
+
             np.nan
         If any spike train is empty.
-    
-    
+
+
     References
     ----------
-    
+
     Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations in
     Spike Trains: An Objective Comparison of Methods and Application to the
     Study of Retinal Waves. Journal of Neuroscience, 34(43), 14288–14303.
     """
+
     def run_P(spiketrain_1, spiketrain_2, N1, N2, dt):
         """
         Check every spike in train 1 to see if there's a spike in train 2
@@ -710,7 +710,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
         else:  # if more than one spike in train
             i = 0
-            while (i < (N - 1)):
+            while i < (N - 1):
                 diff = spiketrain[i + 1] - spiketrain[i]
 
                 if diff < (2 * dt):  # subtract overlap
