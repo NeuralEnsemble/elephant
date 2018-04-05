@@ -346,6 +346,9 @@ class UETestCase(unittest.TestCase):
     def test_Riehle_et_al_97_UE(self):
         import sys
         import os
+        import mock
+        sys.modules['matplotlib']=mock.Mock()
+        sys.modules['matplotlib.pyplot']=mock.Mock()       
         from neo.rawio.tests.tools import (download_test_file,
                                            create_local_temp_dir,
                                            make_all_directories)
