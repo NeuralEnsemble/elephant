@@ -452,7 +452,7 @@ class UETestCase(unittest.TestCase):
             pattern_hash, method=method)
         # load extracted data from figure 2 of Riehle et al 1997
         extracted_data = np.load(
-            local_test_dir + '/extracted_data.npy', encoding='latin1').item()
+            local_test_dir + '/extracted_data.npy').item()
         Js_sig = ue.jointJ(significance_level)
         sig_idx_win = np.where(UE['Js'] >= Js_sig)[0]
         diff_UE_rep = []
