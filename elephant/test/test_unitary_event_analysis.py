@@ -339,6 +339,66 @@ class UETestCase(unittest.TestCase):
         self.assertTrue(np.allclose(
             UE_dic['indices']['trial4'],expected_indecis_tril4))
         
+    def load_gdf2Neo(self, fname, trigger, t_pre, t_post):
+    """
+    load and convert the gdf file to Neo format by
+    cutting and aligning around a given trigger
+    # codes for trigger events (extracted from a
+    # documentation of an old file after
+    # contacting Dr. Alexa Rihle)
+    # 700 : ST (correct) 701, 702, 703, 704*
+    # 500 : ST (error =5) 501, 502, 503, 504*
+    # 1000: ST (if no selec) 1001,1002,1003,1004*
+    # 11  : PS 111, 112, 113, 114
+    # 12  : RS 121, 122, 123, 124
+    # 13  : RT 131, 132, 133, 134
+    # 14  : MT 141, 142, 143, 144
+    # 15  : ES 151, 152, 153, 154
+    # 16  : ES 161, 162, 163, 164
+    # 17  : ES 171, 172, 173, 174
+    # 19  : RW 191, 192, 193, 194
+    # 20  : ET 201, 202, 203, 204
+    """
+    data = numpy.loadtxt(fname)
+
+    if trigger == 'PS_4':
+        trigger_code = 114
+    if trigger == 'RS_4':
+        trigger_code = 124
+    if trigger == 'RS':
+        trigger_code = 12
+    if trigger == 'ES':
+        trigger_code = 15
+    # specify units
+    units_id = numpy.unique(data[:, 0][data[:, 0] < 7])
+    # indecies of the trigger
+    sel_tr_idx = numpy.where(data[:, 0] == trigger_code)[0]
+    # cutting the data by aligning on the trigger
+    data_tr = []
+    for id_tmp in units_id:
+        data_sel_units = []
+        for i_cnt, i in enumerate(sel_tr_idx):
+            start_tmp = data[i][1] - t_pre.magnitude
+            stop_tmp = data[i][1] + t_post.magnitude
+            sel_data_tmp = numpy.array(
+                data[numpy.where((data[:, 1] <= stop_tmp) &
+                                 (data[:, 1] >= start_tmp))])
+            sp_units_tmp = sel_data_tmp[:, 1][
+                numpy.where(sel_data_tmp[:, 0] == id_tmp)[0]]
+            if len(sp_units_tmp) > 0:
+                aligned_time = sp_units_tmp - start_tmp
+                data_sel_units.append(neo.SpikeTrain(
+                    aligned_time * pq.ms, t_start=0 * pq.ms,
+                    t_stop=t_pre + t_post))
+            else:
+                data_sel_units.append(neo.SpikeTrain(
+                    [] * pq.ms, t_start=0 * pq.ms,
+                    t_stop=t_pre + t_post))
+        data_tr.append(data_sel_units)
+    data_tr.reverse()
+    spiketrain = numpy.vstack([i for i in data_tr]).T
+    return spiketrain
+
     # test if the result of newly implemented Unitary Events in
     # Elephant is consistent with the result of
     # Riehle et al 1997 Science
@@ -363,8 +423,7 @@ class UETestCase(unittest.TestCase):
         shortname = "unitary_event_analysis_test_data"
         local_test_dir = create_local_temp_dir(
             shortname, os.environ.get("ELEPHANT_TEST_FILE_DIR"))
-        files_to_download = ["extracted_data.npy", "winny131_23.gdf",
-                             "utils.py"]
+        files_to_download = ["extracted_data.npy", "winny131_23.gdf"]
         make_all_directories(files_to_download,
                              local_test_dir)
         for f_cnt, f in enumerate(files_to_download):
@@ -372,13 +431,12 @@ class UETestCase(unittest.TestCase):
 
         # load spike data of figure 2 of Riehle et al 1997
         sys.path.append(local_test_dir)
-        from utils import load_gdf2Neo
         file_name = '/winny131_23.gdf'
         trigger = 'RS_4'
         t_pre = 1799 * pq.ms
         t_post = 300 * pq.ms
-        spiketrain = load_gdf2Neo(local_test_dir + file_name,
-                                  trigger, t_pre, t_post)
+        spiketrain = self.load_gdf2Neo(local_test_dir + file_name,
+                                       trigger, t_pre, t_post)
 
         # calculating UE ...
         winsize = 100 * pq.ms
@@ -420,7 +478,8 @@ class UETestCase(unittest.TestCase):
                         diff_UE_rep, x_tmp - ue_trial)
                     y_cnt += +1
         np.testing.assert_array_less(np.abs(diff_UE_rep), 0.3)
-        cleanup_test_file('dir', local_test_dir)        
+        cleanup_test_file('dir', local_test_dir)
+        
 def suite():
     suite = unittest.makeSuite(UETestCase, 'test')
     return suite
