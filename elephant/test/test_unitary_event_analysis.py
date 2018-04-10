@@ -454,7 +454,7 @@ class UETestCase(unittest.TestCase):
         try:
             extracted_data = np.load(
                 local_test_dir + '/extracted_data.npy').item()
-        except UnicodeEncodeError:
+        except UnicodeError:
             extracted_data = np.load(
                 local_test_dir + '/extracted_data.npy', encoding='latin1').item()
         Js_sig = ue.jointJ(significance_level)
