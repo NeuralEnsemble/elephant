@@ -11,6 +11,16 @@ import quantities as pq
 import types
 import elephant.unitary_event_analysis as ue
 import neo
+import sys
+import os
+
+from distutils.version import StrictVersion
+
+
+def _check_for_incompatibilty():
+    smaller_version = StrictVersion(np.__version__) < '1.10.0'
+    return sys.version_info >= (3, 0) and smaller_version
+
 
 class UETestCase(unittest.TestCase):
 
@@ -404,9 +414,9 @@ class UETestCase(unittest.TestCase):
     # Elephant is consistent with the result of
     # Riehle et al 1997 Science
     # (see Rostami et al (2016) [Re] Science, 3(1):1-17)
-    def test_Riehle_et_al_97_UE(self):
-        import sys
-        import os       
+    @unittest.skipIf(_check_for_incompatibilty(),
+                     'Incompatible package versions')
+    def test_Riehle_et_al_97_UE(self):      
         from neo.rawio.tests.tools import (download_test_file,
                                            create_local_temp_dir,
                                            make_all_directories)
@@ -415,9 +425,7 @@ class UETestCase(unittest.TestCase):
             "https://raw.githubusercontent.com/ReScience-Archives/" +
             "Rostami-Ito-Denker-Gruen-2017/master/data",
             "https://raw.githubusercontent.com/ReScience-Archives/" +
-            "Rostami-Ito-Denker-Gruen-2017/master/data",
-            "https://raw.githubusercontent.com/ReScience-Archives/" +
-            "Rostami-Ito-Denker-Gruen-2017/master/code"]
+            "Rostami-Ito-Denker-Gruen-2017/master/data"]
         shortname = "unitary_event_analysis_test_data"
         local_test_dir = create_local_temp_dir(
             shortname, os.environ.get("ELEPHANT_TEST_FILE_DIR"))
