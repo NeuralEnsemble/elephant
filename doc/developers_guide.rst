@@ -200,7 +200,8 @@ Finally, tag the release in the Git repository and push it::
 
     $ git tag <version>
     $ git push --tags upstream
-    
+
+Here, version should be of the form `vX.Y.Z`.
 
 .. make a release branch
 

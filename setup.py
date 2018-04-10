@@ -40,7 +40,7 @@ else:
 
 setup(
     name="elephant",
-    version='0.4.3',
+    version='0.5.0',
     packages=['elephant', 'elephant.test'],
     package_data={'elephant': [
         os.path.join('current_source_density_src', 'test_data.mat'),
@@ -62,7 +62,7 @@ setup(
     license="BSD",
     url='http://neuralensemble.org/elephant',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
