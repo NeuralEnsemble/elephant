@@ -810,14 +810,14 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         raise AttributeError('min_neu must be an integer >=1')
     # By default set maximum number of attributes
     if max_z is None:
-        max_z = len(context) + 1
+        max_z = len(context)
     # By default set maximum number of data to number of bins
     if max_c is None:
-        max_c = len(context) + 1
+        max_c = len(context)
     if report == '#':
-        spec_matrix = np.zeros((max_z + 1, max_c + 1))
+        spec_matrix = np.zeros((max_z, max_c))
     if report == '3d#':
-        spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
+        spec_matrix = np.zeros((max_z, max_c, winlen))
     spectrum = []
     # Mining the data with fast fca algorithm
     fca_out = fast_fca.formalConcepts(context)
@@ -857,7 +857,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
             spec_matrix[len(intent) - 1, len(extent) - 1] += 1
         if report == '3d#':
             spec_matrix[len(intent) - 1, len(extent) - 1, max(
-                np.array(intent) % winlen) - 1] += 1
+                np.array(intent) % winlen)] += 1
     if report == 'a':
         return concepts
     else:
@@ -870,7 +870,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         if report == '3d#':
             for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
                 spectrum.append(
-                    (z + 1, c + 1, l + 1, int(spec_matrix[z, c, l])))
+                    (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
         del spec_matrix
         return spectrum
 

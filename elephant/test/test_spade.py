@@ -122,7 +122,7 @@ class SpadeTestCase(unittest.TestCase):
     def test_spade_cpp(self):
         # Computing Spectrum
         spectrum_cpp = spade.concepts_mining(self.cpp, self.binsize,
-                                  1,report='#')[0]
+                                  1, report='#')[0]
         # Check spectrum
         assert_array_equal(spectrum_cpp, [(len(self.cpp), len(self.cpp[0]), 1)])
 
