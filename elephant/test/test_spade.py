@@ -341,23 +341,30 @@ class SpadeTestCase(unittest.TestCase):
             [len(self.lags3) + 1, self.n_occ3, max(self.lags3), 1]])
     # test the errors raised
     def test_spade_raise_error(self):
+        # Test list not using neo.Spiketrain
         self.assertRaises(TypeError, spade.spade, [[1,2,3],[3,4,5]], 1*pq.ms, 4)
+        # Test neo.Spiketrain with different t_stop
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1,2,3]*pq.s, t_stop=5*pq.s), neo.SpikeTrain(
             [3,4,5]*pq.s, t_stop=6*pq.s)], 1*pq.ms, 4)
+        # Test wrong spectrum parameter
         self.assertRaises(ValueError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=6 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=6 * pq.s)], 1 * pq.ms, 4, n_surr=1,
-            spectrum=4)
+            spectrum='try')
+        # Test negative minimum number of spikes
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, min_neu=-3)
+        # Test negative number of surrogates
         self.assertRaises(AttributeError, spade.pvalue_spectrum, [
             neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, 3*pq.ms,
             n_surr=-3)
+        # Test wrong correction parameter
         self.assertRaises(AttributeError, spade.test_signature_significance, (
             (2, 3, 0.2), (2, 4, 0.1)), 0.01, corr='try')
+        # Test negative number of subset for stability
         self.assertRaises(AttributeError, spade.approximate_stability, (),
         np.array([]), n_subsets=-3)
     # test psr
