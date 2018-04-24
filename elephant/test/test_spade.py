@@ -345,6 +345,10 @@ class SpadeTestCase(unittest.TestCase):
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1,2,3]*pq.s, t_stop=5*pq.s), neo.SpikeTrain(
             [3,4,5]*pq.s, t_stop=6*pq.s)], 1*pq.ms, 4)
+        self.assertRaises(ValueError, spade.spade, [neo.SpikeTrain(
+            [1, 2, 3] * pq.s, t_stop=6 * pq.s), neo.SpikeTrain(
+            [3, 4, 5] * pq.s, t_stop=6 * pq.s)], 1 * pq.ms, 4, n_surr=1,
+            spectrum=4)
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, min_neu=-3)

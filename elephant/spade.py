@@ -156,6 +156,14 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         within ]t-dither, t+dither[ (see also
         elephant.spike_train_surrogates.dither_spikes).
         Default: 15*pq.s
+    spectrum: str
+        Define the signature of the patterns, it can assume valus:
+        '#': pattern spectrum using the as signature the pair:
+            (number of spikes, number of occurrence)
+        '3d#': pattern spectrum using the as signature the triplets:
+            (number of spikes, number of occurrence, difference between last 
+            and first spike of the pattern)
+        Deafault: '#'
     alpha: float
         The significance level of the hypothesis tests performed. If alpha=1
         all the concepts are returned. If 0<alpha<1 the concepts
@@ -421,7 +429,11 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     report: str
         Indicates the output of the function.
         'a': all the mined patterns
-        '#': pattern spectrum
+        '#': pattern spectrum using the as signature the pair:
+            (number of spikes, number of occurrence)
+        '3d#': pattern spectrum using the as signature the triplets:
+            (number of spikes, number of occurrence, difference between last 
+            and first spike of the pattern)        
         Default: 'a'
 
     Returns
@@ -457,6 +469,9 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             [st.t_stop == data[0].t_stop for st in data]):
         raise AttributeError(
             'All spiketrains must have the same t_start and t_stop')
+    if report not in ['a','#','3d#']:
+        raise ValueError(
+            "The report value has to be one between 'a', '#' and '3d#' ")
     # Binning the data and clipping (binary matrix)
     binary_matrix = conv.BinnedSpikeTrain(data, binsize).to_bool_array()
     # Computing the context and the binary matrix encoding the relation between
@@ -652,8 +667,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     if max_c is None:
         max_c = len(transactions)
     if min_neu >= 1:
-        if min_neu < 1:
-            raise AttributeError('min_neu must be an integer >=1')
         # Inizializing outputs
         concepts = []
         if report == '#':
