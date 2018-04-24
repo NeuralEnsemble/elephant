@@ -706,7 +706,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             # Computing 3d spectrum
             elif report == '3d#':
                 spec_matrix[len(intent) - 1, supp - 1, max(
-                    np.array(intent) % winlen) - 1] += 1
+                    np.array(intent) % winlen)] += 1
         del fpgrowth_output
         if report == 'a':
             return concepts
@@ -718,7 +718,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             elif report == '3d#':
                 for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
                     spectrum.append(
-                        (z + 1, c + 1, l + 1, int(spec_matrix[z, c, l])))
+                        (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
             del spec_matrix
             return spectrum
     else:
