@@ -271,9 +271,6 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
      Detection and Evaluation of Spatio-Temporal Spike Patterns in Massively
      Parallel Spike Train Data with SPADE.
     Frontiers in Computational Neuroscience, 11.
-    '''
-    :param max_spikes: 
-    :param max_occ: 
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD   # create MPI communicator
@@ -1004,8 +1001,9 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                 xx, dither=dither, n=1)[0] for xx in data]
             # Find all pattern signatures in the current surrogate data set
             surr_sgnt = concepts_mining(
-                    surrs, binsize, winlen, min_spikes=min_spikes,
-                    min_occ=min_occ, min_neu=min_neu, report=spectrum)[0]
+                surrs, binsize, winlen, min_spikes=min_spikes,
+                max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
+                min_neu=min_neu, report=spectrum)[0]
             # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
             # current surrogate, and add it to the list of all signatures
             filled_sgnt = []
@@ -1550,11 +1548,12 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
 
     # by default, select all elements in conc to be returned in the output
     selected = [True for p in conc]
-
     # scan all conc and their subsets
     for id1, (conc1, s_times1, winds1, count1) in enumerate(conc):
         for id2, (conc2, s_times2, winds2, count2) in enumerate(conc):
-            if id1 == id2:
+            if not selected[id1]:
+                break
+            if id1 == id2 :
                 continue
             # Collecting all the possible distances between the windows
             # of the two concepts
@@ -1572,22 +1571,23 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                 if set(conc1_new) == set(
                     conc2) and selected[id1] and selected[id2]:
                     selected[id2] = False
-                    continue
+                    break
                 if len(set(conc1_new) & set(conc2)) == 0 or (
                         not selected[id1] or not selected[id2]):
                     continue
                 if set(conc1_new).issuperset(conc2) and count2\
-                        - count1 < min_occ:
+                        - count1 + h < min_occ:
                     selected[id2] = False
-                    continue
+                    break
                 if set(conc2).issuperset(conc1_new) and count1\
-                        - count2 < min_occ:
+                        - count2  + h < min_occ:
                     selected[id1] = False
-                    continue
+                    break
                 if len(excluded) == 0:
-                    continue
+                    break
                 # Test the case con1 is a superset of con2
                 if set(conc1_new).issuperset(conc2):
+                    print('0:testing')
                     supp_diff = count2 - count1 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size1 - size2 + k
@@ -1631,6 +1631,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     else:
                         continue
                 elif set(conc2).issuperset(conc1_new):
+                    print('1:testing')
                     supp_diff = count1 - count2 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size2 - size1 + k
@@ -1675,6 +1676,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     else:
                         continue
                 else:
+                    print('2:testing')
                     size1, size2 = len(conc1_new), len(conc2)
                     inter_size = len(set(conc1_new) & set(conc2))
                     if len(excluded[0]) == 2:
