@@ -349,8 +349,11 @@ class BinnedSpikeTrain(object):
 
     Parameters
     ----------
-    spiketrains : List of `neo.SpikeTrain` or a `neo.SpikeTrain` object
-        Spiketrain(s)to be binned.
+    spiketrains : List of `neo.SpikeTrain`, a `neo.SpikeTrain` object
+        or a binary array or list.
+        Spiketrain(s)to be binned. 
+        Accepts also a binary representation and converts it to a 
+        `BinnedSpikeTrain` object.
     binsize : quantities.Quantity
         Width of each time bin.
         Default is `None`
