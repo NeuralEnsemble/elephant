@@ -9,15 +9,12 @@ except ImportError:
     from urllib import urlretrieve
 
 long_description = open("README.rst").read()
-install_requires = ['neo>=0.5.0',
-                    'numpy>=1.8.2',
-                    'quantities>=0.10.1',
-                    'scipy>=0.14.0',
-                    'six>=1.10.0']
-extras_require = {'pandas': ['pandas>=0.14.1'],
-                  'docs': ['numpydoc>=0.5',
-                           'sphinx>=1.2.2'],
-                  'tests': ['nose>=1.3.3']}
+with open('requirements.txt', 'r') as fp:
+    install_requires = fp.read()
+extras_require = {}
+for extra in ['pandas', 'docs', 'tests']:
+    with open('requirements-{0}.txt'.format(extra), 'r') as fp:
+        extras_require[extra] = fp.read()
 
 # spade specific
 is_64bit = sys.maxsize > 2 ** 32
