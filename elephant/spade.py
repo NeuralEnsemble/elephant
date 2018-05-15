@@ -1587,7 +1587,6 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     break
                 # Test the case con1 is a superset of con2
                 if set(conc1_new).issuperset(conc2):
-                    print('0:testing')
                     supp_diff = count2 - count1 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size1 - size2 + k
@@ -1631,7 +1630,6 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     else:
                         continue
                 elif set(conc2).issuperset(conc1_new):
-                    print('1:testing')
                     supp_diff = count1 - count2 + h
                     size1, size2 = len(conc1_new), len(conc2)
                     size_diff = size2 - size1 + k
@@ -1676,7 +1674,6 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     else:
                         continue
                 else:
-                    print('2:testing')
                     size1, size2 = len(conc1_new), len(conc2)
                     inter_size = len(set(conc1_new) & set(conc2))
                     if len(excluded[0]) == 2:
