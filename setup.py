@@ -12,7 +12,7 @@ long_description = open("README.rst").read()
 with open('requirements.txt', 'r') as fp:
     install_requires = fp.read()
 extras_require = {}
-for extra in ['pandas', 'docs', 'tests']:
+for extra in ['extras', 'docs', 'tests']:
     with open('requirements-{0}.txt'.format(extra), 'r') as fp:
         extras_require[extra] = fp.read()
 
@@ -48,13 +48,14 @@ setup(
         os.path.join('spade_src', 'LICENSE'),
         os.path.join('spade_src', '*.so')
     ]},
-    
+
     install_requires=install_requires,
     extras_require=extras_require,
 
     author="Elephant authors and contributors",
     author_email="andrew.davison@unic.cnrs-gif.fr",
-    description="Elephant is a package for analysis of electrophysiology data in Python",
+    description="Elephant is a package for analysis of electrophysiology"
+                " data in Python",
     long_description=long_description,
     license="BSD",
     url='http://neuralensemble.org/elephant',
