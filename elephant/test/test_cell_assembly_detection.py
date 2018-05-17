@@ -73,7 +73,8 @@ class CadTestCase(unittest.TestCase):
             t_stop=self.t_stop * pq.s) for l in self.lags3]
 
         # Binning spiketrains
-        self.bin_patt1 = conv.BinnedSpikeTrain(self.patt1, binsize=self.binsize)
+        self.bin_patt1 = conv.BinnedSpikeTrain(self.patt1,
+                                               binsize=self.binsize)
 
         # Data
         self.msip = self.patt1 + self.patt2 + self.patt3
@@ -177,7 +178,8 @@ class CadTestCase(unittest.TestCase):
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3]*pq.ms, t_stop=6*pq.ms),
-                               neo.SpikeTrain([3, 4, 5]*pq.ms, t_stop=6*pq.ms)],
+                               neo.SpikeTrain([3, 4, 5]*pq.ms,
+                                              t_stop=6*pq.ms)],
                               binsize=1*pq.ms),
                           maxlag=self.maxlag)
 

@@ -1,7 +1,7 @@
 """
 CAD consists of a statistical parametric testing done on the level of pairs
-of neurons, followed by an agglomerative recursive algorithm, in order to detect
-and test statistically millisecond precise repetitions of spikes in data
+of neurons, followed by an agglomerative recursive algorithm, in order to 
+detect and test statistically millisecond precise repetitions of spikes in data
 (Spatio-Temporal Patterns, or STPs).
 In particular, pairs of neurons are tested for significance under the null
 hypothesis of independence, and then the significant pairs are agglomerated
@@ -184,8 +184,9 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     # For large binsizes, the binned spike counts may potentially fluctuate
     # around a high mean level and never fall below some minimum count
     # considerably larger than zero for the whole time series.
-    # Entries up to this minimum count would contribute to the coincidence count
-    # although they are completely uninformative, so we subtract the minima.
+    # Entries up to this minimum count would contribute 
+    # to the coincidence count although they are completely
+    # uninformative, so we subtract the minima.
 
     binned_pair = np.array([binned_pair[0] - min(binned_pair[0]),
                             binned_pair[1] - min(binned_pair[1])])
@@ -336,9 +337,10 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
                     for i in range(maxrate):  # for all parallel processes
                         par_processes_a = par_processes[i][0]
                         par_processes_b = par_processes[i][1]
-                        activation_series = np.add(activation_series,
-                                                   np.multiply(par_processes_a,
-                                                               par_processes_b))
+                        activation_series = \
+                            np.add(activation_series,
+                                   np.multiply(par_processes_a,
+                                               par_processes_b))
                     coinc_count_matrix = np.array([[0, fwd_coinc_count[0]],
                                                    [bwd_coinc_count[2], 0]])
                     # matrix with #AB and #BA
@@ -708,7 +710,8 @@ def _raise_errors(data, maxlag, alph, min_occ, size_chunks, max_spikes):
         if the significance level is not in [0,1]
         if the minimal number of occurrences for an assembly is less than 1
         if the length of the chunks for the variance computation is 1 or less
-        if the maximal assembly order is not between 2 and the number of neurons
+        if the maximal assembly order is not between 2 
+        and the number of neurons
         if the time series is too short (less than 100 bins)
 
     """
@@ -798,7 +801,8 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
         if True the activation time series is a list of 0/1 elements, where
         1 indicates the first spike of the patter
         Otherwise, the activation times of the assemblies are indicated by the
-        indices of the bins in which the first spike of the pattern is happening
+        indices of the bins in which the first spike of the pattern 
+        is happening
         Default: False
 
     Returns
@@ -832,7 +836,8 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
         if the significance level is not in [0,1]
         if the minimal number of occurrences for an assembly is less than 1
         if the length of the chunks for the variance computation is 1 or less
-        if the maximal assembly order is not between 2 and the number of neurons
+        if the maximal assembly order is not between 2 
+        and the number of neurons
         if the time series is too short (less than 100 bins)
 
     Example
@@ -842,7 +847,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
     >>> import elephant.spike_train_generation
     >>> import quantities as pq
     >>> import numpy as np
-    >>> import cad
+    >>> import elephant.cell_assembly_detection as cad
     >>> np.random.seed(30)
     >>> # Generate correlated data and bin it with a binsize of 10ms
     >>> sts = elephant.spike_train_generation.cpp(
