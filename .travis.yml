@@ -31,7 +31,6 @@ env:
       SIX_VERSION="1.10.0" NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" COVERAGE="true"
     # basic Ubuntu build environment
     - DISTRIB="ubuntu" PYTHON_VERSION="2.7" INSTALL_ATLAS="true"
-      NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" SIX_VERSION="1.10.0"
       COVERAGE="true"
     # This environment tests for mpi
     - DISTRIB="mpi" PYTHON_VERSION="3.5" INSTALL_MKL="false"
