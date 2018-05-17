@@ -9,7 +9,7 @@ from numpy.testing.utils import assert_array_equal
 import neo
 import quantities as pq
 import elephant.conversion as conv
-import cell_assembly_detection as cad
+import elephant.cell_assembly_detection as cad
 
 
 class CadTestCase(unittest.TestCase):
