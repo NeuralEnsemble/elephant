@@ -410,8 +410,8 @@ class BinnedSpikeTrain(object):
         if not self.is_binary:
             if not all([type(elem) == neo.core.SpikeTrain for elem in
                         spiketrains]):
-                raise TypeError("All elements of the input list must be
-                                neo.core.SpikeTrain objects ")
+                raise TypeError("All elements of the input list must be "
+                                "neo.core.SpikeTrain objects")
         # Link to input
         self.lst_input = spiketrains
         # Set given parameter
@@ -556,8 +556,8 @@ class BinnedSpikeTrain(object):
             max_tstart = max(t_starts)
             min_tstop = min(t_stops)
             if max_tstart >= min_tstop:
-                raise ValueError("Starting time of each spike train must be
-                                 smaller than each stopping time")
+                raise ValueError("Starting time of each spike train must be "
+                                 "smaller than each stopping time")
             if t_start < max_tstart or t_start > min_tstop:
                 raise ValueError(
                     'some spike trains are not defined in the time given '
