@@ -23,6 +23,402 @@ from scipy.stats import f
 import time
 
 
+def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
+                            min_occ=1, size_chunks=100, max_spikes=np.inf,
+                            significance_pruning=True, subgroup_pruning=True,
+                            same_config_cut=False, bool_times_format=False,
+                            verbose=False):
+
+    """
+    Returns cell assemblies detected in data spike matrix already binned at
+    a temporal resolution specified in the 'binsize' parameter
+    and testing for all lags between '-maxlag' and 'maxlag'
+    Agglomerates pairs of units (or a unit and a preexisting assembly), tests
+    their significance and stops when the detected assemblies reach their
+    maximal dimension.
+
+    Parameters
+    ----------
+    data : BinnedSpikeTrain object
+        binned spike trains containing the data to be analysed
+    maxlag: int
+        maximal lag to be tested. For a binning dimension of binsize the
+        method will test all pairs configurations with a time
+        shift between -maxlag and maxlag
+    reference_lag : int
+        reference lag.
+        Default value : 2
+    alph : float
+        alpha level.
+        Default : 0.05
+    min_occ : int
+        minimal number of occurrences required for an assembly
+        (all assemblies, even if significant, with fewer occurrences
+        than min_occurrences are discarded).
+        Default : 0.
+    size_chunks : int
+        size (in bins) of chunks in which the spike trains is divided
+        to compute the variance (to reduce non stationarity effects
+        on variance estimation)
+        Default : 100.
+    max_spikes : int
+        maximal assembly order (the algorithm will return assemblies of
+        composed by maximum max_spikes elements).
+        Default : numpy.inf
+    significance_pruning : bool
+        if True the method performs significance pruning among
+        the detected assemblies
+        Default: True
+    subgroup_pruning : bool
+        if True the method performs subgroup pruning among
+        the detected assemblies
+        Default: True
+    same_config_cut: bool
+        if True performs pruning (not present in the original code and more
+        efficient), not testing assemblies already formed
+        if they appear in the very same configuration
+        Default: False
+    bool_times_format: bool
+        if True the activation time series is a list of 0/1 elements, where
+        1 indicates the first spike of the patter
+        Otherwise, the activation times of the assemblies are indicated by the
+        indices of the bins in which the first spike of the pattern
+        is happening
+        Default: False
+    verbose: bool
+        Regulates the number of prints given by the method. If true all prints
+        are given, otherwise the method does give any prints.
+        Default: False
+
+    Returns
+    -------
+    assembly_bin : list
+        contains the assemblies detected for the binsize chosen
+        each assembly is a dictionary with attributes:
+        'neurons' : vector of units taking part to the assembly
+                    (unit order correspond to the agglomeration order)
+        'lag' : vector of time lags lag[z] is the activation delay between
+                neurons[1] and neurons[z+1]
+        'pvalue' : vector of pvalues. pvalue[z] is the p-value of the
+                   statistical test between performed adding
+                   neurons[z+1] to the neurons[1:z]
+        'times' : assembly activation time. It reports how many times the
+                  complete assembly activates in that bin.
+                  time always refers to the activation of the first listed
+                  assembly element (neurons[1]), that doesn't necessarily
+                  corresponds to the first unit firing.
+                  The format is  identified by the variable bool_times_format.
+        'signature' : array of two entries (z,c). The first is the number of
+                      neurons participating in the assembly (size),
+                      the second is number of assembly occurrences.
+
+    Raises
+    ------
+    TypeError
+        if the data is not a list of elephant.conv.BinnedSpikeTrains
+    ValueError
+        if the maximum lag considered is 1 or less
+        if the significance level is not in [0,1]
+        if the minimal number of occurrences for an assembly is less than 1
+        if the length of the chunks for the variance computation is 1 or less
+        if the maximal assembly order is not between 2
+        and the number of neurons
+        if the time series is too short (less than 100 bins)
+
+    Example
+    -------
+    >>> import matplotlib.pyplot as plt
+    >>> import elephant.conversion as conv
+    >>> import elephant.spike_train_generation
+    >>> import quantities as pq
+    >>> import numpy as np
+    >>> import elephant.cell_assembly_detection as cad
+    >>> np.random.seed(30)
+    >>> # Generate correlated data and bin it with a binsize of 10ms
+    >>> sts = elephant.spike_train_generation.cpp(
+    >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
+    >>> binsize = 10*pq.ms
+    >>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
+    >>> # Call of the method
+    >>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
+    >>> # Plotting
+    >>> plt.figure()
+    >>> for neu in patterns['neurons']:
+    >>>     if neu == 0:
+    >>>         plt.plot(
+    >>>             patterns['times']*binsize, [neu]*len(patterns['times']),
+    >>>             'ro', label='pattern')
+    >>>     else:
+    >>>         plt.plot(
+    >>>             patterns['times']*binsize, [neu] * len(patterns['times']),
+    >>>             'ro')
+    >>> # Raster plot of the data
+    >>> for st_idx, st in enumerate(sts):
+    >>>     if st_idx == 0:
+    >>>         plt.plot(st.rescale(pq.ms), [st_idx] * len(st), 'k.',
+    >>>                  label='spikes')
+    >>>     else:
+    >>>         plt.plot(st.rescale(pq.ms), [st_idx] * len(st), 'k.')
+    >>> plt.ylim([-1, len(sts)])
+    >>> plt.xlabel('time (ms)')
+    >>> plt.ylabel('neurons ids')
+    >>> plt.legend()
+    >>> plt.show()
+
+    References
+    ----------
+    [1] Russo, E., & Durstewitz, D. (2017).
+    Cell assemblies at multiple time scales with arbitrary lag constellations.
+    Elife, 6.
+
+    """
+    initial_time = time.time()
+
+    # check parameter input and raise errors if necessary
+    _raise_errors(data=data,
+                  maxlag=maxlag,
+                  alph=alph,
+                  min_occ=min_occ,
+                  size_chunks=size_chunks,
+                  max_spikes=max_spikes)
+
+    # transform the binned spiketrain into array
+    data = data.to_array()
+
+    # assign the maximum number of assemblies as the number of neurons
+    max_spikes = len(data)
+
+    # zero order
+    nu = len(data)
+
+    # initialize empty assembly
+
+    assembly_in = [{'neurons': None,
+                    'lags': None,
+                    'pvalue': None,
+                    'times': None,
+                    'signature': None} for _ in range(nu)]
+
+    # initializing the dictionaries
+    if verbose:
+        print('Initializing the dictionaries...')
+    for w1 in range(nu):
+        assembly_in[w1]['neurons'] = [w1]
+        assembly_in[w1]['lags'] = []
+        assembly_in[w1]['pvalue'] = []
+        assembly_in[w1]['times'] = data[w1]
+        assembly_in[w1]['signature'] = [[1, sum(data[w1])]]
+
+    # first order = test over pairs
+
+    den = nu * (nu - 1) * (2 * maxlag + 1)
+    alpha = alph * 2 / float(den)
+    if verbose:
+        print('actual significance_level', alpha)
+
+    # sign_pairs_matrix is the matrix with entry as 1 for the significant pairs
+    sign_pairs_matrix = np.zeros((nu, nu), dtype=np.int)
+    assembly = []
+    if verbose:
+        print('Testing on pairs...')
+
+    # nns: count of the existing assemblies
+    nns = 0
+
+    # initialize the structure existing_patterns, storing the patterns
+    # determined by neurons and lags:
+    # if the pattern is already existing, don't do the test
+    existing_patterns = []
+
+    # for loop for the pairwise testing
+    for w1 in range(nu - 1):
+        for w2 in range(w1 + 1, nu):
+            spiketrain2 = data[w2]
+            n2 = w2
+            assembly_flag = 0
+
+            # call of the function that does the pairwise testing
+            call_tp = _test_pair(ensemble=assembly_in[w1],
+                                 spiketrain2=spiketrain2,
+                                 n2=n2,
+                                 maxlag=maxlag,
+                                 size_chunks=size_chunks,
+                                 reference_lag=reference_lag,
+                                 existing_patterns=existing_patterns,
+                                 same_config_cut=same_config_cut)
+            if same_config_cut:
+                assem_tp = call_tp[0]
+            else:
+                assem_tp = call_tp
+
+            # if the assembly given in output is significant and the number
+            # of occurrences is higher than the minimum requested number
+            if assem_tp['pvalue'][-1] < alpha and \
+                    assem_tp['signature'][-1][1] > min_occ:
+                # save the assembly in the output
+                assembly.append(assem_tp)
+                sign_pairs_matrix[w1][w2] = 1
+                assembly_flag = 1  # flag : it is indeed an assembly
+                # put the item_candidate into the existing_patterns list
+                if same_config_cut:
+                    item_candidate = call_tp[1]
+                    if not existing_patterns:
+                        existing_patterns = [item_candidate]
+                    else:
+                        existing_patterns.append(item_candidate)
+            if assembly_flag:
+                nns += 1  # count of the existing assemblies
+
+    # making sign_pairs_matrix symmetric
+    sign_pairs_matrix = sign_pairs_matrix + sign_pairs_matrix.T
+    sign_pairs_matrix[sign_pairs_matrix == 2] = 1
+    # print(sign_pairs_matrix)
+
+    # second order and more: increase the assembly size by adding a new unit
+
+    # the algorithm will return assemblies composed by
+    # maximum max_spikes elements
+    if verbose:
+        print()
+        print('Testing on higher order assemblies...')
+        print()
+
+    # keep the count of the current size of the assembly
+    current_size_agglomeration = 2
+
+    # number of groups previously found
+    n_as = len(assembly)
+
+    # w2_to_test_v : contains the elements to test with the elements that are
+    # in the assembly in input
+    w2_to_test_v = np.zeros(nu)
+
+    # testing for higher order assemblies
+
+    w1 = 0
+
+    while w1 < n_as:
+
+        w1_elements = assembly[w1]['neurons']
+
+        # Add only neurons that have significant first order
+        # co-occurrences with members of the assembly
+        # Find indices and values of nonzero elements
+
+        for i in range(len(w1_elements)):
+            w2_to_test_v += sign_pairs_matrix[w1_elements[i]]
+
+        # w2_to_test_p : vector with the index of nonzero elements
+        w2_to_test_p = np.nonzero(w2_to_test_v)[0]
+
+        # list with the elements to test
+        # that are not already in the assembly
+        w2_to_test = [item for item in w2_to_test_p
+                      if item not in w1_elements]
+        pop_flag = 0
+
+        # check that there are candidate neurons for agglomeration
+        if w2_to_test:
+
+            # bonferroni correction only for the tests actually performed
+            alpha = alph / float(len(w2_to_test) * n_as * (2 * maxlag + 1))
+
+            # testing for the element in w2_to_test
+            for ww2 in range(len(w2_to_test)):
+                w2 = w2_to_test[ww2]
+                spiketrain2 = data[w2]
+                assembly_flag = 0
+                pop_flag = max(assembly_flag, 0)
+                # testing for the assembly and the new neuron
+
+                call_tp = _test_pair(ensemble=assembly[w1],
+                                     spiketrain2=spiketrain2,
+                                     n2=w2,
+                                     maxlag=maxlag,
+                                     size_chunks=size_chunks,
+                                     reference_lag=reference_lag,
+                                     existing_patterns=existing_patterns,
+                                     same_config_cut=same_config_cut)
+                if same_config_cut:
+                    assem_tp = call_tp[0]
+                else:
+                    assem_tp = call_tp
+
+                # if it is significant and
+                # the number of occurrences is sufficient and
+                # the length of the assembly is less than the input limit
+                if assem_tp['pvalue'][-1] < alpha and \
+                        assem_tp['signature'][-1][1] > min_occ and \
+                        assem_tp['signature'][-1][0] <= max_spikes:
+                    # the assembly is saved in the output list of
+                    # assemblies
+                    assembly.append(assem_tp)
+                    assembly_flag = 1
+
+                    if len(assem_tp['neurons']) > current_size_agglomeration:
+                        # up to the next agglomeration level
+                        current_size_agglomeration += 1
+                        # Pruning step 1
+                        # between two assemblies with the same unit set
+                        # arranged into different
+                        # configurations, choose the most significant one
+                        if significance_pruning is True and \
+                                current_size_agglomeration > 3:
+                            assembly, n_filtered_assemblies = \
+                                _significance_pruning_step(
+                                    pre_pruning_assembly=assembly)
+                    if same_config_cut:
+                        item_candidate = call_tp[1]
+                        existing_patterns.append(item_candidate)
+                if assembly_flag:
+                    # count one more assembly
+                    nns += 1
+                    n_as = len(assembly)
+        # if at least once the assembly was agglomerated to a bigger one,
+        # pop the smaller one
+        if pop_flag:
+            assembly.pop(w1)
+        w1 = w1 + 1
+
+    # Pruning step 1
+    # between two assemblies with the same unit set arranged into different
+    # configurations, choose the most significant one
+
+    # Last call for pruning of last order agglomeration
+
+    if significance_pruning:
+        assembly = _significance_pruning_step(pre_pruning_assembly=assembly)[0]
+
+    # Pruning step 2
+    # Remove assemblies whom elements are already
+    # ALL included in a bigger assembly
+    if subgroup_pruning:
+        assembly = _subgroup_pruning_step(pre_pruning_assembly=assembly)
+
+    # Reformat of the activation times
+    if not bool_times_format:
+        for pattern in assembly:
+            pattern['times'] = np.where(pattern['times'] > 0)[0]
+
+    # Give as output only the maximal groups
+    if verbose:
+        print()
+        print('Giving outputs of the method...')
+        print()
+        print('final_assembly')
+        for item in assembly:
+            print(item['neurons'],
+                  item['lags'],
+                  item['signature'])
+
+    # Time needed for the computation
+    if verbose:
+        print()
+        print('time', time.time() - initial_time)
+
+    return assembly
+
+
 def _chunking(binned_pair, size_chunks, maxlag, best_lag):
     """
     Chunking the object binned_pair into parts with the same bin length
@@ -741,396 +1137,6 @@ def _raise_errors(data, maxlag, alph, min_occ, size_chunks, max_spikes):
         raise ValueError('The time series is too short, consider '
                          'taking a longer portion of spike train '
                          'or diminish the bin size to be tested')
-
-
-def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
-                            min_occ=1, size_chunks=100, max_spikes=np.inf,
-                            significance_pruning=True, subgroup_pruning=True,
-                            same_config_cut=False, bool_times_format=False):
-
-    """
-    Returns cell assemblies detected in data spike matrix already binned at
-    a temporal resolution specified in the 'binsize' parameter
-    and testing for all lags between '-maxlag' and 'maxlag'
-    Agglomerates pairs of units (or a unit and a preexisting assembly), tests
-    their significance and stops when the detected assemblies reach their
-    maximal dimension.
-
-    Parameters
-    ----------
-    data : BinnedSpikeTrain object
-        binned spike trains containing the data to be analysed
-    maxlag: int
-        maximal lag to be tested. For a binning dimension of binsize the
-        method will test all pairs configurations with a time
-        shift between -maxlag and maxlag
-    reference_lag : int
-        reference lag.
-        Default value : 2
-    alph : float
-        alpha level.
-        Default : 0.05
-    min_occ : int
-        minimal number of occurrences required for an assembly
-        (all assemblies, even if significant, with fewer occurrences
-        than min_occurrences are discarded).
-        Default : 0.
-    size_chunks : int
-        size (in bins) of chunks in which the spike trains is divided
-        to compute the variance (to reduce non stationarity effects
-        on variance estimation)
-        Default : 100.
-    max_spikes : int
-        maximal assembly order (the algorithm will return assemblies of
-        composed by maximum max_spikes elements).
-        Default : numpy.inf
-    significance_pruning : bool
-        if True the method performs significance pruning among
-        the detected assemblies
-        Default: True
-    subgroup_pruning : bool
-        if True the method performs subgroup pruning among
-        the detected assemblies
-        Default: True
-    same_config_cut: bool
-        if True performs pruning (not present in the original code and more
-        efficient), not testing assemblies already formed
-        if they appear in the very same configuration
-        Default: False
-    bool_times_format: bool
-        if True the activation time series is a list of 0/1 elements, where
-        1 indicates the first spike of the patter
-        Otherwise, the activation times of the assemblies are indicated by the
-        indices of the bins in which the first spike of the pattern 
-        is happening
-        Default: False
-
-    Returns
-    -------
-    assembly_bin : list
-        contains the assemblies detected for the binsize chosen
-        each assembly is a dictionary with attributes:
-        'neurons' : vector of units taking part to the assembly
-                    (unit order correspond to the agglomeration order)
-        'lag' : vector of time lags lag[z] is the activation delay between
-                neurons[1] and neurons[z+1]
-        'pvalue' : vector of pvalues. pvalue[z] is the p-value of the
-                   statistical test between performed adding
-                   neurons[z+1] to the neurons[1:z]
-        'times' : assembly activation time. It reports how many times the
-                  complete assembly activates in that bin.
-                  time always refers to the activation of the first listed
-                  assembly element (neurons[1]), that doesn't necessarily
-                  corresponds to the first unit firing.
-                  The format is  identified by the variable bool_times_format.
-        'signature' : array of two entries (z,c). The first is the number of
-                      neurons participating in the assembly (size),
-                      the second is number of assembly occurrences.
-
-    Raises
-    ------
-    TypeError
-        if the data is not a list of elephant.conv.BinnedSpikeTrains
-    ValueError
-        if the maximum lag considered is 1 or less
-        if the significance level is not in [0,1]
-        if the minimal number of occurrences for an assembly is less than 1
-        if the length of the chunks for the variance computation is 1 or less
-        if the maximal assembly order is not between 2 
-        and the number of neurons
-        if the time series is too short (less than 100 bins)
-
-    Example
-    -------
-    >>> import matplotlib.pyplot as plt
-    >>> import elephant.conversion as conv
-    >>> import elephant.spike_train_generation
-    >>> import quantities as pq
-    >>> import numpy as np
-    >>> import elephant.cell_assembly_detection as cad
-    >>> np.random.seed(30)
-    >>> # Generate correlated data and bin it with a binsize of 10ms
-    >>> sts = elephant.spike_train_generation.cpp(
-    >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
-    >>> binsize = 10*pq.ms
-    >>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
-    >>> # Call of the method
-    >>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
-    >>> # Plotting
-    >>> plt.figure()
-    >>> for neu in patterns['neurons']:
-    >>>     if neu == 0:
-    >>>         plt.plot(
-    >>>             patterns['times']*binsize, [neu]*len(patterns['times']),
-    >>>             'ro', label='pattern')
-    >>>     else:
-    >>>         plt.plot(
-    >>>             patterns['times']*binsize, [neu] * len(patterns['times']),
-    >>>             'ro')
-    >>> # Raster plot of the data
-    >>> for st_idx, st in enumerate(sts):
-    >>>     if st_idx == 0:
-    >>>         plt.plot(st.rescale(pq.ms), [st_idx] * len(st), 'k.',
-    >>>                  label='spikes')
-    >>>     else:
-    >>>         plt.plot(st.rescale(pq.ms), [st_idx] * len(st), 'k.')
-    >>> plt.ylim([-1, len(sts)])
-    >>> plt.xlabel('time (ms)')
-    >>> plt.ylabel('neurons ids')
-    >>> plt.legend()
-    >>> plt.show()
-
-    References
-    ----------
-    [1] Russo, E., & Durstewitz, D. (2017).
-    Cell assemblies at multiple time scales with arbitrary lag constellations.
-    Elife, 6.
-
-    """
-    initial_time = time.time()
-
-    # check parameter input and raise errors if necessary
-    _raise_errors(data=data,
-                  maxlag=maxlag,
-                  alph=alph,
-                  min_occ=min_occ,
-                  size_chunks=size_chunks,
-                  max_spikes=max_spikes)
-
-    # transform the binned spiketrain into array
-    data = data.to_array()
-
-    # assign the maximum number of assemblies as the number of neurons
-    max_spikes = len(data)
-
-    # zero order
-    nu = len(data)
-
-    # initialize empty assembly
-
-    assembly_in = [{'neurons': None,
-                    'lags': None,
-                    'pvalue': None,
-                    'times': None,
-                    'signature': None} for _ in range(nu)]
-
-    # initializing the dictionaries
-    print('Initializing the dictionaries...')
-    for w1 in range(nu):
-        assembly_in[w1]['neurons'] = [w1]
-        assembly_in[w1]['lags'] = []
-        assembly_in[w1]['pvalue'] = []
-        assembly_in[w1]['times'] = data[w1]
-        assembly_in[w1]['signature'] = [[1, sum(data[w1])]]
-
-    # first order = test over pairs
-
-    den = nu * (nu - 1) * (2 * maxlag + 1)
-    alpha = alph * 2 / float(den)
-
-    print('actual significance_level', alpha)
-
-    # sign_pairs_matrix is the matrix with entry as 1 for the significant pairs
-    sign_pairs_matrix = np.zeros((nu, nu), dtype=np.int)
-    assembly = []
-
-    print('Testing on pairs...')
-
-    # nns: count of the existing assemblies
-    nns = 0
-
-    # initialize the structure existing_patterns, storing the patterns
-    # determined by neurons and lags:
-    # if the pattern is already existing, don't do the test
-    existing_patterns = []
-
-    # for loop for the pairwise testing
-    for w1 in range(nu - 1):
-        for w2 in range(w1 + 1, nu):
-            spiketrain2 = data[w2]
-            n2 = w2
-            assembly_flag = 0
-
-            # call of the function that does the pairwise testing
-            call_tp = _test_pair(ensemble=assembly_in[w1],
-                                 spiketrain2=spiketrain2,
-                                 n2=n2,
-                                 maxlag=maxlag,
-                                 size_chunks=size_chunks,
-                                 reference_lag=reference_lag,
-                                 existing_patterns=existing_patterns,
-                                 same_config_cut=same_config_cut)
-            if same_config_cut:
-                assem_tp = call_tp[0]
-            else:
-                assem_tp = call_tp
-
-            # if the assembly given in output is significant and the number
-            # of occurrences is higher than the minimum requested number
-            if assem_tp['pvalue'][-1] < alpha and \
-                    assem_tp['signature'][-1][1] > min_occ:
-                # save the assembly in the output
-                assembly.append(assem_tp)
-                sign_pairs_matrix[w1][w2] = 1
-                assembly_flag = 1  # flag : it is indeed an assembly
-                # put the item_candidate into the existing_patterns list
-                if same_config_cut:
-                    item_candidate = call_tp[1]
-                    if not existing_patterns:
-                        existing_patterns = [item_candidate]
-                    else:
-                        existing_patterns.append(item_candidate)
-            if assembly_flag:
-                nns += 1  # count of the existing assemblies
-
-    # making sign_pairs_matrix symmetric
-    sign_pairs_matrix = sign_pairs_matrix + sign_pairs_matrix.T
-    sign_pairs_matrix[sign_pairs_matrix == 2] = 1
-    # print(sign_pairs_matrix)
-
-    # second order and more: increase the assembly size by adding a new unit
-
-    # the algorithm will return assemblies composed by
-    # maximum max_spikes elements
-
-    print()
-    print('Testing on higher order assemblies...')
-    print()
-
-    # keep the count of the current size of the assembly
-    current_size_agglomeration = 2
-
-    # number of groups previously found
-    n_as = len(assembly)
-
-    # w2_to_test_v : contains the elements to test with the elements that are
-    # in the assembly in input
-    w2_to_test_v = np.zeros(nu)
-
-    # testing for higher order assemblies
-
-    w1 = 0
-
-    while w1 < n_as:
-
-        w1_elements = assembly[w1]['neurons']
-
-        # Add only neurons that have significant first order
-        # co-occurrences with members of the assembly
-        # Find indices and values of nonzero elements
-
-        for i in range(len(w1_elements)):
-            w2_to_test_v += sign_pairs_matrix[w1_elements[i]]
-
-        # w2_to_test_p : vector with the index of nonzero elements
-        w2_to_test_p = np.nonzero(w2_to_test_v)[0]
-
-        # list with the elements to test
-        # that are not already in the assembly
-        w2_to_test = [item for item in w2_to_test_p
-                      if item not in w1_elements]
-        pop_flag = 0
-
-        # check that there are candidate neurons for agglomeration
-        if w2_to_test:
-
-            # bonferroni correction only for the tests actually performed
-            alpha = alph / float(len(w2_to_test) * n_as * (2 * maxlag + 1))
-
-            # testing for the element in w2_to_test
-            for ww2 in range(len(w2_to_test)):
-                w2 = w2_to_test[ww2]
-                spiketrain2 = data[w2]
-                assembly_flag = 0
-                pop_flag = max(assembly_flag, 0)
-                # testing for the assembly and the new neuron
-
-                call_tp = _test_pair(ensemble=assembly[w1],
-                                     spiketrain2=spiketrain2,
-                                     n2=w2,
-                                     maxlag=maxlag,
-                                     size_chunks=size_chunks,
-                                     reference_lag=reference_lag,
-                                     existing_patterns=existing_patterns,
-                                     same_config_cut=same_config_cut)
-                if same_config_cut:
-                    assem_tp = call_tp[0]
-                else:
-                    assem_tp = call_tp
-
-                # if it is significant and
-                # the number of occurrences is sufficient and
-                # the length of the assembly is less than the input limit
-                if assem_tp['pvalue'][-1] < alpha and \
-                        assem_tp['signature'][-1][1] > min_occ and \
-                        assem_tp['signature'][-1][0] <= max_spikes:
-                    # the assembly is saved in the output list of
-                    # assemblies
-                    assembly.append(assem_tp)
-                    assembly_flag = 1
-
-                    if len(assem_tp['neurons']) > current_size_agglomeration:
-                        # up to the next agglomeration level
-                        current_size_agglomeration += 1
-                        # Pruning step 1
-                        # between two assemblies with the same unit set
-                        # arranged into different
-                        # configurations, choose the most significant one
-                        if significance_pruning is True and \
-                                current_size_agglomeration > 3:
-                            assembly, n_filtered_assemblies = \
-                                _significance_pruning_step(
-                                    pre_pruning_assembly=assembly)
-                    if same_config_cut:
-                        item_candidate = call_tp[1]
-                        existing_patterns.append(item_candidate)
-                if assembly_flag:
-                    # count one more assembly
-                    nns += 1
-                    n_as = len(assembly)
-        # if at least once the assembly was agglomerated to a bigger one,
-        # pop the smaller one
-        if pop_flag:
-            assembly.pop(w1)
-        w1 = w1 + 1
-
-    # Pruning step 1
-    # between two assemblies with the same unit set arranged into different
-    # configurations, choose the most significant one
-
-    # Last call for pruning of last order agglomeration
-
-    if significance_pruning:
-        assembly = _significance_pruning_step(pre_pruning_assembly=assembly)[0]
-
-    # Pruning step 2
-    # Remove assemblies whom elements are already
-    # ALL included in a bigger assembly
-    if subgroup_pruning:
-        assembly = _subgroup_pruning_step(pre_pruning_assembly=assembly)
-
-    # Reformat of the activation times
-    if not bool_times_format:
-        for pattern in assembly:
-            pattern['times'] = np.where(pattern['times'] > 0)[0]
-
-    # Give as output only the maximal groups
-
-    print()
-    print('Giving outputs of the method...')
-    print()
-    print('final_assembly')
-    for i in range(len(assembly)):
-        print(assembly[i]['neurons'],
-              assembly[i]['lags'],
-              assembly[i]['signature'])
-
-    # Time needed for the computation
-
-    print()
-    print('time', time.time() - initial_time)
-
-    return assembly
 
 
 # alias for the function
