@@ -351,8 +351,8 @@ class BinnedSpikeTrain(object):
     ----------
     spiketrains : List of `neo.SpikeTrain`, a `neo.SpikeTrain` object
         or a binary array or list.
-        Spiketrain(s)to be binned. 
-        Accepts also a binary representation and converts it to a 
+        Spiketrain(s)to be binned.
+        Accepts also a binary representation and converts it to a
         `BinnedSpikeTrain` object.
     binsize : quantities.Quantity
         Width of each time bin.
@@ -410,9 +410,8 @@ class BinnedSpikeTrain(object):
         if not self.is_binary:
             if not all([type(elem) == neo.core.SpikeTrain for elem in
                         spiketrains]):
-                raise TypeError(
-                    "All elements of the input list must be neo.core.SpikeTrain "
-                    "objects ")
+                raise TypeError("All elements of the input list must be
+                                neo.core.SpikeTrain objects ")
         # Link to input
         self.lst_input = spiketrains
         # Set given parameter
@@ -557,9 +556,8 @@ class BinnedSpikeTrain(object):
             max_tstart = max(t_starts)
             min_tstop = min(t_stops)
             if max_tstart >= min_tstop:
-                raise ValueError(
-                    "Starting time of each spike train must be smaller than each "
-                    "stopping time")
+                raise ValueError("Starting time of each spike train must be
+                                 smaller than each stopping time")
             if t_start < max_tstart or t_start > min_tstop:
                 raise ValueError(
                     'some spike trains are not defined in the time given '
@@ -569,8 +567,8 @@ class BinnedSpikeTrain(object):
                     'too many / too large time bins. Some spike trains are '
                     'not defined in the ending time')
         if num_bins != int((
-                                       (t_stop - t_start).rescale(
-                                           binsize.units) / binsize).magnitude):
+            (t_stop - t_start).rescale(
+                binsize.units) / binsize).magnitude):
             raise ValueError(
                 "Inconsistent arguments t_start (%s), " % t_start +
                 "t_stop (%s), binsize (%d) " % (t_stop, binsize) +
@@ -682,13 +680,13 @@ class BinnedSpikeTrain(object):
         """
         spike_idx = []
         for row in self._sparse_mat_u:
-            l = []
+            n_cols = []
             # Extract each non-zeros column index and how often it exists,
             # i.e., how many spikes fall in this column
             for col, count in zip(row.nonzero()[1], row.data):
                 # Append the column index for each spike
-                l.extend([col] * count)
-            spike_idx.append(l)
+                n_cols.extend([col] * count)
+            spike_idx.append(n_cols)
         return spike_idx
 
     def to_bool_array(self):
@@ -814,9 +812,9 @@ class BinnedSpikeTrain(object):
             ev = elem.view(pq.Quantity)
             scale = np.array(((ev - self.t_start).rescale(
                 self.binsize.units) / self.binsize).magnitude, dtype=int)
-            l = np.logical_and(ev >= self.t_start.rescale(self.binsize.units),
-                               ev <= self.t_stop.rescale(self.binsize.units))
-            filled_tmp = scale[l]
+            la = np.logical_and(ev >= self.t_start.rescale(self.binsize.units),
+                                ev <= self.t_stop.rescale(self.binsize.units))
+            filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
             if smaller_version:
                 f = np.unique(filled_tmp)
