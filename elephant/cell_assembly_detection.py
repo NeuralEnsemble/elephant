@@ -23,7 +23,7 @@ from scipy.stats import f
 import time
 
 
-def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
+def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
                             min_occ=1, size_chunks=100, max_spikes=np.inf,
                             significance_pruning=True, subgroup_pruning=True,
                             same_config_cut=False, bool_times_format=False,
@@ -31,8 +31,8 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
 
     """
     Returns cell assemblies detected in data spike matrix already binned at
-    a temporal resolution specified in the 'binsize' parameter
-    and testing for all lags between '-maxlag' and 'maxlag'
+    a temporal resolution specified in the `binsize` parameter
+    and testing for all lags between `-maxlag` and `maxlag`
     Agglomerates pairs of units (or a unit and a preexisting assembly), tests
     their significance and stops when the detected assemblies reach their
     maximal dimension.
@@ -46,10 +46,11 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
         method will test all pairs configurations with a time
         shift between -maxlag and maxlag
     reference_lag : int
-        reference lag.
+        reference lag (in bins) for the non-stationarity correction in the
+        statistical test
         Default value : 2
-    alph : float
-        alpha level.
+    alpha : float
+        significance level for the statistical test
         Default : 0.05
     min_occ : int
         minimal number of occurrences required for an assembly
@@ -117,13 +118,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
     TypeError
         if the data is not a list of elephant.conv.BinnedSpikeTrains
     ValueError
-        if the maximum lag considered is 1 or less
-        if the significance level is not in [0,1]
-        if the minimal number of occurrences for an assembly is less than 1
-        if the length of the chunks for the variance computation is 1 or less
-        if the maximal assembly order is not between 2
-        and the number of neurons
-        if the time series is too short (less than 100 bins)
+        if the parameters are out of bounds
 
     Example
     -------
@@ -177,7 +172,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
     # check parameter input and raise errors if necessary
     _raise_errors(data=data,
                   maxlag=maxlag,
-                  alph=alph,
+                  alpha=alpha,
                   min_occ=min_occ,
                   size_chunks=size_chunks,
                   max_spikes=max_spikes)
@@ -185,11 +180,8 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
     # transform the binned spiketrain into array
     data = data.to_array()
 
-    # assign the maximum number of assemblies as the number of neurons
-    max_spikes = len(data)
-
     # zero order
-    nu = len(data)
+    n_neurons = len(data)
 
     # initialize empty assembly
 
@@ -197,12 +189,12 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
                     'lags': None,
                     'pvalue': None,
                     'times': None,
-                    'signature': None} for _ in range(nu)]
+                    'signature': None} for _ in range(n_neurons)]
 
     # initializing the dictionaries
     if verbose:
         print('Initializing the dictionaries...')
-    for w1 in range(nu):
+    for w1 in range(n_neurons):
         assembly_in[w1]['neurons'] = [w1]
         assembly_in[w1]['lags'] = []
         assembly_in[w1]['pvalue'] = []
@@ -211,13 +203,16 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
 
     # first order = test over pairs
 
-    den = nu * (nu - 1) * (2 * maxlag + 1)
-    alpha = alph * 2 / float(den)
+    # denominator of the Bonferroni correction
+    # divide alpha by the number of tests performed in the first
+    # pairwise testing loop
+    number_test_performed = n_neurons * (n_neurons - 1) * (2 * maxlag + 1)
+    alpha = alpha * 2 / float(number_test_performed)
     if verbose:
         print('actual significance_level', alpha)
 
     # sign_pairs_matrix is the matrix with entry as 1 for the significant pairs
-    sign_pairs_matrix = np.zeros((nu, nu), dtype=np.int)
+    sign_pairs_matrix = np.zeros((n_neurons, n_neurons), dtype=np.int)
     assembly = []
     if verbose:
         print('Testing on pairs...')
@@ -231,8 +226,8 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
     existing_patterns = []
 
     # for loop for the pairwise testing
-    for w1 in range(nu - 1):
-        for w2 in range(w1 + 1, nu):
+    for w1 in range(n_neurons - 1):
+        for w2 in range(w1 + 1, n_neurons):
             spiketrain2 = data[w2]
             n2 = w2
             assembly_flag = 0
@@ -291,7 +286,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
 
     # w2_to_test_v : contains the elements to test with the elements that are
     # in the assembly in input
-    w2_to_test_v = np.zeros(nu)
+    w2_to_test_v = np.zeros(n_neurons)
 
     # testing for higher order assemblies
 
@@ -321,7 +316,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alph=0.05,
         if w2_to_test:
 
             # bonferroni correction only for the tests actually performed
-            alpha = alph / float(len(w2_to_test) * n_as * (2 * maxlag + 1))
+            alpha = alpha / float(len(w2_to_test) * n_as * (2 * maxlag + 1))
 
             # testing for the element in w2_to_test
             for ww2 in range(len(w2_to_test)):
@@ -501,7 +496,7 @@ def _assert_same_pattern(item_candidate, existing_patterns, maxlag):
         in the second there are the correspondent lags
     existing_patterns: list
         list of the already significant patterns
-    maxlag: integer
+    maxlag: int
         maximum lag to be tested
 
     Returns
@@ -1071,7 +1066,7 @@ def _subgroup_pruning_step(pre_pruning_assembly):
     return assembly
 
 
-def _raise_errors(data, maxlag, alph, min_occ, size_chunks, max_spikes):
+def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
     """
     Returns errors if the parameters given in input are not correct.
 
@@ -1083,7 +1078,7 @@ def _raise_errors(data, maxlag, alph, min_occ, size_chunks, max_spikes):
         maximal lag to be tested. For a binning dimension of binsize the
         method will test all pairs configurations with a time
         shift between -maxlag and maxlag
-    alph : float
+    alpha : float
         alpha level.
     min_occ : int
         minimal number of occurrences required for an assembly
@@ -1119,7 +1114,7 @@ def _raise_errors(data, maxlag, alph, min_occ, size_chunks, max_spikes):
     if maxlag < 2:
         raise ValueError('maxlag value cant be less than 2')
 
-    if alph < 0 or alph > 1:
+    if alpha < 0 or alpha > 1:
         raise ValueError('significance level has to be in interval [0,1]')
 
     if min_occ < 1:

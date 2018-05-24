@@ -18,7 +18,7 @@ class CadTestCase(unittest.TestCase):
 
         # Parameters
         self.binsize = 1*pq.ms
-        self.alph = 0.05
+        self.alpha = 0.05
         self.size_chunks = 100
         self.maxlag = 10
         self.reference_lag = 2
@@ -157,7 +157,7 @@ class CadTestCase(unittest.TestCase):
                                neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
                               binsize=self.binsize),
                           maxlag=self.maxlag,
-                          alph=-3)
+                          alpha=-3)
         # test error minimum number of occurrences
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
