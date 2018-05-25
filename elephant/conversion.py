@@ -403,7 +403,6 @@ class BinnedSpikeTrain(object):
         Defines a binned spike train class
 
         """
-        # self.is_binary = _check_binary_matrix(spiketrains)
         self.is_not_spiketrain = _check_not_neo_spiketrain(spiketrains)
         # Converting spiketrains to a list, if spiketrains is one
         # SpikeTrain object
@@ -696,6 +695,13 @@ class BinnedSpikeTrain(object):
 
     @property
     def is_binary(self):
+        """
+        Checks and returns **True** if given input is a binary input.
+        Beware, that the function does not know if the input is binary
+        because e.g `to_bool_array()` was used before or if the input is just
+        sparse (i.e. only one spike per bin at maximum).
+        """
+
         return _check_binary_matrix(self.lst_input)
 
     def to_bool_array(self):
