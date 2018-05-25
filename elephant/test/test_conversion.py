@@ -528,6 +528,42 @@ class TimeHistogramTestCase(unittest.TestCase):
                           binsize=-2 * pq.s, t_start=-4 * pq.s,
                           t_stop=0 * pq.s)
 
+        # Check binary property
+        self.assertTrue(x.is_binary)
+
+    def test_binned_to_binned(self):
+        a = self.spiketrain_a
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s).to_array()
+        y = cv.BinnedSpikeTrain(x, binsize=1 * pq.s, t_start=0 * pq.s)
+        self.assertTrue(np.array_equal(x, y.to_array()))
+
+        # test with a list
+        x = cv.BinnedSpikeTrain([[0, 1, 2, 3]], binsize=1 * pq.s,
+                                t_stop=3*pq.s).to_array()
+        y = cv.BinnedSpikeTrain(x, binsize=1 * pq.s, t_start=0 * pq.s)
+        self.assertTrue(np.array_equal(x, y.to_array()))
+
+        # test with a numpy array
+        a = np.array([[0, 1, 2, 3], [1, 2, 2.5, 3]])
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s,
+                                t_stop=3*pq.s).to_array()
+        y = cv.BinnedSpikeTrain(x, binsize=1 * pq.s, t_start=0 * pq.s)
+        self.assertTrue(np.array_equal(x, y.to_array()))
+
+        # Check binary property
+        self.assertFalse(y.is_binary)
+
+        # Raise Errors
+        # give a strangely shaped matrix as input (not MxN), which should
+        # produce a TypeError
+        a = np.array([[0, 1, 2, 3], [1, 2, 3]])
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
+                          binsize=1 * pq.s)
+        # Give no t_start or t_stop
+        a = np.array([[0, 1, 2, 3], [1, 2, 3, 4]])
+        self.assertRaises(AttributeError, cv.BinnedSpikeTrain, a,
+                          binsize=1 * pq.s)
+
 
 if __name__ == '__main__':
     unittest.main()

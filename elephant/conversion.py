@@ -317,8 +317,11 @@ def _get_start_stop_from_input(spiketrains):
     if isinstance(spiketrains, neo.SpikeTrain):
         return spiketrains.t_start, spiketrains.t_stop
     else:
-        start = max([elem.t_start for elem in spiketrains])
-        stop = min([elem.t_stop for elem in spiketrains])
+        try:
+            start = max([elem.t_start for elem in spiketrains])
+            stop = min([elem.t_stop for elem in spiketrains])
+        except AttributeError as ae:
+            raise AttributeError(ae, 'Please provide t_start or t_stop')
     return start, stop
 
 
@@ -349,11 +352,11 @@ class BinnedSpikeTrain(object):
 
     Parameters
     ----------
-    spiketrains : List of `neo.SpikeTrain`, a `neo.SpikeTrain` object
-        or a binary array or list.
+    spiketrains : List of `neo.SpikeTrain`, a `neo.SpikeTrain` object, or
+        numpy array.
         Spiketrain(s)to be binned.
-        Accepts also a binary representation and converts it to a
-        `BinnedSpikeTrain` object.
+        Accepts also a matrix representation (as a list of lists or 2d
+        `ndarray`) and converts it to a `BinnedSpikeTrain` object.
     binsize : quantities.Quantity
         Width of each time bin.
         Default is `None`
@@ -400,14 +403,16 @@ class BinnedSpikeTrain(object):
         Defines a binned spike train class
 
         """
-        self.is_binary = _check_binary_matrix(spiketrains)
+        # self.is_binary = _check_binary_matrix(spiketrains)
+        self.is_not_spiketrain = _check_not_neo_spiketrain(spiketrains)
         # Converting spiketrains to a list, if spiketrains is one
         # SpikeTrain object
-        if isinstance(spiketrains, neo.SpikeTrain) and not self.is_binary:
+        if isinstance(spiketrains,
+                      neo.SpikeTrain) and not self.is_not_spiketrain:
             spiketrains = [spiketrains]
 
         # Check that spiketrains is a list of neo Spike trains.
-        if not self.is_binary:
+        if not self.is_not_spiketrain:
             if not all([type(elem) == neo.core.SpikeTrain for elem in
                         spiketrains]):
                 raise TypeError("All elements of the input list must be "
@@ -426,7 +431,7 @@ class BinnedSpikeTrain(object):
         # Variables to store the sparse matrix
         self._sparse_mat_u = None
         # Check all parameter, set also missing values
-        if self.is_binary:
+        if self.is_not_spiketrain:
             # if len(spiketrains) < 2 or isinstance(spiketrains, list):
             self.num_bins = np.array(spiketrains).shape[1]
         self._calc_start_stop(spiketrains)
@@ -550,7 +555,7 @@ class BinnedSpikeTrain(object):
                                      self.t_stop,
                                      self.binsize,
                                      self.num_bins))
-        if not self.is_binary:
+        if not self.is_not_spiketrain:
             t_starts = [elem.t_start for elem in spiketrains]
             t_stops = [elem.t_stop for elem in spiketrains]
             max_tstart = max(t_starts)
@@ -689,6 +694,10 @@ class BinnedSpikeTrain(object):
             spike_idx.append(n_cols)
         return spike_idx
 
+    @property
+    def is_binary(self):
+        return _check_binary_matrix(self.lst_input)
+
     def to_bool_array(self):
         """
         Returns a dense matrix (`scipy.sparse.csr_matrix`), which rows
@@ -794,7 +803,7 @@ class BinnedSpikeTrain(object):
            SpikeTrain object or from a list of SpikeTrain objects.
 
         """
-        if self.is_binary:
+        if self.is_not_spiketrain:
             self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=int)
             return
 
@@ -841,3 +850,31 @@ def _check_binary_matrix(binary_matrix):
         if not len(np.where(row == 1)[0]) == np.count_nonzero(row):
             return False
     return True
+
+
+def _check_not_neo_spiketrain(matrix):
+    """
+    Checks if given matrix does not contain neo spiketrain objects
+
+    """
+    # Check for lists
+    if isinstance(matrix, list):
+        # Check for proper dimension
+        # arr = np.array(matrix)
+        # if not arr.ndim == 2:
+        #     raise ValueError('The given input does not have a shape of MxN '
+        #                      'but {}'.format(arr.shape))
+        # # Check for the first element, if it is a spiketrain
+        return not isinstance(matrix[0], neo.SpikeTrain)
+    # Check for numpy arrays
+    elif isinstance(matrix, np.ndarray) and not isinstance(matrix[0],
+                                                           neo.SpikeTrain):
+        # Check for proper dimension MxN
+        if matrix.ndim == 2:
+            return True
+        elif matrix.dtype == np.dtype('O') and matrix.ndim != 2:
+            raise TypeError('Please check the dimensions of the input, '
+                            'it should be MxN array, '
+                            'the input has a shape: {}'.format(matrix.shape))
+    # Otherwise e.g. single spiketrain
+    return False
