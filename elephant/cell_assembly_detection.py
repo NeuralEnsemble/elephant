@@ -106,7 +106,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     Parameters
     ----------
     data : BinnedSpikeTrain object
-        binned spike trains containing the data to be analysed
+        binned spike trains containing data to be analysed
     maxlag: int
         maximal lag to be tested. For a binning dimension of binsize the
         method will test all pairs configurations with a time
@@ -182,7 +182,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     Raises
     ------
     TypeError
-        if the data is not a list of elephant.conv.BinnedSpikeTrain objects
+        if the data is not an elephant.conv.BinnedSpikeTrain object
     ValueError
         if the parameters are out of bounds
 
@@ -1116,8 +1116,8 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
 
     Parameters
     ----------
-    data : numpy array
-        list of already binned spiketrains in listed form
+    data : BinnedSpikeTrain object
+        binned spike trains containing data to be analysed
     maxlag: int
         maximal lag to be tested. For a binning dimension of binsize the
         method will test all pairs configurations with a time
@@ -1139,7 +1139,7 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
     Raises
     ------
     TypeError
-        if the data is not a list of elephant.conv.BinnedSpikeTrains
+        if the data is not an elephant.conv.BinnedSpikeTrain object
     ValueError
         if the maximum lag considered is 1 or less
         if the significance level is not in [0,1]
@@ -1171,8 +1171,7 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
     if max_spikes < 2:
         raise ValueError('maximal assembly order must be less than 2')
 
-    data = data.to_array()
-    if len(data[0]) - maxlag < 100:
+    if data.matrix_columns - maxlag < 100:
         raise ValueError('The time series is too short, consider '
                          'taking a longer portion of spike train '
                          'or diminish the bin size to be tested')
