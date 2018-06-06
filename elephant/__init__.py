@@ -22,7 +22,8 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               spade)
+               spade,
+               cell_assembly_detection)
 
 try:
     from . import pandas_bridge
