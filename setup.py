@@ -8,6 +8,18 @@ try:
 except ImportError:
     from urllib import urlretrieve
 
+#cython extension
+try:
+    from distutils.extension import Extension
+    from Cython.Build import cythonize
+    exts = [Extension('*', ['elephant/*.pyx'], include_dirs=['elephant'])]
+    exts = cythonize(exts)
+except ImportError as ie:
+    exts = []
+    # no loop for you!
+    pass
+
+# requirements
 long_description = open("README.rst").read()
 with open('requirements.txt', 'r') as fp:
     install_requires = fp.read()
@@ -46,7 +58,7 @@ setup(
         os.path.join('current_source_density_src', '*.py'),
         os.path.join('spade_src', '*.py'),
         os.path.join('spade_src', 'LICENSE'),
-        os.path.join('spade_src', '*.so')
+        os.path.join('spade_src', '*.so'),
         os.path.join('test', 'dpss_testdata1.txt'),
         os.path.join('test', 'dpss_testdata2.npy')
     ]},
