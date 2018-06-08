@@ -1088,6 +1088,12 @@ def _fdr(pvalues, alpha):
     # Return outcome of the test, critical p-value and its order
     return pvalues <= thresh, thresh, m - i - 1 + stop
 
+def _holm_bonferroni(pvalues, alpha):
+    pvalues_sorted = sorted(pvalues)
+    tests = [pval<=alpha/float(
+        len(pvalues)-pval_idx+1) for pval_idx, pval in enumerate(
+        pvalues_sorted)]
+    return tests
 
 def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#',
                                 spectrum='#'):
@@ -1137,6 +1143,8 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#',
         tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
     elif corr in ['f', 'fdr']:  # or with FDR correction
         tests, pval, rank = _fdr(x_array[:, -1], alpha=alpha)
+    elif corr in ['hb', 'holm_bonf']:
+        tests = holm_bonferroni_threshold(x_array[:, -1], alpha=alpha)
     else:
         raise AttributeError(
             "corr must be either '', 'b'('bonf') or 'f'('fdr')")
