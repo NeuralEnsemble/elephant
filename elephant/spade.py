@@ -1089,10 +1089,10 @@ def _fdr(pvalues, alpha):
     return pvalues <= thresh, thresh, m - i - 1 + stop
 
 def _holm_bonferroni(pvalues, alpha):
-    pvalues_sorted = sorted(pvalues)
+    id_sorted = np.argsort(pvalues)
     tests = [pval<=alpha/float(
-        len(pvalues)-pval_idx+1) for pval_idx, pval in enumerate(
-        pvalues_sorted)]
+        len(pvalues)-id_sorted[pval_idx]) for pval_idx, pval in enumerate(
+        pvalues)]
     return tests
 
 def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#',
@@ -1144,7 +1144,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#',
     elif corr in ['f', 'fdr']:  # or with FDR correction
         tests, pval, rank = _fdr(x_array[:, -1], alpha=alpha)
     elif corr in ['hb', 'holm_bonf']:
-        tests = holm_bonferroni_threshold(x_array[:, -1], alpha=alpha)
+        tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
         raise AttributeError(
             "corr must be either '', 'b'('bonf') or 'f'('fdr')")
@@ -1765,6 +1765,13 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
                 the pvalues are set to -1.
     '''
+    if len(pvalue_spectrum) == 0:
+        spectrum = '#'
+        pass
+    elif len(pvalue_spectrum[0]) == 4:
+        spectrum = '3d#'
+    elif len(pvalue_spectrum[0]) == 3:
+        spectrum = '#'
     pvalue_dict = {}
     # Creating a dictionary for the pvalue spectrum
     for entry in pvalue_spectrum:
@@ -1789,18 +1796,34 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         output_dict['times'] = sorted(conc[1]) * binsize + bin_ids[0] * \
             binsize + t_start
         # Signature (size, n occ) of the pattern
-        output_dict['signature'] = (len(conc[0]), len(conc[1]))
-        # If None is given in input to the pval spectrum the pvalue
-        # is set to -1 (pvalue spectrum not available)
-        if len(pvalue_spectrum) == None:
-            output_dict['pvalue'] = -1
-        # p-value assigned to the pattern from the pvalue spectrum
-        else:
-            try:
-                output_dict['pvalue'] = pvalue_dict[(
-                    len(conc[0]), len(conc[1]))]
-            except KeyError:
-                output_dict['pvalue'] = 0.0
-        # pattern dictionary appended to the output
+        if spectrum == '3d#':
+            sgnt = (len(conc[0]), len(conc[1]), max(
+            np.abs(np.diff(np.array(conc[0])%winlen))))
+            output_dict['signature'] = sgnt
+            # If None is given in input to the pval spectrum the pvalue
+            # is set to -1 (pvalue spectrum not available)
+            # pattern dictionary appended to the output
+            if len(pvalue_spectrum) == None:
+                output_dict['pvalue'] = -1
+            # p-value assigned to the pattern from the pvalue spectrum
+            else:
+                try:
+                    output_dict['pvalue'] = pvalue_dict[sgnt]
+                except KeyError:
+                    output_dict['pvalue'] = 0.0
+        if spectrum == '#':
+            sgnt = (len(conc[0]), len(conc[1]))
+            output_dict['signature'] = sgnt
+            # If None is given in input to the pval spectrum the pvalue
+            # is set to -1 (pvalue spectrum not available)
+            # pattern dictionary appended to the output
+            if len(pvalue_spectrum) == None:
+                output_dict['pvalue'] = -1
+            # p-value assigned to the pattern from the pvalue spectrum
+            else:
+                try:
+                    output_dict['pvalue'] = pvalue_dict[sgnt]
+                except KeyError:
+                    output_dict['pvalue'] = 0.0
         output.append(output_dict)
     return output
