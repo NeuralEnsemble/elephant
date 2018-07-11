@@ -1,2 +1,6 @@
 # Include requirements
 include requirement*.txt
+include README.rst
+include LICENSE.txt
+include AUTHORS.txt
+include elephant/test/spike_extraction_test_data.npz
