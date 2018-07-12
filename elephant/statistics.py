@@ -732,14 +732,33 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
 
     """
-    # Call function recursively if spiketrain is a list of spike trains
+    # Merge spike trains if list of spike trains given:
     if isinstance(spiketrain, list):
-        rates = []
+        # Check consistency of spike trains
         for st in spiketrain:
-            rate = instantaneous_rate(st, sampling_period=sampling_period, kernel=kernel,
-                                      cutoff=cutoff, t_start=t_start, t_stop=t_start, trim=trim)
-            rates += [rate]
-        return rates
+            if not isinstance(st, SpikeTrain):
+                raise TypeError(
+                    "spiketrain must be instance of :class:`SpikeTrain` of Neo!\n"
+                    "    Found: %s, value %s" % (type(st), str(st)))
+            if t_start is None and not st.t_start == spiketrain[0].t_start:
+                raise ValueError(
+                        "the spike trains must have the same t_start!")
+            if t_stop is None and not st.t_stop == spiketrain[0].t_stop:
+                raise ValueError(
+                        "the spike trains must have the same t_stop!")
+            if not st.units == spiketrain[0].units:
+                raise ValueError(
+                        "the spike trains must have the same units!")
+        if t_start is None:
+            t_start = spiketrain[0].t_start
+        if t_stop is None:
+            t_stop = spiketrain[0].t_stop
+        spikes = np.concatenate([st.magnitude for st in spiketrain])
+        merged_spiketrain = SpikeTrain(np.sort(spikes), units=spiketrain[0].units,
+                                       t_start=t_start, t_stop=t_stop)
+        return instantaneous_rate(merged_spiketrain, sampling_period=sampling_period,
+                                  kernel=kernel, cutoff=cutoff, t_start=t_start,
+                                  t_stop=t_stop, trim=trim)
 
     # Checks of input variables:
     if not isinstance(spiketrain, SpikeTrain):
