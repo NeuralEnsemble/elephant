@@ -734,21 +734,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     """
     # Merge spike trains if list of spike trains given:
     if isinstance(spiketrain, list):
-        # Check consistency of spike trains
-        for st in spiketrain:
-            if not isinstance(st, SpikeTrain):
-                raise TypeError(
-                    "spiketrain must be instance of :class:`SpikeTrain` of Neo!\n"
-                    "    Found: %s, value %s" % (type(st), str(st)))
-            if t_start is None and not st.t_start == spiketrain[0].t_start:
-                raise ValueError(
-                        "the spike trains must have the same t_start!")
-            if t_stop is None and not st.t_stop == spiketrain[0].t_stop:
-                raise ValueError(
-                        "the spike trains must have the same t_stop!")
-            if not st.units == spiketrain[0].units:
-                raise ValueError(
-                        "the spike trains must have the same units!")
+        _check_consistency_of_spiketrainlist(spiketrain, t_start=t_start, t_stop=t_stop)
         if t_start is None:
             t_start = spiketrain[0].t_start
         if t_stop is None:
@@ -1245,3 +1231,21 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
             'C': C,
             'confb95': confb95,
             'yb': yb}
+
+
+def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None, t_stop=None):
+    for spiketrain in spiketrainlist:
+        if not isinstance(spiketrain, SpikeTrain):
+            raise TypeError(
+                "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
+                "    Found: %s, value %s" % (type(spiketrain), str(spiketrain)))
+        if t_start is None and not spiketrain.t_start == spiketrainlist[0].t_start:
+            raise ValueError(
+                "the spike trains must have the same t_start!")
+        if t_stop is None and not spiketrain.t_stop == spiketrainlist[0].t_stop:
+            raise ValueError(
+                "the spike trains must have the same t_stop!")
+        if not spiketrain.units == spiketrainlist[0].units:
+            raise ValueError(
+                "the spike trains must have the same units!")
+    return None
