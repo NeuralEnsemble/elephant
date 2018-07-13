@@ -658,7 +658,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Parameters
     -----------
-    spiketrain : 'neo.SpikeTrain'
+    spiketrain : neo.SpikeTrain or list of neo.SpikeTrain objects
         Neo object that contains spike times, the unit of the time stamps
         and t_start and t_stop of the spike train.
     sampling_period : Time Quantity
@@ -732,6 +732,20 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
 
     """
+    # Merge spike trains if list of spike trains given:
+    if isinstance(spiketrain, list):
+        _check_consistency_of_spiketrainlist(spiketrain, t_start=t_start, t_stop=t_stop)
+        if t_start is None:
+            t_start = spiketrain[0].t_start
+        if t_stop is None:
+            t_stop = spiketrain[0].t_stop
+        spikes = np.concatenate([st.magnitude for st in spiketrain])
+        merged_spiketrain = SpikeTrain(np.sort(spikes), units=spiketrain[0].units,
+                                       t_start=t_start, t_stop=t_stop)
+        return instantaneous_rate(merged_spiketrain, sampling_period=sampling_period,
+                                  kernel=kernel, cutoff=cutoff, t_start=t_start,
+                                  t_stop=t_stop, trim=trim)
+
     # Checks of input variables:
     if not isinstance(spiketrain, SpikeTrain):
         raise TypeError(
@@ -752,7 +766,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
         unit = spiketrain.units
-        sigma = 1/(2.0 * 2.7) * kernel_width * unit
+        sigma = 1 / (2.0 * 2.7) * kernel_width * unit
         # factor 2.0 connects kernel width with its half width,
         # factor 2.7 connects half width of Gaussian distribution with
         #             99% probability mass with its standard deviation.
@@ -767,13 +781,13 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         raise TypeError("cutoff must be float or integer!")
 
     if not (t_start is None or (isinstance(t_start, pq.Quantity) and
-            t_start.dimensionality.simplified ==
-            pq.Quantity(1, "s").dimensionality)):
+                                t_start.dimensionality.simplified ==
+                                pq.Quantity(1, "s").dimensionality)):
         raise TypeError("t_start must be a time quantity!")
 
     if not (t_stop is None or (isinstance(t_stop, pq.Quantity) and
-            t_stop.dimensionality.simplified ==
-            pq.Quantity(1, "s").dimensionality)):
+                               t_stop.dimensionality.simplified ==
+                               pq.Quantity(1, "s").dimensionality)):
         raise TypeError("t_stop must be a time quantity!")
 
     if not (isinstance(trim, bool)):
@@ -1217,3 +1231,21 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
             'C': C,
             'confb95': confb95,
             'yb': yb}
+
+
+def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None, t_stop=None):
+    for spiketrain in spiketrainlist:
+        if not isinstance(spiketrain, SpikeTrain):
+            raise TypeError(
+                "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
+                "    Found: %s, value %s" % (type(spiketrain), str(spiketrain)))
+        if t_start is None and not spiketrain.t_start == spiketrainlist[0].t_start:
+            raise ValueError(
+                "the spike trains must have the same t_start!")
+        if t_stop is None and not spiketrain.t_stop == spiketrainlist[0].t_stop:
+            raise ValueError(
+                "the spike trains must have the same t_stop!")
+        if not spiketrain.units == spiketrainlist[0].units:
+            raise ValueError(
+                "the spike trains must have the same units!")
+    return None
