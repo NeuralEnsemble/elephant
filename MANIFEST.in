@@ -4,3 +4,5 @@ include README.rst
 include LICENSE.txt
 include AUTHORS.txt
 include elephant/test/spike_extraction_test_data.npz
+recursive-include doc *
+prune doc/build
