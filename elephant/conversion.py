@@ -403,19 +403,17 @@ class BinnedSpikeTrain(object):
         Defines a binned spike train class
 
         """
-        self.is_not_spiketrain = _check_not_neo_spiketrain(spiketrains)
+        self.is_spiketrain = _check_neo_spiketrain(spiketrains)
+        if not self.is_spiketrain:
+            self.is_binned = _check_binned_array(spiketrains)
+        else:
+            self.is_binned = False
         # Converting spiketrains to a list, if spiketrains is one
         # SpikeTrain object
         if isinstance(spiketrains,
-                      neo.SpikeTrain) and not self.is_not_spiketrain:
+                      neo.SpikeTrain) and self.is_spiketrain:
             spiketrains = [spiketrains]
 
-        # Check that spiketrains is a list of neo Spike trains.
-        if not self.is_not_spiketrain:
-            if not all([type(elem) == neo.core.SpikeTrain for elem in
-                        spiketrains]):
-                raise TypeError("All elements of the input list must be "
-                                "neo.core.SpikeTrain objects")
         # Link to input
         self.lst_input = spiketrains
         # Set given parameter
@@ -430,8 +428,7 @@ class BinnedSpikeTrain(object):
         # Variables to store the sparse matrix
         self._sparse_mat_u = None
         # Check all parameter, set also missing values
-        if self.is_not_spiketrain:
-            # if len(spiketrains) < 2 or isinstance(spiketrains, list):
+        if self.is_binned:
             self.num_bins = np.array(spiketrains).shape[1]
         self._calc_start_stop(spiketrains)
         self._check_init_params(
@@ -554,7 +551,7 @@ class BinnedSpikeTrain(object):
                                      self.t_stop,
                                      self.binsize,
                                      self.num_bins))
-        if not self.is_not_spiketrain:
+        if self.is_spiketrain:
             t_starts = [elem.t_start for elem in spiketrains]
             t_stops = [elem.t_stop for elem in spiketrains]
             max_tstart = max(t_starts)
@@ -809,7 +806,7 @@ class BinnedSpikeTrain(object):
            SpikeTrain object or from a list of SpikeTrain objects.
 
         """
-        if self.is_not_spiketrain:
+        if not self.is_spiketrain:
             self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=int)
             return
 
@@ -858,29 +855,36 @@ def _check_binary_matrix(binary_matrix):
     return True
 
 
-def _check_not_neo_spiketrain(matrix):
+def _check_neo_spiketrain(matrix):
     """
-    Checks if given matrix does not contain neo spiketrain objects
+    Checks if given matrix contains neo spiketrain objects
 
     """
+    # Check for single spiketrain
+    if isinstance(matrix, neo.SpikeTrain):
+        return True
     # Check for lists
+    elif isinstance(matrix, list):
+        ts = True
+        for m in matrix:
+            if not isinstance(m, neo.SpikeTrain):
+                return False
+        return ts
+
+
+def _check_binned_array(matrix):
+    # Try to convert to numpy array
     if isinstance(matrix, list):
-        # Check for proper dimension
-        # arr = np.array(matrix)
-        # if not arr.ndim == 2:
-        #     raise ValueError('The given input does not have a shape of MxN '
-        #                      'but {}'.format(arr.shape))
-        # # Check for the first element, if it is a spiketrain
-        return not isinstance(matrix[0], neo.SpikeTrain)
+        matrix = np.array(matrix)
     # Check for numpy arrays
-    elif isinstance(matrix, np.ndarray) and not isinstance(matrix[0],
-                                                           neo.SpikeTrain):
+    if isinstance(matrix, np.ndarray):
         # Check for proper dimension MxN
         if matrix.ndim == 2:
             return True
-        elif matrix.dtype == np.dtype('O') and matrix.ndim != 2:
+        elif matrix.dtype == np.dtype('O') or matrix.ndim != 2:
             raise TypeError('Please check the dimensions of the input, '
-                            'it should be MxN array, '
-                            'the input has a shape: {}'.format(matrix.shape))
-    # Otherwise e.g. single spiketrain
-    return False
+                            'it should be an MxN array, '
+                            'the input has the shape: {}'.format(matrix.shape))
+    else:
+        # Otherwise not supported
+        return TypeError('Input not supported. Please check again')
