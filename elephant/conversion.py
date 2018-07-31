@@ -857,7 +857,7 @@ def _check_binary_matrix(binary_matrix):
 
 def _check_neo_spiketrain(matrix):
     """
-    Checks if given matrix contains neo spiketrain objects
+    Checks if given input contains neo spiketrain objects
 
     """
     # Check for single spiketrain
@@ -873,6 +873,9 @@ def _check_neo_spiketrain(matrix):
 
 
 def _check_binned_array(matrix):
+    """
+    Checks if given input is a binned array
+    """
     # Try to convert to numpy array
     if isinstance(matrix, list):
         matrix = np.array(matrix)

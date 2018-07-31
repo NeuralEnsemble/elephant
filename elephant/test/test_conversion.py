@@ -563,6 +563,9 @@ class TimeHistogramTestCase(unittest.TestCase):
         a = np.array([[0, 1, 2, 3], [1, 2, 3, 4]])
         self.assertRaises(AttributeError, cv.BinnedSpikeTrain, a,
                           binsize=1 * pq.s)
+        # Input format not supported
+        a = np.array(([0, 1, 2], [0, 1, 2, 3, 4]))
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, binsize=1 * pq.s)
 
 
 if __name__ == '__main__':
