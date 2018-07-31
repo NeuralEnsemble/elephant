@@ -517,6 +517,13 @@ class RateEstimationTestCase(unittest.TestCase):
         for a, b in zip(combined_rate.magnitude, summed_rate.magnitude):
             self.assertAlmostEqual(a, b, delta=0.0001)
 
+    # Regression test for #144
+    def test_instantaneous_rate_regression_144(self):
+        # The following spike train contains spikes that are so close to each
+        # other, that the optimal kernel cannot be detected. Therefore, the
+        # function should react with a ValueError.
+        st = neo.SpikeTrain([2.12, 2.13, 2.15] * pq.s, t_stop=10 * pq.s)
+        self.assertRaises(ValueError, es.instantaneous_rate, st, 1 * pq.ms)
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):

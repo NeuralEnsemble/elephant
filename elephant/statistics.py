@@ -765,6 +765,10 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     if kernel == 'auto':
         kernel_width = sskernel(spiketrain.magnitude, tin=None,
                                 bootstrap=True)['optw']
+        if kernel_width is None:
+            raise ValueError(
+                "Unable to calculate optimal kernel width for "
+                "instantaneous rate from input data.")
         unit = spiketrain.units
         sigma = 1 / (2.0 * 2.7) * kernel_width * unit
         # factor 2.0 connects kernel width with its half width,
@@ -1121,6 +1125,9 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     'C': cost functions of w,
     'confb95': (lower bootstrap confidence level, upper bootstrap confidence level),
     'yb': bootstrap samples.
+    
+    If no optimal kernel could be found, all entries of the dictionary are set
+    to None.
 
 
     Ref: Shimazaki, Hideaki, and Shigeru Shinomoto. 2010. Kernel
@@ -1208,7 +1215,8 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     # Bootstrap confidence intervals
     confb95 = None
     yb = None
-    if bootstrap:
+    # If bootstrap is requested, and an optimal kernel was found
+    if bootstrap and optw:
         nbs = 1000
         yb = np.zeros((nbs, len(tin)))
         for ii in range(nbs):
@@ -1223,8 +1231,10 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         y95b = ybsort[np.floor(0.05 * nbs).astype(int), :]
         y95u = ybsort[np.floor(0.95 * nbs).astype(int), :]
         confb95 = (y95b, y95u)
-    ret = np.interp(tin, t, y)
-    return {'y': ret,
+    # Only perform interpolation if y could be calculated
+    if y is not None:
+        y = np.interp(tin, t, y)
+    return {'y': y,
             't': tin,
             'optw': optw,
             'w': w,
