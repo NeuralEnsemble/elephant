@@ -564,7 +564,7 @@ def gen_pval_anal(
             if len(n_emp) > 1:
                 raise ValueError(
                     'in surrogate method the p_value can be calculated only for one pattern!')
-            return np.sum(exp_dist[n_emp[0]:])
+            return np.sum(exp_dist[int(n_emp[0]):])
 
     return pval, n_exp
 
@@ -770,6 +770,7 @@ def jointJ_window_analysis(
 
     mat_tr_unit_spt = np.zeros((len(data), N, n_bins))
     for tr, sts in enumerate(data):
+        sts = list(sts)
         bs = conv.BinnedSpikeTrain(
             sts, t_start=t_start, t_stop=t_stop, binsize=binsize)
         if binary is True:
