@@ -78,7 +78,7 @@ def _signals_same_tstart(signals):
     signals : list
         a list of signals (e.g. AnalogSignals or SpikeTrains) having
         attribute `t_start`
-en
+        
     Returns
     -------
     t_start : Quantity
