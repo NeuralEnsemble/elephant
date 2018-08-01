@@ -628,7 +628,7 @@ def mask_matrices(matrices, thresholds):
 
     # Replace nans, coming from False * np.inf, with 0s
     # (trick to find nans in masked: a number is nan if it's not >= - np.inf)
-    mask[True - (mask >= -np.inf)] = False
+    mask[np.logical_xor(True, (mask >= -np.inf))] = False
 
     return np.array(mask, dtype=bool)
 
