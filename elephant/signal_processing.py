@@ -229,7 +229,7 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
     # Calculate envelope of cross-correlation function with Hilber transform.
     # This is useful for transient oscillatory signals.
     if env:
-        for i in xrange(Nch):
+        for i in range(Nch):
             xcorr[:,i] = np.abs(scipy.signal.hilbert(xcorr[:,i]))
     
     # Cut off lags outside desired range
