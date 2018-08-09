@@ -497,6 +497,33 @@ class RateEstimationTestCase(unittest.TestCase):
                                      x=rate_estimate.times.rescale('s').magnitude)[-1]
                 self.assertAlmostEqual(num_spikes, auc, delta=0.05*num_spikes)
 
+    def test_instantaneous_rate_spiketrainlist(self):
+        st_num_spikes = np.random.poisson(self.st_rate*(self.st_dur-2*self.st_margin))
+        spike_train2 = np.random.rand(st_num_spikes) * (self.st_dur - 2 * self.st_margin) + self.st_margin
+        spike_train2.sort()
+        spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
+                                          t_start=self.st_tr[0] * pq.s,
+                                          t_stop=self.st_tr[1] * pq.s)
+        st_rate_1 = es.instantaneous_rate(self.spike_train,
+                                          sampling_period=0.01*pq.s,
+                                          kernel=self.kernel)
+        st_rate_2 = es.instantaneous_rate(spike_train2,
+                                          sampling_period=0.01*pq.s,
+                                          kernel=self.kernel)
+        combined_rate = es.instantaneous_rate([self.spike_train, spike_train2],
+                                              sampling_period=0.01*pq.s,
+                                              kernel=self.kernel)
+        summed_rate = st_rate_1 + st_rate_2  # equivalent for identical kernels
+        for a, b in zip(combined_rate.magnitude, summed_rate.magnitude):
+            self.assertAlmostEqual(a, b, delta=0.0001)
+
+    # Regression test for #144
+    def test_instantaneous_rate_regression_144(self):
+        # The following spike train contains spikes that are so close to each
+        # other, that the optimal kernel cannot be detected. Therefore, the
+        # function should react with a ValueError.
+        st = neo.SpikeTrain([2.12, 2.13, 2.15] * pq.s, t_stop=10 * pq.s)
+        self.assertRaises(ValueError, es.instantaneous_rate, st, 1 * pq.ms)
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):

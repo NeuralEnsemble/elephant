@@ -362,7 +362,7 @@ def inhomogeneous_poisson_process(rate, as_array=False):
             'rate at time t')
     else:
         #Generate n hidden Poisson SpikeTrains with rate equal to the peak rate
-        max_rate = max(rate)
+        max_rate = np.max(rate)
         homogeneous_poiss = homogeneous_poisson_process(
             rate=max_rate, t_stop=rate.t_stop, t_start=rate.t_start)
         # Compute the rate profile at each spike time by interpolation
