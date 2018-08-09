@@ -235,6 +235,9 @@ class corrcoeff_TestCase(unittest.TestCase):
         # test for a boolean mask
         assert_array_equal(mask, np.array([True, False]))
         
+        bst = conv.BinnedSpikeTrain([st2, st2], binsize=1 * pq.s)
+        corr = sc.corrcoef(bst)
+        assert_array_equal(corr, np.zeros((2,2)) * np.NaN)
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):
 
