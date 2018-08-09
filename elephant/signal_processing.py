@@ -12,6 +12,7 @@ import numpy as np
 import scipy.signal
 import quantities as pq
 import neo
+import numpy.matlib as npm
 
 
 def zscore(signal, inplace=True):
@@ -136,7 +137,7 @@ def zscore(signal, inplace=True):
         return result
     
     
-def cross_correlation_function(signal, channel1, channel2, dt=1., env=False, nlags=None):
+def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
 
     """
     Computes unbiased estimator of the cross-correlation function.
@@ -153,8 +154,9 @@ def cross_correlation_function(signal, channel1, channel2, dt=1., env=False, nla
     -----------
     signal : neo.AnalogSignal
         Signal that contains the LFP channels
-    channel1/2 : int, list, tuple, array
-        channels in signal for which to compute cross-correlation function
+    ch_pairs : list (or array with shape (N,2))
+        list with N channel pairs for which to compute cross-correlation, 
+        each element of list must contain 2 channel indices
     dt : float
         Defines sampling period
     env: bool
@@ -187,20 +189,22 @@ def cross_correlation_function(signal, channel1, channel2, dt=1., env=False, nla
         plt.show()
     """
     
-    # Convert channel indices to one-dimensional array
-    ch1 = np.array(channel1).ravel()
-    ch2 = np.array(channel2).ravel()
-    
-    # check input
-    assert len(ch1) == len(ch2), 'Error: shape of channel1 and channel2 is not identical!'\
-        'Cannot define pairs for cross-correlation.'
+    # Check input
+    pairs = np.array(ch_pairs)
+    a, b = np.shape(pairs)
+    if b!=2 and a==2:
+        pairs = pairs.T
+        a, b = np.shape(pairs)
+    if b!=2:
+        raise ValueError('ch_pairs is not a list of channel pair indices.'\
+                         'Cannot define pairs for cross-correlation.')
     assert isinstance(signal, neo.AnalogSignal), 'Error: signal is not a neo.AnalogSignal!'
     
     # z-score analog signal and store channel time series in different arrays
     # Cross-correlation will be calculated between x and y
     zsig = zscore(signal).magnitude
-    x = zsig[:,ch1]
-    y = zsig[:,ch2]
+    x = np.array([zsig[:,pair[0]] for pair in pairs]).T
+    y = np.array([zsig[:,pair[1]] for pair in pairs]).T
     
     # Define vector of lags tau
     Nt, Nch = np.shape(x)

@@ -45,9 +45,9 @@ class XCorrelationTestCase(unittest.TestCase):
             signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms, 
                                       sampling_rate=1/dt*pq.Hz, dtype=float)
             rho, tau = elephant.signal_processing.cross_correlation_function(
-                    signal, [0, 1], [2, 3], dt=dt, nlags=N/4.6)
+                    signal, [[0, 2], [1, 3]], dt=dt, nlags=N/4.6)
             env, _ = elephant.signal_processing.cross_correlation_function(
-                    signal, [0, 1], [2, 3], dt=dt, nlags=N/4.6, env=True)
+                    signal, [[0, 2], [1, 3]], dt=dt, nlags=N/4.6, env=True)
             # Test if vector of lags tau has correct length (nlags working correctly)
             assert len(tau)==2*int(np.round(N/4.6))+1
             # Cross-correlation of sine and cosine should be sine
