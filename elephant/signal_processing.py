@@ -221,7 +221,7 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
     # multiply in Fourier space, and transform back. Correct for bias due 
     # to zero-padding
     xcorr = np.zeros((Nt, Nch))
-    for i in xrange(Nch):
+    for i in range(Nch):
         xcorr[:,i] = scipy.signal.fftconvolve(x[:,i], y[::-1,i], mode='same')
     bias = npm.repmat((Nt-abs(tau/dt)), Nch, 1).T
     xcorr = xcorr / bias
