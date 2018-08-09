@@ -111,10 +111,10 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False
     with_nans : bool, optional
-        If True, correlations of empty spike trains are given NaN values. If 
-        False, a boolean array indicating empty (False) and non-empty (True) 
-        spike trains is returned. In each case a warning is raised when empty 
-        spike trains are detected. 
+        If True, correlations of empty spike trains are given NaN values. If
+        False, a boolean array indicating empty (False) and non-empty (True)
+        spike trains is returned. In each case a warning is raised when empty
+        spike trains are detected.
         Default: True
 
     Returns
@@ -125,7 +125,7 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
         binned_sts[i] and binned_sts[j]. If binned_sts contains only one
         SpikeTrain, C=1.0.
     mask : ndarray
-        If `with_nans` is False, a boolean array indicating empty (True) and 
+        If `with_nans` is False, a boolean array indicating empty (True) and
         non-empty (False) spike trains.
 
     Examples
@@ -149,7 +149,7 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
     cc_matrix[0,1] (or cc_matrix[1,0]).
 
     Option `with_nans=False` returns a boolean array.
-    
+
     >>> st1 = neo.SpikeTrain(
             [1,2,4,7]*s, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = neo.SpikeTrain(
@@ -170,7 +170,8 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
         binned_sts, binary, corrcoef_norm=True, with_nans=with_nans)
 
 
-def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm, with_nans=True):
+def __calculate_correlation_or_covariance(
+        binned_sts, binary, corrcoef_norm, with_nans=True):
     '''
     Helper function for covariance() and corrcoef() that performs the complete
     calculation for either the covariance (corrcoef_norm=False) or correlation
@@ -193,7 +194,7 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm, wit
         warnings.warn('Detected rows without spikes.')
     if not with_nans:
         return row_counts != 0
-    
+
     num_neurons = binned_sts.matrix_rows
 
     # Pre-allocate correlation matrix
@@ -216,8 +217,8 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm, wit
     # All combinations of spike trains
     for i in range(num_neurons):
         if row_counts[i] == 0:
-            C[i,:] = np.NaN
-            C[:,i] = np.NaN
+            C[i, :] = np.NaN
+            C[:, i] = np.NaN
             continue
         for j in range(i, num_neurons):
             # Enumerator:
@@ -343,8 +344,8 @@ def cross_correlation_histogram(
         which is more memory efficient but slower than the "speed" option.
         Default: "speed"
     cross_corr_coef : bool (optional)
-        Normalizes the CCH to obtain the cross-correlation  coefficient 
-        function ranging from -1 to 1 according to Equation (5.10) in 
+        Normalizes the CCH to obtain the cross-correlation  coefficient
+        function ranging from -1 to 1 according to Equation (5.10) in
         "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7
 
     Returns
@@ -408,11 +409,11 @@ def cross_correlation_histogram(
     -----
     cch
     """
-        
+
     def _cross_corr_coef(cch_result, binned_st1, binned_st2):
-        # Normalizes the CCH to obtain the cross-correlation 
+        # Normalizes the CCH to obtain the cross-correlation
         # coefficient function ranging from -1 to 1
-        N  = max(binned_st1.num_bins, binned_st2.num_bins)
+        N = max(binned_st1.num_bins, binned_st2.num_bins)
         Nx = len(binned_st1.spike_indices[0])
         Ny = len(binned_st2.spike_indices[0])
         spmat = [binned_st1.to_sparse_array(), binned_st2.to_sparse_array()]
@@ -421,10 +422,9 @@ def cross_correlation_histogram(
             bin_counts_unique.append(s.data)
         ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
         jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
-        rho_xy = (cch_result - Nx*Ny/N) / np.sqrt( (ii-Nx**2./N)*(jj-Ny**2./N) )
+        rho_xy = (cch_result - Nx * Ny / N) / np.sqrt((ii - Nx**2. / N) * (jj - Ny**2. / N))
         return rho_xy
-        
-        
+
     def _border_correction(counts, max_num_bins, l, r):
         # Correct the values taking into account lacking contributes
         # at the edges
@@ -656,6 +656,7 @@ def cross_correlation_histogram(
 
     return cch_result, bin_ids
 
+
 # Alias for common abbreviation
 cch = cross_correlation_histogram
 
@@ -772,7 +773,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         PB = run_P(spiketrain_2, spiketrain_1, N2, N1, dt)
         PB = PB / N2
         index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
-                1 - PB * TA)
+            1 - PB * TA)
     return index
 
 
