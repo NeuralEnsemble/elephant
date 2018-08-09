@@ -112,7 +112,7 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
         Default: False
     with_nans : bool, optional
         If True, correlations of empty spike trains are given NaN values. If 
-        False, a boolean array indicating empty (True) and non-empty (False) 
+        False, a boolean array indicating empty (False) and non-empty (True) 
         spike trains is returned. In each case a warning is raised when empty 
         spike trains are detected. 
         Default: True
@@ -158,7 +158,7 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> mask = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
     >>> print(mask)
-    [False, True]
+    [True, False]
 
     Notes
     -----
@@ -192,7 +192,7 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm, wit
     if row_counts.min() == 0:
         warnings.warn('Detected rows without spikes.')
     if not with_nans:
-        return row_counts == 0
+        return row_counts != 0
     
     num_neurons = binned_sts.matrix_rows
 

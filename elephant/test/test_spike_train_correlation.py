@@ -233,7 +233,7 @@ class corrcoeff_TestCase(unittest.TestCase):
             mask = sc.corrcoef(conv.BinnedSpikeTrain([st1, st2], binsize=5*pq.ms), with_nans=False)
             self.assertTrue(issubclass(w.pop().category, UserWarning))
         # test for a boolean mask
-        assert_array_equal(mask, np.array([False, True]))
+        assert_array_equal(mask, np.array([True, False]))
         
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):
