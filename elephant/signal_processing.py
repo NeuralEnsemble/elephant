@@ -192,7 +192,9 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
         plt.show()
     """
     # Make ch_pairs an 2D array
-    pairs = np.expand_dims(np.array(ch_pairs), axis=0)
+    pairs = np.array(ch_pairs)
+    if pairs.ndim == 1:
+        pairs = pairs[:, np.newaxis]
     
     # Check input
     a, b = np.shape(pairs)
