@@ -15,9 +15,7 @@ import scipy.signal as spsig
 import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
-
 import elephant.signal_processing
-
 from numpy.ma.testutils import assert_array_equal, assert_allclose
 
 
@@ -26,8 +24,8 @@ class XCorrelationTestCase(unittest.TestCase):
     def test_cross_correlation(self):
         '''
         Test cross-correlation function for two sinusoids
-        Note, that accuracy depends on N and min(f). E.g., f=0.1 and N=2018 only
-        has an accuracy on the order decimal=1
+        Note, that accuracy depends on N and min(f).
+        E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
         '''
         # Sine with phase shift phi vs cosine for different frequencies
         dt = 0.02
@@ -48,12 +46,14 @@ class XCorrelationTestCase(unittest.TestCase):
                     signal, [[0, 2], [1, 3]], dt=dt, nlags=N/4.6)
             env, _ = elephant.signal_processing.cross_correlation_function(
                     signal, [[0, 2], [1, 3]], dt=dt, nlags=N/4.6, env=True)
-            # Test if vector of lags tau has correct length (nlags working correctly)
+            # Test if vector of lags tau has correct length
             assert len(tau)==2*int(np.round(N/4.6))+1
             # Cross-correlation of sine and cosine should be sine
-            assert_array_almost_equal(rho[:,0], np.sin(2.*np.pi*f*tau+phi), decimal=2)
-            assert_array_almost_equal(rho[:,1], np.sin(2.*np.pi*f*tau+2*phi), decimal=2)
-            # Envelope should be one for sinusoidal function (env working correctly)
+            assert_array_almost_equal(
+                    rho[:,0], np.sin(2.*np.pi*f*tau+phi), decimal=2)
+            assert_array_almost_equal(
+                    rho[:,1], np.sin(2.*np.pi*f*tau+2*phi), decimal=2)
+            # Envelope should be one for sinusoidal function
             assert_array_almost_equal(env, np.ones_like(env), decimal=2)
 
 
