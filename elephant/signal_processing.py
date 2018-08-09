@@ -12,6 +12,7 @@ import numpy as np
 import scipy.signal
 import quantities as pq
 import neo
+import numpy.matlib as npm
 
 
 def zscore(signal, inplace=True):
@@ -134,6 +135,101 @@ def zscore(signal, inplace=True):
         return result[0]
     else:
         return result
+    
+    
+def cross_correlation_function(signal, channel1, channel2, dt=1., env=False, nlags=None):
+
+    """
+    Computes unbiased estimator of the cross-correlation function.
+    
+    Calculates the unbiased estimator of the cross-correlation function 
+    R(tau) = 1/(N-|k|) R'(tau), where R'(tau) = E[x(t)*y(t+tau)] for signal1
+    and signal2 in a pairwise manner, i.e. signal1[0] vs signal2[0], signal1[1]
+    vs signal2[1] and so on. The cross-correlation function is obtained 
+    by np.correlate. signal1 and signal2 are zscored beforehand.
+    Alternatively returns the Hilbert envelope of R(tau), which is useful to 
+    determine the correlation length of oscillatory signals.
+
+    Parameters
+    -----------
+    signal : neo.AnalogSignal
+        Signal that contains the LFP channels
+    channel1/2 : int, list, tuple, array
+        channels in signal for which to compute cross-correlation function
+    dt : float
+        Defines sampling period
+    env: bool
+        Return Hilbert envelope of cross-correlation function
+    nlags: int
+        Defines number of lags for cross-corelation function. Floats will be
+        rounded to nearest integer. Output is of length 2*nlags+1. If None, len(tau) = Nt
+
+    Returns
+    -------
+    neo.AnalogSignal or array-like (same as input)
+        Pairwise cross-correlation functions of signal1 and signal2. 
+        Output xcorr has same size as signal1 and signal2.
+    
+    Example:
+        dt = 0.02
+        N = 2018
+        f = 0.5
+        t = np.arange(N)*dt
+        x = np.zeros((N,2))
+        x[:,0] = 0.2 * np.sin(2.*np.pi*f*t + np.pi/2.)
+        x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
+        # Generate neo.AnalogSignals from x
+        signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms, 
+                                  sampling_rate=1/dt*pq.Hz, dtype=float)
+        rho, tau = elephant.signal_processing.cross_correlation_function(signal, 0, 1, dt=dt, nlags=150)
+        env, _ = elephant.signal_processing.cross_correlation_function(signal, 0, 1, dt=dt, nlags=150, env=True)
+        plt.plot(tau, rho)
+        plt.plot(tau, env) # should be equal to one
+        plt.show()
+    """
+    
+    # Convert channel indices to one-dimensional array
+    ch1 = np.array(channel1).ravel()
+    ch2 = np.array(channel2).ravel()
+    
+    # check input
+    assert len(ch1) == len(ch2), 'Error: shape of channel1 and channel2 is not identical!'\
+        'Cannot define pairs for cross-correlation.'
+    assert isinstance(signal, neo.AnalogSignal), 'Error: signal is not a neo.AnalogSignal!'
+    
+    # z-score analog signal and store channel time series in different arrays
+    # Cross-correlation will be calculated between x and y
+    zsig = zscore(signal).magnitude
+    x = zsig[:,ch1]
+    y = zsig[:,ch2]
+    
+    # Define vector of lags tau
+    Nt, Nch = np.shape(x)
+    tau = (np.arange(Nt) - Nt//2)*dt
+    
+    # Calculate cross-correlation by taking Fourier transform of signal,
+    # multiply in Fourier space, and transform back. Correct for bias due 
+    # to zero-padding
+    xcorr = np.zeros((Nt, Nch))
+    for i in xrange(Nch):
+        xcorr[:,i] = scipy.signal.fftconvolve(x[:,i], y[::-1,i], mode='same')
+    bias = npm.repmat((Nt-abs(tau/dt)), Nch, 1).T
+    xcorr = xcorr / bias
+        
+    # Calculate envelope of cross-correlation function with Hilber transform
+    # this is useful for transient oscillatory signals
+    if env:
+        for i in xrange(Nch):
+            xcorr[:,i] = np.abs( scipy.signal.hilbert(xcorr[:,i]) )
+    
+    # Cut off lags outside desired range
+    if nlags is not None:
+        nlags = int(np.round(nlags))
+        i0 = int(np.argwhere(tau==0))
+        xcorr = xcorr[i0-nlags:i0+nlags+1,:]
+        tau = tau[i0-nlags:i0+nlags+1]
+    
+    return xcorr, tau
 
 
 def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,

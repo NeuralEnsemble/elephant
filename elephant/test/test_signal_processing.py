@@ -21,6 +21,42 @@ import elephant.signal_processing
 from numpy.ma.testutils import assert_array_equal, assert_allclose
 
 
+class XCorrelationTestCase(unittest.TestCase):
+
+    def test_cross_correlation(self):
+        '''
+        Test cross-correlation function for two sinusoids
+        Note, that accuracy depends on N and min(f). E.g., f=0.1 and N=2018 only
+        has an accuracy on the order decimal=1
+        '''
+        # Sine with phase shift phi vs cosine for different frequencies
+        dt = 0.02
+        freq = np.linspace(0.5, 15, 8)
+        N = 2018
+        t = np.arange(N)*dt
+        phi = np.pi/6.
+        x = np.zeros((N,4))
+        for f in freq:
+            x[:,0] = 0.2 * np.sin(2.*np.pi*f*t+phi)
+            x[:,1] = 10.7 * np.sin(2.*np.pi*f*t+phi*2.)
+            x[:,2] = 5.3 * np.cos(2.*np.pi*f*t)
+            x[:,3] = 1875.35 * np.cos(2.*np.pi*f*t)
+            # Generate neo.AnalogSignals from x and y
+            signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms, 
+                                      sampling_rate=1/dt*pq.Hz, dtype=float)
+            rho, tau = elephant.signal_processing.cross_correlation_function(
+                    signal, [0, 1], [2, 3], dt=dt, nlags=N/4.6)
+            env, _ = elephant.signal_processing.cross_correlation_function(
+                    signal, [0, 1], [2, 3], dt=dt, nlags=N/4.6, env=True)
+            # Test if vector of lags tau has correct length (nlags working correctly)
+            assert len(tau)==2*int(np.round(N/4.6))+1
+            # Cross-correlation of sine and cosine should be sine
+            assert_array_almost_equal(rho[:,0], np.sin(2.*np.pi*f*tau+phi), decimal=2)
+            assert_array_almost_equal(rho[:,1], np.sin(2.*np.pi*f*tau+2*phi), decimal=2)
+            # Envelope should be one for sinusoidal function (env working correctly)
+            assert_array_almost_equal(env, np.ones_like(env), decimal=2)
+
+
 class ZscoreTestCase(unittest.TestCase):
 
     def setUp(self):
