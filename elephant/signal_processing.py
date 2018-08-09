@@ -12,7 +12,6 @@ import numpy as np
 import scipy.signal
 import quantities as pq
 import neo
-import numpy.matlib as npm
 
 
 def zscore(signal, inplace=True):
