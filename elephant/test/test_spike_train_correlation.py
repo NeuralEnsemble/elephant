@@ -14,6 +14,7 @@ import quantities as pq
 import neo
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
+import warnings
 
 
 class covariance_TestCase(unittest.TestCase):
@@ -220,6 +221,20 @@ class corrcoeff_TestCase(unittest.TestCase):
         self.assertEqual(target.ndim, 0)
         self.assertEqual(target, 1.)
 
+    def test_empty_spike_train(self):
+        st1 = neo.SpikeTrain(
+            [1,2,4,7] * pq.s, t_start=0.0 * pq.s, t_stop=10.0 * pq.s)
+        st2 = neo.SpikeTrain(
+            [] * pq.s, t_start=0.0 * pq.s, t_stop=10.0 * pq.s)
+
+        # test for a warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            mask = sc.corrcoef(conv.BinnedSpikeTrain([st1, st2], binsize=5*pq.ms), with_nans=False)
+            self.assertTrue(issubclass(w.pop().category, UserWarning))
+        # test for a boolean mask
+        assert_array_equal(mask, np.array([False, True]))
+        
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):
 
