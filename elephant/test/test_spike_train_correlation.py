@@ -468,22 +468,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             self.binned_st1, self.binned_st2, window='full', binary=False)
         assert_array_equal(cch_win, cch_unclipped[19:80])
 
-        cch_win, bin_ids = sc.cch(
-            self.binned_st1, self.binned_st2, window=[-25*pq.ms, 25*pq.ms])
-        cch_win_mem, bin_ids_mem = sc.cch(
-            self.binned_st1, self.binned_st2, window=[-25*pq.ms, 25*pq.ms],
-            method='memory')
-
-        assert_array_equal(bin_ids, np.arange(-25, 26, 1))
-        assert_array_equal(
-            (bin_ids - 0.5) * self.binned_st1.binsize, cch_win.times)
-
-        assert_array_equal(bin_ids_mem, np.arange(-25, 26, 1))
-        assert_array_equal(
-            (bin_ids_mem - 0.5) * self.binned_st1.binsize, cch_win.times)
-
-        assert_array_equal(cch_win, cch_win_mem)
-
         _, bin_ids = sc.cch(
             self.binned_st1, self.binned_st2, window=[20, 30])
         _, bin_ids_mem = sc.cch(
@@ -502,48 +486,21 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         assert_array_equal(bin_ids, np.arange(-30, -19, 1))
         assert_array_equal(bin_ids_mem, np.arange(-30, -19, 1))
 
-        # Cehck for wrong assignments to the window parameter
+        # Check for wrong assignments to the window parameter
+        # Test for window longer than the total length of the spike trains
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window=[-60, 50])
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-60, 50], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window=[-50, 60])
+        # Test for no integer or wrong string in input
         self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-50, 60], method='memory')
-
+            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            self.binned_st2, window=[-25.5, 25.5])
         self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25.5*pq.ms, 25*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25.5*pq.ms, 25*pq.ms], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25*pq.ms, 25.5*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25*pq.ms, 25.5*pq.ms], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-60*pq.ms, 50*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-60*pq.ms, 50*pq.ms], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-50*pq.ms, 60*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-50*pq.ms, 60*pq.ms], method='memory')
+            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            self.binned_st2, window='test')
 
     def test_border_correction(self):
         '''Test if the border correction for bins at the edges is correctly

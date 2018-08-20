@@ -269,12 +269,11 @@ def cross_correlation_histogram(
         The cross-correlation product is only given for points where the
         signals overlap completely.
         Values outside the signal boundary have no effect.
+        list of integer (window[0]=minimum lag, window[1]=maximum lag): The
+        entries of window are two integers representing the left and
+        right extremes (expressed as number of bins) where the
+        crosscorrelation is computed
         Default: 'full'
-        list of integer of of quantities (window[0]=minimum, window[1]=maximum
-        lag): The  entries of window can be integer (number of bins) or
-        quantities (time units of the lag), in the second case they have to be
-        a multiple of the binsize
-        Default: 'Full'
     border_correction : bool (optional)
         whether to correct for the border effect. If True, the value of the
         CCH at bin b (for b=-H,-H+1, ...,H, where H is the CCH half-length)
@@ -415,55 +414,11 @@ def cross_correlation_histogram(
         # Smooth the cross-correlation histogram with the kern
         return np.convolve(counts, kern, mode='same')
 
-    def _cch_memory(binned_st1, binned_st2, win, border_corr, binary, kern):
+    def _cch_memory(binned_st1, binned_st2, l, r, border_corr, binary, kern):
 
         # Retrieve unclipped matrix
         st1_spmat = binned_st1.to_sparse_array()
         st2_spmat = binned_st2.to_sparse_array()
-        binsize = binned_st1.binsize
-        max_num_bins = max(binned_st1.num_bins, binned_st2.num_bins)
-
-        # Set the time window in which is computed the cch
-        if not isinstance(win, str):
-            # Window parameter given in number of bins (integer)
-            if isinstance(win[0], int) and isinstance(win[1], int):
-                # Check the window parameter values
-                if win[0] >= win[1] or win[0] <= -max_num_bins \
-                        or win[1] >= max_num_bins:
-                    raise ValueError(
-                        "The window exceeds the length of the spike trains")
-                # Assign left and right edges of the cch
-                l, r = win[0], win[1]
-            # Window parameter given in time units
-            else:
-                # Check the window parameter values
-                if win[0].rescale(binsize.units).magnitude % \
-                    binsize.magnitude != 0 or win[1].rescale(
-                        binsize.units).magnitude % binsize.magnitude != 0:
-                    raise ValueError(
-                        "The window has to be a multiple of the binsize")
-                if win[0] >= win[1] or win[0] <= -max_num_bins * binsize \
-                        or win[1] >= max_num_bins * binsize:
-                    raise ValueError("The window exceeds the length of the"
-                                     " spike trains")
-                # Assign left and right edges of the cch
-                l, r = int(win[0].rescale(binsize.units) / binsize), int(
-                    win[1].rescale(binsize.units) / binsize)
-        # Case without explicit window parameter
-        elif window == 'full':
-            # cch computed for all the possible entries
-            # Assign left and right edges of the cch
-            r = binned_st2.num_bins - 1
-            l = - binned_st1.num_bins + 1
-            # cch compute only for the entries that completely overlap
-        elif window == 'valid':
-            # cch computed only for valid entries
-            # Assign left and right edges of the cch
-            r = max(binned_st2.num_bins - binned_st1.num_bins, 0)
-            l = min(binned_st2.num_bins - binned_st1.num_bins, 0)
-        # Check the mode parameter
-        else:
-            raise KeyError("Invalid window parameter")
 
         # For each row, extract the nonzero column indices
         # and the corresponding # data in the matrix (for performance reasons)
@@ -511,66 +466,23 @@ def cross_correlation_histogram(
         # central one
         return cch_result, bin_ids
 
-    def _cch_speed(binned_st1, binned_st2, win, border_corr, binary, kern):
+    def _cch_speed(binned_st1, binned_st2, l, r, cch_mode,
+                   border_corr, binary, kern):
 
         # Retrieve the array of the binne spik train
         st1_arr = binned_st1.to_array()[0, :]
         st2_arr = binned_st2.to_array()[0, :]
-        binsize = binned_st1.binsize
 
         # Convert the to binary version
         if binary:
             st1_arr = np.array(st1_arr > 0, dtype=int)
             st2_arr = np.array(st2_arr > 0, dtype=int)
-        max_num_bins = max(len(st1_arr), len(st2_arr))
-
-        # Cross correlate the spiketrains
-
-        # Case explicit temporal window
-        if not isinstance(win, str):
-            # Window parameter given in number of bins (integer)
-            if isinstance(win[0], int) and isinstance(win[1], int):
-                # Check the window parameter values
-                if win[0] >= win[1] or win[0] <= -max_num_bins \
-                        or win[1] >= max_num_bins:
-                    raise ValueError(
-                        "The window exceed the length of the spike trains")
-                # Assign left and right edges of the cch
-                l, r = win
-            # Window parameter given in time units
-            else:
-                # Check the window parameter values
-                if win[0].rescale(binsize.units).magnitude % \
-                    binsize.magnitude != 0 or win[1].rescale(
-                        binsize.units).magnitude % binsize.magnitude != 0:
-                    raise ValueError(
-                        "The window has to be a multiple of the binsize")
-                if win[0] >= win[1] or win[0] <= -max_num_bins * binsize \
-                        or win[1] >= max_num_bins * binsize:
-                    raise ValueError("The window exceed the length of the"
-                                     " spike trains")
-                # Assign left and right edges of the cch
-                l, r = int(win[0].rescale(binsize.units) / binsize), int(
-                    win[1].rescale(binsize.units) / binsize)
-
-            # Zero padding
-            st1_arr = np.pad(
-                st1_arr, (int(np.abs(np.min([l, 0]))), np.max([r, 0])),
-                mode='constant')
+        if cch_mode == 'pad':
+            # Zero padding to stay between l and r
+            st1_arr = np.pad(st1_arr,
+                (int(np.abs(np.min([l, 0]))), np.max([r, 0])),
+                           mode = 'constant')
             cch_mode = 'valid'
-        else:
-            # Assign the edges of the cch for the different mode parameters
-            if win == 'full':
-                # Assign left and right edges of the cch
-                r = binned_st2.num_bins - 1
-                l = - binned_st1.num_bins + 1
-            # cch compute only for the entries that completely overlap
-            elif win == 'valid':
-                # Assign left and right edges of the cch
-                r = max(binned_st2.num_bins - binned_st1.num_bins, 0)
-                l = min(binned_st2.num_bins - binned_st1.num_bins, 0)
-            cch_mode = win
-
         # Cross correlate the spike trains
         counts = np.correlate(st2_arr, st1_arr, mode=cch_mode)
         bin_ids = np.r_[l:r + 1]
@@ -606,14 +518,46 @@ def cross_correlation_histogram(
     if not binned_st1.t_stop == binned_st2.t_stop:
         raise AssertionError("Spike train must have same t stop")
 
+    # The maximum number of of bins
+    max_num_bins = max(binned_st1.num_bins, binned_st2.num_bins)
+
+    # Set the time window in which is computed the cch
+    # Window parameter given in number of bins (integer)
+    if isinstance(window[0], int) and isinstance(window[1], int):
+        # Check the window parameter values
+        if window[0] >= window[1] or window[0] <= -max_num_bins \
+                or window[1] >= max_num_bins:
+            raise ValueError(
+                "The window exceeds the length of the spike trains")
+        # Assign left and right edges of the cch
+        l, r = window[0], window[1]
+        # The mode in which to compute the cch for the speed implementation
+        cch_mode = 'pad'
+    # Case without explicit window parameter
+    elif window == 'full':
+        # cch computed for all the possible entries
+        # Assign left and right edges of the cch
+        r = binned_st2.num_bins - 1
+        l = - binned_st1.num_bins + 1
+        cch_mode = window
+        # cch compute only for the entries that completely overlap
+    elif window == 'valid':
+        # cch computed only for valid entries
+        # Assign left and right edges of the cch
+        r = max(binned_st2.num_bins - binned_st1.num_bins, 0)
+        l = min(binned_st2.num_bins - binned_st1.num_bins, 0)
+        cch_mode = window
+    # Check the mode parameter
+    else:
+        raise KeyError("Invalid window parameter")
+
     if method == "memory":
         cch_result, bin_ids = _cch_memory(
-            binned_st1, binned_st2, window, border_correction, binary,
+            binned_st1, binned_st2, l, r, border_correction, binary,
             kernel)
     elif method == "speed":
-
         cch_result, bin_ids = _cch_speed(
-            binned_st1, binned_st2, window, border_correction, binary,
+            binned_st1, binned_st2, l, r, cch_mode, border_correction, binary,
             kernel)
 
     if cross_corr_coef:
