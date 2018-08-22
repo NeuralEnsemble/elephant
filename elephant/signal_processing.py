@@ -239,7 +239,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
-def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
+def wavelet_transform(signal, freq, nco, fs=1.0, zero_padding=True):
     """
     Compute the wavelet transform of a given signal with Morlet mother wavelet.
     The definition of the wavelet is based on Le van Quyen et al. J
@@ -260,8 +260,10 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
         in a range of 3 - 8, but one should be cautious when using a value
         smaller than ~6, in which case the admissibility of the wavelet is not
         ensured (c.f. Farge, Annu Rev Fluid Mech 24:395-458 (1992)).
-    fs : float
-        Sampling rate of the signal in Hz.
+    fs : float (optional, default: 1.0)
+        Sampling rate of the signal in Hz. When the input is given as an
+        AnalogSignal, the sampling frequency is taken from its attribute and
+        this parameter is ignored.
     zero_padding : bool (optional, default: True)
         Specifies whether the signal length is extended to the least power of
         2 greater than the original length, by padding zeros to the tail, for
@@ -294,6 +296,11 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     if isinstance(signal, neo.AnalogSignal):
         data = np.rollaxis(data, 0, len(data.shape))[0]
 
+    # When the input is AnalogSignal, use its attribute to specify the
+    # sampling frequency
+    if hasattr(signal, 'sampling_rate'):
+        fs = signal.sampling_rate.rescale('Hz').magnitude
+
     if isinstance(freq, (list, tuple, np.ndarray)):
         freqs = np.asarray(freq)
     else:
@@ -303,12 +310,11 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     # Nyquist frequency of the signal
     if np.any(freqs >= fs / 2):
         raise ValueError(
-            "freq must be less than the half of fs " +
-            "(sampling rate of the original signal)")
+            "`freq` must be less than the half of the sampling rate `fs` = {} Hz".format(fs))
 
     # check if nco is positive
     if nco <= 0:
-        raise ValueError("nco must be positive")
+        raise ValueError("`nco` must be positive")
 
     n_orig = len(data)
     if zero_padding:

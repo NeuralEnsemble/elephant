@@ -606,7 +606,7 @@ class WaveletTestCase(unittest.TestCase):
         # check the data type and the consistency between types
         wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 6, self.fs)
         wt_pq = elephant.signal_processing.wavelet_transform(self.test_data_pq, self.freq, 6, self.fs)
-        wt_neo = elephant.signal_processing.wavelet_transform(self.test_data_neo, self.freq, 6, self.fs)
+        wt_neo = elephant.signal_processing.wavelet_transform(self.test_data_neo, self.freq, 6)
 
         self.assertTrue(isinstance(wt, type(self.test_data)))
         self.assertTrue(isinstance(wt_pq, type(self.test_data_pq)))
