@@ -239,7 +239,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
-def wavelet_transform(signal, freq, nco, fs):
+def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     """
     Compute the wavelet transform of a given signal with Morlet mother wavelet.
     The definition of the wavelet is based on Le van Quyen et al. J
@@ -260,6 +260,12 @@ def wavelet_transform(signal, freq, nco, fs):
         ensured (c.f. Farge, Annu Rev Fluid Mech 24:395-458 (1992)).
     fs : float
         Sampling rate of the signal in Hz.
+    zero_padding : bool (optional, default: True)
+        Specifies whether the signal length is extended to the least power of
+        2 greater than the original length, by padding zeros to the tail, for
+        speeding up the computation. In the case of True, the final result is
+        sliced to the original length before being returned, so that it does
+        not contain the extended part.
 
     Returns
     -------
@@ -295,19 +301,18 @@ def wavelet_transform(signal, freq, nco, fs):
     if nco <= 0:
         raise ValueError("nco must be positive")
 
-    N = len(data)
-    # the least power of 2 greater than N
-    N_pow2 = 2 ** (int(np.log2(N)) + 1)
-
-    # zero-padding to a power of 2 for efficient convolution
-    tmpdata = np.zeros(N_pow2)
-    tmpdata[0:N] = data
+    n_orig = len(data)
+    if zero_padding:
+        n = 2 ** (int(np.log2(n_orig)) + 1)
+        data = np.concatenate([data, np.zeros(n - n_orig)])
+    else:
+        n = n_orig
 
     # generate Morlet wavelet
-    wavelet = _morlet_wavelet(freq, nco, fs, N_pow2)
+    wavelet = _morlet_wavelet(freq, nco, fs, n)
 
     # convolution of the signal with the wavelet
-    signal_trans = np.fft.ifft(np.fft.fft(tmpdata) * np.fft.fft(wavelet))[0:N]
+    signal_trans = np.fft.ifft(np.fft.fft(data) * np.fft.fft(wavelet))[0:n_orig]
 
     if isinstance(signal, neo.AnalogSignal):
         return signal.duplicate_with_new_array(signal_trans.T)
