@@ -250,14 +250,16 @@ def wavelet_transform(signal, freq, nco, fs):
     signal : 1D array_like
         Signal to be wavelet-transformed
     freq : float
-        Center frequency of the Morlet wavelet.
+        Center frequency of the Morlet wavelet in Hz.
     nco : float
         Size of the mother wavelet (approximate number of cycles within a
         wavelet). A larger nco value leads to a higher frequency resolution but
         a lower temporal resolution, and vice versa. Typically used values are
-        in a range of 3 - 8.
+        in a range of 3 - 8, but one should be cautious when using a value
+        smaller than ~6, in which case the admissibility of the wavelet is not
+        ensured (c.f. Farge, Annu Rev Fluid Mech 24:395-458 (1992)).
     fs : float
-        Sampling rate of the signal.
+        Sampling rate of the signal in Hz.
 
     Returns
     -------
