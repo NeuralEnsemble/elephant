@@ -272,17 +272,16 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     signal_trans: 1D complex array_like
         Wavelet-transformed signal
     """
-    # Morlet wavelet generator (c.f. Le van Quyen et al. J Neurosci Meth
-    # 111:83-98 (2001))
-    def _morlet_wavelet(freq, nco, Fs, N):
+    def _morlet_wavelet_ft(freq, nco, fs, n):
+        # Generate the Fourier transform of Morlet wavelet as defined
+        # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
         sigma = nco / (6. * freq)
-        t = (np.arange(N, dtype='float') - N / 2) / Fs
-        if N % 2 == 0:
-            t = np.roll(t, int(N / 2))
-        else:
-            t = np.roll(t, int(N / 2) + 1)
-        return np.sqrt(freq) * np.exp(
-            -(t * t) / (2 * sigma ** 2) + 1j * 2 * np.pi * freq * t)
+        freqs = np.fft.fftfreq(n, 1.0 / fs)
+        heaviside = np.array(freqs > 0., dtype=np.float)
+        ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
+            -2 * (np.pi * sigma * (freqs - freq)) ** 2) * heaviside * fs
+        ft_imag = np.zeros_like(ft_real)
+        return ft_real + 1.0j * ft_imag
 
     data = np.asarray(signal)
     # When the input is AnalogSignal, the axis for time index (i.e. the
@@ -309,10 +308,10 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
         n = n_orig
 
     # generate Morlet wavelet
-    wavelet = _morlet_wavelet(freq, nco, fs, n)
+    wavelet_ft = _morlet_wavelet_ft(freq, nco, fs, n)
 
     # convolution of the signal with the wavelet
-    signal_trans = np.fft.ifft(np.fft.fft(data) * np.fft.fft(wavelet))[0:n_orig]
+    signal_trans = np.fft.ifft(np.fft.fft(data) * wavelet_ft)[0:n_orig]
 
     if isinstance(signal, neo.AnalogSignal):
         return signal.duplicate_with_new_array(signal_trans.T)
