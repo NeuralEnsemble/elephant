@@ -249,8 +249,10 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     ----------
     signal : 1D array_like
         Signal to be wavelet-transformed
-    freq : float
-        Center frequency of the Morlet wavelet in Hz.
+    freq : float or list of floats
+        Center frequency of the Morlet wavelet in Hz. Multiple frequencies can
+        be given as a list, in which case the function computes the wavelet
+        transforms for the given frequencies at once.
     nco : float
         Size of the mother wavelet (approximate number of cycles within a
         wavelet). A larger nco value leads to a higher frequency resolution but
@@ -269,8 +271,11 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
 
     Returns
     -------
-    signal_trans: 1D complex array_like
-        Wavelet-transformed signal
+    signal_trans: 1D or 2D complex array_like
+        Wavelet-transformed signal. When multiple center frequencies were
+        given, wavelet transforms for different frequencies are stored in
+        the rows of 2D output array (when the input was an array) or the
+        columns of AnalogSignal.signal (when the input was an AnalogSignal).
     """
     def _morlet_wavelet_ft(freq, nco, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
@@ -289,11 +294,16 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     if isinstance(signal, neo.AnalogSignal):
         data = np.rollaxis(data, 0, len(data.shape))[0]
 
-    # check whether the given central frequency is less than the Nyquist
-    # frequency of the signal
-    if freq >= fs / 2:
+    if isinstance(freq, (list, tuple, np.ndarray)):
+        freqs = np.asarray(freq)
+    else:
+        freqs = np.array([freq,])
+
+    # check whether the given central frequencies are less than the
+    # Nyquist frequency of the signal
+    if np.any(freqs >= fs / 2):
         raise ValueError(
-            "freq must be less than the half of Fs "+
+            "freq must be less than the half of fs " +
             "(sampling rate of the original signal)")
 
     # check if nco is positive
@@ -307,11 +317,15 @@ def wavelet_transform(signal, freq, nco, fs, zero_padding=True):
     else:
         n = n_orig
 
-    # generate Morlet wavelet
-    wavelet_ft = _morlet_wavelet_ft(freq, nco, fs, n)
+    # generate Morlet wavelets (in the frequency domain)
+    wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
+    for i, freq in enumerate(freqs):
+        wavelet_fts[i] = _morlet_wavelet_ft(freq, nco, fs, n)
 
     # convolution of the signal with the wavelet
-    signal_trans = np.fft.ifft(np.fft.fft(data) * wavelet_ft)[0:n_orig]
+    signal_trans = np.fft.ifft(np.fft.fft(data) * wavelet_fts)[:, 0:n_orig]
+    if len(freqs) == 1:
+        signal_trans = signal_trans[0]
 
     if isinstance(signal, neo.AnalogSignal):
         return signal.duplicate_with_new_array(signal_trans.T)
