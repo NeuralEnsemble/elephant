@@ -570,8 +570,9 @@ class HilbertTestCase(unittest.TestCase):
 
 class WaveletTestCase(unittest.TestCase):
     def setUp(self):
+        # generate a 10-sec test data of pure 50 Hz cosine wave
         self.fs = 1000.0
-        self.freq = 10.0
+        self.freq = 50.0
         self.times = np.arange(0, 10.0, 1/self.fs)
         self.test_data = np.cos(2*np.pi*self.freq*self.times)
         self.test_data_pq = self.test_data*pq.mV
@@ -588,6 +589,10 @@ class WaveletTestCase(unittest.TestCase):
         kwds = {'signal': self.test_data, 'freq': self.fs/2, 'nco': 3, 'fs': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+        kwds = {'signal': self.test_data, 'freq': [self.fs/10, self.fs/2], 'nco': 3, 'fs': self.fs}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+
         # nco is not positive
         kwds = {'signal': self.test_data, 'freq': self.freq, 'nco': 0, 'fs': self.fs}
         self.assertRaises(
@@ -595,12 +600,13 @@ class WaveletTestCase(unittest.TestCase):
 
     def test_wavelet_io(self):
         """
-        Tests the data type of the output is consistent with that of the input, and also test the consistency between
-        the outputs of different types
+        Tests the data type and data shape of the output is consistent with that of the input, and also test the
+        consistency between the outputs of different types
         """
-        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 3, self.fs)
-        wt_pq = elephant.signal_processing.wavelet_transform(self.test_data_pq, self.freq, 3, self.fs)
-        wt_neo = elephant.signal_processing.wavelet_transform(self.test_data_neo, self.freq, 3, self.fs)
+        # check the data type and the consistency between types
+        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 6, self.fs)
+        wt_pq = elephant.signal_processing.wavelet_transform(self.test_data_pq, self.freq, 6, self.fs)
+        wt_neo = elephant.signal_processing.wavelet_transform(self.test_data_neo, self.freq, 6, self.fs)
 
         self.assertTrue(isinstance(wt, type(self.test_data)))
         self.assertTrue(isinstance(wt_pq, type(self.test_data_pq)))
@@ -609,32 +615,56 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(np.all(wt == wt_pq.magnitude))
         self.assertTrue(np.all(wt == wt_neo.magnitude[:, 0]))
 
+        # check the data shape in the case where freq is given as a list
+        wt_2freqs = elephant.signal_processing.wavelet_transform(self.test_data, [self.freq, self.freq/2], 6, self.fs)
+        wt_neo_2freqs = elephant.signal_processing.wavelet_transform(self.test_data_neo, [self.freq, self.freq/2], 6,
+                                                                     self.fs)
+        self.assertTrue(wt_2freqs.shape == (2, len(self.test_data)))
+        self.assertTrue(wt_neo_2freqs.shape == (len(self.test_data), 2))
+
+        # check the data contents in the case where freq is given as a list
+        # Note: there seems to be a bug in np.fft since NumPy 1.14.1, which causes that the values of wt and
+        # wt_2freqs[0] are not exactly equal, even though they use the same center frequency for wavelet transform
+        # (in NumPy 1.13.1, they become identical). Here we only check that they are almost equal.
+        assert_array_almost_equal(wt, wt_2freqs[0], decimal=12)
+
     def test_wavelet_amplitude(self):
         """
         Tests amplitude properties of the obtained wavelet transform
         """
         # check that the amplitude of WT of a sinusoid is (almost) constant
-        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 3, self.fs)
+        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 6, self.fs)
         amp = np.abs(wt[int(len(wt)/3):int(len(wt)//3*2)])  # take a middle segment in order to avoid edge effects
         mean_amp = amp.mean()
         assert_array_almost_equal((amp - mean_amp) / mean_amp, np.zeros_like(amp), decimal=6)
 
         # check that the amplitude of WT is (almost) zero when center frequency is considerably different from signal
         # frequency
-        wt_low = elephant.signal_processing.wavelet_transform(self.test_data, self.freq/10, 3, self.fs)
+        wt_low = elephant.signal_processing.wavelet_transform(self.test_data, self.freq/10, 6, self.fs)
         amp_low = np.abs(wt_low[int(len(wt)/3):int(len(wt)//3*2)])
         assert_array_almost_equal(amp_low, np.zeros_like(amp), decimal=6)
+
+        # check that zero padding hardly affect the result
+        wt_padded = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 6, self.fs,
+                                                                 zero_padding=False)
+        amp_padded = np.abs(wt_padded[int(len(wt)/3):int(len(wt)//3*2)])
+        assert_array_almost_equal(amp_padded, amp, decimal=9)
 
     def test_wavelet_phase(self):
         """
         Tests phase properties of the obtained wavelet transform
         """
         # check that the phase of WT is (almost) same as that of the original sinusoid
-        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 3, self.fs)
+        wt = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 6, self.fs)
         phase = np.angle(wt[int(len(wt)/3):int(len(wt)//3*2)])
         true_phase = self.true_phase[int(len(wt)/3):int(len(wt)//3*2)]
         assert_array_almost_equal(np.exp(1j*phase), np.exp(1j*true_phase), decimal=6)
 
+        # check that zero padding hardly affect the result
+        wt_padded = elephant.signal_processing.wavelet_transform(self.test_data, self.freq, 6, self.fs,
+                                                                 zero_padding=False)
+        phase_padded = np.angle(wt_padded[int(len(wt)/3):int(len(wt)//3*2)])
+        assert_array_almost_equal(np.exp(1j*phase_padded), np.exp(1j*phase), decimal=9)
 
 
 if __name__ == '__main__':
