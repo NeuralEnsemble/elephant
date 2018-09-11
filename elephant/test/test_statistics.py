@@ -6,7 +6,7 @@ Unit tests for the statistics module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
-    
+
 import unittest
 
 import neo
@@ -384,8 +384,10 @@ class RateEstimationTestCase(unittest.TestCase):
         self.st_margin = 5.0  # seconds
         self.st_rate = 10.0  # Hertz
 
-        st_num_spikes = np.random.poisson(self.st_rate*(self.st_dur-2*self.st_margin))
-        spike_train = np.random.rand(st_num_spikes) * (self.st_dur-2*self.st_margin) + self.st_margin
+        st_num_spikes = np.random.poisson(
+            self.st_rate*(self.st_dur-2*self.st_margin))
+        spike_train = np.random.rand(
+            st_num_spikes) * (self.st_dur-2*self.st_margin) + self.st_margin
         spike_train.sort()
 
         # convert spike train into neo objects
@@ -394,7 +396,7 @@ class RateEstimationTestCase(unittest.TestCase):
                                           t_stop=self.st_tr[1]*pq.s)
 
         # generation of a multiply used specific kernel
-        self.kernel = kernels.TriangularKernel(sigma = 0.03*pq.s)
+        self.kernel = kernels.TriangularKernel(sigma=0.03*pq.s)
 
     def test_instantaneous_rate_and_warnings(self):
         st = self.spike_train
@@ -402,24 +404,27 @@ class RateEstimationTestCase(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             inst_rate = es.instantaneous_rate(
                 st, sampling_period, self.kernel, cutoff=0)
-            self.assertEqual("The width of the kernel was adjusted to a minimally "
-                             "allowed width.", str(w[-2].message))
-            self.assertEqual("Instantaneous firing rate approximation contains "
-                             "negative values, possibly caused due to machine "
-                             "precision errors.", str(w[-1].message))
+            message1 = "The width of the kernel was adjusted to a minimally " \
+                       "allowed width."
+            message2 = "Instantaneous firing rate approximation contains " \
+                       "negative values, possibly caused due to machine " \
+                       "precision errors."
+            warning_message = [str(m.message) for m in w]
+            self.assertTrue(message1 in warning_message)
+            self.assertTrue(message2 in warning_message)
         self.assertIsInstance(inst_rate, neo.core.AnalogSignal)
-        self.assertEquals(
+        self.assertEqual(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
-        self.assertEquals(inst_rate.simplified.units, pq.Hz)
-        self.assertEquals(inst_rate.t_stop.simplified, st.t_stop.simplified)
-        self.assertEquals(inst_rate.t_start.simplified, st.t_start.simplified)
+        self.assertEqual(inst_rate.simplified.units, pq.Hz)
+        self.assertEqual(inst_rate.t_stop.simplified, st.t_stop.simplified)
+        self.assertEqual(inst_rate.t_start.simplified, st.t_start.simplified)
 
     def test_error_instantaneous_rate(self):
         self.assertRaises(
-            TypeError, es.instantaneous_rate, spiketrain=[1,2,3]*pq.s,
+            TypeError, es.instantaneous_rate, spiketrain=[1, 2, 3]*pq.s,
             sampling_period=0.01*pq.ms, kernel=self.kernel)
         self.assertRaises(
-            TypeError, es.instantaneous_rate, spiketrain=[1,2,3],
+            TypeError, es.instantaneous_rate, spiketrain=[1, 2, 3],
             sampling_period=0.01*pq.ms, kernel=self.kernel)
         st = self.spike_train
         self.assertRaises(
@@ -432,9 +437,9 @@ class RateEstimationTestCase(unittest.TestCase):
             TypeError, es.instantaneous_rate, spiketrain=st,
             sampling_period=0.01*pq.ms, kernel='NONE')
         self.assertRaises(TypeError, es.instantaneous_rate, self.spike_train,
-            sampling_period=0.01*pq.s, kernel='wrong_string',
-            t_start=self.st_tr[0]*pq.s, t_stop=self.st_tr[1]*pq.s,
-            trim=False)
+                          sampling_period=0.01*pq.s, kernel='wrong_string',
+                          t_start=self.st_tr[0]*pq.s, t_stop=self.st_tr[1]*pq.s,
+                          trim=False)
         self.assertRaises(
             TypeError, es.instantaneous_rate, spiketrain=st,
             sampling_period=0.01*pq.ms, kernel=self.kernel, cutoff=20*pq.ms)
@@ -464,30 +469,30 @@ class RateEstimationTestCase(unittest.TestCase):
         kernel_resolution = 0.01*pq.s
         for kernel in kernel_list:
             rate_estimate_a0 = es.instantaneous_rate(self.spike_train,
-                                            sampling_period=kernel_resolution,
-                                            kernel='auto',
-                                            t_start=self.st_tr[0]*pq.s,
-                                            t_stop=self.st_tr[1]*pq.s,
-                                            trim=False)
+                                                     sampling_period=kernel_resolution,
+                                                     kernel='auto',
+                                                     t_start=self.st_tr[0]*pq.s,
+                                                     t_stop=self.st_tr[1]*pq.s,
+                                                     trim=False)
 
             rate_estimate0 = es.instantaneous_rate(self.spike_train,
-                                            sampling_period=kernel_resolution,
-                                            kernel=kernel)
+                                                   sampling_period=kernel_resolution,
+                                                   kernel=kernel)
 
             rate_estimate1 = es.instantaneous_rate(self.spike_train,
-                                            sampling_period=kernel_resolution,
-                                            kernel=kernel,
-                                            t_start=self.st_tr[0]*pq.s,
-                                            t_stop=self.st_tr[1]*pq.s,
-                                            trim=False)
+                                                   sampling_period=kernel_resolution,
+                                                   kernel=kernel,
+                                                   t_start=self.st_tr[0]*pq.s,
+                                                   t_stop=self.st_tr[1]*pq.s,
+                                                   trim=False)
 
             rate_estimate2 = es.instantaneous_rate(self.spike_train,
-                                            sampling_period=kernel_resolution,
-                                            kernel=kernel,
-                                            t_start=self.st_tr[0]*pq.s,
-                                            t_stop=self.st_tr[1]*pq.s,
-                                            trim=True)
-            ### test consistency
+                                                   sampling_period=kernel_resolution,
+                                                   kernel=kernel,
+                                                   t_start=self.st_tr[0]*pq.s,
+                                                   t_stop=self.st_tr[1]*pq.s,
+                                                   trim=True)
+            # test consistency
             rate_estimate_list = [rate_estimate0, rate_estimate1,
                                   rate_estimate2, rate_estimate_a0]
 
@@ -498,12 +503,14 @@ class RateEstimationTestCase(unittest.TestCase):
                 self.assertAlmostEqual(num_spikes, auc, delta=0.05*num_spikes)
 
     def test_instantaneous_rate_spiketrainlist(self):
-        st_num_spikes = np.random.poisson(self.st_rate*(self.st_dur-2*self.st_margin))
-        spike_train2 = np.random.rand(st_num_spikes) * (self.st_dur - 2 * self.st_margin) + self.st_margin
+        st_num_spikes = np.random.poisson(
+            self.st_rate*(self.st_dur-2*self.st_margin))
+        spike_train2 = np.random.rand(
+            st_num_spikes) * (self.st_dur - 2 * self.st_margin) + self.st_margin
         spike_train2.sort()
         spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
-                                          t_start=self.st_tr[0] * pq.s,
-                                          t_stop=self.st_tr[1] * pq.s)
+                                      t_start=self.st_tr[0] * pq.s,
+                                      t_stop=self.st_tr[1] * pq.s)
         st_rate_1 = es.instantaneous_rate(self.spike_train,
                                           sampling_period=0.01*pq.s,
                                           kernel=self.kernel)
@@ -524,6 +531,7 @@ class RateEstimationTestCase(unittest.TestCase):
         # function should react with a ValueError.
         st = neo.SpikeTrain([2.12, 2.13, 2.15] * pq.s, t_stop=10 * pq.s)
         self.assertRaises(ValueError, es.instantaneous_rate, st, 1 * pq.ms)
+
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):

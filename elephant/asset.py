@@ -41,7 +41,6 @@ References:
 [1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted)
 """
 
-
 import numpy as np
 import scipy.spatial
 import scipy.stats
@@ -51,6 +50,7 @@ import itertools
 import elephant.conversion as conv
 import elephant.spike_train_surrogates as spike_train_surrogates
 from sklearn.cluster import dbscan as dbscan
+
 
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
@@ -78,7 +78,7 @@ def _signals_same_tstart(signals):
     signals : list
         a list of signals (e.g. AnalogSignals or SpikeTrains) having
         attribute `t_start`
-
+en
     Returns
     -------
     t_start : Quantity
@@ -248,7 +248,7 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
 
     # Compute and return the transaction list
     return [[train_id for train_id, b in zip(ids, filled_bins)
-            if bin_id in b] for bin_id in _xrange(Nbins)]
+             if bin_id in b] for bin_id in _xrange(Nbins)]
 
 
 def _analog_signal_step_interp(signal, times):
@@ -379,6 +379,7 @@ def _time_slice(signal, t_start, t_stop):
 
     return sliced_signal
 
+
 # =============================================================================
 # HERE ASSET STARTS
 # =============================================================================
@@ -420,12 +421,12 @@ def intersection_matrix(
         type of normalization to be applied to each entry [i,j] of the
         intersection matrix. Given the sets s_i, s_j of neuron ids in the
         bins i, j respectively, the normalisation coefficient can be:
-        
+
             * norm = 0 or None: no normalisation (row counts)
             * norm = 1: len(intersection(s_i, s_j))
             * norm = 2: sqrt(len(s_1) * len(s_2))
             * norm = 3: len(union(s_i, s_j))
-            
+
         Default: None
 
     Returns
@@ -455,7 +456,7 @@ def intersection_matrix(
         if not (st.t_stop > t_stop_max or
                 _quantities_almost_equal(st.t_stop, t_stop_max)):
             msg = 'SpikeTrain %d is shorter than the required time ' % i + \
-                'span: t_stop (%s) < %s' % (st.t_stop, t_stop_max)
+                  'span: t_stop (%s) < %s' % (st.t_stop, t_stop_max)
             raise ValueError(msg)
 
     # For both x and y axis, cut all SpikeTrains between t_start and t_stop
@@ -628,7 +629,7 @@ def mask_matrices(matrices, thresholds):
 
     # Replace nans, coming from False * np.inf, with 0s
     # (trick to find nans in masked: a number is nan if it's not >= - np.inf)
-    mask[True - (mask >= -np.inf)] = False
+    mask[np.logical_xor(True, (mask >= -np.inf))] = False
 
     return np.array(mask, dtype=bool)
 
@@ -712,7 +713,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     a neighbourhood if at least one of them has a distance not larger than
     eps from the others, and if they are at least min. Overlapping
     neighborhoods form a cluster.
-    
+
         * Clusters are assigned integers from 1 to the total number k of
           clusters
         * Unclustered ("isolated") positive elements of mat are
@@ -873,10 +874,10 @@ def probability_matrix_montecarlo(
     pmat = np.array(np.zeros(imat.shape), dtype=int)
     if verbose:
         print('pmat_bootstrap(): begin of bootstrap...')
-    for i in _xrange(n_surr):                      # For each surrogate id i
+    for i in _xrange(n_surr):  # For each surrogate id i
         if verbose:
             print('    surr %d' % i)
-        surrs_i = [st[i] for st in surrs]         # Take each i-th surrogate
+        surrs_i = [st[i] for st in surrs]  # Take each i-th surrogate
         imat_surr, xx, yy = intersection_matrix(  # compute the related imat
             surrs_i, binsize=binsize, dt=dt,
             t_start_x=t_start_x, t_start_y=t_start_y)
@@ -897,7 +898,7 @@ def probability_matrix_analytical(
 
     The approximation is analytical and works under the assumptions that the
     input spike trains are independent and Poisson. It works as follows:
-    
+
         * Bin each spike train at the specified binsize: this yields a binary
           array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
         * If required, estimate the rate profile of each spike train by 
@@ -1006,7 +1007,7 @@ def probability_matrix_analytical(
         # Reshape all rates to one-dimensional array object (e.g. AnalogSignal)
         for i, rate in enumerate(fir_rates):
             if len(rate.shape) == 2:
-                fir_rates[i] = rate.reshape((-1, ))
+                fir_rates[i] = rate.reshape((-1,))
             elif len(rate.shape) > 2:
                 raise ValueError(
                     'elements in fir_rates have too many dimensions')
@@ -1079,17 +1080,17 @@ def _jsf_uniform_orderstat_3d(u, alpha, n):
     '''
     Considered n independent random variables X1, X2, ..., Xn all having
     uniform distribution in the interval (alpha, 1):
-    
+
     .. centered::  Xi ~ Uniform(alpha, 1),
-    
+
     with alpha \in [0, 1), and given a 3D matrix U = (u_ijk) where each U_ij
     is an array of length d: U_ij = [u0, u1, ..., u_{d-1}] of
     quantiles, with u1 <= u2 <= ... <= un, computes the joint survival function
     (jsf) of the d highest order statistics (U_{n-d+1}, U_{n-d+2}, ..., U_n),
     where U_i := "i-th highest X's" at each u_ij, i.e.:
-    
+
     .. centered::  jsf(u_ij) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
-    
+
 
     Arguments
     ---------
@@ -1415,7 +1416,7 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
     consisting of a pool of positions (iK, jK) of matrix entries and
     associated synchronous events SK, finds the intersection among them.
     The intersection can be performed 'pixelwise' or 'linkwise'.
-        
+
         * if 'pixelwise', it yields a new SSE which retains only events in sse1
           whose pixel position matches a pixel position in sse2. This operation
           is not symmetric: intersection(sse1, sse2) != intersection(sse2, sse1).
@@ -1425,9 +1426,9 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
           intersection(sse1, sse2) = intersection(sse2, sse1).
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-    
+
     .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
-    
+
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1535,9 +1536,9 @@ def _remove_empty_events(sse):
     copy of sse where all empty events have been removed.
 
     sse must be provided as a dictionary of type
-    
+
     .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
-    
+
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1571,9 +1572,9 @@ def sse_isequal(sse1, sse2):
     do not belong to sse1 (i.e. sse1 and sse2 are not identical)
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-    
+
     .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
-    
+
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
@@ -1606,9 +1607,9 @@ def sse_isdisjoint(sse1, sse2):
     associated to common pixels are disjoint.
 
     Both sse1 and sse2 must be provided as dictionaries of the type
-    
+
     .. centered:: {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
-    
+
     where each i, j is an integer and each S is a set of neuron ids.
     (See also: extract_sse() that extracts SSEs from given spiketrains).
 
