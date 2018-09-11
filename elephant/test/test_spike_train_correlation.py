@@ -280,8 +280,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             binary=True, method='memory')
         cch_unclipped_mem, bin_ids_unclipped_mem = \
             sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            binary=False, method='memory')
+                self.binned_st1, self.binned_st2, window='full',
+                binary=False, method='memory')
         # Check consistency two methods
         assert_array_equal(
             np.squeeze(cch_clipped.magnitude), np.squeeze(
@@ -376,8 +376,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             binary=True, method='memory')
         cch_unclipped_mem, bin_ids_unclipped_mem = \
             sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='valid',
-            binary=False, method='memory')
+                self.binned_st1, self.binned_st2, window='valid',
+                binary=False, method='memory')
 
         # Check consistency two methods
         assert_array_equal(

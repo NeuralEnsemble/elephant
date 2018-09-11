@@ -417,7 +417,8 @@ def cross_correlation_histogram(
         # Smooth the cross-correlation histogram with the kern
         return np.convolve(counts, kern, mode='same')
 
-    def _cch_memory(binned_st1, binned_st2, left_edge, right_edge, border_corr, binary, kern):
+    def _cch_memory(binned_st1, binned_st2, left_edge, right_edge,
+                    border_corr, binary, kern):
 
         # Retrieve unclipped matrix
         st1_spmat = binned_st1.to_sparse_array()
@@ -451,8 +452,8 @@ def cross_correlation_histogram(
             assert ((timediff >= left_edge) & (
                 timediff <= right_edge)).all(), 'Not all the '
             'entries of cch lie in the window'
-            counts[timediff + np.abs(left_edge)] += (st1_bin_counts_unique[idx] *
-                                                     st2_bin_counts_unique[il:ir])
+            counts[timediff + np.abs(left_edge)] += (
+                    st1_bin_counts_unique[idx] * st2_bin_counts_unique[il:ir])
             st2_bin_idx_unique = st2_bin_idx_unique[il:]
             st2_bin_counts_unique = st2_bin_counts_unique[il:]
         # Border correction
@@ -475,7 +476,7 @@ def cross_correlation_histogram(
     def _cch_speed(binned_st1, binned_st2, left_edge, right_edge, cch_mode,
                    border_corr, binary, kern):
 
-        # Retrieve the array of the binne spik train
+        # Retrieve the array of the binne spike train
         st1_arr = binned_st1.to_array()[0, :]
         st2_arr = binned_st2.to_array()[0, :]
 
@@ -561,12 +562,12 @@ def cross_correlation_histogram(
 
     if method == "memory":
         cch_result, bin_ids = _cch_memory(
-            binned_st1, binned_st2, left_edge, right_edge, border_correction, binary,
-            kernel)
+            binned_st1, binned_st2, left_edge, right_edge, border_correction,
+            binary, kernel)
     elif method == "speed":
         cch_result, bin_ids = _cch_speed(
-            binned_st1, binned_st2, left_edge, right_edge, cch_mode, border_correction, binary,
-            kernel)
+            binned_st1, binned_st2, left_edge, right_edge, cch_mode,
+            border_correction, binary, kernel)
 
     if cross_corr_coef:
         cch_result = _cross_corr_coef(cch_result, binned_st1, binned_st2)
