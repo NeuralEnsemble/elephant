@@ -278,7 +278,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         cch_clipped_mem, bin_ids_clipped_mem = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='full',
             binary=True, method='memory')
-        cch_unclipped_mem, bin_ids_unclipped_mem = sc.cross_correlation_histogram(
+        cch_unclipped_mem, bin_ids_unclipped_mem = \
+            sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='full',
             binary=False, method='memory')
         # Check consistency two methods
@@ -341,9 +342,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             # calculate CCHcoef and take value at t=tau
             CCHcoef, _ = sc.cch(binned_st1, binned_st2,
                                 cross_corr_coef=True)
-            l = - binned_st1.num_bins + 1
+            left_edge = - binned_st1.num_bins + 1
             tau_bin = int(t / float(binned_st1.binsize.magnitude))
-            assert_array_equal(corrcoef, CCHcoef[tau_bin - l].magnitude)
+            assert_array_equal(
+                corrcoef, CCHcoef[tau_bin - left_edge].magnitude)
 
         # Check correlation using binary spike trains
         mat1 = np.array(self.binned_st1.to_bool_array()[0], dtype=int)
@@ -372,7 +374,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         cch_clipped_mem, bin_ids_clipped_mem = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='valid',
             binary=True, method='memory')
-        cch_unclipped_mem, bin_ids_unclipped_mem = sc.cross_correlation_histogram(
+        cch_unclipped_mem, bin_ids_unclipped_mem = \
+            sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='valid',
             binary=False, method='memory')
 

@@ -249,8 +249,8 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm):
 
 
 def cross_correlation_histogram(
-        binned_st1, binned_st2, window='full', border_correction=False, binary=False,
-        kernel=None, method='speed', cross_corr_coef=False):
+        binned_st1, binned_st2, window='full', border_correction=False,
+        binary=False, kernel=None, method='speed', cross_corr_coef=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains binned_st1 and binned_st2.
@@ -260,7 +260,7 @@ def cross_correlation_histogram(
     binned_st1, binned_st2 : BinnedSpikeTrain
         Binned spike trains to cross-correlate. The two spike trains must have
         same t_start and t_stop
-    window : string or list (optional)
+    window : string or list of integer (optional)
         ‘full’: This returns the crosscorrelation at each point of overlap,
         with an output shape of (N+M-1,). At the end-points of the
         cross-correlogram, the signals do not overlap completely, and
@@ -307,21 +307,23 @@ def cross_correlation_histogram(
         which is more memory efficient but slower than the "speed" option.
         Default: "speed"
     cross_corr_coef : bool (optional)
-        Normalizes the CCH to obtain the cross-correlation  coefficient 
-        function ranging from -1 to 1 according to Equation (5.10) in 
+        Normalizes the CCH to obtain the cross-correlation  coefficient
+        function ranging from -1 to 1 according to Equation (5.10) in
         "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7
 
     Returns
     -------
     cch : AnalogSignal
-        Containing the cross-correlation histogram between binned_st1 and binned_st2.
+        Containing the cross-correlation histogram between binned_st1 and
+        binned_st2.
 
         The central bin of the histogram represents correlation at zero
         delay. Offset bins correspond to correlations at a delay equivalent
-        to the difference between the spike times of binned_st1 and those of binned_st2: an
-        entry at positive lags corresponds to a spike in binned_st2 following a
-        spike in binned_st1 bins to the right, and an entry at negative lags
-        corresponds to a spike in binned_st1 following a spike in binned_st2.
+        to the difference between the spike times of binned_st1 and those of
+        binned_st2: an entry at positive lags corresponds to a spike in
+        binned_st2 following a spike in binned_st1 bins to the right, and an
+        entry at negative lags corresponds to a spike in binned_st1 following
+        a spike in binned_st2.
 
         To illustrate this definition, consider the two spike trains:
         binned_st1: 0 0 0 0 1 0 0 0 0 0 0
@@ -354,7 +356,8 @@ def cross_correlation_histogram(
                     10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
                 binsize=5. * pq.ms)
 
-        >>> cc_hist = elephant.spike_train_correlation.cross_correlation_histogram(
+        >>> cc_hist = \
+            elephant.spike_train_correlation.cross_correlation_histogram(
                 binned_st1, binned_st2, window=[-30,30],
                 border_correction=False,
                 binary=False, kernel=None, method='memory')
@@ -414,7 +417,7 @@ def cross_correlation_histogram(
         # Smooth the cross-correlation histogram with the kern
         return np.convolve(counts, kern, mode='same')
 
-    def _cch_memory(binned_st1, binned_st2, l, r, border_corr, binary, kern):
+    def _cch_memory(binned_st1, binned_st2, left_edge, right_edge, border_corr, binary, kern):
 
         # Retrieve unclipped matrix
         st1_spmat = binned_st1.to_sparse_array()
@@ -437,25 +440,28 @@ def cross_correlation_histogram(
         # Initialize the counts to an array of zeroes,
         # and the bin IDs to integers
         # spanning the time axis
-        counts = np.zeros(np.abs(l) + np.abs(r) + 1)
-        bin_ids = np.arange(l, r + 1)
-        # Compute the CCH at lags in l,...,r only
+        counts = np.zeros(np.abs(left_edge) + np.abs(right_edge) + 1)
+        bin_ids = np.arange(left_edge, right_edge + 1)
+        # Compute the CCH at lags in left_edge,...,right_edge only
         for idx, i in enumerate(st1_bin_idx_unique):
-            il = np.searchsorted(st2_bin_idx_unique, l + i)
-            ir = np.searchsorted(st2_bin_idx_unique, r + i, side='right')
+            il = np.searchsorted(st2_bin_idx_unique, left_edge + i)
+            ir = np.searchsorted(st2_bin_idx_unique,
+                                 right_edge + i, side='right')
             timediff = st2_bin_idx_unique[il:ir] - i
-            assert ((timediff >= l) & (timediff <= r)).all(), 'Not all the '
+            assert ((timediff >= left_edge) & (
+                timediff <= right_edge)).all(), 'Not all the '
             'entries of cch lie in the window'
-            counts[timediff + np.abs(l)] += (st1_bin_counts_unique[idx] *
-                                             st2_bin_counts_unique[il:ir])
+            counts[timediff + np.abs(left_edge)] += (st1_bin_counts_unique[idx] *
+                                                     st2_bin_counts_unique[il:ir])
             st2_bin_idx_unique = st2_bin_idx_unique[il:]
             st2_bin_counts_unique = st2_bin_counts_unique[il:]
         # Border correction
         if border_corr is True:
-            counts = _border_correction(counts, max_num_bins, l, r)
+            counts = _border_correction(
+                counts, max_num_bins, left_edge, right_edge)
         if kern is not None:
             # Smoothing
-            counts = _kernel_smoothing(counts, kern, l, r)
+            counts = _kernel_smoothing(counts, kern, left_edge, right_edge)
         # Transform the array count into an AnalogSignal
         cch_result = neo.AnalogSignal(
             signal=counts.reshape(counts.size, 1),
@@ -466,7 +472,7 @@ def cross_correlation_histogram(
         # central one
         return cch_result, bin_ids
 
-    def _cch_speed(binned_st1, binned_st2, l, r, cch_mode,
+    def _cch_speed(binned_st1, binned_st2, left_edge, right_edge, cch_mode,
                    border_corr, binary, kern):
 
         # Retrieve the array of the binne spik train
@@ -478,20 +484,22 @@ def cross_correlation_histogram(
             st1_arr = np.array(st1_arr > 0, dtype=int)
             st2_arr = np.array(st2_arr > 0, dtype=int)
         if cch_mode == 'pad':
-            # Zero padding to stay between l and r
+            # Zero padding to stay between left_edge and right_edge
             st1_arr = np.pad(st1_arr,
-                             (int(np.abs(np.min([l, 0]))), np.max([r, 0])),
+                             (int(np.abs(np.min([left_edge, 0]))), np.max(
+                                 [right_edge, 0])),
                              mode='constant')
             cch_mode = 'valid'
         # Cross correlate the spike trains
         counts = np.correlate(st2_arr, st1_arr, mode=cch_mode)
-        bin_ids = np.r_[l:r + 1]
+        bin_ids = np.r_[left_edge:right_edge + 1]
         # Border correction
         if border_corr is True:
-            counts = _border_correction(counts, max_num_bins, l, r)
+            counts = _border_correction(
+                counts, max_num_bins, left_edge, right_edge)
         if kern is not None:
             # Smoothing
-            counts = _kernel_smoothing(counts, kern, l, r)
+            counts = _kernel_smoothing(counts, kern, left_edge, right_edge)
         # Transform the array count into an AnalogSignal
         cch_result = neo.AnalogSignal(
             signal=counts.reshape(counts.size, 1),
@@ -530,22 +538,22 @@ def cross_correlation_histogram(
             raise ValueError(
                 "The window exceeds the length of the spike trains")
         # Assign left and right edges of the cch
-        l, r = window[0], window[1]
+        left_edge, right_edge = window[0], window[1]
         # The mode in which to compute the cch for the speed implementation
         cch_mode = 'pad'
     # Case without explicit window parameter
     elif window == 'full':
         # cch computed for all the possible entries
         # Assign left and right edges of the cch
-        r = binned_st2.num_bins - 1
-        l = - binned_st1.num_bins + 1
+        right_edge = binned_st2.num_bins - 1
+        left_edge = - binned_st1.num_bins + 1
         cch_mode = window
         # cch compute only for the entries that completely overlap
     elif window == 'valid':
         # cch computed only for valid entries
         # Assign left and right edges of the cch
-        r = max(binned_st2.num_bins - binned_st1.num_bins, 0)
-        l = min(binned_st2.num_bins - binned_st1.num_bins, 0)
+        right_edge = max(binned_st2.num_bins - binned_st1.num_bins, 0)
+        left_edge = min(binned_st2.num_bins - binned_st1.num_bins, 0)
         cch_mode = window
     # Check the mode parameter
     else:
@@ -553,11 +561,11 @@ def cross_correlation_histogram(
 
     if method == "memory":
         cch_result, bin_ids = _cch_memory(
-            binned_st1, binned_st2, l, r, border_correction, binary,
+            binned_st1, binned_st2, left_edge, right_edge, border_correction, binary,
             kernel)
     elif method == "speed":
         cch_result, bin_ids = _cch_speed(
-            binned_st1, binned_st2, l, r, cch_mode, border_correction, binary,
+            binned_st1, binned_st2, left_edge, right_edge, cch_mode, border_correction, binary,
             kernel)
 
     if cross_corr_coef:
