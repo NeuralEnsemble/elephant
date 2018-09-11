@@ -372,11 +372,11 @@ def cross_correlation_histogram(
     -----
     cch
     """
-        
+
     def _cross_corr_coef(cch_result, binned_st1, binned_st2):
-        # Normalizes the CCH to obtain the cross-correlation 
+        # Normalizes the CCH to obtain the cross-correlation
         # coefficient function ranging from -1 to 1
-        N  = max(binned_st1.num_bins, binned_st2.num_bins)
+        N = max(binned_st1.num_bins, binned_st2.num_bins)
         Nx = len(binned_st1.spike_indices[0])
         Ny = len(binned_st2.spike_indices[0])
         spmat = [binned_st1.to_sparse_array(), binned_st2.to_sparse_array()]
@@ -385,10 +385,10 @@ def cross_correlation_histogram(
             bin_counts_unique.append(s.data)
         ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
         jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
-        rho_xy = (cch_result - Nx*Ny/N) / np.sqrt( (ii-Nx**2./N)*(jj-Ny**2./N) )
+        rho_xy = (cch_result - Nx * Ny / N) / \
+            np.sqrt((ii - Nx**2. / N) * (jj - Ny**2. / N))
         return rho_xy
-        
-        
+
     def _border_correction(counts, max_num_bins, l, r):
         # Correct the values taking into account lacking contributes
         # at the edges
@@ -480,8 +480,8 @@ def cross_correlation_histogram(
         if cch_mode == 'pad':
             # Zero padding to stay between l and r
             st1_arr = np.pad(st1_arr,
-                (int(np.abs(np.min([l, 0]))), np.max([r, 0])),
-                           mode = 'constant')
+                             (int(np.abs(np.min([l, 0]))), np.max([r, 0])),
+                             mode='constant')
             cch_mode = 'valid'
         # Cross correlate the spike trains
         counts = np.correlate(st2_arr, st1_arr, mode=cch_mode)
@@ -564,6 +564,7 @@ def cross_correlation_histogram(
         cch_result = _cross_corr_coef(cch_result, binned_st1, binned_st2)
 
     return cch_result, bin_ids
+
 
 # Alias for common abbreviation
 cch = cross_correlation_histogram
@@ -681,7 +682,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         PB = run_P(spiketrain_2, spiketrain_1, N2, N1, dt)
         PB = PB / N2
         index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
-                1 - PB * TA)
+            1 - PB * TA)
     return index
 
 
