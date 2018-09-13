@@ -247,7 +247,7 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         self.binned_sts = conv.BinnedSpikeTrain(
             [self.st_1, self.st_2], t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-            
+
         # Binned sts to check errors raising
         self.st_check_binsize = conv.BinnedSpikeTrain(
             [self.st_1], t_start=0 * pq.ms, t_stop=50. * pq.ms,
@@ -278,9 +278,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         cch_clipped_mem, bin_ids_clipped_mem = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='full',
             binary=True, method='memory')
-        cch_unclipped_mem, bin_ids_unclipped_mem = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            binary=False, method='memory')
+        cch_unclipped_mem, bin_ids_unclipped_mem = \
+            sc.cross_correlation_histogram(
+                self.binned_st1, self.binned_st2, window='full',
+                binary=False, method='memory')
         # Check consistency two methods
         assert_array_equal(
             np.squeeze(cch_clipped.magnitude), np.squeeze(
@@ -306,45 +307,45 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         assert_array_equal(
             target_numpy, np.squeeze(cch_unclipped.magnitude))
 
-
         # Check cross correlation function for several displacements tau
-        # Note: Use Elephant corrcoeff to verify result 
-        tau = [-25.0, 0.0, 13.0] # in ms
+        # Note: Use Elephant corrcoeff to verify result
+        tau = [-25.0, 0.0, 13.0]  # in ms
         for t in tau:
             # adjust t_start, t_stop to shift by tau
-            t0 = np.min([self.st_1.t_start+t*pq.ms, self.st_2.t_start])
-            t1 = np.max([self.st_1.t_stop+t*pq.ms, self.st_2.t_stop])            
-            st1 = neo.SpikeTrain(self.st_1.magnitude+t, units='ms',
-                                t_start = t0*pq.ms, t_stop = t1*pq.ms)           
+            t0 = np.min([self.st_1.t_start + t * pq.ms, self.st_2.t_start])
+            t1 = np.max([self.st_1.t_stop + t * pq.ms, self.st_2.t_stop])
+            st1 = neo.SpikeTrain(self.st_1.magnitude + t, units='ms',
+                                 t_start=t0 * pq.ms, t_stop=t1 * pq.ms)
             st2 = neo.SpikeTrain(self.st_2.magnitude, units='ms',
-                                t_start = t0*pq.ms, t_stop = t1*pq.ms)              
+                                 t_start=t0 * pq.ms, t_stop=t1 * pq.ms)
             binned_sts = conv.BinnedSpikeTrain([st1, st2],
-                                               binsize=1*pq.ms,
-                                               t_start = t0*pq.ms,
-                                               t_stop = t1*pq.ms)
+                                               binsize=1 * pq.ms,
+                                               t_start=t0 * pq.ms,
+                                               t_stop=t1 * pq.ms)
             # caluclate corrcoef
-            corrcoef = sc.corrcoef(binned_sts)[1,0]    
-            
-            # expand t_stop to have two spike trains with same length as st1, st2
+            corrcoef = sc.corrcoef(binned_sts)[1, 0]
+
+            # expand t_stop to have two spike trains with same length as st1,
+            # st2
             st1 = neo.SpikeTrain(self.st_1.magnitude, units='ms',
-                                t_start = self.st_1.t_start, 
-                                t_stop = self.st_1.t_stop+np.abs(t)*pq.ms)           
+                                 t_start=self.st_1.t_start,
+                                 t_stop=self.st_1.t_stop + np.abs(t) * pq.ms)
             st2 = neo.SpikeTrain(self.st_2.magnitude, units='ms',
-                                t_start = self.st_2.t_start, 
-                                t_stop = self.st_2.t_stop+np.abs(t)*pq.ms)
+                                 t_start=self.st_2.t_start,
+                                 t_stop=self.st_2.t_stop + np.abs(t) * pq.ms)
             binned_st1 = conv.BinnedSpikeTrain(
-                st1, t_start=0*pq.ms, t_stop=(50+np.abs(t))*pq.ms,
+                st1, t_start=0 * pq.ms, t_stop=(50 + np.abs(t)) * pq.ms,
                 binsize=1 * pq.ms)
             binned_st2 = conv.BinnedSpikeTrain(
-                st2, t_start=0 * pq.ms, t_stop=(50+np.abs(t))*pq.ms,
+                st2, t_start=0 * pq.ms, t_stop=(50 + np.abs(t)) * pq.ms,
                 binsize=1 * pq.ms)
             # calculate CCHcoef and take value at t=tau
-            CCHcoef, _  = sc.cch(binned_st1, binned_st2, 
-                               cross_corr_coef=True)
-            l = - binned_st1.num_bins + 1
-            tau_bin = int(t/float(binned_st1.binsize.magnitude))
-            assert_array_equal(corrcoef, CCHcoef[tau_bin-l].magnitude)
-            
+            CCHcoef, _ = sc.cch(binned_st1, binned_st2,
+                                cross_corr_coef=True)
+            left_edge = - binned_st1.num_bins + 1
+            tau_bin = int(t / float(binned_st1.binsize.magnitude))
+            assert_array_equal(
+                corrcoef, CCHcoef[tau_bin - left_edge].magnitude)
 
         # Check correlation using binary spike trains
         mat1 = np.array(self.binned_st1.to_bool_array()[0], dtype=int)
@@ -373,9 +374,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         cch_clipped_mem, bin_ids_clipped_mem = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='valid',
             binary=True, method='memory')
-        cch_unclipped_mem, bin_ids_unclipped_mem = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='valid',
-            binary=False, method='memory')
+        cch_unclipped_mem, bin_ids_unclipped_mem = \
+            sc.cross_correlation_histogram(
+                self.binned_st1, self.binned_st2, window='valid',
+                binary=False, method='memory')
 
         # Check consistency two methods
         assert_array_equal(
@@ -468,22 +470,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             self.binned_st1, self.binned_st2, window='full', binary=False)
         assert_array_equal(cch_win, cch_unclipped[19:80])
 
-        cch_win, bin_ids = sc.cch(
-            self.binned_st1, self.binned_st2, window=[-25*pq.ms, 25*pq.ms])
-        cch_win_mem, bin_ids_mem = sc.cch(
-            self.binned_st1, self.binned_st2, window=[-25*pq.ms, 25*pq.ms],
-            method='memory')
-
-        assert_array_equal(bin_ids, np.arange(-25, 26, 1))
-        assert_array_equal(
-            (bin_ids - 0.5) * self.binned_st1.binsize, cch_win.times)
-
-        assert_array_equal(bin_ids_mem, np.arange(-25, 26, 1))
-        assert_array_equal(
-            (bin_ids_mem - 0.5) * self.binned_st1.binsize, cch_win.times)
-
-        assert_array_equal(cch_win, cch_win_mem)
-
         _, bin_ids = sc.cch(
             self.binned_st1, self.binned_st2, window=[20, 30])
         _, bin_ids_mem = sc.cch(
@@ -502,48 +488,21 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         assert_array_equal(bin_ids, np.arange(-30, -19, 1))
         assert_array_equal(bin_ids_mem, np.arange(-30, -19, 1))
 
-        # Cehck for wrong assignments to the window parameter
+        # Check for wrong assignments to the window parameter
+        # Test for window longer than the total length of the spike trains
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window=[-60, 50])
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-60, 50], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window=[-50, 60])
+        # Test for no integer or wrong string in input
         self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-50, 60], method='memory')
-
+            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            self.binned_st2, window=[-25.5, 25.5])
         self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25.5*pq.ms, 25*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25.5*pq.ms, 25*pq.ms], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25*pq.ms, 25.5*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-25*pq.ms, 25.5*pq.ms], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-60*pq.ms, 50*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-60*pq.ms, 50*pq.ms], method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-50*pq.ms, 60*pq.ms])
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram, self.binned_st1,
-            self.binned_st2, window=[-50*pq.ms, 60*pq.ms], method='memory')
+            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            self.binned_st2, window='test')
 
     def test_border_correction(self):
         '''Test if the border correction for bins at the edges is correctly
@@ -633,7 +592,7 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         st1 = neo.SpikeTrain([1], units='ms', t_stop=1.)
         st2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
         self.assertEqual(sc.sttc(st1, st2), 1.0)
-        self.assertTrue(bool(sc.sttc(st1, st2, 0.1*pq.ms) < 0))
+        self.assertTrue(bool(sc.sttc(st1, st2, 0.1 * pq.ms) < 0))
 
         # test for high value of dt
         self.assertEqual(sc.sttc(self.st_1, self.st_2, dt=5 * pq.s), 1.0)
