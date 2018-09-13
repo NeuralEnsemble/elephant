@@ -601,5 +601,47 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         '''
         self.assertEqual(sc.cross_correlation_histogram, sc.cch)
 
+
+class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
+
+    def setUp(self):
+        # These two arrays must be such that they do not have coincidences
+        # spanning across two neighbor bins assuming ms bins [0,1),[1,2),...
+        self.test_array_1d_1 = [
+            1.3, 7.56, 15.87, 28.23, 30.9, 34.2, 38.2, 43.2]
+        self.test_array_1d_2 = [
+            1.02, 2.71, 18.82, 28.46, 28.79, 43.6]
+
+        # Build spike trains
+        self.st_1 = neo.SpikeTrain(
+            self.test_array_1d_1, units='ms', t_stop=50.)
+        self.st_2 = neo.SpikeTrain(
+            self.test_array_1d_2, units='ms', t_stop=50.)
+
+    def test_sttc(self):
+        # test for result
+        target = 0.8748350567
+        self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
+                                               0.005 * pq.s))
+        # test no spiketrains
+        self.assertTrue(np.isnan(sc.sttc([], [])))
+
+        # test one spiketrain
+        self.assertTrue(np.isnan(sc.sttc(self.st_1, [])))
+
+        # test for one spike in a spiketrain
+        st1 = neo.SpikeTrain([1], units='ms', t_stop=1.)
+        st2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
+        self.assertEqual(sc.sttc(st1, st2), 1.0)
+        self.assertTrue(bool(sc.sttc(st1, st2, 0.1*pq.ms) < 0))
+
+        # test for high value of dt
+        self.assertEqual(sc.sttc(self.st_1, self.st_2, dt=5 * pq.s), 1.0)
+
+    def test_exist_alias(self):
+        # Test if alias cch still exists.
+        self.assertEqual(sc.spike_time_tiling_coefficient, sc.sttc)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -623,3 +623,122 @@ def cross_correlation_histogram(
 
 # Alias for common abbreviation
 cch = cross_correlation_histogram
+
+
+def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
+    """
+    Calculates the Spike Time Tiling Coefficient (STTC) as described in
+    (Cutts & Eglen, 2014) following Cutts' implementation in C.
+    The STTC is a pairwise measure of correlation between spike trains.
+    It has been proposed as a replacement for the correlation index as it
+    presents several advantages (e.g. it's not confounded by firing rate,
+    appropriately distinguishes lack of correlation from anti-correlation,
+    periods of silence don't add to the correlation and it's sensible to
+    firing pattern).
+
+    The STTC is calculated as follows:
+
+    .. math::
+        STTC = 1/2((PA - TB)/(1 - PA*TB) + (PB - TA)/(1 - PB*TA))
+
+    Where `PA` is the proportion of spikes from train 1 that lie within
+    `[-dt, +dt]` of any spike of train 2 divided by the total number of spikes
+    in train 1, `PB` is the same proportion for the spikes in train 2;
+    `TA` is the proportion of total recording time within `[-dt, +dt]` of any
+    spike in train 1, TB is the same propotion for train 2.
+
+    This is a Python implementation compatible with the elephant library of
+    the original code by C. Cutts written in C and avaiable at:
+    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/blob/master/spike_time_tiling_coefficient.c)
+
+    Parameters
+    ----------
+    spiketrain_1, spiketrain_2: neo.Spiketrain objects to cross-correlate.
+        Must have the same t_start and t_stop.
+    dt: Python Quantity.
+        The synchronicity window is used for both: the quantification of the
+        propotion of total recording time that lies [-dt, +dt] of each spike
+        in each train and the proportion of spikes in `spiketrain_1` that lies
+        `[-dt, +dt]` of any spike in `spiketrain_2`.
+        Default : 0.005 * pq.s
+
+    Returns
+    -------
+    index:  float
+        The spike time tiling coefficient (STTC). Returns np.nan if any spike
+        train is empty.
+
+    References
+    ----------
+    Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations in
+    Spike Trains: An Objective Comparison of Methods and Application to the
+    Study of Retinal Waves. Journal of Neuroscience, 34(43), 14288–14303.
+    """
+
+    def run_P(spiketrain_1, spiketrain_2, N1, N2, dt):
+        """
+        Check every spike in train 1 to see if there's a spike in train 2
+        within dt
+        """
+        Nab = 0
+        j = 0
+        for i in range(N1):
+            while j < N2:  # don't need to search all j each iteration
+                if np.abs(spiketrain_1[i] - spiketrain_2[j]) <= dt:
+                    Nab = Nab + 1
+                    break
+                elif spiketrain_2[j] > spiketrain_1[i]:
+                    break
+                else:
+                    j = j + 1
+        return Nab
+
+    def run_T(spiketrain, N, dt):
+        """
+        Calculate the proportion of the total recording time 'tiled' by spikes.
+        """
+        time_A = 2 * N * dt  # maxium possible time
+
+        if N == 1:  # for just one spike in train
+            if spiketrain[0] - spiketrain.t_start < dt:
+                time_A = time_A - dt + spiketrain[0] - spiketrain.t_start
+            elif spiketrain[0] + dt > spiketrain.t_stop:
+                time_A = time_A - dt - spiketrain[0] + spiketrain.t_stop
+
+        else:  # if more than one spike in train
+            i = 0
+            while i < (N - 1):
+                diff = spiketrain[i + 1] - spiketrain[i]
+
+                if diff < (2 * dt):  # subtract overlap
+                    time_A = time_A - 2 * dt + diff
+                i += 1
+                # check if spikes are within dt of the start and/or end
+                # if so just need to subract overlap of first and/or last spike
+            if (spiketrain[0] - spiketrain.t_start) < dt:
+                time_A = time_A + spiketrain[0] - dt - spiketrain.t_start
+
+            if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
+                time_A = time_A - spiketrain[-1] - dt + spiketrain.t_stop
+
+        T = (time_A / (spiketrain.t_stop - spiketrain.t_start)).item()
+        return T
+
+    N1 = len(spiketrain_1)
+    N2 = len(spiketrain_2)
+
+    if N1 == 0 or N2 == 0:
+        index = np.nan
+    else:
+        TA = run_T(spiketrain_1, N1, dt)
+        TB = run_T(spiketrain_2, N2, dt)
+        PA = run_P(spiketrain_1, spiketrain_2, N1, N2, dt)
+        PA = PA / N1
+        PB = run_P(spiketrain_2, spiketrain_1, N2, N1, dt)
+        PB = PB / N2
+        index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
+                1 - PB * TA)
+    return index
+
+
+sttc = spike_time_tiling_coefficient

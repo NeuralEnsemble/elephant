@@ -2,7 +2,7 @@
 """
 Elephant is a package for the analysis of neurophysiology data, based on Neo.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2018 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -17,10 +17,13 @@ from . import (statistics,
                spike_train_surrogates,
                signal_processing,
                current_source_density,
+               change_point_detection,
+               phase_analysis,
                sta,
                conversion,
                neo_tools,
-               spade)
+               spade,
+               cell_assembly_detection)
 
 try:
     from . import pandas_bridge
@@ -28,4 +31,4 @@ try:
 except ImportError:
     pass
 
-__version__ = "0.4.3"
+__version__ = "0.5.0"

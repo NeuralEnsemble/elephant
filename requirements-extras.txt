@@ -1,0 +1,2 @@
+pandas>=0.14.1
+scikit-learn
