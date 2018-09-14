@@ -564,6 +564,8 @@ class BinnedSpikeTrain(object):
             raise TypeError(
                 "Number of bins (num_bins) is not an integer or < 0: " + str(
                     num_bins))
+        elif binsize.units != self.t_start.units:
+                self.binsize = self.binsize.rescale(self.t_start.units)
 
     @property
     def bin_edges(self):

@@ -500,6 +500,22 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array_equal(xa.bin_edges[:-1],
                            xb.bin_edges[:-1].rescale(binsize.units)))
 
+    def test_binnend_spiketrain_rescaling(self):
+        train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
+                               t_start=1 * pq.s, t_stop=1.01 * pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=1 * pq.s, t_stop=1.01 * pq.s,
+                                  binsize=1 * pq.ms)
+        target_edges = np.array([1., 1.001, 1.002, 1.003, 1.004, 1.005, 1.006,
+                                 1.007, 1.008, 1.009, 1.01], dtype=np.float)
+        target_centers = np.array(
+            [1.0005, 1.0015, 1.0025, 1.0035, 1.0045, 1.0055, 1.0065, 1.0075,
+             1.0085, 1.0095], dtype=np.float)
+        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
+        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
+        self.assertTrue(bst.bin_centers.units == pq.s)
+        self.assertTrue(bst.bin_edges.units == pq.s)
+
 
 if __name__ == '__main__':
     unittest.main()
