@@ -380,6 +380,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         else:
             output['patterns'] = concepts
         return output
+    #TODO: check whether necessary output for rank!=0
     else:
         return []
 
