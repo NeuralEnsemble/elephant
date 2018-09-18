@@ -113,13 +113,7 @@ elif [[ "$DISTRIB" == "ubuntu" ]]; then
     # Create a new virtualenv using system site packages for numpy and scipy
     # virtualenv --system-site-packages testenv
     # source testenv/bin/activate
-    pip install nose
-    pip install coverage
-    pip install quantities
-    pip install numpy==$NUMPY_VERSION
-    pip install scipy==$SCIPY_VERSION
-    pip install six==$SIX_VERSION
- 
+    pip install -r requirements.txt    
 fi
 
 if [[ "$COVERAGE" == "true" ]]; then
@@ -135,6 +129,7 @@ popd
 
 pip install .
 
-
-python -c "import numpy; import os; assert os.getenv('NUMPY_VERSION') == numpy.__version__"
-python -c "import scipy; import os; assert os.getenv('SCIPY_VERSION') == scipy.__version__"
+if ! [[ "$DISTRIB" == "ubuntu" ]]; then
+    python -c "import numpy; import os; assert os.getenv('NUMPY_VERSION') == numpy.__version__, 'Numpy versions do not match: {0} - {1}'.format(os.getenv('NUMPY_VERSION'), numpy.__version__)"
+    python -c "import scipy; import os; assert os.getenv('SCIPY_VERSION') == scipy.__version__, 'Scipy versions do not match: {0} - {1}'.format(os.getenv('SCIPY_VERSION'), scipy.__version__)"
+fi
