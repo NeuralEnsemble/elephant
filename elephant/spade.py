@@ -371,7 +371,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         if output_format == 'patterns':
             # If the p-value spectra was not computed, is set to an empty list
             if n_surr == 0:
-                pv_spec = []
+                pv_spec = None
             # Transfroming concepts to dictionary containing pattern infos
             output['patterns'] = concept_output_to_patterns(concepts,
                                                             winlen, binsize,
@@ -1212,7 +1212,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     n_subsets: int
         Number of subsets of a concept used to approximate its stability. If
         n_subset is set to 0 the stability is not computed. If, however,
-        for parameters delta and epsilon (see below) delta + epsilon == 0,
+        for parameters delta and epsilon (see below) delta + epsilon > 0,
         then an optimal n_subsets is calculated according to the formula given
         in Babin, Kuznetsov (2012), proposition 6:
 
@@ -1257,8 +1257,8 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     else:
         rank = 0
         size = 1
-    if n_subsets <= 0:
-        raise AttributeError('n_subsets has to be >=0')
+    if n_subsets <= 0 and delta + epsilon <= 0:
+        raise AttributeError('n_subsets has to be >=0 or delta + epsilon > 0')
     if len(concepts) == 0:
         return []
     elif len(concepts) <= size:
@@ -1804,7 +1804,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             # If None is given in input to the pval spectrum the pvalue
             # is set to -1 (pvalue spectrum not available)
             # pattern dictionary appended to the output
-            if len(pvalue_spectrum) == None:
+            if pvalue_spectrum == None:
                 output_dict['pvalue'] = -1
             # p-value assigned to the pattern from the pvalue spectrum
             else:
@@ -1818,7 +1818,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             # If None is given in input to the pval spectrum the pvalue
             # is set to -1 (pvalue spectrum not available)
             # pattern dictionary appended to the output
-            if len(pvalue_spectrum) == None:
+            if pvalue_spectrum == None:
                 output_dict['pvalue'] = -1
             # p-value assigned to the pattern from the pvalue spectrum
             else:
