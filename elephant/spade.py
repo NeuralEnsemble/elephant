@@ -334,7 +334,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         print("Time for data mining: {}".format(time_mining))
     if rank == 0:
         # Decide whether filter concepts with psf
-        if 0 < alpha < 1 and n_surr > 0:
+        if n_surr > 0:
             if len(pv_spec) == 0:
                 ns_sgnt = []
             else:
@@ -350,19 +350,11 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             concepts = list(filter(
                 lambda c: _pattern_spectrum_filter(
                     c, ns_sgnt, spectrum, winlen), concepts))
-        # Decide whether filter the concepts using psr
-        if psr_param is not None:
-            # Filter using conditional tests (psr)
-            if 0 < alpha < 1 and n_surr > 0:
+            # Decide whether filter the concepts using psr
+            if psr_param is not None and len(ns_sgnt) > 0:
+                # Filter using conditional tests (psr)
                 concepts = pattern_set_reduction(concepts, ns_sgnt,
                                                  winlen=winlen, h=psr_param[0],
-                                                 k=psr_param[1],
-                                                 l=psr_param[2],
-                                                 min_spikes=min_spikes,
-                                                 min_occ=min_occ)
-            else:
-                concepts = pattern_set_reduction(concepts, [], winlen=winlen,
-                                                 h=psr_param[0],
                                                  k=psr_param[1],
                                                  l=psr_param[2],
                                                  min_spikes=min_spikes,
@@ -1136,6 +1128,9 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='', report='#',
         Significant signatures of pvalue_spectrum, in the format specified
         by report
     '''
+    # If alpha == 1 all the signatures are significant
+    if alpha == 1:
+        return []
     x_array = numpy.array(pvalue_spectrum)
     # Compute significance...
     if corr == '' or corr == 'no':  # ...without statistical correction
