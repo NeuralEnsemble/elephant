@@ -175,7 +175,7 @@ class SpadeTestCase(unittest.TestCase):
             self.winlen,
             min_spikes=self.min_spikes,
             n_subsets=self.n_subset,
-            n_surr=self.n_surr,
+            n_surr=0,
             alpha=self.alpha,
             psr_param=self.psr_param,
             output_format='patterns')['patterns']
@@ -188,6 +188,7 @@ class SpadeTestCase(unittest.TestCase):
         lags_msip_min_spikes = []
         for out in output_msip_min_spikes:
             lags_msip_min_spikes.append(list(out['lags'].magnitude))
+            pvalue = out['pvalue']
         lags_msip_min_spikes = sorted(
             lags_msip_min_spikes, key=lambda d: len(d))
         # check the lags
@@ -197,6 +198,8 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(elements_msip_min_spikes, [
             el for el in self.elements_msip if len(el) >= self.min_neu and len(
                 el) >= self.min_spikes])
+        # check that the p-values assigned are equal to -1 (n_surr=0)
+        assert_array_equal(-1, pvalue)
 
         # test min_occ parameter
         output_msip_min_occ = spade.spade(self.msip, self.binsize, self.winlen,

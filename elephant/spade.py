@@ -381,9 +381,9 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         else:
             output['patterns'] = concepts
         return output
-    # TODO: check whether necessary output for rank!=0
+    # rank!= returning a string message
     else:
-        return []
+        return 'Results returned only for rank==0'
 
 
 def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
@@ -1818,20 +1818,21 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
                 the pvalues are set to -1.
     """
-    if len(pvalue_spectrum) == 0:
-        spectrum = '#'
-        pass
-    elif len(pvalue_spectrum[0]) == 4:
-        spectrum = '3d#'
-    elif len(pvalue_spectrum[0]) == 3:
-        spectrum = '#'
-    pvalue_dict = {}
-    # Creating a dictionary for the pvalue spectrum
-    for entry in pvalue_spectrum:
-        if len(entry) == 4:
-            pvalue_dict[(entry[0], entry[1], entry[2])] = entry[-1]
-        if len(entry) == 3:
-            pvalue_dict[(entry[0], entry[1])] = entry[-1]
+    if pvalue_spectrum != None:
+        if len(pvalue_spectrum) == 0:
+            spectrum = '#'
+            pass
+        elif len(pvalue_spectrum[0]) == 4:
+            spectrum = '3d#'
+        elif len(pvalue_spectrum[0]) == 3:
+            spectrum = '#'
+        pvalue_dict = {}
+        # Creating a dictionary for the pvalue spectrum
+        for entry in pvalue_spectrum:
+            if len(entry) == 4:
+                pvalue_dict[(entry[0], entry[1], entry[2])] = entry[-1]
+            if len(entry) == 3:
+                pvalue_dict[(entry[0], entry[1])] = entry[-1]
     # Initializing list containing all the patterns
     output = []
     for conc in concepts:
@@ -1851,35 +1852,28 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         # Times (in binsize units) in which the pattern occurres
         output_dict['times'] = sorted(conc[1]) * binsize + bin_ids[0] * \
             binsize + t_start
+        # If None is given in input to the pval spectrum the pvalue
+        # is set to -1 (pvalue spectrum not available)
+        # pattern dictionary appended to the output
+        if pvalue_spectrum is None:
+            output_dict['pvalue'] = -1
         # Signature (size, n occ) of the pattern
-        if spectrum == '3d#':
+        elif spectrum == '3d#':
             sgnt = (len(conc[0]), len(conc[1]), max(
                 np.abs(np.diff(np.array(conc[0]) % winlen))))
             output_dict['signature'] = sgnt
-            # If None is given in input to the pval spectrum the pvalue
-            # is set to -1 (pvalue spectrum not available)
-            # pattern dictionary appended to the output
-            if pvalue_spectrum is None:
-                output_dict['pvalue'] = -1
             # p-value assigned to the pattern from the pvalue spectrum
-            else:
-                try:
-                    output_dict['pvalue'] = pvalue_dict[sgnt]
-                except KeyError:
-                    output_dict['pvalue'] = 0.0
-        if spectrum == '#':
+            try:
+                output_dict['pvalue'] = pvalue_dict[sgnt]
+            except KeyError:
+                output_dict['pvalue'] = 0.0
+        elif spectrum == '#':
             sgnt = (len(conc[0]), len(conc[1]))
             output_dict['signature'] = sgnt
-            # If None is given in input to the pval spectrum the pvalue
-            # is set to -1 (pvalue spectrum not available)
-            # pattern dictionary appended to the output
-            if pvalue_spectrum is None:
-                output_dict['pvalue'] = -1
             # p-value assigned to the pattern from the pvalue spectrum
-            else:
-                try:
-                    output_dict['pvalue'] = pvalue_dict[sgnt]
-                except KeyError:
-                    output_dict['pvalue'] = 0.0
+            try:
+                output_dict['pvalue'] = pvalue_dict[sgnt]
+            except KeyError:
+                output_dict['pvalue'] = 0.0
         output.append(output_dict)
     return output
