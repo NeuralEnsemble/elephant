@@ -10,12 +10,13 @@ from __future__ import division
 import unittest
 import os
 import warnings
+import pickle
 
 import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon, poisson
-from quantities import s, ms, second, Hz, kHz, mV, dimensionless
+from quantities import V, s, ms, second, Hz, kHz, mV, dimensionless
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
 from scipy.stats import expon
@@ -40,10 +41,10 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         # Load membrane potential simulated using Brian2
         # according to make_spike_extraction_test_data.py.
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.txt')
+        with open(raw_data_file_loc, 'rb') as fp:
+            raw_data = pickle.load(fp)
+        vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         spike_train = stgen.threshold_detection(vm)
         try:
             len(spike_train)
@@ -73,10 +74,10 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        self.vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        with open(raw_data_file_loc, 'rb') as fp:
+            raw_data = pickle.load(fp)
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         self.true_time_stamps = [0.0124,  0.0354,  0.0713,  0.1192,  0.1695,
                                  0.2201,  0.2711] * second
 
@@ -100,10 +101,10 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
     
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        self.vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        with open(raw_data_file_loc, 'rb') as fp:
+            raw_data = pickle.load(fp)
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
                                      -0.03392689, -0.03061474, -0.02650277,
                                      -0.0212756, -0.01443531, -0.00515365,
