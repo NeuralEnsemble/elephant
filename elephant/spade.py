@@ -506,7 +506,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         return mining_results, rel_matrix
 
 
-def _build_context(binary_matrix, winlen):
+def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     """
     Building the context given a matrix (number of trains x number of bins) of
     binned spike trains
@@ -516,7 +516,10 @@ def _build_context(binary_matrix, winlen):
         Binary matrix containing the binned spike trais
     winlen : int
         Length of the binsize used to bin the data
-
+    only_windows_with_first_spike : bool
+        Whether to consider every wondow or only the one with a spike in the
+        first bin
+        Default: True
     Returns:
     --------
     context : list
@@ -554,7 +557,8 @@ def _build_context(binary_matrix, winlen):
         # spikes in the current window
         current_window = binary_matrix[:, w:w + winlen]
         # only keep windows that start with a spike
-        if np.add.reduce(current_window[:, 0]) == 0:
+        if only_windows_with_first_spike and np.add.reduce(
+                current_window[:, 0]) == 0:
             continue
         # concatenating horizzontally the boolean arrays of spikes
         times = current_window.flatten()
@@ -1780,6 +1784,9 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     for conc in concepts:
         # Vocabulary for each of the patterns
         output_dict = {}
+        # The pattern in for of Itemset (spiketrain_id * winlen + bin_id)
+        output_dict['itemset'] = conc[0]
+        output_dict['windows_ids'] = conc[1]
         # Bins relative to the sliding window in which the spikes of patt fall
         bin_ids_unsort = np.array(conc[0]) % winlen
         bin_ids = sorted(np.array(conc[0]) % winlen)
