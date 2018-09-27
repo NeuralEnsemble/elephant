@@ -65,6 +65,7 @@ import numpy as np
 import time
 import quantities as pq
 import warnings
+from elephant.spade_src import fast_fca
 warnings.simplefilter('once', UserWarning)
 try:
     from mpi4py import MPI  # for parallelized routines
@@ -80,7 +81,6 @@ except ImportError:  # pragma: no cover
     warnings.warn(
         'fim.so not found in elephant/spade_src folder,' +
         'you are using the python implementation of fast fca')
-from elephant.spade_src import fast_fca
 
 
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
@@ -1223,7 +1223,8 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
         keep_concept = (len(concept[0]), len(concept[1]), max(
-            np.abs(np.diff(np.array(concept[0]) % winlen)))) not in ns_signature
+            np.abs(
+                np.diff(np.array(concept[0]) % winlen)))) not in ns_signature
     return keep_concept
 
 

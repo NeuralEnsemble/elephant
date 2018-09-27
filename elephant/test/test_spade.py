@@ -259,7 +259,7 @@ class SpadeTestCase(unittest.TestCase):
 
     # test to compare the python and the C implementation of FIM
     # skip this test if C code not available
-    @unittest.skipIf(HAVE_FIM == False, 'Requires fim.so')
+    @unittest.skipIf(not HAVE_FIM, 'Requires fim.so')
     def test_fpgrowth_fca(self):
         binary_matrix = conv.BinnedSpikeTrain(
             self.patt1, self.binsize).to_bool_array()
