@@ -191,7 +191,7 @@ def fanofactor(spiketrains):
     return fano
 
 
-def lv(v):
+def lv(v, with_nan=False):
     """
     Calculate the measure of local variation LV for
     a sequence of time intervals between events.
@@ -214,6 +214,13 @@ def lv(v):
 
     v : quantity array, numpy array or list
         Vector of consecutive time intervals
+        
+    with_nans : bool, optional
+        If True, correlations of empty spike trains are given NaN values. If
+        False, a boolean array indicating empty (False) and non-empty (True)
+        spike trains is returned. In each case a warning is raised when empty
+        spike trains are detected.
+        Default: False
 
     Returns
     -------
@@ -225,7 +232,8 @@ def lv(v):
     AttributeError :
        If an empty list is specified, or if the sequence has less
        than two entries, an AttributeError will be raised.
-    ValueError :
+    ValueError : # should it be attribute?
+    AttributeError :
         Only vector inputs are supported.  If a matrix is passed to the
         function a ValueError will be raised.
 
@@ -239,18 +247,31 @@ def lv(v):
     """
     # convert to array, cast to float
     v = np.asarray(v)
+    
+    # ensure the input ia a vector
+    if len(v.shape) > 1: # adeed by me for symmetry with CV
+        raise AttributeError("Input shape is larger than 1. Please provide "
+                             "a vector as an input.")
 
     # ensure we have enough entries
     if v.size < 2:
-        raise AttributeError("Input size is too small. Please provide "
-                             "an input with more than 1 entry.")
+        if with_nan:
+           warnings.warn("Input size is too small. Please provide "
+                         "an input with more than 1 entry. lv returns 'NaN'"
+                         "since the argument `with_nan` is True")
+           return np.NaN
+     
+        else:
+            raise AttributeError("Input size is too small. Please provide "
+                                 "an input with more than 1 entry. lv returned any"
+                                 "value since the argument `with_nan` is False" )
 
     # calculate LV and return result
     # raise error if input is multi-dimensional
     return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
 
 
-def cv2(v):
+def cv2(v, with_nan=False):
     """
     Calculate the measure of CV2 for a sequence of time intervals between 
     events.
@@ -273,6 +294,13 @@ def cv2(v):
 
     v : quantity array, numpy array or list
         Vector of consecutive time intervals
+        
+    with_nans : bool, optional
+        If True, correlations of empty spike trains are given NaN values. If
+        False, a boolean array indicating empty (False) and non-empty (True)
+        spike trains is returned. In each case a warning is raised when empty
+        spike trains are detected.
+        Default: True
 
     Returns
     -------
@@ -300,12 +328,19 @@ def cv2(v):
     # ensure the input ia a vector
     if len(v.shape) > 1:
         raise AttributeError("Input shape is larger than 1. Please provide "
-                             "a vector in input.")
+                             "a vector as an input.")
 
     # ensure we have enough entries
     if v.size < 2:
-        raise AttributeError("Input size is too small. Please provide "
-                             "an input with more than 1 entry.")
+        if with_nan:
+            warnings.warn("Input size is too small. Please provide"
+                                 "an input with more than 1 entry. cv2 returns `NaN`"
+                                 "since the argument `with_nan` is True")
+            return np.NaN
+        else:
+            raise AttributeError("Input size is too small. Please provide "
+                                 "an input with more than 1 entry. cv2 returns any"
+                                 "value since the argument `with_nan` is False" )
 
     # calculate CV2 and return result
     return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))

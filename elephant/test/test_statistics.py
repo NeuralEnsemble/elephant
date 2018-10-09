@@ -18,6 +18,7 @@ import scipy.integrate as spint
 import elephant.statistics as es
 import elephant.kernels as kernels
 import warnings
+import math
 
 
 class isi_TestCase(unittest.TestCase):
@@ -338,8 +339,12 @@ class LVTestCase(unittest.TestCase):
         seq = self.test_seq
         self.assertRaises(AttributeError, es.lv, [])
         self.assertRaises(AttributeError, es.lv, 1)
-        self.assertRaises(ValueError, es.lv, np.array([seq, seq]))
-
+        self.assertRaises(AttributeError, es.lv, np.array([seq, seq]))
+        
+    def test_2short_spike_train(self):
+        seq = [1]
+        self.assertTrue(math.isnan(es.lv(seq, with_nan=True)))
+        
 
 class CV2TestCase(unittest.TestCase):
     def setUp(self):
