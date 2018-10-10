@@ -214,7 +214,7 @@ def lv(v, with_nan=False):
 
     v : quantity array, numpy array or list
         Vector of consecutive time intervals
-        
+
     with_nans : bool, optional
         If `True`, correlations of empty spike trains are given NaN values. If
         `False`, a boolean array indicating empty (`False`) and non-empty (`True`)
@@ -248,22 +248,22 @@ def lv(v, with_nan=False):
     # convert to array, cast to float
     v = np.asarray(v)
     # ensure the input ia a vector
-    if len(v.shape) > 1: 
+    if len(v.shape) > 1:
         raise AttributeError("Input shape is larger than 1. Please provide "
                              "a vector as an input.")
 
     # ensure we have enough entries
     if v.size < 2:
         if with_nan:
-           warnings.warn("Input size is too small. Please provide "
-                         "an input with more than 1 entry. lv returns 'NaN'"
-                         "since the argument `with_nan` is True")
-           return np.NaN
-     
+            warnings.warn("Input size is too small. Please provide "
+                          "an input with more than 1 entry. lv returns 'NaN'"
+                          "since the argument `with_nan` is True")
+            return np.NaN
+
         else:
             raise AttributeError("Input size is too small. Please provide "
                                  "an input with more than 1 entry. lv returned any"
-                                 "value since the argument `with_nan` is False" )
+                                 "value since the argument `with_nan` is False")
 
     # calculate LV and return result
     # raise error if input is multi-dimensional
@@ -293,7 +293,7 @@ def cv2(v, with_nan=False):
 
     v : quantity array, numpy array or list
         Vector of consecutive time intervals
-        
+
     with_nans : bool, optional
         If `True`, correlations of empty spike trains are given NaN values. If
         `False`, a boolean array indicating empty (`False`) and non-empty (`True`)
@@ -333,13 +333,13 @@ def cv2(v, with_nan=False):
     if v.size < 2:
         if with_nan:
             warnings.warn("Input size is too small. Please provide"
-                                 "an input with more than 1 entry. cv2 returns `NaN`"
-                                 "since the argument `with_nan` is `True`")
+                          "an input with more than 1 entry. cv2 returns `NaN`"
+                          "since the argument `with_nan` is `True`")
             return np.NaN
         else:
             raise AttributeError("Input size is too small. Please provide "
                                  "an input with more than 1 entry. cv2 returns any"
-                                 "value since the argument `with_nan` is `False`" )
+                                 "value since the argument `with_nan` is `False`")
 
     # calculate CV2 and return result
     return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
@@ -348,7 +348,7 @@ def cv2(v, with_nan=False):
 # sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
 # to finally be taken out of Elephant
 
-def sigma2kw(form): # pragma: no cover
+def sigma2kw(form):  # pragma: no cover
     warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     if form.upper() == 'BOX':
@@ -367,14 +367,14 @@ def sigma2kw(form): # pragma: no cover
     return coeff
 
 
-def kw2sigma(form): # pragma: no cover
+def kw2sigma(form):  # pragma: no cover
     warnings.simplefilter('always', DeprecationWarning)
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     return 1/sigma2kw(form)
 
 
 # to finally be taken out of Elephant
-def make_kernel(form, sigma, sampling_period, direction=1): # pragma: no cover
+def make_kernel(form, sigma, sampling_period, direction=1):  # pragma: no cover
     """
     Creates kernel functions for convolution.
 
@@ -460,7 +460,7 @@ def make_kernel(form, sigma, sampling_period, direction=1): # pragma: no cover
     warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
     forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'])
     forms_verbose = np.array(['boxcar', 'triangle', 'gaussian', 'epanechnikov',
-                     'exponential', 'alpha'])
+                              'exponential', 'alpha'])
     if form in forms_verbose:
         form = forms_abbreviated[forms_verbose == form][0]
 
@@ -540,8 +540,8 @@ def make_kernel(form, sigma, sampling_period, direction=1): # pragma: no cover
 
 # to finally be taken out of Elephant
 def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
-                       sigma='auto', t_start=None, t_stop=None,
-                       acausal=True, trim=False): # pragma: no cover
+                              sigma='auto', t_start=None, t_stop=None,
+                              acausal=True, trim=False):  # pragma: no cover
     """
     Estimate instantaneous firing rate by kernel convolution.
 
@@ -678,15 +678,14 @@ def oldfct_instantaneous_rate(spiketrain, sampling_period, form,
             t_stop = t_stop - ((kernel.size) - m_idx) * spiketrain.units
 
     rate = neo.AnalogSignal(signal=r.reshape(r.size, 1),
-                                 sampling_period=sampling_period,
-                                 units=pq.Hz, t_start=t_start)
+                            sampling_period=sampling_period,
+                            units=pq.Hz, t_start=t_start)
 
     return rate, sigma
 
 
 def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False):
-
     """
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -768,7 +767,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     """
     # Merge spike trains if list of spike trains given:
     if isinstance(spiketrain, list):
-        _check_consistency_of_spiketrainlist(spiketrain, t_start=t_start, t_stop=t_stop)
+        _check_consistency_of_spiketrainlist(
+            spiketrain, t_start=t_start, t_stop=t_stop)
         if t_start is None:
             t_start = spiketrain[0].t_start
         if t_stop is None:
@@ -832,7 +832,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         raise TypeError("trim must be bool!")
 
     # main function:
-    units = pq.CompoundUnit("%s*s" % str(sampling_period.rescale('s').magnitude))
+    units = pq.CompoundUnit(
+        "%s*s" % str(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
         t_start = spiketrain.t_start
@@ -985,8 +986,8 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
-                                 sampling_period=binsize, units=bin_hist.units,
-                                 t_start=t_start)
+                            sampling_period=binsize, units=bin_hist.units,
+                            t_start=t_start)
 
 
 def complexity_pdf(spiketrains, binsize):
@@ -1126,7 +1127,7 @@ def cost_function(x, N, w, dt):
     yh = np.abs(fftkernel(x, w / dt))  # density
     # formula for density
     C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * \
-               dt + 2 / np.sqrt(2 * np.pi) / w / N
+        dt + 2 / np.sqrt(2 * np.pi) / w / N
     C = C * N * N
     # formula for rate
     # C = dt*sum( yh.^2 - 2*yh.*y_hist + 2/sqrt(2*pi)/w*y_hist )
@@ -1159,7 +1160,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     'C': cost functions of w,
     'confb95': (lower bootstrap confidence level, upper bootstrap confidence level),
     'yb': bootstrap samples.
-    
+
     If no optimal kernel could be found, all entries of the dictionary are set
     to None.
 
@@ -1224,7 +1225,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         f2, y2 = cost_function(yhist, N, logexp(c2), dt)
         k = 0
         while (np.abs(b - a) > (tolerance * (np.abs(c1) + np.abs(c2))))\
-              and (k < imax):
+                and (k < imax):
             if f1 < f2:
                 b = c2
                 c2 = c1
