@@ -216,11 +216,11 @@ def lv(v, with_nan=False):
         Vector of consecutive time intervals
         
     with_nans : bool, optional
-        If True, correlations of empty spike trains are given NaN values. If
-        False, a boolean array indicating empty (False) and non-empty (True)
+        If `True`, correlations of empty spike trains are given NaN values. If
+        `False`, a boolean array indicating empty (`False`) and non-empty (`True`)
         spike trains is returned. In each case a warning is raised when empty
         spike trains are detected.
-        Default: False
+        Default: `False`
 
     Returns
     -------
@@ -232,7 +232,7 @@ def lv(v, with_nan=False):
     AttributeError :
        If an empty list is specified, or if the sequence has less
        than two entries, an AttributeError will be raised.
-    ValueError : # should it be attribute?
+    ValueError :
     AttributeError :
         Only vector inputs are supported.  If a matrix is passed to the
         function a ValueError will be raised.
@@ -247,9 +247,8 @@ def lv(v, with_nan=False):
     """
     # convert to array, cast to float
     v = np.asarray(v)
-    
     # ensure the input ia a vector
-    if len(v.shape) > 1: # adeed by me for symmetry with CV
+    if len(v.shape) > 1: 
         raise AttributeError("Input shape is larger than 1. Please provide "
                              "a vector as an input.")
 
@@ -296,11 +295,11 @@ def cv2(v, with_nan=False):
         Vector of consecutive time intervals
         
     with_nans : bool, optional
-        If True, correlations of empty spike trains are given NaN values. If
-        False, a boolean array indicating empty (False) and non-empty (True)
+        If `True`, correlations of empty spike trains are given NaN values. If
+        `False`, a boolean array indicating empty (`False`) and non-empty (`True`)
         spike trains is returned. In each case a warning is raised when empty
         spike trains are detected.
-        Default: True
+        Default: `True`
 
     Returns
     -------
@@ -335,12 +334,12 @@ def cv2(v, with_nan=False):
         if with_nan:
             warnings.warn("Input size is too small. Please provide"
                                  "an input with more than 1 entry. cv2 returns `NaN`"
-                                 "since the argument `with_nan` is True")
+                                 "since the argument `with_nan` is `True`")
             return np.NaN
         else:
             raise AttributeError("Input size is too small. Please provide "
                                  "an input with more than 1 entry. cv2 returns any"
-                                 "value since the argument `with_nan` is False" )
+                                 "value since the argument `with_nan` is `False`" )
 
     # calculate CV2 and return result
     return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
