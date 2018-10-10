@@ -232,7 +232,6 @@ def lv(v, with_nan=False):
     AttributeError :
        If an empty list is specified, or if the sequence has less
        than two entries, an AttributeError will be raised.
-    ValueError :
     AttributeError :
         Only vector inputs are supported.  If a matrix is passed to the
         function a ValueError will be raised.
