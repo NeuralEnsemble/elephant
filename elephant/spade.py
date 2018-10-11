@@ -476,8 +476,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             'All spiketrains must have the same t_start and t_stop')
     if report not in ['a', '#', '3d#']:
         raise ValueError(
-            "report has to assume of the following values:"
-            +"  'a', '#' and '3d#,' got {} instead".format(report))
+            "report has to assume of the following values:" +
+            "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the data and clipping (binary matrix)
     binary_matrix = conv.BinnedSpikeTrain(data, binsize).to_bool_array()
     # Computing the context and the binary matrix encoding the relation between
@@ -1852,7 +1852,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
                 the pvalues are set to -1.
     """
-    if pvalue_spectrum != None:
+    if pvalue_spectrum is not None:
         if len(pvalue_spectrum) == 0:
             spectrum = '#'
             pass
