@@ -242,8 +242,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
 def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     """
     Compute the wavelet transform of a given signal with Morlet mother wavelet.
-    The parametrization of the wavelet is based on Le van Quyen et al. J
-    Neurosci Meth 111:83-98 (2001).
+    The parametrization of the wavelet is based on [1].
 
     Parameters
     ----------
@@ -255,40 +254,52 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
         Center frequency of the Morlet wavelet in Hz. Multiple center
         frequencies can be given as a list, in which case the function
         computes the wavelet transforms for all the given frequencies at once.
-    nco : float (optional, default: 6.0)
-        Size of the mother wavelet (approximate number of cycles within a
-        wavelet). A larger nco value leads to a higher frequency resolution and
-        a lower temporal resolution, and vice versa. Typically used values are
-        in a range of 3 - 8, but one should be cautious when using a value
-        smaller than ~ 6, in which case the admissibility of the wavelet is not
-        ensured (c.f. Farge, Annu Rev Fluid Mech 24:395-458 (1992)).
-    fs : float (optional, default: 1.0)
-        Sampling rate of the signal in Hz. When the input is given as an
+    nco : float (optional)
+        Size of the mother wavelet (approximate number of oscillation cycles
+        within a wavelet; related to the wavelet number w as w ~ 2 pi nco / 6),
+        as defined in [1]. A larger nco value leads to a higher frequency
+        resolution and a lower temporal resolution, and vice versa. Typically
+        used values are in a range of 3 - 8, but one should be cautious when
+        using a value smaller than ~ 6, in which case the admissibility of the
+        wavelet is not ensured (cf. [2]). Default value is 6.0.
+    fs : float (optional)
+        Sampling rate of the input data in Hz. When `signal` is given as an
         AnalogSignal, the sampling frequency is taken from its attribute and
-        this parameter is ignored.
-    zero_padding : bool (optional, default: True)
-        Specifies whether the signal length is extended to the least power of
+        this parameter is ignored. Default value is 1.0.
+    zero_padding : bool (optional)
+        Specifies whether the data length is extended to the least power of
         2 greater than the original length, by padding zeros to the tail, for
-        speeding up the computation. In the case of True, the final result is
-        sliced to the original length before being returned, so that it does
-        not contain the extended part.
+        speeding up the computation. In the case of True, the extended part is
+        cut out from the final result before returned, so that the output
+        has the same length as the input. Default is True.
 
     Returns
     -------
     signal_wt: complex array
-        Wavelet-transformed signal. When multiple center frequencies were
-        given, how the wavelet transforms for different frequencies are
-        returned depends on the input type. When the input was an
-        AnalogSignal of shape (Nt, Nch), where Nt and Nch are the numbers of
-        time points and channels, respectively, the returned array has a
-        shape (Nt, Nch, Nf), where Nf is the number of the given center
-        frequencies, such that the last dimension indexes the frequencies.
-        When the input was an array_like of shape (a, b, ..., c, Nt), the
-        returned array has a shape (a, b, ..., c, Nf, Nt), such that the
-        second last dimension indexes the frequencies. Thus,
-        signal_wt.ndim = signal.ndim + 1 with the additional dimension in the
-        last axis (for AnalogSignal input) or the second last axis (for
-        array_like input) indexing the frequencies.
+        Wavelet transform of the input data. When `freq` was given as a list,
+        the way how the wavelet transforms for different frequencies are
+        returned depends on the input type. When the input was an AnalogSignal
+        of shape (Nt, Nch), where Nt and Nch are the numbers of time points and
+        channels, respectively, the returned array has a shape (Nt, Nch, Nf),
+        where Nf = `len(freq)`, such that the last dimension indexes the
+        frequencies. When the input was an array_like of shape
+        (a, b, ..., c, Nt), the returned array has a shape
+        (a, b, ..., c, Nf, Nt), such that the second last dimension indexes the
+        frequencies.
+        To summarize, `signal_wt.ndim` = `signal.ndim` + 1, with the additional
+        dimension in the last axis (for AnalogSignal input) or the second last
+        axis (for array_like input) indexing the frequencies.
+
+    Raises
+    ------
+    ValueError
+        If `freq` (or one of the values in `freq` when it is a list) is greater
+        than the half of `fs`, or `nco` is not positive.
+
+    References
+    ----------
+    1. Le van Quyen et al. J Neurosci Meth 111:83-98 (2001)
+    2. Farge, Annu Rev Fluid Mech 24:395-458 (1992)
     """
     def _morlet_wavelet_ft(freq, nco, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
@@ -324,8 +335,8 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # check whether the given central frequencies are less than the
     # Nyquist frequency of the signal
     if np.any(freqs >= fs / 2):
-        raise ValueError(
-            "`freq` must be less than the half of the sampling rate `fs` = {} Hz".format(fs))
+        raise ValueError("`freq` must be less than the half of " +
+                         "the sampling rate `fs` = {} Hz".format(fs))
 
     # check if nco is positive
     if nco <= 0:
