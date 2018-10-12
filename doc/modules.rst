@@ -3,7 +3,7 @@ Function Reference by Module
 ****************************
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    reference/statistics
    reference/signal_processing
@@ -16,6 +16,7 @@ Function Reference by Module
    reference/unitary_event_analysis
    reference/cubic
    reference/asset
+   reference/cell_assembly_detection
    reference/spike_train_generation
    reference/spike_train_surrogates
    reference/conversion
