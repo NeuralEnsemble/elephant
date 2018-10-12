@@ -214,13 +214,11 @@ def lv(v, with_nan=False):
 
     v : quantity array, numpy array or list
         Vector of consecutive time intervals
-
+        
     with_nans : bool, optional
-        If `True`, correlations of empty spike trains are given NaN values. If
-        `False`, a boolean array indicating empty (`False`) and non-empty (`True`)
-        spike trains is returned. In each case a warning is raised when empty
-        spike trains are detected.
-        Default: `False`
+        If `True`, cv2 of an empty spike trains is given NaN value and a warning 
+        is raised. If `False`, an attribute error is raised. 
+        Default: `True`
 
     Returns
     -------
@@ -294,10 +292,8 @@ def cv2(v, with_nan=False):
         Vector of consecutive time intervals
 
     with_nans : bool, optional
-        If `True`, correlations of empty spike trains are given NaN values. If
-        `False`, a boolean array indicating empty (`False`) and non-empty (`True`)
-        spike trains is returned. In each case a warning is raised when empty
-        spike trains are detected.
+        If `True`, cv2 of an empty spike trains is given NaN value and a warning 
+        is raised. If `False`, an attribute error is raised. 
         Default: `True`
 
     Returns
