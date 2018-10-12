@@ -564,8 +564,10 @@ class BinnedSpikeTrain(object):
             raise TypeError(
                 "Number of bins (num_bins) is not an integer or < 0: " + str(
                     num_bins))
-        elif binsize.units != self.t_start.units:
-                self.binsize = self.binsize.rescale(self.t_start.units)
+        # elif binsize.units != self.t_start.units:
+        #     self.binsize = self.binsize.rescale(self.t_start.units)
+        # elif t_stop.units != self.binsize.units:
+        #     self.t_stop.units = self.t_stop.rescale(self.binsize.units)
 
     @property
     def bin_edges(self):
@@ -583,10 +585,10 @@ class BinnedSpikeTrain(object):
             are returned as a quantity array.
 
         """
-        return pq.Quantity(np.linspace(self.t_start.magnitude,
-                                       self.t_stop.magnitude,
+        return pq.Quantity(np.linspace(self.t_start.rescale('s').magnitude,
+                                       self.t_stop.rescale('s').magnitude,
                                        self.num_bins + 1, endpoint=True),
-                           units=self.binsize.units)
+                           units='s')
 
     @property
     def bin_centers(self):

@@ -515,6 +515,13 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
         self.assertTrue(bst.bin_centers.units == pq.s)
         self.assertTrue(bst.bin_edges.units == pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=1 * pq.s, t_stop=1010 * pq.ms,
+                                  binsize=1 * pq.ms)
+        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
+        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
+        self.assertTrue(bst.bin_centers.units == pq.s)
+        self.assertTrue(bst.bin_edges.units == pq.s)
 
 
 if __name__ == '__main__':
