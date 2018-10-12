@@ -588,7 +588,7 @@ class BinnedSpikeTrain(object):
         return pq.Quantity(np.linspace(self.t_start.rescale('s').magnitude,
                                        self.t_stop.rescale('s').magnitude,
                                        self.num_bins + 1, endpoint=True),
-                           units='s')
+                           units='s').rescale(self.binsize.units)
 
     @property
     def bin_centers(self):
