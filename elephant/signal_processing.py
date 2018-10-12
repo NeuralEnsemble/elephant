@@ -192,7 +192,7 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
                 signal, [0,1], nlags=150)
         env = elephant.signal_processing.cross_correlation_function(
                 signal, [0,1], nlags=150, env=True)
-        plt.plot(rho.tmes, rho)
+        plt.plot(rho.times, rho)
         plt.plot(env.times, env) # should be equal to one
         plt.show()
     """
