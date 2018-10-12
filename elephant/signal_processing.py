@@ -137,40 +137,45 @@ def zscore(signal, inplace=True):
         return result
     
     
-def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
+def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
 
     """
     Computes unbiased estimator of the cross-correlation function.
     
     Calculates the unbiased estimator of the cross-correlation function 
-    R(tau) = 1/(N-|k|) R'(tau), where R'(tau) = E[x(t)*y(t+tau)] for signal1 
-    and signal2 in a pairwise manner, i.e. signal1[0] vs signal2[0], signal1[1] 
-    vs signal2[1] and so on. The cross-correlation function is obtained 
-    by np.correlate. signal1 and signal2 are zscored beforehand.
+    R(tau) = 1/(N-|k|) R'(tau), where R'(tau) = E[x(t)*y(t+tau)] in a 
+    pairwise manner, i.e. signal[ch_pairs[0,0]] vs signal2[ch_pairs[0,1]], 
+    signal[ch_pairs[1,0]] vs signal2[ch_pairs[1,1]], and so on (see also
+    Hall & River (2009) Spectral Analysis of Signals, Spectral Element Method
+    in Structural Dynamics, Eq. 2.2.3). The cross-correlation function is obtained 
+    by scipy's fftconvolve. Time series in signal are zscored beforehand.
     Alternatively returns the Hilbert envelope of R(tau), which is useful to 
     determine the correlation length of oscillatory signals.
 
     Parameters
     -----------
-    signal : neo.AnalogSignal
-        Signal that contains the LFP channels
+    signal : neo.AnalogSignal (Nt x Nch)
+        Signal with Nt samples that contains Nch LFP channels
     ch_pairs : list (or array with shape (N,2))
         list with N channel pairs for which to compute cross-correlation, 
         each element of list must contain 2 channel indices
-    dt : float
-        Defines sampling period
     env: bool
         Return Hilbert envelope of cross-correlation function
+        Default: False
     nlags: int
-        Defines number of lags for cross-corelation function. Floats will be 
-        rounded to nearest integer. Output is of length 2*nlags+1. If None, 
-        len(tau) = Nt
+        Defines number of lags for cross-corelation function. Float will be 
+        rounded to nearest integer. Sample length of output is 2*nlags+1. 
+        If None, sample length of output is equal to number of samples in 
+        input signal, namely Nt
+        Default: None
 
     Returns
     -------
-    neo.AnalogSignal or array-like (same as input)
-        Pairwise cross-correlation functions of signal1 and signal2. 
-        Output xcorr has same size as signal1 and signal2.
+    cross_corr : neo.AnalogSgnal (2*nlag+1 x N)
+        Pairwise cross-correlation functions for channel pairs given by `ch_pairs`. 
+        If env=True, the output is the Hilbert envelope of the pairwise cross-
+        correlation function. This is helpful to compute the correlation length
+        for oscillating cross-correlation functions
     
     Example:
         dt = 0.02
@@ -178,19 +183,20 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
         f = 0.5
         t = np.arange(N)*dt
         x = np.zeros((N,2))
-        x[:,0] = 0.2 * np.sin(2.*np.pi*f*t + np.pi/2.)
+        x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
         x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
         # Generate neo.AnalogSignals from x
         signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms, 
                                   sampling_rate=1/dt*pq.Hz, dtype=float)
-        rho, tau = elephant.signal_processing.cross_correlation_function(
-                signal, [0,1], dt=dt, nlags=150)
-        env, _ = elephant.signal_processing.cross_correlation_function(
-                signal, [0,1], dt=dt, nlags=150, env=True)
-        plt.plot(tau, rho)
-        plt.plot(tau, env) # should be equal to one
+        rho = elephant.signal_processing.cross_correlation_function(
+                signal, [0,1], nlags=150)
+        env = elephant.signal_processing.cross_correlation_function(
+                signal, [0,1], nlags=150, env=True)
+        plt.plot(rho.tmes, rho)
+        plt.plot(env.times, env) # should be equal to one
         plt.show()
     """
+    
     # Make ch_pairs an 2D array
     pairs = np.array(ch_pairs)
     if pairs.ndim == 1:
@@ -215,7 +221,7 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
     
     # Define vector of lags tau
     Nt, Nch = np.shape(x)
-    tau = (np.arange(Nt) - Nt//2)*dt
+    tau = (np.arange(Nt) - Nt//2)
     
     # Calculate cross-correlation by taking Fourier transform of signal, 
     # multiply in Fourier space, and transform back. Correct for bias due 
@@ -223,7 +229,7 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
     xcorr = np.zeros((Nt, Nch))
     for i in range(Nch):
         xcorr[:,i] = scipy.signal.fftconvolve(x[:,i], y[::-1,i], mode='same')
-    bias = npm.repmat((Nt-abs(tau/dt)), Nch, 1).T
+    bias = npm.repmat((Nt-abs(tau)), Nch, 1).T
     xcorr = xcorr / bias
     
     # Calculate envelope of cross-correlation function with Hilber transform.
@@ -239,7 +245,14 @@ def cross_correlation_function(signal, ch_pairs, dt=1., env=False, nlags=None):
         xcorr = xcorr[i0-nlags:i0+nlags+1,:]
         tau = tau[i0-nlags:i0+nlags+1]
     
-    return xcorr, tau
+    # Return neo.AnalogSignal
+    cross_corr = neo.AnalogSignal(xcorr,
+                                  units='',
+                                  t_start=np.min(tau)*signal.sampling_period,
+                                  t_stop=np.max(tau)*signal.sampling_period,
+                                  sampling_rate=signal.sampling_rate,
+                                  dtype=float)
+    return cross_corr
 
 
 def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,

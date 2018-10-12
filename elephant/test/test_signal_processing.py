@@ -28,8 +28,9 @@ class XCorrelationTestCase(unittest.TestCase):
         E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
         '''
         # Sine with phase shift phi vs cosine for different frequencies
-        dt = 0.02
-        freq = np.linspace(0.5, 15, 8)
+        dt = 0.02 * pq.s
+        nlags = 30
+        freq = np.linspace(0.5, 15, 8) * pq.Hz
         N = 2018
         t = np.arange(N)*dt
         phi = np.pi/6.
@@ -41,18 +42,18 @@ class XCorrelationTestCase(unittest.TestCase):
             x[:,3] = 1875.35 * np.cos(2.*np.pi*f*t)
             # Generate neo.AnalogSignals from x and y
             signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms, 
-                                      sampling_rate=1/dt*pq.Hz, dtype=float)
-            rho, tau = elephant.signal_processing.cross_correlation_function(
-                    signal, [[0, 2], [1, 3]], dt=dt, nlags=N/4.6)
-            env, _ = elephant.signal_processing.cross_correlation_function(
-                    signal, [[0, 2], [1, 3]], dt=dt, nlags=N/4.6, env=True)
+                                      sampling_rate=1/dt, dtype=float)
+            rho = elephant.signal_processing.cross_correlation_function(
+                    signal, [[0, 2], [1, 3]], nlags=nlags)
+            env = elephant.signal_processing.cross_correlation_function(
+                    signal, [[0, 2], [1, 3]], nlags=nlags, env=True)
             # Test if vector of lags tau has correct length
-            assert len(tau)==2*int(np.round(N/4.6))+1
+            assert len(rho.times)==2*int(nlags)+1
             # Cross-correlation of sine and cosine should be sine
             assert_array_almost_equal(
-                    rho[:,0], np.sin(2.*np.pi*f*tau+phi), decimal=2)
+                    rho.magnitude[:,0], np.sin(2.*np.pi*f*rho.times+phi), decimal=2)
             assert_array_almost_equal(
-                    rho[:,1], np.sin(2.*np.pi*f*tau+2*phi), decimal=2)
+                    rho.magnitude[:,1], np.sin(2.*np.pi*f*rho.times+2*phi), decimal=2)
             # Envelope should be one for sinusoidal function
             assert_array_almost_equal(env, np.ones_like(env), decimal=2)
 
