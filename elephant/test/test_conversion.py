@@ -500,6 +500,29 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array_equal(xa.bin_edges[:-1],
                            xb.bin_edges[:-1].rescale(binsize.units)))
 
+    def test_binnend_spiketrain_rescaling(self):
+        train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
+                               t_start=1 * pq.s, t_stop=1.01 * pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=1 * pq.s, t_stop=1.01 * pq.s,
+                                  binsize=1 * pq.ms)
+        target_edges = np.array([1000, 1001, 1002, 1003, 1004, 1005, 1006,
+                                 1007, 1008, 1009, 1010], dtype=np.float)
+        target_centers = np.array(
+            [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
+             1008.5, 1009.5], dtype=np.float)
+        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
+        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
+        self.assertTrue(bst.bin_centers.units == pq.ms)
+        self.assertTrue(bst.bin_edges.units == pq.ms)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=1 * pq.s, t_stop=1010 * pq.ms,
+                                  binsize=1 * pq.ms)
+        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
+        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
+        self.assertTrue(bst.bin_centers.units == pq.ms)
+        self.assertTrue(bst.bin_edges.units == pq.ms)
+
 
 if __name__ == '__main__':
     unittest.main()
