@@ -506,22 +506,22 @@ class TimeHistogramTestCase(unittest.TestCase):
         bst = cv.BinnedSpikeTrain(train,
                                   t_start=1 * pq.s, t_stop=1.01 * pq.s,
                                   binsize=1 * pq.ms)
-        target_edges = np.array([1., 1.001, 1.002, 1.003, 1.004, 1.005, 1.006,
-                                 1.007, 1.008, 1.009, 1.01], dtype=np.float)
+        target_edges = np.array([1000, 1001, 1002, 1003, 1004, 1005, 1006,
+                                 1007, 1008, 1009, 1010], dtype=np.float)
         target_centers = np.array(
-            [1.0005, 1.0015, 1.0025, 1.0035, 1.0045, 1.0055, 1.0065, 1.0075,
-             1.0085, 1.0095], dtype=np.float)
+            [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
+             1008.5, 1009.5], dtype=np.float)
         self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
         self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
-        self.assertTrue(bst.bin_centers.units == pq.s)
-        self.assertTrue(bst.bin_edges.units == pq.s)
+        self.assertTrue(bst.bin_centers.units == pq.ms)
+        self.assertTrue(bst.bin_edges.units == pq.ms)
         bst = cv.BinnedSpikeTrain(train,
                                   t_start=1 * pq.s, t_stop=1010 * pq.ms,
                                   binsize=1 * pq.ms)
         self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
         self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
-        self.assertTrue(bst.bin_centers.units == pq.s)
-        self.assertTrue(bst.bin_edges.units == pq.s)
+        self.assertTrue(bst.bin_centers.units == pq.ms)
+        self.assertTrue(bst.bin_edges.units == pq.ms)
 
 
 if __name__ == '__main__':
