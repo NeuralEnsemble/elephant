@@ -239,6 +239,141 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
+def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
+    """
+    Compute the wavelet transform of a given signal with Morlet mother wavelet.
+    The parametrization of the wavelet is based on [1].
+
+    Parameters
+    ----------
+    signal : neo.AnalogSignal or array_like
+        Time series data to be wavelet-transformed. When multi-dimensional
+        array_like is given, the time axis must be the last dimension of
+        the array_like.
+    freq : float or list of floats
+        Center frequency of the Morlet wavelet in Hz. Multiple center
+        frequencies can be given as a list, in which case the function
+        computes the wavelet transforms for all the given frequencies at once.
+    nco : float (optional)
+        Size of the mother wavelet (approximate number of oscillation cycles
+        within a wavelet; related to the wavelet number w as w ~ 2 pi nco / 6),
+        as defined in [1]. A larger nco value leads to a higher frequency
+        resolution and a lower temporal resolution, and vice versa. Typically
+        used values are in a range of 3 - 8, but one should be cautious when
+        using a value smaller than ~ 6, in which case the admissibility of the
+        wavelet is not ensured (cf. [2]). Default value is 6.0.
+    fs : float (optional)
+        Sampling rate of the input data in Hz. When `signal` is given as an
+        AnalogSignal, the sampling frequency is taken from its attribute and
+        this parameter is ignored. Default value is 1.0.
+    zero_padding : bool (optional)
+        Specifies whether the data length is extended to the least power of
+        2 greater than the original length, by padding zeros to the tail, for
+        speeding up the computation. In the case of True, the extended part is
+        cut out from the final result before returned, so that the output
+        has the same length as the input. Default is True.
+
+    Returns
+    -------
+    signal_wt: complex array
+        Wavelet transform of the input data. When `freq` was given as a list,
+        the way how the wavelet transforms for different frequencies are
+        returned depends on the input type. When the input was an AnalogSignal
+        of shape (Nt, Nch), where Nt and Nch are the numbers of time points and
+        channels, respectively, the returned array has a shape (Nt, Nch, Nf),
+        where Nf = `len(freq)`, such that the last dimension indexes the
+        frequencies. When the input was an array_like of shape
+        (a, b, ..., c, Nt), the returned array has a shape
+        (a, b, ..., c, Nf, Nt), such that the second last dimension indexes the
+        frequencies.
+        To summarize, `signal_wt.ndim` = `signal.ndim` + 1, with the additional
+        dimension in the last axis (for AnalogSignal input) or the second last
+        axis (for array_like input) indexing the frequencies.
+
+    Raises
+    ------
+    ValueError
+        If `freq` (or one of the values in `freq` when it is a list) is greater
+        than the half of `fs`, or `nco` is not positive.
+
+    References
+    ----------
+    1. Le van Quyen et al. J Neurosci Meth 111:83-98 (2001)
+    2. Farge, Annu Rev Fluid Mech 24:395-458 (1992)
+    """
+    def _morlet_wavelet_ft(freq, nco, fs, n):
+        # Generate the Fourier transform of Morlet wavelet as defined
+        # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
+        sigma = nco / (6. * freq)
+        freqs = np.fft.fftfreq(n, 1.0 / fs)
+        heaviside = np.array(freqs > 0., dtype=np.float)
+        ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
+            -2 * (np.pi * sigma * (freqs - freq)) ** 2) * heaviside * fs
+        ft_imag = np.zeros_like(ft_real)
+        return ft_real + 1.0j * ft_imag
+
+    data = np.asarray(signal)
+    # When the input is AnalogSignal, the axis for time index (i.e. the
+    # first axis) needs to be rolled to the last
+    if isinstance(signal, neo.AnalogSignal):
+        data = np.rollaxis(data, 0, data.ndim)
+
+    # When the input is AnalogSignal, use its attribute to specify the
+    # sampling frequency
+    if hasattr(signal, 'sampling_rate'):
+        fs = signal.sampling_rate
+    if isinstance(fs, pq.quantity.Quantity):
+        fs = fs.rescale('Hz').magnitude
+
+    if isinstance(freq, (list, tuple, np.ndarray)):
+        freqs = np.asarray(freq)
+    else:
+        freqs = np.array([freq,])
+    if isinstance(freqs[0], pq.quantity.Quantity):
+        freqs = [f.rescale('Hz').magnitude for f in freqs]
+
+    # check whether the given central frequencies are less than the
+    # Nyquist frequency of the signal
+    if np.any(freqs >= fs / 2):
+        raise ValueError("`freq` must be less than the half of " +
+                         "the sampling rate `fs` = {} Hz".format(fs))
+
+    # check if nco is positive
+    if nco <= 0:
+        raise ValueError("`nco` must be positive")
+
+    n_orig = data.shape[-1]
+    if zero_padding:
+        n = 2 ** (int(np.log2(n_orig)) + 1)
+    else:
+        n = n_orig
+
+    # generate Morlet wavelets (in the frequency domain)
+    wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
+    for i, f in enumerate(freqs):
+        wavelet_fts[i] = _morlet_wavelet_ft(f, nco, fs, n)
+
+    # perform wavelet transform by convoluting the signal with the wavelets
+    if data.ndim == 1:
+        data = np.expand_dims(data, 0)
+    data = np.expand_dims(data, data.ndim-1)
+    data = np.fft.ifft(np.fft.fft(data, n) * wavelet_fts)
+    signal_wt = data[..., 0:n_orig]
+
+    # reshape the result array according to the input
+    if isinstance(signal, neo.AnalogSignal):
+        signal_wt = np.rollaxis(signal_wt, -1)
+        if not isinstance(freq, (list, tuple, np.ndarray)):
+            signal_wt = signal_wt[..., 0]
+    else:
+        if signal.ndim == 1:
+            signal_wt = signal_wt[0]
+        if not isinstance(freq, (list, tuple, np.ndarray)):
+            signal_wt = signal_wt[..., 0, :]
+
+    return signal_wt
+
+
 def hilbert(signal, N='nextpow'):
     '''
     Apply a Hilbert transform to an AnalogSignal object in order to obtain its
