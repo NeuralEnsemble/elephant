@@ -10,3 +10,4 @@ Spike train correlation
 
 .. automodule:: elephant.spike_train_correlation
    :members:
+   :exclude-members: cch, sttc
