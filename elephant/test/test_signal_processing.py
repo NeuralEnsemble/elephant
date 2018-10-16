@@ -20,9 +20,7 @@ from numpy.ma.testutils import assert_array_equal, assert_allclose
 
 
 class XCorrelationTestCase(unittest.TestCase):
-    '''
-    Class t several tests of cross_correlation_function
-    '''
+
     # Set parameters
     sampling_period = 0.02*pq.s
     sampling_rate = 1./sampling_period
