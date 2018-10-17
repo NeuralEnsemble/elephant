@@ -40,11 +40,11 @@ class XCorrelationTestCase(unittest.TestCase):
             signal[:, 0] = np.sin(2.*np.pi*freq*self.time)
             signal[:, 1] = np.cos(2.*np.pi*freq*self.time)
             # Convert signal to neo.AnalogSignal
-            signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+            signal_neo = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                       sampling_rate=self.sampling_rate,
                                       dtype=float)
             rho = elephant.signal_processing.cross_correlation_function(
-                signal, [0, 1])
+                signal_neo, [0, 1])
             # Cross-correlation of sine and cosine should be sine
             assert_array_almost_equal(
                 rho.magnitude[:, 0], np.sin(2.*np.pi*freq*rho.times), decimal=2)
