@@ -15,10 +15,93 @@ import scipy.signal as spsig
 import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
-
 import elephant.signal_processing
-
 from numpy.ma.testutils import assert_array_equal, assert_allclose
+
+
+class XCorrelationTestCase(unittest.TestCase):
+
+    # Set parameters
+    sampling_period = 0.02*pq.s
+    sampling_rate = 1./sampling_period
+    n_samples = 2018
+    time = np.arange(n_samples)*sampling_period
+    freq = 1.*pq.Hz
+
+    def test_cross_correlation_freqs(self):
+        '''
+        Sine vs cosine for different frequencies
+        Note, that accuracy depends on N and min(f).
+        E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
+        '''
+        freq_arr = np.linspace(0.5, 15, 8) * pq.Hz
+        signal = np.zeros((self.n_samples, 2))
+        for freq in freq_arr:
+            signal[:, 0] = np.sin(2.*np.pi*freq*self.time)
+            signal[:, 1] = np.cos(2.*np.pi*freq*self.time)
+            # Convert signal to neo.AnalogSignal
+            signal_neo = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                      sampling_rate=self.sampling_rate,
+                                      dtype=float)
+            rho = elephant.signal_processing.cross_correlation_function(
+                signal_neo, [0, 1])
+            # Cross-correlation of sine and cosine should be sine
+            assert_array_almost_equal(
+                rho.magnitude[:, 0], np.sin(2.*np.pi*freq*rho.times), decimal=2)
+
+    def test_cross_correlation_nlags(self):
+        '''
+        Sine vs cosine for specific nlags
+        '''
+        nlags = 30
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
+        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        rho = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], nlags=nlags)
+        # Test if vector of lags tau has correct length
+        assert len(rho.times) == 2*int(nlags)+1
+
+    def test_cross_correlation_phi(self):
+        '''
+        Sine with phase shift phi vs cosine
+        '''
+        phi = np.pi/6.
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time+phi)
+        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        rho = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1])
+        # Cross-correlation of sine and cosine should be sine + phi
+        assert_array_almost_equal(
+            rho.magnitude[:, 0], np.sin(2.*np.pi*self.freq*rho.times+phi),
+            decimal=2)
+
+    def test_cross_correlation_env(self):
+        '''
+        Envelope of sine vs cosine
+        '''
+        # Sine with phase shift phi vs cosine for different frequencies
+        nlags = 800 # nlags need to be smaller than N/2 b/c border effects
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
+        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        env = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], nlags=nlags, env=True)
+        # Envelope should be one for sinusoidal function
+        assert_array_almost_equal(env, np.ones_like(env), decimal=2)
 
 
 class ZscoreTestCase(unittest.TestCase):

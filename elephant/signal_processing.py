@@ -12,6 +12,7 @@ import numpy as np
 import scipy.signal
 import quantities as pq
 import neo
+import numpy.matlib as npm
 
 
 def zscore(signal, inplace=True):
@@ -134,6 +135,149 @@ def zscore(signal, inplace=True):
         return result[0]
     else:
         return result
+
+
+def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
+
+    """
+    Computes unbiased estimator of the cross-correlation function.
+
+    Calculates the unbiased estimator of the cross-correlation function [1]_
+    
+    .. math::
+             R(\\tau) = \\frac{1}{N-|k|} R'(\\tau) \\ ,
+    
+    where :math:`R'(\\tau) = \\left<x(t)y(t+\\tau)\\right>` in a pairwise 
+    manner, i.e. `signal[ch_pairs[0,0]]` vs `signal2[ch_pairs[0,1]]`,
+    `signal[ch_pairs[1,0]]` vs `signal2[ch_pairs[1,1]]`, and so on. The
+    cross-correlation function is obtained by `scipy.signal.fftconvolve`.
+    Time series in signal are zscored beforehand. Alternatively returns the
+    Hilbert envelope of :math:`R(\\tau)`, which is useful to determine the 
+    correlation length of oscillatory signals.
+
+    Parameters
+    -----------
+    signal : neo.AnalogSignal (`nt` x `nch`)
+        Signal with nt number of samples that contains nch LFP channels
+    ch_pairs : list (or array with shape `(n,2)`)
+        list with n channel pairs for which to compute cross-correlation,
+        each element of list must contain 2 channel indices
+    env : bool
+        Return Hilbert envelope of cross-correlation function
+        Default: False
+    nlags : int
+        Defines number of lags for cross-correlation function. Float will be
+        rounded to nearest integer. Number of samples of output is `2*nlags+1`.
+        If None, number of samples of output is equal to number of samples of
+        input signal, namely `nt`
+        Default: None
+
+    Returns
+    -------
+    cross_corr : neo.AnalogSgnal (`2*nlag+1` x `n`)
+        Pairwise cross-correlation functions for channel pairs given by
+        `ch_pairs`. If `env=True`, the output is the Hilbert envelope of the
+        pairwise cross-correlation function. This is helpful to compute the
+        correlation length for oscillating cross-correlation functions
+
+    Raises
+    ------
+    ValueError
+        If the input signal is not a neo.AnalogSignal.
+    ValueError
+        If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
+    KeyError
+        If keyword `env` is not a boolean.
+    KeyError
+        If `nlags` is not an integer or float larger than 0.
+
+    Examples
+    --------
+        >>> dt = 0.02
+        >>> N = 2018
+        >>> f = 0.5
+        >>> t = np.arange(N)*dt
+        >>> x = np.zeros((N,2))
+        >>> x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
+        >>> x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
+        >>> # Generate neo.AnalogSignals from x
+        >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
+        >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
+        >>> rho = elephant.signal_processing.cross_correlation_function(
+        >>>     signal, [0,1], nlags=150)
+        >>> env = elephant.signal_processing.cross_correlation_function(
+        >>>     signal, [0,1], nlags=150, env=True)
+        >>> plt.plot(rho.times, rho)
+        >>> plt.plot(env.times, env) # should be equal to one
+        >>> plt.show()
+
+    References
+    ----------
+    .. [1] Hall & River (2009) "Spectral Analysis of Signals, Spectral Element
+       Method in Structural Dynamics", Eq. 2.2.3
+    """
+
+    # Make ch_pairs a 2D array
+    pairs = np.array(ch_pairs)
+    if pairs.ndim == 1:
+        pairs = pairs[:, np.newaxis]
+
+    # Check input
+    if not isinstance(signal, neo.AnalogSignal):
+        raise ValueError('Input signal is not a neo.AnalogSignal!')
+    if np.shape(pairs)[1] != 2:
+        pairs = pairs.T
+    if np.shape(pairs)[1] != 2:
+        raise ValueError('ch_pairs is not a list of channel pair indices.'\
+                         'Cannot define pairs for cross-correlation.')
+    if not isinstance(env, bool):
+        raise KeyError('env is not a boolean!')
+    if nlags is not None:
+        if not isinstance(nlags, (int, float)):
+            raise KeyError('nlags must be an integer or float larger than 0!')
+        if nlags <= 0:
+            raise KeyError('nlags must be an integer or float larger than 0!')
+
+    # z-score analog signal and store channel time series in different arrays
+    # Cross-correlation will be calculated between xsig and ysig
+    xsig = np.array([zscore(signal).magnitude[:, pair[0]] \
+        for pair in pairs]).T
+    ysig = np.array([zscore(signal).magnitude[:, pair[1]] \
+        for pair in pairs]).T
+
+    # Define vector of lags tau
+    nt, nch = np.shape(xsig)
+    tau = (np.arange(nt) - nt//2)
+
+    # Calculate cross-correlation by taking Fourier transform of signal,
+    # multiply in Fourier space, and transform back. Correct for bias due
+    # to zero-padding
+    xcorr = np.zeros((nt, nch))
+    for i in range(nch):
+        xcorr[:, i] = scipy.signal.fftconvolve(xsig[:, i], ysig[::-1, i],
+                                               mode='same')
+    xcorr = xcorr / npm.repmat((nt-abs(tau)), nch, 1).T
+
+    # Calculate envelope of cross-correlation function with Hilbert transform.
+    # This is useful for transient oscillatory signals.
+    if env:
+        for i in range(nch):
+            xcorr[:, i] = np.abs(scipy.signal.hilbert(xcorr[:, i]))
+
+    # Cut off lags outside desired range
+    if nlags is not None:
+        nlags = int(np.round(nlags))
+        tau0 = int(np.argwhere(tau == 0))
+        xcorr = xcorr[tau0-nlags:tau0+nlags+1, :]
+
+    # Return neo.AnalogSignal
+    cross_corr = neo.AnalogSignal(xcorr,
+                                  units='',
+                                  t_start=np.min(tau)*signal.sampling_period,
+                                  t_stop=np.max(tau)*signal.sampling_period,
+                                  sampling_rate=signal.sampling_rate,
+                                  dtype=float)
+    return cross_corr
 
 
 def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
