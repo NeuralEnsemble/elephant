@@ -1,6 +1,6 @@
-=======================
-Data format conversions
-=======================
+======================================
+`conversion` - Data format conversions
+======================================
 
 .. automodule:: elephant.conversion
    :members:

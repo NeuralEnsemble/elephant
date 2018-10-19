@@ -175,6 +175,9 @@ html_use_index = True
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'elephantdoc'
 
+# Supresses  wrong numpy doc warnings
+# see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
+numpydoc_show_class_members = False
 
 # -- Options for LaTeX output --------------------------------------------
 

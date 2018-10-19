@@ -1,6 +1,6 @@
-============================
-Bridge to the pandas library
-============================
+=============================================
+`pandas-brige` - Bridge to the pandas library
+=============================================
 
 .. automodule:: elephant.pandas_bridge
    :members:
