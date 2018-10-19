@@ -216,7 +216,7 @@ def lv(v, with_nan=False):
         Vector of consecutive time intervals
         
     with_nans : bool, optional
-        If `True`, cv2 of an empty spike trains is given NaN value and a warning 
+        If `True`, cv2 of an empty spike train is given NaN value and a warning 
         is raised. If `False`, an attribute error is raised. 
         Default: `True`
 
@@ -292,7 +292,7 @@ def cv2(v, with_nan=False):
         Vector of consecutive time intervals
 
     with_nans : bool, optional
-        If `True`, cv2 of an empty spike trains is given NaN value and a warning 
+        If `True`, cv2 of an empty spike train is given NaN value and a warning 
         is raised. If `False`, an attribute error is raised. 
         Default: `True`
 
