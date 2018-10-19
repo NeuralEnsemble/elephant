@@ -22,5 +22,6 @@ Function Reference by Module
    reference/conversion
    reference/neo_tools
    reference/pandas_bridge
+   reference/spade
 
 
