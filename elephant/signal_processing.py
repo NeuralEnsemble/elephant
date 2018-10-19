@@ -180,6 +180,17 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
         pairwise cross-correlation function. This is helpful to compute the
         correlation length for oscillating cross-correlation functions
 
+    Raises
+    ------
+    ValueError
+        If the input signal is not a neo.AnalogSignal.
+    ValueError
+        If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
+    KeyError
+        If keyword `env` is not a boolean.
+    KeyError
+        If `nlags` is not an integer or float larger than 0.
+
     Examples
     --------
         >>> dt = 0.02
