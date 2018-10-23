@@ -1233,7 +1233,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
         raise AttributeError(
-            "corr must be either '', 'b'('bonf') or 'f'('fdr')")
+            "Parameter corr must be either '', 'b'('bonf') or 'f'('fdr')")
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
