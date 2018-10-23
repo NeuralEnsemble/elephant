@@ -382,9 +382,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         else:
             output['patterns'] = concepts
         return output
-    # rank!= returning a string message
+    # rank!=0 returning None
     else:
-        return 'Results returned only for rank==0'
+        warnings.warn('Returning None because executed on a process != 0')
+        return None
 
 
 def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
@@ -534,7 +535,9 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         Length of the binsize used to bin the data
     only_windows_with_first_spike : bool
         Whether to consider every window or only the one with a spike in the
-        first bin
+        first bin. It is passible to discard windows without a spike in the
+        first bin because the same configuration of spikes will be repeated
+        in a following window, just with different position for the first spike
         Default: True
 
     Returns
@@ -629,13 +632,13 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
          support required
         Default: None
     report: str
-        values to report with an item set      (default: a)
-            a     absolute item set support (number of transactions)
-            s     relative item set support as a fraction
-            S     relative item set support as a percentage
-            e     value of item set evaluation measure
-            E     value of item set evaluation measure as a percentage
-            #     pattern spectrum instead of full pattern set
+        'a': all the mined patterns
+        '#': pattern spectrum using as signature the pair:
+            (number of spikes, number of occurrence)
+        '3d#': pattern spectrum using as signature the triplets:
+            (number of spikes, number of occurrence, difference between the
+            times of the last and the first spike of the pattern)
+        Default: 'a'
     rel_matrix : None or numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row correspond to a window (order according to their position in time).
@@ -661,14 +664,22 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
 
     Returns
     --------
-    * If report == 'a':
-        concepts: list
-        List of pairs (i.e. tuples with two elements),
-        each consisting of a tuple with a found frequent item set
-        and a tuple listing the values selected with 'report'
-    * else:
-        spectrum: list
-        List of triplets (size,supp,frq), i.e. a pattern spectrum.
+    If report == 'a':
+        All the pattern candidates (concepts) found in the data. Each
+        pattern is represented as a tuple containing
+        (spike IDs, discrete times (window position)
+        of the  occurrences of the pattern). The spike IDs are defined as:
+        spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
+        bin_id in [0, winlen].
+    If report == '#':
+         The pattern spectrum is represented as a list of triplets each
+         formed by:
+            (pattern size, number of occurrences, number of patterns)
+    If report == '3d#':
+         The pattern spectrum is represented as a list of quadruplets each
+         formed by:
+            (pattern size, number of occurrences, difference between last
+            and first spike of the pattern, number of patterns)
 
     """
     # By default, set the maximum pattern size to the number of spiketrains
@@ -793,9 +804,13 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
          support required
         Default: None
     report: str
-        values to report with an item set      (default: a)
-            a     absolute item set support (number of transactions)
-            #     pattern spectrum instead of full pattern set
+        'a': all the mined patterns
+        '#': pattern spectrum using as signature the pair:
+            (number of spikes, number of occurrence)
+        '3d#': pattern spectrum using as signature the triplets:
+            (number of spikes, number of occurrence, difference between the
+            times of the last and the first spike of the pattern)
+        Default: 'a'
     The following parameters are specific to Massive parallel SpikeTrains
     winlen: int (positive)
         The size (number of bins) of the sliding window used for the
@@ -809,15 +824,22 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
 
     Returns
     --------
-    * If report == 'a':
-        concepts: list
-        List of pairs (i.e. tuples with two elements),
-        each consisting of a tuple with a found frequent item set
-        and a tuple listing the values selected with 'report'
-    * else:
-        spectrum: list
-        List of triplets (size,supp,frq), i.e. a pattern spectrum.
-
+    If report == 'a':
+        All the pattern candidates (concepts) found in the data. Each
+        pattern is represented as a tuple containing
+        (spike IDs, discrete times (window position)
+        of the  occurrences of the pattern). The spike IDs are defined as:
+        spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
+        bin_id in [0, winlen].
+    If report == '#':
+         The pattern spectrum is represented as a list of triplets each
+         formed by:
+            (pattern size, number of occurrences, number of patterns)
+    If report == '3d#':
+         The pattern spectrum is represented as a list of quadruplets each
+         formed by:
+            (pattern size, number of occurrences, difference between last
+            and first spike of the pattern, number of patterns)
     """
     # Initializing outputs
     concepts = []
@@ -853,8 +875,6 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         while keep_concept:
             intent_comp = tuple(fca_concepts[c_idx].intent)
             supp_comp = len(tuple(fca_concepts[c_idx].extent))
-            # print(set(np.array(intent_comp) % winlen).issuperset(set(
-            #     np.array(intent) % winlen)))
             if intent != intent_comp and supp <= supp_comp and set(
                     np.array(intent_comp) % winlen).issuperset(set(
                         np.array(intent) % winlen)) and set(
@@ -1138,10 +1158,10 @@ def _holm_bonferroni(pvalues, alpha):
        significance level
 
     Returns
-    ------
-    Returns a triplet containing:
-    * an array of bool, indicating for each p-value whether it was
-      significantly low or not
+    -------
+    tests : list
+        A list of boolean values, indicating for each p-value whether it was
+        significantly low or not
    """
     id_sorted = np.argsort(pvalues)
     tests = [pval <= alpha / float(
@@ -1299,7 +1319,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         Default: 0
 
     Returns
-    ------
+    -------
     output: list
         List of all the pattern candidates (concepts) given in input, each with
         the correspondent intensional and extensional stability. Each
