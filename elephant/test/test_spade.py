@@ -137,8 +137,9 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(
             spectrum_cpp, [
                 (len(
-                    self.cpp), len(
-                    self.cpp[0]), 1)])
+                    self.cpp), np.sum(
+                    conv.BinnedSpikeTrain(
+                        self.cpp[0], self.binsize).to_bool_array()), 1)])
 
     # Testing with multiple patterns input
     def test_spade_msip(self):
@@ -433,4 +434,3 @@ def suite():
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
-    globals()
