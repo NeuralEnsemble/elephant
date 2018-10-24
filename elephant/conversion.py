@@ -595,10 +595,10 @@ class BinnedSpikeTrain(object):
             are returned as a quantity array.
 
         """
-        return pq.Quantity(np.linspace(self.t_start.magnitude,
-                                       self.t_stop.magnitude,
+        return pq.Quantity(np.linspace(self.t_start.rescale('s').magnitude,
+                                       self.t_stop.rescale('s').magnitude,
                                        self.num_bins + 1, endpoint=True),
-                           units=self.binsize.units)
+                           units='s').rescale(self.binsize.units)
 
     @property
     def bin_centers(self):

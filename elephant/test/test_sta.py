@@ -185,7 +185,7 @@ class sta_TestCase(unittest.TestCase):
             units='mV', sampling_rate=10 / ms)
         cmp_array = cmp_array / 0.
         cmp_array.t_start = -1 * ms
-        assert_array_equal(STA[:, 1], cmp_array[:, 0])
+        assert_array_equal(STA.magnitude[:, 1], cmp_array.magnitude[:, 0])
 
     def test_all_spiketrains_empty(self):
         st = SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)
@@ -201,7 +201,7 @@ class sta_TestCase(unittest.TestCase):
             nan_array.fill(np.nan)
             cmp_array = AnalogSignal(np.array([nan_array, nan_array]).T,
                 units='mV', sampling_rate=10 / ms)
-            assert_array_equal(STA, cmp_array)
+            assert_array_equal(STA.magnitude, cmp_array.magnitude)
 
 
 # =========================================================================

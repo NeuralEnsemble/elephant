@@ -1,7 +1,7 @@
+dist: precise
 language: python
 sudo: false
-virtualenv:
-  system_site_packages: true
+
 addons:
    apt:
       packages:
@@ -12,14 +12,17 @@ addons:
       - gfortran
       - python-scipy
 
+python:
+  - 2.7.13     
+      
 env:
   matrix:
     # This environment tests the newest supported anaconda env
     - DISTRIB="conda" PYTHON_VERSION="2.7" INSTALL_MKL="true"
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.16.1" PANDAS_VERSION="0.16.2"
+      NUMPY_VERSION="1.15.1" SCIPY_VERSION="1.1.0" PANDAS_VERSION="0.23.4"
       SIX_VERSION="1.10.0" COVERAGE="true"
     - DISTRIB="conda" PYTHON_VERSION="3.5" INSTALL_MKL="true"
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.16.1" PANDAS_VERSION="0.16.2"
+      NUMPY_VERSION="1.15.1" SCIPY_VERSION="1.1.0" PANDAS_VERSION="0.23.4"
       SIX_VERSION="1.10.0" COVERAGE="true"
     # This environment tests minimal dependency versions
     - DISTRIB="conda_min" PYTHON_VERSION="2.7" INSTALL_MKL="false"
@@ -28,8 +31,12 @@ env:
       SIX_VERSION="1.10.0" NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" COVERAGE="true"
     # basic Ubuntu build environment
     - DISTRIB="ubuntu" PYTHON_VERSION="2.7" INSTALL_ATLAS="true"
-      NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" SIX_VERSION="1.10.0"
       COVERAGE="true"
+    # This environment tests for mpi
+    - DISTRIB="mpi" PYTHON_VERSION="3.5" INSTALL_MKL="false"
+      NUMPY_VERSION="1.15.1" SCIPY_VERSION="1.1.0" SIX_VERSION="1.10.0"
+      MPI_VERSION="2.0.0" COVERAGE="true" MPI="true"
+
 install: source continuous_integration/install.sh
 script: bash continuous_integration/test_script.sh
 after_success:

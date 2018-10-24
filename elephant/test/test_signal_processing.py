@@ -15,10 +15,93 @@ import scipy.signal as spsig
 import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
-
 import elephant.signal_processing
-
 from numpy.ma.testutils import assert_array_equal, assert_allclose
+
+
+class XCorrelationTestCase(unittest.TestCase):
+
+    # Set parameters
+    sampling_period = 0.02*pq.s
+    sampling_rate = 1./sampling_period
+    n_samples = 2018
+    time = np.arange(n_samples)*sampling_period
+    freq = 1.*pq.Hz
+
+    def test_cross_correlation_freqs(self):
+        '''
+        Sine vs cosine for different frequencies
+        Note, that accuracy depends on N and min(f).
+        E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
+        '''
+        freq_arr = np.linspace(0.5, 15, 8) * pq.Hz
+        signal = np.zeros((self.n_samples, 2))
+        for freq in freq_arr:
+            signal[:, 0] = np.sin(2.*np.pi*freq*self.time)
+            signal[:, 1] = np.cos(2.*np.pi*freq*self.time)
+            # Convert signal to neo.AnalogSignal
+            signal_neo = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                      sampling_rate=self.sampling_rate,
+                                      dtype=float)
+            rho = elephant.signal_processing.cross_correlation_function(
+                signal_neo, [0, 1])
+            # Cross-correlation of sine and cosine should be sine
+            assert_array_almost_equal(
+                rho.magnitude[:, 0], np.sin(2.*np.pi*freq*rho.times), decimal=2)
+
+    def test_cross_correlation_nlags(self):
+        '''
+        Sine vs cosine for specific nlags
+        '''
+        nlags = 30
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
+        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        rho = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], nlags=nlags)
+        # Test if vector of lags tau has correct length
+        assert len(rho.times) == 2*int(nlags)+1
+
+    def test_cross_correlation_phi(self):
+        '''
+        Sine with phase shift phi vs cosine
+        '''
+        phi = np.pi/6.
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time+phi)
+        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        rho = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1])
+        # Cross-correlation of sine and cosine should be sine + phi
+        assert_array_almost_equal(
+            rho.magnitude[:, 0], np.sin(2.*np.pi*self.freq*rho.times+phi),
+            decimal=2)
+
+    def test_cross_correlation_env(self):
+        '''
+        Envelope of sine vs cosine
+        '''
+        # Sine with phase shift phi vs cosine for different frequencies
+        nlags = 800 # nlags need to be smaller than N/2 b/c border effects
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
+        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        env = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], nlags=nlags, env=True)
+        # Envelope should be one for sinusoidal function
+        assert_array_almost_equal(env, np.ones_like(env), decimal=2)
 
 
 class ZscoreTestCase(unittest.TestCase):
@@ -46,10 +129,10 @@ class ZscoreTestCase(unittest.TestCase):
                           20, 15, 4, 7, 10, 14, 15, 15, 20, 1]
 
     def test_zscore_single_dup(self):
-        '''
+        """
         Test z-score on a single AnalogSignal, asking to return a
         duplicate.
-        '''
+        """
         signal = neo.AnalogSignal(
             self.test_seq1, units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=float)
@@ -69,10 +152,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal[0].magnitude, self.test_seq1[0])
 
     def test_zscore_single_inplace(self):
-        '''
+        """
         Test z-score on a single AnalogSignal, asking for an inplace
         operation.
-        '''
+        """
         signal = neo.AnalogSignal(
             self.test_seq1, units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=float)
@@ -92,10 +175,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal[0].magnitude, target[0])
 
     def test_zscore_single_multidim_dup(self):
-        '''
+        """
         Test z-score on a single AnalogSignal with multiple dimensions, asking
         to return a duplicate.
-        '''
+        """
         signal = neo.AnalogSignal(
             np.transpose(
                 np.vstack([self.test_seq1, self.test_seq2])), units='mV',
@@ -113,10 +196,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal[0, 0].magnitude, self.test_seq1[0])
 
     def test_zscore_single_multidim_inplace(self):
-        '''
+        """
         Test z-score on a single AnalogSignal with multiple dimensions, asking
         for an inplace operation.
-        '''
+        """
         signal = neo.AnalogSignal(
             np.vstack([self.test_seq1, self.test_seq2]), units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=float)
@@ -133,11 +216,11 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal[0, 0].magnitude, target[0, 0])
 
     def test_zscore_single_dup_int(self):
-        '''
+        """
         Test if the z-score is correctly calculated even if the input is an
         AnalogSignal of type int, asking for a duplicate (duplicate should
         be of type float).
-        '''
+        """
         signal = neo.AnalogSignal(
             self.test_seq1, units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=int)
@@ -154,10 +237,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal.magnitude[0], self.test_seq1[0])
 
     def test_zscore_single_inplace_int(self):
-        '''
+        """
         Test if the z-score is correctly calculated even if the input is an
         AnalogSignal of type int, asking for an inplace operation.
-        '''
+        """
         signal = neo.AnalogSignal(
             self.test_seq1, units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=int)
@@ -174,10 +257,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal[0].magnitude, target.astype(int)[0])
 
     def test_zscore_list_dup(self):
-        '''
+        """
         Test zscore on a list of AnalogSignal objects, asking to return a
         duplicate.
-        '''
+        """
         signal1 = neo.AnalogSignal(
             np.transpose(np.vstack([self.test_seq1, self.test_seq1])),
             units='mV',
@@ -212,10 +295,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal2.magnitude[0, 1], self.test_seq2[0])
 
     def test_zscore_list_inplace(self):
-        '''
+        """
         Test zscore on a list of AnalogSignal objects, asking for an
         inplace operation.
-        '''
+        """
         signal1 = neo.AnalogSignal(
             np.transpose(np.vstack([self.test_seq1, self.test_seq1])),
             units='mV',
@@ -566,6 +649,169 @@ class HilbertTestCase(unittest.TestCase):
                 phase[:128, 3],
                 np.arange(0, np.pi, np.pi / 128),
                 decimal=decimal)
+
+
+class WaveletTestCase(unittest.TestCase):
+    def setUp(self):
+        # generate a 10-sec test data of pure 50 Hz cosine wave
+        self.fs = 1000.0
+        self.times = np.arange(0, 10.0, 1/self.fs)
+        self.test_freq1 = 50.0
+        self.test_freq2 = 60.0
+        self.test_data1 = np.cos(2*np.pi*self.test_freq1*self.times)
+        self.test_data2 = np.sin(2*np.pi*self.test_freq2*self.times)
+        self.test_data_arr = np.vstack([self.test_data1, self.test_data2])
+        self.test_data = neo.AnalogSignal(
+            self.test_data_arr.T*pq.mV, t_start=self.times[0]*pq.s,
+            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+        self.true_phase1 = np.angle(
+            self.test_data1 + 1j*np.sin(2*np.pi*self.test_freq1*self.times))
+        self.true_phase2 = np.angle(
+            self.test_data2 - 1j*np.cos(2*np.pi*self.test_freq2*self.times))
+        self.wt_freqs = [10, 20, 30]
+
+    def test_wavelet_errors(self):
+        """
+        Tests if errors are raised as expected.
+        """
+        # too high center frequency
+        kwds = {'signal': self.test_data, 'freq': self.fs/2}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+        kwds = {'signal': self.test_data_arr, 'freq': self.fs/2, 'fs': self.fs}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+
+        # too high center frequency in a list
+        kwds = {'signal': self.test_data, 'freq': [self.fs/10, self.fs/2]}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+        kwds = {'signal': self.test_data_arr,
+                'freq': [self.fs/10, self.fs/2], 'fs': self.fs}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+
+        # nco is not positive
+        kwds = {'signal': self.test_data, 'freq': self.fs/10, 'nco': 0}
+        self.assertRaises(
+            ValueError, elephant.signal_processing.wavelet_transform, **kwds)
+
+    def test_wavelet_io(self):
+        """
+        Tests the data type and data shape of the output is consistent with
+        that of the input, and also test the consistency between the outputs
+        of different types
+        """
+        # check the shape of the result array
+        # --- case of single center frequency
+        wt = elephant.signal_processing.wavelet_transform(self.test_data,
+                                                          self.fs/10)
+        self.assertTrue(wt.ndim == self.test_data.ndim)
+        self.assertTrue(wt.shape[0] == self.test_data.shape[0])  # time axis
+        self.assertTrue(wt.shape[1] == self.test_data.shape[1])  # channel axis
+
+        wt_arr = elephant.signal_processing.wavelet_transform(
+            self.test_data_arr, self.fs/10, fs=self.fs)
+        self.assertTrue(wt_arr.ndim == self.test_data.ndim)
+        # channel axis
+        self.assertTrue(wt_arr.shape[0] == self.test_data_arr.shape[0])
+        # time axis
+        self.assertTrue(wt_arr.shape[1] == self.test_data_arr.shape[1])
+
+        wt_arr1d = elephant.signal_processing.wavelet_transform(
+            self.test_data1, self.fs/10, fs=self.fs)
+        self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim)
+        # time axis
+        self.assertTrue(wt_arr1d.shape[0] == self.test_data1.shape[0])
+
+        # --- case of multiple center frequencies
+        wt = elephant.signal_processing.wavelet_transform(
+            self.test_data, self.wt_freqs)
+        self.assertTrue(wt.ndim == self.test_data.ndim+1)
+        self.assertTrue(wt.shape[0] == self.test_data.shape[0])  # time axis
+        self.assertTrue(wt.shape[1] == self.test_data.shape[1])  # channel axis
+        self.assertTrue(wt.shape[2] == len(self.wt_freqs))  # frequency axis
+
+        wt_arr = elephant.signal_processing.wavelet_transform(
+            self.test_data_arr, self.wt_freqs, fs=self.fs)
+        self.assertTrue(wt_arr.ndim == self.test_data_arr.ndim+1)
+        # channel axis
+        self.assertTrue(wt_arr.shape[0] == self.test_data_arr.shape[0])
+        # frequency axis
+        self.assertTrue(wt_arr.shape[1] == len(self.wt_freqs))
+        # time axis
+        self.assertTrue(wt_arr.shape[2] == self.test_data_arr.shape[1])
+
+        wt_arr1d = elephant.signal_processing.wavelet_transform(
+            self.test_data1, self.wt_freqs, fs=self.fs)
+        self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim+1)
+        # frequency axis
+        self.assertTrue(wt_arr1d.shape[0] == len(self.wt_freqs))
+        # time axis
+        self.assertTrue(wt_arr1d.shape[1] == self.test_data1.shape[0])
+
+        # check that the result does not depend on data type
+        self.assertTrue(np.all(wt[:, 0, :] == wt_arr[0, :, :].T))  # channel 0
+        self.assertTrue(np.all(wt[:, 1, :] == wt_arr[1, :, :].T))  # channel 1
+
+        # check the data contents in the case where freq is given as a list
+        # Note: there seems to be a bug in np.fft since NumPy 1.14.1, which
+        # causes that the values of wt_1freq[:, 0] and wt_3freqs[:, 0, 0] are
+        # not exactly equal, even though they use the same center frequency for
+        # wavelet transform (in NumPy 1.13.1, they become identical). Here we
+        # only check that they are almost equal.
+        wt_1freq = elephant.signal_processing.wavelet_transform(
+            self.test_data, self.wt_freqs[0])
+        wt_3freqs = elephant.signal_processing.wavelet_transform(
+            self.test_data, self.wt_freqs)
+        assert_array_almost_equal(wt_1freq[:, 0], wt_3freqs[:, 0, 0],
+                                  decimal=12)
+
+    def test_wavelet_amplitude(self):
+        """
+        Tests amplitude properties of the obtained wavelet transform
+        """
+        # check that the amplitude of WT of a sinusoid is (almost) constant
+        wt = elephant.signal_processing.wavelet_transform(self.test_data,
+                                                          self.test_freq1)
+        # take a middle segment in order to avoid edge effects
+        amp = np.abs(wt[int(len(wt)/3):int(len(wt)//3*2), 0])
+        mean_amp = amp.mean()
+        assert_array_almost_equal((amp - mean_amp) / mean_amp,
+                                  np.zeros_like(amp), decimal=6)
+
+        # check that the amplitude of WT is (almost) zero when center frequency
+        # is considerably different from signal frequency
+        wt_low = elephant.signal_processing.wavelet_transform(
+            self.test_data, self.test_freq1/10)
+        amp_low = np.abs(wt_low[int(len(wt)/3):int(len(wt)//3*2), 0])
+        assert_array_almost_equal(amp_low, np.zeros_like(amp), decimal=6)
+
+        # check that zero padding hardly affect the result
+        wt_padded = elephant.signal_processing.wavelet_transform(
+            self.test_data, self.test_freq1, zero_padding=False)
+        amp_padded = np.abs(wt_padded[int(len(wt)/3):int(len(wt)//3*2), 0])
+        assert_array_almost_equal(amp_padded, amp, decimal=9)
+
+    def test_wavelet_phase(self):
+        """
+        Tests phase properties of the obtained wavelet transform
+        """
+        # check that the phase of WT is (almost) same as that of the original
+        # sinusoid
+        wt = elephant.signal_processing.wavelet_transform(self.test_data,
+                                                          self.test_freq1)
+        phase = np.angle(wt[int(len(wt)/3):int(len(wt)//3*2), 0])
+        true_phase = self.true_phase1[int(len(wt)/3):int(len(wt)//3*2)]
+        assert_array_almost_equal(np.exp(1j*phase), np.exp(1j*true_phase),
+                                  decimal=6)
+
+        # check that zero padding hardly affect the result
+        wt_padded = elephant.signal_processing.wavelet_transform(
+            self.test_data, self.test_freq1, zero_padding=False)
+        phase_padded = np.angle(wt_padded[int(len(wt)/3):int(len(wt)//3*2), 0])
+        assert_array_almost_equal(np.exp(1j*phase_padded), np.exp(1j*phase),
+                                  decimal=9)
 
 
 if __name__ == '__main__':

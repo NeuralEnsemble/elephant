@@ -14,11 +14,11 @@ import warnings
 import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
-from scipy.stats import kstest, expon
-from quantities import ms, second, Hz, kHz, mV, dimensionless
+from scipy.stats import kstest, expon, poisson
+from quantities import V, s, ms, second, Hz, kHz, mV, dimensionless
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
-
+from scipy.stats import expon
 
 def pdiff(a, b):
     """Difference between a and b as a fraction of a
@@ -40,10 +40,12 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         # Load membrane potential simulated using Brian2
         # according to make_spike_extraction_test_data.py.
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.txt')
+        raw_data = []
+        with open(raw_data_file_loc, 'r') as f:
+            for x in (f.readlines()):
+                raw_data.append(float(x))
+        vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         spike_train = stgen.threshold_detection(vm)
         try:
             len(spike_train)
@@ -73,10 +75,12 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        self.vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        raw_data = []
+        with open(raw_data_file_loc, 'r') as f:
+            for x in (f.readlines()):
+                raw_data.append(float(x))
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         self.true_time_stamps = [0.0124,  0.0354,  0.0713,  0.1192,  0.1695,
                                  0.2201,  0.2711] * second
 
@@ -100,10 +104,12 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
     
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        self.vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        raw_data = []
+        with open(raw_data_file_loc, 'r') as f:
+            for x in (f.readlines()):
+                raw_data.append(float(x))
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
                                      -0.03392689, -0.03061474, -0.02650277,
                                      -0.0212756, -0.01443531, -0.00515365,
@@ -180,6 +186,62 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         expected_mean_isi = (1/rate).rescale(ms)
         self.assertLess(expected_last_spike - spiketrain[-1], 4*expected_mean_isi)
 
+
+class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
+    def setUp(self):
+        rate_list = [[20] for i in range(1000)] + [[200] for i in range(1000)]
+        self.rate_profile = neo.AnalogSignal(
+            rate_list * Hz, sampling_period=0.001*s)
+        rate_0 = [[0] for i in range(1000)]
+        self.rate_profile_0 = neo.AnalogSignal(
+            rate_0 * Hz, sampling_period=0.001*s)
+        rate_negative = [[-1] for i in range(1000)]
+        self.rate_profile_negative = neo.AnalogSignal(
+            rate_negative * Hz, sampling_period=0.001 * s)
+        pass
+
+    def test_statistics(self):
+        # This is a statistical test that has a non-zero chance of failure
+        # during normal operation. Thus, we set the random seed to a value that
+        # creates a realization passing the test.
+        np.random.seed(seed=12345)
+
+        for rate in [self.rate_profile, self.rate_profile.rescale(kHz)]:
+            spiketrain = stgen.inhomogeneous_poisson_process(rate)
+            intervals = isi(spiketrain)
+
+            # Computing expected statistics and percentiles
+            expected_spike_count = (np.sum(
+                rate) * rate.sampling_period).simplified
+            percentile_count = poisson.ppf(.999, expected_spike_count)
+            expected_min_isi = (1 / np.min(rate))
+            expected_max_isi = (1 / np.max(rate))
+            percentile_min_isi = expon.ppf(.999, expected_min_isi)
+            percentile_max_isi = expon.ppf(.999, expected_max_isi)
+
+            # Testing (each should fail 1 every 1000 times)
+            self.assertLess(spiketrain.size, percentile_count)
+            self.assertLess(np.min(intervals), percentile_min_isi)
+            self.assertLess(np.max(intervals), percentile_max_isi)
+
+            # Testing t_start t_stop
+            self.assertEqual(rate.t_stop, spiketrain.t_stop)
+            self.assertEqual(rate.t_start, spiketrain.t_start)
+
+        # Testing type
+        spiketrain_as_array = stgen.inhomogeneous_poisson_process(
+            rate, as_array=True)
+        self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
+        self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
+
+    def test_low_rates(self):
+        spiketrain = stgen.inhomogeneous_poisson_process(self.rate_profile_0)
+        self.assertEqual(spiketrain.size, 0)
+        
+    def test_negative_rates(self):
+        self.assertRaises(
+            ValueError, stgen.inhomogeneous_poisson_process,
+            self.rate_profile_negative)
 
 class HomogeneousGammaProcessTestCase(unittest.TestCase):
 
