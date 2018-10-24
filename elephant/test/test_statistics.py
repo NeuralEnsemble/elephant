@@ -18,6 +18,7 @@ import scipy.integrate as spint
 import elephant.statistics as es
 import elephant.kernels as kernels
 import warnings
+import math
 
 
 class isi_TestCase(unittest.TestCase):
@@ -336,10 +337,14 @@ class LVTestCase(unittest.TestCase):
 
     def test_lv_raise_error(self):
         seq = self.test_seq
-        self.assertRaises(AttributeError, es.lv, [])
-        self.assertRaises(AttributeError, es.lv, 1)
+        self.assertRaises(ValueError, es.lv, [])
+        self.assertRaises(ValueError, es.lv, 1)
         self.assertRaises(ValueError, es.lv, np.array([seq, seq]))
-
+        
+    def test_2short_spike_train(self):
+        seq = [1]
+        self.assertTrue(math.isnan(es.lv(seq, with_nan=True)))
+        
 
 class CV2TestCase(unittest.TestCase):
     def setUp(self):
@@ -370,9 +375,9 @@ class CV2TestCase(unittest.TestCase):
 
     def test_cv2_raise_error(self):
         seq = self.test_seq
-        self.assertRaises(AttributeError, es.cv2, [])
-        self.assertRaises(AttributeError, es.cv2, 1)
-        self.assertRaises(AttributeError, es.cv2, np.array([seq, seq]))
+        self.assertRaises(ValueError, es.cv2, [])
+        self.assertRaises(ValueError, es.cv2, 1)
+        self.assertRaises(ValueError, es.cv2, np.array([seq, seq]))
 
 
 class RateEstimationTestCase(unittest.TestCase):
