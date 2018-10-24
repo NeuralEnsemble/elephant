@@ -186,6 +186,8 @@ First, check that the version string (in :file:`elephant/__init__.py`, :file:`se
 
 Second, check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
 
+Third, if there is a new module do not forget to add the modulename to the :file:`doc/module.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`. 
+
 To build a source package::
 
     $ python setup.py sdist
