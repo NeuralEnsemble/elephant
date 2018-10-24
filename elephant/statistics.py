@@ -216,8 +216,9 @@ def lv(v, with_nan=False):
         Vector of consecutive time intervals
         
     with_nans : bool, optional
-        If `True`, cv2 of an empty spike train is given NaN value and a warning 
-        is raised. If `False`, an attribute error is raised. 
+        If `True`, lv of an spike train with less than two spikes 
+        results in a `NaN` value and a warning is raised. 
+        If `False`, an value error is raised. 
         Default: `True`
 
     Returns
@@ -227,10 +228,10 @@ def lv(v, with_nan=False):
 
     Raises
     ------
-    AttributeError :
+    ValueError :
        If an empty list is specified, or if the sequence has less
        than two entries, an AttributeError will be raised.
-    AttributeError :
+    ValueError :
         Only vector inputs are supported.  If a matrix is passed to the
         function a ValueError will be raised.
 
@@ -246,7 +247,7 @@ def lv(v, with_nan=False):
     v = np.asarray(v)
     # ensure the input ia a vector
     if len(v.shape) > 1:
-        raise AttributeError("Input shape is larger than 1. Please provide "
+        raise ValueError("Input shape is larger than 1. Please provide "
                              "a vector as an input.")
 
     # ensure we have enough entries
@@ -258,7 +259,7 @@ def lv(v, with_nan=False):
             return np.NaN
 
         else:
-            raise AttributeError("Input size is too small. Please provide "
+            raise ValueError("Input size is too small. Please provide "
                                  "an input with more than 1 entry. lv returned any"
                                  "value since the argument `with_nan` is False")
 
@@ -292,8 +293,9 @@ def cv2(v, with_nan=False):
         Vector of consecutive time intervals
 
     with_nans : bool, optional
-        If `True`, cv2 of an empty spike train is given NaN value and a warning 
-        is raised. If `False`, an attribute error is raised. 
+        If `True`, cv2 with less than two spikes results in a `NaN` value 
+        and a warning is raised. 
+        If `False`, an attribute error is raised. 
         Default: `True`
 
     Returns
@@ -303,10 +305,10 @@ def cv2(v, with_nan=False):
 
     Raises
     ------
-    AttributeError :
+    ValueError :
        If an empty list is specified, or if the sequence has less
        than two entries, an AttributeError will be raised.
-    AttributeError :
+    ValueError :
         Only vector inputs are supported.  If a matrix is passed to the
         function an AttributeError will be raised.
 
@@ -321,7 +323,7 @@ def cv2(v, with_nan=False):
 
     # ensure the input ia a vector
     if len(v.shape) > 1:
-        raise AttributeError("Input shape is larger than 1. Please provide "
+        raise ValueError("Input shape is larger than 1. Please provide "
                              "a vector as an input.")
 
     # ensure we have enough entries
@@ -332,7 +334,7 @@ def cv2(v, with_nan=False):
                           "since the argument `with_nan` is `True`")
             return np.NaN
         else:
-            raise AttributeError("Input size is too small. Please provide "
+            raise ValueError("Input size is too small. Please provide "
                                  "an input with more than 1 entry. cv2 returns any"
                                  "value since the argument `with_nan` is `False`")
 
