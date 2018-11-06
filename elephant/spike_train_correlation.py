@@ -656,7 +656,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         if N == 1:  # for just one spike in train
             if spiketrain[0] - spiketrain.t_start < dt:
                 time_A = time_A - dt + spiketrain[0] - spiketrain.t_start
-            elif spiketrain[0] + dt > spiketrain.t_stop:
+            if spiketrain[0] + dt > spiketrain.t_stop:
                 time_A = time_A - dt - spiketrain[0] + spiketrain.t_stop
 
         else:  # if more than one spike in train
