@@ -579,7 +579,7 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
 
     def test_sttc(self):
         # test for result
-        target = 0.8748350567
+        target = 0.495860165593
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
                                                0.005 * pq.s))
         # test no spiketrains
