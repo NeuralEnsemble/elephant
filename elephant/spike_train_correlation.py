@@ -690,7 +690,16 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         PA = PA / N1
         PB = run_P(spiketrain_2, spiketrain_1, N2, N1, dt)
         PB = PB / N2
-        index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
+        # check if the P and T values are 1 to avoid division by zero
+        if PA * TB == 1:
+            if PB * TA == 1:
+                index = 1.
+            else :
+                index = 0.5 + 0.5 * (PB - TA) / (1 - PB * TA)
+        elif PB * TA == 1:
+            index = 0.5 + 0.5 * (PA - TB) / (1 - PA * TB)
+        else:
+            index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
             1 - PB * TA)
     return index
 
