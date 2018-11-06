@@ -587,8 +587,8 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
     appropriately distinguishes lack of correlation from anti-correlation,
-    periods of silence don't add to the correlation and it's sensible to
-    firing pattern).
+    periods of silence don't add to the correlation and it's sensitive to
+    firing patterns).
 
     The STTC is calculated as follows:
 
@@ -599,7 +599,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     `[-dt, +dt]` of any spike of train 2 divided by the total number of spikes
     in train 1, `PB` is the same proportion for the spikes in train 2;
     `TA` is the proportion of total recording time within `[-dt, +dt]` of any
-    spike in train 1, TB is the same propotion for train 2.
+    spike in train 1, TB is the same proportion for train 2.
 
     This is a Python implementation compatible with the elephant library of
     the original code by C. Cutts written in C and avaiable at:
@@ -611,7 +611,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         Must have the same t_start and t_stop.
     dt: Python Quantity.
         The synchronicity window is used for both: the quantification of the
-        propotion of total recording time that lies [-dt, +dt] of each spike
+        proportion of total recording time that lies [-dt, +dt] of each spike
         in each train and the proportion of spikes in `spiketrain_1` that lies
         `[-dt, +dt]` of any spike in `spiketrain_2`.
         Default : 0.005 * pq.s
@@ -651,7 +651,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         """
         Calculate the proportion of the total recording time 'tiled' by spikes.
         """
-        time_A = 2 * N * dt  # maxium possible time
+        time_A = 2 * N * dt  # maximum possible time
 
         if N == 1:  # for just one spike in train
             if spiketrain[0] - spiketrain.t_start < dt:
@@ -668,7 +668,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
                     time_A = time_A - 2 * dt + diff
                 i += 1
                 # check if spikes are within dt of the start and/or end
-                # if so just need to subract overlap of first and/or last spike
+                # if so just need to subtract overlap of first and/or last spike
             if (spiketrain[0] - spiketrain.t_start) < dt:
                 time_A = time_A + spiketrain[0] - dt - spiketrain.t_start
 
