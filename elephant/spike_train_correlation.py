@@ -675,10 +675,8 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
             if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
                 time_A = time_A - spiketrain[-1] - dt + spiketrain.t_stop
 
-        T = (
-	    time_A / (spiketrain.t_stop - spiketrain.t_start)
-	    ).simplified.item()
-        return T
+        T = time_A / (spiketrain.t_stop - spiketrain.t_start)
+        return T.simplified.item()  # enforce simplification, strip units
 
     N1 = len(spiketrain_1)
     N2 = len(spiketrain_2)
@@ -696,13 +694,13 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         if PA * TB == 1:
             if PB * TA == 1:
                 index = 1.
-            else :
+            else:
                 index = 0.5 + 0.5 * (PB - TA) / (1 - PB * TA)
         elif PB * TA == 1:
             index = 0.5 + 0.5 * (PA - TB) / (1 - PA * TB)
         else:
             index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
-            1 - PB * TA)
+                    1 - PB * TA)
     return index
 
 
