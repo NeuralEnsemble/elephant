@@ -1032,8 +1032,42 @@ class RAUCTestCase(unittest.TestCase):
             [0.62754110, 0.63040747],
             [0.09304862, 0.03039579]]))
 
-    def test_rauc_baseline(self):
-        '''Test rauc returns correct values when baseline is given'''
+    def test_rauc_mean_baseline(self):
+        '''Test rauc returns correct values when baseline='mean' is given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, baseline='mean')
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, baseline='mean')
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(rauc1.magnitude,
+            np.array([6.36517679]))
+
+        # multi channel
+        assert_array_almost_equal(rauc2.magnitude,
+            np.array([6.36517679, 6.36617364]))
+
+    def test_rauc_median_baseline(self):
+        '''Test rauc returns correct values when baseline='median' is given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, baseline='median')
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, baseline='median')
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(rauc1.magnitude,
+            np.array([6.36517679]))
+
+        # multi channel
+        assert_array_almost_equal(rauc2.magnitude,
+            np.array([6.36517679, 6.36617364]))
+
+    def test_rauc_arbitrary_baseline(self):
+        '''Test rauc returns correct values when arbitrary baseline is given'''
         rauc1 = elephant.signal_processing.rauc(
             self.test_signal1, baseline=0.123*pq.mV)
         rauc2 = elephant.signal_processing.rauc(
@@ -1048,6 +1082,23 @@ class RAUCTestCase(unittest.TestCase):
         # multi channel
         assert_array_almost_equal(rauc2.magnitude,
             np.array([6.41354725, 6.41429810]))
+
+    def test_rauc_none_baseline(self):
+        '''Test rauc returns correct values when baseline=None is given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, baseline=None)
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, baseline=None)
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(rauc1.magnitude,
+            np.array([6.36517679]))
+
+        # multi channel
+        assert_array_almost_equal(rauc2.magnitude,
+            np.array([6.36517679, 6.36617364]))
 
     def test_rauc_time_slice(self):
         '''Test rauc returns correct values when t_start, t_stop are given'''

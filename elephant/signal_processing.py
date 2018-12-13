@@ -613,7 +613,7 @@ def hilbert(signal, N='nextpow'):
     return output / output.units
 
 
-def rauc(signal, bin_duration=None, baseline=None, t_start=None, t_stop=None):
+def rauc(signal, bin_duration=None, baseline='mean', t_start=None, t_stop=None):
     '''
     Calculate the rectified area under the curve (RAUC) for an AnalogSignal.
 
@@ -637,16 +637,18 @@ def rauc(signal, bin_duration=None, baseline=None, t_start=None, t_stop=None):
         of the signal is padded with zeros to accomodate the final,
         overextending bin.
         Default: None
-    baseline : quantities.Quantity
-        A factor to subtract from the signal before rectification. If None, the
-        mean value of the entire signal is used.
-        Default: None
+    baseline : string or quantities.Quantity
+        A factor to subtract from the signal before rectification. If 'mean' or
+        'median', the mean or median value of the entire signal is used on a
+        channel-by-channel basis. If None, nothing is subtracted.
+        Default: 'mean'
     t_start, t_stop : quantities.Quantity
         Times to start and end the algorithm. The signal is cropped using
         `signal.time_slice(t_start, t_stop)` after baseline removal. Useful if
         you want the RAUC for a short section of the signal but want the
-        automatic mean calculation (`baseline=None`) to use the entire signal
-        for better baseline estimation.
+        automatic mean or median calculation (`baseline='mean' or
+        baseline='median'`) to use the entire signal for better baseline
+        estimation.
         Default: None
 
     Returns
@@ -666,21 +668,25 @@ def rauc(signal, bin_duration=None, baseline=None, t_start=None, t_stop=None):
     TypeError
         If `bin_duation` is not None or a Quantity.
     TypeError
-        If `baseline` is not None or a Quantity.
+        If `baseline` is not None, 'mean', 'median', or a Quantity.
     '''
 
     if not isinstance(signal, neo.AnalogSignal):
         raise TypeError('Input signal is not a neo.AnalogSignal!')
 
-    if baseline is not None:
-        # subtract arbitrary baseline
-        if isinstance(baseline, pq.Quantity):
-            signal = signal - baseline
-        else:
-            raise TypeError('baseline must be a Quantity: {}'.format(baseline))
-    else:
+    if baseline is None:
+        pass
+    elif baseline is 'mean':
         # subtract mean from each channel
         signal = signal - signal.mean(axis = 0)
+    elif baseline is 'median':
+        # subtract median from each channel
+        signal = signal - np.median(signal.as_quantity(), axis = 0)
+    elif isinstance(baseline, pq.Quantity):
+        # subtract arbitrary baseline
+        signal = signal - baseline
+    else:
+        raise TypeError('baseline must be \'mean\', \'median\', a Quantity, or None: {}'.format(baseline))
 
     # slice the signal after subtracting baseline
     signal = signal.time_slice(t_start, t_stop)
