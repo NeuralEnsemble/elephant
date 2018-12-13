@@ -842,7 +842,8 @@ class DerivativeTestCase(unittest.TestCase):
         derivative = elephant.signal_processing.derivative(
             self.test_signal1)
         self.assertTrue(isinstance(derivative, neo.AnalogSignal))
-        self.assertEqual(derivative.units,
+        self.assertEqual(
+            derivative.units,
             self.test_signal1.units/self.test_signal1.times.units)
 
     def test_derivative_times(self):
@@ -852,7 +853,8 @@ class DerivativeTestCase(unittest.TestCase):
         self.assertTrue(isinstance(derivative, neo.AnalogSignal))
 
         # test that sampling period is correct
-        self.assertEqual(derivative.sampling_period,
+        self.assertEqual(
+            derivative.sampling_period,
             1/self.fs * self.test_signal1.times.units)
 
         # test that all times are correct
@@ -862,8 +864,9 @@ class DerivativeTestCase(unittest.TestCase):
 
         # test that t_start and t_stop are correct
         self.assertEqual(derivative.t_start, target_times[0])
-        assert_array_almost_equal(derivative.t_stop, target_times[-1]
-            + derivative.sampling_period)
+        assert_array_almost_equal(
+            derivative.t_stop,
+            target_times[-1] + derivative.sampling_period)
 
     def test_derivative_values(self):
         '''Test derivative returns AnalogSignal with correct values'''
@@ -875,13 +878,14 @@ class DerivativeTestCase(unittest.TestCase):
         self.assertTrue(isinstance(derivative2, neo.AnalogSignal))
 
         # single channel
-        assert_array_almost_equal(derivative1.magnitude,
+        assert_array_almost_equal(
+            derivative1.magnitude,
             np.vstack([np.diff(self.test_data1)]).T / (1/self.fs))
 
         # multi channel
         assert_array_almost_equal(derivative2.magnitude, np.vstack([
-            np.diff(self.test_data2[:,0]),
-            np.diff(self.test_data2[:,1])]).T / (1/self.fs))
+            np.diff(self.test_data2[:, 0]),
+            np.diff(self.test_data2[:, 1])]).T / (1/self.fs))
 
 
 class RAUCTestCase(unittest.TestCase):
@@ -926,20 +930,22 @@ class RAUCTestCase(unittest.TestCase):
         rauc = elephant.signal_processing.rauc(
             self.test_signal1)
         self.assertTrue(isinstance(rauc, pq.Quantity))
-        self.assertEqual(rauc.units,
+        self.assertEqual(
+            rauc.units,
             self.test_signal1.units*self.test_signal1.times.units)
 
         # test that multi-bin result is AnalogSignal with correct units
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=1*pq.s)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
-        self.assertEqual(rauc_arr.units,
+        self.assertEqual(
+            rauc_arr.units,
             self.test_signal1.units*self.test_signal1.times.units)
 
     def test_rauc_times_without_overextending_bin(self):
         '''Test rauc returns correct times when signal is binned evenly'''
 
-        bin_duration = 1*pq.s # results in all bin centers < original t_stop
+        bin_duration = 1*pq.s  # results in all bin centers < original t_stop
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
@@ -948,19 +954,22 @@ class RAUCTestCase(unittest.TestCase):
         self.assertEqual(rauc_arr.sampling_period, bin_duration)
 
         # test that all times are correct
-        target_times = np.arange(self.tmin, self.tmax, bin_duration.magnitude) \
+        target_times = np.arange(self.tmin,
+                                 self.tmax,
+                                 bin_duration.magnitude) \
             * bin_duration.units + bin_duration/2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct
         self.assertEqual(rauc_arr.t_start, target_times[0])
-        assert_array_almost_equal(rauc_arr.t_stop, target_times[-1]
-            + bin_duration)
+        assert_array_almost_equal(
+            rauc_arr.t_stop,
+            target_times[-1] + bin_duration)
 
     def test_rauc_times_with_overextending_bin(self):
         '''Test rauc returns correct times when signal is NOT binned evenly'''
 
-        bin_duration = 0.99*pq.s # results in one bin center > original t_stop
+        bin_duration = 0.99*pq.s  # results in one bin center > original t_stop
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
@@ -969,14 +978,17 @@ class RAUCTestCase(unittest.TestCase):
         self.assertEqual(rauc_arr.sampling_period, bin_duration)
 
         # test that all times are correct
-        target_times = np.arange(self.tmin, self.tmax, bin_duration.magnitude) \
+        target_times = np.arange(self.tmin,
+                                 self.tmax,
+                                 bin_duration.magnitude) \
             * bin_duration.units + bin_duration/2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct
         self.assertEqual(rauc_arr.t_start, target_times[0])
-        assert_array_almost_equal(rauc_arr.t_stop, target_times[-1]
-            + bin_duration)
+        assert_array_almost_equal(
+            rauc_arr.t_stop,
+            target_times[-1] + bin_duration)
 
     def test_rauc_values_one_bin(self):
         '''Test rauc returns correct values when there is just one bin'''
@@ -988,11 +1000,13 @@ class RAUCTestCase(unittest.TestCase):
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 
         # single channel
-        assert_array_almost_equal(rauc1.magnitude,
+        assert_array_almost_equal(
+            rauc1.magnitude,
             np.array([6.36517679]))
 
         # multi channel
-        assert_array_almost_equal(rauc2.magnitude,
+        assert_array_almost_equal(
+            rauc2.magnitude,
             np.array([6.36517679, 6.36617364]))
 
     def test_rauc_values_multi_bin(self):
@@ -1042,11 +1056,13 @@ class RAUCTestCase(unittest.TestCase):
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 
         # single channel
-        assert_array_almost_equal(rauc1.magnitude,
+        assert_array_almost_equal(
+            rauc1.magnitude,
             np.array([6.36517679]))
 
         # multi channel
-        assert_array_almost_equal(rauc2.magnitude,
+        assert_array_almost_equal(
+            rauc2.magnitude,
             np.array([6.36517679, 6.36617364]))
 
     def test_rauc_median_baseline(self):
@@ -1059,11 +1075,13 @@ class RAUCTestCase(unittest.TestCase):
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 
         # single channel
-        assert_array_almost_equal(rauc1.magnitude,
+        assert_array_almost_equal(
+            rauc1.magnitude,
             np.array([6.36517679]))
 
         # multi channel
-        assert_array_almost_equal(rauc2.magnitude,
+        assert_array_almost_equal(
+            rauc2.magnitude,
             np.array([6.36517679, 6.36617364]))
 
     def test_rauc_arbitrary_baseline(self):
@@ -1076,11 +1094,13 @@ class RAUCTestCase(unittest.TestCase):
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 
         # single channel
-        assert_array_almost_equal(rauc1.magnitude,
+        assert_array_almost_equal(
+            rauc1.magnitude,
             np.array([6.41354725]))
 
         # multi channel
-        assert_array_almost_equal(rauc2.magnitude,
+        assert_array_almost_equal(
+            rauc2.magnitude,
             np.array([6.41354725, 6.41429810]))
 
     def test_rauc_time_slice(self):
@@ -1093,11 +1113,13 @@ class RAUCTestCase(unittest.TestCase):
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 
         # single channel
-        assert_array_almost_equal(rauc1.magnitude,
+        assert_array_almost_equal(
+            rauc1.magnitude,
             np.array([0.16279006]))
 
         # multi channel
-        assert_array_almost_equal(rauc2.magnitude,
+        assert_array_almost_equal(
+            rauc2.magnitude,
             np.array([0.16279006, 0.26677944]))
 
 

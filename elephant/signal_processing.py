@@ -617,13 +617,14 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     '''
     Calculate the rectified area under the curve (RAUC) for an AnalogSignal.
 
-    The signal is optionally divided into bins with duration `bin_duration`, and
-    the rectified signal (absolute value) is integrated within each bin to find
-    the area under the curve. The mean or median of the signal or an arbitrary
-    baseline may optionally be subtracted before rectification. If the number
-    of bins is 1 (default), a single value is returned for each channel in the
-    input signal. Otherwise, an AnalogSignal containing the values for each bin
-    is returned along with the times of the centers of the bins.
+    The signal is optionally divided into bins with duration `bin_duration`,
+    and the rectified signal (absolute value) is integrated within each bin to
+    find the area under the curve. The mean or median of the signal or an
+    arbitrary baseline may optionally be subtracted before rectification. If
+    the number of bins is 1 (default), a single value is returned for each
+    channel in the input signal. Otherwise, an AnalogSignal containing the
+    values for each bin is returned along with the times of the centers of the
+    bins.
 
     Parameters
     ----------
@@ -646,8 +647,8 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         Times to start and end the algorithm. The signal is cropped using
         `signal.time_slice(t_start, t_stop)` after baseline removal. Useful if
         you want the RAUC for a short section of the signal but want the
-        mean or median calculation (`baseline='mean'` or `baseline='median'`) to
-        use the entire signal for better baseline estimation.
+        mean or median calculation (`baseline='mean'` or `baseline='median'`)
+        to use the entire signal for better baseline estimation.
         Default: None
 
     Returns
@@ -677,26 +678,30 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         pass
     elif baseline is 'mean':
         # subtract mean from each channel
-        signal = signal - signal.mean(axis = 0)
+        signal = signal - signal.mean(axis=0)
     elif baseline is 'median':
         # subtract median from each channel
-        signal = signal - np.median(signal.as_quantity(), axis = 0)
+        signal = signal - np.median(signal.as_quantity(), axis=0)
     elif isinstance(baseline, pq.Quantity):
         # subtract arbitrary baseline
         signal = signal - baseline
     else:
-        raise TypeError('baseline must be None, \'mean\', \'median\', or a Quantity: {}'.format(baseline))
+        raise TypeError(
+            'baseline must be None, \'mean\', \'median\', '
+            'or a Quantity: {}'.format(baseline))
 
     # slice the signal after subtracting baseline
     signal = signal.time_slice(t_start, t_stop)
 
     if bin_duration is not None:
-        # from an arbitrary bin duration, determine samples per bin and number of bins
+        # from bin duration, determine samples per bin and number of bins
         if isinstance(bin_duration, pq.Quantity):
-            samples_per_bin = int(np.round(bin_duration.rescale('s') / signal.sampling_period.rescale('s')))
-            n_bins = int(np.ceil(signal.shape[0] / samples_per_bin))
+            samples_per_bin = int(np.round(
+                bin_duration.rescale('s')/signal.sampling_period.rescale('s')))
+            n_bins = int(np.ceil(signal.shape[0]/samples_per_bin))
         else:
-            raise TypeError('bin_duration must be a Quantity: {}'.format(bin_duration))
+            raise TypeError(
+                'bin_duration must be a Quantity: {}'.format(bin_duration))
     else:
         # all samples in one bin
         samples_per_bin = signal.shape[0]
@@ -712,18 +717,18 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     sig_binned = sig_binned.reshape(n_bins, samples_per_bin, n_channels)
 
     # rectify and integrate over each bin
-    rauc = np.trapz(np.abs(sig_binned), dx = signal.sampling_period, axis = 1)
+    rauc = np.trapz(np.abs(sig_binned), dx=signal.sampling_period, axis=1)
 
     if n_bins == 1:
         # return a single value for each channel
         return rauc.squeeze()
 
     else:
-        # return an AnalogSignal with times corresponding to the center of each bin
+        # return an AnalogSignal with times corresponding to center of each bin
         rauc_sig = neo.AnalogSignal(
             rauc,
-            t_start = signal.t_start.rescale('s') + bin_duration/2,
-            sampling_period = bin_duration,
+            t_start=signal.t_start.rescale('s')+bin_duration/2,
+            sampling_period=bin_duration,
         )
         return rauc_sig
 
@@ -735,8 +740,8 @@ def derivative(signal):
     Parameters
     ----------
     signal : neo.AnalogSignal
-        The signal to differentiate. If `signal` contains more than one channel,
-        each is differentiated separately.
+        The signal to differentiate. If `signal` contains more than one
+        channel, each is differentiated separately.
 
     Returns
     -------
@@ -758,8 +763,8 @@ def derivative(signal):
 
     derivative_sig = neo.AnalogSignal(
         np.diff(signal.as_quantity(), axis=0) / signal.sampling_period,
-        t_start = signal.t_start + signal.sampling_period / 2,
-        sampling_period = signal.sampling_period,
+        t_start=signal.t_start+signal.sampling_period/2,
+        sampling_period=signal.sampling_period,
     )
 
     return derivative_sig
