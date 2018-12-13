@@ -613,17 +613,17 @@ def hilbert(signal, N='nextpow'):
     return output / output.units
 
 
-def rauc(signal, bin_duration=None, baseline='mean', t_start=None, t_stop=None):
+def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     '''
     Calculate the rectified area under the curve (RAUC) for an AnalogSignal.
 
     The signal is optionally divided into bins with duration `bin_duration`, and
     the rectified signal (absolute value) is integrated within each bin to find
-    the area under the curve. By default, the mean of the signal is subtracted
-    before rectification. If the number of bins is 1 (default), a single value
-    is returned for each channel in the input signal. Otherwise, an AnalogSignal
-    containing the values for each bin is returned along with the times of the
-    centers of the bins.
+    the area under the curve. The mean or median of the signal or an arbitrary
+    baseline may optionally be subtracted before rectification. If the number
+    of bins is 1 (default), a single value is returned for each channel in the
+    input signal. Otherwise, an AnalogSignal containing the values for each bin
+    is returned along with the times of the centers of the bins.
 
     Parameters
     ----------
@@ -639,16 +639,15 @@ def rauc(signal, bin_duration=None, baseline='mean', t_start=None, t_stop=None):
         Default: None
     baseline : string or quantities.Quantity
         A factor to subtract from the signal before rectification. If 'mean' or
-        'median', the mean or median value of the entire signal is used on a
-        channel-by-channel basis. If None, nothing is subtracted.
-        Default: 'mean'
+        'median', the mean or median value of the entire signal is subtracted on
+        a channel-by-channel basis.
+        Default: None
     t_start, t_stop : quantities.Quantity
         Times to start and end the algorithm. The signal is cropped using
         `signal.time_slice(t_start, t_stop)` after baseline removal. Useful if
         you want the RAUC for a short section of the signal but want the
-        automatic mean or median calculation (`baseline='mean' or
-        baseline='median'`) to use the entire signal for better baseline
-        estimation.
+        mean or median calculation (`baseline='mean' or baseline='median'`) to
+        use the entire signal for better baseline estimation.
         Default: None
 
     Returns
@@ -686,7 +685,7 @@ def rauc(signal, bin_duration=None, baseline='mean', t_start=None, t_stop=None):
         # subtract arbitrary baseline
         signal = signal - baseline
     else:
-        raise TypeError('baseline must be \'mean\', \'median\', a Quantity, or None: {}'.format(baseline))
+        raise TypeError('baseline must be None, \'mean\', \'median\', or a Quantity: {}'.format(baseline))
 
     # slice the signal after subtracting baseline
     signal = signal.time_slice(t_start, t_stop)

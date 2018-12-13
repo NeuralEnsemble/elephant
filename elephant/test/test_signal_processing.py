@@ -1083,23 +1083,6 @@ class RAUCTestCase(unittest.TestCase):
         assert_array_almost_equal(rauc2.magnitude,
             np.array([6.41354725, 6.41429810]))
 
-    def test_rauc_none_baseline(self):
-        '''Test rauc returns correct values when baseline=None is given'''
-        rauc1 = elephant.signal_processing.rauc(
-            self.test_signal1, baseline=None)
-        rauc2 = elephant.signal_processing.rauc(
-            self.test_signal2, baseline=None)
-        self.assertTrue(isinstance(rauc1, pq.Quantity))
-        self.assertTrue(isinstance(rauc2, pq.Quantity))
-
-        # single channel
-        assert_array_almost_equal(rauc1.magnitude,
-            np.array([6.36517679]))
-
-        # multi channel
-        assert_array_almost_equal(rauc2.magnitude,
-            np.array([6.36517679, 6.36617364]))
-
     def test_rauc_time_slice(self):
         '''Test rauc returns correct values when t_start, t_stop are given'''
         rauc1 = elephant.signal_processing.rauc(
