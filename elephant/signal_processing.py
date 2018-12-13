@@ -174,7 +174,7 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
 
     Returns
     -------
-    cross_corr : neo.AnalogSgnal (`2*nlag+1` x `n`)
+    cross_corr : neo.AnalogSignal (`2*nlag+1` x `n`)
         Pairwise cross-correlation functions for channel pairs given by
         `ch_pairs`. If `env=True`, the output is the Hilbert envelope of the
         pairwise cross-correlation function. This is helpful to compute the
