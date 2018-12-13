@@ -545,11 +545,11 @@ class HilbertTestCase(unittest.TestCase):
         true_shape = np.shape(self.long_signals)
         output = elephant.signal_processing.hilbert(
             self.long_signals, N='nextpow')
-        self.assertEquals(np.shape(output), true_shape)
+        self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
         output = elephant.signal_processing.hilbert(
             self.long_signals, N=16384)
-        self.assertEquals(np.shape(output), true_shape)
+        self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
 
     def test_hilbert_theoretical_long_signals(self):
