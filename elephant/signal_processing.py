@@ -638,15 +638,15 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         overextending bin.
         Default: None
     baseline : string or quantities.Quantity
-        A factor to subtract from the signal before rectification. If 'mean' or
-        'median', the mean or median value of the entire signal is subtracted on
-        a channel-by-channel basis.
+        A factor to subtract from the signal before rectification. If `'mean'`
+        or `'median'`, the mean or median value of the entire signal is
+        subtracted on a channel-by-channel basis.
         Default: None
     t_start, t_stop : quantities.Quantity
         Times to start and end the algorithm. The signal is cropped using
         `signal.time_slice(t_start, t_stop)` after baseline removal. Useful if
         you want the RAUC for a short section of the signal but want the
-        mean or median calculation (`baseline='mean' or baseline='median'`) to
+        mean or median calculation (`baseline='mean'` or `baseline='median'`) to
         use the entire signal for better baseline estimation.
         Default: None
 
@@ -667,7 +667,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     TypeError
         If `bin_duation` is not None or a Quantity.
     TypeError
-        If `baseline` is not None, 'mean', 'median', or a Quantity.
+        If `baseline` is not None, `'mean'`, `'median'`, or a Quantity.
     '''
 
     if not isinstance(signal, neo.AnalogSignal):
