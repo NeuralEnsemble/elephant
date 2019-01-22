@@ -163,7 +163,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         filtering the pattern spectrum. A spike at time t is placed randomly
         within ]t-dither, t+dither[ (see also
         elephant.spike_train_surrogates.dither_spikes).
-        Default: 15*pq.s
+        Default: 15*pq.ms
     spectrum: str
         Define the signature of the patterns, it can assume valus:
         '#': pattern spectrum using the as signature the pair:
@@ -1802,20 +1802,20 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     Returns
     --------
     output: list
-        List of dictionaries. Each dictionary correspond to a patterns and
+        List of dictionaries. Each dictionary corresponds to a pattern and
         has the following entries:
             ['neurons'] array containing the idx of the neurons of the pattern
             ['lags'] array containing the lags (integers corresponding to the
                 number of bins) between the spikes of the patterns. The first
-                lag is always assumed to be 0 and correspond to the first
+                lag is always assumed to be 0 and corresponds to the first
                 spike.
-            ['times'] array contianing the times (integers corresponding to the
-                bin idx) of the occurrences of the patterns.
+            ['times'] array containing the times (integers corresponding to the
+                bin idx) of the patterns' occurrences.
             ['signature'] tuple containing two integers
                 (number of spikes of the patterns,
                 number of occurrences of the pattern)
-            ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
-                the pvalues are set to -1.
+            ['pvalue'] pvalue corresponding to the pattern. If n_surr==0,
+            pvalues are set to -1.
     """
     if len(pvalue_spectrum) == 0:
         spectrum = '#'
