@@ -378,8 +378,12 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                                             winlen, binsize,
                                                             pv_spec,
                                                             data[0].t_start)
-        else:
+        if output_format == 'concepts':
             output['patterns'] = concepts
+        else:
+            raise ValueError(
+                "The output_format value has to be one between "
+                "'patterns' and 'concepts' ")
         return output
     # TODO: check whether necessary output for rank!=0
     else:
