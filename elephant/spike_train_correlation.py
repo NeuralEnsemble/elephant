@@ -77,7 +77,7 @@ def covariance(binned_sts, binary=False):
         binned_sts, binary, corrcoef_norm=False)
 
 
-def corrcoef(binned_sts, binary=False, with_nans=True):
+def corrcoef(binned_sts, binary=False):
     '''
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
@@ -96,6 +96,8 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
     For an input of n spike trains, a n x n matrix is returned.
     Each entry in the matrix is a real number ranging between -1 (perfectly
     anti-correlated spike trains) and +1 (perfectly correlated spike trains).
+    However, if k-th spike train is empty, k-th row and k-th column of the
+    returned matrix are set to NaN.
 
     If binary is True, the binned spike trains are clipped to 0 or 1 before
     computing the correlation coefficients, so that the binned vectors
@@ -110,12 +112,6 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False
-    with_nans : bool, optional
-        If True, correlations of empty spike trains are given NaN values. If
-        False, a boolean array indicating empty (False) and non-empty (True)
-        spike trains is returned. In each case a warning is raised when empty
-        spike trains are detected.
-        Default: True
 
     Returns
     -------
@@ -124,9 +120,6 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
         :math:`C[i,j]=C[j,i]` is the Pearson's correlation coefficient between
         binned_sts[i] and binned_sts[j]. If binned_sts contains only one
         SpikeTrain, C=1.0.
-    mask : ndarray
-        If `with_nans` is False, a boolean array indicating empty (True) and
-        non-empty (False) spike trains.
 
     Examples
     --------
@@ -148,17 +141,7 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
     The correlation coefficient between the spike trains is stored in
     cc_matrix[0,1] (or cc_matrix[1,0]).
 
-    Option `with_nans=False` returns a boolean array.
-
-    >>> st1 = neo.SpikeTrain(
-            [1,2,4,7]*s, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = neo.SpikeTrain(
-            []*s, t_start=0.0*s, t_stop=10.0*s)
-
-    >>> from elephant.conversion import BinnedSpikeTrain
-    >>> mask = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
-    >>> print(mask)
-    [True, False]
+    
 
     Notes
     -----
@@ -167,11 +150,10 @@ def corrcoef(binned_sts, binary=False, with_nans=True):
     '''
 
     return __calculate_correlation_or_covariance(
-        binned_sts, binary, corrcoef_norm=True, with_nans=with_nans)
+        binned_sts, binary, corrcoef_norm=True)
 
 
-def __calculate_correlation_or_covariance(
-        binned_sts, binary, corrcoef_norm, with_nans=True):
+def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm):
     '''
     Helper function for covariance() and corrcoef() that performs the complete
     calculation for either the covariance (corrcoef_norm=False) or correlation
@@ -188,13 +170,6 @@ def __calculate_correlation_or_covariance(
         Use normalization factor for the correlation coefficient rather than
         for the covariance.
     '''
-    sparse = binned_sts.to_sparse_array()
-    row_counts = sparse.getnnz(1)
-    if row_counts.min() == 0:
-        warnings.warn('Detected rows without spikes.')
-    if not with_nans:
-        return row_counts != 0
-
     num_neurons = binned_sts.matrix_rows
 
     # Pre-allocate correlation matrix
@@ -202,6 +177,12 @@ def __calculate_correlation_or_covariance(
 
     # Retrieve unclipped matrix
     spmat = binned_sts.to_sparse_array()
+
+    # Check for empty spike trains
+    row_counts = spmat.getnnz(1)
+    if row_counts.min() == 0:
+        warnings.warn(
+            'Detected empty spike trains (rows) in the argument binned_sts.')
 
     # For each row, extract the nonzero column indices and the corresponding
     # data in the matrix (for performance reasons)
@@ -216,11 +197,11 @@ def __calculate_correlation_or_covariance(
 
     # All combinations of spike trains
     for i in range(num_neurons):
-        if row_counts[i] == 0:
-            C[i, :] = np.NaN
-            C[:, i] = np.NaN
-            continue
         for j in range(i, num_neurons):
+            if row_counts[j] == 0:
+                C[j, :] = np.NaN
+                C[:, j] = np.NaN
+                break
             # Enumerator:
             # $$ <b_i-m_i, b_j-m_j>
             #      = <b_i, b_j> + l*m_i*m_j - <b_i, M_j> - <b_j, M_i>
