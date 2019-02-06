@@ -19,7 +19,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
     def test_dither_spikes_output_format(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=5 * pq.s)
 
         nr_surr = 2
         dither = 10 * pq.ms
