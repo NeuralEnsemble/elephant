@@ -45,7 +45,16 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
 
     """
     attrs = obj.annotations.copy()
+    try:
+        for a in obj.array_annotations:
+            if a not in [_[0] for _ in obj._necessary_attrs + obj._recommended_attrs]:
+                if "array_annotations" not in attrs:
+                    attrs["array_annotations"] = {}
+                attrs["array_annotations"][a] = obj.array_annotations[a].copy()
+    except AttributeError:
+        pass
     for attr in obj._necessary_attrs + obj._recommended_attrs:
+        print(attr)
         if skip_array and len(attr) >= 3 and attr[2]:
             continue
         attr = attr[0]
