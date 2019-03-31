@@ -10,10 +10,12 @@ contribution, and may not be the current affiliation of a contributor.
 
 * Alper Yegenoglu [1]
 * Andrew Davison [2]
+* Björn Müller [1]
 * Detlef Holstein [2]
 * Eilif Muller [3, 4]
 * Emiliano Torre [1]
 * Espen Hagen [1]
+* Jeffrey Gill
 * Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
