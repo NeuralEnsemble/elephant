@@ -521,8 +521,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             border_correction=False, binary=False, kernel=None,
             method='memory')
 
-        self.assertNotEqual(cch.all(), cch_corrected.all())
-        self.assertNotEqual(cch_mem.all(), cch_corrected_mem.all())
+        self.assertEqual(np.any(np.not_equal(cch, cch_corrected)), True)
+        self.assertEqual(np.any(np.not_equal(cch_mem, cch_corrected_mem)), True)
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
