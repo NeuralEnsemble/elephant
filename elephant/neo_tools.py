@@ -54,7 +54,6 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
     except AttributeError:
         pass
     for attr in obj._necessary_attrs + obj._recommended_attrs:
-        print(attr)
         if skip_array and len(attr) >= 3 and attr[2]:
             continue
         attr = attr[0]
