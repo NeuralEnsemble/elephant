@@ -118,7 +118,7 @@ def zscore(signal, inplace=True):
         # Create new signal instance
         result = []
         for sig in signal:
-            sig_dimless = sig.duplicate_with_new_array(
+            sig_dimless = sig.duplicate_with_new_data(
                 (sig.magnitude - m.magnitude) / s.magnitude) / sig.units
             result.append(sig_dimless)
     else:
@@ -376,7 +376,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         )
 
     if isinstance(signal, neo.AnalogSignal):
-        return signal.duplicate_with_new_array(np.rollaxis(filtered_data, -1, 0))
+        return signal.duplicate_with_new_data(np.rollaxis(filtered_data, -1, 0))
     elif isinstance(signal, pq.quantity.Quantity):
         return filtered_data * signal.units
     else:
@@ -608,6 +608,6 @@ def hilbert(signal, N='nextpow'):
     else:
         raise ValueError("'{}' is an unknown N.".format(N))
 
-    output = signal.duplicate_with_new_array(
+    output = signal.duplicate_with_new_data(
         scipy.signal.hilbert(signal.magnitude, N=n, axis=0)[:n_org])
     return output / output.units
