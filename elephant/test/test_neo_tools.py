@@ -26,7 +26,8 @@ ARRAY_ATTRS = ['waveforms',
                'index',
                'channel_names',
                'channel_ids',
-               'coordinates'
+               'coordinates',
+               'array_annotations'
                ]
 
 
