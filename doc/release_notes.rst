@@ -2,6 +2,25 @@
 Release Notes
 *************
 
+
+Elephant 0.6.1 release notes
+============================
+April 1st 2019
+
+New functions
+-------------
+* `signal_processing` module
+    * New function to calculate the cross-correlation function for analog signals.
+* `spade` module
+    * Spatio-temporal spike pattern detection now includes the option to assess significance also based on time-lags of patterns, in addition to patterns size and frequency (referred to as 3D pattern spectrum).
+
+Other changes
+-------------
+* This release fixes a number of compatibility issues in relation to API breaking changes in the Neo library.
+* Fixed error in STTC calculation (spike time tiling coefficient)
+* Minor bug fixes
+
+
 Elephant 0.6.0 release notes
 ============================
 October 12th 2018
