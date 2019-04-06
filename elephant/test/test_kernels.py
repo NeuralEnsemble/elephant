@@ -50,8 +50,8 @@ class kernel_TestCase(unittest.TestCase):
                           rec_kernel.boundary_enclosing_area_fraction, [1, 2])
         self.assertRaises(ValueError,
                           rec_kernel.boundary_enclosing_area_fraction, -10)
-        self.assertEquals(kernel.is_symmetric(), False)
-        self.assertEquals(rec_kernel.is_symmetric(), True)
+        self.assertEqual(kernel.is_symmetric(), False)
+        self.assertEqual(rec_kernel.is_symmetric(), True)
 
     @unittest.skip('very time-consuming test')
     def test_error_alpha_kernel(self):

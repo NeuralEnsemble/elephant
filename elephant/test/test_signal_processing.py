@@ -545,11 +545,11 @@ class HilbertTestCase(unittest.TestCase):
         true_shape = np.shape(self.long_signals)
         output = elephant.signal_processing.hilbert(
             self.long_signals, N='nextpow')
-        self.assertEquals(np.shape(output), true_shape)
+        self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
         output = elephant.signal_processing.hilbert(
             self.long_signals, N=16384)
-        self.assertEquals(np.shape(output), true_shape)
+        self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
 
     def test_hilbert_theoretical_long_signals(self):
@@ -812,6 +812,315 @@ class WaveletTestCase(unittest.TestCase):
         phase_padded = np.angle(wt_padded[int(len(wt)/3):int(len(wt)//3*2), 0])
         assert_array_almost_equal(np.exp(1j*phase_padded), np.exp(1j*phase),
                                   decimal=9)
+
+
+class DerivativeTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.fs = 1000.0
+        self.tmin = 0.0
+        self.tmax = 10.0
+        self.times = np.arange(self.tmin, self.tmax, 1/self.fs)
+        self.test_data1 = np.cos(2*np.pi*self.times)
+        self.test_data2 = np.vstack(
+            [np.cos(2*np.pi*self.times), np.sin(2*np.pi*self.times)]).T
+        self.test_signal1 = neo.AnalogSignal(
+            self.test_data1*pq.mV, t_start=self.times[0]*pq.s,
+            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+        self.test_signal2 = neo.AnalogSignal(
+            self.test_data2*pq.mV, t_start=self.times[0]*pq.s,
+            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+
+    def test_derivative_invalid_signal(self):
+        '''Test derivative on non-AnalogSignal'''
+        kwds = {'signal': np.arange(5)}
+        self.assertRaises(
+            TypeError, elephant.signal_processing.derivative, **kwds)
+
+    def test_derivative_units(self):
+        '''Test derivative returns AnalogSignal with correct units'''
+        derivative = elephant.signal_processing.derivative(
+            self.test_signal1)
+        self.assertTrue(isinstance(derivative, neo.AnalogSignal))
+        self.assertEqual(
+            derivative.units,
+            self.test_signal1.units/self.test_signal1.times.units)
+
+    def test_derivative_times(self):
+        '''Test derivative returns AnalogSignal with correct times'''
+        derivative = elephant.signal_processing.derivative(
+            self.test_signal1)
+        self.assertTrue(isinstance(derivative, neo.AnalogSignal))
+
+        # test that sampling period is correct
+        self.assertEqual(
+            derivative.sampling_period,
+            1/self.fs * self.test_signal1.times.units)
+
+        # test that all times are correct
+        target_times = self.times[:-1] * self.test_signal1.times.units \
+            + derivative.sampling_period/2
+        assert_array_almost_equal(derivative.times, target_times)
+
+        # test that t_start and t_stop are correct
+        self.assertEqual(derivative.t_start, target_times[0])
+        assert_array_almost_equal(
+            derivative.t_stop,
+            target_times[-1] + derivative.sampling_period)
+
+    def test_derivative_values(self):
+        '''Test derivative returns AnalogSignal with correct values'''
+        derivative1 = elephant.signal_processing.derivative(
+            self.test_signal1)
+        derivative2 = elephant.signal_processing.derivative(
+            self.test_signal2)
+        self.assertTrue(isinstance(derivative1, neo.AnalogSignal))
+        self.assertTrue(isinstance(derivative2, neo.AnalogSignal))
+
+        # single channel
+        assert_array_almost_equal(
+            derivative1.magnitude,
+            np.vstack([np.diff(self.test_data1)]).T / (1/self.fs))
+
+        # multi channel
+        assert_array_almost_equal(derivative2.magnitude, np.vstack([
+            np.diff(self.test_data2[:, 0]),
+            np.diff(self.test_data2[:, 1])]).T / (1/self.fs))
+
+
+class RAUCTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.fs = 1000.0
+        self.tmin = 0.0
+        self.tmax = 10.0
+        self.times = np.arange(self.tmin, self.tmax, 1/self.fs)
+        self.test_data1 = np.cos(2*np.pi*self.times)
+        self.test_data2 = np.vstack(
+            [np.cos(2*np.pi*self.times), np.sin(2*np.pi*self.times)]).T
+        self.test_signal1 = neo.AnalogSignal(
+            self.test_data1*pq.mV, t_start=self.times[0]*pq.s,
+            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+        self.test_signal2 = neo.AnalogSignal(
+            self.test_data2*pq.mV, t_start=self.times[0]*pq.s,
+            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+
+    def test_rauc_invalid_signal(self):
+        '''Test rauc on non-AnalogSignal'''
+        kwds = {'signal': np.arange(5)}
+        self.assertRaises(
+            TypeError, elephant.signal_processing.rauc, **kwds)
+
+    def test_rauc_invalid_bin_duration(self):
+        '''Test rauc on bad bin duration'''
+        kwds = {'signal': self.test_signal1, 'bin_duration': 'bad'}
+        self.assertRaises(
+            TypeError, elephant.signal_processing.rauc, **kwds)
+
+    def test_rauc_invalid_baseline(self):
+        '''Test rauc on bad baseline'''
+        kwds = {'signal': self.test_signal1, 'baseline': 'bad'}
+        self.assertRaises(
+            TypeError, elephant.signal_processing.rauc, **kwds)
+
+    def test_rauc_units(self):
+        '''Test rauc returns Quantity or AnalogSignal with correct units'''
+
+        # test that single-bin result is Quantity with correct units
+        rauc = elephant.signal_processing.rauc(
+            self.test_signal1)
+        self.assertTrue(isinstance(rauc, pq.Quantity))
+        self.assertEqual(
+            rauc.units,
+            self.test_signal1.units*self.test_signal1.times.units)
+
+        # test that multi-bin result is AnalogSignal with correct units
+        rauc_arr = elephant.signal_processing.rauc(
+            self.test_signal1, bin_duration=1*pq.s)
+        self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
+        self.assertEqual(
+            rauc_arr.units,
+            self.test_signal1.units*self.test_signal1.times.units)
+
+    def test_rauc_times_without_overextending_bin(self):
+        '''Test rauc returns correct times when signal is binned evenly'''
+
+        bin_duration = 1*pq.s  # results in all bin centers < original t_stop
+        rauc_arr = elephant.signal_processing.rauc(
+            self.test_signal1, bin_duration=bin_duration)
+        self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
+
+        # test that sampling period is correct
+        self.assertEqual(rauc_arr.sampling_period, bin_duration)
+
+        # test that all times are correct
+        target_times = np.arange(self.tmin,
+                                 self.tmax,
+                                 bin_duration.magnitude) \
+            * bin_duration.units + bin_duration/2
+        assert_array_almost_equal(rauc_arr.times, target_times)
+
+        # test that t_start and t_stop are correct
+        self.assertEqual(rauc_arr.t_start, target_times[0])
+        assert_array_almost_equal(
+            rauc_arr.t_stop,
+            target_times[-1] + bin_duration)
+
+    def test_rauc_times_with_overextending_bin(self):
+        '''Test rauc returns correct times when signal is NOT binned evenly'''
+
+        bin_duration = 0.99*pq.s  # results in one bin center > original t_stop
+        rauc_arr = elephant.signal_processing.rauc(
+            self.test_signal1, bin_duration=bin_duration)
+        self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
+
+        # test that sampling period is correct
+        self.assertEqual(rauc_arr.sampling_period, bin_duration)
+
+        # test that all times are correct
+        target_times = np.arange(self.tmin,
+                                 self.tmax,
+                                 bin_duration.magnitude) \
+            * bin_duration.units + bin_duration/2
+        assert_array_almost_equal(rauc_arr.times, target_times)
+
+        # test that t_start and t_stop are correct
+        self.assertEqual(rauc_arr.t_start, target_times[0])
+        assert_array_almost_equal(
+            rauc_arr.t_stop,
+            target_times[-1] + bin_duration)
+
+    def test_rauc_values_one_bin(self):
+        '''Test rauc returns correct values when there is just one bin'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1)
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2)
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(
+            rauc1.magnitude,
+            np.array([6.36517679]))
+
+        # multi channel
+        assert_array_almost_equal(
+            rauc2.magnitude,
+            np.array([6.36517679, 6.36617364]))
+
+    def test_rauc_values_multi_bin(self):
+        '''Test rauc returns correct values when there are multiple bins'''
+        rauc_arr1 = elephant.signal_processing.rauc(
+            self.test_signal1, bin_duration=0.99*pq.s)
+        rauc_arr2 = elephant.signal_processing.rauc(
+            self.test_signal2, bin_duration=0.99*pq.s)
+        self.assertTrue(isinstance(rauc_arr1, neo.AnalogSignal))
+        self.assertTrue(isinstance(rauc_arr2, neo.AnalogSignal))
+
+        # single channel
+        assert_array_almost_equal(rauc_arr1.magnitude, np.array([
+            [0.62562647],
+            [0.62567202],
+            [0.62576076],
+            [0.62589236],
+            [0.62606628],
+            [0.62628184],
+            [0.62653819],
+            [0.62683432],
+            [0.62716907],
+            [0.62754110],
+            [0.09304862]]))
+
+        # multi channel
+        assert_array_almost_equal(rauc_arr2.magnitude, np.array([
+            [0.62562647, 0.63623770],
+            [0.62567202, 0.63554830],
+            [0.62576076, 0.63486313],
+            [0.62589236, 0.63418488],
+            [0.62606628, 0.63351623],
+            [0.62628184, 0.63285983],
+            [0.62653819, 0.63221825],
+            [0.62683432, 0.63159403],
+            [0.62716907, 0.63098964],
+            [0.62754110, 0.63040747],
+            [0.09304862, 0.03039579]]))
+
+    def test_rauc_mean_baseline(self):
+        '''Test rauc returns correct values when baseline='mean' is given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, baseline='mean')
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, baseline='mean')
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(
+            rauc1.magnitude,
+            np.array([6.36517679]))
+
+        # multi channel
+        assert_array_almost_equal(
+            rauc2.magnitude,
+            np.array([6.36517679, 6.36617364]))
+
+    def test_rauc_median_baseline(self):
+        '''Test rauc returns correct values when baseline='median' is given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, baseline='median')
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, baseline='median')
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(
+            rauc1.magnitude,
+            np.array([6.36517679]))
+
+        # multi channel
+        assert_array_almost_equal(
+            rauc2.magnitude,
+            np.array([6.36517679, 6.36617364]))
+
+    def test_rauc_arbitrary_baseline(self):
+        '''Test rauc returns correct values when arbitrary baseline is given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, baseline=0.123*pq.mV)
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, baseline=0.123*pq.mV)
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(
+            rauc1.magnitude,
+            np.array([6.41354725]))
+
+        # multi channel
+        assert_array_almost_equal(
+            rauc2.magnitude,
+            np.array([6.41354725, 6.41429810]))
+
+    def test_rauc_time_slice(self):
+        '''Test rauc returns correct values when t_start, t_stop are given'''
+        rauc1 = elephant.signal_processing.rauc(
+            self.test_signal1, t_start=0.123*pq.s, t_stop=0.456*pq.s)
+        rauc2 = elephant.signal_processing.rauc(
+            self.test_signal2, t_start=0.123*pq.s, t_stop=0.456*pq.s)
+        self.assertTrue(isinstance(rauc1, pq.Quantity))
+        self.assertTrue(isinstance(rauc2, pq.Quantity))
+
+        # single channel
+        assert_array_almost_equal(
+            rauc1.magnitude,
+            np.array([0.16279006]))
+
+        # multi channel
+        assert_array_almost_equal(
+            rauc2.magnitude,
+            np.array([0.16279006, 0.26677944]))
 
 
 if __name__ == '__main__':
