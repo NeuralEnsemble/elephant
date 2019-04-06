@@ -708,7 +708,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         n_bins = 1
 
     # store the actual bin duration
-    bin_duration = samples_per_bin * signal.sampling_period.rescale('s')
+    bin_duration = samples_per_bin * signal.sampling_period
 
     # reshape into equal size bins, padding the end with zeros if necessary
     n_channels = signal.shape[1]
@@ -727,7 +727,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         # return an AnalogSignal with times corresponding to center of each bin
         rauc_sig = neo.AnalogSignal(
             rauc,
-            t_start=signal.t_start.rescale('s')+bin_duration/2,
+            t_start=signal.t_start.rescale(bin_duration.units)+bin_duration/2,
             sampling_period=bin_duration)
         return rauc_sig
 
