@@ -666,7 +666,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     TypeError
         If the input signal is not a neo.AnalogSignal.
     TypeError
-        If `bin_duation` is not None or a Quantity.
+        If `bin_duration` is not None or a Quantity.
     TypeError
         If `baseline` is not None, `'mean'`, `'median'`, or a Quantity.
     '''
@@ -763,7 +763,6 @@ def derivative(signal):
     derivative_sig = neo.AnalogSignal(
         np.diff(signal.as_quantity(), axis=0) / signal.sampling_period,
         t_start=signal.t_start+signal.sampling_period/2,
-        sampling_period=signal.sampling_period,
-    )
+        sampling_period=signal.sampling_period)
 
     return derivative_sig
