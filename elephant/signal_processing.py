@@ -631,7 +631,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     signal : neo.AnalogSignal
         The signal to integrate. If `signal` contains more than one channel,
         each is integrated separately.
-    bin_duation : quantities.Quantity
+    bin_duration : quantities.Quantity
         The length of time that each integration should span. If None, there
         will be only one bin spanning the entire signal duration. If
         `bin_duration` does not divide evenly into the signal duration, the end
@@ -728,8 +728,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         rauc_sig = neo.AnalogSignal(
             rauc,
             t_start=signal.t_start.rescale('s')+bin_duration/2,
-            sampling_period=bin_duration,
-        )
+            sampling_period=bin_duration)
         return rauc_sig
 
 
