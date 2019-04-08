@@ -111,7 +111,6 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     # Main: generate the surrogates
     surr = data.reshape((1, len(data))) + 2 * dither * np.random.random_sample(
         (n, len(data))) - dither
-    print(surr)
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
         surr = surr.round(decimals)
