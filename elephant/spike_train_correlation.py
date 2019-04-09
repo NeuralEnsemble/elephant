@@ -9,6 +9,7 @@ from __future__ import division
 import numpy as np
 import neo
 import quantities as pq
+import warnings
 
 
 def covariance(binned_sts, binary=False):
@@ -95,6 +96,8 @@ def corrcoef(binned_sts, binary=False):
     For an input of n spike trains, a n x n matrix is returned.
     Each entry in the matrix is a real number ranging between -1 (perfectly
     anti-correlated spike trains) and +1 (perfectly correlated spike trains).
+    However, if k-th spike train is empty, k-th row and k-th column of the
+    returned matrix are set to NaN.
 
     If binary is True, the binned spike trains are clipped to 0 or 1 before
     computing the correlation coefficients, so that the binned vectors
@@ -123,6 +126,8 @@ def corrcoef(binned_sts, binary=False):
     Generate two Poisson spike trains
 
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from quantities import s, Hz
+    >>> import neo
     >>> st1 = homogeneous_poisson_process(
             rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
@@ -135,6 +140,8 @@ def corrcoef(binned_sts, binary=False):
 
     The correlation coefficient between the spike trains is stored in
     cc_matrix[0,1] (or cc_matrix[1,0]).
+
+    
 
     Notes
     -----
@@ -171,6 +178,12 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm):
     # Retrieve unclipped matrix
     spmat = binned_sts.to_sparse_array()
 
+    # Check for empty spike trains
+    row_counts = spmat.getnnz(1)
+    if row_counts.min() == 0:
+        warnings.warn(
+            'Detected empty spike trains (rows) in the argument binned_sts.')
+
     # For each row, extract the nonzero column indices and the corresponding
     # data in the matrix (for performance reasons)
     bin_idx_unique = []
@@ -185,6 +198,10 @@ def __calculate_correlation_or_covariance(binned_sts, binary, corrcoef_norm):
     # All combinations of spike trains
     for i in range(num_neurons):
         for j in range(i, num_neurons):
+            if row_counts[j] == 0:
+                C[j, :] = np.NaN
+                C[:, j] = np.NaN
+                break
             # Enumerator:
             # $$ <b_i-m_i, b_j-m_j>
             #      = <b_i, b_j> + l*m_i*m_j - <b_i, M_j> - <b_j, M_i>
