@@ -3,6 +3,7 @@
 from setuptools import setup
 import os
 import sys
+import platform
 try:
     from urllib.request import urlretrieve
 except ImportError:
@@ -19,10 +20,9 @@ for extra in ['extras', 'docs', 'tests']:
 # spade specific
 is_64bit = sys.maxsize > 2 ** 32
 is_python3 = float(sys.version[0:3]) > 2.7
-
-if uname()[0] == "Windows":
+if platform.uname()[0] == "Windows":
     oext = ".pyd"
-elif uname()[0] == "Linux":
+elif platform.uname()[0] == "Linux":
     oext = ".so"
 else:
     oext = None
