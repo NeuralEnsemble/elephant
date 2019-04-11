@@ -2,7 +2,7 @@
 """
 Elephant is a package for the analysis of neurophysiology data, based on Neo.
 
-:copyright: Copyright 2014-2018 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2019 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -31,4 +31,4 @@ try:
 except ImportError:
     pass
 
-__version__ = "0.5.0"
+__version__ = "0.6.1"

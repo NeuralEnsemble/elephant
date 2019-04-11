@@ -37,7 +37,7 @@ else:
 
 setup(
     name="elephant",
-    version='0.5.0',
+    version='0.6.1',
     packages=['elephant', 'elephant.test'],
     package_data={'elephant': [
         os.path.join('current_source_density_src', 'test_data.mat'),

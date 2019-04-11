@@ -604,8 +604,8 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
     appropriately distinguishes lack of correlation from anti-correlation,
-    periods of silence don't add to the correlation and it's sensible to
-    firing pattern).
+    periods of silence don't add to the correlation and it's sensitive to
+    firing patterns).
 
     The STTC is calculated as follows:
 
@@ -616,7 +616,11 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     `[-dt, +dt]` of any spike of train 2 divided by the total number of spikes
     in train 1, `PB` is the same proportion for the spikes in train 2;
     `TA` is the proportion of total recording time within `[-dt, +dt]` of any
-    spike in train 1, TB is the same propotion for train 2.
+    spike in train 1, TB is the same proportion for train 2.
+    For :math:`TA = PB = 1`and for :math:`TB = PA = 1`
+    the resulting :math:`0/0` is replaced with :math:`1`,
+    since every spike from the train with :math:`T = 1` is within
+    `[-dt, +dt]` of a spike of the other train.
 
     This is a Python implementation compatible with the elephant library of
     the original code by C. Cutts written in C and avaiable at:
@@ -628,7 +632,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         Must have the same t_start and t_stop.
     dt: Python Quantity.
         The synchronicity window is used for both: the quantification of the
-        propotion of total recording time that lies [-dt, +dt] of each spike
+        proportion of total recording time that lies [-dt, +dt] of each spike
         in each train and the proportion of spikes in `spiketrain_1` that lies
         `[-dt, +dt]` of any spike in `spiketrain_2`.
         Default : 0.005 * pq.s
@@ -668,12 +672,12 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         """
         Calculate the proportion of the total recording time 'tiled' by spikes.
         """
-        time_A = 2 * N * dt  # maxium possible time
+        time_A = 2 * N * dt  # maximum possible time
 
         if N == 1:  # for just one spike in train
             if spiketrain[0] - spiketrain.t_start < dt:
                 time_A = time_A - dt + spiketrain[0] - spiketrain.t_start
-            elif spiketrain[0] + dt > spiketrain.t_stop:
+            if spiketrain[0] + dt > spiketrain.t_stop:
                 time_A = time_A - dt - spiketrain[0] + spiketrain.t_stop
 
         else:  # if more than one spike in train
@@ -685,15 +689,15 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
                     time_A = time_A - 2 * dt + diff
                 i += 1
                 # check if spikes are within dt of the start and/or end
-                # if so just need to subract overlap of first and/or last spike
+                # if so subtract overlap of first and/or last spike
             if (spiketrain[0] - spiketrain.t_start) < dt:
                 time_A = time_A + spiketrain[0] - dt - spiketrain.t_start
 
             if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
                 time_A = time_A - spiketrain[-1] - dt + spiketrain.t_stop
 
-        T = (time_A / (spiketrain.t_stop - spiketrain.t_start)).item()
-        return T
+        T = time_A / (spiketrain.t_stop - spiketrain.t_start)
+        return T.simplified.item()  # enforce simplification, strip units
 
     N1 = len(spiketrain_1)
     N2 = len(spiketrain_2)
@@ -707,8 +711,22 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         PA = PA / N1
         PB = run_P(spiketrain_2, spiketrain_1, N2, N1, dt)
         PB = PB / N2
-        index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
-            1 - PB * TA)
+        # check if the P and T values are 1 to avoid division by zero
+        # This only happens for TA = PB = 1 and/or TB = PA = 1,
+        # which leads to 0/0 in the calculation of the index.
+        # In those cases, every spike in the train with P = 1
+        # is within dt of a spike in the other train,
+        # so we set the respective (partial) index to 1.
+        if PA * TB == 1:
+            if PB * TA == 1:
+                index = 1.
+            else:
+                index = 0.5 + 0.5 * (PB - TA) / (1 - PB * TA)
+        elif PB * TA == 1:
+            index = 0.5 + 0.5 * (PA - TB) / (1 - PA * TB)
+        else:
+            index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
+                    1 - PB * TA)
     return index
 
 

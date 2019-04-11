@@ -17,7 +17,7 @@ import elephant.conversion as cv
 
 
 def get_nearest(times, time):
-    return (np.abs(times-time)).argmin()
+    return (np.abs(times - time)).argmin()
 
 
 class binarize_TestCase(unittest.TestCase):
@@ -27,7 +27,7 @@ class binarize_TestCase(unittest.TestCase):
     def test_binarize_with_spiketrain_exact(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms',
                             t_stop=10.0, sampling_rate=100)
-        times = np.arange(0, 10.+.01, .01)
+        times = np.arange(0, 10. + .01, .01)
         target = np.zeros_like(times).astype('bool')
         for time in self.test_array_1d:
             target[get_nearest(times, time)] = True
@@ -40,7 +40,7 @@ class binarize_TestCase(unittest.TestCase):
     def test_binarize_with_spiketrain_exact_set_ends(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms',
                             t_stop=10.0, sampling_rate=100)
-        times = np.arange(5., 10.+.01, .01)
+        times = np.arange(5., 10. + .01, .01)
         target = np.zeros_like(times).astype('bool')
         times = pq.Quantity(times, units='ms')
 
@@ -51,7 +51,7 @@ class binarize_TestCase(unittest.TestCase):
     def test_binarize_with_spiketrain_round(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms',
                             t_stop=10.0, sampling_rate=10.0)
-        times = np.arange(0, 10.+.1, .1)
+        times = np.arange(0, 10. + .1, .1)
         target = np.zeros_like(times).astype('bool')
         for time in np.round(self.test_array_1d, 1):
             target[get_nearest(times, time)] = True
@@ -63,44 +63,44 @@ class binarize_TestCase(unittest.TestCase):
 
     def test_binarize_with_quantities_exact(self):
         st = pq.Quantity(self.test_array_1d, units='ms')
-        times = np.arange(0, 1.23+.01, .01)
+        times = np.arange(0, 1.23 + .01, .01)
         target = np.zeros_like(times).astype('bool')
         for time in self.test_array_1d:
             target[get_nearest(times, time)] = True
         times = pq.Quantity(times, units='ms')
 
         res, tres = cv.binarize(st, return_times=True,
-                                sampling_rate=100.*pq.kHz)
+                                sampling_rate=100. * pq.kHz)
         assert_array_almost_equal(res, target, decimal=9)
         assert_array_almost_equal(tres, times, decimal=9)
 
     def test_binarize_with_quantities_exact_set_ends(self):
         st = pq.Quantity(self.test_array_1d, units='ms')
-        times = np.arange(0, 10.+.01, .01)
+        times = np.arange(0, 10. + .01, .01)
         target = np.zeros_like(times).astype('bool')
         for time in self.test_array_1d:
             target[get_nearest(times, time)] = True
         times = pq.Quantity(times, units='ms')
 
         res, tres = cv.binarize(st, return_times=True, t_stop=10.,
-                                sampling_rate=100.*pq.kHz)
+                                sampling_rate=100. * pq.kHz)
         assert_array_almost_equal(res, target, decimal=9)
         assert_array_almost_equal(tres, times, decimal=9)
 
     def test_binarize_with_quantities_round_set_ends(self):
         st = pq.Quantity(self.test_array_1d, units='ms')
-        times = np.arange(5., 10.+.1, .1)
+        times = np.arange(5., 10. + .1, .1)
         target = np.zeros_like(times).astype('bool')
         times = pq.Quantity(times, units='ms')
 
         res, tres = cv.binarize(st, return_times=True, t_start=5., t_stop=10.,
-                                sampling_rate=10.*pq.kHz)
+                                sampling_rate=10. * pq.kHz)
         assert_array_almost_equal(res, target, decimal=9)
         assert_array_almost_equal(tres, times, decimal=9)
 
     def test_binarize_with_plain_array_exact(self):
         st = self.test_array_1d
-        times = np.arange(0, 1.23+.01, .01)
+        times = np.arange(0, 1.23 + .01, .01)
         target = np.zeros_like(times).astype('bool')
         for time in self.test_array_1d:
             target[get_nearest(times, time)] = True
@@ -111,18 +111,19 @@ class binarize_TestCase(unittest.TestCase):
 
     def test_binarize_with_plain_array_exact_set_ends(self):
         st = self.test_array_1d
-        times = np.arange(0, 10.+.01, .01)
+        times = np.arange(0, 10. + .01, .01)
         target = np.zeros_like(times).astype('bool')
         for time in self.test_array_1d:
             target[get_nearest(times, time)] = True
 
-        res, tres = cv.binarize(st, return_times=True, t_stop=10., sampling_rate=100.)
+        res, tres = cv.binarize(st, return_times=True, t_stop=10.,
+                                sampling_rate=100.)
         assert_array_almost_equal(res, target, decimal=9)
         assert_array_almost_equal(tres, times, decimal=9)
 
     def test_binarize_no_time(self):
         st = self.test_array_1d
-        times = np.arange(0, 1.23+.01, .01)
+        times = np.arange(0, 1.23 + .01, .01)
         target = np.zeros_like(times).astype('bool')
         for time in self.test_array_1d:
             target[get_nearest(times, time)] = True
@@ -154,7 +155,7 @@ class binarize_TestCase(unittest.TestCase):
                           t_stop=pq.Quantity(10, 'ms'),
                           sampling_rate=10.)
         self.assertRaises(TypeError, cv.binarize, st,
-                          sampling_rate=10.*pq.Hz)
+                          sampling_rate=10. * pq.Hz)
 
     def test_binariz_without_sampling_rate_valueerror(self):
         st0 = self.test_array_1d
@@ -247,7 +248,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         binsize = self.binsize
         x_bool = cv.BinnedSpikeTrain(c, binsize=binsize)
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
-                     [1, 0, 1, 1, 0, 1, 1, 0]]
+                  [1, 0, 1, 1, 0, 1, 1, 0]]
 
         self.assertTrue(
             np.array_equal(x_bool.to_bool_array(), y_bool))
@@ -274,7 +275,7 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array_equal(x_bool.to_bool_array(), y_bool_matrix))
         s = x_bool.to_sparse_bool_array()[
             x_bool.to_sparse_bool_array().nonzero()]
-        self.assertTrue(np.array_equal(s, [[True]*6]))
+        self.assertTrue(np.array_equal(s, [[True] * 6]))
 
     def test_binned_spiketrain_list(self):
         a = self.spiketrain_a
@@ -460,7 +461,7 @@ class TimeHistogramTestCase(unittest.TestCase):
 
         b = neo.SpikeTrain([-4, -2, 0, 1] * pq.s, t_start=-4 * pq.s,
                            t_stop=1 * pq.s)
-        self.assertRaises(TypeError, cv.BinnedSpikeTrain, b, binsize=-2*pq.s,
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, b, binsize=-2 * pq.s,
                           t_start=-4 * pq.s, t_stop=0 * pq.s)
 
     # Test edges
@@ -499,6 +500,95 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertTrue(
             np.array_equal(xa.bin_edges[:-1],
                            xb.bin_edges[:-1].rescale(binsize.units)))
+
+    def test_binary_to_binned_matrix(self):
+        a = [[1, 0, 0, 0], [0, 1, 1, 0]]
+        x = cv.BinnedSpikeTrain(a, t_start=0 * pq.s, t_stop=5 * pq.s)
+        # Check for correctness with different init params
+        self.assertTrue(np.array_equal(a, x.to_bool_array()))
+        self.assertTrue(np.array_equal(np.array(a), x.to_bool_array()))
+        self.assertTrue(np.array_equal(a, x.to_bool_array()))
+        self.assertEqual(x.num_bins, 4)
+        self.assertEqual(x.binsize, 1.25 * pq.s)
+
+        x = cv.BinnedSpikeTrain(a, t_start=1 * pq.s, binsize=2 * pq.s)
+        self.assertTrue(np.array_equal(a, x.to_bool_array()))
+        self.assertEqual(x.t_stop, 9 * pq.s)
+
+        x = cv.BinnedSpikeTrain(a, t_stop=9 * pq.s, binsize=2 * pq.s)
+        self.assertEqual(x.t_start, 1 * pq.s)
+
+        # Raise error
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a,
+                          t_start=5 * pq.s, t_stop=0 * pq.s, binsize=pq.s,
+                          num_bins=10)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
+                          t_stop=10 * pq.s, binsize=3 * pq.s, num_bins=10)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a,
+                          binsize=-2 * pq.s, t_start=-4 * pq.s,
+                          t_stop=0 * pq.s)
+
+        # Check binary property
+        self.assertTrue(x.is_binary)
+
+    def test_binned_to_binned(self):
+        a = self.spiketrain_a
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s).to_array()
+        y = cv.BinnedSpikeTrain(x, binsize=1 * pq.s, t_start=0 * pq.s)
+        self.assertTrue(np.array_equal(x, y.to_array()))
+
+        # test with a list
+        x = cv.BinnedSpikeTrain([[0, 1, 2, 3]], binsize=1 * pq.s,
+                                t_stop=3*pq.s).to_array()
+        y = cv.BinnedSpikeTrain(x, binsize=1 * pq.s, t_start=0 * pq.s)
+        self.assertTrue(np.array_equal(x, y.to_array()))
+
+        # test with a numpy array
+        a = np.array([[0, 1, 2, 3], [1, 2, 2.5, 3]])
+        x = cv.BinnedSpikeTrain(a, binsize=1 * pq.s,
+                                t_stop=3*pq.s).to_array()
+        y = cv.BinnedSpikeTrain(x, binsize=1 * pq.s, t_start=0 * pq.s)
+        self.assertTrue(np.array_equal(x, y.to_array()))
+
+        # Check binary property
+        self.assertFalse(y.is_binary)
+
+        # Raise Errors
+        # give a strangely shaped matrix as input (not MxN), which should
+        # produce a TypeError
+        a = np.array([[0, 1, 2, 3], [1, 2, 3]])
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
+                          binsize=1 * pq.s)
+        # Give no t_start or t_stop
+        a = np.array([[0, 1, 2, 3], [1, 2, 3, 4]])
+        self.assertRaises(AttributeError, cv.BinnedSpikeTrain, a,
+                          binsize=1 * pq.s)
+        # Input format not supported
+        a = np.array(([0, 1, 2], [0, 1, 2, 3, 4]))
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, binsize=1 * pq.s)
+
+    def test_binnend_spiketrain_rescaling(self):
+        train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
+                               t_start=1 * pq.s, t_stop=1.01 * pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=1 * pq.s, t_stop=1.01 * pq.s,
+                                  binsize=1 * pq.ms)
+        target_edges = np.array([1000, 1001, 1002, 1003, 1004, 1005, 1006,
+                                 1007, 1008, 1009, 1010], dtype=np.float)
+        target_centers = np.array(
+            [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
+             1008.5, 1009.5], dtype=np.float)
+        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
+        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
+        self.assertTrue(bst.bin_centers.units == pq.ms)
+        self.assertTrue(bst.bin_edges.units == pq.ms)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=1 * pq.s, t_stop=1010 * pq.ms,
+                                  binsize=1 * pq.ms)
+        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
+        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
+        self.assertTrue(bst.bin_centers.units == pq.ms)
+        self.assertTrue(bst.bin_edges.units == pq.ms)
 
 
 if __name__ == '__main__':

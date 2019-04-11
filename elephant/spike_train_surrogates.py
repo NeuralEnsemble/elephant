@@ -111,7 +111,6 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     # Main: generate the surrogates
     surr = data.reshape((1, len(data))) + 2 * dither * np.random.random_sample(
         (n, len(data))) - dither
-
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
         surr = surr.round(decimals)
@@ -119,15 +118,15 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     if edges is False:
         # Move all spikes outside [spiketrain.t_start, spiketrain.t_stop] to
         # the range's ends
-        surr = np.minimum(np.maximum(surr.base,
-            (spiketrain.t_start / spiketrain.units).base),
-            (spiketrain.t_stop / spiketrain.units).base) * spiketrain.units
+        surr = np.minimum(np.maximum(surr.simplified.magnitude,
+            spiketrain.t_start.simplified.magnitude),
+            spiketrain.t_stop.simplified.magnitude) * pq.s
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
-        tstart, tstop = (spiketrain.t_start / spiketrain.units).base, \
-                        (spiketrain.t_stop / spiketrain.units).base
-        surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * spiketrain.units
-                for s in surr.base]
+        tstart, tstop = spiketrain.t_start.simplified.magnitude, \
+                        spiketrain.t_stop.simplified.magnitude
+        surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
+                for s in surr.simplified.magnitude]
 
     # Return the surrogates as SpikeTrains
     return [neo.SpikeTrain(s,
@@ -347,15 +346,15 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
     if edges is False:
         # Move all spikes outside [spiketrain.t_start, spiketrain.t_stop] to
         # the range's ends
-        surr = np.minimum(np.maximum(surr.base,
-            (spiketrain.t_start / spiketrain.units).base),
-            (spiketrain.t_stop / spiketrain.units).base) * spiketrain.units
+        surr = np.minimum(np.maximum(surr.simplified.magnitude,
+            spiketrain.t_start.simplified.magnitude),
+            spiketrain.t_stop.simplified.magnitude) * pq.s
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
-        tstart, tstop = (spiketrain.t_start / spiketrain.units).base,\
-                        (spiketrain.t_stop / spiketrain.units).base
-        surr = [s[np.all([s >= tstart, s < tstop], axis=0)] * spiketrain.units
-                for s in surr.base]
+        tstart, tstop = spiketrain.t_start.simplified.magnitude, \
+                        spiketrain.t_stop.simplified.magnitude
+        surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
+                for s in surr.simplified.magnitude]
 
     # Return the surrogates as SpikeTrains
     return [neo.SpikeTrain(s, t_start=spiketrain.t_start,

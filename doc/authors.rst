@@ -10,10 +10,12 @@ contribution, and may not be the current affiliation of a contributor.
 
 * Alper Yegenoglu [1]
 * Andrew Davison [2]
+* Björn Müller [1]
 * Detlef Holstein [2]
 * Eilif Muller [3, 4]
 * Emiliano Torre [1]
 * Espen Hagen [1]
+* Jeffrey Gill [11]
 * Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
@@ -42,6 +44,7 @@ contribution, and may not be the current affiliation of a contributor.
 7. Arizona State University School of Life Sciences, USA
 8. Computational Neuroscience Research Group (CNRG), Waterloo Centre for Theoretical Neuroscience, Waterloo, Canada
 9. Nencki Institute of Experimental Biology, Warsaw, Poland
-10.  Instituto de Neurobiología, Universidad Nacional Autónoma de México, Mexico City, Mexico
+10. Instituto de Neurobiología, Universidad Nacional Autónoma de México, Mexico City, Mexico
+11. Case Western Reserve University (CWRU), Cleveland, OH, USA
 
 If we've somehow missed you off the list we're very sorry - please let us know.

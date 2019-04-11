@@ -2,20 +2,57 @@
 Release Notes
 *************
 
+
+Elephant 0.6.1 release notes
+============================
+April 1st 2019
+
+New functions
+-------------
+* `signal_processing` module
+    * New function to calculate the cross-correlation function for analog signals.
+* `spade` module
+    * Spatio-temporal spike pattern detection now includes the option to assess significance also based on time-lags of patterns, in addition to patterns size and frequency (referred to as 3D pattern spectrum).
+
+Other changes
+-------------
+* This release fixes a number of compatibility issues in relation to API breaking changes in the Neo library.
+* Fixed error in STTC calculation (spike time tiling coefficient)
+* Minor bug fixes
+
+
+Elephant 0.6.0 release notes
+============================
+October 12th 2018
+
+New functions
+-------------
+* `cell_assembly_detection` module
+    * New function to detect higher-order correlation structures such as patterns in parallel spike trains based on Russo et al, 2017.
+*  **wavelet_transform()** function in `signal_prosessing.py` module
+    * Function for computing wavelet transform of a given time series based on Le van Quyen et al. (2001)
+
+Other changes
+-------------
+* Switched to multiple `requirements.txt` files which are directly read into the `setup.py`
+* `instantaneous_rate()` accepts now list of spiketrains
+* Minor bug fixes  
+
+
 Elephant 0.5.0 release notes
-===========================
+============================
 April 4nd 2018
 
 New functions
 -------------
 * `change_point_detection` module:
-  * New function to detect changes in the firing rate
+    * New function to detect changes in the firing rate
 * `spike_train_correlation` module:
-  * New function to calculate the spike time tiling coefficient
+    * New function to calculate the spike time tiling coefficient
 * `phase_analysis` module:
-  * New function to extract spike-triggered phases of an AnalogSignal
+    * New function to extract spike-triggered phases of an AnalogSignal
 * `unitary_event_analysis` module:
-  * Added new unit test to the UE function to verify the method based on data of a recent [Re]Science publication
+    * Added new unit test to the UE function to verify the method based on data of a recent [Re]Science publication
   
 Other changes
 -------------
@@ -23,29 +60,29 @@ Other changes
   
   
 Elephant 0.4.3 release notes
-===========================
+============================
 March 2nd 2018
 
 Other changes
 -------------
 * Bug fixes in `spade` module:
-  * Fixed an incompatibility with the latest version of an external library
+    * Fixed an incompatibility with the latest version of an external library
 
   
 Elephant 0.4.2 release notes
-===========================
+============================
 March 1st 2018
 
 New functions
 -------------
 * `spike_train_generation` module:
-  * **inhomogeneous_poisson()** function
+    * **inhomogeneous_poisson()** function
 * Modules for Spatio Temporal Pattern Detection (SPADE) `spade_src`:
-  * Module SPADE: `spade.py`
+    * Module SPADE: `spade.py`
 * Module `statistics.py`:
-  * Added CV2 (coefficient of variation for non-stationary time series)
+    * Added CV2 (coefficient of variation for non-stationary time series)
 * Module `spike_train_correlation.py`:
-  * Added normalization in **cross-correlation histogram()** (CCH)
+    * Added normalization in **cross-correlation histogram()** (CCH)
 
 Other changes
 -------------

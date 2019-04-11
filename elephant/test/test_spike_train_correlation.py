@@ -544,8 +544,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             border_correction=False, binary=False, kernel=None,
             method='memory')
 
-        self.assertNotEqual(cch.all(), cch_corrected.all())
-        self.assertNotEqual(cch_mem.all(), cch_corrected_mem.all())
+        self.assertEqual(np.any(np.not_equal(cch, cch_corrected)), True)
+        self.assertEqual(np.any(np.not_equal(cch_mem, cch_corrected_mem)), True)
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
@@ -602,9 +602,14 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
 
     def test_sttc(self):
         # test for result
-        target = 0.8748350567
+        target = 0.495860165593
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
                                                0.005 * pq.s))
+
+        # test for same result with dt given in ms
+        self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
+                                               5.0 * pq.ms))
+
         # test no spiketrains
         self.assertTrue(np.isnan(sc.sttc([], [])))
 
@@ -619,6 +624,14 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
 
         # test for high value of dt
         self.assertEqual(sc.sttc(self.st_1, self.st_2, dt=5 * pq.s), 1.0)
+
+        # test for TA = PB = 1 but TB /= PA /= 1 and vice versa
+        st3 = neo.SpikeTrain([1, 5, 9], units='ms', t_stop=10.)
+        target2 = 1./3.
+        self.assertAlmostEqual(target2, sc.sttc(st3, st2,
+                                                0.003 * pq.s))
+        self.assertAlmostEqual(target2, sc.sttc(st2, st3,
+                                                0.003 * pq.s))
 
     def test_exist_alias(self):
         # Test if alias cch still exists.
