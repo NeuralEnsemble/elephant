@@ -14,6 +14,7 @@ import quantities as pq
 import neo
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
+import warnings
 
 
 class covariance_TestCase(unittest.TestCase):
@@ -127,12 +128,15 @@ class corrcoeff_TestCase(unittest.TestCase):
             1.3, 7.56, 15.87, 28.23, 30.9, 34.2, 38.2, 43.2]
         self.test_array_1d_1 = [
             1.02, 2.71, 18.82, 28.46, 28.79, 43.6]
+        self.test_array_1d_2 = []
 
         # Build spike trains
         self.st_0 = neo.SpikeTrain(
             self.test_array_1d_0, units='ms', t_stop=50.)
         self.st_1 = neo.SpikeTrain(
             self.test_array_1d_1, units='ms', t_stop=50.)
+        self.st_2 = neo.SpikeTrain(
+            self.test_array_1d_2, units='ms', t_stop=50.)
 
         # And binned counterparts
         self.binned_st = conv.BinnedSpikeTrain(
@@ -220,6 +224,25 @@ class corrcoeff_TestCase(unittest.TestCase):
         self.assertEqual(target.ndim, 0)
         self.assertEqual(target, 1.)
 
+    def test_empty_spike_train(self):
+        '''
+        Test whether a warning is yielded in case of empty spike train.
+        Also check correctness of the output array.
+        '''
+        # st_2 is empty
+        binned_12 = conv.BinnedSpikeTrain([self.st_1, self.st_2],
+                                          binsize=1 * pq.ms)
+
+        # test for a warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            ccmat = sc.corrcoef(binned_12)
+            self.assertTrue(issubclass(w.pop().category, UserWarning))
+
+        # test for NaNs in the output array
+        target = np.zeros((2, 2)) * np.NaN
+        target[0,0] = 1.0
+        assert_array_equal(ccmat, target)
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):
 
