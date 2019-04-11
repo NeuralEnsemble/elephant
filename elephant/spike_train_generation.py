@@ -152,7 +152,7 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
         cutout = np.where(signal < threshold)[0]
 
     if len(cutout) <= 0:
-        events = np.zeros(0)
+        events_base = np.zeros(0)
     else:
         take = np.where(np.diff(cutout) > 1)[0] + 1
         take = np.append(0, take)
@@ -160,11 +160,11 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
         time = signal.times
         events = time[cutout][take]
 
-    events_base = events.base
-    if events_base is None:
-        # This occurs in some Python 3 builds due to some
-        # bug in quantities.
-        events_base = np.array([event.base for event in events])  # Workaround
+        events_base = events.magnitude
+        if events_base is None:
+            # This occurs in some Python 3 builds due to some
+            # bug in quantities.
+            events_base = np.array([event.magnitude for event in events])  # Workaround
 
     result_st = SpikeTrain(events_base, units=signal.times.units,
                            t_start=signal.t_start, t_stop=signal.t_stop)
@@ -236,12 +236,12 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
         max_idc = maxima_idc_split + true_borders[0::2]
 
         events = signal.times[max_idc]
-        events_base = events.base
+        events_base = events.magnitude
 
-    if events_base is None:
-        # This occurs in some Python 3 builds due to some
-        # bug in quantities.
-        events_base = np.array([event.base for event in events])  # Workaround
+        if events_base is None:
+            # This occurs in some Python 3 builds due to some
+            # bug in quantities.
+            events_base = np.array([event.magnitude for event in events])  # Workaround
     if format is None:
         result_st = SpikeTrain(events_base, units=signal.times.units,
                                t_start=signal.t_start, t_stop=signal.t_stop)
