@@ -3,6 +3,21 @@ Release Notes
 *************
 
 
+Elephant 0.6.2 release notes
+============================
+April 11th 2019
+
+New functions
+-------------
+* `signal_processing` module
+    * New functions to calculate the area under a curve and the derivative of a time series.
+
+Other changes
+-------------
+* Added support to initialize binned spike train representations with a matrix
+* Multiple bug fixes
+
+
 Elephant 0.6.1 release notes
 ============================
 April 1st 2019
