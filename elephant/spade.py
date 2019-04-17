@@ -509,8 +509,9 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     else:
         warnings.warn(
             'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
-            'in elephant/spade_src folder,' +
-            'you are using the Python implementation of fast fca.')
+            'in elephant/spade_src folder, or not compatible with this ' +
+            'Python version. You are using the pure Python implementation ' +
+            'of fast fca.')
         # Return output
         mining_results = _fast_fca(
             context,
