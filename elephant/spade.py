@@ -78,9 +78,6 @@ try:
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
     HAVE_FIM = False
-    warnings.warn(
-        'fim.so not found in elephant/spade_src folder,' +
-        'you are using the python implementation of fast fca')
 
 
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
@@ -510,6 +507,10 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         return mining_results, rel_matrix
     # Otherwise use fast_fca python implementation
     else:
+        warnings.warn(
+            'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
+            'in elephant/spade_src folder,' +
+            'you are using the Python implementation of fast fca.')
         # Return output
         mining_results = _fast_fca(
             context,
