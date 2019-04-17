@@ -3,6 +3,7 @@
 from setuptools import setup
 import os
 import sys
+import platform
 try:
     from urllib.request import urlretrieve
 except ImportError:
@@ -19,21 +20,28 @@ for extra in ['extras', 'docs', 'tests']:
 # spade specific
 is_64bit = sys.maxsize > 2 ** 32
 is_python3 = float(sys.version[0:3]) > 2.7
-
-if is_python3:
-    if is_64bit:
-        urlretrieve('http://www.borgelt.net/bin64/py3/fim.so',
-                    'elephant/spade_src/fim.so')
-    else:
-        urlretrieve('http://www.borgelt.net/bin32/py3/fim.so',
-                    'elephant/spade_src/fim.so')
+if platform.uname()[0] == "Windows":
+    oext = ".pyd"
+elif platform.uname()[0] == "Linux":
+    oext = ".so"
 else:
-    if is_64bit:
-        urlretrieve('http://www.borgelt.net/bin64/py2/fim.so',
-                    'elephant/spade_src/fim.so')
+    oext = None
+
+if oext:
+    if is_python3:
+        if is_64bit:
+            urlretrieve('http://www.borgelt.net/bin64/py3/fim' + oext,
+                        'elephant/spade_src/fim' + oext)
+        else:
+            urlretrieve('http://www.borgelt.net/bin32/py3/fim' + oext,
+                        'elephant/spade_src/fim' + oext)
     else:
-        urlretrieve('http://www.borgelt.net/bin32/py2/fim.so',
-                    'elephant/spade_src/fim.so')
+        if is_64bit:
+            urlretrieve('http://www.borgelt.net/bin64/py2/fim' + oext,
+                        'elephant/spade_src/fim' + oext)
+        else:
+            urlretrieve('http://www.borgelt.net/bin32/py2/fim' + oext,
+                        'elephant/spade_src/fim' + oext)
 
 setup(
     name="elephant",
@@ -46,7 +54,8 @@ setup(
         os.path.join('current_source_density_src', '*.py'),
         os.path.join('spade_src', '*.py'),
         os.path.join('spade_src', 'LICENSE'),
-        os.path.join('spade_src', '*.so')
+        os.path.join('spade_src', '*.so'),
+        os.path.join('spade_src', '*.pyd')
     ]},
 
     install_requires=install_requires,
