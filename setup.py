@@ -29,19 +29,20 @@ else:
 
 if oext:
     if is_python3:
-        if is_64bit:
-            urlretrieve('http://www.borgelt.net/bin64/py3/fim' + oext,
-                        'elephant/spade_src/fim' + oext)
-        else:
-            urlretrieve('http://www.borgelt.net/bin32/py3/fim' + oext,
-                        'elephant/spade_src/fim' + oext)
+        py_ver = '3'
     else:
-        if is_64bit:
-            urlretrieve('http://www.borgelt.net/bin64/py2/fim' + oext,
-                        'elephant/spade_src/fim' + oext)
-        else:
-            urlretrieve('http://www.borgelt.net/bin32/py2/fim' + oext,
-                        'elephant/spade_src/fim' + oext)
+        py_ver = '2'
+    if is_64bit:
+        arch = '64'
+    else:
+        arch = '32'
+
+    try:
+        urlretrieve('http://www.borgelt.net/bin' +
+                    arch + '/py' + py_ver + '/fim' + oext,
+                    'elephant/spade_src/fim' + oext)
+    except:
+        print("Unable to download fim" + oext + " module.")
 
 setup(
     name="elephant",
