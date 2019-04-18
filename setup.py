@@ -36,13 +36,13 @@ if oext:
         arch = '64'
     else:
         arch = '32'
-    
+
     try:
-        urlretrieve('http://www.borgelt.net/bin' + arch + '/py' + py_ver + '/fim' + oext,
+        urlretrieve('http://www.borgelt.net/bin' +
+                    arch + '/py' + py_ver + '/fim' + oext,
                     'elephant/spade_src/fim' + oext)
     except:
         print("Unable to download fim" + oext + " module.")
-        pass
 
 setup(
     name="elephant",
