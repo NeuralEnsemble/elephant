@@ -5,7 +5,7 @@ Release Notes
 
 Elephant 0.6.2 release notes
 ============================
-April 17th 2019
+April 23rd 2019
 
 New functions
 -------------
