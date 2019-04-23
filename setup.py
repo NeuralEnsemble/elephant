@@ -46,7 +46,7 @@ if oext:
 
 setup(
     name="elephant",
-    version='0.6.1',
+    version='0.6.2',
     packages=['elephant', 'elephant.test'],
     package_data={'elephant': [
         os.path.join('current_source_density_src', 'test_data.mat'),
