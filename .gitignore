@@ -58,6 +58,8 @@ develop-eggs
 pip-log.txt
 # coverage
 cover
+# numpy
+*.npy
 
 # OS generated files #
 ######################

@@ -1,2 +1,4 @@
+# todo: move to requirements.txt
 pandas>=0.14.1
 scikit-learn
+matplotlib
