@@ -16,6 +16,7 @@ nosetests.xml
 .settings
 *.tmp*
 .idea
+.pytest_cache/
 
 # Compiled source #
 ###################
