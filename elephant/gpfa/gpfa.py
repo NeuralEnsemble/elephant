@@ -1,10 +1,12 @@
 import time
+import warnings
 
 import numpy as np
 import scipy.linalg as linalg
-import scipy.sparse as sparse
 import scipy.optimize as optimize
+import scipy.sparse as sparse
 from sklearn.decomposition import FactorAnalysis
+from tqdm import trange
 
 # import util
 from elephant.gpfa import util
@@ -116,7 +118,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
 
     # Precomputations
     if params['notes']['RforceDiagonal']:
-        rinv = np.diag(1.0/np.diag(params['R']))
+        rinv = np.diag(1.0 / np.diag(params['R']))
         logdet_r = (np.log(np.diag(params['R']))).sum()
     else:
         rinv = linalg.inv(params['R'])
@@ -147,9 +149,9 @@ def exact_inference_with_ll(seq, params, get_ll=True):
         # so can compute once for all trials with same T.
         # xDim x xDim posterior covariance for each timepoint
         vsm = np.full((x_dim, x_dim, t), np.nan)
-        idx = np.arange(0, x_dim*t+1, x_dim)
+        idx = np.arange(0, x_dim * t + 1, x_dim)
         for i in range(t):
-            vsm[:, :, i] = minv[idx[i]:idx[i+1], idx[i]:idx[i+1]]
+            vsm[:, :, i] = minv[idx[i]:idx[i + 1], idx[i]:idx[i + 1]]
 
         # T x T posterior covariance for each GP
         vsm_gp = np.full((t, t, x_dim), np.nan)
@@ -161,16 +163,16 @@ def exact_inference_with_ll(seq, params, get_ll=True):
         # dif is yDim x sum(T)
         dif = np.hstack(seq_lat[n_list]['y']) - params['d'][:, np.newaxis]
         # term1Mat is (xDim*T) x length(nList)
-        term1_mat = c_rinv.dot(dif).reshape((x_dim*t, -1), order='F')
+        term1_mat = c_rinv.dot(dif).reshape((x_dim * t, -1), order='F')
 
         # Compute blkProd = CRinvC_big * invM efficiently
         # blkProd is block persymmetric, so just compute top half
-        t_half = np.int(np.ceil(t/2.0))
-        blk_prod = np.zeros((x_dim*t_half, x_dim*t))
-        idx = range(0, x_dim*t_half+1, x_dim)
+        t_half = np.int(np.ceil(t / 2.0))
+        blk_prod = np.zeros((x_dim * t_half, x_dim * t))
+        idx = range(0, x_dim * t_half + 1, x_dim)
         for i in range(t_half):
-            blk_prod[idx[i]:idx[i+1], :] = c_rinv_c.dot(minv[idx[i]:idx[i+1], :])
-        blk_prod = k_big[:x_dim*t_half, :].dot(
+            blk_prod[idx[i]:idx[i + 1], :] = c_rinv_c.dot(minv[idx[i]:idx[i + 1], :])
+        blk_prod = k_big[:x_dim * t_half, :].dot(
             util.fill_persymm(np.eye(x_dim * t_half, x_dim * t) - blk_prod, x_dim, t))
         # xsmMat is (xDim*T) x length(nList)
         xsm_mat = util.fill_persymm(blk_prod, x_dim, t).dot(term1_mat)
@@ -182,10 +184,10 @@ def exact_inference_with_ll(seq, params, get_ll=True):
 
         if get_ll:
             # Compute data likelihood
-            val = -t*logdet_r - logdet_k_big - logdet_m \
-                - y_dim*t*np.log(2*np.pi)
-            ll = ll + len(n_list)*val - (rinv.dot(dif)*dif).sum() \
-                + (term1_mat.T.dot(minv)*term1_mat.T).sum()
+            val = -t * logdet_r - logdet_k_big - logdet_m \
+                  - y_dim * t * np.log(2 * np.pi)
+            ll = ll + len(n_list) * val - (rinv.dot(dif) * dif).sum() \
+                 + (term1_mat.T.dot(minv) * term1_mat.T).sum()
 
     if get_ll:
         ll /= 2
@@ -265,15 +267,15 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     ll_base = ll
     iter_time = []
     var_floor = min_var_frac * np.diag(np.cov(np.hstack(seq['y'])))
+    seq_lat = None
 
     # Loop once for each iteration of EM algorithm
-    for i in range(1, em_max_iters+1):
+    for iter_id in trange(1, em_max_iters + 1, desc='EM iteration'):
         if verbose:
             print()
         tic = time.time()
 
-        print('EM iteration {0:3d} of {1}'.format(i, em_max_iters))
-        if (np.fmod(i, freq_ll) == 0) or (i <= 2):
+        if (np.fmod(iter_id, freq_ll) == 0) or (iter_id <= 2):
             get_ll = True
         else:
             get_ll = False
@@ -288,7 +290,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         sum_p_auto = np.zeros((x_dim, x_dim))
         for seq_lat_n in seq_lat:
             sum_p_auto += seq_lat_n['Vsm'].sum(axis=2) \
-                         + seq_lat_n['xsm'].dot(seq_lat_n['xsm'].T)
+                          + seq_lat_n['xsm'].dot(seq_lat_n['xsm'].T)
         y = np.hstack(seq['y'])
         xsm = np.hstack(seq_lat['xsm'])
         sum_yxtrans = y.dot(xsm.T)
@@ -312,8 +314,8 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         if params['notes']['RforceDiagonal']:
             sum_yytrans = (y * y).sum(axis=1)[:, np.newaxis]
             yd = sum_yall * d
-            term = ((sum_yxtrans-d.dot(sum_xall.T))*c).sum(axis=1)[:, np.newaxis]
-            r = d**2 + (sum_yytrans-2*yd-term)/t.sum()
+            term = ((sum_yxtrans - d.dot(sum_xall.T)) * c).sum(axis=1)[:, np.newaxis]
+            r = d ** 2 + (sum_yytrans - 2 * yd - term) / t.sum()
 
             # Set minimum private variance
             r = np.maximum(var_floor, r)
@@ -340,35 +342,20 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         t_end = time.time() - tic
         iter_time.append(t_end)
 
-        # Display the most recent likelihood that was evaluated
-        if verbose:
-            if get_ll:
-                print('       lik {0} ({1:.1f} sec)'.format(ll, t_end))
-            else:
-                print()
-        else:
-            if get_ll:
-                print('       lik {0}\r'.format(ll))
-            else:
-                print()
-
         # Verify that likelihood is growing monotonically
-        if i <= 2:
+        if iter_id <= 2:
             ll_base = ll
-        elif ll < ll_old:
+        elif verbose and ll < ll_old:
             print('\nError: Data likelihood has decreased ',
                   'from {0} to {1}'.format(ll_old, ll))
         elif (ll - ll_base) < (1 + tol) * (ll_old - ll_base):
             break
 
-    print()
-
     if len(lls) < em_max_iters:
         print('Fitting has converged after {0} EM iterations.)'.format(len(lls)))
 
     if np.any(np.diag(params['R']) == var_floor):
-        print('Warning: Private variance floor used ',
-              'for one or more observed dimensions in GPFA.')
+        warnings.warn('Private variance floor used for one or more observed dimensions in GPFA.')
 
     return params, seq_lat, lls, iter_time
 
@@ -437,8 +424,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
     # For compute efficiency, train on equal-length segments of trials
     seq_train_cut = util.cut_trials(seq_train)
     if len(seq_train_cut) == 0:
-        print( 'WARNING: no segments extracted for training.',
-               ' Defaulting to segLength=Inf.')
+        warnings.warn('No segments extracted for training. Defaulting to segLength=Inf.')
         seq_train_cut = util.cut_trials(seq_train, seg_length=np.inf)
 
     # ==================================
@@ -448,7 +434,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
     params_init['covType'] = 'rbf'
     # GP timescale
     # Assume binWidth is the time step size.
-    params_init['gamma'] = (bin_width/tau_init)**2 * np.ones(x_dim)
+    params_init['gamma'] = (bin_width / tau_init) ** 2 * np.ones(x_dim)
     # GP noise variance
     params_init['eps'] = eps_init * np.ones(x_dim)
 
@@ -474,7 +460,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
     # =====================
     # Fit model parameters
     # =====================
-    print ('\nFitting GPFA model...')
+    print('\nFitting GPFA model...')
 
     params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq_train_cut, min_var_frac=min_var_frac,
                                                       em_max_iters=em_max_iters)
@@ -505,5 +491,4 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
 
 
 def two_stage_engine(seqTrain, seqTest, typ='fa', xDim=3, binWidth=20.0):
-    return {}
-
+    raise NotImplemented

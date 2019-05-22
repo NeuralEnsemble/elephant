@@ -62,7 +62,7 @@ neural population activity. J Neurophysiol 102:614-635
 """
 
 
-def extract_trajectory(seqs, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0):
+def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_folds=0, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -89,6 +89,8 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_fold
         i.e. train on all trials.
         Default is 0.
         (Cross-validation is not implemented yet.)
+    em_max_iters: int
+        Number of EM iterations to run (default: 500)
 
     Returns
     -------
@@ -136,7 +138,7 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_fold
     fdiv = np.linspace(0, num_trials, num_folds + 1).astype(np.int) if num_folds > 0 \
         else num_trials
 
-    for cvf in range(0, num_folds+1):
+    for cvf in range(0, num_folds + 1):
         if cvf == 0:
             print("\n===== Training on all data =====")
         else:
@@ -148,7 +150,7 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_fold
         # Set cross-validataion masks
         test_mask = np.full(num_trials, False, dtype=bool)
         if cvf > 0:
-            test_mask[fdiv[cvf]:fdiv[cvf+1]] = True
+            test_mask[fdiv[cvf]:fdiv[cvf + 1]] = True
         train_mask = ~test_mask
 
         tr = np.arange(num_trials, dtype=np.int)
@@ -175,8 +177,8 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_fold
         y_dim = y_all.shape[0]
 
         if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
-            errmesg = 'Observation covariance matrix is rank deficient.\n'\
-                      'Possible causes: '\
+            errmesg = 'Observation covariance matrix is rank deficient.\n' \
+                      'Possible causes: ' \
                       'repeated units, not enough observations.'
             raise ValueError(errmesg)
 
@@ -194,16 +196,20 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_fold
         # The following does the heavy lifting.
         if method == 'gpfa':
             params_est, seqs_train, fit_info = gpfa_engine(seqs_train, seqs_test, x_dim=x_dim,
-                                                           bin_width=bin_size, min_var_frac=min_var_frac)
+                                                           bin_width=bin_size, min_var_frac=min_var_frac,
+                                                           em_max_iters=em_max_iters)
         elif method in ['fa', 'ppca', 'pca']:
             # TODO: implement two_stage_engine()
             params_est, seqs_train, fit_info = two_stage_engine(seqs_train, seqs_test, typ=method,
                                                                 xDim=x_dim, binWidth=bin_size)
-            raise NotImplementedError
+        else:
+            raise ValueError("Invalid method: {}".format(method))
 
-        var_names = ['method', 'cvf', 'has_spikes_bool', 'min_var_frac', 'bin_size']
-        for key in var_names:
-            fit_info.update({key: locals()[key]})
+        fit_info['method'] = method
+        fit_info['cvf'] = cvf
+        fit_info['has_spikes_bool'] = has_spikes_bool
+        fit_info['min_var_frac'] = min_var_frac
+        fit_info['bin_size'] = bin_size
 
     return params_est, seqs_train, fit_info
 
@@ -223,7 +229,7 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
         `params_est` corresponding to `kern_sd`.
         Default is 1.
 
-    secs_test: numpy recarray, optional
+    seqs_test: numpy recarray, optional
         Data structure of test dataset.
         Default is None.
 

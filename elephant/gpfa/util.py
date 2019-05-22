@@ -207,12 +207,12 @@ def make_k_big(params, n_timesteps):
     K_big = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     K_big_inv = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     Tdif = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1)).T \
-        - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
+           - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
     logdet_K_big = 0
 
     for i in range(xDim):
         if params['covType'] == 'rbf':
-            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 * Tdif**2) \
+            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 * Tdif ** 2) \
                 + params['eps'][i] * np.eye(n_timesteps)
         elif params['covType'] == 'tri':
             K = np.maximum(1 - params['eps'][i] - params['a'][i] * np.abs(Tdif), 0) \
@@ -343,7 +343,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     for i in range(Thalf):
         for j in range(n_blocks):
             Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
-                 Nh - (j + 1) * blk_size:Nh - j * blk_size] \
+            Nh - (j + 1) * blk_size:Nh - j * blk_size] \
                 = p_in[i * blk_size_vert:(i + 1) * blk_size_vert, j * blk_size:(j + 1) * blk_size]
 
     return Pout
@@ -397,7 +397,7 @@ def make_precomp(seq, xDim):
         'absDif', np.object), ('difSq', np.object), ('Tall', np.object), ('Tu', np.object)])
     for i in range(xDim):
         precomp[i]['absDif'] = np.abs(Tdif)
-        precomp[i]['difSq'] = Tdif**2
+        precomp[i]['difSq'] = Tdif ** 2
         precomp[i]['Tall'] = Tall
     # find unique numbers of trial lengths
     Tu = np.unique(Tall)
@@ -428,9 +428,8 @@ def make_precomp(seq, xDim):
         for j in range(len(Tu)):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
-                # precomp[i]['Tu'][j]['PautoSUM'] += seq_lat[n]['VsmGP'][:, :, i] + seq_lat[n]['xsm'][i, :].T.dot(seq_lat[n]['xsm'][i, :])
                 precomp[i]['Tu'][j]['PautoSUM'] += seq[n]['VsmGP'][:, :, i] \
-                    + np.outer(seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
+                                                   + np.outer(seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
     return precomp
 
 
@@ -479,14 +478,14 @@ def grad_betgam(p, pre_comp, const):
         dg_KinvM = np.diag(KinvM)
         tr_KinvM = 2 * dg_KinvM.sum() - np.fmod(T, 2) * dg_KinvM[-1]
 
-        mkr = np.int(np.ceil(0.5 * T**2))
+        mkr = np.int(np.ceil(0.5 * T ** 2))
         numTrials = pre_comp['Tu'][j]['numTrials']
         PautoSUM = pre_comp['Tu'][j]['PautoSUM']
 
         dEdgamma = dEdgamma - 0.5 * numTrials * tr_KinvM \
-            + 0.5 * PautoSUM.ravel('F')[:mkr].dot(KinvMKinv.ravel('F')[:mkr]) \
-            + 0.5 * PautoSUM.ravel('F')[-1:mkr - 1:-
-                                        1].dot(KinvMKinv.ravel('F')[:(T**2 - mkr)])
+                   + 0.5 * PautoSUM.ravel('F')[:mkr].dot(KinvMKinv.ravel('F')[:mkr]) \
+                   + 0.5 * PautoSUM.ravel('F')[-1:mkr - 1:-
+        1].dot(KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
 
         f = f - 0.5 * numTrials * logdet_K \
             - 0.5 * (PautoSUM * Kinv).sum()
@@ -596,7 +595,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         ldM = (np.log(np.diag(MM_chol))).sum()
         LLi = N * const + N * ldM - 0.5 * N * (MM * cX).sum()
         if verbose:
-            print('EM iteration {:5d} lik {:8.1f} \r'.format(i, LLi),)
+            print('EM iteration {:5d} lik {:8.1f} \r'.format(i, LLi), )
         LL.append(LLi)
 
         # =======
@@ -753,7 +752,7 @@ def minimize(x, f, length, *args):
     i += (length < 0)  # count epochs?!
     # initial search direction (steepest) and slope
     s = -df0
-    d0 = -s**2
+    d0 = -s ** 2
     x3 = red / (1.0 - d0)  # initial step is red/(|s|+1)
 
     while i < np.abs(length):  # while not finished
@@ -808,8 +807,8 @@ def minimize(x, f, length, *args):
             A = 6 * (f1 - f2) + 3 * (d2 + d1) * (x2 - x1)
             B = 3 * (f2 - f1) - (2 * d1 + d2) * (x2 - x1)
             # num. error possible, ok!
-            x3 = x1 - d1 * (x2 - x1)**2 / \
-                (B + np.sqrt(B * B - A * d1 * (x2 - x1)))
+            x3 = x1 - d1 * (x2 - x1) ** 2 / \
+                 (B + np.sqrt(B * B - A * d1 * (x2 - x1)))
             # num prob | wrong sign?
             if not np.isreal(x3) or np.isnan(x3) or np.isinf(x3) or x3 < 0:
                 x3 = x2 * EXT  # extrapolate maximum amount
@@ -834,14 +833,14 @@ def minimize(x, f, length, *args):
                 d2 = d3
             if f4 > f0:
                 # quadratic interpolation
-                x3 = x2 - (0.5 * d2 * (x4 - x2)**2) / \
-                    (f4 - f2 - d2 * (x4 - x2))
+                x3 = x2 - (0.5 * d2 * (x4 - x2) ** 2) / \
+                     (f4 - f2 - d2 * (x4 - x2))
             else:
                 # cubic interpolation
                 A = 6 * (f2 - f4) / (x4 - x2) + 3 * (d4 + d2)
                 B = 3 * (f4 - f2) - (2 * d2 + d4) * (x4 - x2)
                 # num. error possible, ok!
-                x3 = x2 + (np.sqrt(B * B - A * d2 * (x4 - x2)**2) - B) / A
+                x3 = x2 + (np.sqrt(B * B - A * d2 * (x4 - x2) ** 2) - B) / A
             if np.isnan(x3) or np.isinf(x3):
                 # if we had a numerical problem then bisect
                 x3 = (x2 + x4) / 2
@@ -958,7 +957,7 @@ def segment_by_trial(seq, x, fn):
         Data structure with new field `fn`
     """
     if np.sum(seq['T']) != x.shape[1]:
-        raise(ValueError, 'size of X incorrect.')
+        raise (ValueError, 'size of X incorrect.')
 
     dtype_new = [(i, seq[i].dtype) for i in seq.dtype.names]
     dtype_new.append((fn, np.object))

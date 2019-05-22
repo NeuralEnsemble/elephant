@@ -61,7 +61,7 @@ neural population activity. J Neurophysiol 102:614-635
 """
 
 
-def neural_trajectory(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0):
+def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_folds=0, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -88,6 +88,8 @@ def neural_trajectory(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds
         i.e. train on all trials.
         Default is 0.
         (Cross-validation is not implemented yet)
+    em_max_iters: int
+        Number of EM iterations to run (default: 500)
 
     Returns
     -------
@@ -142,6 +144,7 @@ def neural_trajectory(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds
             * hasSpikesBool: Indicates if a neuron has any spikes across trials
             * method: String, method name
     """
+    # todo does it makes sense to explicitly pass trial_id?
     if not isinstance(data[0][1][0], neo.SpikeTrain):
         raise ValueError("structure of the data is not correct: 0-axis should "
                          "be trials, 1-axis neo spike trains "
@@ -149,7 +152,7 @@ def neural_trajectory(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds
 
     seqs = util.get_seq(data, bin_size)
     params_est, seqs_train, fit_info = core.extract_trajectory(seqs, method, bin_size.rescale('ms').magnitude,
-                                                               x_dim, num_folds)
+                                                               x_dim, num_folds, em_max_iters=em_max_iters)
     params_est, seqs_train, seqs_test = core.postprocess(params_est, seqs_train, fit_info)
 
     return params_est, seqs_train, seqs_test, fit_info

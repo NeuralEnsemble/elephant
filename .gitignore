@@ -72,3 +72,5 @@ Thumbs.db
 
 # Things specific to this project #
 ###################################
+# ignored folder for fast prototyping
+ignored/
