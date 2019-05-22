@@ -118,7 +118,8 @@ def cut_trials(seq_in, seg_length=20):
 
         # Skip trials that are shorter than segLength
         if T < seg_length:
-            warnings.warn('trialId {0:4d} shorter than one segLength...skipping'.format(seqIn_n['trialId']))
+            warnings.warn('trialId {0:4d} shorter than one segLength...'
+                          'skipping'.format(seqIn_n['trialId']))
             continue
 
         numSeg = np.int(np.ceil(float(T) / seg_length))
@@ -219,10 +220,12 @@ def make_k_big(params, n_timesteps):
 
     for i in range(xDim):
         if params['covType'] == 'rbf':
-            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 * Tdif ** 2) \
+            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 *
+                                                Tdif ** 2) \
                 + params['eps'][i] * np.eye(n_timesteps)
         elif params['covType'] == 'tri':
-            K = np.maximum(1 - params['eps'][i] - params['a'][i] * np.abs(Tdif), 0) \
+            K = np.maximum(1 - params['eps'][i] - params['a'][i] *
+                           np.abs(Tdif), 0) \
                 + params['eps'][i] * np.eye(n_timesteps)
         elif params['covType'] == 'logexp':
             z = params['gamma'] \
@@ -243,8 +246,9 @@ def make_k_big(params, n_timesteps):
         # in C and MEX, for inversion of Toeplitz matrix:
         # [K_big_inv(idx+i, idx+i), logdet_K] = invToeplitz(K);
         # TODO: use an inversion method optimized for Toeplitz matrix
-        # Below is an attempt to use such a method, not leading to a speed-up...
-        # # K_big_inv[i::xDim, i::xDim] = sp.linalg.solve_toeplitz((K[:, 0], K[0, :]), np.eye(T))
+        # Below is an attempt to use such a method, not leading to a speed-up.
+        # # K_big_inv[i::xDim, i::xDim] = sp.linalg.solve_toeplitz((K[:, 0],
+        # K[0, :]), np.eye(T))
         K_big_inv[i::xDim, i::xDim] = np.linalg.inv(K)
         logdet_K = logdet(K)
 
@@ -268,7 +272,8 @@ def inv_persymm(M, blk_size):
     ----------
 
     M: numpy.ndarray 
-        The block persymmetric matrix to be inverted ((blkSize*T) x (blkSize*T)).  
+        The block persymmetric matrix to be inverted
+        ((blkSize*T) x (blkSize*T)).
         Each block is blkSize x blkSize, arranged in a T x T grid.
     blk_size: int 
         Edge length of one block
@@ -349,7 +354,9 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
         for j in range(n_blocks):
             Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
             Nh - (j + 1) * blk_size:Nh - j * blk_size] \
-                = p_in[i * blk_size_vert:(i + 1) * blk_size_vert, j * blk_size:(j + 1) * blk_size]
+                = p_in[i * blk_size_vert:(i + 1) *
+                                         blk_size_vert,
+                  j * blk_size:(j + 1) * blk_size]
 
     return Pout
 
@@ -393,13 +400,14 @@ def make_precomp(seq, xDim):
     Tall = seq['T']
     Tmax = (Tall).max()
     Tdif = np.tile(np.arange(0, Tmax), (Tmax, 1)).T \
-        - np.tile(np.arange(0, Tmax), (Tmax, 1))
+           - np.tile(np.arange(0, Tmax), (Tmax, 1))
 
     # assign some helpful precomp items
     # this is computationally cheap, so we keep a few loops in MATLAB
     # for ease of readability.
     precomp = np.empty(xDim, dtype=[(
-        'absDif', np.object), ('difSq', np.object), ('Tall', np.object), ('Tu', np.object)])
+        'absDif', np.object), ('difSq', np.object), ('Tall', np.object),
+        ('Tu', np.object)])
     for i in range(xDim):
         precomp[i]['absDif'] = np.abs(Tdif)
         precomp[i]['difSq'] = Tdif ** 2
@@ -409,7 +417,8 @@ def make_precomp(seq, xDim):
     # Loop once for each state dimension (each GP)
     for i in range(xDim):
         precomp_Tu = np.empty(len(Tu), dtype=[(
-            'nList', np.object), ('T', np.int), ('numTrials', np.int), ('PautoSUM', np.object)])
+            'nList', np.object), ('T', np.int), ('numTrials', np.int),
+            ('PautoSUM', np.object)])
         for j in range(len(Tu)):
             T = Tu[j]
             precomp_Tu[j]['nList'] = np.where(Tall == T)[0]
@@ -434,7 +443,8 @@ def make_precomp(seq, xDim):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
                 precomp[i]['Tu'][j]['PautoSUM'] += seq[n]['VsmGP'][:, :, i] \
-                                                   + np.outer(seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
+                                                   + np.outer(
+                    seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
     return precomp
 
 
@@ -488,7 +498,8 @@ def grad_betgam(p, pre_comp, const):
         PautoSUM = pre_comp['Tu'][j]['PautoSUM']
 
         dEdgamma = dEdgamma - 0.5 * numTrials * tr_KinvM \
-                   + 0.5 * PautoSUM.ravel('F')[:mkr].dot(KinvMKinv.ravel('F')[:mkr]) \
+                   + 0.5 * PautoSUM.ravel('F')[:mkr].dot(
+            KinvMKinv.ravel('F')[:mkr]) \
                    + 0.5 * PautoSUM.ravel('F')[-1:mkr - 1:-
         1].dot(KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
 
@@ -627,7 +638,9 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         print()
 
     if np.any(Ph == varFloor):
-        warnings.warn('Private variance floor used for one or more observed dimensions in FA.')
+        warnings.warn(
+            'Private variance floor used for one or more observed dimensions '
+            'in FA.')
 
     estParams = {'L': L, 'Ph': Ph, 'd': d}
 
@@ -640,31 +653,32 @@ def minimize(x, f, length, *args):
 
     Usage: x, f_x, i = minimize(x, f, length, P1, P2, P3, ... )
 
-    where the starting point is given by `x` (D by 1), and the function named in
-    the string `f`, must return a function value and a vector of partial
+    where the starting point is given by `x` (D by 1), and the function named
+    in the string `f`, must return a function value and a vector of partial
     derivatives of f wrt x, the `length` gives the length of the run: if it is
     positive, it gives the maximum number of line searches, if negative its
     absolute gives the maximum allowed number of function evaluations. You can
     (optionally) give `length` a second component, which will indicate the
-    reduction in function value to be expected in the first line-search (defaults
-    to 1.0). The parameters P1, P2, P3, ... are passed on to the function f.
+    reduction in function value to be expected in the first line-search
+    (defaults to 1.0). The parameters P1, P2, P3, ... are passed on to the
+    function f.
 
-    The function returns when either its length is up, or if no further progress
-    can be made (ie, we are at a (local) minimum, or so close that due to
-    numerical problems, we cannot get any closer). NOTE: If the function
+    The function returns when either its length is up, or if no further
+    progress can be made (ie, we are at a (local) minimum, or so close that
+    due to numerical problems, we cannot get any closer). NOTE: If the function
     terminates within a few iterations, it could be an indication that the
-    function values and derivatives are not consistent (ie, there may be a bug in
-    the implementation of your `f` function). The function returns the found
-    solution `x`, a vector of function values `f_x` indicating the progress made
-    and `i` the number of iterations (line searches or function evaluations,
-    depending on the sign of `length`) used.
+    function values and derivatives are not consistent (ie, there may be a bug
+    in the implementation of your `f` function). The function returns the found
+    solution `x`, a vector of function values `f_x` indicating the progress
+    made and `i` the number of iterations (line searches or function
+    evaluations, depending on the sign of `length`) used.
 
     The Polack-Ribiere flavour of conjugate gradients is used to compute search
     directions, and a line search using quadratic and cubic polynomial
     approximations and the Wolfe-Powell stopping criteria is used together with
-    the slope ratio method for guessing initial step sizes. Additionally a bunch
-    of checks are made to make sure that exploration is taking place and that
-    extrapolation will not be unboundedly large.
+    the slope ratio method for guessing initial step sizes. Additionally a
+    bunch of checks are made to make sure that exploration is taking place and
+    that extrapolation will not be unboundedly large.
 
     Parameters
     ----------
@@ -701,7 +715,8 @@ def minimize(x, f, length, *args):
     advisable in any important application.  All use of these programs is
     entirely at the user's own risk.
     """
-    INT = 0.1  # don't reevaluate within 0.1 of the limit of the current bracket
+    # don't reevaluate within 0.1 of the limit of the current bracket
+    INT = 0.1
     EXT = 3.0  # extrapolate maximum 3 times the current step-size
     MAX = 20  # max 20 function evaluations per line search
     RATIO = 10  # maximum allowed slope ratio
@@ -780,7 +795,8 @@ def minimize(x, f, length, *args):
                     M -= 1
                     i += (length < 0)  # count epochs?!
                     f3, df3 = eval(f)(x + x3 * s, *args)
-                    if np.isnan(f3) or np.isinf(f3) or np.isnan(df3) or np.isinf(df3):
+                    if np.isnan(f3) or np.isinf(f3) or np.isnan(
+                            df3) or np.isinf(df3):
                         raise ValueError
                     success = 1
                 except:  # catch any error which occured in f

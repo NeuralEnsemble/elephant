@@ -14,21 +14,21 @@ from . import core, util
 from elephant.asset import check_quantities
 
 """
-Gaussian-process factor analysis (GPFA) is a dimensionality reduction method [1]
-for visualizing the neural trajectory (X) of parallel spike trains (Y).
+Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
+ [1] for visualizing the neural trajectory (X) of parallel spike trains (Y).
 
 The INPUT consists in a set of trials (Y), each containing a list of spike
-trains (N neurons): The OUTPUT is the projection (X) of these data in a space of 
-pre-chosen dimension x_dim < N.
+trains (N neurons): The OUTPUT is the projection (X) of these data in a space 
+of pre-chosen dimension x_dim < N.
 
-Under the assumption of a linear relation plus noise between the latent variable 
-X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection correspond 
-to the conditional probability E[X|Y].
+Under the assumption of a linear relation plus noise between the latent 
+variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection 
+correspond to the conditional probability E[X|Y].
 
-A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth neural
-trajectories. The parameters (C, d, R) are estimated from the data using FACTOR
-ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked togheter
-in the low dimensional space by a Gaussian Process (GP).
+A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth 
+neural trajectories. The parameters (C, d, R) are estimated from the data using
+FACTOR ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked
+togheter in the low dimensional space by a Gaussian Process (GP).
 
 The analysis comprises the following steps:
 
@@ -41,8 +41,8 @@ The analysis comprises the following steps:
 -  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                 eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
                 
-2) expectation maximization for the parameters C, d, R and the time-scale of the
-  gaussian process, using all the trials provided as input:
+2) expectation maximization for the parameters C, d, R and the time-scale of
+ the gaussian process, using all the trials provided as input:
   
 -  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq, 
     em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
@@ -115,8 +115,8 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
                 observation noise covariance
 
     seqs_train: numpy.recarray
-        Data structure, whose n-th entry (corresponding to the n-th experimental
-        trial) has fields
+        Data structure, whose n-th entry (corresponding to the n-th
+        experimental trial) has fields
             * trialId: int
                 unique trial identifier
             * T: int
@@ -132,16 +132,16 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
                 posterior covariance over time for each latent variable
 
     seqs_test: numpy.recarray
-        Same structure as seqs_train, but contains results of the method applied to
-        test dataset.
+        Same structure as seqs_train, but contains results of the method
+        applied to test dataset.
         When no cross-validation is performed, None is returned.
 
     fit_info: dict
         Information of the fitting process and the parameters used there
-            * iteration_time: A list containing the runtime for each iteration step
-            in the EM algorithm
-            * log_likelihood: float, maximized likelihood obtained in the E-step of the
-            EM algorithm
+            * iteration_time: A list containing the runtime for each iteration
+                step in the EM algorithm
+            * log_likelihood: float, maximized likelihood obtained in the
+                E-step of the EM algorithm
             * bin_size: int, Width of the bins
             * cvf: int, number for cross-validation folding
                 Default is 0 (no cross-validation)

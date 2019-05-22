@@ -14,25 +14,26 @@ from elephant.gpfa import util
 from .gpfa import gpfa_engine, exact_inference_with_ll, two_stage_engine
 
 """
-Gaussian-process factor analysis (GPFA) is a dimensionality reduction method [1]
-for visualizing the neural trajectory (X) of parallel spike trains (Y).
+Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
+ [1] for visualizing the neural trajectory (X) of parallel spike trains (Y).
 
 The INPUT consists in a set of trials (Y), each containing a list of spike
-trains (N neurons): The OUTPUT is the projection (X) of these data in a space of 
-pre-chosen dimension x_dim < N.
+trains (N neurons): The OUTPUT is the projection (X) of these data in a space 
+of pre-chosen dimension x_dim < N.
 
-Under the assumption of a linear relation plus noise between the latent variable 
-X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection correspond 
-to the conditional probability E[X|Y].
+Under the assumption of a linear relation plus noise between the latent 
+variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection 
+correspond to the conditional probability E[X|Y].
 
-A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth neural
-trajectories. The parameters (C, d, R) are estimated from the data using FACTOR
-ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked togheter
-in the low dimensional space by a Gaussian Process (GP).
+A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth 
+neural trajectories. The parameters (C, d, R) are estimated from the data using
+FACTOR ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked
+togheter in the low dimensional space by a Gaussian Process (GP).
 
 The analysis comprises the following steps:
 
-0) bin the data, to get a sequence of N dimensional vectors, on for each time bin;
+0) bin the data, to get a sequence of N dimensional vectors, on for each time 
+    bin;
   and choose the reduced dimension x_dim;
 
 1) call of the functions used:
@@ -40,11 +41,11 @@ The analysis comprises the following steps:
 -  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                 eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
                 
-2) expectation maximization for the parameters C, d, R and the time-scale of the
-  gaussian process, using all the trials provided as input:
+2) expectation maximization for the parameters C, d, R and the time-scale of
+ the gaussian process, using all the trials provided as input:
   
--  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq, em_max_iters=500,
-                                tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
+-  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq, 
+    em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
   
 3) projection of single trial in the low dimensional space:
 
@@ -107,7 +108,8 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
             d: ndarray of shape (#units, 1)
               observation mean
             C: ndarray of shape (#units, #latent_vars)
-              mapping between the neuronal data space and the latent variable space
+              mapping between the neuronal data space and the latent variable
+                space
             R: ndarray of shape (#units, #latent_vars)
               observation noise covariance
     seqs_train: numpy.recarray
@@ -123,8 +125,8 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
         Information of the fitting process and the parameters used there
         * iteration_time: A list containing the runtime for each iteration step
         in the EM algorithm
-        * log_likelihood: float, maximized likelihood obtained in the E-step of the
-        EM algorithm
+        * log_likelihood: float, maximized likelihood obtained in the E-step
+            of the EM algorithm
         * bin_size: int, Width of the bins
         * cvf: int, number for cross-validation folding
             Default is 0 (no cross-validation)
