@@ -164,7 +164,7 @@ def rdiv(a, b):
 def ldiv(a, b):
     """
     Returns the solution to a x = b. Equivalent to MATLAB left matrix
-    division: a \ b
+    division: a \\ b
     """
     if a.shape[0] == a.shape[1]:
         return np.linalg.solve(a, b)
@@ -589,7 +589,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
 
     varFloor = min_var_frac * np.diag(cX)
 
-    I = np.eye(z_dim)
+    eye_matrix = np.eye(z_dim)
     const = -xDim / 2.0 * np.log(2 * np.pi)
     LLi = 0
     LL = []
@@ -601,11 +601,11 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         iPh = np.diag(1.0 / Ph)
         iPhL = iPh.dot(L)
 
-        MM = iPh - rdiv(iPhL, I + L.T.dot(iPhL)).dot(iPhL.T)
+        MM = iPh - rdiv(iPhL, eye_matrix + L.T.dot(iPhL)).dot(iPhL.T)
         beta = L.T.dot(MM)  # zDim x xDim
 
         cX_beta = cX.dot(beta.T)  # xDim x zDim
-        EZZ = I - beta.dot(L) + beta.dot(cX_beta)
+        EZZ = eye_matrix - beta.dot(L) + beta.dot(cX_beta)
 
         # Compute log likelihood
         LLold = LLi

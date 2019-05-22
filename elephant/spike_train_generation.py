@@ -62,7 +62,7 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
         time_stamps = peak_detection(signal, threshold, sign=sign)
     elif hasattr(time_stamps, 'times'):
         time_stamps = time_stamps.times
-    elif type(time_stamps) is Quantity:
+    elif isinstance(time_stamps, Quantity):
         raise TypeError("time_stamps must be None, a quantity array or" +
                         " expose the.times interface")
 
@@ -167,7 +167,8 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
         if events_base is None:
             # This occurs in some Python 3 builds due to some
             # bug in quantities.
-            events_base = np.array([event.magnitude for event in events])  # Workaround
+            events_base = np.array(
+                [event.magnitude for event in events])  # Workaround
 
     result_st = SpikeTrain(events_base, units=signal.times.units,
                            t_start=signal.t_start, t_stop=signal.t_stop)
@@ -244,7 +245,8 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
         if events_base is None:
             # This occurs in some Python 3 builds due to some
             # bug in quantities.
-            events_base = np.array([event.magnitude for event in events])  # Workaround
+            events_base = np.array(
+                [event.magnitude for event in events])  # Workaround
     if format is None:
         result_st = SpikeTrain(events_base, units=signal.times.units,
                                t_start=signal.t_start, t_stop=signal.t_stop)
@@ -356,8 +358,8 @@ def inhomogeneous_poisson_process(rate, as_array=False):
     Parameters
     ----------
     rate : neo.AnalogSignal
-        A `neo.AnalogSignal` representing the rate profile evolving over time. 
-        Its values have all to be `>=0`. The output spiketrain will have 
+        A `neo.AnalogSignal` representing the rate profile evolving over time.
+        Its values have all to be `>=0`. The output spiketrain will have
         `t_start = rate.t_start` and `t_stop = rate.t_stop`
     as_array : bool
            If True, a NumPy array of sorted spikes is returned,
@@ -372,14 +374,15 @@ def inhomogeneous_poisson_process(rate, as_array=False):
             'rate must be a positive non empty signal, representing the'
             'rate at time t')
     else:
-        # Generate n hidden Poisson SpikeTrains with rate equal to the peak rate
+        # Generate n hidden Poisson SpikeTrains with rate equal to the peak
+        # rate
         max_rate = np.max(rate)
         homogeneous_poiss = homogeneous_poisson_process(
             rate=max_rate, t_stop=rate.t_stop, t_start=rate.t_start)
         # Compute the rate profile at each spike time by interpolation
         rate_interpolated = _analog_signal_linear_interp(
             signal=rate, times=homogeneous_poiss.magnitude *
-                               homogeneous_poiss.units)
+            homogeneous_poiss.units)
         # Accept each spike at time t with probability rate(t)/max_rate
         u = np.random.uniform(size=len(homogeneous_poiss)) * max_rate
         spikes = homogeneous_poiss[u < rate_interpolated.flatten()]
@@ -393,8 +396,8 @@ def _analog_signal_linear_interp(signal, times):
     Compute the linear interpolation of a signal at desired times.
 
     Given the `signal` (neo.AnalogSignal) taking value `s0` and `s1` at two
-    consecutive time points `t0` and `t1` `(t0 < t1)`, for every time `t` in 
-    `times`, such that `t0<t<=t1` is returned the value of the linear 
+    consecutive time points `t0` and `t1` `(t0 < t1)`, for every time `t` in
+    `times`, such that `t0<t<=t1` is returned the value of the linear
     interpolation, given by:
                 `s = ((s1 - s0) / (t1 - t0)) * t + s0`.
 
@@ -408,15 +411,15 @@ def _analog_signal_linear_interp(signal, times):
         interpolate
     Returns
     ------
-    out: Quantity array representing the values of the interpolated signal at the
-    times given by times
+    out: Quantity array representing the values of the interpolated signal at
+    the times given by times
 
     Notes
     -----
-    If `signal` has sampling period `dt=signal.sampling_period`, its values 
-    are defined at `t=signal.times`, such that `t[i] = signal.t_start + i * dt` 
-    The last of such times is lower than 
-    signal.t_stop`:t[-1] = signal.t_stop - dt`. 
+    If `signal` has sampling period `dt=signal.sampling_period`, its values
+    are defined at `t=signal.times`, such that `t[i] = signal.t_start + i * dt`
+    The last of such times is lower than
+    signal.t_stop`:t[-1] = signal.t_stop - dt`.
     For the interpolation at times t such that `t[-1] <= t <= signal.t_stop`,
     the value of `signal` at `signal.t_stop` is taken to be that
     at time `t[-1]`.
@@ -485,7 +488,8 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms,
     b = b.rescale((1 / t_start).units).simplified
     rate = b / a
     k, theta = a, (1 / b.magnitude)
-    return _homogeneous_process(np.random.gamma, (k, theta), rate, t_start, t_stop, as_array)
+    return _homogeneous_process(
+        np.random.gamma, (k, theta), rate, t_start, t_stop, as_array)
 
 
 def _n_poisson(rate, t_stop, t_start=0.0 * ms, n=1):
@@ -534,7 +538,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * ms, n=1):
             't_start (=%s) must be < t_stop (=%s)' % (t_start, t_stop))
 
     # Set number n of output spike trains (specified or set to len(rate))
-    if not (type(n) == int and n > 0):
+    if not (isinstance(n, int) and n > 0):
         raise ValueError('n (=%s) must be a positive integer' % str(n))
     rate_dl = rate.simplified.magnitude.flatten()
 
@@ -682,7 +686,7 @@ def single_interaction_process(
         Nr_coinc = int(((t_stop - t_start) * rate_c).rescale(dimensionless))
         while True:
             coinc_times = t_start + \
-                          np.sort(np.random.random(Nr_coinc)) * (t_stop - t_start)
+                np.sort(np.random.random(Nr_coinc)) * (t_stop - t_start)
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
     elif coincidences == 'stochastic':
@@ -703,11 +707,11 @@ def single_interaction_process(
     # Replicate coinc_times n times, and jitter each event in each array by
     # +/- jitter (within (t_start, t_stop))
     embedded_coinc = coinc_times + \
-                     np.random.random(
-                         (len(rates_b), len(coinc_times))) * 2 * jitter - jitter
+        np.random.random(
+            (len(rates_b), len(coinc_times))) * 2 * jitter - jitter
     embedded_coinc = embedded_coinc + \
-                     (t_start - embedded_coinc) * (embedded_coinc < t_start) - \
-                     (t_stop - embedded_coinc) * (embedded_coinc > t_stop)
+        (t_start - embedded_coinc) * (embedded_coinc < t_start) - \
+        (t_stop - embedded_coinc) * (embedded_coinc > t_stop)
 
     # Inject coincident events into the n SIP processes generated above, and
     # merge with the n independent processes
