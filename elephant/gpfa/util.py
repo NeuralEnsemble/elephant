@@ -22,19 +22,19 @@ def get_seq(data, bin_size, use_sqrt=True):
             * spikes: 0/1 matrix of the raw spiking activity across
                        all neurons. Each row corresponds to a neuron.
                        Each column corresponds to a 1 msec timestep.
-    bin_size: quantity.Quantity   
+    bin_size: quantity.Quantity
         Spike bin width
 
-    use_sqrt: bool 
-        Logical specifying whether or not to use square-root transform on 
-        spike counts 
+    use_sqrt: bool
+        Logical specifying whether or not to use square-root transform on
+        spike counts
         Default is  True
 
     Returns
     -------
 
-    seq          
-        data structure, whose nth entry (corresponding to the nth experimental 
+    seq
+        data structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
             * trialId: unique trial identifier
             * T: (1 x 1) number of timesteps
@@ -81,7 +81,7 @@ def cut_trials(seq_in, seg_length=20):
     Parameters
     ----------
 
-    seq_in 
+    seq_in
         data structure, whose nth entry (corresponding to
         the nth experimental trial) has fields
             * trialId: unique trial identifier
@@ -89,15 +89,15 @@ def cut_trials(seq_in, seg_length=20):
             * y: (yDim x T) neural data
 
     seg_length : int
-        length of segments to extract, in number of timesteps. If infinite, 
-        entire trials are extracted, i.e., no segmenting. 
+        length of segments to extract, in number of timesteps. If infinite,
+        entire trials are extracted, i.e., no segmenting.
         Default is 20
 
 
     Returns
     -------
 
-    seqOut      
+    seqOut
         data structure, whose nth entry (corresponding to
         the nth experimental trial) has fields
             * trialId: identifier of trial from which segment was taken
@@ -205,9 +205,9 @@ def make_k_big(params, n_timesteps):
                    The (t1, t2) block is diagonal, has dimensions xDim x xDim,
                    and represents the covariance between the state vectors at
                    timesteps t1 and t2.  K_big is sparse and striped.
-    K_big_inv 
-        Inverse of K_big 
-    logdet_K_big 
+    K_big_inv
+        Inverse of K_big
+    logdet_K_big
         Log determinant of K_big
     """
     xDim = params['C'].shape[1]
@@ -215,7 +215,7 @@ def make_k_big(params, n_timesteps):
     K_big = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     K_big_inv = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     Tdif = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1)).T \
-           - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
+        - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
     logdet_K_big = 0
 
     for i in range(xDim):
@@ -271,18 +271,18 @@ def inv_persymm(M, blk_size):
     Parameters
     ----------
 
-    M: numpy.ndarray 
+    M: numpy.ndarray
         The block persymmetric matrix to be inverted
         ((blkSize*T) x (blkSize*T)).
         Each block is blkSize x blkSize, arranged in a T x T grid.
-    blk_size: int 
+    blk_size: int
         Edge length of one block
 
     Returns
     -------
-    invM     
+    invM
         Inverse of M ((blkSize*T) x (blkSize*T))
-    logdet_M 
+    logdet_M
         Log determinant of M
     """
     T = np.int(M.shape[0] / blk_size)
@@ -353,10 +353,10 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     for i in range(Thalf):
         for j in range(n_blocks):
             Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
-            Nh - (j + 1) * blk_size:Nh - j * blk_size] \
+                 Nh - (j + 1) * blk_size:Nh - j * blk_size] \
                 = p_in[i * blk_size_vert:(i + 1) *
-                                         blk_size_vert,
-                  j * blk_size:(j + 1) * blk_size]
+                       blk_size_vert,
+                       j * blk_size:(j + 1) * blk_size]
 
     return Pout
 
@@ -400,7 +400,7 @@ def make_precomp(seq, xDim):
     Tall = seq['T']
     Tmax = (Tall).max()
     Tdif = np.tile(np.arange(0, Tmax), (Tmax, 1)).T \
-           - np.tile(np.arange(0, Tmax), (Tmax, 1))
+        - np.tile(np.arange(0, Tmax), (Tmax, 1))
 
     # assign some helpful precomp items
     # this is computationally cheap, so we keep a few loops in MATLAB
@@ -443,7 +443,7 @@ def make_precomp(seq, xDim):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
                 precomp[i]['Tu'][j]['PautoSUM'] += seq[n]['VsmGP'][:, :, i] \
-                                                   + np.outer(
+                    + np.outer(
                     seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
     return precomp
 
@@ -497,11 +497,13 @@ def grad_betgam(p, pre_comp, const):
         numTrials = pre_comp['Tu'][j]['numTrials']
         PautoSUM = pre_comp['Tu'][j]['PautoSUM']
 
+        pauto_kinv_dot = PautoSUM.ravel('F')[:mkr].dot(
+            KinvMKinv.ravel('F')[:mkr])
+        pauto_kinv_dot_rest = PautoSUM.ravel('F')[-1:mkr - 1:- 1].dot(
+            KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
         dEdgamma = dEdgamma - 0.5 * numTrials * tr_KinvM \
-                   + 0.5 * PautoSUM.ravel('F')[:mkr].dot(
-            KinvMKinv.ravel('F')[:mkr]) \
-                   + 0.5 * PautoSUM.ravel('F')[-1:mkr - 1:-
-        1].dot(KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
+            + 0.5 * pauto_kinv_dot \
+            + 0.5 * pauto_kinv_dot_rest
 
         f = f - 0.5 * numTrials * logdet_K \
             - 0.5 * (PautoSUM * Kinv).sum()
@@ -799,7 +801,7 @@ def minimize(x, f, length, *args):
                             df3) or np.isinf(df3):
                         raise ValueError
                     success = 1
-                except:  # catch any error which occured in f
+                except BaseException:  # catch any error which occured in f
                     x3 = (x2 + x3) / 2  # bisect and try again
             if f3 < F0:
                 # keep best values
@@ -824,7 +826,7 @@ def minimize(x, f, length, *args):
             B = 3 * (f2 - f1) - (2 * d1 + d2) * (x2 - x1)
             # num. error possible, ok!
             x3 = x1 - d1 * (x2 - x1) ** 2 / \
-                 (B + np.sqrt(B * B - A * d1 * (x2 - x1)))
+                (B + np.sqrt(B * B - A * d1 * (x2 - x1)))
             # num prob | wrong sign?
             if not np.isreal(x3) or np.isnan(x3) or np.isinf(x3) or x3 < 0:
                 x3 = x2 * EXT  # extrapolate maximum amount
@@ -850,7 +852,7 @@ def minimize(x, f, length, *args):
             if f4 > f0:
                 # quadratic interpolation
                 x3 = x2 - (0.5 * d2 * (x4 - x2) ** 2) / \
-                     (f4 - f2 - d2 * (x4 - x2))
+                    (f4 - f2 - d2 * (x4 - x2))
             else:
                 # cubic interpolation
                 A = 6 * (f2 - f4) / (x4 - x2) + 3 * (d4 + d2)
@@ -932,7 +934,7 @@ def orthogonalize(x, l):
 
     Xorth
         Orthonormalized latent variables (xDim x T)
-    Lorth    
+    Lorth
         Orthonormalized loading matrix (yDim x xDim)
     TT
        Linear transform applied to latent variables (xDim x xDim)

@@ -18,21 +18,21 @@ Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
  [1] for visualizing the neural trajectory (X) of parallel spike trains (Y).
 
 The INPUT consists in a set of trials (Y), each containing a list of spike
-trains (N neurons): The OUTPUT is the projection (X) of these data in a space 
+trains (N neurons): The OUTPUT is the projection (X) of these data in a space
 of pre-chosen dimension x_dim < N.
 
-Under the assumption of a linear relation plus noise between the latent 
-variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection 
+Under the assumption of a linear relation plus noise between the latent
+variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection
 correspond to the conditional probability E[X|Y].
 
-A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth 
+A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth
 neural trajectories. The parameters (C, d, R) are estimated from the data using
 FACTOR ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked
 togheter in the low dimensional space by a Gaussian Process (GP).
 
 The analysis comprises the following steps:
 
-0) bin the data, to get a sequence of N dimensional vectors, on for each time 
+0) bin the data, to get a sequence of N dimensional vectors, on for each time
     bin;
   and choose the reduced dimension x_dim;
 
@@ -40,13 +40,13 @@ The analysis comprises the following steps:
 
 -  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                 eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
-                
+
 2) expectation maximization for the parameters C, d, R and the time-scale of
  the gaussian process, using all the trials provided as input:
-  
--  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq, 
+
+-  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq,
     em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
-  
+
 3) projection of single trial in the low dimensional space:
 
 -  seq_train, ll_train = exact_inference_with_ll(seq_train, params_est)
@@ -84,7 +84,7 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
         Width of each time bin
         Default is 20 ms
     x_dim : int
-        State dimensionality 
+        State dimensionality
         Default is 3
     num_folds : int
         Number of cross-validation folds, 0 indicates no cross-validation,

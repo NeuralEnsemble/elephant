@@ -204,7 +204,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
             val = -t * logdet_r - logdet_k_big - logdet_m \
                   - y_dim * t * np.log(2 * np.pi)
             ll = ll + len(n_list) * val - (rinv.dot(dif) * dif).sum() \
-                 + (term1_mat.T.dot(minv) * term1_mat.T).sum()
+                + (term1_mat.T.dot(minv) * term1_mat.T).sum()
 
     if get_ll:
         ll /= 2
@@ -314,7 +314,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         sum_p_auto = np.zeros((x_dim, x_dim))
         for seq_lat_n in seq_lat:
             sum_p_auto += seq_lat_n['Vsm'].sum(axis=2) \
-                          + seq_lat_n['xsm'].dot(seq_lat_n['xsm'].T)
+                + seq_lat_n['xsm'].dot(seq_lat_n['xsm'].T)
         y = np.hstack(seq['y'])
         xsm = np.hstack(seq_lat['xsm'])
         sum_yxtrans = y.dot(xsm.T)
@@ -339,8 +339,8 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         if params['notes']['RforceDiagonal']:
             sum_yytrans = (y * y).sum(axis=1)[:, np.newaxis]
             yd = sum_yall * d
-            term = ((sum_yxtrans - d.dot(sum_xall.T)) * c).sum(axis=1)[:,
-                   np.newaxis]
+            term = ((sum_yxtrans - d.dot(sum_xall.T)) * c).sum(axis=1)
+            term = term[:, np.newaxis]
             r = d ** 2 + (sum_yytrans - 2 * yd - term) / t.sum()
 
             # Set minimum private variance
