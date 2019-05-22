@@ -5,6 +5,7 @@ import numpy as np
 import scipy as sp
 
 from elephant.conversion import BinnedSpikeTrain
+from elephant.asset import check_quantities
 
 
 def get_seq(data, bin_size, use_sqrt=True):
@@ -29,7 +30,6 @@ def get_seq(data, bin_size, use_sqrt=True):
         spike counts 
         Default is  True
 
-
     Returns
     -------
 
@@ -40,7 +40,13 @@ def get_seq(data, bin_size, use_sqrt=True):
             * T: (1 x 1) number of timesteps
             * y: (yDim x T) neural data
 
+    Raises
+    ------
+    ValueError
+        if `bin_size` is not a pq.Quantity.
+
     """
+    check_quantities(bin_size, 'bin_size')
 
     seq = []
     for dat in data:
@@ -282,7 +288,7 @@ def inv_persymm(M, blk_size):
     invA11 = (invA11 + invA11.T) / 2
 
     # Multiplication of a sparse matrix by a dense matrix is not supported by
-    # SciPy. Making A12 a sparse matrix here raises an error later.
+    # SciPy. Making A12 a sparse matrix here  an error later.
     off_diag_sparse = False
     if off_diag_sparse:
         A12 = sp.sparse.csr_matrix(M[:mkr, mkr:])
@@ -738,10 +744,6 @@ def minimize(x, f, length, *args):
     else:
         red = 1
         length = length
-    if length > 0:
-        S = 'Linesearch'
-    else:
-        S = 'Function evaluation'
 
     i = 0  # zero the run length counter
     ls_failed = 0  # no previous line search has failed
@@ -953,6 +955,12 @@ def segment_by_trial(seq, x, fn):
 
     seq_new
         Data structure with new field `fn`
+
+    Raises
+    ------
+    ValueError
+        If `seq['T']) != x.shape[1]`.
+
     """
     if np.sum(seq['T']) != x.shape[1]:
         raise (ValueError, 'size of X incorrect.')

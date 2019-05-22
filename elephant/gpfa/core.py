@@ -62,7 +62,8 @@ neural population activity. J Neurophysiol 102:614-635
 """
 
 
-def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_folds=0, em_max_iters=500):
+def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
+                       num_folds=0, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -135,8 +136,8 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fo
 
     # Set cross-validation folds
     num_trials = len(seqs)
-    fdiv = np.linspace(0, num_trials, num_folds + 1).astype(np.int) if num_folds > 0 \
-        else num_trials
+    fdiv = np.linspace(0, num_trials, num_folds + 1).astype(np.int) if \
+        num_folds > 0 else num_trials
 
     for cvf in range(0, num_folds + 1):
         if cvf == 0:
@@ -195,13 +196,21 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fo
 
         # The following does the heavy lifting.
         if method == 'gpfa':
-            params_est, seqs_train, fit_info = gpfa_engine(seqs_train, seqs_test, x_dim=x_dim,
-                                                           bin_width=bin_size, min_var_frac=min_var_frac,
-                                                           em_max_iters=em_max_iters)
+            params_est, seqs_train, fit_info = gpfa_engine(
+                seq_train=seqs_train,
+                seq_test=seqs_test,
+                x_dim=x_dim,
+                bin_width=bin_size,
+                min_var_frac=min_var_frac,
+                em_max_iters=em_max_iters)
         elif method in ['fa', 'ppca', 'pca']:
             # TODO: implement two_stage_engine()
-            params_est, seqs_train, fit_info = two_stage_engine(seqs_train, seqs_test, typ=method,
-                                                                xDim=x_dim, binWidth=bin_size)
+            params_est, seqs_train, fit_info = two_stage_engine(
+                seqTrain=seqs_train,
+                seqTest=seqs_test,
+                typ=method,
+                xDim=x_dim,
+                binWidth=bin_size)
         else:
             raise ValueError("Invalid method: {}".format(method))
 
@@ -247,12 +256,20 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
         trajectories in `xorth`, obtained using `params_est`
         When no test dataset is given, None is returned.
 
+
+    Raises
+    ------
+    ValueError
+        If `fit_info['kernSDList'] != kern_sd`.
+
     """
     if hasattr(fit_info, 'kern'):
         if not fit_info['kernSDList']:
             k = 1
         else:
-            k = np.where(np.array(fit_info['kernSDList']) == np.array(kern_sd))[0]
+            k = np.where(np.array(fit_info['kernSDList']) ==
+                         np.array(kern_sd))[0]
+            # FIXME checking of k outside of if-statement?
             if not k:
                 raise ValueError('Selected kernSD not found')
     if fit_info['method'] == 'gpfa':

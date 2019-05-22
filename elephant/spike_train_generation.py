@@ -248,7 +248,7 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
     if format is None:
         result_st = SpikeTrain(events_base, units=signal.times.units,
                                t_start=signal.t_start, t_stop=signal.t_stop)
-    elif 'raw':
+    elif format == 'raw':
         result_st = events_base
     else:
         raise ValueError("Format argument must be None or 'raw'")
@@ -311,15 +311,18 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
     Parameters
     ----------
 
-    rate : Quantity scalar with dimension 1/time
-           The rate of the discharge.
-    t_start : Quantity scalar with dimension time
-              The beginning of the spike train.
-    t_stop : Quantity scalar with dimension time
-             The end of the spike train.
+    rate : Quantity
+        Quantity scalar with dimension 1/time
+        The rate of the discharge.
+    t_start : Quantity
+        Quantity scalar with dimension time
+        The beginning of the spike train.
+    t_stop : Quantity
+        Quantity scalar with dimension time
+        The end of the spike train.
     as_array : bool
-               If True, a NumPy array of sorted spikes is returned,
-               rather than a SpikeTrain object.
+        If True, a NumPy array of sorted spikes is returned,
+        rather than a SpikeTrain object.
 
     Raises
     ------
@@ -333,11 +336,11 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
             20*Hz, 5000*ms, 10000*ms, as_array=True)
 
     """
-    # todo automate args type checking
-    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
-        raise ValueError("t_start and t_stop must be of type pq.Quantity")
+    # TODO use asset.check_quantities
     if not isinstance(rate, Quantity):
         raise ValueError("rate must be of type pq.Quantity")
+    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
+        raise ValueError("t_start and t_stop must be of type pq.Quantity")
     rate = rate.rescale((1 / t_start).units)
     mean_interval = 1 / rate.magnitude
     return _homogeneous_process(

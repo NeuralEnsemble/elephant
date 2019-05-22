@@ -1752,3 +1752,23 @@ def sse_overlap(sse1, sse2):
     '''
     return not (sse_issub(sse1, sse2) or sse_issuper(sse1, sse2) or
                 sse_isequal(sse1, sse2) or sse_isdisjoint(sse1, sse2))
+
+
+def check_quantities(var, var_name):
+    """
+    Checks input `var` data for having the type of Quantity.
+
+    Parameters
+    ----------
+    var
+        input argument
+    var_name : str
+        variable name
+
+    Raises
+    -------
+    ValueError
+        If the input `var` is not a pq.Quantity
+    """
+    if not isinstance(var, pq.Quantity):
+        raise ValueError("{0} must be of type pq.Quantity".format(var_name))

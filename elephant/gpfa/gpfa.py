@@ -15,7 +15,7 @@ from elephant.gpfa import util
 def learn_gp_params(seq, params, verbose=False):
     """Updates parameters of GP state model given neural trajectories.
 
-    parameters
+    Parameters
     ----------
     seq : numpy.recarray
           data structure containing neural trajectories
@@ -25,10 +25,17 @@ def learn_gp_params(seq, params, verbose=False):
     verbose : bool, optional
               specifies whether to display status messages (default: False)
 
-    returns
+    Returns
     -------
-    param_opt : ndarray
+    param_opt : numpy.ndarray
                 updated GP state model parameter
+
+    Raises
+    ------
+    ValueError
+        If `params['covType'] != 'rbf'`.
+        If `params['notes']['learnGPNoise']` set to True.
+
     """
     cov_type = params['covType']
     learn_gp_noise = params['notes']['learnGPNoise']

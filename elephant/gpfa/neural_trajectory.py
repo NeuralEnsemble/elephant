@@ -11,6 +11,7 @@ import neo
 import quantities as pq
 
 from . import core, util
+from elephant.asset import check_quantities
 
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method [1]
@@ -31,7 +32,8 @@ in the low dimensional space by a Gaussian Process (GP).
 
 The analysis comprises the following steps:
 
-0) bin the data, to get a sequence of N dimensional vectors, on for each time bin;
+0) bin the data, to get a sequence of N dimensional vectors, on for each time 
+    bin;
   and choose the reduced dimension x_dim;
 
 1) call of the functions used:
@@ -42,8 +44,8 @@ The analysis comprises the following steps:
 2) expectation maximization for the parameters C, d, R and the time-scale of the
   gaussian process, using all the trials provided as input:
   
--  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq, em_max_iters=500,
-                                tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
+-  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq, 
+    em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
   
 3) projection of single trial in the low dimensional space:
 
@@ -61,7 +63,8 @@ neural population activity. J Neurophysiol 102:614-635
 """
 
 
-def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_folds=0, em_max_iters=500):
+def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
+                      num_folds=0, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -106,7 +109,8 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fol
             d: ndarray of shape (#units, 1)
                 observation mean
             C: ndarray of shape (#units, #latent_vars)
-                mapping between the neuronal data space and the latent variable space
+                mapping between the neuronal data space and the latent variable
+                space
             R: ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
@@ -143,16 +147,43 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fol
                 Default is 0 (no cross-validation)
             * hasSpikesBool: Indicates if a neuron has any spikes across trials
             * method: String, method name
+
+    Raises
+    ------
+    ValueError
+        If `bin_size` if not a `pq.Quantity`.
+        If `data[0][1][0]` is not a `neo.SpikeTrain`.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.gpfa.neural_trajectory import neural_trajectory
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> data = []
+    >>> for trial in range(50):
+    >>>     n_channels = 20
+    >>>     firing_rates = np.random.randint(low=1, high=100,
+    >>>         size=n_channels) * pq.Hz
+    >>>     spike_times = [homogeneous_poisson_process(rate=rate)
+    >>>         for rate in firing_rates]
+    >>>     data.append((trial, spike_times))
+    >>> params_est, seqs_train, seqs_test, fit_info = neural_trajectory(
+    >>>     data, method='gpfa', bin_size=20 * pq.ms, x_dim=8)
+
     """
     # todo does it makes sense to explicitly pass trial_id?
+    check_quantities(bin_size, 'bin_size')
     if not isinstance(data[0][1][0], neo.SpikeTrain):
         raise ValueError("structure of the data is not correct: 0-axis should "
                          "be trials, 1-axis neo spike trains "
                          "and 2-axis spike times")
 
     seqs = util.get_seq(data, bin_size)
-    params_est, seqs_train, fit_info = core.extract_trajectory(seqs, method, bin_size.rescale('ms').magnitude,
-                                                               x_dim, num_folds, em_max_iters=em_max_iters)
-    params_est, seqs_train, seqs_test = core.postprocess(params_est, seqs_train, fit_info)
+    params_est, seqs_train, fit_info = core.extract_trajectory(
+        seqs, method, bin_size.rescale('ms').magnitude, x_dim, num_folds,
+        em_max_iters=em_max_iters)
+    params_est, seqs_train, seqs_test = core.postprocess(params_est,
+                                                         seqs_train, fit_info)
 
     return params_est, seqs_train, seqs_test, fit_info
