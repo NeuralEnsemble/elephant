@@ -34,6 +34,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Michael von Papen [1]
 * Robin Gutzen [1]
 * Felipe Méndez [10]
+* Simon Essink [1]
 
 1. Institute of Neuroscience and Medicine (INM-6), Computational and Systems Neuroscience & Institute for Advanced Simulation (IAS-6), Theoretical Neuroscience, Jülich Research Centre and JARA, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
