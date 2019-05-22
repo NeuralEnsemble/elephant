@@ -68,27 +68,27 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fol
     Parameters
     ----------
 
-    data: list containing following structure
+    data : list
           list of spike trains in different trials
                                         0-axis --> Trials
                                         1-axis --> Neurons
                                         2-axis --> Spike times
-    method: string,
+    method : str
         Method for extracting neural trajectories
         * 'gpfa': Uses the Gaussian Process Factor Analysis method.
         Default is 'gpfa'
-    bin_size:   quantities.Quantity
+    bin_size : quantities.Quantity
         Width of each time bin
         Default is 20 ms
-    x_dim: int
+    x_dim : int
         State dimensionality 
         Default is 3
-    num_folds: int
+    num_folds : int
         Number of cross-validation folds, 0 indicates no cross-validation,
         i.e. train on all trials.
         Default is 0.
         (Cross-validation is not implemented yet)
-    em_max_iters: int
+    em_max_iters : int
         Number of EM iterations to run (default: 500)
 
     Returns
@@ -110,7 +110,7 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fol
             R: ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
-    seqs_train: numpy recarray
+    seqs_train: numpy.recarray
         Data structure, whose n-th entry (corresponding to the n-th experimental
         trial) has fields
             * trialId: int
@@ -127,7 +127,7 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fol
             * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
                 posterior covariance over time for each latent variable
 
-    seqs_test: numpy recarray
+    seqs_test: numpy.recarray
         Same structure as seqs_train, but contains results of the method applied to
         test dataset.
         When no cross-validation is performed, None is returned.

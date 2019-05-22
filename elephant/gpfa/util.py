@@ -1,3 +1,4 @@
+import warnings
 from collections import Iterable
 
 import numpy as np
@@ -13,7 +14,7 @@ def get_seq(data, bin_size, use_sqrt=True):
     Parameters
     ----------
 
-    data         
+    data
         structure whose nth entry (corresponding to the nth
         experimental trial) has fields
             * trialId: unique trial identifier
@@ -40,7 +41,6 @@ def get_seq(data, bin_size, use_sqrt=True):
             * y: (yDim x T) neural data
 
     """
-    # TODO: revise the docstring to a Python format
 
     seq = []
     for dat in data:
@@ -82,7 +82,7 @@ def cut_trials(seq_in, seg_length=20):
             * T: (1 x 1) number of timesteps in trial
             * y: (yDim x T) neural data
 
-    seg_length 
+    seg_length : int
         length of segments to extract, in number of timesteps. If infinite, 
         entire trials are extracted, i.e., no segmenting. 
         Default is 20
@@ -112,8 +112,7 @@ def cut_trials(seq_in, seg_length=20):
 
         # Skip trials that are shorter than segLength
         if T < seg_length:
-            print('Warning: trialId {:4d} '.format(seqIn_n['trialId']) +
-                  'shorter than one segLength...skipping')
+            warnings.warn('trialId {0:4d} shorter than one segLength...skipping'.format(seqIn_n['trialId']))
             continue
 
         numSeg = np.int(np.ceil(float(T) / seg_length))
@@ -186,8 +185,10 @@ def make_k_big(params, n_timesteps):
     Parameters
     ----------
 
-    params: GPFA model parameters
-    n_timesteps: number of timesteps
+    params
+        GPFA model parameters
+    n_timesteps : int
+        number of timesteps
 
     Returns
     -------
@@ -246,7 +247,7 @@ def make_k_big(params, n_timesteps):
     return K_big, K_big_inv, logdet_K_big
 
 
-def inv_persymm(M, blk_size, off_diag_sparse=False):
+def inv_persymm(M, blk_size):
     """
     Inverts a matrix that is block persymmetric.  This function is
     faster than calling inv(M) directly because it only computes the
@@ -265,8 +266,6 @@ def inv_persymm(M, blk_size, off_diag_sparse=False):
         Each block is blkSize x blkSize, arranged in a T x T grid.
     blk_size: int 
         Edge length of one block
-    off_diag_sparse: bool 
-        Logical that specifies whether off-diagonal blocks are sparse (default: false)
 
     Returns
     -------
@@ -316,11 +315,11 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
      p_in
         Top half of block persymmetric matrix (xDim*Thalf) x (xDim*T),
         where Thalf = ceil(T/2)
-     blk_size
+     blk_size : int
         Edge length of one block
-     n_blocks
+     n_blocks : int
         Number of blocks making up a row of Pin
-     blk_size_vert
+     blk_size_vert : int, optional
         Vertical block edge length if blocks are not square.
         `blk_size` is assumed to be the horizontal block edge length.
 
@@ -360,7 +359,7 @@ def make_precomp(seq, xDim):
 
     seq
         The sequence struct of inferred latents, etc.
-    xDim
+    xDim : int
        The dimension of the latent space.
 
     Returns
@@ -510,26 +509,26 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
     Parameters
     ----------
 
-    x
+    x : np.ndarray
         Data matrix (xDim x N)
-    z_dim
+    z_dim : int
         Number of factors
-    typ
+    typ : str
         'fa' or 'ppca'
         Default is 'fa'
-    tol
+    tol : float
         Stopping criterion for EM
         Default is 1e-8
-    cyc
+    cyc : int
         Maximum number of EM iterations
         Default is 1e8
-    min_var_frac
+    min_var_frac : float
         Fraction of overall data variance for each observed dimension
         to set as the private variance floor.  This is used to combat
         Heywood cases, where ML parameter learning returns one or more
         zero private variances. (default: 0.01)
         (See Martin & McDonald, Psychometrika, Dec 1975.)
-    verbose
+    verbose : bool
         Logical that specifies whether to display status messages
         Default is **False**
 
@@ -560,7 +559,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         scale = np.exp(2 * (np.log(np.diag(cX_chol))).sum() / xDim)
     else:
         # cX may not be full rank because N < xDim
-        print('WARNING in fastfa.py: Data matrix is not full rank.')
+        warnings.warn('Data matrix is not full rank.')
         r = np.linalg.matrix_rank(cX)
         e = np.sort(np.linalg.eigvals(cX))[::-1]
         scale = sp.stats.gmean(e[:r])
@@ -612,9 +611,9 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
 
         if i <= 2:
             LLbase = LLi
-        elif LLi < LLold:
+        elif verbose and LLi < LLold:
             print('VIOLATION')
-        elif (LLi - LLbase) < (1 + tol) * (LLold - LLbase):
+        elif verbose and (LLi - LLbase) < (1 + tol) * (LLold - LLbase):
             print('iteration {}'.format(i))
             break
 
@@ -622,8 +621,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         print()
 
     if np.any(Ph == varFloor):
-        print('Warning: Private variance floor used'
-              'for one or more observed dimensions in FA.')
+        warnings.warn('Private variance floor used for one or more observed dimensions in FA.')
 
     estParams = {'L': L, 'Ph': Ph, 'd': d}
 
@@ -667,7 +665,7 @@ def minimize(x, f, length, *args):
 
     x: numpy.ndarray
         input matrix (Dx1)
-    f: string
+    f: str
         Function name
     length: iterable
         Length of the run
@@ -906,9 +904,9 @@ def orthogonalize(x, l):
     Parameters
     ----------
 
-    x 
+    x : np.ndarray
         Latent variables (xDim x T)
-    l
+    l : np.ndarray
         Loading matrix (yDim x xDim)
 
     Returns
@@ -945,7 +943,7 @@ def segment_by_trial(seq, x, fn):
 
     seq
         Data structure that has field T, the number of timesteps
-    x
+    x : np.ndarray
         Data to be segmented (any dimensionality x total number of timesteps)
     fn
         New field name of seq where segments of X are stored

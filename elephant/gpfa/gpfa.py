@@ -17,7 +17,7 @@ def learn_gp_params(seq, params, verbose=False):
 
     parameters
     ----------
-    seq : numpy recarray
+    seq : numpy.recarray
           data structure containing neural trajectories
     params : dict
              current GP state model parameters, which gives starting point
@@ -73,7 +73,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
 
     Parameters
     ----------
-    seq : numpy recarray
+    seq : numpy.recarray
           Input data structure, whose n-th element (corresponding to the n-th experimental trial) has fields:
               y : ndarray of shape (#units, #bins)
                   neural data
@@ -96,7 +96,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
 
     Returns
     -------
-    seq_lat : numpy recarray
+    seq_lat : numpy.recarray
               a copy of the input data structure, augmented by new fields:
                   xsm : ndarray of shape (#latent_vars x #bins)
                         posterior mean of latent variables at each time bin
@@ -142,8 +142,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
 
         blah = [c_rinv_c for _ in range(t)]
         c_rinv_c_big = linalg.block_diag(*blah)  # (xDim*T) x (xDim*T)
-        minv, logdet_m = util.inv_persymm(k_big_inv + c_rinv_c_big, x_dim,
-                                          off_diag_sparse=True)
+        minv, logdet_m = util.inv_persymm(k_big_inv + c_rinv_c_big, x_dim)
 
         # Note that posterior covariance does not depend on observations,
         # so can compute once for all trials with same T.
@@ -217,7 +216,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
                           mapping between the neuronal data space and the latent variable space
                       R : ndarray of shape (#units, #latent_vars)
                           observation noise covariance
-    seq : numpy recarray
+    seq : numpy.recarray
           training data structure, whose n-th entry (corresponding to the n-th experimental trial) has fields
               trialId :
                         unique trial identifier
@@ -366,7 +365,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
 
     Parameters
     ----------
-    seq_train : numpy recarray
+    seq_train : numpy.recarray
                 training data structure, whose n-th element (corresponding to the n-th experimental trial) has fields
                     trialId :
                               unique trial identifier
@@ -374,7 +373,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                         number of bins
                     y : ndarray of shape (#units, #bins)
                         neural data
-    seq_test : numpy recarray
+    seq_test : numpy.recarray
                test data structure (same format as seqTrain)
     x_dim : int, optional
             state dimensionality (default: 3)
@@ -411,7 +410,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                                   mapping between the neuronal data space and the latent variable space
                               R : ndarray of shape (#units, #latent_vars)
                                   observation noise covariance
-              seqTrain : numpy recarray
+              seqTrain : numpy.recarray
                          a copy of the training data structure, augmented by new fields
                              xsm : ndarray of shape (#latent_vars x #bins)
                                    posterior mean of latent variables at each time bin

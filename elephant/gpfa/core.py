@@ -69,27 +69,27 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fo
     Parameters
     ----------
 
-    seqs: list containing following structure
+    seqs : list
         list of spike trains in different trials
             0-axis --> Trials
             1-axis --> Neurons
             2-axis --> Spike times
-    method: string,
+    method : string
         Method for extracting neural trajectories
         * 'gpfa': Uses the Gaussian Process Factor Analysis method.
         Default is 'gpfa'
-    bin_size:   quantities.Quantity
+    bin_size : quantities.Quantity
         Width of each time bin
         Default is 20 ms
-    x_dim: int
+    x_dim : int
         State dimensionality 
         Default is 3
-    num_folds: int
+    num_folds : int
         Number of cross-validation folds, 0 indicates no cross-validation,
         i.e. train on all trials.
         Default is 0.
         (Cross-validation is not implemented yet.)
-    em_max_iters: int
+    em_max_iters : int
         Number of EM iterations to run (default: 500)
 
     Returns
@@ -109,7 +109,7 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fo
               mapping between the neuronal data space and the latent variable space
             R: ndarray of shape (#units, #latent_vars)
               observation noise covariance
-    seqs_train: Numpy recarray
+    seqs_train: numpy.recarray
         A copy of the training data structure, augmented by new fields
             xsm: ndarray of shape (#latent_vars x #bins)
                  posterior mean of latent variables at each time bin
@@ -118,7 +118,7 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3, num_fo
                  timepoint
             VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
                    posterior covariance over time for each latent variable
-    fit_info: Dictionary
+    fit_info: dict
         Information of the fitting process and the parameters used there
         * iteration_time: A list containing the runtime for each iteration step
         in the EM algorithm
@@ -229,7 +229,7 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
         `params_est` corresponding to `kern_sd`.
         Default is 1.
 
-    seqs_test: numpy recarray, optional
+    seqs_test: numpy.recarray, optional
         Data structure of test dataset.
         Default is None.
 
