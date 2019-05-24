@@ -32,8 +32,8 @@ matrix:
       # test requirements-extra
       python: 3.6
       env: DISTRIB="extra"
-      before_istall:
-       - sudo apt install -y libopenmpi-dev
+#      before_istall:
+#       - sudo apt install -y libopenmpi-dev
 
 install:
   set -e
