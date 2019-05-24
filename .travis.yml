@@ -58,14 +58,6 @@ script:
   - printenv
   - python --version
   - pip list
-
-  - if [[ "${DISTRIB}" == "extra" ]]; then
-    # extra packages covers mpi
-    mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
-    else
-    nosetests --with-coverage --cover-package=elephant
-    fi
-
-#  bash continuous_integration/test_script.sh
+  - bash continuous_integration/test_script.sh
 after_success:
     coveralls || echo "coveralls failed"

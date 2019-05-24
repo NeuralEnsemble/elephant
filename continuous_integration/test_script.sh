@@ -6,10 +6,6 @@
 # The behavior of the script is controlled by environment variables defined
 # in the .travis.yml in the top level folder of the project.
 
-set -e
-
-python --version
-pip list
 
 if [[ "${DISTRIB}" == "extra" ]]; then
     # extra packages covers mpi
