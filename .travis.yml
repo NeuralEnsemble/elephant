@@ -42,10 +42,10 @@ install:
   - conda config --set always_yes yes
   - conda update --yes conda
 
-  - conda install python=${TRAVIS_PYTHON_VERSION}
   - pip install -r requirements.txt
+  - pip install coveralls
   - conda install --yes --no-update-dependencies mkl
-#
+  #
 #  - if [[ "${DISTRIB}" == "extra" ]]; then
 #  - pip install -r requirements-extras.txt
 #  - fi
