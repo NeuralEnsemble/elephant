@@ -45,7 +45,7 @@ install:
   - python --version
   - pip install -r requirements.txt
   - pip install coverage coveralls
-  - conda install --no-update-dependencies mkl
+  - conda install mkl
 
 #  - if [[ "${DISTRIB}" == "extra" ]]; then
 #  - pip install -r requirements-extras.txt
