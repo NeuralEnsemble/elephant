@@ -7,7 +7,6 @@ addons:
      update: true
 
 env:
-  INSTALL_MKL="true"
   DISTRIB="conda"
 
 matrix:
@@ -24,10 +23,6 @@ matrix:
     - name: "conda 3.7"
       python: 3.7
 
-    - name: "conda 3.6 no MKL"
-      python: 3.6
-      env: INSTALL_MKL="false"
-
     - name: "extra"
       # test requirements-extra
       python: 3.6
@@ -40,7 +35,7 @@ install:
 
   # Use the miniconda installer for faster download / install of conda
   # itself
-  - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh O miniconda.sh
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - export MINICONDA_PATH=$HOME/miniconda
   - bash miniconda.sh -b -p ${MINICONDA_PATH}
   - export PATH=${MINICONDA_PATH}/bin:$PATH
