@@ -9,15 +9,11 @@
 set -e
 
 python --version
-python -c "import numpy; print('numpy %s' % numpy.__version__)"
-python -c "import scipy; print('scipy %s' % scipy.__version__)"
+pip list
 
-if [[ "$COVERAGE" == "true" ]]; then
-    if [[ "$MPI" == "true" ]]; then
-	mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
-    else
-	nosetests --with-coverage --cover-package=elephant
-    fi
+if [[ "${DISTRIB}" == "extra" ]]; then
+    # extra packages covers mpi
+    mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
 else
-    nosetests
+    nosetests --with-coverage --cover-package=elephant
 fi

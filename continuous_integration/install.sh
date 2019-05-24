@@ -8,128 +8,31 @@
 
 set -e
 
-# Fix the compilers to workaround avoid having the Python 3.4 build
-# lookup for g++44 unexpectedly.
-export CC=gcc
-export CXX=g++
+# Use the miniconda installer for faster download / install of conda
+# itself
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    -O miniconda.sh
+export MINICONDA_PATH=$HOME/miniconda
+bash miniconda.sh -b -p ${MINICONDA_PATH}
+export PATH=${MINICONDA_PATH}/bin:$PATH
+conda config --set always_yes yes
+conda update --yes conda
 
-if [[ "$DISTRIB" == "conda_min" ]]; then
-    # Deactivate the travis-provided virtual environment and setup a
-    # conda-based environment instead
-    deactivate
+conda install python=${TRAVIS_PYTHON_VERSION} coveralls
+pip install -r requirements.txt
 
-    # Use the miniconda installer for faster download / install of conda
-    # itself
-    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
-        -O miniconda.sh
-    chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
-    export PATH=/home/travis/miniconda/bin:$PATH
-    conda config --set always_yes yes
-    conda update --yes conda
-
-    # Configure the conda environment and put it in the path using the
-    # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage \
-        six=$SIX_VERSION numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION
-    source activate testenv
-    conda install libgfortran=1
-
-    if [[ "$INSTALL_MKL" == "true" ]]; then
-        # Make sure that MKL is used
-        conda install --yes --no-update-dependencies mkl
-    else
-        # Make sure that MKL is not used
-        conda remove --yes --features mkl || echo "MKL not installed"
-    fi
-
-elif [[ "$DISTRIB" == "conda" ]]; then
-    # Deactivate the travis-provided virtual environment and setup a
-    # conda-based environment instead
-    deactivate
-
-    # Use the miniconda installer for faster download / install of conda
-    # itself
-    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
-        -O miniconda.sh
-    chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
-    export PATH=/home/travis/miniconda/bin:$PATH
-    conda config --set always_yes yes
-    conda update --yes conda
-
-    # Configure the conda environment and put it in the path using the
-    # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six=$SIX_VERSION \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pandas=$PANDAS_VERSION scikit-learn
-    source activate testenv
-
-    if [[ "$INSTALL_MKL" == "true" ]]; then
-        # Make sure that MKL is used
-        conda install --yes --no-update-dependencies mkl
-    else
-        # Make sure that MKL is not used
-        conda remove --yes --features mkl || echo "MKL not installed"
-    fi
-
-    if [[ "$COVERAGE" == "true" ]]; then
-        pip install coveralls
-    fi
-
-    python -c "import pandas; import os; assert os.getenv('PANDAS_VERSION') == pandas.__version__"
-
-elif [[ "$DISTRIB" == "mpi" ]]; then
-    # Deactivate the travis-provided virtual environment and setup a
-    # conda-based environment instead
-    deactivate
-
-    # Use the miniconda installer for faster download / install of conda
-    # itself
-    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
-        -O miniconda.sh
-    chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
-    export PATH=/home/travis/miniconda/bin:$PATH
-    conda config --set always_yes yes
-    conda update --yes conda
-
-    # Configure the conda environment and put it in the path using the
-    # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose coverage six=$SIX_VERSION \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION scikit-learn mpi4py=$MPI_VERSION
-    source activate testenv
-
-    if [[ "$INSTALL_MKL" == "true" ]]; then
-        # Make sure that MKL is used
-        conda install --yes --no-update-dependencies mkl
-    else
-        # Make sure that MKL is not used
-        conda remove --yes --features mkl || echo "MKL not installed"
-    fi
-
-    if [[ "$COVERAGE" == "true" ]]; then
-        pip install coveralls
-    fi
-
-elif [[ "$DISTRIB" == "ubuntu" ]]; then
-    # deactivate
-    # Create a new virtualenv using system site packages for numpy and scipy
-    # virtualenv --system-site-packages testenv
-    # source testenv/bin/activate
-    pip install -r requirements.txt    
+if [[ "${INSTALL_MKL}" == "true" ]]; then
+    conda install --yes --no-update-dependencies mkl
+else
+    # Make sure that MKL is not used
+    conda remove --yes --features mkl || echo "MKL is not installed"
 fi
 
-if [[ "$COVERAGE" == "true" ]]; then
-    pip install coveralls
+pip install -r requirements.txt
+
+if [[ "${DISTRIB}" == "extra" ]]; then
+    pip install -r requirements-extras.txt
 fi
 
-# pip install neo==0.3.3
-wget https://github.com/NeuralEnsemble/python-neo/archive/master.tar.gz
-tar -xzvf master.tar.gz
-pushd python-neo-master
-python setup.py install
-popd
-
+# todo do we need this?
 pip install .
-
-if ! [[ "$DISTRIB" == "ubuntu" ]]; then
-    python -c "import numpy; import os; assert os.getenv('NUMPY_VERSION') == numpy.__version__, 'Numpy versions do not match: {0} - {1}'.format(os.getenv('NUMPY_VERSION'), numpy.__version__)"
-    python -c "import scipy; import os; assert os.getenv('SCIPY_VERSION') == scipy.__version__, 'Scipy versions do not match: {0} - {1}'.format(os.getenv('SCIPY_VERSION'), scipy.__version__)"
-fi
