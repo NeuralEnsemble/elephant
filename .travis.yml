@@ -44,9 +44,9 @@ install:
 
   - python --version
   - pip install -r requirements.txt
-  - pip install coveralls
-#  - conda install --yes --no-update-dependencies mkl
-  #
+  - pip install coverage coveralls
+  - conda install --no-update-dependencies mkl
+
 #  - if [[ "${DISTRIB}" == "extra" ]]; then
 #  - pip install -r requirements-extras.txt
 #  - fi
@@ -54,6 +54,18 @@ install:
   # todo do we need this?
   - pip install .
 
-script: bash continuous_integration/test_script.sh
+script:
+  - printenv
+  - python --version
+  - pip list
+
+  - if [[ "${DISTRIB}" == "extra" ]]; then
+    # extra packages covers mpi
+    mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
+    else
+    nosetests --with-coverage --cover-package=elephant
+    fi
+
+#  bash continuous_integration/test_script.sh
 after_success:
     coveralls || echo "coveralls failed"
