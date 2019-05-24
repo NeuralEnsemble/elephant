@@ -26,14 +26,14 @@ matrix:
 
     - name: "conda 3.6 no MKL"
       python: 3.6
-      INSTALL_MKL="false"
+      env: INSTALL_MKL="false"
 
     - name: "extra"
       # test requirements-extra
       python: 3.6
-      DISTRIB="extra"
-      before_install:
-       - sudo apt install -y libopenmpi-dev
+      env: DISTRIB="extra"
+#      before_istall:
+#       - sudo apt install -y libopenmpi-dev
 
 install: source continuous_integration/install.sh
 script: bash continuous_integration/test_script.sh
