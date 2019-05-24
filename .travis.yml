@@ -32,10 +32,33 @@ matrix:
       # test requirements-extra
       python: 3.6
       env: DISTRIB="extra"
-#      before_istall:
-#       - sudo apt install -y libopenmpi-dev
+      before_istall:
+       - sudo apt install -y libopenmpi-dev
 
-install: source continuous_integration/install.sh
+install:
+  set -e
+
+  # Use the miniconda installer for faster download / install of conda
+  # itself
+  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+  -O miniconda.sh
+  export MINICONDA_PATH=$HOME/miniconda
+  bash miniconda.sh -b -p ${MINICONDA_PATH}
+  export PATH=${MINICONDA_PATH}/bin:$PATH
+  conda config --set always_yes yes
+  conda update --yes conda
+
+  conda install python=${TRAVIS_PYTHON_VERSION} coveralls
+  pip install -r requirements.txt
+  conda install --yes --no-update-dependencies mkl
+
+  if [[ "${DISTRIB}" == "extra" ]]; then
+  pip install -r requirements-extras.txt
+  fi
+
+  # todo do we need this?
+  pip install .
+
 script: bash continuous_integration/test_script.sh
 after_success:
     coveralls || echo "coveralls failed"

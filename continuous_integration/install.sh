@@ -20,15 +20,7 @@ conda update --yes conda
 
 conda install python=${TRAVIS_PYTHON_VERSION} coveralls
 pip install -r requirements.txt
-
-if [[ "${INSTALL_MKL}" == "true" ]]; then
-    conda install --yes --no-update-dependencies mkl
-else
-    # Make sure that MKL is not used
-    conda remove --yes --features mkl || echo "MKL is not installed"
-fi
-
-pip install -r requirements.txt
+conda install --yes --no-update-dependencies mkl
 
 if [[ "${DISTRIB}" == "extra" ]]; then
     pip install -r requirements-extras.txt
