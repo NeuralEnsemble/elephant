@@ -35,7 +35,7 @@ install:
 
   # Use the miniconda installer for faster download / install of conda
   # itself
-  - wget https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - export MINICONDA_PATH=$HOME/miniconda
   - bash miniconda.sh -b -p ${MINICONDA_PATH}
   - export PATH=${MINICONDA_PATH}/bin:$PATH
