@@ -27,8 +27,8 @@ matrix:
       # test requirements-extras
       python: 3.6
       env: DISTRIB="extra"
-#      before_istall:
-#       - sudo apt install -y libopenmpi-dev
+      before_istall:
+       - sudo apt install -y libopenmpi-dev
 
 install:
   # Use the miniconda installer for faster download / install of conda
@@ -47,9 +47,9 @@ install:
   - pip install coverage coveralls nose
   - conda install mkl
 
-#  - if [[ "${DISTRIB}" == "extra" ]]; then
-#  - pip install -r requirements-extras.txt
-#  - fi
+  - if [[ "${DISTRIB}" == "extra" ]];
+    then pip install -r requirements-extras.txt;
+    fi
 
   # todo do we need this?
   - pip install .
@@ -58,7 +58,6 @@ script:
   - printenv
   - python --version
   - pip list
-  - python -c "import quantities as pq; print(pq.__version__)"
   - bash continuous_integration/test_script.sh
 after_success:
     coveralls || echo "coveralls failed"

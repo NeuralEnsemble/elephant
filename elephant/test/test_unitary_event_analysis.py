@@ -461,10 +461,12 @@ class UETestCase(unittest.TestCase):
         # load extracted data from figure 2 of Riehle et al 1997
         try:
             extracted_data = np.load(
-                local_test_dir + '/extracted_data.npy').item()
+                local_test_dir + '/extracted_data.npy',
+                allow_pickle=True).item()
         except UnicodeError:
             extracted_data = np.load(
-                local_test_dir + '/extracted_data.npy', encoding='latin1').item()
+                local_test_dir + '/extracted_data.npy', encoding='latin1',
+                allow_pickle=True).item()
         Js_sig = ue.jointJ(significance_level)
         sig_idx_win = np.where(UE['Js'] >= Js_sig)[0]
         diff_UE_rep = []
