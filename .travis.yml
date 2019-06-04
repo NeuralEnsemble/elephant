@@ -52,6 +52,7 @@ install:
       pip -V;
       source activate elephant_env;
       pip -V;
+      conda install mkl;
       conda config --append channels conda-forge;
       sed '/^neo/d' requirements.txt > requirements-conda.txt;
       conda install --file requirements-conda.txt;
