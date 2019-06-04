@@ -44,7 +44,9 @@ install:
     fi
 
   - python --version
+  - pip list
   - pip install coverage coveralls nose
+  - pip list
   - pip install .
 
 script:

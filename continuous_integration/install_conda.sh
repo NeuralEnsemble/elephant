@@ -16,11 +16,11 @@ export PATH=${MINICONDA_PATH}/bin:$PATH
 conda config --set always_yes yes
 conda update conda
 
-conda install python==${TRAVIS_PYTHON_VERSION} pip
+conda install python==${TRAVIS_PYTHON_VERSION} pip wheel
 conda install mkl  # should be installed first not to override next
 conda config --append channels conda-forge
-sed -i '/^neo/d' requirements.txt  # remove neo from requirements.txt
-conda install --file requirements.txt
+sed '/^neo/d' requirements.txt > requirements-conda.txt  # remove neo from requirements.txt
+conda install --file requirements-conda.txt
 # python-neo conda package is not well supported (outdated, for example)
 # not constraining python-neo to a specific version thus
 conda install -c conda-forge python-neo
