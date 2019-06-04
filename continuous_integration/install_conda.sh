@@ -17,9 +17,11 @@ conda config --set always_yes yes
 conda update conda
 
 conda install python==${TRAVIS_PYTHON_VERSION}
-conda config --append channels conda-forge
-sed -i 's/^neo/python-neo/g' requirements.txt
+sed -i '/^neo/d' requirements.txt  # remove neo from requirements.txt
 conda install --file requirements.txt
+# python-neo conda package is not well supported (outdated, for example)
+# not constraining python-neo to a specific version thus
+conda install -c conda-forge python-neo
 conda install mkl
 
 #if [[ "${DISTRIB}" == "extra" ]]; then
