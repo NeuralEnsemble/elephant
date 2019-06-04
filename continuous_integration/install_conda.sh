@@ -16,7 +16,7 @@ export PATH=${MINICONDA_PATH}/bin:$PATH
 conda config --set always_yes yes
 conda update conda
 
-conda install python==${TRAVIS_PYTHON_VERSION}
+conda install python==${TRAVIS_PYTHON_VERSION} pip
 conda install mkl  # should be installed first not to override next
 conda config --append channels conda-forge
 sed -i '/^neo/d' requirements.txt  # remove neo from requirements.txt
