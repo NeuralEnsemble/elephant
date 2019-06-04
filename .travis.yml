@@ -41,7 +41,22 @@ install:
   - if [[ "${DISTRIB}" == "conda" ]];
     then
       export MINICONDA_PATH=${HOME}/miniconda;
-      export PATH=${MINICONDA_PATH}/bin:$PATH;
+      export PATH=${MINICONDA_PATH}/bin:${PATH};
+      wget \
+        https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+        -O miniconda.sh;
+      bash miniconda.sh -b -p ${MINICONDA_PATH};
+      conda config --set always_yes yes;
+      conda update conda;
+      conda create --name elephant_env python=${TRAVIS_PYTHON_VERSION};
+      pip -V;
+      source activate elephant_env;
+      pip -V;
+      conda install mkl;  # should be installed first not to override next
+      conda config --append channels conda-forge;
+      sed '/^neo/d' requirements.txt > requirements-conda.txt;
+      conda install --file requirements-conda.txt;
+      conda install -c conda-forge python-neo;
       pip list;
     else
       pip install -r requirements.txt;
