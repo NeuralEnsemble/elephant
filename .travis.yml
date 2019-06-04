@@ -6,37 +6,41 @@ addons:
    apt:
      update: true
 
-env:
-  DISTRIB="conda"
+
 
 matrix:
   include:
-#    - name: "conda 2.7"
-#      python: 2.7
-#
-#    - name: "pip 2.7"
-#      python: 2.7
-#      env: DISTRIB="pip"
-#
-#    - name: "conda 3.5"
-#      python: 3.5
-#
-#    - name: "conda 3.6"
-#      python: 3.6
-#
-#    - name: "pip 3.6"
-#      python: 3.6
-#      env: DISTRIB="pip"
+    - name: "conda 2.7"
+      python: 2.7
+      env: DISTRIB="conda"
 
-    - name: "conda 3.6 extras"
+    - name: "pip 2.7"
+      python: 2.7
+      env: DISTRIB="pip"
+
+    - name: "conda 3.5"
+      python: 3.5
+      env: DISTRIB="conda"
+
+    - name: "conda 3.6"
+      python: 3.6
+      env: DISTRIB="conda"
+
+    - name: "pip 3.6"
+      python: 3.6
+      env: DISTRIB="pip"
+
+    - name: "pip 3.6 extras"
       # test requirements-extras
       python: 3.6
+      env: DISTRIB="pip"
       before_install: sudo apt install -y libopenmpi-dev openmpi-bin
       before_script: pip install -r requirements-extras.txt
       script: mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
 
     - name: "conda 3.7"
       python: 3.7
+      env: DISTRIB="conda"
 
 install:
   - if [[ "${DISTRIB}" == "conda" ]];

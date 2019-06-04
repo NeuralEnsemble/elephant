@@ -713,7 +713,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     # reshape into equal size bins, padding the end with zeros if necessary
     n_channels = signal.shape[1]
     sig_binned = signal.as_quantity().copy()
-    sig_binned.resize(n_bins * samples_per_bin, n_channels)
+    sig_binned.resize(n_bins * samples_per_bin, n_channels, refcheck=False)
     sig_binned = sig_binned.reshape(n_bins, samples_per_bin, n_channels)
 
     # rectify and integrate over each bin
