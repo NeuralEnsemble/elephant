@@ -38,8 +38,6 @@ matrix:
       python: 3.7
 
 install:
-  # Use the miniconda installer for faster download / install of conda
-  # itself
   - if [[ "${DISTRIB}" == "conda" ]];
     then bash continuous_integration/install_conda.sh;
     else pip install -r requirements.txt;
@@ -47,7 +45,7 @@ install:
 
   - python --version
   - pip install coverage coveralls nose
-
+  - pip show neo
   - pip install .
 
 script:
