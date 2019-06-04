@@ -2,9 +2,9 @@ dist: xenial
 language: python
 sudo: false
 
-addons:
-   apt:
-     update: true
+#addons:
+#   apt:
+#     update: true
 
 env:
   DISTRIB="conda"
@@ -14,48 +14,47 @@ matrix:
     - name: "conda 2.7"
       python: 2.7
 
+    - name: "pip 2.7"
+      env: DISTRIB="pip"
+      python: 2.7
+
     - name: "conda 3.5"
       python: 3.5
 
     - name: "conda 3.6"
       python: 3.6
 
-    - name: "conda 3.7"
-      python: 3.7
+    - name: "pip 3.6"
+      python: 3.6
+      env: DISTRIB="pip"
 
     - name: "conda 3.6 extras"
       # test requirements-extras
       python: 3.6
-      env: DISTRIB="extra"
       before_istall:
-       - sudo apt install -y libopenmpi-dev
+        - sudo apt install -y libopenmpi-dev
+      before_script:
+        - pip install -r requirements-extras.txt
+
+    - name: "conda 3.7"
+      python: 3.7
+
 
 install:
   # Use the miniconda installer for faster download / install of conda
   # itself
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - export MINICONDA_PATH=$HOME/miniconda
-  - bash miniconda.sh -b -p ${MINICONDA_PATH}
-  - export PATH=${MINICONDA_PATH}/bin:$PATH
-  - conda config --set always_yes yes
-  - conda update --yes conda
-  - printenv
-  - conda install python=${TRAVIS_PYTHON_VERSION}
+  - if [[ "${DISTRIB}" == "conda" ]];
+    then bash continuous_integration/install_conda.sh;
+    else bash continuous_integration/install_pip.sh;
+    fi
 
   - python --version
-  - pip install -r requirements.txt
   - pip install coverage coveralls nose
-  - conda install mkl
-
-  - if [[ "${DISTRIB}" == "extra" ]];
-    then pip install -r requirements-extras.txt;
-    fi
 
   # todo do we need this?
   - pip install .
 
 script:
-  - printenv
   - python --version
   - pip list
   - bash continuous_integration/test_script.sh
