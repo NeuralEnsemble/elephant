@@ -45,7 +45,6 @@ install:
 
   - python --version
   - pip install coverage coveralls nose
-  - pip show neo
   - pip install .
 
 script:

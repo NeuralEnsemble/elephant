@@ -25,7 +25,3 @@ conda install --file requirements.txt
 # not constraining python-neo to a specific version thus
 conda install -c conda-forge python-neo
 pip list
-
-#if [[ "${DISTRIB}" == "extra" ]]; then
-#    conda install --file requirements-extras.txt
-#fi
