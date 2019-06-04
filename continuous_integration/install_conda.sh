@@ -10,13 +10,11 @@
 # itself
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     -O miniconda.sh
-export MINICONDA_PATH=$HOME/miniconda
 bash miniconda.sh -b -p ${MINICONDA_PATH}
-export PATH=${MINICONDA_PATH}/bin:$PATH
 conda config --set always_yes yes
 conda update conda
 
-conda install python==${TRAVIS_PYTHON_VERSION} pip wheel
+conda install python==${TRAVIS_PYTHON_VERSION} pip
 conda install mkl  # should be installed first not to override next
 conda config --append channels conda-forge
 sed '/^neo/d' requirements.txt > requirements-conda.txt  # remove neo from requirements.txt

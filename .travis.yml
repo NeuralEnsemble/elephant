@@ -7,7 +7,9 @@ addons:
      update: true
 
 env:
-  DISTRIB="conda"
+  - DISTRIB="conda"
+  - MINICONDA_PATH=${HOME}/miniconda
+  - PATH=${MINICONDA_PATH}/bin:$PATH
 
 matrix:
   include:
@@ -44,7 +46,7 @@ install:
     fi
 
   - python --version
-  - pip list
+  - pip -V
   - pip install coverage coveralls nose
   - pip list
   - pip install .
