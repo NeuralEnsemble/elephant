@@ -2,9 +2,9 @@ dist: xenial
 language: python
 sudo: false
 
-#addons:
-#   apt:
-#     update: true
+addons:
+   apt:
+     update: true
 
 env:
   DISTRIB="conda"
@@ -31,28 +31,23 @@ matrix:
     - name: "conda 3.6 extras"
       # test requirements-extras
       python: 3.6
+      before_install: sudo apt install -y libopenmpi-dev
       before_script: pip install -r requirements-extras.txt
 
     - name: "conda 3.7"
       python: 3.7
-
-before_install:
-  - sudo apt update
-  - sudo apt install -y libopenmpi-dev
-
 
 install:
   # Use the miniconda installer for faster download / install of conda
   # itself
   - if [[ "${DISTRIB}" == "conda" ]];
     then bash continuous_integration/install_conda.sh;
-    else bash continuous_integration/install_pip.sh;
+    else pip install -r requirements.txt;
     fi
 
   - python --version
   - pip install coverage coveralls nose
 
-  # todo do we need this?
   - pip install .
 
 script:
