@@ -12,7 +12,6 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     -O miniconda.sh
 bash miniconda.sh -b -p ${MINICONDA_PATH}
 conda config --set always_yes yes
-conda update conda
 
 conda install python==${TRAVIS_PYTHON_VERSION} pip
 conda install mkl  # should be installed first not to override next

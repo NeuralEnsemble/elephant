@@ -41,8 +41,22 @@ install:
   - if [[ "${DISTRIB}" == "conda" ]];
     then
       export MINICONDA_PATH=${HOME}/miniconda;
-      export PATH=${MINICONDA_PATH}/bin:$PATH;
-      bash continuous_integration/install_conda.sh;
+      export PATH=${MINICONDA_PATH}/bin:${PATH};
+      wget
+        https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+        -O miniconda.sh;
+      bash miniconda.sh -b -p ${MINICONDA_PATH};
+      conda config --set always_yes yes;
+      conda install python==${TRAVIS_PYTHON_VERSION};
+      conda install mkl;  # should be installed first not to override next
+      conda config --append channels conda-forge;
+      # remove neo from requirements.txt
+      sed '/^neo/d' requirements.txt > requirements-conda.txt;
+      conda install --file requirements-conda.txt;
+      # python-neo conda package is not well supported (outdated, for example)
+      # not constraining python-neo to a specific version thus
+      conda install -c conda-forge python-neo;
+      pip list;
     else
       pip install -r requirements.txt;
     fi
