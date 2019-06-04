@@ -7,9 +7,7 @@ addons:
      update: true
 
 env:
-  - DISTRIB="conda"
-  - MINICONDA_PATH=${HOME}/miniconda
-  - PATH=${MINICONDA_PATH}/bin:$PATH
+  DISTRIB="conda"
 
 matrix:
   include:
@@ -41,8 +39,12 @@ matrix:
 
 install:
   - if [[ "${DISTRIB}" == "conda" ]];
-    then bash continuous_integration/install_conda.sh;
-    else pip install -r requirements.txt;
+    then
+      export MINICONDA_PATH=${HOME}/miniconda;
+      export PATH=${MINICONDA_PATH}/bin:$PATH;
+      bash continuous_integration/install_conda.sh;
+    else
+      pip install -r requirements.txt;
     fi
 
   - python --version
