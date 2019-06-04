@@ -15,8 +15,8 @@ matrix:
       python: 2.7
 
     - name: "pip 2.7"
-      env: DISTRIB="pip"
       python: 2.7
+      env: DISTRIB="pip"
 
     - name: "conda 3.5"
       python: 3.5
@@ -31,13 +31,14 @@ matrix:
     - name: "conda 3.6 extras"
       # test requirements-extras
       python: 3.6
-      before_istall:
-        - sudo apt install -y libopenmpi-dev
-      before_script:
-        - pip install -r requirements-extras.txt
+      before_script: pip install -r requirements-extras.txt
 
     - name: "conda 3.7"
       python: 3.7
+
+before_install:
+  - sudo apt update
+  - sudo apt install -y libopenmpi-dev
 
 
 install:

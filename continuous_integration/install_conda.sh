@@ -20,7 +20,7 @@ conda install python==${TRAVIS_PYTHON_VERSION}
 conda config --append channels conda-forge
 sed -i 's/^neo/python-neo/g' requirements.txt
 conda install --file requirements.txt
-conda install --no-update-dependencies mkl
+conda install mkl
 
 #if [[ "${DISTRIB}" == "extra" ]]; then
 #    conda install --file requirements-extras.txt
