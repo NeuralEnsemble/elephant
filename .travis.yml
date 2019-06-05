@@ -7,7 +7,6 @@ addons:
      update: true
 
 
-
 matrix:
   include:
     - name: "conda 2.7"
@@ -30,8 +29,7 @@ matrix:
       python: 3.6
       env: DISTRIB="pip"
 
-    - name: "pip 3.6 extras"
-      # test requirements-extras
+    - name: "pip 3.6 requirements-extras"
       python: 3.6
       env: DISTRIB="pip"
       before_install: sudo apt install -y libopenmpi-dev openmpi-bin
@@ -41,6 +39,16 @@ matrix:
     - name: "conda 3.7"
       python: 3.7
       env: DISTRIB="conda"
+
+  exclude:
+    - name: "pip 3.6 requirements min version"
+      # excluded due to unmet dependencies in neo, quantities, and scipy
+      python: 3.6
+      env: DISTRIB="pip"
+      before_install:
+        - sudo apt install libblas-dev liblapack-dev libatlas-base-dev gfortran
+        - sed -i 's/>=/==/g' requirements.txt
+
 
 install:
   - if [[ "${DISTRIB}" == "conda" ]];
