@@ -1,40 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import platform
-import struct
-import sys
 
 from setuptools import setup
-
-python_version_major = sys.version_info.major
-
-if python_version_major == 2:
-    from urllib import urlretrieve
-else:
-    from urllib.request import urlretrieve
-
-
-def download_spade_fim():
-    """
-    Downloads SPADE specific PyFIM binary file.
-    """
-    arch_bits = struct.calcsize("P") * 8
-    if platform.system() == "Windows":
-        fim_filename = "fim.pyd"
-    else:
-        # Linux
-        fim_filename = "fim.so"
-    url_fim = "http://www.borgelt.net/bin{arch}/py{py_ver}/{filename}". \
-        format(arch=arch_bits, py_ver=python_version_major,
-               filename=fim_filename)
-
-    try:
-        urlretrieve(url_fim,
-                    filename=os.path.join('elephant', 'spade_src',
-                                          fim_filename))
-    except:
-        print("Unable to download {url} module.".format(url=url_fim))
 
 
 with open("README.rst") as f:
@@ -45,8 +13,6 @@ extras_require = {}
 for extra in ['extras', 'docs', 'tests']:
     with open('requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
-
-download_spade_fim()
 
 setup(
     name="elephant",
