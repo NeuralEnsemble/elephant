@@ -14,12 +14,7 @@ import quantities as pq
 import elephant.spade as spade
 import elephant.conversion as conv
 import elephant.spike_train_generation as stg
-
-try:
-    from elephant.spade_src import fim
-    HAVE_FIM = True
-except ImportError:
-    HAVE_FIM = False
+from elephant.spade import HAVE_FIM
 
 
 class SpadeTestCase(unittest.TestCase):
@@ -129,7 +124,7 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(lags_cpp, [np.array([0] * (self.n_neu - 1))])
 
     # Testing spectrum cpp
-    def test_spade_cpp(self):
+    def test_spade_spectrum_cpp(self):
         # Computing Spectrum
         spectrum_cpp = spade.concepts_mining(self.cpp, self.binsize,
                                              1, report='#')[0]
@@ -265,6 +260,7 @@ class SpadeTestCase(unittest.TestCase):
     # skip this test if C code not available
     @unittest.skipIf(not HAVE_FIM, 'Requires fim.so')
     def test_fpgrowth_fca(self):
+        print("fim.so is found.")
         binary_matrix = conv.BinnedSpikeTrain(
             self.patt1, self.binsize).to_bool_array()
         context, transactions, rel_matrix = spade._build_context(
