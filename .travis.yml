@@ -65,7 +65,7 @@ install:
       conda config --append channels conda-forge;
       sed '/^neo/d' requirements.txt > requirements-conda.txt;
       conda install --file requirements-conda.txt;
-      conda install -c conda-forge python-neo;
+      # `neo` will be installed by pip from requirements.txt later on
       pip list;
     else
       pip install -r requirements.txt;
@@ -73,7 +73,10 @@ install:
 
   - pip -V
   - pip install coverage coveralls nose
+
+  # installs also `neo` from requirements.txt if the distribution is conda
   - pip install .
+
   - pip list
   - python --version
 
