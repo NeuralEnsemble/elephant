@@ -17,9 +17,9 @@ matrix:
       python: 2.7
       env: DISTRIB="pip"
 
-    - name: "conda 3.5"
+    - name: "pip 3.5"
       python: 3.5
-      env: DISTRIB="conda"
+      env: DISTRIB="pip"
 
     - name: "conda 3.6"
       python: 3.6
