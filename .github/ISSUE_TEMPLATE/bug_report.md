@@ -14,7 +14,7 @@ assignees: ''
 1. 
 2.
 
-<!-- If you have a code sample, error messages, stack traces, please provide it here as well -->
+<!-- If you have a code sample, error messages, or stack traces, please provide it here as well. -->
 
 
 **Expected behavior**
