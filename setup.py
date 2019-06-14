@@ -6,6 +6,7 @@ import struct
 import sys
 
 from setuptools import setup
+from setuptools.command.install import install
 
 python_version_major = sys.version_info.major
 
@@ -37,6 +38,12 @@ def download_spade_fim():
         print("Unable to download {url} module.".format(url=url_fim))
 
 
+class ElephantInstall(install):
+    def run(self):
+        install.run(self)
+        download_spade_fim()
+
+
 with open("README.rst") as f:
     long_description = f.read()
 with open('requirements.txt') as fp:
@@ -46,7 +53,6 @@ for extra in ['extras', 'docs', 'tests']:
     with open('requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
 
-download_spade_fim()
 
 setup(
     name="elephant",
@@ -61,8 +67,8 @@ setup(
         os.path.join('spade_src', 'LICENSE'),
         os.path.join('spade_src', '*.so'),
         os.path.join('spade_src', '*.pyd'),
-        os.path.join('test', '*.txt'),
     ]},
+    cmdclass={'install': ElephantInstall},
 
     install_requires=install_requires,
     extras_require=extras_require,
