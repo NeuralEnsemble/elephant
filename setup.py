@@ -1,48 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup
 import os
-import sys
-import platform
-try:
-    from urllib.request import urlretrieve
-except ImportError:
-    from urllib import urlretrieve
 
-long_description = open("README.rst").read()
-with open('requirements.txt', 'r') as fp:
+from setuptools import setup
+
+
+with open("README.rst") as f:
+    long_description = f.read()
+with open('requirements.txt') as fp:
     install_requires = fp.read()
 extras_require = {}
 for extra in ['extras', 'docs', 'tests']:
-    with open('requirements-{0}.txt'.format(extra), 'r') as fp:
+    with open('requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
-
-# spade specific
-is_64bit = sys.maxsize > 2 ** 32
-is_python3 = float(sys.version[0:3]) > 2.7
-if platform.uname()[0] == "Windows":
-    oext = ".pyd"
-elif platform.uname()[0] == "Linux":
-    oext = ".so"
-else:
-    oext = None
-
-if oext:
-    if is_python3:
-        py_ver = '3'
-    else:
-        py_ver = '2'
-    if is_64bit:
-        arch = '64'
-    else:
-        arch = '32'
-
-    try:
-        urlretrieve('http://www.borgelt.net/bin' +
-                    arch + '/py' + py_ver + '/fim' + oext,
-                    'elephant/spade_src/fim' + oext)
-    except:
-        print("Unable to download fim" + oext + " module.")
 
 setup(
     name="elephant",
