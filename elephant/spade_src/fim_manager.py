@@ -31,5 +31,5 @@ def download_spade_fim():
     try:
         urlretrieve(url_fim, filename=fim_lib_path)
         print("Successfully downloaded fim lib to {}".format(fim_lib_path))
-    except:
+    except Exception:
         print("Unable to download {url} module.".format(url=url_fim))

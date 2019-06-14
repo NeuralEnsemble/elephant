@@ -74,7 +74,6 @@ install:
   - pip -V
   - pip install coverage coveralls nose
   - pip install .
-  - find /home/travis -name fim.so
   - pip list
   - python --version
 
