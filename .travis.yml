@@ -17,9 +17,9 @@ matrix:
       python: 2.7
       env: DISTRIB="pip"
 
-#    - name: "pip 3.5"
-#      python: 3.5
-#      env: DISTRIB="pip"
+    - name: "pip 3.5"
+      python: 3.5
+      env: DISTRIB="pip"
 
     - name: "conda 3.6"
       python: 3.6
@@ -29,12 +29,12 @@ matrix:
       python: 3.6
       env: DISTRIB="pip"
 
-#    - name: "pip 3.6 requirements-extras"
-#      python: 3.6
-#      env: DISTRIB="pip"
-#      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
-#      before_script: pip install -r requirements-extras.txt
-#      script: mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
+    - name: "pip 3.6 requirements-extras"
+      python: 3.6
+      env: DISTRIB="pip"
+      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
+      before_script: pip install -r requirements-extras.txt
+      script: mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
 
     - name: "conda 3.7"
       python: 3.7
