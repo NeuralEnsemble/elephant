@@ -74,7 +74,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    import fim
+    from elephant.spade_src import fim
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
     HAVE_FIM = False
@@ -508,9 +508,10 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # Otherwise use fast_fca python implementation
     else:
         warnings.warn(
-            'Optimized C implementation of FCA (fim.so/fim.pyd) is not '
-            'found. You are using the pure Python implementation ' +
-            'of fast fca. Please, install requirements-extras.txt.')
+            'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
+            'in elephant/spade_src folder, or not compatible with this ' +
+            'Python version. You are using the pure Python implementation ' +
+            'of fast fca.')
         # Return output
         mining_results = _fast_fca(
             context,
