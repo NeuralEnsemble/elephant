@@ -25,8 +25,7 @@ setup(
         os.path.join('current_source_density_src', '*.py'),
         os.path.join('spade_src', '*.py'),
         os.path.join('spade_src', 'LICENSE'),
-        os.path.join('spade_src', '*.so'),
-        os.path.join('spade_src', '*.pyd')
+        os.path.join('test', '*.txt')
     ]},
 
     install_requires=install_requires,
