@@ -1,2 +1,7 @@
-conda:
-  file: doc/environment.yml
+name: elephant
+
+build:
+    image: latest
+
+python:
+    version: 3.7

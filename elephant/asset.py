@@ -811,7 +811,7 @@ def probability_matrix_montecarlo(
 
     Parameters
     ----------
-    sts : list of neo.SpikeTrains
+    spiketrains : list of neo.SpikeTrains
         list of spike trains for which to compute the probability matrix
     binsize : quantities.Quantity
         width of the time bins used to compute the probability matrix
@@ -842,10 +842,12 @@ def probability_matrix_montecarlo(
     n_surr : int, optional
         number of spike_train_surrogates to generate for the bootstrap
         procedure. Default: 100
+    verbose : bool, optional
+        Print the progress bar.
 
     Returns
     -------
-    pmat : ndarray
+    pmat : np.ndarray
         the cumulative probability matrix. pmat[i, j] represents the
         estimated probability of having an overlap between bins i and j
         STRICTLY LOWER than the observed overlap, under the null hypothesis
@@ -853,7 +855,7 @@ def probability_matrix_montecarlo(
 
     See also
     --------
-    probability_matrix_analytical() for analytical derivation of the matrix
+    probability_matrix_analytical : for analytical derivation of the matrix
     '''
 
     # Compute the intersection matrix of the original data
@@ -873,6 +875,7 @@ def probability_matrix_montecarlo(
     # equal to that of the original data
     pmat = np.array(np.zeros(imat.shape), dtype=int)
     if verbose:
+        # todo: move to tqdm
         print('pmat_bootstrap(): begin of bootstrap...')
     for i in _xrange(n_surr):  # For each surrogate id i
         if verbose:
@@ -1655,7 +1658,6 @@ def sse_issub(sse1, sse2):
     Both sse1 and sse2 must be provided as dictionaries of the type
             {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
     where each i, j is an integer and each S is a set of neuron ids.
-    (See also: extract_sse() that extracts SSEs from given spiketrains).
 
     Parameters
     ----------
@@ -1667,6 +1669,10 @@ def sse_issub(sse1, sse2):
     -------
     is_sub : bool
         returns True if sse1 is a subset of sse2
+
+    See Also
+    -------
+    extract_sse : extracts SSEs from given spiketrains
 
     '''
     # Remove empty links from sse11 and sse22, if any
