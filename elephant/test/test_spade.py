@@ -5,16 +5,21 @@ Unit tests for the spade module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
+
+import os
 import unittest
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_equal
 import quantities as pq
-import elephant.spade as spade
+from numpy.testing.utils import assert_array_equal
+
 import elephant.conversion as conv
+import elephant.spade as spade
 import elephant.spike_train_generation as stg
 from elephant.spade import HAVE_FIM
+from elephant.spade_src.fim_manager import download_spade_fim, \
+    _get_fim_lib_path
 
 
 class SpadeTestCase(unittest.TestCase):
@@ -420,6 +425,13 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
         # check the occurrences time of the patters
         assert_array_equal(len(occ_msip[0]), self.n_occ3)
+
+    def test_download_spade_fim(self):
+        fim_lib_path = _get_fim_lib_path()
+        if os.path.exists(fim_lib_path):
+            os.unlink(fim_lib_path)
+        download_spade_fim()
+        assert os.path.exists(fim_lib_path)
 
 
 def suite():

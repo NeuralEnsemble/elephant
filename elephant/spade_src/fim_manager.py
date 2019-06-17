@@ -11,16 +11,22 @@ else:
     from urllib.request import urlretrieve
 
 
-def download_spade_fim():
-    """
-    Downloads SPADE specific PyFIM binary file.
-    """
+def _get_fim_lib_path():
     if platform.system() == "Windows":
         fim_filename = "fim.pyd"
     else:
         # Linux
         fim_filename = "fim.so"
     fim_lib_path = os.path.join(os.path.dirname(__file__), fim_filename)
+    return fim_lib_path
+
+
+def download_spade_fim():
+    """
+    Downloads SPADE specific PyFIM binary file.
+    """
+    fim_lib_path = _get_fim_lib_path()
+    fim_filename = os.path.basename(fim_lib_path)
     if os.path.exists(fim_lib_path):
         return
 
