@@ -143,11 +143,9 @@ def _H03xi(kappa, xi, L):
 
     # Check the order condition of the cumulants necessary to perform CuBIC
     if kappa[1] < kappa[0]:
-        # p = errorval
-        kstar = [0]
         raise ValueError(
             'H_0 can not be tested:'
-            'kappa(2)= %f<%f=kappa(1)!!!' % (kappa[1], kappa[0]))
+            'kappa(2) = %f < %f = kappa(1)!!!' % (kappa[1], kappa[0]))
     else:
         # computation of the maximized cumulants
         kstar = [_kappamstar(kappa[:2], i, xi) for i in range(2, 7)]
@@ -158,7 +156,7 @@ def _H03xi(kappa, xi, L):
             kstar[4] / L + 9 * (kstar[2] * kstar[0] + kstar[1] ** 2) /
             (L - 1) + 6 * L * kstar[0] ** 3 / ((L - 1) * (L - 2)))
         # computation of the p-value (the third cumulant is supposed to
-        # be gaussian istribuited)
+        # be gaussian distributed)
         p = 1 - scipy.stats.norm(k3star, sigmak3star).cdf(kappa[2])
         return p
 
@@ -199,23 +197,16 @@ def _kstat(data):
 
     Parameters
     -----
-    data : numpy.aray
+    data : numpy.ndarray
         The population histogram of the population on which are computed
         the cumulants
 
     Returns
     -----
-    kappa : list
-        The first three cumulants of the population count
+    kappa : numpy.ndarray
+        The first three unbiased cumulants of the population count
     '''
-    L = len(data)
-    if L == 0:
+    if len(data) == 0:
         raise ValueError('The input data must be a non-empty array')
-    S = [(data ** r).sum() for r in range(1, 4)]
-    kappa = []
-    kappa.append(S[0] / float(L))
-    kappa.append((L * S[1] - S[0] ** 2) / (L * (L - 1)))
-    kappa.append(
-        (2 * S[0] ** 3 - 3 * L * S[0] * S[1] + L ** 2 * S[2]) / (
-            L * (L - 1) * (L - 2)))
-    return kappa
+    moments = [scipy.stats.kstat(data, n=n) for n in [1, 2, 3]]
+    return moments
