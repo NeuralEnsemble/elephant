@@ -9,6 +9,8 @@ try:
 except ImportError:
     from urllib import urlretrieve
 
+from elephant import __version__
+
 long_description = open("README.rst").read()
 with open('requirements.txt', 'r') as fp:
     install_requires = fp.read()
@@ -46,7 +48,7 @@ if oext:
 
 setup(
     name="elephant",
-    version='0.6.2',
+    version=__version__,
     packages=['elephant', 'elephant.test'],
     package_data={'elephant': [
         os.path.join('current_source_density_src', 'test_data.mat'),
