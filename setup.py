@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 
 from setuptools import setup
+
+from elephant import __version__
+from elephant.spade_src.fim_manager import download_spade_fim
 
 python_version_major = sys.version_info.major
 
@@ -16,20 +18,13 @@ for extra in ['extras', 'docs', 'tests']:
     with open('requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
 
+download_spade_fim()
+
 setup(
     name="elephant",
-    version='0.6.2',
+    version=__version__,
     packages=['elephant', 'elephant.test'],
-    package_data={'elephant': [
-        os.path.join('current_source_density_src', 'test_data.mat'),
-        os.path.join('current_source_density_src', 'LICENSE'),
-        os.path.join('current_source_density_src', 'README.md'),
-        os.path.join('current_source_density_src', '*.py'),
-        os.path.join('spade_src', '*.py'),
-        os.path.join('spade_src', 'LICENSE'),
-        os.path.join('spade_src', '*.so'),
-        os.path.join('spade_src', '*.pyd'),
-    ]},
+    include_package_data=True,
 
     install_requires=install_requires,
     extras_require=extras_require,
