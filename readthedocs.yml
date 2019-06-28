@@ -1,7 +1,15 @@
-name: elephant
+# readthedocs version
+version: 2
 
 build:
     image: latest
 
+sphinx:
+  builder: html
+  configuration: doc/conf.py
+
 python:
     version: 3.7
+    install:
+        - requirements: requirements.txt
+        - requirements: requirements-docs.txt
