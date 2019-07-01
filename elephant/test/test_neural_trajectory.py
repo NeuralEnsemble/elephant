@@ -20,7 +20,7 @@ try:
 except ImportError:
     HAVE_SKLEARN = False
 else:
-    from elephant.neural_trajectory import neural_trajectory
+    from elephant.gpfa import gpfa
 
     HAVE_SKLEARN = True
 
@@ -83,7 +83,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
             self.data2.append((trial, spike_times))
 
     def test_data1(self):
-        params_est, seqs_train, seqs_test, fit_info = neural_trajectory(
+        params_est, seqs_train, seqs_test, fit_info = gpfa(
             self.data1, x_dim=self.x_dim, em_max_iters=self.n_iters)
         self.assertEqual(fit_info['cvf'], 0)
         self.assertEqual(fit_info['bin_size'], 20 * pq.ms)
@@ -93,15 +93,15 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
     def test_invalid_bin_size_type(self):
         invalid_bin_size = 10
-        self.assertRaises(ValueError, neural_trajectory, data=self.data2,
+        self.assertRaises(ValueError, gpfa, data=self.data2,
                           bin_size=invalid_bin_size)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
-        self.assertRaises(ValueError, neural_trajectory, data=invalid_data)
+        self.assertRaises(ValueError, gpfa, data=invalid_data)
 
     def test_data2(self):
-        params_est, seqs_train, seqs_test, fit_info = neural_trajectory(
+        params_est, seqs_train, seqs_test, fit_info = gpfa(
             self.data2, method=self.method, bin_size=self.bin_size, x_dim=8,
             em_max_iters=self.n_iters)
         self.assertEqual(fit_info['method'], self.method,
