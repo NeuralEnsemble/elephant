@@ -57,15 +57,14 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         for tr in range(1):
             np.random.seed(tr)
             n1 = neo.SpikeTrain(h_alt(2, 10, 2, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1 * pq.s)
+                                t_start=0, t_stop=10, units=1*pq.s)
             n2 = neo.SpikeTrain(h_alt(2, 10, 2, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1 * pq.s)
+                                t_start=0, t_stop=10, units=1*pq.s)
             n3 = neo.SpikeTrain(h_alt(2, 2, 10, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1 * pq.s)
+                                t_start=0, t_stop=10, units=1*pq.s)
             n4 = neo.SpikeTrain(h_alt(2, 2, 10, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1 * pq.s)
+                                t_start=0, t_stop=10, units=1*pq.s)
             self.data1.append((tr, [n1, n2, n3, n4]))
-        self.method = 'gpfa'
         self.x_dim = 4
 
         # data2 setup
@@ -77,7 +76,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         for trial in range(self.n_trials):
             n_channels = 20
             firing_rates = np.random.randint(low=1, high=100,
-                                             size=n_channels) * pq.Hz
+                                             size=n_channels)*pq.Hz
             spike_times = [homogeneous_poisson_process(rate=rate)
                            for rate in firing_rates]
             self.data2.append((trial, spike_times))
@@ -85,8 +84,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
     def test_data1(self):
         params_est, seqs_train, seqs_test, fit_info = gpfa(
             self.data1, x_dim=self.x_dim, em_max_iters=self.n_iters)
-        self.assertEqual(fit_info['cvf'], 0)
-        self.assertEqual(fit_info['bin_size'], 20 * pq.ms)
+        self.assertEqual(fit_info['bin_size'], 20*pq.ms)
         assert_array_equal(fit_info['has_spikes_bool'], np.array([True] * 4))
         self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
         self.assertEqual(fit_info['min_var_frac'], 0.01)
@@ -102,10 +100,8 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
     def test_data2(self):
         params_est, seqs_train, seqs_test, fit_info = gpfa(
-            self.data2, method=self.method, bin_size=self.bin_size, x_dim=8,
+            self.data2, bin_size=self.bin_size, x_dim=8,
             em_max_iters=self.n_iters)
-        self.assertEqual(fit_info['method'], self.method,
-                         "Input and output methods don't match")
         self.assertEqual(fit_info['bin_size'], self.bin_size,
                          "Input and output bin_size don't match")
         n_bins = 50

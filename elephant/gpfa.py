@@ -1,20 +1,4 @@
 """
-@ 2009
-Byron Yu
-byronyu @ stanford.edu
-John Cunningham
-jcunnin @ stanford.edu
-
-"""
-
-import numpy as np
-import neo
-import quantities as pq
-
-from elephant.gpfa_src import gpfa_core, gpfa_util
-from elephant.utils import check_quantities
-
-"""
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
  [1] for neural trajectory (X) visualization of parallel spike trains (Y).
 
@@ -28,7 +12,7 @@ corresponds to the conditional probability E[X|Y].
 
 A GAUSSIAN PROCESS (X) of dimension x_dim < N is adopted to extract smooth
 neural trajectories. The parameters (C, d, R) are estimated from the data using
-FACTOR ANALYSIS technique. GPFA is simply a set of Factor Analyzers (FA), 
+FACTOR ANALYSIS technique. GPFA is simply a set of Factor Analyzers (FA),
 linked together in the low dimensional space by a Gaussian Process (GP).
 
 The analysis consists of the following steps:
@@ -63,8 +47,15 @@ neural population activity. J Neurophysiol 102:614-635
 """
 
 
-def extract_trajectory(seqs, method='gpfa', bin_size=20., x_dim=3,
-                       num_folds=0, em_max_iters=500):
+import numpy as np
+import neo
+import quantities as pq
+
+from elephant.gpfa_src import gpfa_core, gpfa_util
+from elephant.utils import check_quantities
+
+
+def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -76,21 +67,12 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20., x_dim=3,
                                         0-axis --> Trials
                                         1-axis --> Neurons
                                         2-axis --> Spike times
-    method : str, optional
-        Method for extracting neural trajectories.
-        * 'gpfa': Uses the Gaussian Process Factor Analysis method.
-        Default is 'gpfa'.
     bin_size : float, optional
         Width of each time bin in ms (magnitude).
         Default is 20 ms.
     x_dim : int, optional
         State dimensionality.
         Default is 3.
-    num_folds : int, optional
-        Number of cross-validation folds, 0 indicates no cross-validation,
-        i.e. train on all trials.
-        Default is 0.
-        (Cross-validation is not implemented yet)
     em_max_iters : int, optional
         Number of EM iterations to run (default: 500).
 
@@ -149,89 +131,55 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20., x_dim=3,
 
     # Set cross-validation folds
     num_trials = len(seqs)
-    fdiv = np.linspace(0, num_trials, num_folds + 1).astype(np.int) if \
-        num_folds > 0 else num_trials
+    # fdiv = np.linspace(0, num_trials, num_folds + 1).astype(np.int) if \
+    #     num_folds > 0 else num_trials
 
-    for cvf in range(0, num_folds + 1):
-        if cvf == 0:
-            print("\n===== Training on all data =====")
-        else:
-            # TODO: implement cross-validation
-            # print("\n===== Cross-validation fold {} of {} =====").\
-            #     format(cvf, num_folds)
-            raise NotImplementedError
+    test_mask = np.full(num_trials, False, dtype=bool)
+    train_mask = ~test_mask
 
-        # Set cross-validataion masks
-        test_mask = np.full(num_trials, False, dtype=bool)
-        if cvf > 0:
-            test_mask[fdiv[cvf]:fdiv[cvf + 1]] = True
-        train_mask = ~test_mask
+    tr = np.arange(num_trials, dtype=np.int)
+    train_trial_idx = tr[train_mask]
+    test_trial_idx = tr[test_mask]
+    seqs_train = seqs[train_trial_idx]
+    seqs_test = seqs[test_trial_idx]
 
-        tr = np.arange(num_trials, dtype=np.int)
-        if cvf > 0:
-            # Randomly reorder trials before partitioning into training and
-            # test sets
-            np.random.seed(0)
-            np.random.shuffle(tr)
-        train_trial_idx = tr[train_mask]
-        test_trial_idx = tr[test_mask]
-        seqs_train = seqs[train_trial_idx]
-        seqs_test = seqs[test_trial_idx]
+    # Remove inactive units based on training set
+    has_spikes_bool = (np.hstack(seqs_train['y']).mean(1) != 0)
 
-        # Remove inactive units based on training set
-        has_spikes_bool = (np.hstack(seqs_train['y']).mean(1) != 0)
+    for seq_train in seqs_train:
+        seq_train['y'] = seq_train['y'][has_spikes_bool, :]
+    for seq_test in seqs_test:
+        seq_test['y'] = seq_test['y'][has_spikes_bool, :]
 
-        for seq_train in seqs_train:
-            seq_train['y'] = seq_train['y'][has_spikes_bool, :]
-        for seq_test in seqs_test:
-            seq_test['y'] = seq_test['y'][has_spikes_bool, :]
+    # Check if training data covariance is full rank
+    y_all = np.hstack(seqs_train['y'])
+    y_dim = y_all.shape[0]
 
-        # Check if training data covariance is full rank
-        y_all = np.hstack(seqs_train['y'])
-        y_dim = y_all.shape[0]
+    if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
+        errmesg = 'Observation covariance matrix is rank deficient.\n' \
+                  'Possible causes: ' \
+                  'repeated units, not enough observations.'
+        raise ValueError(errmesg)
 
-        if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
-            errmesg = 'Observation covariance matrix is rank deficient.\n' \
-                      'Possible causes: ' \
-                      'repeated units, not enough observations.'
-            raise ValueError(errmesg)
+    print('Number of training trials: {}'.format(len(seqs_train)))
+    print('Number of test trials: {}'.format(len(seqs_test)))
+    print('Latent space dimensionality: {}'.format(x_dim))
+    print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
 
-        print('Number of training trials: {}'.format(len(seqs_train)))
-        print('Number of test trials: {}'.format(len(seqs_test)))
-        print('Latent space dimensionality: {}'.format(x_dim))
-        print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
+    min_var_frac = 0.01
 
-        # If doing cross-validation, don't use private noise variance floor.
-        if cvf == 0:
-            min_var_frac = 0.01
-        else:
-            min_var_frac = -np.inf
+    # The following does the heavy lifting.
+    params_est, seqs_train, fit_info = gpfa_core.gpfa_engine(
+        seq_train=seqs_train,
+        seq_test=seqs_test,
+        x_dim=x_dim,
+        bin_width=bin_size,
+        min_var_frac=min_var_frac,
+        em_max_iters=em_max_iters)
 
-        # The following does the heavy lifting.
-        if method == 'gpfa':
-            params_est, seqs_train, fit_info = gpfa_core.gpfa_engine(
-                seq_train=seqs_train,
-                seq_test=seqs_test,
-                x_dim=x_dim,
-                bin_width=bin_size,
-                min_var_frac=min_var_frac,
-                em_max_iters=em_max_iters)
-        elif method in ['fa', 'ppca', 'pca']:
-            # TODO: implement two_stage_engine()
-            params_est, seqs_train, fit_info = gpfa_core.two_stage_engine(
-                seqTrain=seqs_train,
-                seqTest=seqs_test,
-                typ=method,
-                xDim=x_dim,
-                binWidth=bin_size)
-        else:
-            raise ValueError("Invalid method: {}".format(method))
-
-        fit_info['method'] = method
-        fit_info['cvf'] = cvf
-        fit_info['has_spikes_bool'] = has_spikes_bool
-        fit_info['min_var_frac'] = min_var_frac
-        fit_info['bin_size'] = bin_size
+    fit_info['has_spikes_bool'] = has_spikes_bool
+    fit_info['min_var_frac'] = min_var_frac
+    fit_info['bin_size'] = bin_size
 
     return params_est, seqs_train, fit_info
 
@@ -285,30 +233,26 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
                          np.array(kern_sd))[0]
             if not k:
                 raise ValueError('Selected kernSD not found')
-    if fit_info['method'] == 'gpfa':
-        C = params_est['C']
-        X = np.hstack(seqs_train['xsm'])
+    C = params_est['C']
+    X = np.hstack(seqs_train['xsm'])
+    Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
+    seqs_train = gpfa_util.segment_by_trial(seqs_train, Xorth, 'xorth')
+
+    params_est['Corth'] = Corth
+
+    if seqs_test is not None:
+        print("Extracting neural trajectories for test data...\n")
+        seqs_test = gpfa_core.exact_inference_with_ll(seqs_test,
+                                                      params_est)
+        X = np.hstack(seqs_test['xsm'])
         Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
-        seqs_train = gpfa_util.segment_by_trial(seqs_train, Xorth, 'xorth')
-
-        params_est['Corth'] = Corth
-
-        if seqs_test is not None:
-            print("Extracting neural trajectories for test data...\n")
-            seqs_test = gpfa_core.exact_inference_with_ll(seqs_test,
-                                                          params_est)
-            X = np.hstack(seqs_test['xsm'])
-            Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
-            seqs_test = gpfa_util.segment_by_trial(seqs_test, Xorth, 'xorth')
-    else:
-        # TODO: implement postprocessing for the two stage methods
-        raise NotImplementedError
+        seqs_test = gpfa_util.segment_by_trial(seqs_test, Xorth, 'xorth')
 
     return params_est, seqs_train, seqs_test
 
 
-def gpfa(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
-         num_folds=0, em_max_iters=500):
+def gpfa(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0,
+         em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -426,9 +370,9 @@ def gpfa(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
 
     seqs = gpfa_util.get_seq(data, bin_size)
     params_est, seqs_train, fit_info = extract_trajectory(
-        seqs, method=method, bin_size=bin_size.rescale('ms').magnitude,
-        x_dim=x_dim, num_folds=num_folds, em_max_iters=em_max_iters)
-    params_est, seqs_train, seqs_test = postprocess(params_est,
-                                                         seqs_train, fit_info)
+        seqs, bin_size=bin_size.rescale('ms').magnitude, x_dim=x_dim,
+        em_max_iters=em_max_iters)
+    params_est, seqs_train, seqs_test = postprocess(params_est, seqs_train,
+                                                    fit_info)
 
     return params_est, seqs_train, seqs_test, fit_info
