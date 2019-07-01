@@ -7,227 +7,183 @@ jcunnin @ stanford.edu
 
 """
 
-import numpy as np
 import neo
 import quantities as pq
 
-from elephant.neural_trajectory_src.gpfa import gpfa_engine, \
-    exact_inference_with_ll, two_stage_engine
-from elephant.neural_trajectory_src import util
+from elephant.neural_trajectory_src import core, gpfa_util
+from elephant.utils import check_quantities
+
+"""
+Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
+ [1] for visualizing the neural trajectory (X) of parallel spike trains (Y).
+
+The INPUT consists in a set of trials (Y), each containing a list of spike
+trains (N neurons): The OUTPUT is the projection (X) of these data in a space
+of pre-chosen dimension x_dim < N.
+
+Under the assumption of a linear relation plus noise between the latent
+variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection
+correspond to the conditional probability E[X|Y].
+
+A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth
+neural trajectories. The parameters (C, d, R) are estimated from the data using
+FACTOR ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked
+togheter in the low dimensional space by a Gaussian Process (GP).
+
+The analysis comprises the following steps:
+
+0) bin the data, to get a sequence of N dimensional vectors, on for each time
+    bin;
+  and choose the reduced dimension x_dim;
+
+1) call of the functions used:
+
+-  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
+                eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
+
+2) expectation maximization for the parameters C, d, R and the time-scale of
+ the gaussian process, using all the trials provided as input:
+
+-  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq,
+    em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
+
+3) projection of single trial in the low dimensional space:
+
+-  seq_train, ll_train = exact_inference_with_ll(seq_train, params_est)
 
 
-def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, num_folds=0, 
-                      x_dim=3):
+4) orthonormalization of the matrix C and the corresponding subspace;
+
+-  postprocess(ws, kern_sd=[])
+
+References:
+[1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
+Gaussian-process factor analysis for low-dimensional single-trial analysis of
+neural population activity. J Neurophysiol 102:614-635
+"""
+
+
+def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
+                      num_folds=0, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
     Parameters
     ----------
 
-    data: list containing following structure
-          list of tuple of trial ids and spike trains 
-                                        0-axis --> Trial IDs
-                                        1-axis --> List or array of neurons
+    data : list
+          list of spike trains in different trials
+                                        0-axis --> Trials
+                                        1-axis --> Neurons
                                         2-axis --> Spike times
-    method: string,
+    method : str
         Method for extracting neural trajectories
         * 'gpfa': Uses the Gaussian Process Factor Analysis method.
         Default is 'gpfa'
-    bin_size:   quantities.Quantity
+    bin_size : quantities.Quantity
         Width of each time bin
         Default is 20 ms
-    num_folds: int
-        Number of cross-validation folds, 0 indicates no cross-validation,
-        i.e. train on all trials.        
-        Default is 0             
-    x_dim: int
-        State dimensionality 
+    x_dim : int
+        State dimensionality
         Default is 3
+    num_folds : int
+        Number of cross-validation folds, 0 indicates no cross-validation,
+        i.e. train on all trials.
+        Default is 0.
+        (Cross-validation is not implemented yet)
+    em_max_iters : int
+        Number of EM iterations to run (default: 500)
 
     Returns
     -------
 
-    result: Dictionary
-        Returns the results of the specified method, with following keys and
-        values:
-        * iteration_time: A list containing the runtime for each iteration step
-        in the EM algorithm
-        * log_likelihood: float, maximized likelihood obtained in the E-step of the
-        EM algorithm
-        * seqTrain: numpy rec array, a copy of the training data structure,
-        augmented by new fields
-            xsm: ndarray of shape (#latent_vars x #bins)
-                  posterior mean of latent variables at each time bin
-            Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                 posterior covariance between latent variables at each
-                 timepoint
-             VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
-                    posterior covariance over time for each latent variable
-        * bin_size: int, Width of the bins
-        * cvf: int, number for cross-validation folding
-            Default is 0 (no cross-validation)
-        * parameter_estimates: dict, estimated GPFA model parameters
-              covType: {'rbf', 'tri', 'logexp'}
-                      type of GP covariance
-              gamma: ndarray of shape (1, #latent_vars)
-                      related to GP timescales by 'bin_width / sqrt(gamma)'
-              eps: ndarray of shape (1, #latent_vars)
-                    GP noise variances
-              d: ndarray of shape (#units, 1)
-                  observation mean
-              C: ndarray of shape (#units, #latent_vars)
-                  mapping between the neuronal data space and the latent variable space
-              R: ndarray of shape (#units, #latent_vars)
-                  observation noise covariance
-        * hasSpikesBool: Indicates if a neuron has any spikes across trials
-        * method: String, method name
+    parameter_estimates: dict
+        Estimated model parameters.
+        When the GPFA method is used, following parameters are contained
+            covType: {'rbf', 'tri', 'logexp'}
+                type of GP covariance
+            gamma: ndarray of shape (1, #latent_vars)
+                related to GP timescales by 'bin_width / sqrt(gamma)'
+            eps: ndarray of shape (1, #latent_vars)
+                GP noise variances
+            d: ndarray of shape (#units, 1)
+                observation mean
+            C: ndarray of shape (#units, #latent_vars)
+                mapping between the neuronal data space and the latent variable
+                space
+            R: ndarray of shape (#units, #latent_vars)
+                observation noise covariance
+
+    seqs_train: numpy.recarray
+        Data structure, whose n-th entry (corresponding to the n-th
+        experimental trial) has fields
+            * trialId: int
+                unique trial identifier
+            * T: int
+                number of timesteps
+            * y: ndarray of shape (#units, #bins)
+                neural data
+            * xsm: ndarray of shape (#latent_vars, #bins)
+                posterior mean of latent variables at each time bin
+            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
+                posterior covariance between latent variables at each
+                timepoint
+            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
+                posterior covariance over time for each latent variable
+
+    seqs_test: numpy.recarray
+        Same structure as seqs_train, but contains results of the method
+        applied to test dataset.
+        When no cross-validation is performed, None is returned.
+
+    fit_info: dict
+        Information of the fitting process and the parameters used there
+            * iteration_time: A list containing the runtime for each iteration
+                step in the EM algorithm
+            * log_likelihood: float, maximized likelihood obtained in the
+                E-step of the EM algorithm
+            * bin_size: int, Width of the bins
+            * cvf: int, number for cross-validation folding
+                Default is 0 (no cross-validation)
+            * hasSpikesBool: Indicates if a neuron has any spikes across trials
+            * method: String, method name
+
+    Raises
+    ------
+    ValueError
+        If `bin_size` if not a `pq.Quantity`.
+        If `data[0][1][0]` is not a `neo.SpikeTrain`.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.neural_trajectory import neural_trajectory
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> data = []
+    >>> for trial in range(50):
+    >>>     n_channels = 20
+    >>>     firing_rates = np.random.randint(low=1, high=100,
+    >>>         size=n_channels) * pq.Hz
+    >>>     spike_times = [homogeneous_poisson_process(rate=rate)
+    >>>         for rate in firing_rates]
+    >>>     data.append((trial, spike_times))
+    >>> params_est, seqs_train, seqs_test, fit_info = neural_trajectory(
+    >>>     data, method='gpfa', bin_size=20 * pq.ms, x_dim=8)
+
     """
+    # todo does it makes sense to explicitly pass trial_id?
+    check_quantities(bin_size, 'bin_size')
     if not isinstance(data[0][1][0], neo.SpikeTrain):
         raise ValueError("structure of the data is not correct: 0-axis should "
-                         "be trials, 1-axis list of neo spike trains "
+                         "be trials, 1-axis neo spike trains "
                          "and 2-axis spike times")
-    # Obtain binned spike counts
-    seq = util.get_seq(data, bin_size)
-    if len(seq) == 0:
-        raise ValueError("Error: No valid trials.")
-    # Set cross-validation folds
-    N = len(seq)
-    fdiv = np.linspace(0, N, num_folds + 1).astype(np.int) if num_folds > 0 \
-        else N
 
-    result = {}
-    for cvf in range(0, num_folds+1):
-        if cvf == 0:
-            print("\n===== Training on all data =====")
-        else:
-            # print("\n===== Cross-validation fold {} of {} =====").\
-            #     format(cvf, num_folds)
-            raise NotImplementedError
+    seqs = gpfa_util.get_seq(data, bin_size)
+    params_est, seqs_train, fit_info = core.extract_trajectory(
+        seqs, method, bin_size.rescale('ms').magnitude, x_dim, num_folds,
+        em_max_iters=em_max_iters)
+    params_est, seqs_train, seqs_test = core.postprocess(params_est,
+                                                         seqs_train, fit_info)
 
-        # Set cross-validataion masks
-        testMask = np.full(N, False, dtype=bool)
-        if cvf > 0:
-            testMask[fdiv[cvf]:fdiv[cvf+1]] = True
-        trainMask = ~testMask
-
-        tr = np.arange(N, dtype=np.int)
-        if cvf > 0:
-            # Randomly reorder trials before partitioning into training and
-            # test sets
-            np.random.seed(0)
-            np.random.shuffle(tr)
-        trainTrialIdx = tr[trainMask]
-        testTrialIdx = tr[testMask]
-        seqTrain = seq[trainTrialIdx]
-        seqTest = seq[testTrialIdx]
-
-        # Remove inactive units based on training set
-        hasSpikesBool = (np.hstack(seqTrain['y']).mean(1) != 0)
-
-        for seq_train in seqTrain:
-            seq_train['y'] = seq_train['y'][hasSpikesBool, :]
-        for seq_test in seqTest:
-            seq_test['y'] = seq_test['y'][hasSpikesBool, :]
-
-        # Check if training data covariance is full rank
-        yAll = np.hstack(seqTrain['y'])
-        yDim = yAll.shape[0]
-
-        if np.linalg.matrix_rank(np.cov(yAll)) < yDim:
-            errmesg = 'Observation covariance matrix is rank deficient.\n'\
-                      'Possible causes: '\
-                      'repeated units, not enough observations.'
-            raise ValueError(errmesg)
-
-        print('Number of training trials: {}'.format(len(seqTrain)))
-        print('Number of test trials: {}'.format(len(seqTest)))
-        print('Latent space dimensionality: {}'.format(x_dim))
-        print('Observation dimensionality: {}'.format(hasSpikesBool.sum()))
-
-        # If doing cross-validation, don't use private noise variance floor.
-        if cvf == 0:
-            minVarFrac = 0.01
-        else:
-            minVarFrac = -np.inf
-
-        # The following does the heavy lifting.
-        if method == 'gpfa':
-            result = gpfa_engine(seqTrain, seqTest, x_dim=x_dim,
-                                 bin_width=bin_size.magnitude, min_var_frac=minVarFrac)
-        elif method in ['fa', 'ppca', 'pca']:
-            # TODO
-            result = two_stage_engine(seqTrain, seqTest, typ=method, xDim=x_dim,
-                                      binWidth=bin_size)
-            raise NotImplementedError
-        result.update(
-            {'method': method, 'cvf': cvf, 'hasSpikesBool': hasSpikesBool,
-             'min_var_frac': minVarFrac, 'bin_size': bin_size})
-
-    return result
-
-
-def postprocess(ws, kern_sd=[]):
-    """
-    Orthonormalization and other cleanup.
-
-    Parameters
-    ----------
-
-    ws
-        Workspace variables returned by neuralTraj.py
-
-    kern_sd
-        For two-stage methods, this function returns `seqTrain` and
-        `parameter_estimates` corresponding to `kern_sd`.
-        Default is `ws.kern(1)`
-
-
-    Returns
-    -------
-
-    parameter_estimates
-        Estimated model parameters, including `Corth` obtained by
-        orthonormalizing the columns of C
-    seqTrain
-        Training data structure containing new field `xorth`,
-        the orthonormalized neural trajectories
-    seqTest
-        Test data structure containing orthonormalized neural
-        trajectories in `xorth`, obtained using `estParams`
-
-    """
-    # TODO: assignopts(who, extraopts)
-    estParams = []
-    seqTrain = []
-    seqTest = []
-    # check if array is empty
-    if not ws:
-        raise ValueError("Input argument 'ws' is empty")
-
-    if hasattr(ws, 'kern'):
-        # Check if kernSDList is empty
-        if not ws['kernSDList']:
-            k = 1
-        else:
-            k = np.where(np.array(ws.kernSDList) == np.array(kern_sd))[0]
-            if not k:
-                raise ValueError('Selected kernSD not found')
-    if ws['method'] == 'gpfa':
-        C = ws['parameter_estimates']['C']
-        X = np.hstack(ws['seqTrain']['xsm'])
-        Xorth, Corth, _ = util.orthogonalize(X, C)
-        seqTrain = util.segment_by_trial(ws['seqTrain'], Xorth, 'xorth')
-
-        estParams = ws['parameter_estimates']
-        estParams['Corth'] = Corth
-
-        if 'seqTest' in ws:
-            # Check that seqTest is not empty
-            if ws['seqTest']:
-                print("Extracting neural trajectories for test data...\n")
-                ws['seqTest'] = exact_inference_with_ll(ws['seqTest'], estParams)
-                X = np.hstack(ws['seqTest']['xsm'])
-                Xorth, Corth, _ = util.orthogonalize(X, C)
-                seqTest = util.segment_by_trial(ws['seqTest'], Xorth, 'xorth')
-
-    return estParams, seqTrain, seqTest
+    return params_est, seqs_train, seqs_test, fit_info

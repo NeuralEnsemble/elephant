@@ -1,9 +1,11 @@
+import warnings
 from collections import Iterable
 
 import numpy as np
 import scipy as sp
 
 from elephant.conversion import BinnedSpikeTrain
+from elephant.utils import check_quantities
 
 
 def get_seq(data, bin_size, use_sqrt=True):
@@ -13,34 +15,38 @@ def get_seq(data, bin_size, use_sqrt=True):
     Parameters
     ----------
 
-    data         
+    data
         structure whose nth entry (corresponding to the nth
         experimental trial) has fields
             * trialId: unique trial identifier
             * spikes: 0/1 matrix of the raw spiking activity across
                        all neurons. Each row corresponds to a neuron.
                        Each column corresponds to a 1 msec timestep.
-    bin_size: quantity.Quantity   
+    bin_size: quantity.Quantity
         Spike bin width
 
-    use_sqrt: bool 
-        Logical specifying whether or not to use square-root transform on 
-        spike counts 
+    use_sqrt: bool
+        Logical specifying whether or not to use square-root transform on
+        spike counts
         Default is  True
-
 
     Returns
     -------
 
-    seq          
-        data structure, whose nth entry (corresponding to the nth experimental 
+    seq
+        data structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
             * trialId: unique trial identifier
             * T: (1 x 1) number of timesteps
             * y: (yDim x T) neural data
 
+    Raises
+    ------
+    ValueError
+        if `bin_size` is not a pq.Quantity.
+
     """
-    # TODO: revise the docstring to a Python format
+    check_quantities(bin_size, 'bin_size')
 
     seq = []
     for dat in data:
@@ -75,23 +81,23 @@ def cut_trials(seq_in, seg_length=20):
     Parameters
     ----------
 
-    seq_in 
+    seq_in
         data structure, whose nth entry (corresponding to
         the nth experimental trial) has fields
             * trialId: unique trial identifier
             * T: (1 x 1) number of timesteps in trial
             * y: (yDim x T) neural data
 
-    seg_length 
-        length of segments to extract, in number of timesteps. If infinite, 
-        entire trials are extracted, i.e., no segmenting. 
+    seg_length : int
+        length of segments to extract, in number of timesteps. If infinite,
+        entire trials are extracted, i.e., no segmenting.
         Default is 20
 
 
     Returns
     -------
 
-    seqOut      
+    seqOut
         data structure, whose nth entry (corresponding to
         the nth experimental trial) has fields
             * trialId: identifier of trial from which segment was taken
@@ -112,8 +118,8 @@ def cut_trials(seq_in, seg_length=20):
 
         # Skip trials that are shorter than segLength
         if T < seg_length:
-            print('Warning: trialId {:4d} '.format(seqIn_n['trialId']) +
-                  'shorter than one segLength...skipping')
+            warnings.warn('trialId {0:4d} shorter than one segLength...'
+                          'skipping'.format(seqIn_n['trialId']))
             continue
 
         numSeg = np.int(np.ceil(float(T) / seg_length))
@@ -158,7 +164,7 @@ def rdiv(a, b):
 def ldiv(a, b):
     """
     Returns the solution to a x = b. Equivalent to MATLAB left matrix
-    division: a \ b
+    division: a \\ b
     """
     if a.shape[0] == a.shape[1]:
         return np.linalg.solve(a, b)
@@ -186,8 +192,10 @@ def make_k_big(params, n_timesteps):
     Parameters
     ----------
 
-    params: GPFA model parameters
-    n_timesteps: number of timesteps
+    params
+        GPFA model parameters
+    n_timesteps : int
+        number of timesteps
 
     Returns
     -------
@@ -197,9 +205,9 @@ def make_k_big(params, n_timesteps):
                    The (t1, t2) block is diagonal, has dimensions xDim x xDim,
                    and represents the covariance between the state vectors at
                    timesteps t1 and t2.  K_big is sparse and striped.
-    K_big_inv 
-        Inverse of K_big 
-    logdet_K_big 
+    K_big_inv
+        Inverse of K_big
+    logdet_K_big
         Log determinant of K_big
     """
     xDim = params['C'].shape[1]
@@ -212,10 +220,12 @@ def make_k_big(params, n_timesteps):
 
     for i in range(xDim):
         if params['covType'] == 'rbf':
-            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 * Tdif**2) \
+            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 *
+                                                Tdif ** 2) \
                 + params['eps'][i] * np.eye(n_timesteps)
         elif params['covType'] == 'tri':
-            K = np.maximum(1 - params['eps'][i] - params['a'][i] * np.abs(Tdif), 0) \
+            K = np.maximum(1 - params['eps'][i] - params['a'][i] *
+                           np.abs(Tdif), 0) \
                 + params['eps'][i] * np.eye(n_timesteps)
         elif params['covType'] == 'logexp':
             z = params['gamma'] \
@@ -236,8 +246,9 @@ def make_k_big(params, n_timesteps):
         # in C and MEX, for inversion of Toeplitz matrix:
         # [K_big_inv(idx+i, idx+i), logdet_K] = invToeplitz(K);
         # TODO: use an inversion method optimized for Toeplitz matrix
-        # Below is an attempt to use such a method, not leading to a speed-up...
-        # # K_big_inv[i::xDim, i::xDim] = sp.linalg.solve_toeplitz((K[:, 0], K[0, :]), np.eye(T))
+        # Below is an attempt to use such a method, not leading to a speed-up.
+        # # K_big_inv[i::xDim, i::xDim] = sp.linalg.solve_toeplitz((K[:, 0],
+        # K[0, :]), np.eye(T))
         K_big_inv[i::xDim, i::xDim] = np.linalg.inv(K)
         logdet_K = logdet(K)
 
@@ -246,7 +257,7 @@ def make_k_big(params, n_timesteps):
     return K_big, K_big_inv, logdet_K_big
 
 
-def inv_persymm(M, blk_size, off_diag_sparse=False):
+def inv_persymm(M, blk_size):
     """
     Inverts a matrix that is block persymmetric.  This function is
     faster than calling inv(M) directly because it only computes the
@@ -260,22 +271,21 @@ def inv_persymm(M, blk_size, off_diag_sparse=False):
     Parameters
     ----------
 
-    M: numpy.ndarray 
-        The block persymmetric matrix to be inverted ((blkSize*T) x (blkSize*T)).  
+    M: numpy.ndarray
+        The block persymmetric matrix to be inverted
+        ((blkSize*T) x (blkSize*T)).
         Each block is blkSize x blkSize, arranged in a T x T grid.
-    blk_size: int 
+    blk_size: int
         Edge length of one block
-    off_diag_sparse: bool 
-        Logical that specifies whether off-diagonal blocks are sparse (default: false)
 
     Returns
     -------
-    invM     
+    invM
         Inverse of M ((blkSize*T) x (blkSize*T))
-    logdet_M 
+    logdet_M
         Log determinant of M
     """
-    T = M.shape[0] / blk_size
+    T = int(M.shape[0] / blk_size)
     Thalf = np.int(np.ceil(T / 2.0))
     mkr = blk_size * Thalf
 
@@ -283,7 +293,7 @@ def inv_persymm(M, blk_size, off_diag_sparse=False):
     invA11 = (invA11 + invA11.T) / 2
 
     # Multiplication of a sparse matrix by a dense matrix is not supported by
-    # SciPy. Making A12 a sparse matrix here raises an error later.
+    # SciPy. Making A12 a sparse matrix here  an error later.
     off_diag_sparse = False
     if off_diag_sparse:
         A12 = sp.sparse.csr_matrix(M[:mkr, mkr:])
@@ -316,11 +326,11 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
      p_in
         Top half of block persymmetric matrix (xDim*Thalf) x (xDim*T),
         where Thalf = ceil(T/2)
-     blk_size
+     blk_size : int
         Edge length of one block
-     n_blocks
+     n_blocks : int
         Number of blocks making up a row of Pin
-     blk_size_vert
+     blk_size_vert : int, optional
         Vertical block edge length if blocks are not square.
         `blk_size` is assumed to be the horizontal block edge length.
 
@@ -332,7 +342,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     """
     if blk_size_vert is None:
         blk_size_vert = blk_size
-    n_blocks = int(n_blocks)
+
     Nh = blk_size * n_blocks
     Nv = blk_size_vert * n_blocks
     Thalf = np.int(np.floor(n_blocks / 2.0))
@@ -344,7 +354,9 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
         for j in range(n_blocks):
             Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
                  Nh - (j + 1) * blk_size:Nh - j * blk_size] \
-                = p_in[i * blk_size_vert:(i + 1) * blk_size_vert, j * blk_size:(j + 1) * blk_size]
+                = p_in[i * blk_size_vert:(i + 1) *
+                       blk_size_vert,
+                       j * blk_size:(j + 1) * blk_size]
 
     return Pout
 
@@ -360,7 +372,7 @@ def make_precomp(seq, xDim):
 
     seq
         The sequence struct of inferred latents, etc.
-    xDim
+    xDim : int
        The dimension of the latent space.
 
     Returns
@@ -394,17 +406,19 @@ def make_precomp(seq, xDim):
     # this is computationally cheap, so we keep a few loops in MATLAB
     # for ease of readability.
     precomp = np.empty(xDim, dtype=[(
-        'absDif', np.object), ('difSq', np.object), ('Tall', np.object), ('Tu', np.object)])
+        'absDif', np.object), ('difSq', np.object), ('Tall', np.object),
+        ('Tu', np.object)])
     for i in range(xDim):
         precomp[i]['absDif'] = np.abs(Tdif)
-        precomp[i]['difSq'] = Tdif**2
+        precomp[i]['difSq'] = Tdif ** 2
         precomp[i]['Tall'] = Tall
     # find unique numbers of trial lengths
     Tu = np.unique(Tall)
     # Loop once for each state dimension (each GP)
     for i in range(xDim):
         precomp_Tu = np.empty(len(Tu), dtype=[(
-            'nList', np.object), ('T', np.int), ('numTrials', np.int), ('PautoSUM', np.object)])
+            'nList', np.object), ('T', np.int), ('numTrials', np.int),
+            ('PautoSUM', np.object)])
         for j in range(len(Tu)):
             T = Tu[j]
             precomp_Tu[j]['nList'] = np.where(Tall == T)[0]
@@ -428,9 +442,9 @@ def make_precomp(seq, xDim):
         for j in range(len(Tu)):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
-                # precomp[i]['Tu'][j]['PautoSUM'] += seq_lat[n]['VsmGP'][:, :, i] + seq_lat[n]['xsm'][i, :].T.dot(seq_lat[n]['xsm'][i, :])
                 precomp[i]['Tu'][j]['PautoSUM'] += seq[n]['VsmGP'][:, :, i] \
-                    + np.outer(seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
+                    + np.outer(
+                    seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
     return precomp
 
 
@@ -479,14 +493,17 @@ def grad_betgam(p, pre_comp, const):
         dg_KinvM = np.diag(KinvM)
         tr_KinvM = 2 * dg_KinvM.sum() - np.fmod(T, 2) * dg_KinvM[-1]
 
-        mkr = np.int(np.ceil(0.5 * T**2))
+        mkr = np.int(np.ceil(0.5 * T ** 2))
         numTrials = pre_comp['Tu'][j]['numTrials']
         PautoSUM = pre_comp['Tu'][j]['PautoSUM']
 
+        pauto_kinv_dot = PautoSUM.ravel('F')[:mkr].dot(
+            KinvMKinv.ravel('F')[:mkr])
+        pauto_kinv_dot_rest = PautoSUM.ravel('F')[-1:mkr - 1:- 1].dot(
+            KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
         dEdgamma = dEdgamma - 0.5 * numTrials * tr_KinvM \
-            + 0.5 * PautoSUM.ravel('F')[:mkr].dot(KinvMKinv.ravel('F')[:mkr]) \
-            + 0.5 * PautoSUM.ravel('F')[-1:mkr - 1:-
-                                        1].dot(KinvMKinv.ravel('F')[:(T**2 - mkr)])
+            + 0.5 * pauto_kinv_dot \
+            + 0.5 * pauto_kinv_dot_rest
 
         f = f - 0.5 * numTrials * logdet_K \
             - 0.5 * (PautoSUM * Kinv).sum()
@@ -511,26 +528,26 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
     Parameters
     ----------
 
-    x
+    x : np.ndarray
         Data matrix (xDim x N)
-    z_dim
+    z_dim : int
         Number of factors
-    typ
+    typ : str
         'fa' or 'ppca'
         Default is 'fa'
-    tol
+    tol : float
         Stopping criterion for EM
         Default is 1e-8
-    cyc
+    cyc : int
         Maximum number of EM iterations
         Default is 1e8
-    min_var_frac
+    min_var_frac : float
         Fraction of overall data variance for each observed dimension
         to set as the private variance floor.  This is used to combat
         Heywood cases, where ML parameter learning returns one or more
         zero private variances. (default: 0.01)
         (See Martin & McDonald, Psychometrika, Dec 1975.)
-    verbose
+    verbose : bool
         Logical that specifies whether to display status messages
         Default is **False**
 
@@ -561,7 +578,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         scale = np.exp(2 * (np.log(np.diag(cX_chol))).sum() / xDim)
     else:
         # cX may not be full rank because N < xDim
-        print('WARNING in fastfa.py: Data matrix is not full rank.')
+        warnings.warn('Data matrix is not full rank.')
         r = np.linalg.matrix_rank(cX)
         e = np.sort(np.linalg.eigvals(cX))[::-1]
         scale = sp.stats.gmean(e[:r])
@@ -572,7 +589,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
 
     varFloor = min_var_frac * np.diag(cX)
 
-    I = np.eye(z_dim)
+    eye_matrix = np.eye(z_dim)
     const = -xDim / 2.0 * np.log(2 * np.pi)
     LLi = 0
     LL = []
@@ -584,11 +601,11 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         iPh = np.diag(1.0 / Ph)
         iPhL = iPh.dot(L)
 
-        MM = iPh - rdiv(iPhL, I + L.T.dot(iPhL)).dot(iPhL.T)
+        MM = iPh - rdiv(iPhL, eye_matrix + L.T.dot(iPhL)).dot(iPhL.T)
         beta = L.T.dot(MM)  # zDim x xDim
 
         cX_beta = cX.dot(beta.T)  # xDim x zDim
-        EZZ = I - beta.dot(L) + beta.dot(cX_beta)
+        EZZ = eye_matrix - beta.dot(L) + beta.dot(cX_beta)
 
         # Compute log likelihood
         LLold = LLi
@@ -596,7 +613,7 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         ldM = (np.log(np.diag(MM_chol))).sum()
         LLi = N * const + N * ldM - 0.5 * N * (MM * cX).sum()
         if verbose:
-            print('EM iteration {:5d} lik {:8.1f} \r'.format(i, LLi),)
+            print('EM iteration {:5d} lik {:8.1f} \r'.format(i, LLi), )
         LL.append(LLi)
 
         # =======
@@ -613,9 +630,9 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
 
         if i <= 2:
             LLbase = LLi
-        elif LLi < LLold:
+        elif verbose and LLi < LLold:
             print('VIOLATION')
-        elif (LLi - LLbase) < (1 + tol) * (LLold - LLbase):
+        elif verbose and (LLi - LLbase) < (1 + tol) * (LLold - LLbase):
             print('iteration {}'.format(i))
             break
 
@@ -623,8 +640,9 @@ def fastfa(x, z_dim, typ='fa', tol=1.0E-8, cyc=10 ** 8, min_var_frac=0.01,
         print()
 
     if np.any(Ph == varFloor):
-        print('Warning: Private variance floor used'
-              'for one or more observed dimensions in FA.')
+        warnings.warn(
+            'Private variance floor used for one or more observed dimensions '
+            'in FA.')
 
     estParams = {'L': L, 'Ph': Ph, 'd': d}
 
@@ -637,38 +655,39 @@ def minimize(x, f, length, *args):
 
     Usage: x, f_x, i = minimize(x, f, length, P1, P2, P3, ... )
 
-    where the starting point is given by `x` (D by 1), and the function named in
-    the string `f`, must return a function value and a vector of partial
+    where the starting point is given by `x` (D by 1), and the function named
+    in the string `f`, must return a function value and a vector of partial
     derivatives of f wrt x, the `length` gives the length of the run: if it is
     positive, it gives the maximum number of line searches, if negative its
     absolute gives the maximum allowed number of function evaluations. You can
     (optionally) give `length` a second component, which will indicate the
-    reduction in function value to be expected in the first line-search (defaults
-    to 1.0). The parameters P1, P2, P3, ... are passed on to the function f.
+    reduction in function value to be expected in the first line-search
+    (defaults to 1.0). The parameters P1, P2, P3, ... are passed on to the
+    function f.
 
-    The function returns when either its length is up, or if no further progress
-    can be made (ie, we are at a (local) minimum, or so close that due to
-    numerical problems, we cannot get any closer). NOTE: If the function
+    The function returns when either its length is up, or if no further
+    progress can be made (ie, we are at a (local) minimum, or so close that
+    due to numerical problems, we cannot get any closer). NOTE: If the function
     terminates within a few iterations, it could be an indication that the
-    function values and derivatives are not consistent (ie, there may be a bug in
-    the implementation of your `f` function). The function returns the found
-    solution `x`, a vector of function values `f_x` indicating the progress made
-    and `i` the number of iterations (line searches or function evaluations,
-    depending on the sign of `length`) used.
+    function values and derivatives are not consistent (ie, there may be a bug
+    in the implementation of your `f` function). The function returns the found
+    solution `x`, a vector of function values `f_x` indicating the progress
+    made and `i` the number of iterations (line searches or function
+    evaluations, depending on the sign of `length`) used.
 
     The Polack-Ribiere flavour of conjugate gradients is used to compute search
     directions, and a line search using quadratic and cubic polynomial
     approximations and the Wolfe-Powell stopping criteria is used together with
-    the slope ratio method for guessing initial step sizes. Additionally a bunch
-    of checks are made to make sure that exploration is taking place and that
-    extrapolation will not be unboundedly large.
+    the slope ratio method for guessing initial step sizes. Additionally a
+    bunch of checks are made to make sure that exploration is taking place and
+    that extrapolation will not be unboundedly large.
 
     Parameters
     ----------
 
     x: numpy.ndarray
         input matrix (Dx1)
-    f: string
+    f: str
         Function name
     length: iterable
         Length of the run
@@ -698,7 +717,8 @@ def minimize(x, f, length, *args):
     advisable in any important application.  All use of these programs is
     entirely at the user's own risk.
     """
-    INT = 0.1  # don't reevaluate within 0.1 of the limit of the current bracket
+    # don't reevaluate within 0.1 of the limit of the current bracket
+    INT = 0.1
     EXT = 3.0  # extrapolate maximum 3 times the current step-size
     MAX = 20  # max 20 function evaluations per line search
     RATIO = 10  # maximum allowed slope ratio
@@ -741,10 +761,6 @@ def minimize(x, f, length, *args):
     else:
         red = 1
         length = length
-    if length > 0:
-        S = 'Linesearch'
-    else:
-        S = 'Function evaluation'
 
     i = 0  # zero the run length counter
     ls_failed = 0  # no previous line search has failed
@@ -753,7 +769,7 @@ def minimize(x, f, length, *args):
     i += (length < 0)  # count epochs?!
     # initial search direction (steepest) and slope
     s = -df0
-    d0 = -s**2
+    d0 = -s ** 2
     x3 = red / (1.0 - d0)  # initial step is red/(|s|+1)
 
     while i < np.abs(length):  # while not finished
@@ -781,10 +797,11 @@ def minimize(x, f, length, *args):
                     M -= 1
                     i += (length < 0)  # count epochs?!
                     f3, df3 = eval(f)(x + x3 * s, *args)
-                    if np.isnan(f3) or np.isinf(f3) or np.isnan(df3) or np.isinf(df3):
+                    if np.isnan(f3) or np.isinf(f3) or np.isnan(
+                            df3) or np.isinf(df3):
                         raise ValueError
                     success = 1
-                except:  # catch any error which occured in f
+                except BaseException:  # catch any error which occured in f
                     x3 = (x2 + x3) / 2  # bisect and try again
             if f3 < F0:
                 # keep best values
@@ -808,7 +825,7 @@ def minimize(x, f, length, *args):
             A = 6 * (f1 - f2) + 3 * (d2 + d1) * (x2 - x1)
             B = 3 * (f2 - f1) - (2 * d1 + d2) * (x2 - x1)
             # num. error possible, ok!
-            x3 = x1 - d1 * (x2 - x1)**2 / \
+            x3 = x1 - d1 * (x2 - x1) ** 2 / \
                 (B + np.sqrt(B * B - A * d1 * (x2 - x1)))
             # num prob | wrong sign?
             if not np.isreal(x3) or np.isnan(x3) or np.isinf(x3) or x3 < 0:
@@ -834,14 +851,14 @@ def minimize(x, f, length, *args):
                 d2 = d3
             if f4 > f0:
                 # quadratic interpolation
-                x3 = x2 - (0.5 * d2 * (x4 - x2)**2) / \
+                x3 = x2 - (0.5 * d2 * (x4 - x2) ** 2) / \
                     (f4 - f2 - d2 * (x4 - x2))
             else:
                 # cubic interpolation
                 A = 6 * (f2 - f4) / (x4 - x2) + 3 * (d4 + d2)
                 B = 3 * (f4 - f2) - (2 * d2 + d4) * (x4 - x2)
                 # num. error possible, ok!
-                x3 = x2 + (np.sqrt(B * B - A * d2 * (x4 - x2)**2) - B) / A
+                x3 = x2 + (np.sqrt(B * B - A * d2 * (x4 - x2) ** 2) - B) / A
             if np.isnan(x3) or np.isinf(x3):
                 # if we had a numerical problem then bisect
                 x3 = (x2 + x4) / 2
@@ -907,9 +924,9 @@ def orthogonalize(x, l):
     Parameters
     ----------
 
-    x 
+    x : np.ndarray
         Latent variables (xDim x T)
-    l
+    l : np.ndarray
         Loading matrix (yDim x xDim)
 
     Returns
@@ -917,7 +934,7 @@ def orthogonalize(x, l):
 
     Xorth
         Orthonormalized latent variables (xDim x T)
-    Lorth    
+    Lorth
         Orthonormalized loading matrix (yDim x xDim)
     TT
        Linear transform applied to latent variables (xDim x xDim)
@@ -946,7 +963,7 @@ def segment_by_trial(seq, x, fn):
 
     seq
         Data structure that has field T, the number of timesteps
-    x
+    x : np.ndarray
         Data to be segmented (any dimensionality x total number of timesteps)
     fn
         New field name of seq where segments of X are stored
@@ -956,9 +973,15 @@ def segment_by_trial(seq, x, fn):
 
     seq_new
         Data structure with new field `fn`
+
+    Raises
+    ------
+    ValueError
+        If `seq['T']) != x.shape[1]`.
+
     """
     if np.sum(seq['T']) != x.shape[1]:
-        raise(ValueError, 'size of X incorrect.')
+        raise (ValueError, 'size of X incorrect.')
 
     dtype_new = [(i, seq[i].dtype) for i in seq.dtype.names]
     dtype_new.append((fn, np.object))
