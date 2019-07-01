@@ -145,7 +145,7 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
             * bin_size: int, Width of the bins
             * cvf: int, number for cross-validation folding
                 Default is 0 (no cross-validation)
-            * hasSpikesBool: Indicates if a neuron has any spikes across trials
+            * has_spikes_bool: Indicates if a neuron has any spikes across trials
             * method: String, method name
 
     Raises

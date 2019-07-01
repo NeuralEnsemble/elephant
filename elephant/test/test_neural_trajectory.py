@@ -13,12 +13,15 @@ import neo
 
 from numpy.testing import assert_array_equal
 
+from elephant.spike_train_generation import homogeneous_poisson_process
+
 try:
     import sklearn
 except ImportError:
     HAVE_SKLEARN = False
 else:
-    import elephant.neural_trajectory as nt
+    from elephant.neural_trajectory import neural_trajectory
+
     HAVE_SKLEARN = True
 
 
@@ -50,8 +53,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
             return np.concatenate((s1, s2, s3, s4))
 
-        trials = []
-        dat_temp = []
+        self.data1 = []
         for tr in range(1):
             np.random.seed(tr)
             n1 = neo.SpikeTrain(h_alt(2, 10, 2, 2, 2.5, 2.5, 2.5, 2.5),
@@ -62,25 +64,58 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
                                 t_start=0, t_stop=10, units=1 * pq.s)
             n4 = neo.SpikeTrain(h_alt(2, 2, 10, 2, 2.5, 2.5, 2.5, 2.5),
                                 t_start=0, t_stop=10, units=1 * pq.s)
-            dat_temp.append((tr, np.array([n1, n2, n3, n4])))
-            trials.append((tr, [n1, n2, n3, n4]))
-
-        self.input = np.array(dat_temp,
-                              dtype=[('trialId', 'O'), ('spikes', 'O')])
-
+            self.data1.append((tr, [n1, n2, n3, n4]))
         self.method = 'gpfa'
         self.x_dim = 4
 
-    def test_input(self):
-        dat = [(0, [0, 1, 2])]
-        self.assertRaises(ValueError, nt.neural_trajectory, dat)
-        result = nt.neural_trajectory(self.input,
-                                      x_dim=self.x_dim)
-        self.assertEqual(result['cvf'], 0)
-        self.assertEqual(result['bin_size'], 20 * pq.ms)
-        assert_array_equal(result['hasSpikesBool'], np.array([True] * 4))
-        self.assertAlmostEqual(result['log_likelihood'], -26.504094758661424)
-        self.assertEqual(result['min_var_frac'], 0.01)
+        # data2 setup
+        np.random.seed(27)
+        self.data2 = []
+        self.n_iters = 10
+        self.bin_size = 20 * pq.ms
+        self.n_trials = 10
+        for trial in range(self.n_trials):
+            n_channels = 20
+            firing_rates = np.random.randint(low=1, high=100,
+                                             size=n_channels) * pq.Hz
+            spike_times = [homogeneous_poisson_process(rate=rate)
+                           for rate in firing_rates]
+            self.data2.append((trial, spike_times))
+
+    def test_data1(self):
+        params_est, seqs_train, seqs_test, fit_info = neural_trajectory(
+            self.data1, x_dim=self.x_dim, em_max_iters=self.n_iters)
+        self.assertEqual(fit_info['cvf'], 0)
+        self.assertEqual(fit_info['bin_size'], 20 * pq.ms)
+        assert_array_equal(fit_info['has_spikes_bool'], np.array([True] * 4))
+        self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
+        self.assertEqual(fit_info['min_var_frac'], 0.01)
+
+    def test_invalid_bin_size_type(self):
+        invalid_bin_size = 10
+        self.assertRaises(ValueError, neural_trajectory, data=self.data2,
+                          bin_size=invalid_bin_size)
+
+    def test_invalid_input_data(self):
+        invalid_data = [(0, [0, 1, 2])]
+        self.assertRaises(ValueError, neural_trajectory, data=invalid_data)
+
+    def test_data2(self):
+        params_est, seqs_train, seqs_test, fit_info = neural_trajectory(
+            self.data2, method=self.method, bin_size=self.bin_size, x_dim=8,
+            em_max_iters=self.n_iters)
+        self.assertEqual(fit_info['method'], self.method,
+                         "Input and output methods don't match")
+        self.assertEqual(fit_info['bin_size'], self.bin_size,
+                         "Input and output bin_size don't match")
+        n_bins = 50
+        assert_array_equal(seqs_train['T'], np.repeat(n_bins,
+                                                      repeats=self.n_trials))
+        assert_array_equal(seqs_train['trialId'], np.arange(self.n_trials))
+        for key in ['y', 'xsm', 'Vsm', 'VsmGP', 'xorth']:
+            self.assertEqual(len(seqs_train[key]), self.n_trials,
+                             msg="Failed ndarray field {0}".format(key))
+        self.assertEqual(len(seqs_train), self.n_trials)
 
 
 def suite():
