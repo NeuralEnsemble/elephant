@@ -8,63 +8,13 @@ jcunnin @ stanford.edu
 """
 
 import numpy as np
-import quantities as pq
 
 from elephant.neural_trajectory_src import gpfa_util
 from elephant.neural_trajectory_src.gpfa import gpfa_engine, \
     exact_inference_with_ll, two_stage_engine
 
-"""
-Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
- [1] for visualizing the neural trajectory (X) of parallel spike trains (Y).
 
-The INPUT consists in a set of trials (Y), each containing a list of spike
-trains (N neurons): The OUTPUT is the projection (X) of these data in a space
-of pre-chosen dimension x_dim < N.
-
-Under the assumption of a linear relation plus noise between the latent
-variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection
-correspond to the conditional probability E[X|Y].
-
-A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth
-neural trajectories. The parameters (C, d, R) are estimated from the data using
-FACTOR ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked
-togheter in the low dimensional space by a Gaussian Process (GP).
-
-The analysis comprises the following steps:
-
-0) bin the data, to get a sequence of N dimensional vectors, on for each time
-    bin;
-  and choose the reduced dimension x_dim;
-
-1) call of the functions used:
-
--  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
-                eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
-
-2) expectation maximization for the parameters C, d, R and the time-scale of
- the gaussian process, using all the trials provided as input:
-
--  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq,
-    em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
-
-3) projection of single trial in the low dimensional space:
-
--  seq_train, ll_train = exact_inference_with_ll(seq_train, params_est)
-
-
-4) orthonormalization of the matrix C and the corresponding subspace;
-
--  postprocess(ws, kern_sd=[])
-
-References:
-[1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
-Gaussian-process factor analysis for low-dimensional single-trial analysis of
-neural population activity. J Neurophysiol 102:614-635
-"""
-
-
-def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
+def extract_trajectory(seqs, method='gpfa', bin_size=20., x_dim=3,
                        num_folds=0, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
@@ -72,67 +22,78 @@ def extract_trajectory(seqs, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
     Parameters
     ----------
 
-    seqs : list
-        list of spike trains in different trials
-            0-axis --> Trials
-            1-axis --> Neurons
-            2-axis --> Spike times
-    method : string
-        Method for extracting neural trajectories
+    seqs : np.ndarray
+          list of spike trains in different trials
+                                        0-axis --> Trials
+                                        1-axis --> Neurons
+                                        2-axis --> Spike times
+    method : str, optional
+        Method for extracting neural trajectories.
         * 'gpfa': Uses the Gaussian Process Factor Analysis method.
-        Default is 'gpfa'
-    bin_size : quantities.Quantity
-        Width of each time bin
-        Default is 20 ms
-    x_dim : int
-        State dimensionality
-        Default is 3
-    num_folds : int
+        Default is 'gpfa'.
+    bin_size : float, optional
+        Width of each time bin in ms (magnitude).
+        Default is 20 ms.
+    x_dim : int, optional
+        State dimensionality.
+        Default is 3.
+    num_folds : int, optional
         Number of cross-validation folds, 0 indicates no cross-validation,
         i.e. train on all trials.
         Default is 0.
-        (Cross-validation is not implemented yet.)
-    em_max_iters : int
-        Number of EM iterations to run (default: 500)
+        (Cross-validation is not implemented yet)
+    em_max_iters : int, optional
+        Number of EM iterations to run (default: 500).
 
     Returns
     -------
 
-    params_est: dict
-        Estimated GPFA model parameters
+    parameter_estimates: dict
+        Estimated model parameters.
+        When the GPFA method is used, following parameters are contained
             covType: {'rbf', 'tri', 'logexp'}
-                  type of GP covariance
+                type of GP covariance
             gamma: ndarray of shape (1, #latent_vars)
-                  related to GP timescales by 'bin_width / sqrt(gamma)'
+                related to GP timescales by 'bin_width / sqrt(gamma)'
             eps: ndarray of shape (1, #latent_vars)
                 GP noise variances
             d: ndarray of shape (#units, 1)
-              observation mean
+                observation mean
             C: ndarray of shape (#units, #latent_vars)
-              mapping between the neuronal data space and the latent variable
+                mapping between the neuronal data space and the latent variable
                 space
             R: ndarray of shape (#units, #latent_vars)
-              observation noise covariance
-    seqs_train: numpy.recarray
-        A copy of the training data structure, augmented by new fields
-            xsm: ndarray of shape (#latent_vars x #bins)
-                 posterior mean of latent variables at each time bin
-            Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                 posterior covariance between latent variables at each
-                 timepoint
-            VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
-                   posterior covariance over time for each latent variable
+                observation noise covariance
+
+    seqs_train: np.recarray
+        Data structure, whose n-th entry (corresponding to the n-th
+        experimental trial) has fields
+            * trialId: int
+                unique trial identifier
+            * T: int
+                number of timesteps
+            * y: ndarray of shape (#units, #bins)
+                neural data
+            * xsm: ndarray of shape (#latent_vars, #bins)
+                posterior mean of latent variables at each time bin
+            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
+                posterior covariance between latent variables at each
+                timepoint
+            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
+                posterior covariance over time for each latent variable
+
     fit_info: dict
-        Information of the fitting process and the parameters used there
-        * iteration_time: A list containing the runtime for each iteration step
-        in the EM algorithm
-        * log_likelihood: float, maximized likelihood obtained in the E-step
-            of the EM algorithm
-        * bin_size: int, Width of the bins
-        * cvf: int, number for cross-validation folding
-            Default is 0 (no cross-validation)
-        * has_spikes_bool: Indicates if a neuron has any spikes across trials
-        * method: String, method name
+        Information of the fitting process and the parameters used there:
+            * iteration_time: A list containing the runtime for each iteration
+                step in the EM algorithm.
+            * log_likelihood: float, maximized likelihood obtained in the
+                E-step of the EM algorithm.
+            * bin_size: int, Width of the bins.
+            * cvf: int, number for cross-validation folding
+                Default is 0 (no cross-validation).
+            * has_spikes_bool: Indicates if a neuron has any spikes across
+                trials.
+            * method: str, Method name.
     """
     if len(seqs) == 0:
         raise ValueError("Error: No valid trials.")
@@ -241,22 +202,22 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
         `params_est` corresponding to `kern_sd`.
         Default is 1.
 
-    seqs_test: numpy.recarray, optional
+    seqs_test: np.recarray, optional
         Data structure of test dataset.
         Default is None.
 
     Returns
     -------
 
-    params_est
-        Estimated model parameters, including `Corth` obtained by
-        orthonormalizing the columns of C
-    seqs_train
-        Training data structure containing new field `xorth`,
-        the orthonormalized neural trajectories
-    seqs_test
-        Test data structure containing orthonormalized neural
-        trajectories in `xorth`, obtained using `params_est`
+    params_est : dict
+        Estimated model parameters, including `Corth`, obtained by
+        orthonormalizing the columns of C.
+    seqs_train : np.recarray
+        Training data structure that contains the new field `xorth`,
+        the orthonormalized neural trajectories.
+    seqs_test : np.recarray
+        Test data structure that contains orthonormalized neural
+        trajectories in `xorth`, obtained using `params_est`.
         When no test dataset is given, None is returned.
 
 
@@ -267,12 +228,12 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
 
     """
     if hasattr(fit_info, 'kern'):
+        # FIXME `k` and `kern_sd` are not used
         if not fit_info['kernSDList']:
             k = 1
         else:
             k = np.where(np.array(fit_info['kernSDList']) ==
                          np.array(kern_sd))[0]
-            # FIXME checking of k outside of if-statement?
             if not k:
                 raise ValueError('Selected kernSD not found')
     if fit_info['method'] == 'gpfa':

@@ -12,21 +12,21 @@ from . import gpfa_util
 
 
 def learn_gp_params(seq, params, verbose=False):
-    """Updates parameters of GP state model given neural trajectories.
+    """Updates parameters of GP state model, given neural trajectories.
 
     Parameters
     ----------
-    seq : numpy.recarray
-          data structure containing neural trajectories
+    seq : np.recarray
+          data structure containing neural trajectories;
     params : dict
              current GP state model parameters, which gives starting point
-             for gradient optimization
+             for gradient optimization;
     verbose : bool, optional
               specifies whether to display status messages (default: False)
 
     Returns
     -------
-    param_opt : numpy.ndarray
+    param_opt : np.ndarray
                 updated GP state model parameter
 
     Raises
@@ -80,11 +80,11 @@ def learn_gp_params(seq, params, verbose=False):
 
 def exact_inference_with_ll(seq, params, get_ll=True):
     """
-    Extracts latent trajectories from neural data given GPFA model parameters.
+    Extracts latent trajectories from neural data, given GPFA model parameters.
 
     Parameters
     ----------
-    seq : numpy.recarray
+    seq : np.recarray
           Input data structure, whose n-th element (corresponding to the n-th
           experimental trial) has fields:
               y : ndarray of shape (#units, #bins)
@@ -92,7 +92,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
               T : int
                   number of bins
     params : dict
-             GPFA model parameters contained in fields:
+             GPFA model parameters whe the following fields:
                 C : ndarray
                     FA factor loadings matrix
                 d : ndarray
@@ -108,8 +108,9 @@ def exact_inference_with_ll(seq, params, get_ll=True):
 
     Returns
     -------
-    seq_lat : numpy.recarray
-              a copy of the input data structure, augmented by new fields:
+    seq_lat : np.recarray
+              a copy of the input data structure, augmented with the new
+              fields:
                   xsm : ndarray of shape (#latent_vars x #bins)
                         posterior mean of latent variables at each time bin
                   Vsm : ndarray of shape (#latent_vars, #latent_vars, #bins)
@@ -236,7 +237,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
                           latent variable space
                       R : ndarray of shape (#units, #latent_vars)
                           observation noise covariance
-    seq : numpy.recarray
+    seq : np.recarray
           training data structure, whose n-th entry (corresponding to the n-th
            experimental trial) has fields
               trialId :
@@ -265,10 +266,11 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     Returns
     -------
     params_est : dict
-                 GPFA model parameter estimates returned by EM algorithm (same
+                 GPFA model parameter estimates, returned by EM algorithm (same
                  format as params_init)
     seq_lat : dict
-              a copy of the training data structure, augmented by new fields
+              a copy of the training data structure, augmented with the new
+              fields:
                   xsm : ndarray of shape (#latent_vars x #bins)
                         posterior mean of latent variables at each time bin
                   Vsm : ndarray of shape (#latent_vars, #latent_vars, #bins)
@@ -277,10 +279,10 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
                   VsmGP : ndarray of shape (#bins, #bins, #latent_vars)
                           posterior covariance over time for each latent
                           variable
-    ll : list of floats
-         data log likelihood after each EM iteration
-    iter_time : list of floats
-                computation time (in seconds) for each EM iteration
+    ll : list
+        list of log likelihoods after each EM iteration
+    iter_time : list
+        lisf of computation times (in seconds) for each EM iteration
     """
     params = params_init
     t = seq['T']
@@ -393,7 +395,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
 
     Parameters
     ----------
-    seq_train : numpy.recarray
+    seq_train : np.recarray
                 training data structure, whose n-th element (corresponding to
                 the n-th experimental trial) has fields
                     trialId :
@@ -402,11 +404,11 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                         number of bins
                     y : ndarray of shape (#units, #bins)
                         neural data
-    seq_test : numpy.recarray
+    seq_test : np.recarray
                test data structure (same format as seqTrain)
     x_dim : int, optional
             state dimensionality (default: 3)
-    bin_width : int, optional
+    bin_width : float, optional
                 spike bin width in msec (default: 20)
     tau_init : float, optional
                GP timescale initialization in msec (default: 100)
@@ -423,39 +425,53 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
 
     Returns
     -------
-    results : dict
-              results of GPFA model fitting contained in fields
-              estParams : dict
-                          estimated GPFA model parameters
-                              covType : {'rbf', 'tri', 'logexp'}
-                                        type of GP covariance
-                              gamma : ndarray of shape (1, #latent_vars)
-                                      related to GP timescales by
-                                      'bin_width / sqrt(gamma)'
-                              eps : ndarray of shape (1, #latent_vars)
-                                    GP noise variances
-                              d : ndarray of shape (#units, 1)
-                                  observation mean
-                              C : ndarray of shape (#units, #latent_vars)
-                                  mapping between the neuronal data space and
-                                  the latent variable space
-                              R : ndarray of shape (#units, #latent_vars)
-                                  observation noise covariance
-              seqTrain : numpy.recarray
-                         a copy of the training data structure, augmented by
-                         new fields
-                             xsm : ndarray of shape (#latent_vars x #bins)
-                                   posterior mean of latent variables at each
-                                   time bin
-                             Vsm : ndarray of shape (#latent_vars,
-                                    #latent_vars, #bins)
-                                   posterior covariance between latent
-                                   variables at each timepoint
-                             VsmGP : ndarray of shape (#bins, #bins,
-                                    #latent_vars)
-                                     posterior covariance over time for each
-                                     latent variable
-              ...
+
+    parameter_estimates: dict
+        Estimated model parameters.
+        When the GPFA method is used, following parameters are contained
+            covType: {'rbf', 'tri', 'logexp'}
+                type of GP covariance
+            gamma: ndarray of shape (1, #latent_vars)
+                related to GP timescales by 'bin_width / sqrt(gamma)'
+            eps: ndarray of shape (1, #latent_vars)
+                GP noise variances
+            d: ndarray of shape (#units, 1)
+                observation mean
+            C: ndarray of shape (#units, #latent_vars)
+                mapping between the neuronal data space and the latent variable
+                space
+            R: ndarray of shape (#units, #latent_vars)
+                observation noise covariance
+
+    seqs_train: np.recarray
+        Data structure, whose n-th entry (corresponding to the n-th
+        experimental trial) has fields
+            * trialId: int
+                unique trial identifier
+            * T: int
+                number of timesteps
+            * y: ndarray of shape (#units, #bins)
+                neural data
+            * xsm: ndarray of shape (#latent_vars, #bins)
+                posterior mean of latent variables at each time bin
+            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
+                posterior covariance between latent variables at each
+                timepoint
+            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
+                posterior covariance over time for each latent variable
+
+    fit_info: dict
+        Information of the fitting process and the parameters used there:
+            * iteration_time: A list containing the runtime for each iteration
+                step in the EM algorithm.
+            * log_likelihood: float, maximized likelihood obtained in the
+                E-step of the EM algorithm.
+            * bin_size: int, Width of the bins.
+            * cvf: int, number for cross-validation folding
+                Default is 0 (no cross-validation).
+            * has_spikes_bool: Indicates if a neuron has any spikes across
+                trials.
+            * method: str, Method name.
     """
     # For compute efficiency, train on equal-length segments of trials
     seq_train_cut = gpfa_util.cut_trials(seq_train)

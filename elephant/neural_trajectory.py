@@ -15,28 +15,27 @@ from elephant.utils import check_quantities
 
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
- [1] for visualizing the neural trajectory (X) of parallel spike trains (Y).
+ [1] for neural trajectory (X) visualization of parallel spike trains (Y).
 
-The INPUT consists in a set of trials (Y), each containing a list of spike
-trains (N neurons): The OUTPUT is the projection (X) of these data in a space
+The INPUT consists of a set of trials (Y), each containing a list of spike
+trains (N neurons): The OUTPUT is the projection (X) of the data in space
 of pre-chosen dimension x_dim < N.
 
 Under the assumption of a linear relation plus noise between the latent
 variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection
-correspond to the conditional probability E[X|Y].
+corresponds to the conditional probability E[X|Y].
 
-A GAUSSIAN PROCESS (X) of dimesnion x_dim < N is adopted to extract smooth
+A GAUSSIAN PROCESS (X) of dimension x_dim < N is adopted to extract smooth
 neural trajectories. The parameters (C, d, R) are estimated from the data using
-FACTOR ANALYSIS tecnique. GPFA is simply a set of Factor Analyzers (FA), linked
-togheter in the low dimensional space by a Gaussian Process (GP).
+FACTOR ANALYSIS technique. GPFA is simply a set of Factor Analyzers (FA), 
+linked together in the low dimensional space by a Gaussian Process (GP).
 
-The analysis comprises the following steps:
+The analysis consists of the following steps:
 
-0) bin the data, to get a sequence of N dimensional vectors, on for each time
-    bin;
-  and choose the reduced dimension x_dim;
+0) bin the data to get a sequence of N dimensional vectors for each time
+    bin, and choose the reduced dimension x_dim;
 
-1) call of the functions used:
+1) run
 
 -  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                 eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
@@ -76,23 +75,23 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
                                         0-axis --> Trials
                                         1-axis --> Neurons
                                         2-axis --> Spike times
-    method : str
-        Method for extracting neural trajectories
+    method : str, optional
+        Method for extracting neural trajectories.
         * 'gpfa': Uses the Gaussian Process Factor Analysis method.
-        Default is 'gpfa'
-    bin_size : quantities.Quantity
-        Width of each time bin
-        Default is 20 ms
-    x_dim : int
-        State dimensionality
-        Default is 3
-    num_folds : int
+        Default is 'gpfa'.
+    bin_size : quantities.Quantity, optional
+        Width of each time bin.
+        Default is 20 ms.
+    x_dim : int, optional
+        State dimensionality.
+        Default is 3.
+    num_folds : int, optional
         Number of cross-validation folds, 0 indicates no cross-validation,
         i.e. train on all trials.
         Default is 0.
         (Cross-validation is not implemented yet)
-    em_max_iters : int
-        Number of EM iterations to run (default: 500)
+    em_max_iters : int, optional
+        Number of EM iterations to run (default: 500).
 
     Returns
     -------
@@ -137,16 +136,17 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
         When no cross-validation is performed, None is returned.
 
     fit_info: dict
-        Information of the fitting process and the parameters used there
+        Information of the fitting process and the parameters used there:
             * iteration_time: A list containing the runtime for each iteration
-                step in the EM algorithm
+                step in the EM algorithm.
             * log_likelihood: float, maximized likelihood obtained in the
-                E-step of the EM algorithm
-            * bin_size: int, Width of the bins
+                E-step of the EM algorithm.
+            * bin_size: int, Width of the bins.
             * cvf: int, number for cross-validation folding
-                Default is 0 (no cross-validation)
-            * has_spikes_bool: Indicates if a neuron has any spikes across trials
-            * method: String, method name
+                Default is 0 (no cross-validation).
+            * has_spikes_bool: Indicates if a neuron has any spikes across
+                trials.
+            * method: str, Method name.
 
     Raises
     ------
@@ -181,8 +181,8 @@ def neural_trajectory(data, method='gpfa', bin_size=20 * pq.ms, x_dim=3,
 
     seqs = gpfa_util.get_seq(data, bin_size)
     params_est, seqs_train, fit_info = core.extract_trajectory(
-        seqs, method, bin_size.rescale('ms').magnitude, x_dim, num_folds,
-        em_max_iters=em_max_iters)
+        seqs, method=method, bin_size=bin_size.rescale('ms').magnitude,
+        x_dim=x_dim, num_folds=num_folds, em_max_iters=em_max_iters)
     params_est, seqs_train, seqs_test = core.postprocess(params_est,
                                                          seqs_train, fit_info)
 
