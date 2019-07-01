@@ -16,6 +16,7 @@ nosetests.xml
 .settings
 *.tmp*
 .idea
+.pytest_cache/
 
 # Compiled source #
 ###################
@@ -70,3 +71,5 @@ Thumbs.db
 
 # Things specific to this project #
 ###################################
+# ignored folder for fast prototyping
+ignored/

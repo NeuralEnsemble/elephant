@@ -2,31 +2,17 @@
 """
 Elephant is a package for the analysis of neurophysiology data, based on Neo.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2019 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from . import (statistics,
-               spike_train_generation,
-               spike_train_correlation,
-               unitary_event_analysis,
-               cubic,
-               spectral,
-               kernels,
-               spike_train_dissimilarity,
-               spike_train_surrogates,
-               signal_processing,
-               current_source_density,
-               sta,
-               conversion,
-               neo_tools,               
-               spade)
 
-try:
-    from . import pandas_bridge
-    from . import asset
-    from . import neural_trajectory
-except ImportError:
-    pass
+def _get_version():
+    import os
+    elephant_dir = os.path.dirname(__file__)
+    with open(os.path.join(elephant_dir, 'VERSION')) as version_file:
+        version = version_file.read().strip()
+    return version
 
-__version__ = "0.4.3"
+
+__version__ = _get_version()

@@ -1,45 +1,84 @@
-dist: precise
+dist: xenial
 language: python
 sudo: false
 
 addons:
    apt:
-      packages:
-      - libatlas3gf-base
-      - libatlas-dev
-      - libatlas-base-dev
-      - liblapack-dev
-      - gfortran
-      - python-scipy
+     update: true
 
-python:
-  - 2.7.13     
-      
-env:
-  matrix:
-    # This environment tests the newest supported anaconda env
-    - DISTRIB="conda" PYTHON_VERSION="2.7" INSTALL_MKL="true"
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.16.1" PANDAS_VERSION="0.16.2"
-      SIX_VERSION="1.10.0" COVERAGE="true"
-    - DISTRIB="conda" PYTHON_VERSION="3.5" INSTALL_MKL="true"
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.16.1" PANDAS_VERSION="0.16.2"
-      SIX_VERSION="1.10.0" COVERAGE="true"
-    # This environment tests minimal dependency versions
-    - DISTRIB="conda_min" PYTHON_VERSION="2.7" INSTALL_MKL="false"
-      SIX_VERSION="1.10.0" NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" COVERAGE="true"
-    - DISTRIB="conda_min" PYTHON_VERSION="3.4" INSTALL_MKL="false"
-      SIX_VERSION="1.10.0" NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" COVERAGE="true"
-    # basic Ubuntu build environment
-    - DISTRIB="ubuntu" PYTHON_VERSION="2.7" INSTALL_ATLAS="true"
-      NUMPY_VERSION="1.8.2" SCIPY_VERSION="0.14.0" SIX_VERSION="1.10.0"
-      COVERAGE="true"
-    # This environment tests for mpi
-    - DISTRIB="mpi" PYTHON_VERSION="3.5" INSTALL_MKL="false"
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.16.1" SIX_VERSION="1.10.0"
-      MPI_VERSION="2.0.0" COVERAGE="true" MPI="true"
 
-install: source continuous_integration/install.sh
-script: bash continuous_integration/test_script.sh
+matrix:
+  include:
+    - name: "conda 2.7"
+      python: 2.7
+      env: DISTRIB="conda"
+
+    - name: "pip 2.7"
+      python: 2.7
+      env: DISTRIB="pip"
+
+    - name: "pip 3.5"
+      python: 3.5
+      env: DISTRIB="pip"
+
+    - name: "conda 3.6"
+      python: 3.6
+      env: DISTRIB="conda"
+
+    - name: "pip 3.6"
+      python: 3.6
+      env: DISTRIB="pip"
+
+    - name: "pip 3.6 requirements-extras"
+      python: 3.6
+      env: DISTRIB="pip"
+      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
+      before_script: pip install -r requirements-extras.txt
+      script: mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
+
+    - name: "conda 3.7"
+      python: 3.7
+      env: DISTRIB="conda"
+
+  exclude:
+    - name: "pip 3.6 requirements min version"
+      # excluded due to unmet dependencies in neo, quantities, and scipy
+      python: 3.6
+      env: DISTRIB="pip"
+      before_install:
+        - sudo apt install libblas-dev liblapack-dev libatlas-base-dev gfortran
+        - sed -i 's/>=/==/g' requirements.txt
+
+
+install:
+  - if [[ "${DISTRIB}" == "conda" ]];
+    then
+      export MINICONDA_PATH=${HOME}/miniconda;
+      export PATH=${MINICONDA_PATH}/bin:${PATH};
+      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      bash miniconda.sh -b -p ${MINICONDA_PATH};
+      conda config --set always_yes yes;
+      conda update conda;
+      conda create --name elephant_env python=${TRAVIS_PYTHON_VERSION};
+      source activate elephant_env;
+      conda install mkl;
+      conda config --append channels conda-forge;
+      sed '/^neo/d' requirements.txt > requirements-conda.txt;
+      conda install --file requirements-conda.txt;
+      echo "'neo' will be installed by pip from requirements.txt later on";
+      pip list;
+    else
+      pip install -r requirements.txt;
+    fi
+
+  - pip -V
+  - pip install coverage coveralls nose
+  - pip install .
+  - pip list
+  - python --version
+
+script:
+  nosetests --with-coverage --cover-package=elephant
+
 after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
-cache: apt
+  coveralls || echo "coveralls failed"

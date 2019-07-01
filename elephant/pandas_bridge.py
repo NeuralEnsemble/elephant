@@ -60,7 +60,7 @@ def _sort_inds(obj, axis=0):
         return obj
 
     obj = obj.reorder_levels(sorted(obj.axes[axis].names), axis=axis)
-    return obj.sortlevel(0, axis=axis, sort_remaining=True)
+    return obj.sort_index(level=0, axis=axis, sort_remaining=True)
 
 
 def _extract_neo_attrs_safe(obj, parents=True, child_first=True):

@@ -44,7 +44,7 @@ def check_for_duplicated_electrodes(elec_pos):
     -------
     has_duplicated_elec : Boolean
     """
-    unique_elec_pos = np.vstack({tuple(row) for row in elec_pos})
+    unique_elec_pos = np.unique(elec_pos, axis=0)
     has_duplicated_elec = unique_elec_pos.shape == elec_pos.shape
     return has_duplicated_elec
 

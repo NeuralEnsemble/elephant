@@ -174,17 +174,18 @@ All code should conform as much as possible to `PEP 8`_, and should run with
 Python 2.7 and 3.2-3.5.
 
 
-Making a release
+Making a release (maintainers only)
 ----------------
 
 .. TODO: discuss branching/tagging policy.
 
 .. Add a section in /doc/releases/<version>.rst for the release.
 
-First, check that the version string (in :file:`elephant/__init__.py`, :file:`setup.py`,
-:file:`doc/conf.py`, and :file:`doc/install.rst`) is correct.
+1. Increment the Elephant package version in :file:`elephant/VERSION`, if necessary.
 
-Second, check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
+2. Check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
+
+3. If there is a new module do not forget to add the modulename to the :file:`doc/module.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`.
 
 To build a source package::
 
@@ -200,7 +201,8 @@ Finally, tag the release in the Git repository and push it::
 
     $ git tag <version>
     $ git push --tags upstream
-    
+
+Here, version should be of the form `vX.Y.Z`.
 
 .. make a release branch
 

@@ -15,7 +15,7 @@ import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 from scipy.stats import kstest, expon, poisson
-from quantities import s, ms, second, Hz, kHz, mV, dimensionless
+from quantities import V, s, ms, second, Hz, kHz, mV, dimensionless
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
 from scipy.stats import expon
@@ -31,20 +31,23 @@ def pdiff(a, b):
 class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
-        pass
+        # Load membrane potential simulated using Brian2
+        # according to make_spike_extraction_test_data.py.
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        raw_data = []
+        with open(raw_data_file_loc, 'r') as f:
+            for x in (f.readlines()):
+                raw_data.append(float(x))
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
+        self.true_time_stamps = [0.0123,  0.0354,  0.0712,  0.1191,  0.1694,
+                                 0.2200,  0.2711] * second
 
     def test_threshold_detection(self):
         # Test whether spikes are extracted at the correct times from
         # an analog signal.
 
-        # Load membrane potential simulated using Brian2
-        # according to make_spike_extraction_test_data.py.
-        curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir,'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        vm = data[0].segments[0].analogsignals[0]
-        spike_train = stgen.threshold_detection(vm)
+        spike_train = stgen.threshold_detection(self.vm)
         try:
             len(spike_train)
         except TypeError: # Handles an error in Neo related to some zero length
@@ -56,27 +59,30 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
                                                  t_stop=spike_train.t_stop,
                                                  units=spike_train.units)
 
-        # Correct values determined previously.
-        true_spike_train = [0.0123, 0.0354, 0.0712, 0.1191,
-                            0.1694, 0.22, 0.2711]
-
         # Does threshold_detection gives the correct number of spikes?
-        self.assertEqual(len(spike_train),len(true_spike_train))
+        self.assertEqual(len(spike_train),len(self.true_time_stamps))
         # Does threshold_detection gives the correct times for the spikes?
         try:
-            assert_array_almost_equal(spike_train,spike_train)
+            assert_array_almost_equal(spike_train, self.true_time_stamps)
         except AttributeError: # If numpy version too old to have allclose
-            self.assertTrue(np.array_equal(spike_train,spike_train))
+            self.assertTrue(np.array_equal(spike_train, self.true_time_stamps))
+
+    def test_peak_detection_threshold(self):
+        # Test for empty SpikeTrain when threshold is too high
+        result = stgen.threshold_detection(self.vm, threshold=30 * mV)
+        self.assertEqual(len(result), 0)
 
 
 class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        self.vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        raw_data = []
+        with open(raw_data_file_loc, 'r') as f:
+            for x in (f.readlines()):
+                raw_data.append(float(x))
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         self.true_time_stamps = [0.0124,  0.0354,  0.0713,  0.1192,  0.1695,
                                  0.2201,  0.2711] * second
 
@@ -96,14 +102,17 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
         result = stgen.peak_detection(self.vm, threshold=30 * mV)
         self.assertEqual(len(result), 0)
 
+
 class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
     
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        npz_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.npz')
-        iom2 = neo.io.PyNNNumpyIO(npz_file_loc)
-        data = iom2.read()
-        self.vm = data[0].segments[0].analogsignals[0]
+        raw_data_file_loc = os.path.join(curr_dir, 'spike_extraction_test_data.txt')
+        raw_data = []
+        with open(raw_data_file_loc, 'r') as f:
+            for x in (f.readlines()):
+                raw_data.append(float(x))
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
         self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
                                      -0.03392689, -0.03061474, -0.02650277,
                                      -0.0212756, -0.01443531, -0.00515365,

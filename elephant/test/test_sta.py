@@ -284,7 +284,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
                           self.anasig0, [1, 2, 3])
         self.assertRaises(ValueError,
                           sta.spike_field_coherence,
-                          self.anasig0.duplicate_with_new_array([]), self.bst0)
+                          self.anasig0.duplicate_with_new_data([]), self.bst0)
 
     def test_start_stop_times_out_of_range(self):
         self.assertRaises(ValueError,
