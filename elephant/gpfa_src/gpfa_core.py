@@ -189,8 +189,8 @@ def exact_inference_with_ll(seq, params, get_ll=True):
             blk_prod[idx[i]:idx[i + 1], :] = c_rinv_c.dot(
                 minv[idx[i]:idx[i + 1], :])
         blk_prod = k_big[:x_dim * t_half, :].dot(
-            gpfa_util.fill_persymm(np.eye(x_dim * t_half, x_dim * t) - blk_prod,
-                              x_dim, t))
+            gpfa_util.fill_persymm(np.eye(x_dim * t_half, x_dim * t) -
+                                   blk_prod, x_dim, t))
         # xsmMat is (xDim*T) x length(nList)
         xsm_mat = gpfa_util.fill_persymm(blk_prod, x_dim, t).dot(term1_mat)
 
@@ -288,8 +288,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     t = seq['T']
     y_dim, x_dim = params['C'].shape
     lls = []
-    ll = 0.0
-    ll_base = ll
+    ll_old = ll_base = ll = 0.0
     iter_time = []
     var_floor = min_var_frac * np.diag(np.cov(np.hstack(seq['y'])))
     seq_lat = None

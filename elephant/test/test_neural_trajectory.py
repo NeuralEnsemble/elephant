@@ -6,12 +6,13 @@ Unit tests for the neural_trajectory analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import sys
 import unittest
+
+import neo
 import numpy as np
 import quantities as pq
-import neo
-
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from elephant.spike_train_generation import homogeneous_poisson_process
 
@@ -20,9 +21,11 @@ try:
 except ImportError:
     HAVE_SKLEARN = False
 else:
+    HAVE_SKLEARN = True
+    from elephant.gpfa_src import gpfa_util
     from elephant.gpfa import gpfa
 
-    HAVE_SKLEARN = True
+python_version_major = sys.version_info.major
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
@@ -112,6 +115,53 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
             self.assertEqual(len(seqs_train[key]), self.n_trials,
                              msg="Failed ndarray field {0}".format(key))
         self.assertEqual(len(seqs_train), self.n_trials)
+
+    def test_get_seq_sqrt(self):
+        data = [self.data2[0]]
+        seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
+        seqs_not_sqrt = gpfa_util.get_seq(data, bin_size=self.bin_size,
+                                          use_sqrt=False)
+        for common_key in ('trialId', 'T'):
+            self.assertEqual(seqs[common_key], seqs_not_sqrt[common_key])
+        self.assertEqual(seqs['y'].shape, seqs_not_sqrt['y'].shape)
+
+    def test_cut_trials_inf(self):
+        same_data = gpfa_util.cut_trials(self.data2, seg_length=np.Inf)
+        assert same_data is self.data2
+
+    def test_cut_trials_zero_length(self):
+        seqs = gpfa_util.get_seq(self.data2, bin_size=self.bin_size)
+        with self.assertRaises(AssertionError):
+            gpfa_util.cut_trials(seqs, seg_length=0)
+
+    def test_cut_trials_same_length(self):
+        data = [self.data2[0]]
+        seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
+        seg_length = seqs[0]['T']
+        seqs_cut = gpfa_util.cut_trials(seqs, seg_length=seg_length)
+        assert_array_almost_equal(seqs[0]['y'], seqs_cut[0]['y'])
+
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_cut_trials_larger_length(self):
+        data = [self.data2[0]]
+        seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
+        seg_length = seqs[0]['T'] + 1
+        with self.assertWarns(UserWarning):
+            gpfa_util.cut_trials(seqs, seg_length=seg_length)
+
+    @unittest.skip("Test are broken. Consider removing. Or fix it.")
+    def test_make_k_big(self):
+        seqs = gpfa_util.get_seq(self.data2, bin_size=self.bin_size)
+        parameter_estimates, _, _ = gpfa.gpfa_engine(seqs,
+                                                     seq_test=[],
+                                                     em_max_iters=self.n_iters)
+        timesteps = len(parameter_estimates['eps'])
+        parameter_estimates['a'] = np.random.random(timesteps)
+        for covType in ('rbf', 'tri', 'logexp'):
+            parameter_estimates['covType'] = covType
+            # see if there is no errors
+            gpfa_util.make_k_big(params=parameter_estimates,
+                                 n_timesteps=timesteps)
 
 
 def suite():
