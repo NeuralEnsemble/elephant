@@ -41,7 +41,7 @@ def get_seq(data, bin_size, use_sqrt=True):
 
     Raises
     ------
-    ValueError
+    AssertionError
         if `bin_size` is not a pq.Quantity.
 
     """

@@ -126,9 +126,14 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
             * has_spikes_bool: Indicates if a neuron has any spikes across
                 trials.
             * method: str, Method name.
+
+    Raises
+    ------
+    AssertionError
+        If `seqs` es empty.
+
     """
-    if len(seqs) == 0:
-        raise ValueError("Error: No valid trials.")
+    assert len(seqs) > 0, "Got empty trials."
 
     # Set cross-validation folds
     num_trials = len(seqs)
@@ -351,7 +356,8 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
 
     Raises
     ------
-    ValueError
+    AssertionError
+        If `data` is an empty list.
         If `bin_size` if not a `pq.Quantity`.
         If `data[0][1][0]` is not a `neo.SpikeTrain`.
 
@@ -374,11 +380,12 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
 
     """
     # todo does it makes sense to explicitly pass trial_id?
+    assert len(data) > 0, "`data` cannot be empty"
     check_quantities(bin_size, 'bin_size')
-    if not isinstance(data[0][1][0], neo.SpikeTrain):
-        raise ValueError("structure of the data is not correct: 0-axis should "
-                         "be trials, 1-axis neo spike trains "
-                         "and 2-axis spike times")
+    assert isinstance(data[0][1][0], neo.SpikeTrain), \
+        "structure of the data is not correct: 0-axis should "\
+        "be trials, 1-axis neo spike trains "\
+        "and 2-axis spike times"
 
     seqs = gpfa_util.get_seq(data, bin_size)
     params_est, seqs_train, fit_info = extract_trajectory(

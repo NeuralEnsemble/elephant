@@ -92,15 +92,15 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
         self.assertEqual(fit_info['min_var_frac'], 0.01)
 
-    def test_invalid_bin_size_type(self):
-        invalid_bin_size = 10
-        with self.assertRaises(ValueError):
-            gpfa(data=self.data2, bin_size=invalid_bin_size)
-
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
-        with self.assertRaises(ValueError):
+        invalid_bin_size = 10
+        with self.assertRaises(AssertionError):
             gpfa(data=invalid_data)
+        with self.assertRaises(AssertionError):
+            gpfa(data=[])
+        with self.assertRaises(AssertionError):
+            gpfa(data=self.data2, bin_size=invalid_bin_size)
 
     def test_data2(self):
         params_est, seqs_train, seqs_test, fit_info = gpfa(

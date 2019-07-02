@@ -14,8 +14,8 @@ def check_quantities(var, var_name):
 
     Raises
     -------
-    ValueError
+    AssertionError
         If the input `var` is not a `pq.Quantity`
     """
-    if not isinstance(var, pq.Quantity):
-        raise ValueError("{0} must be of type pq.Quantity".format(var_name))
+    assert isinstance(var, pq.Quantity), \
+        "{0} must be of type pq.Quantity".format(var_name)
