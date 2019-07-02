@@ -197,7 +197,16 @@ def make_k_big(params, n_timesteps):
         Inverse of K_big
     logdet_K_big
         Log determinant of K_big
+
+    Raises
+    ------
+    AssertionError
+        If `params['covType'] != 'rbf'`.
+
     """
+    assert params['covType'] == 'rbf', \
+        "Only 'rbf' GP covariance type is supported."
+
     xDim = params['C'].shape[1]
 
     K_big = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
@@ -207,28 +216,9 @@ def make_k_big(params, n_timesteps):
     logdet_K_big = 0
 
     for i in range(xDim):
-        if params['covType'] == 'rbf':
-            K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 *
-                                                Tdif ** 2) \
-                + params['eps'][i] * np.eye(n_timesteps)
-        elif params['covType'] == 'tri':
-            K = np.maximum(1 - params['eps'][i] - params['a'][i] *
-                           np.abs(Tdif), 0) \
-                + params['eps'][i] * np.eye(n_timesteps)
-        elif params['covType'] == 'logexp':
-            z = params['gamma'] \
-                * (1 - params['eps'][i] - params['a'][i] * np.abs(Tdif))
-            outUL = (z > 36)
-            outLL = (z < -19)
-            inLim = ~outUL & ~outLL
-
-            hz = np.full(z.shape, np.nan)
-            hz[outUL] = z[outUL]
-            hz[outLL] = np.exp(z[outLL])
-            hz[inLim] = np.log(1 + np.exp(z[inLim]))
-
-            K = hz / params['gamma'] + params['eps'][i] * np.eye(n_timesteps)
-
+        K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 *
+                                            Tdif ** 2) \
+            + params['eps'][i] * np.eye(n_timesteps)
         K_big[i::xDim, i::xDim] = K
         # the original MATLAB program uses here a special algorithm, provided
         # in C and MEX, for inversion of Toeplitz matrix:

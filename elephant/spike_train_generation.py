@@ -331,7 +331,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
     """
     if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
         raise ValueError("t_start and t_stop must be of type pq.Quantity")
-    rate = rate.rescale((1 / t_start).units)
+    rate = rate.rescale(1 / t_start.units)
     mean_interval = 1 / rate.magnitude
     return _homogeneous_process(
         np.random.exponential, (mean_interval,), rate, t_start, t_stop,

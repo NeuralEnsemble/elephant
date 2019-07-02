@@ -94,12 +94,13 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
     def test_invalid_bin_size_type(self):
         invalid_bin_size = 10
-        self.assertRaises(ValueError, gpfa, data=self.data2,
-                          bin_size=invalid_bin_size)
+        with self.assertRaises(ValueError):
+            gpfa(data=self.data2, bin_size=invalid_bin_size)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
-        self.assertRaises(ValueError, gpfa, data=invalid_data)
+        with self.assertRaises(ValueError):
+            gpfa(data=invalid_data)
 
     def test_data2(self):
         params_est, seqs_train, seqs_test, fit_info = gpfa(
@@ -148,20 +149,6 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         seg_length = seqs[0]['T'] + 1
         with self.assertWarns(UserWarning):
             gpfa_util.cut_trials(seqs, seg_length=seg_length)
-
-    @unittest.skip("Test are broken. Consider removing. Or fix it.")
-    def test_make_k_big(self):
-        seqs = gpfa_util.get_seq(self.data2, bin_size=self.bin_size)
-        parameter_estimates, _, _ = gpfa.gpfa_engine(seqs,
-                                                     seq_test=[],
-                                                     em_max_iters=self.n_iters)
-        timesteps = len(parameter_estimates['eps'])
-        parameter_estimates['a'] = np.random.random(timesteps)
-        for covType in ('rbf', 'tri', 'logexp'):
-            parameter_estimates['covType'] = covType
-            # see if there is no errors
-            gpfa_util.make_k_big(params=parameter_estimates,
-                                 n_timesteps=timesteps)
 
 
 def suite():

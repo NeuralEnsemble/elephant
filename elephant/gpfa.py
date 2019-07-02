@@ -83,7 +83,8 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
         Estimated model parameters.
         When the GPFA method is used, following parameters are contained
             covType: {'rbf', 'tri', 'logexp'}
-                type of GP covariance
+                type of GP covariance.
+                Currently, only 'rbf' is supported.
             gamma: ndarray of shape (1, #latent_vars)
                 related to GP timescales by 'bin_width / sqrt(gamma)'
             eps: ndarray of shape (1, #latent_vars)
@@ -184,20 +185,49 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
     return params_est, seqs_train, fit_info
 
 
-def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
+def postprocess(params_est, seqs_train, seqs_test=None):
     """
     Orthonormalization and other cleanup.
 
     Parameters
     ----------
 
-    params_est, seqs_train, fit_info
-        Return variables of extract_trajectory()
+    params_est : dict
+        First return value of extract_trajectory().
+        Estimated model parameters.
+        When the GPFA method is used, following parameters are contained
+            covType: {'rbf', 'tri', 'logexp'}
+                type of GP covariance
+                Currently, only 'rbf' is supported.
+            gamma: ndarray of shape (1, #latent_vars)
+                related to GP timescales by 'bin_width / sqrt(gamma)'
+            eps: ndarray of shape (1, #latent_vars)
+                GP noise variances
+            d: ndarray of shape (#units, 1)
+                observation mean
+            C: ndarray of shape (#units, #latent_vars)
+                mapping between the neuronal data space and the latent variable
+                space
+            R: ndarray of shape (#units, #latent_vars)
+                observation noise covariance
 
-    kern_sd: float, optional
-        For two-stage methods, this function returns `seqs_train` and
-        `params_est` corresponding to `kern_sd`.
-        Default is 1.
+    seqs_train: np.recarray
+        Second return value of extract_trajectory().
+        Data structure, whose n-th entry (corresponding to the n-th
+        experimental trial) has fields
+            * trialId: int
+                unique trial identifier
+            * T: int
+                number of timesteps
+            * y: ndarray of shape (#units, #bins)
+                neural data
+            * xsm: ndarray of shape (#latent_vars, #bins)
+                posterior mean of latent variables at each time bin
+            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
+                posterior covariance between latent variables at each
+                timepoint
+            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
+                posterior covariance over time for each latent variable
 
     seqs_test: np.recarray, optional
         Data structure of test dataset.
@@ -224,15 +254,6 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
         If `fit_info['kernSDList'] != kern_sd`.
 
     """
-    if hasattr(fit_info, 'kern'):
-        # FIXME `k` and `kern_sd` are not used
-        if not fit_info['kernSDList']:
-            k = 1
-        else:
-            k = np.where(np.array(fit_info['kernSDList']) ==
-                         np.array(kern_sd))[0]
-            if not k:
-                raise ValueError('Selected kernSD not found')
     C = params_est['C']
     X = np.hstack(seqs_train['xsm'])
     Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
@@ -251,8 +272,7 @@ def postprocess(params_est, seqs_train, fit_info, kern_sd=1.0, seqs_test=None):
     return params_est, seqs_train, seqs_test
 
 
-def gpfa(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0,
-         em_max_iters=500):
+def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -264,21 +284,12 @@ def gpfa(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0,
                                         0-axis --> Trials
                                         1-axis --> Neurons
                                         2-axis --> Spike times
-    method : str, optional
-        Method for extracting neural trajectories.
-        * 'gpfa': Uses the Gaussian Process Factor Analysis method.
-        Default is 'gpfa'.
     bin_size : quantities.Quantity, optional
         Width of each time bin.
         Default is 20 ms.
     x_dim : int, optional
         State dimensionality.
         Default is 3.
-    num_folds : int, optional
-        Number of cross-validation folds, 0 indicates no cross-validation,
-        i.e. train on all trials.
-        Default is 0.
-        (Cross-validation is not implemented yet)
     em_max_iters : int, optional
         Number of EM iterations to run (default: 500).
 
@@ -290,6 +301,7 @@ def gpfa(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0,
         When the GPFA method is used, following parameters are contained
             covType: {'rbf', 'tri', 'logexp'}
                 type of GP covariance
+                Currently, only 'rbf' is supported.
             gamma: ndarray of shape (1, #latent_vars)
                 related to GP timescales by 'bin_width / sqrt(gamma)'
             eps: ndarray of shape (1, #latent_vars)
@@ -358,7 +370,7 @@ def gpfa(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0,
     >>>         for rate in firing_rates]
     >>>     data.append((trial, spike_times))
     >>> params_est, seqs_train, seqs_test, fit_info = gpfa(
-    >>>     data, method='gpfa', bin_size=20 * pq.ms, x_dim=8)
+    >>>     data, bin_size=20 * pq.ms, x_dim=8)
 
     """
     # todo does it makes sense to explicitly pass trial_id?
@@ -372,7 +384,6 @@ def gpfa(data, method='gpfa', bin_size=20*pq.ms, x_dim=3, num_folds=0,
     params_est, seqs_train, fit_info = extract_trajectory(
         seqs, bin_size=bin_size.rescale('ms').magnitude, x_dim=x_dim,
         em_max_iters=em_max_iters)
-    params_est, seqs_train, seqs_test = postprocess(params_est, seqs_train,
-                                                    fit_info)
+    params_est, seqs_train, seqs_test = postprocess(params_est, seqs_train)
 
     return params_est, seqs_train, seqs_test, fit_info

@@ -31,28 +31,17 @@ def learn_gp_params(seq, params, verbose=False):
 
     Raises
     ------
-    ValueError
+    AssertionError
         If `params['covType'] != 'rbf'`.
         If `params['notes']['learnGPNoise']` set to True.
 
     """
-    cov_type = params['covType']
-    learn_gp_noise = params['notes']['learnGPNoise']
-
-    if cov_type == 'rbf':
-        param_name = 'gamma'
-        fname = 'gpfa_util.grad_betgam'
-    elif cov_type == 'tri':
-        raise ValueError("learnKernelParams with covType = 'tri' is "
-                         "not supported.")
-    elif cov_type == 'logexp':
-        raise ValueError("learnKernelParams with covType = 'logexp' is "
-                         "not supported.")
-    else:
-        raise ValueError("covType must be either 'rbf', 'tri' or 'logexp'.")
-
-    if learn_gp_noise:
-        raise ValueError("learnGPNoise is not supported.")
+    assert params['covType'] == 'rbf', \
+        "Only 'rbf' GP covariance type is supported."
+    assert not params['notes']['learnGPNoise'], \
+        "learnGPNoise is not supported."
+    param_name = 'gamma'
+    fname = 'gpfa_util.grad_betgam'
 
     param_init = params[param_name]
     param_opt = {param_name: np.empty_like(param_init)}
@@ -62,10 +51,7 @@ def learn_gp_params(seq, params, verbose=False):
 
     # Loop once for each state dimension (each GP)
     for i in range(x_dim):
-        const = {}
-        if not learn_gp_noise:
-            const['eps'] = params['eps'][i]
-
+        const = {'eps': params['eps'][i]}
         initp = np.log(param_init[i])
         res_opt = optimize.minimize(eval(fname), initp,
                                     args=(precomp[i], const),
@@ -356,14 +342,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
 
         if params['notes']['learnKernelParams']:
             res = learn_gp_params(seq_lat, params, verbose=verbose)
-            if params['covType'] == 'rbf':
-                params['gamma'] = res['gamma']
-            elif params['covType'] == 'tri':
-                params['a'] = res['a']
-            elif params['covType'] == 'logexp':
-                params['a'] = res['a']
-            if params['notes']['learnGPNoise']:
-                params['eps'] = res['eps']
+            params['gamma'] = res['gamma']
 
         t_end = time.time() - tic
         iter_time.append(t_end)
@@ -526,21 +505,6 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
     if len(seq_test) > 0:
         pass
         # TODO: include the assessment of generalization performance
-        # % ==================================
-        # % Assess generalization performance
-        # % ==================================
-        # if ~isempty(seqTest) % check if there are any test trials
-        #     % Leave-neuron-out prediction on test data
-        #     if estParams.notes.RforceDiagonal
-        #         seqTest = cosmoother_gpfa_viaOrth_fast(seqTest, estParams,
-        #         1:xDim);
-        #     else
-        #         seqTest = cosmoother_gpfa_viaOrth(seqTest, estParams,
-        #         1:xDim);
-        #     end
-        #     % Compute log-likelihood of test data
-        #     [blah, LLtest] = exactInferenceWithLL(seqTest, estParams);
-        # end
 
     fit_info = {'iteration_time': iter_time, 'log_likelihood': ll_train}
     return params_est, seq_train, fit_info
