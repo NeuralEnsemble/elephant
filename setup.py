@@ -25,6 +25,7 @@ setup(
     version=__version__,
     packages=['elephant', 'elephant.test'],
     include_package_data=True,
+
     install_requires=install_requires,
     extras_require=extras_require,
 
