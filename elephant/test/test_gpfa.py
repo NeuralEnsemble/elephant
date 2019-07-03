@@ -150,6 +150,15 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         with self.assertWarns(UserWarning):
             gpfa_util.cut_trials(seqs, seg_length=seg_length)
 
+    def test_logdet(self):
+        np.random.seed(27)
+        # generate a positive definite matrix
+        matrix = np.random.randn(20, 20)
+        matrix = matrix.dot(matrix.T)
+        logdet_fast = gpfa_util.logdet(matrix)
+        logdet_ground_truth = np.log(np.linalg.det(matrix))
+        assert_array_almost_equal(logdet_fast, logdet_ground_truth)
+
 
 def suite():
     suite = unittest.makeSuite(NeuralTrajectoryTestCase, 'test')
