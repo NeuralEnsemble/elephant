@@ -76,8 +76,8 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
         self.n_iters = 10
         self.bin_size = 20 * pq.ms
         self.n_trials = 10
+        n_channels = 20
         for trial in range(self.n_trials):
-            n_channels = 20
             firing_rates = np.random.randint(low=1, high=100,
                                              size=n_channels)*pq.Hz
             spike_times = [homogeneous_poisson_process(rate=rate)
