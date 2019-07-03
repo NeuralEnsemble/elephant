@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+GPFA util functions.
+
+:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+
+
 import warnings
 
 import numpy as np

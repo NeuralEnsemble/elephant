@@ -43,7 +43,10 @@ The analysis consists of the following steps:
 References:
 [1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
 Gaussian-process factor analysis for low-dimensional single-trial analysis of
-neural population activity. J Neurophysiol 102:614-635
+neural population activity. J Neurophysiol 102:614-635.
+
+:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
 """
 
 
@@ -55,7 +58,8 @@ from elephant.gpfa_src import gpfa_core, gpfa_util
 from elephant.utils import check_quantities
 
 
-def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
+def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500,
+                       verbose=False):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -75,6 +79,8 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
         Default is 3.
     em_max_iters : int, optional
         Number of EM iterations to run (default: 500).
+    verbose : bool, optional
+              specifies whether to display status messages (default: False)
 
     Returns
     -------
@@ -137,8 +143,6 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
 
     # Set cross-validation folds
     num_trials = len(seqs)
-    # fdiv = np.linspace(0, num_trials, num_folds + 1).astype(np.int) if \
-    #     num_folds > 0 else num_trials
 
     test_mask = np.full(num_trials, False, dtype=bool)
     train_mask = ~test_mask
@@ -167,10 +171,11 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
                   'repeated units, not enough observations.'
         raise ValueError(errmesg)
 
-    print('Number of training trials: {}'.format(len(seqs_train)))
-    print('Number of test trials: {}'.format(len(seqs_test)))
-    print('Latent space dimensionality: {}'.format(x_dim))
-    print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
+    if verbose:
+        print('Number of training trials: {}'.format(len(seqs_train)))
+        print('Number of test trials: {}'.format(len(seqs_test)))
+        print('Latent space dimensionality: {}'.format(x_dim))
+        print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
 
     min_var_frac = 0.01
 
@@ -181,7 +186,8 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500):
         x_dim=x_dim,
         bin_width=bin_size,
         min_var_frac=min_var_frac,
-        em_max_iters=em_max_iters)
+        em_max_iters=em_max_iters,
+        verbose=verbose)
 
     fit_info['has_spikes_bool'] = has_spikes_bool
     fit_info['min_var_frac'] = min_var_frac

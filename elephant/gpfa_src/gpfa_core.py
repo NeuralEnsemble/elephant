@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+GPFA core functionality.
+
+:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+
+
 import time
 import warnings
 
@@ -368,7 +377,8 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
 
 
 def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
-                eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500):
+                eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500,
+                verbose=False):
     """Extract neural trajectories using GPFA.
 
     Parameters
@@ -400,6 +410,8 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                    (See Martin & McDonald, Psychometrika, Dec 1975.)
     em_max_iters : int, optional
                    number of EM iterations to run (default: 500)
+    verbose : bool, optional
+              specifies whether to display status messages (default: False)
 
     Returns
     -------
@@ -496,7 +508,7 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
 
     params_est, seq_train_cut, ll_cut, iter_time = em(
         params_init, seq_train_cut, min_var_frac=min_var_frac,
-        em_max_iters=em_max_iters)
+        em_max_iters=em_max_iters, verbose=verbose)
 
     # Extract neural trajectories for original, unsegmented trials
     # using learned parameters

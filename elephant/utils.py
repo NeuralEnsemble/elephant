@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Elephant-wide utility functions.
+
+:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+
+
 import quantities as pq
 
 
