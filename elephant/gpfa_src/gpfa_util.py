@@ -211,12 +211,13 @@ def make_k_big(params, n_timesteps):
 
     K_big = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     K_big_inv = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
-    timesteps_tiled = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
-    Tdif = np.power(timesteps_tiled.T - timesteps_tiled, 2)
+    Tdif = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1)).T \
+        - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
     logdet_K_big = 0
 
     for i in range(xDim):
-        K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 * Tdif) \
+        K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 *
+                                            Tdif ** 2) \
             + params['eps'][i] * np.eye(n_timesteps)
         K_big[i::xDim, i::xDim] = K
         # the original MATLAB program uses here a special algorithm, provided
@@ -228,7 +229,8 @@ def make_k_big(params, n_timesteps):
         # K[0, :]), np.eye(T))
         K_big_inv[i::xDim, i::xDim] = np.linalg.inv(K)
         logdet_K = logdet(K)
-        logdet_K_big += logdet_K
+
+        logdet_K_big = logdet_K_big + logdet_K
 
     return K_big, K_big_inv, logdet_K_big
 
@@ -262,7 +264,7 @@ def inv_persymm(M, blk_size):
         Log determinant of M
     """
     T = int(M.shape[0] / blk_size)
-    Thalf = int(np.ceil(T / 2.0))
+    Thalf = np.int(np.ceil(T / 2.0))
     mkr = blk_size * Thalf
 
     invA11 = np.linalg.inv(M[:mkr, :mkr])
@@ -299,7 +301,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
      Parameters
      ----------
 
-     p_in : np.ndarray
+     p_in
         Top half of block persymmetric matrix (xDim*Thalf) x (xDim*T),
         where Thalf = ceil(T/2)
      blk_size : int
@@ -316,28 +318,23 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
      Pout
         Full block persymmetric matrix (xDim*T) x (xDim*T)
     """
-    assert blk_size * n_blocks == p_in.shape[1], "Input matrix shape mismatch"
     if blk_size_vert is None:
         blk_size_vert = blk_size
 
-    Thalf_floor = int(np.floor(n_blocks / 2.0))
-    Thalf_ceil = int(np.ceil(n_blocks / 2.0))
+    Nh = blk_size * n_blocks
+    Nv = blk_size_vert * n_blocks
+    Thalf = np.int(np.floor(n_blocks / 2.0))
+    THalf = np.int(np.ceil(n_blocks / 2.0))
 
     Pout = np.empty((blk_size_vert * n_blocks, blk_size * n_blocks))
-    Pout[:blk_size_vert * Thalf_ceil, :] = p_in
-
-    cols_pin = np.arange(n_blocks * blk_size, dtype=np.int32)
-    cols_pin = cols_pin.reshape((n_blocks, blk_size))
-
-    rows_pin = np.arange(Thalf_floor * blk_size_vert, dtype=np.int32)
-    rows_pin = rows_pin.reshape((Thalf_floor, blk_size_vert))
-    rows_pin = rows_pin[:, :, np.newaxis, np.newaxis]
-    rows_pin = np.tile(rows_pin, (1, 1, cols_pin.shape[0], cols_pin.shape[1]))
-
-    rows_pout = rows_pin[::-1] + Thalf_floor * blk_size_vert
-    cols_pout = cols_pin[::-1]
-
-    Pout[rows_pout, cols_pout] = p_in[rows_pin, cols_pin]
+    Pout[:blk_size_vert * THalf, :] = p_in
+    for i in range(Thalf):
+        for j in range(n_blocks):
+            Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
+                 Nh - (j + 1) * blk_size:Nh - j * blk_size] \
+                = p_in[i * blk_size_vert:(i + 1) *
+                       blk_size_vert,
+                       j * blk_size:(j + 1) * blk_size]
 
     return Pout
 
