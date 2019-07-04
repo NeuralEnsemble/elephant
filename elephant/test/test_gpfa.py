@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for the neural_trajectory analysis.
+Unit tests for the GPFA analysis.
 
 :copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -29,7 +29,7 @@ python_version_major = sys.version_info.major
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
-class NeuralTrajectoryTestCase(unittest.TestCase):
+class GPFATestCase(unittest.TestCase):
     def setUp(self):
         def gamma_train(k, tetha, t_max):
             x = []
@@ -161,7 +161,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.makeSuite(NeuralTrajectoryTestCase, 'test')
+    suite = unittest.makeSuite(GPFATestCase, 'test')
     return suite
 
 

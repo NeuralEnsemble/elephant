@@ -40,15 +40,15 @@ def learn_gp_params(seq, params, verbose=False):
 
     Raises
     ------
-    AssertionError
+    ValueError
         If `params['covType'] != 'rbf'`.
         If `params['notes']['learnGPNoise']` set to True.
 
     """
-    assert params['covType'] == 'rbf', \
-        "Only 'rbf' GP covariance type is supported."
-    assert not params['notes']['learnGPNoise'], \
-        "learnGPNoise is not supported."
+    if params['covType'] != 'rbf':
+        raise ValueError("Only 'rbf' GP covariance type is supported.")
+    if params['notes']['learnGPNoise']:
+        raise ValueError("learnGPNoise is not supported.")
     param_name = 'gamma'
     fname = 'gpfa_util.grad_betgam'
 
