@@ -55,11 +55,10 @@ import neo
 import quantities as pq
 
 from elephant.gpfa_src import gpfa_core, gpfa_util
-from elephant.utils import check_quantities
 
 
-def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500,
-                       verbose=False):
+def extract_trajectory(seqs, bin_size=20., x_dim=3, min_var_frac=0.01,
+                       em_max_iters=500, verbose=False):
     """
     Prepares data and calls functions for extracting neural trajectories.
 
@@ -77,6 +76,12 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500,
     x_dim : int, optional
         State dimensionality.
         Default is 3.
+    min_var_frac : float, optional
+                   fraction of overall data variance for each observed
+                   dimension to set as the private variance floor.  This is
+                   used to combat Heywood cases, where ML parameter learning
+                   returns one or more zero private variances. (default: 0.01)
+                   (See Martin & McDonald, Psychometrika, Dec 1975.)
     em_max_iters : int, optional
         Number of EM iterations to run (default: 500).
     verbose : bool, optional
@@ -176,8 +181,6 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, em_max_iters=500,
         print('Number of test trials: {}'.format(len(seqs_test)))
         print('Latent space dimensionality: {}'.format(x_dim))
         print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
-
-    min_var_frac = 0.01
 
     # The following does the heavy lifting.
     params_est, seqs_train, fit_info = gpfa_core.gpfa_engine(
@@ -386,12 +389,14 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
 
     """
     # todo does it makes sense to explicitly pass trial_id?
-    assert len(data) > 0, "`data` cannot be empty"
-    check_quantities(bin_size, 'bin_size')
-    assert isinstance(data[0][1][0], neo.SpikeTrain), \
-        "structure of the data is not correct: 0-axis should "\
-        "be trials, 1-axis neo spike trains "\
-        "and 2-axis spike times"
+    if len(data) == 0:
+        raise ValueError("`data` cannot be empty")
+    if not isinstance(bin_size, pq.Quantity):
+        raise ValueError("'bin_size' must be of type pq.Quantity")
+    if not isinstance(data[0][1][0], neo.SpikeTrain):
+        raise ValueError("structure of the data is not correct: 0-axis "
+                         "should be trials, 1-axis neo spike trains "
+                         "and 2-axis spike times")
 
     seqs = gpfa_util.get_seq(data, bin_size)
     params_est, seqs_train, fit_info = extract_trajectory(

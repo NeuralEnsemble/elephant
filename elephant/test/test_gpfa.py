@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for the neural_trajectory analysis.
+Unit tests for the GPFA analysis.
 
 :copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -29,7 +29,7 @@ python_version_major = sys.version_info.major
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
-class NeuralTrajectoryTestCase(unittest.TestCase):
+class GPFATestCase(unittest.TestCase):
     def setUp(self):
         def gamma_train(k, tetha, t_max):
             x = []
@@ -95,11 +95,11 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
         invalid_bin_size = 10
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa(data=invalid_data)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa(data=[])
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa(data=self.data2, bin_size=invalid_bin_size)
 
     def test_data2(self):
@@ -132,7 +132,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
     def test_cut_trials_zero_length(self):
         seqs = gpfa_util.get_seq(self.data2, bin_size=self.bin_size)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa_util.cut_trials(seqs, seg_length=0)
 
     def test_cut_trials_same_length(self):
@@ -161,7 +161,7 @@ class NeuralTrajectoryTestCase(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.makeSuite(NeuralTrajectoryTestCase, 'test')
+    suite = unittest.makeSuite(GPFATestCase, 'test')
     return suite
 
 

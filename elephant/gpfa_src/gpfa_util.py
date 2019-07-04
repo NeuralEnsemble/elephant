@@ -10,10 +10,10 @@ GPFA util functions.
 import warnings
 
 import numpy as np
+import quantities as pq
 import scipy as sp
 
 from elephant.conversion import BinnedSpikeTrain
-from elephant.utils import check_quantities
 
 
 def get_seq(data, bin_size, use_sqrt=True):
@@ -50,11 +50,12 @@ def get_seq(data, bin_size, use_sqrt=True):
 
     Raises
     ------
-    AssertionError
+    ValueError
         if `bin_size` is not a pq.Quantity.
 
     """
-    check_quantities(bin_size, 'bin_size')
+    if not isinstance(bin_size, pq.Quantity):
+        raise ValueError("'bin_size' must be of type pq.Quantity")
 
     seq = []
     for dat in data:
@@ -112,8 +113,15 @@ def cut_trials(seq_in, seg_length=20):
             * segId: segment identifier within trial
             * T: (1 x 1) number of timesteps in segment
             * y: (yDim x T) neural data
+
+    Raises
+    ------
+    ValueError
+        If `seq_length == 0`.
+
     """
-    assert seg_length > 0, "At least 1 extracted trial must be returned"
+    if seg_length == 0:
+        raise ValueError("At least 1 extracted trial must be returned")
     if np.isinf(seg_length):
         seqOut = seq_in
         return seqOut
@@ -209,12 +217,12 @@ def make_k_big(params, n_timesteps):
 
     Raises
     ------
-    AssertionError
+    ValueError
         If `params['covType'] != 'rbf'`.
 
     """
-    assert params['covType'] == 'rbf', \
-        "Only 'rbf' GP covariance type is supported."
+    if params['covType'] != 'rbf':
+        raise ValueError("Only 'rbf' GP covariance type is supported.")
 
     xDim = params['C'].shape[1]
 
