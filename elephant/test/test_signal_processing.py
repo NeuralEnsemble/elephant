@@ -398,7 +398,13 @@ class ButterTestCase(unittest.TestCase):
         _, psd_lfilter = spsig.welch(
             filtered_noise.T, nperseg=1024, fs=1000.0, detrend=lambda x: x)
 
+        kwds['filter_function'] = 'sosfiltfilt'
+        filtered_noise = elephant.signal_processing.butter(**kwds)
+        _, psd_sosfiltfilt = spsig.welch(
+            filtered_noise.T, nperseg=1024, fs=1000.0, detrend=lambda x: x)
+
         self.assertAlmostEqual(psd_filtfilt[0, 0], psd_lfilter[0, 0])
+        self.assertAlmostEqual(psd_filtfilt[0, 0], psd_sosfiltfilt[0, 0])
 
     def test_butter_invalid_filter_function(self):
         # generate a dummy AnalogSignal
