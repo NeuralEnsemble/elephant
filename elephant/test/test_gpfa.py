@@ -31,66 +31,59 @@ python_version_major = sys.version_info.major
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class GPFATestCase(unittest.TestCase):
     def setUp(self):
-        def gamma_train(k, tetha, t_max):
+        def gen_gamma_spike_train(k, theta, t_max):
             x = []
-
-            for i in range(int(t_max * (k * tetha) ** (-1) * 3)):
-                x.append(np.random.gamma(k, tetha))
-
+            for i in range(int(3 * t_max / (k*theta))):
+                x.append(np.random.gamma(k, theta))
             s = np.cumsum(x)
-            idx = np.where(s < t_max)
-            s = s[idx]  # Poisson process
+            return s[s < t_max]
 
+        def gen_test_data(rates, durs, shapes=(1, 1, 1, 1)):
+            s = gen_gamma_spike_train(shapes[0], 1./rates[0], durs[0])
+            for i in range(1, 4):
+                s_i = gen_gamma_spike_train(shapes[i], 1./rates[i], durs[i])
+                s = np.concatenate([s, s_i + np.sum(durs[:i])])
             return s
 
-        def h_alt(rate1, rate2, rate3, rate4, c1, c2, c3, T, k1=1, k2=1, k3=1,
-                  k4=1):
-            teta1 = rate1 ** -1
-            teta2 = rate2 ** -1
-            teta3 = rate3 ** -1
-            teta4 = rate4 ** -1
-            s1 = gamma_train(k1, teta1, c1)
-            s2 = gamma_train(k2, teta2, c2) + c1
-            s3 = gamma_train(k3, teta3, c3) + c1 + c2
-            s4 = gamma_train(k4, teta4, T) + c1 + c2 + c3
+        self.n_iters = 10
+        self.bin_size = 20 * pq.ms
 
-            return np.concatenate((s1, s2, s3, s4))
-
+        # generate data1
+        rates_a = (2, 10, 2, 2)
+        rates_b = (2, 2, 10, 2)
+        durs = (2.5, 2.5, 2.5, 2.5)
         self.data1 = []
         for tr in range(1):
             np.random.seed(tr)
-            n1 = neo.SpikeTrain(h_alt(2, 10, 2, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1*pq.s)
-            n2 = neo.SpikeTrain(h_alt(2, 10, 2, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1*pq.s)
-            n3 = neo.SpikeTrain(h_alt(2, 2, 10, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1*pq.s)
-            n4 = neo.SpikeTrain(h_alt(2, 2, 10, 2, 2.5, 2.5, 2.5, 2.5),
-                                t_start=0, t_stop=10, units=1*pq.s)
+            n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n2 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n3 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
             self.data1.append((tr, [n1, n2, n3, n4]))
         self.x_dim = 4
 
-        # data2 setup
+        # generate data2
         np.random.seed(27)
         self.data2 = []
-        self.n_iters = 10
-        self.bin_size = 20 * pq.ms
-        self.n_trials = 10
-        for trial in range(self.n_trials):
-            n_channels = 20
-            firing_rates = np.random.randint(low=1, high=100,
-                                             size=n_channels)*pq.Hz
-            spike_times = [homogeneous_poisson_process(rate=rate)
-                           for rate in firing_rates]
+        n_trials = 10
+        n_channels = 20
+        for trial in range(n_trials):
+            rates = np.random.randint(low=1, high=100, size=n_channels)
+            spike_times = [homogeneous_poisson_process(rate=rate*pq.Hz)
+                           for rate in rates]
             self.data2.append((trial, spike_times))
 
     def test_data1(self):
         params_est, seqs_train, seqs_test, fit_info = gpfa(
             self.data1, x_dim=self.x_dim, em_max_iters=self.n_iters)
         self.assertEqual(fit_info['bin_size'], 20*pq.ms)
-        assert_array_equal(fit_info['has_spikes_bool'], np.array([True] * 4))
-        self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
         self.assertEqual(fit_info['min_var_frac'], 0.01)
+        self.assertTrue(np.all(fit_info['has_spikes_bool']))
+        self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
@@ -99,7 +92,7 @@ class GPFATestCase(unittest.TestCase):
             gpfa(data=invalid_data)
         with self.assertRaises(AssertionError):
             gpfa(data=[])
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa(data=self.data2, bin_size=invalid_bin_size)
 
     def test_data2(self):
@@ -108,14 +101,16 @@ class GPFATestCase(unittest.TestCase):
             em_max_iters=self.n_iters)
         self.assertEqual(fit_info['bin_size'], self.bin_size,
                          "Input and output bin_size don't match")
-        n_bins = 50
-        assert_array_equal(seqs_train['T'], np.repeat(n_bins,
-                                                      repeats=self.n_trials))
-        assert_array_equal(seqs_train['trialId'], np.arange(self.n_trials))
+        n_trials = len(self.data2)
+        t_start = self.data2[0][1][0].t_stop
+        t_stop = self.data2[0][1][0].t_start
+        n_bins = int(((t_start - t_stop) / self.bin_size).magnitude)
+        assert_array_equal(seqs_train['T'], [n_bins,] * n_trials)
+        assert_array_equal(seqs_train['trialId'], np.arange(n_trials))
         for key in ['y', 'xsm', 'Vsm', 'VsmGP', 'xorth']:
-            self.assertEqual(len(seqs_train[key]), self.n_trials,
+            self.assertEqual(len(seqs_train[key]), n_trials,
                              msg="Failed ndarray field {0}".format(key))
-        self.assertEqual(len(seqs_train), self.n_trials)
+        self.assertEqual(len(seqs_train), n_trials)
 
     def test_get_seq_sqrt(self):
         data = [self.data2[0]]
@@ -132,7 +127,7 @@ class GPFATestCase(unittest.TestCase):
 
     def test_cut_trials_zero_length(self):
         seqs = gpfa_util.get_seq(self.data2, bin_size=self.bin_size)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa_util.cut_trials(seqs, seg_length=0)
 
     def test_cut_trials_same_length(self):
