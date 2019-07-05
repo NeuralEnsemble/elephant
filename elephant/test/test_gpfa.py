@@ -96,9 +96,9 @@ class GPFATestCase(unittest.TestCase):
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
         invalid_bin_size = 10
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa(data=invalid_data)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             gpfa(data=[])
         with self.assertRaises(ValueError):
             gpfa(data=self.data2, bin_size=invalid_bin_size)

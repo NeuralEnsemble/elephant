@@ -389,13 +389,14 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
 
     """
     # todo does it makes sense to explicitly pass trial_id?
-    assert len(data) > 0, "`data` cannot be empty"
+    if len(data) == 0:
+        raise ValueError("`data` cannot be empty")
     if not isinstance(bin_size, pq.Quantity):
         raise ValueError("'bin_size' must be of type pq.Quantity")
-    assert isinstance(data[0][1][0], neo.SpikeTrain), \
-        "structure of the data is not correct: 0-axis should "\
-        "be trials, 1-axis neo spike trains "\
-        "and 2-axis spike times"
+    if not isinstance(data[0][1][0], neo.SpikeTrain):
+        raise ValueError("structure of the data is not correct: 0-axis "
+                         "should be trials, 1-axis neo spike trains "
+                         "and 2-axis spike times")
 
     seqs = gpfa_util.get_seq(data, bin_size)
     params_est, seqs_train, fit_info = extract_trajectory(
