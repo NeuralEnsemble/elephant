@@ -84,6 +84,14 @@ class GPFATestCase(unittest.TestCase):
         self.assertEqual(fit_info['min_var_frac'], 0.01)
         self.assertTrue(np.all(fit_info['has_spikes_bool']))
         self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
+        # Since data1 is inherently 2 dimensional, only the first two
+        # dimensions of xorth should have finite power.
+        for i in [0, 1]:
+            self.assertNotEqual(seqs_train['xorth'][0][i].mean(), 0)
+            self.assertNotEqual(seqs_train['xorth'][0][i].var(), 0)
+        for i in [2, 3]:
+            self.assertEqual(seqs_train['xorth'][0][i].mean(), 0)
+            self.assertEqual(seqs_train['xorth'][0][i].var(), 0)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
