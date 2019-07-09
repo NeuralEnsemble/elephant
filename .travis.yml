@@ -44,7 +44,8 @@ matrix:
       python: 3.6
       env: DISTRIB="pip"
       before_install:
-        - sudo apt install libblas-dev liblapack-dev libatlas-base-dev gfortran
+        - sudo apt install -y libopenmpi-dev openmpi-bin
+        - sudo apt install -y libblas-dev liblapack-dev libatlas-base-dev gfortran
         - sed -i 's/>=/==/g' requirements*.txt
       before_script: pip install -r requirements-extras.txt
 
