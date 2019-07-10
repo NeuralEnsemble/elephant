@@ -73,6 +73,7 @@ install:
 
   - pip -V
   - pip install coverage coveralls nose
+  - python -c "from tools.fim_manager import download_spade_fim; download_spade_fim()"
   - pip install .
   - python -c "from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list
