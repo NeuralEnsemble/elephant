@@ -6,6 +6,7 @@ Unit tests for the spade module.
 """
 from __future__ import division
 
+import sys
 import unittest
 
 import neo
@@ -17,6 +18,8 @@ import elephant.conversion as conv
 import elephant.spade as spade
 import elephant.spike_train_generation as stg
 from elephant.spade import HAVE_FIM
+
+python_version_major = sys.version_info.major
 
 
 class SpadeTestCase(unittest.TestCase):
@@ -165,19 +168,24 @@ class SpadeTestCase(unittest.TestCase):
         # check the lags
         assert_array_equal(lags_msip, self.lags_msip)
 
-    # test under different configuration of parameters than the default one
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_parameters(self):
+        """
+        Test under different configuration of parameters than the default one
+        """
         # test min_spikes parameter
-        output_msip_min_spikes = spade.spade(
-            self.msip,
-            self.binsize,
-            self.winlen,
-            min_spikes=self.min_spikes,
-            n_subsets=self.n_subset,
-            n_surr=0,
-            alpha=self.alpha,
-            psr_param=self.psr_param,
-            output_format='patterns')['patterns']
+        with self.assertWarns(UserWarning):
+            # n_surr=0 and alpha=0.05 spawns expected UserWarning
+            output_msip_min_spikes = spade.spade(
+                self.msip,
+                self.binsize,
+                self.winlen,
+                min_spikes=self.min_spikes,
+                n_subsets=self.n_subset,
+                n_surr=0,
+                alpha=self.alpha,
+                psr_param=self.psr_param,
+                output_format='patterns')['patterns']
         # collecting spade output
         elements_msip_min_spikes = []
         for out in output_msip_min_spikes:

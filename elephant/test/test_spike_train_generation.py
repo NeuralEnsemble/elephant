@@ -7,18 +7,24 @@ Unit tests for the spike_train_generation module.
 """
 
 from __future__ import division
-import unittest
+
 import os
+import sys
+import unittest
 import warnings
 
 import neo
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
-from scipy.stats import kstest, expon, poisson
 from quantities import V, s, ms, second, Hz, kHz, mV, dimensionless
+from scipy.stats import expon
+from scipy.stats import kstest, poisson
+
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi
-from scipy.stats import expon
+
+python_version_major = sys.version_info.major
+
 
 def pdiff(a, b):
     """Difference between a and b as a fraction of a
@@ -174,11 +180,17 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 self.assertLess(D, 0.12)
 
     def test_low_rates(self):
-        spiketrain = stgen.homogeneous_poisson_process(0*Hz, t_stop=1000*ms)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Catch RuntimeWarning: divide by zero encountered in true_divide
+            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
+            """
+            spiketrain = stgen.homogeneous_poisson_process(0*Hz,
+                                                           t_stop=1000*ms)
         self.assertEqual(spiketrain.size, 0)
         # not really a test, just making sure that all code paths are covered
-        for i in range(10):
-            spiketrain = stgen.homogeneous_poisson_process(1*Hz, t_stop=1000*ms)
+        spiketrain = stgen.homogeneous_poisson_process(1*Hz, t_stop=1000*ms)
 
     def test_buffer_overrun(self):
         np.random.seed(6085)  # this seed should produce a buffer overrun
@@ -238,9 +250,16 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
     def test_low_rates(self):
-        spiketrain = stgen.inhomogeneous_poisson_process(self.rate_profile_0)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Catch RuntimeWarning: divide by zero encountered in true_divide
+            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
+            """
+            spiketrain = stgen.inhomogeneous_poisson_process(
+                self.rate_profile_0)
         self.assertEqual(spiketrain.size, 0)
-        
+
     def test_negative_rates(self):
         self.assertRaises(
             ValueError, stgen.inhomogeneous_poisson_process,
@@ -356,10 +375,12 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         self.assertEqual(
             len(coinc[0]), (self.rate_c*self.t_stop).rescale(dimensionless))
 
-        # Generate an example SIP mode giving a list of rates as imput
-        sip, coinc = stgen.single_interaction_process(
-            t_stop=self.t_stop, rate=self.rates,
-            rate_c=self.rate_c, return_coinc=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # Generate an example SIP mode giving a list of rates as imput
+            sip, coinc = stgen.single_interaction_process(
+                t_stop=self.t_stop, rate=self.rates,
+                rate_c=self.rate_c, return_coinc=True)
 
         # Check the output types
         self.assertEqual(type(sip), list)
@@ -484,9 +505,15 @@ class cppTestCase(unittest.TestCase):
             ValueError, stgen.cpp, A=[-1, 1, 1], t_stop=10*1000 * ms,
             rate=3*Hz)
         # test negative rate
-        self.assertRaises(
-            AssertionError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
-            rate=-3*Hz)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Catches RuntimeWarning: invalid value encountered in sqrt
+            number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
+            """
+            self.assertRaises(
+                AssertionError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
+                rate=-3*Hz)
         # test wrong unit for rate
         self.assertRaises(
             ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
@@ -511,62 +538,69 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10 * 1000 * ms
         t_start = 5 * 1000 * ms
         rate = [3, 4] * Hz
-        cpp_het = stgen.cpp(rate, A, t_stop, t_start=t_start)
-        # testing the ouput formats
-        self.assertEqual(
-            [type(train) for train in cpp_het], [neo.SpikeTrain]*len(cpp_het))
-        self.assertEqual(cpp_het[0].simplified.units, 1000 * ms)
-        self.assertEqual(type(cpp_het), list)
-        # testing units
-        self.assertEqual(
-            [train.simplified.units for train in cpp_het], [1000 * ms]*len(
-                cpp_het))
-        # testing output t_start and t_stop
-        for st in cpp_het:
-            self.assertEqual(st.t_stop, t_stop)
-            self.assertEqual(st.t_start, t_start)
-        # testing the number of output spiketrains
-        self.assertEqual(len(cpp_het), len(A) - 1)
-        self.assertEqual(len(cpp_het), len(rate))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Catch RuntimeWarning: divide by zero encountered in true_divide
+            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
+            """
+            cpp_het = stgen.cpp(rate, A, t_stop, t_start=t_start)
+            # testing the ouput formats
+            self.assertEqual(
+                [type(train) for train in cpp_het],
+                [neo.SpikeTrain] * len(cpp_het))
+            self.assertEqual(cpp_het[0].simplified.units, 1000 * ms)
+            self.assertEqual(type(cpp_het), list)
+            # testing units
+            self.assertEqual(
+                [train.simplified.units for train in cpp_het],
+                [1000 * ms] * len(cpp_het))
+            # testing output t_start and t_stop
+            for st in cpp_het:
+                self.assertEqual(st.t_stop, t_stop)
+                self.assertEqual(st.t_start, t_start)
+            # testing the number of output spiketrains
+            self.assertEqual(len(cpp_het), len(A) - 1)
+            self.assertEqual(len(cpp_het), len(rate))
 
-        # testing the units
-        A = [0, 0.9, 0.1]
-        t_stop = 10000*ms
-        t_start = 5 * 1000 * ms
-        rate = [3, 4] * Hz
-        cpp_unit = stgen.cpp(rate, A, t_stop, t_start=t_start)
+            # testing the units
+            A = [0, 0.9, 0.1]
+            t_stop = 10000*ms
+            t_start = 5 * 1000 * ms
+            rate = [3, 4] * Hz
+            cpp_unit = stgen.cpp(rate, A, t_stop, t_start=t_start)
 
-        self.assertEqual(cpp_unit[0].units, t_stop.units)
-        self.assertEqual(cpp_unit[0].t_stop.units, t_stop.units)
-        self.assertEqual(cpp_unit[0].t_start.units, t_stop.units)
-        # testing without copying any spikes
-        A = [1, 0, 0]
-        t_stop = 10 * 1000 * ms
-        t_start = 5 * 1000 * ms
-        rate = [3, 4] * Hz
-        cpp_het_empty = stgen.cpp(rate, A, t_stop, t_start=t_start)
+            self.assertEqual(cpp_unit[0].units, t_stop.units)
+            self.assertEqual(cpp_unit[0].t_stop.units, t_stop.units)
+            self.assertEqual(cpp_unit[0].t_start.units, t_stop.units)
+            # testing without copying any spikes
+            A = [1, 0, 0]
+            t_stop = 10 * 1000 * ms
+            t_start = 5 * 1000 * ms
+            rate = [3, 4] * Hz
+            cpp_het_empty = stgen.cpp(rate, A, t_stop, t_start=t_start)
 
-        self.assertEqual(len(cpp_het_empty[0]), 0)
+            self.assertEqual(len(cpp_het_empty[0]), 0)
 
-        # testing output with rate equal to 0
-        A = [0, .9, .1]
-        t_stop = 10 * 1000 * ms
-        t_start = 5 * 1000 * ms
-        rate = [0, 0] * Hz
-        cpp_het_empty_r = stgen.cpp(rate, A, t_stop, t_start=t_start)
-        self.assertEqual(
-            [len(train) for train in cpp_het_empty_r], [0]*len(
-                cpp_het_empty_r))
+            # testing output with rate equal to 0
+            A = [0, .9, .1]
+            t_stop = 10 * 1000 * ms
+            t_start = 5 * 1000 * ms
+            rate = [0, 0] * Hz
+            cpp_het_empty_r = stgen.cpp(rate, A, t_stop, t_start=t_start)
+            self.assertEqual(
+                [len(train) for train in cpp_het_empty_r], [0] * len(
+                    cpp_het_empty_r))
 
-        # testing completely sync spiketrains
-        A = [0, 0, 1]
-        t_stop = 10 * 1000 * ms
-        t_start = 5 * 1000 * ms
-        rate = [3, 3] * Hz
-        cpp_het_eq = stgen.cpp(rate, A, t_stop, t_start=t_start)
+            # testing completely sync spiketrains
+            A = [0, 0, 1]
+            t_stop = 10 * 1000 * ms
+            t_start = 5 * 1000 * ms
+            rate = [3, 3] * Hz
+            cpp_het_eq = stgen.cpp(rate, A, t_stop, t_start=t_start)
 
-        self.assertTrue(np.allclose(
-            cpp_het_eq[0].magnitude, cpp_het_eq[1].magnitude))
+            self.assertTrue(np.allclose(
+                cpp_het_eq[0].magnitude, cpp_het_eq[1].magnitude))
 
     def test_cpp_het_err(self):
         # testing raises of ValueError (wrong inputs)

@@ -24,23 +24,23 @@ class sta_TestCase(unittest.TestCase):
 
     def setUp(self):
         self.asiga0 = AnalogSignal(np.array([
-            np.sin(np.arange(0, 20 * math.pi, 0.1))]).T, 
+            np.sin(np.arange(0, 20 * math.pi, 0.1))]).T,
             units='mV', sampling_rate=10 / ms)
         self.asiga1 = AnalogSignal(np.array([
-            np.sin(np.arange(0, 20 * math.pi, 0.1)), 
-            np.cos(np.arange(0, 20 * math.pi, 0.1))]).T, 
+            np.sin(np.arange(0, 20 * math.pi, 0.1)),
+            np.cos(np.arange(0, 20 * math.pi, 0.1))]).T,
             units='mV', sampling_rate=10 / ms)
         self.asiga2 = AnalogSignal(np.array([
-            np.sin(np.arange(0, 20 * math.pi, 0.1)), 
-            np.cos(np.arange(0, 20 * math.pi, 0.1)), 
-            np.tan(np.arange(0, 20 * math.pi, 0.1))]).T, 
+            np.sin(np.arange(0, 20 * math.pi, 0.1)),
+            np.cos(np.arange(0, 20 * math.pi, 0.1)),
+            np.tan(np.arange(0, 20 * math.pi, 0.1))]).T,
             units='mV', sampling_rate=10 / ms)
         self.st0 = SpikeTrain(
-            [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi], 
+            [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
             units='ms', t_stop=self.asiga0.t_stop)
         self.lst = [SpikeTrain(
-            [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi], 
-            units='ms', t_stop=self.asiga1.t_stop), 
+            [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
+            units='ms', t_stop=self.asiga1.t_stop),
             SpikeTrain([30, 35, 40], units='ms', t_stop=self.asiga1.t_stop)]
 
     #***********************************************************************
@@ -68,7 +68,7 @@ class sta_TestCase(unittest.TestCase):
         STA = sta.spike_triggered_average(
             self.asiga0, self.st0, (-4 * ms, 4 * ms))
         target = 5e-2 * mV
-        self.assertEqual(np.abs(STA).max().dimensionality.simplified, 
+        self.assertEqual(np.abs(STA).max().dimensionality.simplified,
                          pq.Quantity(1, "V").dimensionality.simplified)
         self.assertLess(np.abs(STA).max(), target)
 
@@ -85,13 +85,13 @@ class sta_TestCase(unittest.TestCase):
         window_endtime = 5 * ms
         STA = sta.spike_triggered_average(
             z, st, (window_starttime, window_endtime))
-        cutout = z[int(((spiketime + window_starttime) * sr).simplified): 
+        cutout = z[int(((spiketime + window_starttime) * sr).simplified):
             int(((spiketime + window_endtime) * sr).simplified)]
         cutout.t_start = window_starttime
         assert_array_equal(STA, cutout)
 
     def test_usage_of_spikes(self):
-        st = SpikeTrain([16.5 * math.pi, 17.5 * math.pi, 
+        st = SpikeTrain([16.5 * math.pi, 17.5 * math.pi,
             18.5 * math.pi, 19.5 * math.pi], units='ms', t_stop=20 * math.pi)
         STA = sta.spike_triggered_average(
             self.asiga0, st, (-math.pi * ms, math.pi * ms))
@@ -106,46 +106,46 @@ class sta_TestCase(unittest.TestCase):
     def test_analog_signal_of_wrong_type(self):
         '''Analog signal given as list, but must be AnalogSignal'''
         asiga = [0, 1, 2, 3, 4]
-        self.assertRaises(TypeError, sta.spike_triggered_average, 
+        self.assertRaises(TypeError, sta.spike_triggered_average,
             asiga, self.st0, (-2 * ms, 2 * ms))
 
     def test_spiketrain_of_list_type_in_wrong_sense(self):
         st = [10, 11, 12]
-        self.assertRaises(TypeError, sta.spike_triggered_average, 
+        self.assertRaises(TypeError, sta.spike_triggered_average,
             self.asiga0, st, (1 * ms, 2 * ms))
 
     def test_spiketrain_of_nonlist_and_nonspiketrain_type(self):
         st = (10, 11, 12)
-        self.assertRaises(TypeError, sta.spike_triggered_average, 
+        self.assertRaises(TypeError, sta.spike_triggered_average,
             self.asiga0, st, (1 * ms, 2 * ms))
 
     def test_forgotten_AnalogSignal_argument(self):
-        self.assertRaises(TypeError, sta.spike_triggered_average, 
+        self.assertRaises(TypeError, sta.spike_triggered_average,
             self.st0, (-2 * ms, 2 * ms))
 
     def test_one_smaller_nrspiketrains_smaller_nranalogsignals(self):
         '''Number of spiketrains between 1 and number of analogsignals'''
-        self.assertRaises(ValueError, sta.spike_triggered_average, 
+        self.assertRaises(ValueError, sta.spike_triggered_average,
             self.asiga2, self.lst, (-2 * ms, 2 * ms))
 
     def test_more_spiketrains_than_analogsignals_forbidden(self):
-        self.assertRaises(ValueError, sta.spike_triggered_average, 
+        self.assertRaises(ValueError, sta.spike_triggered_average,
             self.asiga0, self.lst, (-2 * ms, 2 * ms))
 
     def test_spike_earlier_than_analogsignal(self):
         st = SpikeTrain([-1 * math.pi, 2 * math.pi],
             units='ms', t_start=-2 * math.pi, t_stop=20 * math.pi)
-        self.assertRaises(ValueError, sta.spike_triggered_average, 
+        self.assertRaises(ValueError, sta.spike_triggered_average,
             self.asiga0, st, (-2 * ms, 2 * ms))
 
     def test_spike_later_than_analogsignal(self):
         st = SpikeTrain(
             [math.pi, 21 * math.pi], units='ms', t_stop=25 * math.pi)
-        self.assertRaises(ValueError, sta.spike_triggered_average, 
+        self.assertRaises(ValueError, sta.spike_triggered_average,
             self.asiga0, st, (-2 * ms, 2 * ms))
 
     def test_impossible_window(self):
-        self.assertRaises(ValueError, sta.spike_triggered_average, 
+        self.assertRaises(ValueError, sta.spike_triggered_average,
             self.asiga0, self.st0, (-2 * ms, -5 * ms))
 
     def test_window_larger_than_signal(self):
@@ -153,11 +153,11 @@ class sta_TestCase(unittest.TestCase):
             self.asiga0, self.st0, (-15 * math.pi * ms, 15 * math.pi * ms))
 
     def test_wrong_window_starttime_unit(self):
-        self.assertRaises(TypeError, sta.spike_triggered_average, 
+        self.assertRaises(TypeError, sta.spike_triggered_average,
             self.asiga0, self.st0, (-2 * mV, 2 * ms))
 
     def test_wrong_window_endtime_unit(self):
-        self.assertRaises(TypeError, sta.spike_triggered_average, 
+        self.assertRaises(TypeError, sta.spike_triggered_average,
             self.asiga0, self.st0, (-2 * ms, 2 * Hz))
 
     def test_window_borders_as_complex_numbers(self):
@@ -171,21 +171,25 @@ class sta_TestCase(unittest.TestCase):
     def test_empty_analogsignal(self):
         asiga = AnalogSignal([], units='mV', sampling_rate=10 / ms)
         st = SpikeTrain([5], units='ms', t_stop=10)
-        self.assertRaises(ValueError, sta.spike_triggered_average, 
+        self.assertRaises(ValueError, sta.spike_triggered_average,
             asiga, st, (-1 * ms, 1 * ms))
 
     def test_one_spiketrain_empty(self):
         '''Test for one empty SpikeTrain, but existing spikes in other'''
         st = [SpikeTrain(
-            [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi], 
-            units='ms', t_stop=self.asiga1.t_stop), 
+            [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
+            units='ms', t_stop=self.asiga1.t_stop),
             SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)]
-        STA = sta.spike_triggered_average(self.asiga1, st, (-1 * ms, 1 * ms))
-        cmp_array = AnalogSignal(np.array([np.zeros(20, dtype=float)]).T,
-            units='mV', sampling_rate=10 / ms)
-        cmp_array = cmp_array / 0.
-        cmp_array.t_start = -1 * ms
-        assert_array_equal(STA.magnitude[:, 1], cmp_array.magnitude[:, 0])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Ignore the RuntimeWarning: invalid value encountered in true_divide
+            new_signal = f(other, *args) for the empty SpikeTrain.
+            """
+            STA = sta.spike_triggered_average(self.asiga1,
+                                              spiketrains=st,
+                                              window=(-1 * ms, 1 * ms))
+        assert np.isnan(STA.magnitude[:, 1]).all()
 
     def test_all_spiketrains_empty(self):
         st = SpikeTrain([], units='ms', t_stop=self.asiga1.t_stop)
@@ -345,8 +349,15 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
 
     def test_spike_field_coherence_perfect_coherence(self):
         # check for detection of 20Hz peak in anasig0/bst0
-        s, f = sta.spike_field_coherence(
-            self.anasig0, self.bst0, window='boxcar')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            When the spiketrain is a vector with zero values, ignore the
+            warning RuntimeWarning: invalid value encountered in true_divide
+              Cxy = np.abs(Pxy)**2 / Pxx / Pyy.
+            """
+            s, f = sta.spike_field_coherence(
+                self.anasig0, self.bst0, window='boxcar')
 
         f_ind = np.where(f >= 19.)[0][0]
         max_ind = np.argmax(s[1:]) + 1
@@ -361,21 +372,30 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         # check number of frequency samples
         self.assertEqual(len(f), nfft / 2 + 1)
 
+        f_max = self.anasig3.sampling_rate.rescale('Hz').magnitude / 2
+        f_ground_truth = np.linspace(start=0,
+                                     stop=f_max,
+                                     num=nfft // 2 + 1) * pq.Hz
+
         # check values of frequency samples
-        assert_array_almost_equal(
-            f, np.linspace(
-                0, self.anasig3.sampling_rate.rescale('Hz').magnitude / 2,
-                nfft / 2 + 1) * pq.Hz)
+        assert_array_almost_equal(f, f_ground_truth)
 
     def test_short_spiketrain(self):
         # this spike train has the same length as anasig0
-        s1, f1 = sta.spike_field_coherence(
-            self.anasig0, self.bst3, window='boxcar')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            When the spiketrain is a vector with zero values, ignore the
+            warning RuntimeWarning: invalid value encountered in true_divide
+              Cxy = np.abs(Pxy)**2 / Pxx / Pyy.
+            """
+            s1, f1 = sta.spike_field_coherence(
+                self.anasig0, self.bst3, window='boxcar')
 
-        # this spike train has the same spikes as above, but is shorter than
-        # anasig0
-        s2, f2 = sta.spike_field_coherence(
-            self.anasig0, self.bst4, window='boxcar')
+            # this spike train has the same spikes as above,
+            # but it's shorter than anasig0
+            s2, f2 = sta.spike_field_coherence(
+                self.anasig0, self.bst4, window='boxcar')
 
         # the results above should be the same, nevertheless
         assert_array_equal(s1.magnitude, s2.magnitude)

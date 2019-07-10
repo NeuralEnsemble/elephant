@@ -7,12 +7,16 @@ Unit tests for the waveform_feature module.
 
 from __future__ import division
 
+import sys
 import unittest
+
 import neo
 import numpy as np
 import quantities as pq
 
 from elephant import waveform_features
+
+python_version_major = sys.version_info.major
 
 
 class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
@@ -33,9 +37,12 @@ class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
         self.assertRaises(ValueError, waveform_features.waveform_snr,
                           self.spiketrain_without_waveforms)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_with_zero_waveforms(self):
-        result = waveform_features.waveform_snr(
-            self.spiketrain_with_zero_waveforms)
+        with self.assertWarns(UserWarning):
+            # expect np.nan result when spiketrain noise is zero.
+            result = waveform_features.waveform_snr(
+                self.spiketrain_with_zero_waveforms)
         self.assertTrue(np.isnan(result))
 
     def test_with_waveforms(self):

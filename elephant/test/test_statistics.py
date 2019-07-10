@@ -7,18 +7,21 @@ Unit tests for the statistics module.
 """
 from __future__ import division
 
+import math
+import sys
 import unittest
+import warnings
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 import quantities as pq
 import scipy.integrate as spint
+from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 
-import elephant.statistics as es
 import elephant.kernels as kernels
-import warnings
-import math
+import elephant.statistics as es
+
+python_version_major = sys.version_info.major
 
 
 class isi_TestCase(unittest.TestCase):
@@ -340,10 +343,16 @@ class LVTestCase(unittest.TestCase):
         self.assertRaises(ValueError, es.lv, [])
         self.assertRaises(ValueError, es.lv, 1)
         self.assertRaises(ValueError, es.lv, np.array([seq, seq]))
-        
+
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_2short_spike_train(self):
         seq = [1]
-        self.assertTrue(math.isnan(es.lv(seq, with_nan=True)))
+        with self.assertWarns(UserWarning):
+            """
+            Catches UserWarning: Input size is too small. Please provide
+            an input with more than 1 entry.
+            """
+            self.assertTrue(math.isnan(es.lv(seq, with_nan=True)))
         
 
 class CV2TestCase(unittest.TestCase):
@@ -472,62 +481,86 @@ class RateEstimationTestCase(unittest.TestCase):
         kernel_list = [kernel_type(sigma=0.5*pq.s, invert=False)
                        for kernel_type in kernel_types]
         kernel_resolution = 0.01*pq.s
-        for kernel in kernel_list:
-            rate_estimate_a0 = es.instantaneous_rate(self.spike_train,
-                                                     sampling_period=kernel_resolution,
-                                                     kernel='auto',
-                                                     t_start=self.st_tr[0]*pq.s,
-                                                     t_stop=self.st_tr[1]*pq.s,
-                                                     trim=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Catches UserWarning: Instantaneous firing rate approximation
+            contains negative values, possibly caused due to machine precision
+            errors.
+            In this scenario, spiking rates are close to -/+ 0.
+            """
+            for kernel in kernel_list:
+                rate_estimate_a0 = es.instantaneous_rate(
+                    self.spike_train,
+                    sampling_period=kernel_resolution,
+                    kernel='auto',
+                    t_start=self.st_tr[0] * pq.s,
+                    t_stop=self.st_tr[1] * pq.s,
+                    trim=False)
 
-            rate_estimate0 = es.instantaneous_rate(self.spike_train,
-                                                   sampling_period=kernel_resolution,
-                                                   kernel=kernel)
+                rate_estimate0 = es.instantaneous_rate(
+                    self.spike_train,
+                    sampling_period=kernel_resolution,
+                    kernel=kernel)
 
-            rate_estimate1 = es.instantaneous_rate(self.spike_train,
-                                                   sampling_period=kernel_resolution,
-                                                   kernel=kernel,
-                                                   t_start=self.st_tr[0]*pq.s,
-                                                   t_stop=self.st_tr[1]*pq.s,
-                                                   trim=False)
+                rate_estimate1 = es.instantaneous_rate(
+                    self.spike_train,
+                    sampling_period=kernel_resolution,
+                    kernel=kernel,
+                    t_start=self.st_tr[0] * pq.s,
+                    t_stop=self.st_tr[1] * pq.s,
+                    trim=False)
 
-            rate_estimate2 = es.instantaneous_rate(self.spike_train,
-                                                   sampling_period=kernel_resolution,
-                                                   kernel=kernel,
-                                                   t_start=self.st_tr[0]*pq.s,
-                                                   t_stop=self.st_tr[1]*pq.s,
-                                                   trim=True)
-            # test consistency
-            rate_estimate_list = [rate_estimate0, rate_estimate1,
-                                  rate_estimate2, rate_estimate_a0]
+                rate_estimate2 = es.instantaneous_rate(
+                    self.spike_train,
+                    sampling_period=kernel_resolution,
+                    kernel=kernel,
+                    t_start=self.st_tr[0] * pq.s,
+                    t_stop=self.st_tr[1] * pq.s,
+                    trim=True)
+                # test consistency
+                rate_estimate_list = [rate_estimate0, rate_estimate1,
+                                      rate_estimate2, rate_estimate_a0]
 
-            for rate_estimate in rate_estimate_list:
-                num_spikes = len(self.spike_train)
-                auc = spint.cumtrapz(y=rate_estimate.magnitude[:, 0],
-                                     x=rate_estimate.times.rescale('s').magnitude)[-1]
-                self.assertAlmostEqual(num_spikes, auc, delta=0.05*num_spikes)
+                for rate_estimate in rate_estimate_list:
+                    num_spikes = len(self.spike_train)
+                    auc = spint.cumtrapz(
+                        y=rate_estimate.magnitude[:, 0],
+                        x=rate_estimate.times.rescale('s').magnitude)[-1]
+                    self.assertAlmostEqual(num_spikes, auc,
+                                           delta=0.05 * num_spikes)
 
     def test_instantaneous_rate_spiketrainlist(self):
         st_num_spikes = np.random.poisson(
-            self.st_rate*(self.st_dur-2*self.st_margin))
+            self.st_rate * (self.st_dur - 2 * self.st_margin))
         spike_train2 = np.random.rand(
-            st_num_spikes) * (self.st_dur - 2 * self.st_margin) + self.st_margin
+            st_num_spikes) * (self.st_dur - 2 * self.st_margin) + \
+            self.st_margin
         spike_train2.sort()
         spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
                                       t_start=self.st_tr[0] * pq.s,
                                       t_stop=self.st_tr[1] * pq.s)
-        st_rate_1 = es.instantaneous_rate(self.spike_train,
-                                          sampling_period=0.01*pq.s,
-                                          kernel=self.kernel)
-        st_rate_2 = es.instantaneous_rate(spike_train2,
-                                          sampling_period=0.01*pq.s,
-                                          kernel=self.kernel)
-        combined_rate = es.instantaneous_rate([self.spike_train, spike_train2],
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            """
+            Catches UserWarning: Instantaneous firing rate approximation
+            contains negative values, possibly caused due to machine precision
+            errors.
+            In this scenario, spiking rates are close to -/+ 0.
+            """
+            st_rate_1 = es.instantaneous_rate(self.spike_train,
                                               sampling_period=0.01*pq.s,
                                               kernel=self.kernel)
+            st_rate_2 = es.instantaneous_rate(spike_train2,
+                                              sampling_period=0.01*pq.s,
+                                              kernel=self.kernel)
+            combined_rate = es.instantaneous_rate([self.spike_train,
+                                                   spike_train2],
+                                                  sampling_period=0.01*pq.s,
+                                                  kernel=self.kernel)
         summed_rate = st_rate_1 + st_rate_2  # equivalent for identical kernels
-        for a, b in zip(combined_rate.magnitude, summed_rate.magnitude):
-            self.assertAlmostEqual(a, b, delta=0.0001)
+        assert_array_almost_equal(combined_rate.magnitude,
+                                  summed_rate.magnitude)
 
     # Regression test for #144
     def test_instantaneous_rate_regression_144(self):

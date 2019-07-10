@@ -205,15 +205,14 @@ class ZscoreTestCase(unittest.TestCase):
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=float)
 
         m = np.mean(signal.magnitude, axis=0, keepdims=True)
-        s = np.std(signal.magnitude, axis=0, keepdims=True)
-        target = (signal.magnitude - m) / s
+        s = np.std(signal.magnitude, axis=0, keepdims=True) + 1e-9
+        ground_truth = (signal.magnitude - m) / s
+        result = elephant.signal_processing.zscore(signal, inplace=True)
 
-        assert_array_almost_equal(
-            elephant.signal_processing.zscore(
-                signal, inplace=True).magnitude, target, decimal=9)
+        assert_array_almost_equal(result.magnitude, ground_truth, decimal=8)
 
         # Assert original signal is overwritten
-        self.assertEqual(signal[0, 0].magnitude, target[0, 0])
+        self.assertAlmostEqual(signal[0, 0].magnitude, ground_truth[0, 0])
 
     def test_zscore_single_dup_int(self):
         """

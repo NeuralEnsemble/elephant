@@ -113,6 +113,7 @@ def zscore(signal, inplace=True):
     # Calculate mean and standard deviation
     m = np.mean(np.concatenate(signal), axis=0)
     s = np.std(np.concatenate(signal), axis=0)
+    s[s == 0] = 1e-9  # avoid diving by zero
 
     if not inplace:
         # Create new signal instance
