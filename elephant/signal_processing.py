@@ -310,7 +310,8 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
             * 'sosfiltfilt': `scipy.signal.sosfiltfilt()`.
         In most applications 'filtfilt' should be used, because it doesn't
         bring about phase shift due to filtering. For numerically stable
-        filtering, use 'sosfiltfilt' (see issue
+        filtering, in particular higher order filters, use 'sosfiltfilt'
+        (see issue
         https://github.com/NeuralEnsemble/elephant/issues/220).
         Default is 'filtfilt'.
     fs : Quantity or float

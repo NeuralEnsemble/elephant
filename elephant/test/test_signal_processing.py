@@ -380,13 +380,18 @@ class ButterTestCase(unittest.TestCase):
         self.assertAlmostEqual(psd[0, 256], 0)
 
     def test_butter_filter_function(self):
+        """
+        `elephant.signal_processing.butter` return values test for all
+        available filters (result has to be almost equal):
+            * lfilter
+            * filtfilt
+            * sosfiltfilt
+        """
         # generate white noise AnalogSignal
         noise = neo.AnalogSignal(
             np.random.normal(size=5000),
             sampling_rate=1000 * pq.Hz, units='mV')
 
-        # test if the filter performance is as well with filftunc=lfilter as
-        # with filtfunc=filtfilt (i.e. default option)
         kwds = {'signal': noise, 'highpass_freq': 250.0 * pq.Hz,
                 'lowpass_freq': None, 'filter_function': 'filtfilt'}
         filtered_noise = elephant.signal_processing.butter(**kwds)
