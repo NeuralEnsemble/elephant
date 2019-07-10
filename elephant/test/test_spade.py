@@ -6,7 +6,6 @@ Unit tests for the spade module.
 """
 from __future__ import division
 
-import os
 import unittest
 
 import neo
@@ -18,8 +17,6 @@ import elephant.conversion as conv
 import elephant.spade as spade
 import elephant.spike_train_generation as stg
 from elephant.spade import HAVE_FIM
-from elephant.spade_src.fim_manager import download_spade_fim, \
-    _get_fim_lib_path
 
 
 class SpadeTestCase(unittest.TestCase):
@@ -243,7 +240,7 @@ class SpadeTestCase(unittest.TestCase):
         # check the lags
         assert_array_equal([len(lags) < self.max_spikes for lags in
                             lags_msip_max_spikes], [True] * len(
-                                lags_msip_max_spikes))
+            lags_msip_max_spikes))
 
         # test max_occ parameter
         output_msip_max_occ = spade.spade(self.msip, self.binsize, self.winlen,
@@ -371,12 +368,11 @@ class SpadeTestCase(unittest.TestCase):
                                             self.winlen, report='3d#')[0]
         assert_array_equal(spectrum_3d, [
             [len(self.lags3) + 1, self.n_occ3, max(self.lags3), 1]])
-    # test the errors raised
 
     def test_spade_raise_error(self):
         # Test list not using neo.Spiketrain
         self.assertRaises(TypeError, spade.spade, [
-                          [1, 2, 3], [3, 4, 5]], 1 * pq.ms, 4)
+            [1, 2, 3], [3, 4, 5]], 1 * pq.ms, 4)
         # Test neo.Spiketrain with different t_stop
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
@@ -385,7 +381,7 @@ class SpadeTestCase(unittest.TestCase):
         self.assertRaises(ValueError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=6 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=6 * pq.s)], 1 * pq.ms, 4, n_surr=1,
-            spectrum='try')
+                          spectrum='try')
         # Test negative minimum number of spikes
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
@@ -394,14 +390,13 @@ class SpadeTestCase(unittest.TestCase):
         self.assertRaises(AttributeError, spade.pvalue_spectrum, [
             neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
                 [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, 3 * pq.ms,
-            n_surr=-3)
+                          n_surr=-3)
         # Test wrong correction parameter
         self.assertRaises(AttributeError, spade.test_signature_significance, (
             (2, 3, 0.2), (2, 4, 0.1)), 0.01, corr='try')
         # Test negative number of subset for stability
         self.assertRaises(AttributeError, spade.approximate_stability, (),
                           np.array([]), n_subsets=-3)
-    # test psr
 
     def test_pattern_set_reduction(self):
         output_msip = spade.spade(self.patt_psr, self.binsize, self.winlen,
@@ -425,13 +420,6 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
         # check the occurrences time of the patters
         assert_array_equal(len(occ_msip[0]), self.n_occ3)
-
-    def test_download_spade_fim(self):
-        fim_lib_path = _get_fim_lib_path()
-        if os.path.exists(fim_lib_path):
-            os.unlink(fim_lib_path)
-        download_spade_fim()
-        assert os.path.exists(fim_lib_path)
 
 
 def suite():
