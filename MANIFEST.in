@@ -1,3 +1,4 @@
+include requirements*.txt
 include README.rst
 include LICENSE.txt
 include AUTHORS.txt
@@ -8,6 +9,4 @@ include elephant/spade_src/LICENCE
 recursive-include elephant/spade_src *.so *.pyd
 include elephant/test/spike_extraction_test_data.txt
 recursive-include doc *
-
-# special care for the files, used in setup.py
-include elephant/spade_src/fim_manager.py
+prune doc/_build
