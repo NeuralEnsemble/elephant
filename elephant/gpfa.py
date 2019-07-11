@@ -1,18 +1,19 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
- [1] for neural trajectory (X) visualization of parallel spike trains (Y).
+ [1] for neural trajectory visualization of parallel spike trains.
 
-The INPUT consists of a set of trials (Y), each containing a list of spike
-trains (N neurons): The OUTPUT is the projection (X) of the data in space
+The input consists of a set of trials (Y), each containing a list of spike
+trains (N neurons). The output is the projection (X) of the data in space
 of pre-chosen dimension x_dim < N.
 
-Under the assumption of a linear relation plus noise between the latent
-variable X and the actual data Y (Y = C * X + d + Gauss(0,R)), the projection
-corresponds to the conditional probability E[X|Y].
+Under the assumption of a linear relation between the latent
+variable X and the actual data Y in addition to a noise term (i.e.,
+Y = C * X + d + Gauss(0,R)), the projection corresponds to the conditional
+probability E[X|Y].
 
-A GAUSSIAN PROCESS (X) of dimension x_dim < N is adopted to extract smooth
+A Gaussian process (X) of dimension x_dim < N is adopted to extract smooth
 neural trajectories. The parameters (C, d, R) are estimated from the data using
-FACTOR ANALYSIS technique. GPFA is simply a set of Factor Analyzers (FA),
+factor analysis technique. GPFA is simply a set of Factor Analyzers (FA),
 linked together in the low dimensional space by a Gaussian Process (GP).
 
 The analysis consists of the following steps:
@@ -36,11 +37,14 @@ The analysis consists of the following steps:
 -  seq_train, ll_train = exact_inference_with_ll(seq_train, params_est)
 
 
-4) orthonormalization of the matrix C and the corresponding subspace;
+4) orthonormalization of the matrix C and the corresponding subspace:
 
 -  postprocess(ws, kern_sd=[])
 
 References:
+
+The code was ported from the MATLAB code (see INFO.md for more details).
+
 [1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
 Gaussian-process factor analysis for low-dimensional single-trial analysis of
 neural population activity. J Neurophysiol 102:614-635.
@@ -372,6 +376,10 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
 
     Examples
     --------
+    In the following example, we calculate the neural trajectories of 20
+    Poisson spike train generators recorded in 50 trials with randomized
+    rates up to 100 Hz.
+
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.gpfa import gpfa

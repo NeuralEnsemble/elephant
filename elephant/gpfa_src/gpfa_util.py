@@ -34,7 +34,7 @@ def get_seq(data, bin_size, use_sqrt=True):
         Spike bin width
 
     use_sqrt: bool
-        Logical specifying whether or not to use square-root transform on
+        Boolean specifying whether or not to use square-root transform on
         spike counts
         Default is  True
 
