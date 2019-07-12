@@ -78,7 +78,7 @@ class GPFATestCase(unittest.TestCase):
             self.data2.append((trial, spike_times))
 
     def test_data1(self):
-        params_est, seqs_train, seqs_test, fit_info = gpfa(
+        params_est, seqs_train, fit_info = gpfa(
             self.data1, x_dim=self.x_dim, em_max_iters=self.n_iters)
         self.assertEqual(fit_info['bin_size'], 20*pq.ms)
         self.assertEqual(fit_info['min_var_frac'], 0.01)
@@ -104,7 +104,7 @@ class GPFATestCase(unittest.TestCase):
             gpfa(data=self.data2, bin_size=invalid_bin_size)
 
     def test_data2(self):
-        params_est, seqs_train, seqs_test, fit_info = gpfa(
+        params_est, seqs_train, fit_info = gpfa(
             self.data2, bin_size=self.bin_size, x_dim=8,
             em_max_iters=self.n_iters)
         self.assertEqual(fit_info['bin_size'], self.bin_size,

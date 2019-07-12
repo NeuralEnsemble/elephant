@@ -16,30 +16,36 @@ neural trajectories. The parameters (C, d, R) are estimated from the data using
 factor analysis technique. GPFA is simply a set of Factor Analyzers (FA),
 linked together in the low dimensional space by a Gaussian Process (GP).
 
-The analysis consists of the following steps:
+Internally, the analysis consists of the following steps:
 
 0) bin the data to get a sequence of N dimensional vectors for each time
-    bin, and choose the reduced dimension x_dim;
+   bin (cf., `gpfa_util.get_seq`), and choose the reduced dimension x_dim
 
-1) run
+1) expectation maximization for the parameters C, d, R and the time-scale of
+   the gaussian process, using all the trials provided as input (cf.,
+   `gpfa_core.em`)
 
--  gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
-                eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500)
+2) projection of single trial in the low dimensional space (cf.,
+   `gpfa_core.exact_inference_with_ll`)
 
-2) expectation maximization for the parameters C, d, R and the time-scale of
- the gaussian process, using all the trials provided as input:
-
--  params_est, seq_train_cut, ll_cut, iter_time = em(params_init, seq,
-    em_max_iters=500, tol=1.0E-8, min_var_frac=0.01, freq_ll=5, verbose=False)
-
-3) projection of single trial in the low dimensional space:
-
--  seq_train, ll_train = exact_inference_with_ll(seq_train, params_est)
+3) orthonormalization of the matrix C and the corresponding subspace:
+   (cf., `gpfa_util.orthogonalize`)
 
 
-4) orthonormalization of the matrix C and the corresponding subspace:
+There are two principle scenarios of using the GPFA analysis. In the first
+scenario, only one single dataset is available. The parameters that describe
+the transformation are first extracted from the data, and the orthonormal basis
+is constructed. Then the same data is projected into this basis. This analysis
+is performed using the `gpfa()` function.
 
--  postprocess(ws, kern_sd=[])
+In the second scenario, both a training and a test data set is available. Here,
+the parameters are estimated from the training data. In a second step the test
+data is projected into the non-orthonormal space obtained from the training
+data, and then orthonormalized. From this scenario, it is possible to perform a
+cross-validation between training and test data sets. This analysis is
+performed by exectuing first `extract_trajectory()` on the training data,
+followed by `postprocess()` on the training and test datasets.
+
 
 References:
 
@@ -64,16 +70,17 @@ from elephant.gpfa_src import gpfa_core, gpfa_util
 def extract_trajectory(seqs, bin_size=20., x_dim=3, min_var_frac=0.01,
                        em_max_iters=500, verbose=False):
     """
-    Prepares data and calls functions for extracting neural trajectories.
+    Prepares data, estimates parameters of the latent variables and extracts
+    neural trajectories.
 
     Parameters
     ----------
-
-    seqs : np.ndarray
-          list of spike trains in different trials
-                                        0-axis --> Trials
-                                        1-axis --> Neurons
-                                        2-axis --> Spike times
+    seqs : np.recarray
+        data structure, whose nth entry (corresponding to the nth experimental
+        trial) has fields
+            * trialId: unique trial identifier
+            * T: (1 x 1) number of timesteps
+            * y: (yDim x T) neural data
     bin_size : float, optional
         Width of each time bin in ms (magnitude).
         Default is 20 ms.
@@ -113,6 +120,8 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, min_var_frac=0.01,
                 observation noise covariance
 
     seqs_train: np.recarray
+        Contains the embedding of the training data into the latent variable
+        space.
         Data structure, whose n-th entry (corresponding to the n-th
         experimental trial) has fields
             * trialId: int
@@ -144,11 +153,12 @@ def extract_trajectory(seqs, bin_size=20., x_dim=3, min_var_frac=0.01,
 
     Raises
     ------
-    AssertionError
-        If `seqs` es empty.
+    ValueError
+        If `seqs` is empty.
 
     """
-    assert len(seqs) > 0, "Got empty trials."
+    if len(seqs) == 0:
+        raise ValueError("Got empty trials.")
 
     # Set cross-validation folds
     num_trials = len(seqs)
@@ -211,7 +221,7 @@ def postprocess(params_est, seqs_train, seqs_test=None):
     ----------
 
     params_est : dict
-        First return value of extract_trajectory().
+        First return value of extract_trajectory() on the training data set.
         Estimated model parameters.
         When the GPFA method is used, following parameters are contained
             covType: {'rbf', 'tri', 'logexp'}
@@ -230,7 +240,8 @@ def postprocess(params_est, seqs_train, seqs_test=None):
                 observation noise covariance
 
     seqs_train: np.recarray
-        Second return value of extract_trajectory().
+        Contains the embedding of the training data into the latent variable
+        space.
         Data structure, whose n-th entry (corresponding to the n-th
         experimental trial) has fields
             * trialId: int
@@ -248,7 +259,8 @@ def postprocess(params_est, seqs_train, seqs_test=None):
                 posterior covariance over time for each latent variable
 
     seqs_test: np.recarray, optional
-        Data structure of test dataset.
+        Contains the embedding of the test data into the latent variable space.
+        Same data structure as for `seqs_train`.
         Default is None.
 
     Returns
@@ -281,8 +293,16 @@ def postprocess(params_est, seqs_train, seqs_test=None):
 
     if seqs_test is not None:
         print("Extracting neural trajectories for test data...\n")
-        seqs_test = gpfa_core.exact_inference_with_ll(seqs_test,
-                                                      params_est)
+
+        # Copy additional fields from extract_trajectory from training data to
+        # test data
+        seqs_test_dup = seqs_train.copy()
+        seqs_test_dup["T"] = seqs_test["T"]
+        seqs_test_dup["y"] = seqs_test["y"]
+        seqs_test_dup["trialId"] = seqs_test["trialId"]
+
+        seqs_test = seqs_test_dup
+        seqs_test = gpfa_core.exact_inference_with_ll(seqs_test, params_est)
         X = np.hstack(seqs_test['xsm'])
         Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
         seqs_test = gpfa_util.segment_by_trial(seqs_test, Xorth, 'xorth')
@@ -292,16 +312,22 @@ def postprocess(params_est, seqs_train, seqs_test=None):
 
 def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
     """
-    Prepares data and calls functions for extracting neural trajectories.
+    Prepares data and calls functions for extracting neural trajectories in the
+    orthonormal space.
+
+    The function combines calls to `extract_trajectory()` and `postprocess()`
+    in a scenario, where no cross-validation of the embedding is performed.
 
     Parameters
     ----------
 
-    data : list
-          list of spike trains in different trials
-                                        0-axis --> Trials
-                                        1-axis --> Neurons
-                                        2-axis --> Spike times
+    data : list of list of Spiketrain objects
+        The outer list corresponds to trials and the inner list corresponds to
+        the neurons recorded in that trial, such that data[l][n] is the
+        Spiketrain of neuron n in trial l. Note that the number and order of
+        Spiketrains objects per trial must be fixed such that data[l][n] and
+        data[k][n] refer to the same spike generator for any choice of l,k and
+        n.
     bin_size : quantities.Quantity, optional
         Width of each time bin.
         Default is 20 ms.
@@ -329,10 +355,14 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
             C: ndarray of shape (#units, #latent_vars)
                 mapping between the neuronal data space and the latent variable
                 space
+            Corth: ndarray of shape (#units, #latent_vars)
+                mapping between the neuronal data space and the orthonormal
+                latent variable space
             R: ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
     seqs_train: numpy.recarray
+        Contains the embedding of the data into the latent variable space.
         Data structure, whose n-th entry (corresponding to the n-th
         experimental trial) has fields
             * trialId: int
@@ -348,11 +378,8 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
                 timepoint
             * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
                 posterior covariance over time for each latent variable
-
-    seqs_test: numpy.recarray
-        Same structure as seqs_train, but contains results of the method
-        applied to test dataset.
-        When no cross-validation is performed, None is returned.
+            * xorth: ndarray of shape (#latent_vars, #bins)
+                trajectory in the orthonormalized space
 
     fit_info: dict
         Information of the fitting process and the parameters used there:
@@ -369,7 +396,7 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
 
     Raises
     ------
-    AssertionError
+    ValueError
         If `data` is an empty list.
         If `bin_size` if not a `pq.Quantity`.
         If `data[0][1][0]` is not a `neo.SpikeTrain`.
@@ -410,6 +437,6 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
     params_est, seqs_train, fit_info = extract_trajectory(
         seqs, bin_size=bin_size.rescale('ms').magnitude, x_dim=x_dim,
         em_max_iters=em_max_iters)
-    params_est, seqs_train, seqs_test = postprocess(params_est, seqs_train)
+    params_est, seqs_train, _ = postprocess(params_est, seqs_train)
 
-    return params_est, seqs_train, seqs_test, fit_info
+    return params_est, seqs_train, fit_info

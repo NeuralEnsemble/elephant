@@ -23,19 +23,19 @@ def get_seq(data, bin_size, use_sqrt=True):
     Parameters
     ----------
 
-    data
-        structure whose nth entry (corresponding to the nth
-        experimental trial) has fields
-            * trialId: unique trial identifier
-            * spikes: 0/1 matrix of the raw spiking activity across
-                       all neurons. Each row corresponds to a neuron.
-                       Each column corresponds to a 1 msec timestep.
+    data : list of list of Spiketrain objects
+        The outer list corresponds to trials and the inner list corresponds to
+        the neurons recorded in that trial, such that data[l][n] is the
+        Spiketrain of neuron n in trial l. Note that the number and order of
+        Spiketrains objects per trial must be fixed such that data[l][n] and
+        data[k][n] refer to the same spike generator for any choice of l,k and
+        n.
     bin_size: quantity.Quantity
         Spike bin width
 
     use_sqrt: bool
         Boolean specifying whether or not to use square-root transform on
-        spike counts
+        spike counts (see original paper for motivation).
         Default is  True
 
     Returns
