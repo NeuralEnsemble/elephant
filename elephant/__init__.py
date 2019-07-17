@@ -23,7 +23,8 @@ from . import (statistics,
                conversion,
                neo_tools,
                spade,
-               cell_assembly_detection)
+               cell_assembly_detection,
+               waveform_features)
 
 try:
     from . import pandas_bridge
