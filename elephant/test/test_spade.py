@@ -107,6 +107,7 @@ class SpadeTestCase(unittest.TestCase):
         self.patt_psr = self.patt3 + [self.patt3[-1][:3]]
 
     # Testing cpp
+    @unittest.skipUnless(HAVE_FIM, "Time consuming with pythonic FIM")
     def test_spade_cpp(self):
         output_cpp = spade.spade(self.cpp, self.binsize, 1,
                                  n_subsets=self.n_subset,
