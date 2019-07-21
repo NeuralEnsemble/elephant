@@ -66,12 +66,8 @@ import time
 import quantities as pq
 import warnings
 from elephant.spade_src import fast_fca
-from elephant.spade_src.fim_manager import download_spade_fim
 
 warnings.simplefilter('once', UserWarning)
-
-# if not downloaded during the install, do it now
-download_spade_fim()
 
 
 try:

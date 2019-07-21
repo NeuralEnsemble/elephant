@@ -15,7 +15,9 @@ nosetests.xml
 .pydevproject
 .settings
 *.tmp*
-.idea
+.idea/
+venv/
+env/
 .pytest_cache/
 
 # Compiled source #
