@@ -1,5 +1,5 @@
 =====================================================================================================
-`waveform_features` - Util functions for computing waveform features like signal-to-noise ratio, etc.
+`waveform_features` - Functions for computing waveform features like signal-to-noise ratio, etc.
 =====================================================================================================
 
 .. automodule:: elephant.waveform_features
