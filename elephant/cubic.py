@@ -203,7 +203,7 @@ def _kstat(data):
 
     Returns
     -----
-    kappa : numpy.ndarray
+    moments : list
         The first three unbiased cumulants of the population count
     '''
     if len(data) == 0:
