@@ -8,7 +8,7 @@ Examples of usage:
     >>> kernel1 = kernels.GaussianKernel(sigma=100*ms)
     >>> kernel2 = kernels.ExponentialKernel(sigma=8*mm, invert=True)
     
-:copyright: Copyright 2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

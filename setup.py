@@ -18,7 +18,7 @@ with open(os.path.join(os.path.dirname(__file__),
                        "elephant", "VERSION")) as version_file:
     version = version_file.read().strip()
 
-with open("README.rst") as f:
+with open("README.md") as f:
     long_description = f.read()
 with open('requirements.txt') as fp:
     install_requires = fp.read()
