@@ -10,3 +10,4 @@ recursive-include elephant/spade_src *.so *.pyd
 include elephant/test/spike_extraction_test_data.txt
 recursive-include doc *
 prune doc/_build
+recursive-exclude . *~
