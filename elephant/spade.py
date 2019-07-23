@@ -53,7 +53,7 @@ plt.ylabel('neurons ids')
 plt.legend()
 plt.show()
 
-:copyright: Copyright 2017 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 '''
 import numpy

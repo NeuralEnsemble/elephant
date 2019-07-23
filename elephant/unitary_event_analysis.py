@@ -15,7 +15,7 @@ References:
   - Gruen S (2009) Data-driven significance estimation of precise spike
     correlation. J Neurophysiology 101:1126-1140 (invited review)
 
-:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

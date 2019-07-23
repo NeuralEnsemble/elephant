@@ -3,7 +3,7 @@
 Basic processing procedures for analog signals (e.g., performing a z-score of a
 signal, or filtering a signal).
 
-:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 '''
 
