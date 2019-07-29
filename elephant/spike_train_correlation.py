@@ -655,18 +655,10 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         Check every spike in train 1 to see if there's a spike in train 2
         within dt
         """
-        Nab = 0
-        j = 0
-        for i in range(N1):
-            while j < N2:  # don't need to search all j each iteration
-                if np.abs(spiketrain_1[i] - spiketrain_2[j]) <= dt:
-                    Nab = Nab + 1
-                    break
-                elif spiketrain_2[j] > spiketrain_1[i]:
-                    break
-                else:
-                    j = j + 1
-        return Nab
+
+        diff = spiketrain_1.times[:, np.newaxis] - spiketrain_2.times[np.newaxis, :]
+        sumdiff = np.sum(np.abs(diff) <= dt, axis=1)
+        return np.count_nonzero(sumdiff)
 
     def run_T(spiketrain, N, dt):
         """
@@ -681,15 +673,15 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
                 time_A = time_A - dt - spiketrain[0] + spiketrain.t_stop
 
         else:  # if more than one spike in train
-            i = 0
-            while i < (N - 1):
-                diff = spiketrain[i + 1] - spiketrain[i]
 
-                if diff < (2 * dt):  # subtract overlap
-                    time_A = time_A - 2 * dt + diff
-                i += 1
-                # check if spikes are within dt of the start and/or end
-                # if so subtract overlap of first and/or last spike
+            diff = spiketrain[1:N] - spiketrain[:N-1]
+            # Overlap
+            mask = diff < 2*dt
+            # Subtract overlap
+            time_A = time_A - 2*dt*np.count_nonzero(mask) + np.sum(diff[mask])
+
+            # check if spikes are within dt of the start and/or end
+            # if so subtract overlap of first and/or last spike
             if (spiketrain[0] - spiketrain.t_start) < dt:
                 time_A = time_A + spiketrain[0] - dt - spiketrain.t_start
 
