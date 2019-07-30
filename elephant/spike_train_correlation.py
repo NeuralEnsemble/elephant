@@ -656,16 +656,30 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         within dt
         """
 
+        # Search spikes of spiketrain_1 in spiketrain_2
+        # ind will contain index of
         ind = np.searchsorted(spiketrain_2.times, spiketrain_1.times)
-        ind[ind == 0] = 1
+
+        # To prevent IndexErrors
+        # If a spike of spiketrain_1 is after the last spike of spiketrain_2,
+        # the index is N2, however spiketrain_2[N2] raises an IndexError
+        # By shifting this index, the spike of spiketrain_1 will be compared
+        # to the last 2 spikes of spiketrain_2 (negligible overhead)
+        # Note: Not necessary for index 0 that will be shifted to -1 for close_left,
+        # because spiketrain_2[-1] is valid (also negligible additional comparison)
         ind[ind == N2] = N2 - 1
-        # TODO: Index Errors if N1 == 1 || N2 == 1
-        diff_left = np.abs(spiketrain_2.times[ind - 1] - spiketrain_1.times)
-        diff_right = np.abs(spiketrain_2.times[ind] - spiketrain_1.times)
-        diff_left = diff_left <= dt
-        diff_right = diff_right <= dt
-        diff = diff_left + diff_right
-        return np.count_nonzero(diff)
+
+        # Comparison to nearest spike in spiketrain_2 BEFORE spike in spiketrain_1
+        close_left = np.abs(spiketrain_2.times[ind - 1] - spiketrain_1.times) <= dt
+        # Comparison to nearest spike in spiketrain_2 AFTER (or simultaneous) spike in spiketrain_2
+        close_right = np.abs(spiketrain_2.times[ind] - spiketrain_1.times) <= dt
+
+        # If spike in spiketrain_2 before or after is in range of spike in spiketrain_1,
+        # it will be counted ONCE (as per original implementation)
+        close = close_left + close_right
+
+        # Count how many spikes of spiketrain_1 have a "partner" in spiketrain_2
+        return np.count_nonzero(close)
 
     def run_T(spiketrain, N, dt):
         """
@@ -681,6 +695,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
         else:  # if more than one spike in train
 
+            # Vectorized loop of spike time differences
             diff = spiketrain[1:N] - spiketrain[:N-1]
             # Overlap
             mask = diff < 2*dt
