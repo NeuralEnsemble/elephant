@@ -656,9 +656,16 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         within dt
         """
 
-        diff = spiketrain_1.times[:, np.newaxis] - spiketrain_2.times[np.newaxis, :]
-        sumdiff = np.sum(np.abs(diff) <= dt, axis=1)
-        return np.count_nonzero(sumdiff)
+        ind = np.searchsorted(spiketrain_2.times, spiketrain_1.times)
+        ind[ind == 0] = 1
+        ind[ind == N2] = N2 - 1
+        # TODO: Index Errors if N1 == 1 || N2 == 1
+        diff_left = np.abs(spiketrain_2.times[ind - 1] - spiketrain_1.times)
+        diff_right = np.abs(spiketrain_2.times[ind] - spiketrain_1.times)
+        diff_left = diff_left <= dt
+        diff_right = diff_right <= dt
+        diff = diff_left + diff_right
+        return np.count_nonzero(diff)
 
     def run_T(spiketrain, N, dt):
         """
