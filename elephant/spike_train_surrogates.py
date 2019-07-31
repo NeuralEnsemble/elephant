@@ -31,7 +31,7 @@ the original data:
     Operational Time. Front Comput Neurosci. 2010; 4: 127.
 
 Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
-:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

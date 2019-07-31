@@ -2,6 +2,28 @@
 Release Notes
 *************
 
+Elephant 0.6.3 release notes
+============================
+July 22nd 2019
+
+The release v0.6.3 is mostly about improving maintenance.
+
+New functions
+-------------
+* `waveform_features` module
+    * Waveform signal-to-noise ratio (https://github.com/NeuralEnsemble/elephant/pull/219).
+* Added support for Butterworth `sosfiltfilt` - numerically stable (in particular, higher order) filtering (https://github.com/NeuralEnsemble/elephant/pull/234).
+
+Buf fixes
+---------
+* Fixed neo version typo in requirements file (https://github.com/NeuralEnsemble/elephant/pull/218)
+* Fixed broken docs (https://github.com/NeuralEnsemble/elephant/pull/230, https://github.com/NeuralEnsemble/elephant/pull/232)
+* Fixed issue with 32-bit arch (https://github.com/NeuralEnsemble/elephant/pull/229)
+
+Other changes
+-------------
+* Added issue templates (https://github.com/NeuralEnsemble/elephant/pull/226)
+* Single VERSION file (https://github.com/NeuralEnsemble/elephant/pull/231)
 
 Elephant 0.6.2 release notes
 ============================

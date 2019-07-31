@@ -175,17 +175,17 @@ Python 2.7 and 3.2-3.5.
 
 
 Making a release (maintainers only)
-----------------
+-----------------------------------
 
 .. TODO: discuss branching/tagging policy.
 
-.. Add a section in /doc/releases/<version>.rst for the release.
+.. Add a section in /doc/release_notes.rst for the release.
 
 1. Increment the Elephant package version in :file:`elephant/VERSION`, if necessary.
 
 2. Check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
 
-3. If there is a new module do not forget to add the modulename to the :file:`doc/module.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`.
+3. If there is a new module do not forget to add the modulename to the :file:`doc/modules.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`.
 
 To build a source package::
 

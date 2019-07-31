@@ -53,7 +53,7 @@ plt.ylabel('neurons ids')
 plt.legend()
 plt.show()
 
-:copyright: Copyright 2017 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 '''
 import numpy
@@ -66,12 +66,8 @@ import time
 import quantities as pq
 import warnings
 from elephant.spade_src import fast_fca
-from elephant.spade_src.fim_manager import download_spade_fim
 
 warnings.simplefilter('once', UserWarning)
-
-# if not downloaded during the install, do it now
-download_spade_fim()
 
 
 try:

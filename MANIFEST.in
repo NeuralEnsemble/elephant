@@ -1,13 +1,14 @@
-include README.rst
+recursive-include elephant *.py
+include requirements*.txt
+include README.md
 include LICENSE.txt
-include AUTHORS.txt
 include elephant/VERSION
 include elephant/current_source_density_src/README.md
 include elephant/current_source_density_src/test_data.mat
 include elephant/neural_trajectory_src/README.md
 include elephant/spade_src/LICENCE
+recursive-include elephant/spade_src *.so *.pyd
 include elephant/test/spike_extraction_test_data.txt
 recursive-include doc *
-
-# special care for the files, used in setup.py
-include elephant/spade_src/fim_manager.py
+prune doc/_build
+recursive-exclude . *~

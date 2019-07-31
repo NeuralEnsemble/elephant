@@ -25,7 +25,8 @@ Table of Contents
     modules
     developers_guide
     authors
-    release_notes	       
+    release_notes
+    acknowledgements
 
    
 

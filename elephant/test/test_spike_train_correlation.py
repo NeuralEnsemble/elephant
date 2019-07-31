@@ -2,7 +2,7 @@
 """
 Unit tests for the spike_train_correlation module.
 
-:copyright: Copyright 2015-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
