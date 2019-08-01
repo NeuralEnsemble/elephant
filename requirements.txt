@@ -1,5 +1,5 @@
 neo>=0.7.1,<0.8.0
-numpy>=1.8.2
-quantities>=0.10.1
-scipy>=0.14.0
+numpy>=1.10.1
+quantities>=0.12.1
+scipy>=0.17.0
 six>=1.10.0

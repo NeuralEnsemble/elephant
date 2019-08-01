@@ -41,14 +41,14 @@ matrix:
       python: 3.7
       env: DISTRIB="conda"
 
-  exclude:
-    - name: "pip 3.6 requirements min version"
-      # excluded due to unmet dependencies in neo, quantities, and scipy
+    - name: "pip 3.6 requirements-extras min version"
       python: 3.6
       env: DISTRIB="pip"
       before_install:
-        - sudo apt install libblas-dev liblapack-dev libatlas-base-dev gfortran
-        - sed -i 's/>=/==/g' requirements.txt
+        - sudo apt install -y libopenmpi-dev openmpi-bin
+        - sudo apt install -y libblas-dev liblapack-dev libatlas-base-dev gfortran
+        - sed -i 's/>=/==/g' requirements*.txt
+      before_script: pip install -r requirements-extras.txt
 
 
 install:

@@ -48,7 +48,7 @@ class CSD(object):
         if ele_pos.shape[0] < 1+ele_pos.shape[1]: #Dim+1
             raise Exception("Number of electrodes must be at least :",
                             1+ele_pos.shape[1])
-        if utils.check_for_duplicated_electrodes(ele_pos) is False:
+        if utils.contains_duplicated_electrodes(ele_pos):
             raise Exception("Error! Duplicated electrode!")
 
     def sanity(self, true_csd, pos_csd):

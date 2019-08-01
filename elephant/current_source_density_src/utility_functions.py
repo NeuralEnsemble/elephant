@@ -35,17 +35,19 @@ def patch_quantities():
         lastdefinition = definition
     return
 
-def check_for_duplicated_electrodes(elec_pos):
+
+def contains_duplicated_electrodes(elec_pos):
     """Checks for duplicate electrodes
     Parameters
     ----------
     elec_pos : np.array
+
     Returns
     -------
     has_duplicated_elec : Boolean
     """
-    unique_elec_pos = np.unique(elec_pos, axis=0)
-    has_duplicated_elec = unique_elec_pos.shape == elec_pos.shape
+    unique_elec_pos = set(map(tuple, elec_pos))
+    has_duplicated_elec = len(unique_elec_pos) < len(elec_pos)
     return has_duplicated_elec
 
 
