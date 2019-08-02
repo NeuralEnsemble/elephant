@@ -9,22 +9,25 @@ Unit tests for the pandas bridge module.
 from __future__ import division, print_function
 
 import unittest
+import warnings
+from distutils.version import StrictVersion
 from itertools import chain
 
-from neo.test.generate_datasets import fake_neo
 import numpy as np
-from numpy.testing import assert_array_equal
 import quantities as pq
-import warnings
+from neo.test.generate_datasets import fake_neo
+from numpy.testing import assert_array_equal
 
 try:
     import pandas as pd
     from pandas.util.testing import assert_frame_equal, assert_index_equal
 except ImportError:
     HAVE_PANDAS = False
+    pandas_version = StrictVersion('0.0.0')
 else:
     import elephant.pandas_bridge as ep
     HAVE_PANDAS = True
+    pandas_version = StrictVersion(pd.__version__)
 
 if HAVE_PANDAS:
     # Currying, otherwise the unittest will break with pandas>=0.16.0
@@ -40,7 +43,7 @@ if HAVE_PANDAS:
             return pd.util.testing.assert_index_equal(left, right)
 
 
-@unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
+@unittest.skipUnless(pandas_version >= '0.24.0', 'requires pandas v0.24.0')
 class MultiindexFromDictTestCase(unittest.TestCase):
     def test__multiindex_from_dict(self):
         inds = {'test1': 6.5,
