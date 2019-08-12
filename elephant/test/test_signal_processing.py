@@ -205,8 +205,10 @@ class ZscoreTestCase(unittest.TestCase):
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=float)
 
         m = np.mean(signal.magnitude, axis=0, keepdims=True)
-        s = np.std(signal.magnitude, axis=0, keepdims=True) + 1e-9
-        ground_truth = (signal.magnitude - m) / s
+        s = np.std(signal.magnitude, axis=0, keepdims=True)
+        ground_truth = np.divide(signal.magnitude - m, s,
+                                 out=np.zeros_like(signal.magnitude),
+                                 where=s != 0)
         result = elephant.signal_processing.zscore(signal, inplace=True)
 
         assert_array_almost_equal(result.magnitude, ground_truth, decimal=8)
