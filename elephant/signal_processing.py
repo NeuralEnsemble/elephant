@@ -111,25 +111,24 @@ def zscore(signal, inplace=True):
         signal = [signal]
 
     # Calculate mean and standard deviation
-    m = np.mean(np.concatenate(signal), axis=0)
-    s = np.std(np.concatenate(signal), axis=0)
+    signal_stacked = np.vstack(signal)
+    m = np.mean(signal_stacked, axis=0)
+    s = np.std(signal_stacked, axis=0)
 
-    if not inplace:
-        # Create new signal instance
-        result = []
-        for sig in signal:
-            sig_dimless = sig.duplicate_with_new_data(
-                (sig.magnitude - m.magnitude) / s.magnitude) / sig.units
-            result.append(sig_dimless)
-    else:
-        result = []
-        # Overwrite signal
-        for sig in signal:
-            sig[:] = pq.Quantity(
-                (sig.magnitude - m.magnitude) / s.magnitude,
-                units=sig.units)
-            sig_dimless = sig / sig.units
-            result.append(sig_dimless)
+    result = []
+    for sig in signal:
+        sig_normalized = sig.magnitude - m.magnitude
+        sig_normalized = np.divide(sig_normalized, s.magnitude,
+                                   out=np.zeros_like(sig_normalized),
+                                   where=s.magnitude != 0)
+        if inplace:
+            sig[:] = pq.Quantity(sig_normalized, units=sig.units)
+            sig_normalized = sig
+        else:
+            sig_normalized = sig.duplicate_with_new_data(sig_normalized)
+        sig_dimless = sig_normalized / sig.units
+        result.append(sig_dimless)
+
     # Return single object, or list of objects
     if len(result) == 1:
         return result[0]

@@ -57,17 +57,6 @@ from sklearn.cluster import dbscan as dbscan
 # =============================================================================
 
 
-def _xrange(x, *args):
-    '''
-    Auxiliary function to use both in python 3 and python 2 to have a range
-    function as a generator.
-    '''
-    try:
-        return xrange(x, *args)
-    except NameError:
-        return range(x, *args)
-
-
 def _signals_same_tstart(signals):
     '''
     Check whether a list of signals (AnalogSignals or SpikeTrains) have same
@@ -248,7 +237,7 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
 
     # Compute and return the transaction list
     return [[train_id for train_id, b in zip(ids, filled_bins)
-             if bin_id in b] for bin_id in _xrange(Nbins)]
+             if bin_id in b] for bin_id in range(Nbins)]
 
 
 def _analog_signal_step_interp(signal, times):
@@ -482,8 +471,8 @@ def intersection_matrix(
 
         # Compute the intersection matrix imat
         N_bins = len(spikes_per_bin_x)
-        imat = np.zeros((N_bins, N_bins)) * 1.
-        for ii in _xrange(N_bins):
+        imat = np.zeros((N_bins, N_bins), dtype=float)
+        for ii in range(N_bins):
             # Compute the ii-th row of imat
             bin_ii = bsts_x[:, ii].reshape(-1, 1)
             imat[ii, :] = (bin_ii * bsts_y).sum(axis=0)
@@ -508,7 +497,7 @@ def intersection_matrix(
             for y_id in ybins_equal_0:
                 imat[:, y_id] = 0
 
-            imat[_xrange(N_bins), _xrange(N_bins)] = 1.
+            np.fill_diagonal(imat, val=1.)
 
     except MemoryError:  # use the memory-efficient version
         # Compute the list spiking neurons per bin, along both axes
@@ -520,8 +509,8 @@ def intersection_matrix(
         # Generate the intersection matrix
         N_bins = len(ids_per_bin_x)
         imat = np.zeros((N_bins, N_bins))
-        for ii in _xrange(N_bins):
-            for jj in _xrange(N_bins):
+        for ii in range(N_bins):
+            for jj in range(N_bins):
                 if len(ids_per_bin_x[ii]) * len(ids_per_bin_y[jj]) != 0:
                     imat[ii, jj] = len(set(ids_per_bin_x[ii]).intersection(
                         set(ids_per_bin_y[jj])))
@@ -589,9 +578,11 @@ def _reference_diagonal(x_edges, y_edges):
     if diag_id is None:
         return diag_id, np.array([])
     elif diag_id >= 0:
-        elements = np.array([_xrange(m - diag_id), _xrange(diag_id, m)]).T
+        elements = np.column_stack([np.arange(m - diag_id),
+                                    np.arange(diag_id, m)])
     else:
-        elements = np.array([_xrange(diag_id, m), _xrange(m - diag_id)]).T
+        elements = np.column_stack([np.arange(diag_id, m),
+                                    np.arange(m - diag_id)])
 
     return diag_id, elements
 
@@ -680,19 +671,23 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     D = scipy.spatial.distance_matrix(points, points)
 
     # Compute the angular coefficients of the line between each pair of points
-    x_array = 1. * np.vstack([x for i in x])
-    y_array = 1. * np.vstack([y for i in y])
+    x_array = np.tile(x, reps=(len(x), 1))
+    y_array = np.tile(y, reps=(len(y), 1))
     dX = x_array.T - x_array  # dX[i,j]: x difference between points i and j
     dY = y_array.T - y_array  # dY[i,j]: y difference between points i and j
-    AngCoeff = dY / dX
 
     # Compute the matrix Theta of angles between each pair of points
-    Theta = np.arctan(AngCoeff)
-    n = Theta.shape[0]
-    Theta[_xrange(n), _xrange(n)] = 0  # set angle to 0 if points identical
+    theta = np.arctan2(dY, dX)
+
+    # Transform [-pi, pi] back to [-pi/2, pi/2]
+    theta[theta < -np.pi / 2] += np.pi
+    theta[theta > np.pi / 2] -= np.pi
+    assert np.allclose(np.diagonal(theta), 0), \
+        "Diagonal elements should be zero due to `np.arctan2(0, 0) == 0` " \
+        "convention."
 
     # Compute the matrix of stretching factors for each pair of points
-    stretch_mat = (1 + ((stretch - 1.) * np.abs(np.sin(alpha - Theta))))
+    stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
 
     # Return the stretched distance matrix
     return D * stretch_mat
@@ -877,7 +872,7 @@ def probability_matrix_montecarlo(
     if verbose:
         # todo: move to tqdm
         print('pmat_bootstrap(): begin of bootstrap...')
-    for i in _xrange(n_surr):  # For each surrogate id i
+    for i in range(n_surr):  # For each surrogate id i
         if verbose:
             print('    surr %d' % i)
         surrs_i = [st[i] for st in surrs]  # Take each i-th surrogate
@@ -994,7 +989,7 @@ def probability_matrix_analytical(
         # to absence of spikes beyond the borders. Replace the first and last
         # (k//2) elements with the (k//2)-th / (n-k//2)-th ones, respectively
         k2 = k // 2
-        for i in _xrange(fir_rate_x.shape[0]):
+        for i in range(fir_rate_x.shape[0]):
             fir_rate_x[i, :k2] = fir_rate_x[i, k2]
             fir_rate_x[i, -k2:] = fir_rate_x[i, -k2 - 1]
             fir_rate_y[i, :k2] = fir_rate_y[i, k2]
@@ -1064,8 +1059,8 @@ def probability_matrix_analytical(
         t_start_y=t_start_y)
 
     pmat = np.zeros(imat.shape)
-    for i in _xrange(imat.shape[0]):
-        for j in _xrange(imat.shape[1]):
+    for i in range(imat.shape[0]):
+        for j in range(imat.shape[1]):
             pmat[i, j] = scipy.stats.poisson.cdf(imat[i, j] - 1, Mu[i, j])
 
     # Substitute 0.5 to the elements along the main diagonal
@@ -1123,7 +1118,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n):
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
     # used to compute the integral as a sum over several possibilities
-    lists = [_xrange(j, n + 1) for j in _xrange(d, 0, -1)]
+    lists = [range(j, n + 1) for j in range(d, 0, -1)]
 
     # Compute the log of the integral's coefficient
     logK = np.sum(np.log(np.arange(1, n + 1))) - n * np.log(1 - alpha)
@@ -1399,7 +1394,7 @@ def extract_sse(spiketrains, x_edges, y_edges, cmat, ids=None):
 
     # Reconstruct each worm, link by link
     sse_dict = {}
-    for k in _xrange(1, nr_worms + 1):  # for each worm
+    for k in range(1, nr_worms + 1):  # for each worm
         worm_k = {}  # worm k is a list of links (each link will be 1 sublist)
         pos_worm_k = np.array(np.where(cmat == k)).T  # position of all links
         # if no link lies on the reference diagonal

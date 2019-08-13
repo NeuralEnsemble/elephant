@@ -41,7 +41,9 @@ matrix:
       python: 3.7
       env: DISTRIB="conda"
 
+  exclude:
     - name: "pip 3.6 requirements-extras min version"
+      # excluded due to unrelated unittest assertWarn bug error
       python: 3.6
       env: DISTRIB="pip"
       before_install:

@@ -6,11 +6,16 @@ Unit tests for the CUBIC analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import sys
 import unittest
-import elephant.cubic as cubic
-import quantities as pq
+
 import neo
 import numpy
+import quantities as pq
+
+import elephant.cubic as cubic
+
+python_version_major = sys.version_info.major
 
 
 class CubicTestCase(unittest.TestCase):
@@ -104,10 +109,12 @@ class CubicTestCase(unittest.TestCase):
         # Check the output for test_aborted
         self.assertEqual(test_aborted, False)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_cubic_ximax(self):
         # Test exceeding ximax
-        xi_ximax, p_vals_ximax, k_ximax, test_aborted = cubic.cubic(
-            self.data_signal, alpha=1, ximax=self.ximax)
+        with self.assertWarns(UserWarning):
+            xi_ximax, p_vals_ximax, k_ximax, test_aborted = cubic.cubic(
+                self.data_signal, alpha=1, ximax=self.ximax)
 
         self.assertEqual(test_aborted, True)
         self.assertEqual(xi_ximax - 1, self.ximax)
@@ -121,12 +128,12 @@ class CubicTestCase(unittest.TestCase):
             ValueError, cubic.cubic, neo.AnalogSignal(
                 []*pq.dimensionless, sampling_period=10*pq.ms))
 
+        dummy_data = numpy.tile([1, 2, 3], reps=3)
         # Multidimensional array
         self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
-            [[1, 2, 3], [1, 2, 3]] * pq.dimensionless,
+            dummy_data * pq.dimensionless,
             sampling_period=10 * pq.ms))
-        self.assertRaises(ValueError, cubic.cubic, numpy.array(
-            [[1, 2, 3], [1, 2, 3]]))
+        self.assertRaises(ValueError, cubic.cubic, dummy_data.copy())
 
         # Negative alpha
         self.assertRaises(ValueError, cubic.cubic, self.data_array, alpha=-0.1)

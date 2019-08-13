@@ -9,21 +9,25 @@ Unit tests for the pandas bridge module.
 from __future__ import division, print_function
 
 import unittest
+import warnings
+from distutils.version import StrictVersion
 from itertools import chain
 
-from neo.test.generate_datasets import fake_neo
 import numpy as np
-from numpy.testing import assert_array_equal
 import quantities as pq
+from neo.test.generate_datasets import fake_neo
+from numpy.testing import assert_array_equal
 
 try:
     import pandas as pd
     from pandas.util.testing import assert_frame_equal, assert_index_equal
 except ImportError:
     HAVE_PANDAS = False
+    pandas_version = StrictVersion('0.0.0')
 else:
     import elephant.pandas_bridge as ep
     HAVE_PANDAS = True
+    pandas_version = StrictVersion(pd.__version__)
 
 if HAVE_PANDAS:
     # Currying, otherwise the unittest will break with pandas>=0.16.0
@@ -39,19 +43,19 @@ if HAVE_PANDAS:
             return pd.util.testing.assert_index_equal(left, right)
 
 
-@unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
+@unittest.skipUnless(pandas_version >= '0.24.0', 'requires pandas v0.24.0')
 class MultiindexFromDictTestCase(unittest.TestCase):
     def test__multiindex_from_dict(self):
         inds = {'test1': 6.5,
                 'test2': 5,
                 'test3': 'test'}
         targ = pd.MultiIndex(levels=[[6.5], [5], ['test']],
-                             labels=[[0], [0], [0]],
+                             codes=[[0], [0], [0]],
                              names=['test1', 'test2', 'test3'])
         res0 = ep._multiindex_from_dict(inds)
         self.assertEqual(targ.levels, res0.levels)
         self.assertEqual(targ.names, res0.names)
-        self.assertEqual(targ.labels, res0.labels)
+        self.assertEqual(targ.codes, res0.codes)
 
 
 def _convert_levels(levels):
@@ -2703,7 +2707,10 @@ class SliceSpiketrainTestCase(unittest.TestCase):
         res1_stop = res1.columns.get_level_values('t_stop').values
 
         targ = self.obj.values
-        targ[targ < targ_start] = np.nan
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # targ already has nan values, ignore comparing with nan
+            targ[targ < targ_start] = np.nan
 
         self.assertFalse(res0 is targ)
         self.assertFalse(res1 is targ)
@@ -2731,7 +2738,10 @@ class SliceSpiketrainTestCase(unittest.TestCase):
         res1_stop = res1.columns.get_level_values('t_stop').unique().tolist()
 
         targ = self.obj.values
-        targ[targ > targ_stop] = np.nan
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # targ already has nan values, ignore comparing with nan
+            targ[targ > targ_stop] = np.nan
 
         self.assertFalse(res0 is targ)
         self.assertFalse(res1 is targ)
@@ -2757,8 +2767,11 @@ class SliceSpiketrainTestCase(unittest.TestCase):
         res0_stop = res0.columns.get_level_values('t_stop').unique().tolist()
 
         targ = self.obj.values
-        targ[targ < targ_start] = np.nan
-        targ[targ > targ_stop] = np.nan
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # targ already has nan values, ignore comparing with nan
+            targ[targ < targ_start] = np.nan
+            targ[targ > targ_stop] = np.nan
 
         self.assertFalse(res0 is targ)
 

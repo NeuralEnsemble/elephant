@@ -337,6 +337,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
         np.random.exponential, (mean_interval,), rate, t_start, t_stop,
         as_array)
 
+
 def inhomogeneous_poisson_process(rate, as_array=False):
     """
     Returns a spike train whose spikes are a realization of an inhomogeneous
@@ -469,7 +470,7 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms,
     """
     if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
         raise ValueError("t_start and t_stop must be of type pq.Quantity")
-    b = b.rescale((1 / t_start).units).simplified
+    b = b.rescale(1 / t_start.units).simplified
     rate = b / a
     k, theta = a, (1 / b.magnitude)
     return _homogeneous_process(np.random.gamma, (k, theta), rate, t_start, t_stop, as_array)
