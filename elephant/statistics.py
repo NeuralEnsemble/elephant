@@ -702,13 +702,13 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
         rate estimation.
-        Default: 'auto'. In this case, the optimized kernel width for the 
+        Default: 'auto'. In this case, the optimized kernel width for the
         rate estimation is calculated according to [1] and with this width
-        a gaussian kernel is constructed. Automatized calculation of the 
+        a gaussian kernel is constructed. Automatized calculation of the
         kernel width is not available for other than gaussian kernel shapes.
     cutoff : float
         This factor determines the cutoff of the probability distribution of
-        the kernel, i.e., the considered width of the kernel in terms of 
+        the kernel, i.e., the considered width of the kernel in terms of
         multiples of the standard deviation sigma.
         Default: 5.0
     t_start : Time Quantity (optional)
@@ -734,8 +734,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     Returns
     -------
     rate : neo.AnalogSignal
-        Contains the rate estimation in unit hertz (Hz).
-        Has a property 'rate.times' which contains the time axis of the rate
+        Contains the rate estimation in unit hertz (Hz). In case a list of
+        spike trains was given, this is the combined rate of all spike trains
+        (not the average rate). 'rate.times' contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
         is given via the argument 'sampling_period' to the function.
 
@@ -794,18 +795,13 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         raise ValueError("The sampling period must be larger than zero.")
 
     if kernel == 'auto':
-        kernel_width = sskernel(spiketrain.magnitude, tin=None,
-                                bootstrap=True)['optw']
-        if kernel_width is None:
+        kernel_width_sigma = sskernel(
+            spiketrain.magnitude, tin=None, bootstrap=True)['optw']
+        if kernel_width_sigma is None:
             raise ValueError(
                 "Unable to calculate optimal kernel width for "
                 "instantaneous rate from input data.")
-        unit = spiketrain.units
-        sigma = 1 / (2.0 * 2.7) * kernel_width * unit
-        # factor 2.0 connects kernel width with its half width,
-        # factor 2.7 connects half width of Gaussian distribution with
-        #             99% probability mass with its standard deviation.
-        kernel = kernels.GaussianKernel(sigma)
+        kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
     elif not isinstance(kernel, kernels.Kernel):
         raise TypeError(
             "kernel must be either instance of :class:`Kernel` "
@@ -1134,14 +1130,16 @@ def cost_function(x, N, w, dt):
 def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     """
 
-    Calculates optimal fixed kernel bandwidth.
+    Calculates optimal fixed kernel bandwidth, given as the standard deviation
+    sigma.
 
     spiketimes: sequence of spike times (sorted to be ascending).
 
-    tin: (optional) time points at which the kernel bandwidth is to be estimated.
+    tin: (optional) time points at which the kernel bandwidth is to be
+    estimated.
 
-    w: (optional) vector of kernel bandwidths. If specified, optimal
-    bandwidth is selected from this.
+    w: (optional) vector of kernel bandwidths (standard deviation sigma). If
+    specified, optimal bandwidth is selected from this.
 
     bootstrap (optional): whether to calculate the 95% confidence
     interval. (default False)
@@ -1152,8 +1150,8 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
 
     'y': estimated density,
     't': points at which estimation was computed,
-    'optw': optimal kernel bandwidth,
-    'w': kernel bandwidths examined,
+    'optw': optimal kernel bandwidth given as standard deviation sigma
+    'w': kernel bandwidths examined (standard deviation sigma),
     'C': cost functions of w,
     'confb95': (lower bootstrap confidence level, upper bootstrap confidence level),
     'yb': bootstrap samples.

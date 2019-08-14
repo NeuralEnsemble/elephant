@@ -570,6 +570,35 @@ class RateEstimationTestCase(unittest.TestCase):
         st = neo.SpikeTrain([2.12, 2.13, 2.15] * pq.s, t_stop=10 * pq.s)
         self.assertRaises(ValueError, es.instantaneous_rate, st, 1 * pq.ms)
 
+    # Regression test for #245
+    def test_instantaneous_rate_regression_245(self):
+        # This test makes sue that the correct kernel width is chosen when
+        # selecting 'auto' as kernel
+        spiketrain = neo.SpikeTrain(
+            range(1, 30) * pq.ms, t_start=0*pq.ms, t_stop=30*pq.ms)
+
+        # This is the correct procedure to attain the kernel: first, the result
+        # of sskernel retrieves the kernel bandwidth of an optimal Gaussian
+        # kernel in terms of its standard deviation sigma, then uses this value
+        # directly in the function for creating the Gaussian kernel
+        kernel_width_sigma = es.sskernel(
+            spiketrain.magnitude, tin=None, bootstrap=True)['optw']
+        kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
+        result_target = es.instantaneous_rate(
+            spiketrain, 10*pq.ms, kernel=kernel)
+
+        # Here, we check if the 'auto' argument leads to the same operation. In
+        # the regression, it was incorrectly assumed that the sskernel()
+        # function returns the actual bandwidth of the kernel, which is defined
+        # as approximately bandwidth = sigma * 5.5 = sigma * (2 * 2.75).
+        # factor 2.0 connects kernel width with its half width,
+        # factor 2.7 connects half width of Gaussian distribution with
+        #            99% probability mass with its standard deviation.
+        result_automatic = es.instantaneous_rate(
+            spiketrain, 10*pq.ms, kernel='auto')
+
+        assert_array_almost_equal(result_target, result_automatic)
+
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):
