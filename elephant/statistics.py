@@ -796,7 +796,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     if kernel == 'auto':
         kernel_width_sigma = sskernel(
-            spiketrain.magnitude, tin=None, bootstrap=True)['optw']
+            spiketrain.magnitude, tin=None, bootstrap=False)['optw']
         if kernel_width_sigma is None:
             raise ValueError(
                 "Unable to calculate optimal kernel width for "
