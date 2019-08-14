@@ -572,7 +572,7 @@ class RateEstimationTestCase(unittest.TestCase):
 
     # Regression test for #245
     def test_instantaneous_rate_regression_245(self):
-        # This test makes sue that the correct kernel width is chosen when
+        # This test makes sure that the correct kernel width is chosen when
         # selecting 'auto' as kernel
         spiketrain = neo.SpikeTrain(
             range(1, 30) * pq.ms, t_start=0*pq.ms, t_stop=30*pq.ms)
@@ -582,7 +582,7 @@ class RateEstimationTestCase(unittest.TestCase):
         # kernel in terms of its standard deviation sigma, then uses this value
         # directly in the function for creating the Gaussian kernel
         kernel_width_sigma = es.sskernel(
-            spiketrain.magnitude, tin=None, bootstrap=True)['optw']
+            spiketrain.magnitude, tin=None, bootstrap=False)['optw']
         kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
         result_target = es.instantaneous_rate(
             spiketrain, 10*pq.ms, kernel=kernel)
