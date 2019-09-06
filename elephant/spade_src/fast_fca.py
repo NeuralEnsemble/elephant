@@ -172,10 +172,7 @@ class FormalContext(object):
     def indexList(self, attributeSet):
         """return ordered list of attribute indexes. For lectic ordering of
         concepts. """
-        ilist = []
-        for att in attributeSet:
-            ilist.append(self.attributes.index(att))
-        ilist.sort()
+        ilist = sorted(map(self.attributes.index, attributeSet))
         return ilist
 
 
@@ -184,12 +181,13 @@ class FormalConcepts(object):
     similar to C. Lindig's Fast Concept Analysis (2002).
     """
 
-    def __init__(self, relation, objects=None, attributes=None):
+    def __init__(self, relation, objects=None, attributes=None, verbose=False):
         """ 'relation' has to be an iterable container of tuples. If objects
         or attributes are not supplied, determine from relation. """
         self.context = FormalContext(relation, objects, attributes)
         self.concepts = []  # a lectically ordered list of concepts"
         self.intentToConceptDict = dict()
+        self.verbose = verbose
 
     def computeUpperNeighbours(self, concept):
         """
@@ -200,7 +198,7 @@ class FormalConcepts(object):
         # The set of all objects g which are not in concept's extent G and
         # might therefore be used to create upper neighbours via ((G u g)'',(G
         # u g)')
-        upperNeighbourGeneratingObjects = set(self.context.objects).difference(
+        upperNeighbourGeneratingObjects = self.context.objects.difference(
             concept.extent)
         # dictionary of intent => set of generating objects
         upperNeighbourCandidates = defaultdict(set)
@@ -237,8 +235,6 @@ class FormalConcepts(object):
         """ Numbers concepts and computes introduced objects and attributes"""
         for curConNum, curConcept in enumerate(self.concepts):
             curConcept.cnum = curConNum
-            curConcept.upperNeighbours.sort()
-            curConcept.lowerNeighbours.sort()
             curConcept.introducedObjects = set(curConcept.extent)
             for ln in curConcept.lowerNeighbours:
                 curConcept.introducedObjects.difference_update(ln.extent)
@@ -257,8 +253,9 @@ class FormalConcepts(object):
         self.concepts = [curConcept]
         self.intentToConceptDict[curConcept.intent] = curConcept
         curConceptIndex = 0
-        progress_bar = tqdm.tqdm()
-        while True:
+        progress_bar = tqdm.tqdm(disable=not self.verbose,
+                                 desc="computeLattice")
+        while curConceptIndex >= 0:
             upperNeighbours = self.computeUpperNeighbours(curConcept)
             for upperNeighbour in upperNeighbours:
                 upperNeighbourIndex = bisect.bisect(self.concepts,
@@ -272,8 +269,6 @@ class FormalConcepts(object):
                 upperNeighbour.lowerNeighbours.append(curConcept)
 
             curConceptIndex -= 1
-            if curConceptIndex < 0:
-                break
             curConcept = self.concepts[curConceptIndex]
             progress_bar.update()
 
