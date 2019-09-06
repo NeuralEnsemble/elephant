@@ -863,7 +863,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         spec_matrix = np.zeros((max_z, max_c, winlen))
     spectrum = []
     # Mining the data with fast fca algorithm
-    fca_out = fast_fca.formalConcepts(context)
+    fca_out = fast_fca.FormalConcepts(context)
     fca_out.computeLattice()
     fca_concepts = fca_out.concepts
     fca_concepts = list(filter(
