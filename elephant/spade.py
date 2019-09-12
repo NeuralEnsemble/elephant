@@ -378,7 +378,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                                             winlen, binsize,
                                                             pv_spec,
                                                             data[0].t_start)
-        if output_format == 'concepts':
+        elif output_format == 'concepts':
             output['patterns'] = concepts
         else:
             raise ValueError(
@@ -1821,7 +1821,10 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['pvalue'] pvalue corresponding to the pattern. If n_surr==0,
             pvalues are set to -1.
     """
-    if len(pvalue_spectrum) == 0:
+    if pvalue_spectrum is None:
+        spectrum = '#'
+        pass
+    elif len(pvalue_spectrum) == 0:
         spectrum = '#'
         pass
     elif len(pvalue_spectrum[0]) == 4:
@@ -1830,11 +1833,12 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         spectrum = '#'
     pvalue_dict = {}
     # Creating a dictionary for the pvalue spectrum
-    for entry in pvalue_spectrum:
-        if len(entry) == 4:
-            pvalue_dict[(entry[0], entry[1], entry[2])] = entry[-1]
-        if len(entry) == 3:
-            pvalue_dict[(entry[0], entry[1])] = entry[-1]
+    if pvalue_spectrum is not None:
+        for entry in pvalue_spectrum:
+            if len(entry) == 4:
+                pvalue_dict[(entry[0], entry[1], entry[2])] = entry[-1]
+            if len(entry) == 3:
+                pvalue_dict[(entry[0], entry[1])] = entry[-1]
     # Initializing list containing all the patterns
     output = []
     for conc in concepts:
