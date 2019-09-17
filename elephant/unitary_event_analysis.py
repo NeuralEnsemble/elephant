@@ -55,7 +55,8 @@ def hash_from_pattern(m, base=2):
     -----------
     m: np.ndarray
         2-dim ndarray
-        spike patterns represented as a binary matrix (i.e., matrix of 0's and 1's).
+        spike patterns represented as a binary matrix (i.e., matrix of 0's and
+        1's).
         Rows and columns correspond to patterns and neurons, respectively.
     base: integer
         base for calculation of hash values from binary
@@ -165,17 +166,17 @@ def inverse_hash_from_pattern(h, N, base=2):
 
 def n_emp_mat(mat, pattern_hash, base=2):
     """
-    Count the occurrences of spike coincidence patterns 
+    Count the occurrences of spike coincidence patterns
     in the given spike trains.
 
     Parameters
     -----------
     mat : np.ndarray
         2-dim ndarray
-        binned spike trains of N neurons. Rows and columns correspond 
+        binned spike trains of N neurons. Rows and columns correspond
         to neurons and temporal bins, respectively.
     pattern_hash: list
-        List of hash values, representing the spike coincidence patterns 
+        List of hash values, representing the spike coincidence patterns
         of which occurrences are counted.
     base: integer
         Base which was used to generate the hash values.
@@ -187,7 +188,7 @@ def n_emp_mat(mat, pattern_hash, base=2):
         number of occurrences of the given patterns in the given spike trains
     indices: list
         list of lists of integers
-        indices indexing the bins where the given spike patterns are found 
+        indices indexing the bins where the given spike patterns are found
         in `mat`. Same length as `pattern_hash`
         indices[i] = N_emp[i] = pattern_hash[i]
 
@@ -228,9 +229,9 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     -----------
     mat: np.ndarray
         3d numpy array or elephant BinnedSpikeTrain object
-        Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
-        segmented into trials. Trials should contain an identical number of neurons and 
-        an identical number of time bins.
+        Binned spike trains represented as a binary matrix (i.e., matrix of
+        0's and 1's), segmented into trials. Trials should contain an identical
+        number of neurons and an identical number of time bins.
          the entries are zero or one
          0-axis --> trials
          1-axis --> neurons
@@ -241,8 +242,8 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     Returns
     --------
     N_emp: np.ndarray
-        numbers of occurences of the given spike patterns in the given spike trains, 
-        summed across trials. Same length as `pattern_hash`.
+        numbers of occurences of the given spike patterns in the given spike
+        trains, summed across trials. Same length as `pattern_hash`.
     idx_trials: list
         list of indices of mat for each trial in which
         the specific pattern has been observed.
@@ -292,7 +293,8 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
 
 def _n_exp_mat_analytic(mat, pattern_hash):
     """
-    Calculates the expected joint probability for each spike pattern analyticaly
+    Calculates the expected joint probability for each spike pattern
+    analytically.
     """
     marg_prob = np.mean(mat, 1, dtype=float)
     # marg_prob needs to be a column vector, so we
@@ -305,7 +307,7 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     # multipyling the marginal probability of neurons with regard to the
     # pattern
     pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) + \
-           np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
+        np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
     return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 
@@ -344,7 +346,8 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
          'surr' -- > with surrogates (spike time randomization)
          Default is 'analytic'
     n_surr: integer
-         number of surrogates for constructing the distribution of expected joint probability.
+         number of surrogates for constructing the distribution of expected
+         joint probability.
          Default is 1 and this number is needed only when method = 'surr'
 
     Raises
@@ -403,9 +406,9 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
     -----------
     mat: np.ndarray
         3d numpy array or elephant BinnedSpikeTrain object
-        Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's), 
-        segmented into trials. Trials should contain an identical number of neurons and 
-        an identical number of time bins.
+        Binned spike trains represented as a binary matrix (i.e., matrix of
+        0's and 1's), segmented into trials. Trials should contain an identical
+        number of neurons and an identical number of time bins.
         The entries of mat should be a list of a list where 0-axis is trials
         and 1-axis is neurons.
          0-axis --> trials
@@ -420,8 +423,8 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
          'analytic_TrialAverage' -- > calculate the expectency
          by averaging over trials.
          (cf. Gruen et al. 2003)
-         'surrogate_TrialByTrial' -- > calculate the distribution 
-         of expected coincidences by spike time randomzation in 
+         'surrogate_TrialByTrial' -- > calculate the distribution
+         of expected coincidences by spike time randomzation in
          each trial and sum over trials.
          Default is 'analytic_trialByTrial'
     n_surr: integer, optional
@@ -483,9 +486,9 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
     -----------
     mat: np.ndarray
         3d numpy array or elephant BinnedSpikeTrain object
-        Binned spike trains represented as a binary matrix (i.e., matrix of 0's and 1's),
-        segmented into trials. Trials should contain an identical number of neurons and
-        an identical number of time bins.
+        Binned spike trains represented as a binary matrix (i.e., matrix of
+        0's and 1's), segmented into trials. Trials should contain an identical
+        number of neurons and an identical number of time bins.
         The entries of mat should be a list of a list where 0-axis is trials
         and 1-axis is neurons.
          0-axis --> trials
@@ -631,7 +634,8 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
         dist_exp, n_exp = gen_pval_anal(
             mat, pattern_hash, method, n_surr=n_surr)
         n_exp = np.mean(n_exp)
-    elif method == 'analytic_TrialByTrial' or method == 'analytic_TrialAverage':
+    elif method == 'analytic_TrialByTrial' or \
+            method == 'analytic_TrialAverage':
         dist_exp, n_exp = gen_pval_anal(mat, pattern_hash, method)
     pval = dist_exp(n_emp)
     Js = jointJ(pval)
@@ -671,8 +675,8 @@ def jointJ_window_analysis(
          'analytic_TrialAverage' -- > calculate the expectency
          by averaging over trials.
          (cf. Gruen et al. 2003)
-         'surrogate_TrialByTrial' -- > calculate the distribution 
-         of expected coincidences by spike time randomzation in 
+         'surrogate_TrialByTrial' -- > calculate the distribution
+         of expected coincidences by spike time randomzation in
          each trial and sum over trials.
          Default is 'analytic_trialByTrial'
     t_start: float or pq.Quantity, optional
@@ -714,7 +718,8 @@ def jointJ_window_analysis(
     """
     if not isinstance(data[0][0], neo.SpikeTrain):
         raise ValueError(
-            "structure of the data is not correct: 0-axis should be trials, 1-axis units and 2-axis neo spike trains")
+            "structure of the data is not correct: 0-axis should be trials, "
+            "1-axis units and 2-axis neo spike trains")
 
     if t_start is None:
         t_start = data[0][0].t_start.rescale('ms')
