@@ -290,7 +290,7 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     return N_emp, idx_trials
 
 
-def _n_exp_mat_analytic(mat, N, pattern_hash):
+def _n_exp_mat_analytic(mat, pattern_hash):
     """
     Calculates the expected joint probability for each spike pattern analyticaly
     """
@@ -299,13 +299,14 @@ def _n_exp_mat_analytic(mat, N, pattern_hash):
     # build a two dimensional array with 1 column
     # and len(marg_prob) rows
     marg_prob = np.reshape(marg_prob, (len(marg_prob), 1))
-    m = inverse_hash_from_pattern(pattern_hash, N)
-    nrep = np.shape(m)[1]
+    n_neurons = mat.shape[0]
+    m = inverse_hash_from_pattern(pattern_hash, n_neurons)
+    nrep = m.shape[1]
     # multipyling the marginal probability of neurons with regard to the
     # pattern
     pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) + \
            np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
-    return np.prod(pmat, axis=0) * float(np.shape(mat)[1])
+    return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 
 def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
@@ -324,14 +325,15 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
     return N_exp_array
 
 
-def n_exp_mat(mat, N, pattern_hash, method='analytic', n_surr=1):
+def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
     """
     Calculates the expected joint probability for each spike pattern
 
     Parameters
     -----------
     mat: np.ndarray
-         the entries are zero or one
+         the entries are zero or one,
+         except for the 'analytic_TrialAverage' method in n_exp_mat_sum_trial()
          0-axis --> neurons
          1-axis --> time bins
     pattern_hash: list
@@ -362,18 +364,16 @@ def n_exp_mat(mat, N, pattern_hash, method='analytic', n_surr=1):
     Examples
     ---------
     >>> mat = np.array([[1, 1, 1, 1],
-                 [0, 1, 0, 1],
-                 [0, 0, 1, 0]])
+    >>>                 [0, 1, 0, 1],
+    >>>                 [0, 0, 1, 0]])
     >>> pattern_hash = np.array([5,6])
-    >>> N = 3
-    >>> n_exp_anal = n_exp_mat(mat,N, pattern_hash, method = 'analytic')
+    >>> n_exp_anal = n_exp_mat(mat, pattern_hash, method='analytic')
     >>> n_exp_anal
         [ 0.5 1.5 ]
     >>>
     >>>
-    >>> n_exp_surr = n_exp_mat(
-    >>>           mat, N,pattern_hash, method = 'surr', n_surr = 5000)
-    >>> print n_exp_surr
+    >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr', n_surr=5000)
+    >>> print(n_exp_surr)
     [[ 1.  1.]
      [ 2.  0.]
      [ 2.  0.]
@@ -383,14 +383,14 @@ def n_exp_mat(mat, N, pattern_hash, method='analytic', n_surr=1):
      [ 1.  1.]]
 
     """
-    # check if the mat is zero-one matrix
-    if np.any(mat > 1) or np.any(mat < 0):
-        raise ValueError("entries of mat should be either one or zero")
+    # check if the mat is in the range [0, 1]
+    if not np.all((mat >= 0) & (mat <= 1)):
+        raise ValueError("entries of mat should be in range [0, 1]")
 
     if method == 'analytic':
-        return _n_exp_mat_analytic(mat, N, pattern_hash)
+        return _n_exp_mat_analytic(mat, pattern_hash)
     if method == 'surr':
-        return _n_exp_mat_surrogate(mat, pattern_hash, n_surr)
+        return _n_exp_mat_surrogate(mat, pattern_hash, n_surr=n_surr)
 
 
 def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
@@ -448,20 +448,19 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
     >>> print(n_exp_anal)
         array([ 1.56,  2.56])
     """
-    n_neurons = mat.shape[1]
     if method == 'analytic_TrialByTrial':
         n_exp = np.zeros(len(pattern_hash))
         for mat_tr in mat:
-            n_exp += n_exp_mat(mat_tr, n_neurons, pattern_hash,
+            n_exp += n_exp_mat(mat_tr, pattern_hash,
                                method='analytic')
     elif method == 'analytic_TrialAverage':
         n_exp = n_exp_mat(
-            np.mean(mat, axis=0), n_neurons, pattern_hash,
+            np.mean(mat, axis=0), pattern_hash,
             method='analytic') * mat.shape[0]
     elif method == 'surrogate_TrialByTrial':
         n_exp = np.zeros(n_surr)
         for mat_tr in mat:
-            n_exp += n_exp_mat(mat_tr, n_neurons, pattern_hash,
+            n_exp += n_exp_mat(mat_tr, pattern_hash,
                                method='surr', n_surr=n_surr)
     else:
         raise ValueError(

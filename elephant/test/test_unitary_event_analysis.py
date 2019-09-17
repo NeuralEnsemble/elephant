@@ -204,10 +204,9 @@ class UETestCase(unittest.TestCase):
     def test_n_exp_mat_default(self):
         mat = np.array([[0, 0, 0, 1, 1], [0, 0, 0, 0, 1],
                         [1, 0, 1, 1, 1], [1, 0, 1, 1, 1]])
-        N = 4
         pattern_hash = [3, 11]
         expected = np.array([1.536, 1.024])
-        nexp = ue.n_exp_mat(mat, N, pattern_hash)
+        nexp = ue.n_exp_mat(mat, pattern_hash)
         self.assertTrue(np.allclose(expected, nexp))
 
     def test_n_exp_mat_sum_trial_default(self):
