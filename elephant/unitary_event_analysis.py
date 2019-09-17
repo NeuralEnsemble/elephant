@@ -71,7 +71,7 @@ def hash_from_pattern(m, base=2):
     Raises
     -------
     ValueError
-        if matrix m has wrong orientation
+        if matrix `m` has wrong orientation
 
     Examples
     ---------
@@ -86,8 +86,8 @@ def hash_from_pattern(m, base=2):
     second example:
     >>> import numpy as np
     >>> m = np.array([[0, 1, 0, 0, 1, 1, 0, 1],
-    >>>            [0, 0, 1, 0, 1, 0, 1, 1],
-    >>>            [0, 0, 0, 1, 0, 1, 1, 1]])
+    >>>               [0, 0, 1, 0, 1, 0, 1, 1],
+    >>>               [0, 0, 0, 1, 0, 1, 1, 1]])
 
     >>> hash_from_pattern(m)
         array([0, 4, 2, 1, 6, 5, 3, 7])
@@ -298,7 +298,7 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     # marg_prob needs to be a column vector, so we
     # build a two dimensional array with 1 column
     # and len(marg_prob) rows
-    marg_prob = np.reshape(marg_prob, (len(marg_prob), 1))
+    marg_prob = np.expand_dims(marg_prob, axis=1)
     n_neurons = mat.shape[0]
     m = inverse_hash_from_pattern(pattern_hash, n_neurons)
     nrep = m.shape[1]
@@ -318,9 +318,9 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
         raise ValueError('surrogate method works only for one pattern!')
     N_exp_array = np.zeros(n_surr)
     for rz_idx, rz in enumerate(np.arange(n_surr)):
-        # shuffling all elements of zero-one matrix
-        mat_surr = np.array(mat)
-        [np.random.shuffle(i) for i in mat_surr]
+        # row-wise shuffling all elements of zero-one matrix
+        mat_surr = np.copy(mat)
+        [np.random.shuffle(row) for row in mat_surr]
         N_exp_array[rz_idx] = n_emp_mat(mat_surr, pattern_hash)[0][0]
     return N_exp_array
 
@@ -516,14 +516,13 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
     Examples
     --------
     >>> mat = np.array([[[1, 1, 1, 1, 0],
-                 [0, 1, 1, 1, 0],
-                 [0, 1, 1, 0, 1]],
+    >>>                  [0, 1, 1, 1, 0],
+    >>>                  [0, 1, 1, 0, 1]],
+    >>>                 [[1, 1, 1, 1, 1],
+    >>>                  [0, 1, 1, 1, 1],
+    >>>                  [1, 1, 0, 1, 0]]])
 
-                 [[1, 1, 1, 1, 1],
-                  [0, 1, 1, 1, 1],
-                  [1, 1, 0, 1, 0]]])
-
-    >>> pattern_hash = np.array([5,6])
+    >>> pattern_hash = np.array([5, 6])
     >>> pval_anal, n_exp = gen_pval_anal(mat, pattern_hash)
     >>> n_exp
         array([ 1.56,  2.56])
@@ -542,9 +541,12 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
             hist = np.bincount(np.int64(n_exp))
             exp_dist = hist / float(np.sum(hist))
             if len(n_emp) > 1:
-                raise ValueError(
-                    'in surrogate method the p_value can be calculated only for one pattern!')
+                raise ValueError('In surrogate method the p_value can be'
+                                 'calculated only for one pattern!')
             return np.sum(exp_dist[int(n_emp[0]):])
+    else:
+        raise ValueError("Method is not allowed: {method}".format(
+            method=method))
 
     return pval, n_exp
 
@@ -573,9 +575,7 @@ def jointJ(p_val):
         array([0.3419968 ,  1.92481736])
     """
     p_arr = np.asarray(p_val)
-    with warnings.catch_warnings():
-        # ignore log(0) warnings
-        Js = np.log10(1 - p_arr) - np.log10(p_arr)
+    Js = np.log10(1 - p_arr) - np.log10(p_arr)
     return Js
 
 
@@ -583,11 +583,11 @@ def _rate_mat_avg_trial(mat):
     """
     calculates the average firing rate of each neurons across trials
     """
-    num_tr, N, nbins = np.shape(mat)
-    psth = np.zeros(N, dtype=np.float32)
+    n_trials, n_neurons, n_bins = np.shape(mat)
+    psth = np.zeros(n_neurons, dtype=np.float32)
     for tr, mat_tr in enumerate(mat):
         psth += np.sum(mat_tr, axis=1)
-    return psth / (nbins * num_tr)
+    return psth / (n_bins * n_trials)
 
 
 def _bintime(t, binsize):
@@ -736,8 +736,8 @@ def jointJ_window_analysis(
 
     if winstep_bintime * binsize != winstep:
         warnings.warn(
-            "ratio between winsize and binsize is not integer -- "
-            "the actual number for window size is" + str(
+            "ratio between winstep and binsize is not integer -- "
+            "the actual number for window size is " + str(
                 winstep_bintime * binsize))
 
     num_tr, N = np.shape(data)[:2]
