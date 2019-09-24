@@ -6,29 +6,26 @@ Original implementation by: Peter Bouss [p.bouss@fz-juelich.de]
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-
 import sys
 import unittest
-
 import neo
 import numpy as np
 import quantities as pq
-
-sys.path.insert(0, '../')
-import joint_isi_dithering as jisid
+import elephant.joint_isi_dithering as jisid
 import elephant.spike_train_generation as stg
 
 python_version_major = sys.version_info.major
 
 np.random.seed(0)
 
+
 class JointISITestCase(unittest.TestCase):
 
     def test_joint_isi_dithering_format(self):
 
-        rate=100.*pq.Hz
-        t_stop=1.*pq.s
-        st = stg.homogeneous_poisson_process(rate,t_stop=t_stop)
+        rate = 100.*pq.Hz
+        t_stop = 1.*pq.s
+        st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
         n_surr = 2
         dither = 10 * pq.ms
         surrs = jisid.joint_isi_dithering(st, n_surr=n_surr)
