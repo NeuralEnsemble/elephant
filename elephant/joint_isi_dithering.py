@@ -61,8 +61,8 @@ def joint_isi_dithering(st, **kwargs):
              Default is 0.5
     alternate
         int: determines in which order the ISIs are changed, i.e. if alternate
-            is 2 first the ISIs with even indices are changed, than those with odd
-            indices.
+            is 2 first the ISIs with even indices are changed, than those with
+            odd indices.
             Default is 2.
     show_plot
         boolean: if show_plot=True the joint-ISI distribution will be plotted
@@ -105,12 +105,12 @@ def joint_isi_dithering(st, **kwargs):
 
     '''
 
-    isi, jisih_cumulatives, params = preprocessing_joint_isi_dithering(st,
-                                                                    **kwargs)
+    isi, jisih_cumulatives, params = prepr_joint_isi_dithering(st, **kwargs)
 
-    return processing_joint_isi_dithering(st, isi, jisih_cumulatives, **params)
+    return proc_joint_isi_dithering(st, isi, jisih_cumulatives, **params)
 
-def preprocessing_joint_isi_dithering(st, **kwargs):
+
+def prepr_joint_isi_dithering(st, **kwargs):
     '''
     All preprocessing steps for the joint-ISI dithering are done here.
 
@@ -151,9 +151,9 @@ def preprocessing_joint_isi_dithering(st, **kwargs):
         params['method'] = 'dither'
         return [None], [None], params
 
-    isi=ele_statistics.isi(st.rescale(params['unit']).magnitude)
+    isi = ele_statistics.isi(st.rescale(params['unit']).magnitude)
     if np.sum(np.where(
-                isi<2*params['dither'], 1., 0.
+                isi < 2 * params['dither'], 1., 0.
                 ))/len(isi) < params['dense_rate']:
         params['method'] = 'dither'
         return [None], [None], params
@@ -167,7 +167,8 @@ def preprocessing_joint_isi_dithering(st, **kwargs):
     jisih_bins = params['jisih_bins']
     params['indices_to_isi'] = params['index_to_isi'](np.arange(jisih_bins))
 
-    flipped_jisih=np.flip(jisih.T,0)
+    flipped_jisih = np.flip(jisih.T, 0)
+
     def normalize(v):
         if v[-1]-v[0] > 0.:
             return (v-v[0])/(v[-1]-v[0])
@@ -186,40 +187,51 @@ def preprocessing_joint_isi_dithering(st, **kwargs):
         params['max_change_isi'] = max_change_isi
         jisih_bins = params['jisih_bins']
 
-        jisih_diagonals_cumulatives = np.zeros(
-                                    (jisih_bins,jisih_bins+2*max_change_index))
+        jisih_diag_cums = np.zeros((jisih_bins,
+                                    jisih_bins + 2 * max_change_index))
 
         for double_index in range(jisih_bins):
-            jisih_diagonals_cumulatives[double_index,
-                max_change_index:
-                double_index+max_change_index+1
-                ]=np.cumsum(np.diagonal(
-                flipped_jisih, -jisih_bins+double_index+1))
-            jisih_diagonals_cumulatives[double_index,
-                double_index+max_change_index+1:
-                double_index+2*max_change_index+1
-                ]=np.repeat(jisih_diagonals_cumulatives[double_index,
-                double_index+max_change_index], max_change_index)
+            cum_diag = np.cumsum(np.diagonal(flipped_jisih,
+                                             - jisih_bins + double_index + 1))
+            jisih_diag_cums[double_index,
+                            max_change_index:
+                            double_index
+                            + max_change_index + 1] = cum_diag
 
-        jisih_cumulatives=np.zeros(
+            cum_bound = np.repeat(jisih_diag_cums[double_index,
+                                                  double_index +
+                                                  max_change_index],
+                                  max_change_index)
+
+            jisih_diag_cums[double_index,
+                            double_index
+                            + max_change_index + 1:
+                            double_index
+                            + 2 * max_change_index + 1] = cum_bound
+
+        jisih_cumulatives = np.zeros(
                             (jisih_bins, jisih_bins, 2*max_change_index+1))
         for back_index in range(jisih_bins):
             for for_index in range(jisih_bins-back_index):
-                double_index=for_index+back_index
-                jisih_cumulatives[back_index][for_index]=normalize(
-                    jisih_diagonals_cumulatives[
-                    double_index,back_index:back_index+2*max_change_index+1])
+                double_index = for_index+back_index
+                cum_slice = jisih_diag_cums[double_index,
+                                            back_index:
+                                            back_index +
+                                            2*max_change_index + 1]
+                normalized_cum = normalize(cum_slice)
+                jisih_cumulatives[back_index][for_index] = normalized_cum
 
         return isi, jisih_cumulatives, params
 
-def processing_joint_isi_dithering(st, isi, jisih_cumulatives, **params):
+
+def proc_joint_isi_dithering(st, isi, jisih_cumulatives, **params):
     '''
     The main processing function of the joint-ISI dithering. Shall be only
     used, with the output of the preprocessing function.
     Essentially for each of the three methods, the corresponding dither
     function is called.
     Input:
-    See Output arguments of preprocessing_joint_isi_dithering(st, **kwargs)
+    See Output arguments of prepr_joint_isi_dithering(st, **kwargs)
 
     Output:
     See Output arguments of joint_isi_dithering(st, **kwargs)
@@ -240,16 +252,17 @@ def processing_joint_isi_dithering(st, isi, jisih_cumulatives, **params):
                     isi, jisih_cumulatives, **params), 'jisih'
         else:
             return _joint_isi_dithering_fast(
-                    isi,jisih_cumulatives,**params)
+                    isi, jisih_cumulatives, **params)
 
     elif params['method'] == 'window':
-        isi,jisih_cumulatives = args
+        isi, jisih_cumulatives = args
         if params['print_mode']:
             return _joint_isi_dithering_window(
                 isi, jisih_cumulatives, **params), 'jisih'
         else:
             return _joint_isi_dithering_window(
                 isi, jisih_cumulatives, **params)
+
 
 def plot_difference_in_joint_isi_distributions(st, dithered_sts, **kwargs):
     '''
@@ -263,61 +276,55 @@ def plot_difference_in_joint_isi_distributions(st, dithered_sts, **kwargs):
     Third, the difference between these teo distributions is shown, weighted by
     the standard deviation of the second case.
     '''
-    params=_jisih_add_default_parameters(**kwargs)
-    window_length=params['window_length']
+    params = _jisih_add_default_parameters(**kwargs)
+    window_length = params['window_length']
 
-    isi=np.diff(st.rescale(params['unit']).magnitude)
-    minimal_isi=np.min(isi)
-    start_index=params['isi_to_index'](minimal_isi)
+    isi = np.diff(st.rescale(params['unit']).magnitude)
+    minimal_isi = np.min(isi)
+    start_index = params['isi_to_index'](minimal_isi)
 
+    jisih = _get_joint_isi_histogram(isi, **params)
 
-    jisih=_get_joint_isi_histogram(isi, **params)
+    params_dithered = params
+    params_dithered['sigma'] = 0.
+    params_dithered['cutoff'] = False
 
-    params_dithered=params
-    params_dithered['sigma']=0.
-    params_dithered['cutoff']=False
-
-    dithered_jisih=[_get_joint_isi_histogram(np.diff(dithered_st.magnitude),
-                    **params_dithered)
-                    for dithered_st in dithered_sts]
-    mean_jisih=np.mean(dithered_jisih, axis=0)
-    std_jisih=np.std(dithered_jisih, axis=0)
+    dithered_jisih = [_get_joint_isi_histogram(np.diff(dithered_st.magnitude),
+                      **params_dithered)
+                      for dithered_st in dithered_sts]
+    mean_jisih = np.mean(dithered_jisih, axis=0)
+    std_jisih = np.std(dithered_jisih, axis=0)
 
     plt.figure(figsize=[12.8, 9.6])
     plt.imshow(jisih, origin='lower',
-                extent=(0., window_length, 0., window_length))
+               extent=(0., window_length, 0., window_length))
     plt.xlabel('ISI(i+1) in s')
     plt.ylabel('ISI(i) in s')
     plt.title('Joint-ISI-distribution \n Original')
-    #plt.xlim(left=0.00,right=0.03)
-    #plt.ylim(bottom=0.00,top=0.03)
     plt.colorbar()
     plt.show()
 
     plt.figure(figsize=[12.8, 9.6])
     plt.imshow(mean_jisih, origin='lower',
-                extent=(0., window_length, 0., window_length))
+               extent=(0., window_length, 0., window_length))
     plt.xlabel('ISI(i+1) in s')
     plt.ylabel('ISI(i) in s')
     plt.title('Joint-ISI-distribution \n Mean Dithered')
-    #plt.xlim(left=0.00,right=0.03)
-    #plt.ylim(bottom=0.00,top=0.03)
     plt.colorbar()
     plt.show()
 
     plt.figure(figsize=[12.8, 9.6])
     plt.imshow((jisih-mean_jisih)/std_jisih, vmin=-3., vmax=3.,
-                cmap='nipy_spectral', origin='lower',
-                extent=(0.,window_length,0.,window_length))
+               cmap='nipy_spectral', origin='lower',
+               extent=(0., window_length, 0., window_length))
     plt.xlabel('ISI(i+1) in s')
     plt.ylabel('ISI(i) in s')
-    plt.title('Joint-ISI-distribution '+
-                '\n (Original - Mean Dithered) / Std Dithered')
-    #plt.xlim(left=0.00, right=0.03)
-    #plt.ylim(bottom=0.00, top=0.03)
+    plt.title('Joint-ISI-distribution ' +
+              '\n (Original - Mean Dithered) / Std Dithered')
     plt.colorbar()
     plt.show()
     return None
+
 
 def _jisih_add_default_parameters(**kwargs):
     '''
@@ -331,21 +338,21 @@ def _jisih_add_default_parameters(**kwargs):
     params
         dict: Dictionary of parameters.
     '''
-    #Default Parameters
-    params = {  'n_surr':1,
-                'dither':0.015*pq.s,
-                'unit':pq.s,
-                'window_length':0.06*pq.s,
-                'jisih_bins':120,
-                'sigma':0.001*pq.s,
-                'dense_rate':0.5,
-                'alternate':2,
-                'show_plot':False,
-                'print_mode':False,
-                'use_sqrt':False,
-                'method':'fast',
-                'cutoff':True,
-                'number_of_trials':35}
+    #  Default Parameters
+    params = {'n_surr': 1,
+              'dither': 0.015*pq.s,
+              'unit': pq.s,
+              'window_length': 0.06*pq.s,
+              'jisih_bins': 120,
+              'sigma': 0.001*pq.s,
+              'dense_rate': 0.5,
+              'alternate': 2,
+              'show_plot': False,
+              'print_mode': False,
+              'use_sqrt': False,
+              'method': 'fast',
+              'cutoff': True,
+              'number_of_trials': 35}
 
     for key in kwargs.keys():
         params[key] = kwargs[key]
@@ -356,14 +363,16 @@ def _jisih_add_default_parameters(**kwargs):
 
     params['bin_width'] = params['window_length']/params['jisih_bins']
 
-    def index_to_isi(ind,bin_width = params['bin_width']):
+    def index_to_isi(ind, bin_width=params['bin_width']):
         return (ind+0.5)*bin_width
-    def isi_to_index(isi,bin_width = params['bin_width']):
+
+    def isi_to_index(isi, bin_width=params['bin_width']):
         return np.rint(isi/bin_width-0.5).astype(int)
 
     params['index_to_isi'] = index_to_isi
     params['isi_to_index'] = isi_to_index
     return params
+
 
 def _get_joint_isi_histogram(isi, **params):
     '''
@@ -389,10 +398,10 @@ def _get_joint_isi_histogram(isi, **params):
     jisih
         np.ndarray: the joint-ISI histogram.
     '''
-    jisih=np.histogram2d(isi[:-1], isi[1:],
-                        bins=[params['jisih_bins'], params['jisih_bins']],
-                        range=[[0., params['window_length']],
-                        [0., params['window_length']]])[0]
+    jisih = np.histogram2d(isi[:-1], isi[1:],
+                           bins=[params['jisih_bins'], params['jisih_bins']],
+                           range=[[0., params['window_length']],
+                                  [0., params['window_length']]])[0]
 
     if params['use_sqrt']:
         jisih = np.sqrt(jisih)
@@ -408,13 +417,13 @@ def _get_joint_isi_histogram(isi, **params):
         jisih[:, :start_index+1] = np.zeros_like(jisih[:, :start_index+1])
 
     else:
-        jisih = gaussian_filter(jisih,params['sigma']/params['bin_width'])
+        jisih = gaussian_filter(jisih, params['sigma']/params['bin_width'])
 
     if params['show_plot']:
-        plt.figure(figsize = [12.8, 9.6])
-        plt.imshow(jisih, origin = 'lower',
-                    extent = (0., params['window_length'],
-                    0., params['window_length']))
+        plt.figure(figsize=[12.8, 9.6])
+        plt.imshow(jisih, origin='lower',
+                   extent=(0., params['window_length'],
+                           0., params['window_length']))
         plt.xlabel('ISI(i+1) in s')
         plt.ylabel('ISI(i) in s')
         if params['use_sqrt']:
@@ -425,6 +434,7 @@ def _get_joint_isi_histogram(isi, **params):
         plt.show()
     return jisih
 
+
 def _joint_isi_dithering_fast(isi, jisih_cumulatives, **params):
     '''
     Dithering process for the fast version of the joint-ISI dithering.
@@ -434,9 +444,9 @@ def _joint_isi_dithering_fast(isi, jisih_cumulatives, **params):
         np.ndarray: The interspike-intervals
     jisih_cumulatives:
         np.ndarray: The cumulatives distribution functions as calculated
-                    in preprocessing_joint_isi_dithering(st, **kwargs).
+                    in prepr_joint_isi_dithering(st, **kwargs).
     params
-        see output of preprocessing_joint_isi_dithering(st,**kwargs)
+        see output of prepr_joint_isi_dithering(st,**kwargs)
 
     Output:
     dithered_sts
@@ -452,7 +462,6 @@ def _joint_isi_dithering_fast(isi, jisih_cumulatives, **params):
     indices_to_isi = params['indices_to_isi']
     number_of_isis = params['number_of_isis']
 
-    ###counter_isi = 0
     dithered_sts = []
     for surr_number in range(params['n_surr']):
         dithered_isi = isi
@@ -463,15 +472,14 @@ def _joint_isi_dithering_fast(isi, jisih_cumulatives, **params):
                 back_index = dithered_isi_indices[i]
                 for_index = dithered_isi_indices[i+1]
                 double_index = back_index+for_index
-                if double_index<jisih_bins:
-                    if jisih_cumulatives[double_index][-1]>0.:
+                if double_index < jisih_bins:
+                    if jisih_cumulatives[double_index][-1] > 0.:
                         step = indices_to_isi[np.where(
-                            jisih_cumulatives[double_index]>random_list[i],
+                            jisih_cumulatives[double_index] > random_list[i],
                             jisih_cumulatives[double_index],
                             np.inf).argmin()]-indices_to_isi[back_index]
                         dithered_isi[i] += step
                         dithered_isi[i+1] -= step
-                        ###counter_isi+ = 1
 
         dithered_st = first_spike+np.hstack(
                         (np.array(0.), np.cumsum(dithered_isi)))
@@ -480,13 +488,10 @@ def _joint_isi_dithering_fast(isi, jisih_cumulatives, **params):
             dithered_st = _correct_artefacts_of_neo(dithered_st,
                                                     number_of_isis+1)
         dithered_sts.append(dithered_st)
-    ###print('Percentage of spikes moved: {:.4}'.format(counter_isi/
-    ###                                 ((number_of_isis+1)*params['n_surr'])))
-    ###print(number_of_isis+1)
     return dithered_sts
 
 
-def _joint_isi_dithering_window(isi,jisih_cumulatives,**params):
+def _joint_isi_dithering_window(isi, jisih_cumulatives, **params):
     '''
     Dithering process for the window version of the joint-ISI dithering.
 
@@ -495,9 +500,9 @@ def _joint_isi_dithering_window(isi,jisih_cumulatives,**params):
         np.ndarray: The interspike-intervals
     jisih_cumulatives:
         np.ndarray: The cumulatives distribution functions as calculated in
-            preprocessing_joint_isi_dithering(st, **kwargs).
+            prepr_joint_isi_dithering(st, **kwargs).
     params
-        see output of preprocessing_joint_isi_dithering(st,**kwargs)
+        see output of prepr_joint_isi_dithering(st,**kwargs)
 
     Output:
     dithered_sts
@@ -514,7 +519,6 @@ def _joint_isi_dithering_window(isi,jisih_cumulatives,**params):
     max_change_isi = params['max_change_isi']
     number_of_isis = params['number_of_isis']
 
-    ###counter_isi = 0
     dithered_sts = []
     for surr_number in range(params['n_surr']):
         dithered_isi = isi
@@ -524,28 +528,26 @@ def _joint_isi_dithering_window(isi,jisih_cumulatives,**params):
             for i in range(k, number_of_isis-1, alternate):
                 back_index = dithered_isi_indices[i]
                 for_index = dithered_isi_indices[i+1]
-                if back_index+for_index<jisih_bins:
-                    if jisih_cumulatives[back_index][for_index][-1]>0.:
+                if back_index + for_index < jisih_bins:
+                    if jisih_cumulatives[back_index][for_index][-1] > 0.:
                         step = indices_to_isi[np.where(
-                            jisih_cumulatives[back_index][
-                            for_index] > random_list[i],
-                            jisih_cumulatives[back_index][for_index],
-                            np.inf).argmin()]-max_change_isi
+                               jisih_cumulatives[back_index][for_index]
+                               > random_list[i],
+                               jisih_cumulatives[back_index][for_index],
+                               np.inf).argmin()] - max_change_isi
                         dithered_isi[i] += step
                         dithered_isi[i+1] -= step
-                        ###counter_isi+=1
         dithered_st = first_spike + np.hstack(
                         (np.array(0.), np.cumsum(dithered_isi)))
-        dithered_st = neo.SpikeTrain(dithered_st*unit, t_stop = t_stop)
+        dithered_st = neo.SpikeTrain(dithered_st*unit, t_stop=t_stop)
         if len(dithered_st) != number_of_isis + 1:
             dithered_st = _correct_artefacts_of_neo(dithered_st,
                                                     number_of_isis+1)
         dithered_sts.append(dithered_st)
-    ###print('Percentage of spikes moved: {:.4}'.format(counter_isi/
-    ###                                           ((number_of_isis+1)*n_surr)))
     return dithered_sts
 
-def _correct_artefacts_of_neo(st,number_of_spikes):
+
+def _correct_artefacts_of_neo(st, number_of_spikes):
     '''
     For strange reasons, somtimes building a neo.SpikeTrain, a small amounts of
     spikes get lost. This are here thrown back into the spiketrain according to
@@ -567,10 +569,11 @@ def _correct_artefacts_of_neo(st,number_of_spikes):
         t_stop = st.t_stop
         unit = st.unit
         st_pure = st.magnitude
-        st_pure.append(np.random.random()*
-            (t_stop.magnitude-t_start.magnitude)+t_start.magnitude)
+        st_pure.append(np.random.random()
+                       * (t_stop.magnitude-t_start.magnitude)
+                       + t_start.magnitude)
         st_pure.sort()
-        st = neo.SpikeTrain(st_pure*unit, t_start = t_start, t_stop = t_stop)
+        st = neo.SpikeTrain(st_pure*unit, t_start=t_start, t_stop=t_stop)
         if len(st) < number_of_spikes:
             return _correct_artefacts_of_neo(st, number_of_spikes)
         return st
