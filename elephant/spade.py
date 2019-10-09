@@ -379,7 +379,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                                             winlen, binsize,
                                                             pv_spec,
                                                             data[0].t_start)
-        if output_format == 'concepts':
+        elif output_format == 'concepts':
             output['patterns'] = concepts
         else:
             raise ValueError(
@@ -1881,7 +1881,9 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
              then all pvalues are set to -1.
     """
-    if pvalue_spectrum is not None:
+    if pvalue_spectrum is None:
+        spectrum = '#'
+    else:
         if len(pvalue_spectrum) == 0:
             spectrum = '#'
             pass
