@@ -56,12 +56,11 @@ plt.show()
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 '''
-import numpy
+import numpy as np
 import neo
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
 from itertools import chain, combinations
-import numpy as np
 import time
 import quantities as pq
 import warnings
@@ -1134,8 +1133,8 @@ def _fdr(pvalues, alpha):
     """
 
     # Sort the p-values from largest to smallest
-    pvs_array = numpy.array(pvalues)              # Convert PVs to an array
-    pvs_sorted = numpy.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
+    pvs_array = np.array(pvalues)              # Convert PVs to an array
+    pvs_sorted = np.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
 
     # Perform FDR on the sorted p-values
     m = len(pvalues)
@@ -1230,7 +1229,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     # If alpha == 1 all signatures are significant
     if alpha == 1:
         return []
-    x_array = numpy.array(pvalue_spectrum)
+    x_array = np.array(pvalue_spectrum)
     # Compute significance...
     if corr == '' or corr == 'no':  # ...without statistical correction
         tests = x_array[:, -1] <= alpha
