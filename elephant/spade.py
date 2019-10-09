@@ -1927,8 +1927,8 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             output_dict['pvalue'] = -1
         # Signature (size, n occ) of the pattern
         elif spectrum == '3d#':
-            sgnt = (len(conc[0]), len(conc[1]), max(
-                np.abs(np.diff(np.array(conc[0]) % winlen))))
+            duration = (max(conc[0]) - min(conc[0])) % winlen
+            sgnt = (len(conc[0]), len(conc[1]), duration)
             output_dict['signature'] = sgnt
             # p-value assigned to the pattern from the pvalue spectrum
             try:
