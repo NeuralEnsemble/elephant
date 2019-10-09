@@ -163,7 +163,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         filtering the pattern spectrum. A spike at time t is placed randomly
         within ]t-dither, t+dither[ (see also
         elephant.spike_train_surrogates.dither_spikes).
-        Default: 15*pq.s
+        Default: 15*pq.ms
     spectrum: str
         Define the signature of the patterns, it can assume values:
         '#': pattern spectrum using the as signature the pair:
@@ -244,7 +244,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                     pattern.
                 lags: array containing the lags (integers corresponding to the
                     number of bins) between the spikes of the patterns. The
-                    first lag is always assumed to be 0 and correspond to the
+                    first lag is always assumed to be 0 and corresponds to the
                     first spike ['times'] array containing the times.
             (integers corresponding to the bin idx) of the occurrences of the
             patterns
@@ -459,7 +459,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     rel_matrix : numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to their position in
-        time). Each column correspond to one bin and one neuron and it is 0 if
+        time). Each column corresponds to one bin and one neuron and it is 0 if
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
@@ -555,11 +555,11 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         attributes of the corresponding object.
     rel_matrix : numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
-        row correspond to a window (order according to their position in time).
-        Each column correspond to one bin and one neuron and it is 0 if no
+        row corresponds to a window (order according to their position in time).
+        Each column corresponds to one bin and one neuron and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
-        E.g. the entry [0,0] of this matrix correspond to the first bin of the
+        E.g. the entry [0,0] of this matrix corresponds to the first bin of the
         first window position for the first neuron, the entry [0,winlen] to the
         first bin of the first window position for the second neuron.
     """
@@ -646,11 +646,11 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         Default: 'a'
     rel_matrix : None or numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
-        row correspond to a window (order according to their position in time).
-        Each column correspond to one bin and one neuron and it is 0 if no
+        row corresponds to a window (order according to their position in time).
+        Each column corresponds to one bin and one neuron and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
-        E.g. the entry [0,0] of this matrix correspond to the first bin of the
+        E.g. the entry [0,0] of this matrix corresponds to the first bin of the
         first window position for the first neuron, the entry [0,winlen] to the
         first bin of the first window position for the second neuron.
         If == None only the closed frequent itemsets (intent) are returned and
@@ -1299,7 +1299,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     rel_matrix: numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to their position in
-        time). Each column correspond to one bin and one neuron and it is 0 if
+        time). Each column corresponds to one bin and one neuron and it is 0 if
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
@@ -1841,7 +1841,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     Parameters
     ----------
     concepts: tuple
-        Each element of the tuple correspond to a pattern and it is itself a
+        Each element of the tuple corresponds to a pattern and it is itself a
         tuple consisting of:
             ((spikes in the pattern), (occurrences of the patterns))
     winlen: int
@@ -1850,14 +1850,14 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         The time precision used to discretize the data (binning).
     pvalue_spectrum: None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
-        to None all the pvalues are set to -1
+        to None all pvalues are set to -1
     t_start: Quantity
         t_start of the analyzed spike trains
 
     Returns
     --------
     output: list
-        List of dictionaries. Each dictionary correspond to a patterns and
+        List of dictionaries. Each dictionary corresponds to a pattern and
         has the following entries:
             ['itemset'] list of the spikes in the pattern
                 expressed in the form of itemset, each spike is encoded by:
@@ -1867,15 +1867,15 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['neurons'] array containing the idx of the neurons of the pattern
             ['lags'] array containing the lags (integers corresponding to the
                 number of bins) between the spikes of the patterns. The first
-                lag is always assumed to be 0 and correspond to the first
+                lag is always assumed to be 0 and corresponds to the first
                 spike.
-            ['times'] array contianing the times (integers corresponding to the
+            ['times'] array containing the times (integers corresponding to the
                 bin idx) of the occurrences of the patterns.
             ['signature'] tuple containing two integers
                 (number of spikes of the patterns,
                 number of occurrences of the pattern)
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
-                the pvalues are set to -1.
+             then all pvalues are set to -1.
     """
     if pvalue_spectrum is not None:
         if len(pvalue_spectrum) == 0:
