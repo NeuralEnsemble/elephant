@@ -558,7 +558,8 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         attributes of the corresponding object.
     rel_matrix : numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
-        row corresponds to a window (order according to their position in time).
+        row corresponds to a window (order according to
+        their position in time).
         Each column corresponds to one bin and one neuron and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
@@ -649,7 +650,8 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         Default: 'a'
     rel_matrix : None or numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
-        row corresponds to a window (order according to their position in time).
+        row corresponds to a window (order according to
+        their position in time).
         Each column corresponds to one bin and one neuron and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
