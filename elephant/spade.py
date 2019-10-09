@@ -535,7 +535,7 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     winlen : int
         Length of the binsize used to bin the data
     only_windows_with_first_spike : bool
-        Whether to consider every wondow or only the one with a spike in the
+        Whether to consider every window or only the one with a spike in the
         first bin
         Default: True
 
@@ -1860,8 +1860,8 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             binsize + t_start
         # Signature (size, n occ) of the pattern
         if spectrum == '3d#':
-            sgnt = (len(conc[0]), len(conc[1]), max(
-                np.abs(np.diff(np.array(conc[0]) % winlen))))
+            duration = (max(conc[0]) - min(conc[0])) % winlen
+            sgnt = (len(conc[0]), len(conc[1]), duration)
             output_dict['signature'] = sgnt
             # If None is given in input to the pval spectrum the pvalue
             # is set to -1 (pvalue spectrum not available)
