@@ -546,7 +546,7 @@ class BinnedSpikeTrain(object):
                                  "at least one of the parameter which are "
                                  "None.\n"
                                  "t_start: %s, t_stop: %s, binsize: %s, "
-                                 "numb_bins: %s" % (
+                                 "num_bins: %s" % (
                                      self.t_start,
                                      self.t_stop,
                                      self.binsize,
@@ -584,21 +584,21 @@ class BinnedSpikeTrain(object):
         """
         Returns all time edges with :attr:`num_bins` bins as a quantity array.
 
-        The borders of all time steps between start and stop [start, stop]
-        with:attr:`num_bins` bins are regarded as edges.
-        The border of the last bin is included.
+        The borders of all time steps between :attr:`t_start` and
+        :attr:`t_stop` with a step :attr:`binsize`.
 
         Returns
         -------
-        bin_edges : quantities.Quantity array
+        bin_edges : pq.Quantity
             All edges in interval [start, stop] with :attr:`num_bins` bins
             are returned as a quantity array.
 
         """
-        return pq.Quantity(np.linspace(self.t_start.rescale('s').magnitude,
-                                       self.t_stop.rescale('s').magnitude,
-                                       self.num_bins + 1, endpoint=True),
-                           units='s').rescale(self.binsize.units)
+        bin_edges = np.arange(
+            self.t_start.rescale(self.binsize.units).magnitude,
+            self.t_stop.rescale(self.binsize.units).magnitude,
+            self.binsize.magnitude)
+        return pq.Quantity(bin_edges, units=self.binsize.units)
 
     @property
     def bin_centers(self):
