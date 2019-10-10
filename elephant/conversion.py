@@ -585,14 +585,18 @@ class BinnedSpikeTrain(object):
         Returns all time edges with :attr:`num_bins` bins as a quantity array.
 
         The borders of all time steps between :attr:`t_start` and
-        :attr:`t_stop` with a step :attr:`binsize`.
+        :attr:`t_stop` with a step :attr:`binsize`. It is crucial for many
+        analyses that all bins have the same size, so if
+        :attr:`t_stop` - :attr:`t_start` is not divisible by :attr:`binsize`,
+        there will be some leftover time at the end
+        (see https://github.com/NeuralEnsemble/elephant/issues/255).
+        The length of the returned array should match :attr:`num_bins`.
 
         Returns
         -------
         bin_edges : pq.Quantity
-            All edges in interval [start, stop] with :attr:`num_bins` bins
-            are returned as a quantity array.
-
+            All edges in interval [:attr:`t_start`, :attr:`t_stop`] with
+            :attr:`num_bins` bins are returned as a quantity array.
         """
         bin_edges = np.arange(
             self.t_start.rescale(self.binsize.units).magnitude,

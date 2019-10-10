@@ -10,7 +10,7 @@ import unittest
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 import quantities as pq
 
 import elephant.conversion as cv
@@ -172,6 +172,14 @@ class binarize_TestCase(unittest.TestCase):
         self.assertRaises(ValueError, cv.binarize, st1,
                           t_start=0., t_stop=pq.Quantity(10, 'ms'))
         self.assertRaises(ValueError, cv.binarize, st1)
+
+    def test_bin_edges(self):
+        st = neo.SpikeTrain(times=np.array([2.5]) * pq.s, t_start=0 * pq.s,
+                            t_stop=3 * pq.s)
+        bst = cv.BinnedSpikeTrain(st, binsize=2 * pq.s, t_start=0 * pq.s,
+                                  t_stop=3 * pq.s)
+        assert_array_equal(bst.bin_edges, [0., 2.] * pq.s)
+        assert_array_equal(bst.spike_indices, [[]])  # no binned spikes
 
 
 class TimeHistogramTestCase(unittest.TestCase):
