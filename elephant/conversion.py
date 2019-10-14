@@ -599,11 +599,9 @@ class BinnedSpikeTrain(object):
             :attr:`num_bins` bins are returned as a quantity array.
         """
         t_start = self.t_start.rescale(self.binsize.units).magnitude
-        t_stop = self.t_stop.rescale(self.binsize.units).magnitude
-        bin_edges = np.arange(t_start, t_stop, self.binsize.magnitude)
-        if (t_stop - t_start) == self.binsize.magnitude * self.num_bins:
-            # exact match, include `t_stop`
-            bin_edges = np.append(bin_edges, t_stop)
+        bin_edges = np.linspace(t_start, t_start + self.num_bins *
+                                self.binsize.magnitude,
+                                num=self.num_bins + 1, endpoint=True)
         return pq.Quantity(bin_edges, units=self.binsize.units)
 
     @property
