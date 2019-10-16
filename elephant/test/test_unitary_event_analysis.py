@@ -15,6 +15,7 @@ import neo
 import numpy as np
 import quantities as pq
 from neo.rawio.tests.tools import create_local_temp_dir
+from numpy.testing import assert_array_equal
 
 try:
     from urllib2 import urlopen
@@ -125,6 +126,13 @@ class UETestCase(unittest.TestCase):
         h = ue.hash_from_pattern(m)
         self.assertTrue(np.all(expected == h))
 
+    def test_hash_inverse_longpattern(self):
+        n_patterns = 100
+        m = np.random.randint(low=0, high=2, size=(n_patterns, 2))
+        h = ue.hash_from_pattern(m)
+        m_inv = ue.inverse_hash_from_pattern(h, N=n_patterns)
+        assert_array_equal(m, m_inv)
+
     def test_hash_ValueError_wrong_entries(self):
         m = np.array([[0, 0, 0], [1, 0, 0], [0, 2, 0], [0, 0, 1], [1, 1, 0],
                       [1, 0, 1], [0, 1, 1], [1, 1, 1]])
@@ -139,11 +147,12 @@ class UETestCase(unittest.TestCase):
         h = ue.hash_from_pattern(m, base=base)
         self.assertTrue(np.all(expected == h))
 
-    # TODO: write a test for ValueError in inverse_hash_from_pattern
     def test_invhash_ValueError(self):
+        """
+        The hash is larger than sum(2 ** range(N)).
+        """
         self.assertRaises(
-            ValueError, ue.inverse_hash_from_pattern, [
-                128, 8], 4)
+            ValueError, ue.inverse_hash_from_pattern, [128, 8], 4)
 
     def test_invhash_default_base(self):
         N = 3

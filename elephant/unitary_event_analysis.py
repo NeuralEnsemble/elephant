@@ -147,20 +147,20 @@ def inverse_hash_from_pattern(h, N, base=2):
             [0, 1],
             [0, 0]])
     """
+    h = np.asarray(h)  # this will cast to object type if h > int64
+    if not all(isinstance(v, int) for v in h.tolist()):
+        # .tolist() is necessary because np.int[64] is not int
+        raise ValueError("hash values should be integers")
 
     # check if the hash values are not greater than the greatest possible
     # value for N neurons with the given base
-    if np.any(h > np.power(base, np.arange(N)).sum()):
+    powers = np.array([base ** x for x in range(N)])[::-1]
+    if any(h > sum(powers)):
         raise ValueError(
             "hash value is not compatible with the number of neurons N")
-    # check if the hash values are integer
-    if not np.all(np.int64(h) == h):
-        raise ValueError("hash values should be integers")
-
-    h = np.asarray(h, dtype=np.int64)
-    powers = np.power(base, np.arange(N)[::-1])
     m = h // np.expand_dims(powers, axis=1)
-    m %= base
+    m %= base  # m is a binary matrix now
+    m = m.astype(int)  # convert object to int if the hash was > int64
     return m
 
 
@@ -334,8 +334,11 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
     Parameters
     -----------
     mat: np.ndarray
-         the entries are zero or one,
-         except for the 'analytic_TrialAverage' method in n_exp_mat_sum_trial()
+         The entries are in the range [0, 1].
+         The only possibility when the entries are floating point values is
+         when the `mat` is calculated with the flag `analytic_TrialAverage`
+         in `n_exp_mat_sum_trial()`.
+         Otherwise, the entries are binary.
          0-axis --> neurons
          1-axis --> time bins
     pattern_hash: list
@@ -564,12 +567,12 @@ def jointJ(p_val):
     Parameters
     -----------
     p_val: list
-        List of p-values of statistical tests for different pattern.
+        List of p-values (float) of statistical tests for different pattern.
 
     Returns
     --------
     Js: list
-        list of surprise measure
+        List of surprise measures (float).
 
     Examples:
     ---------
