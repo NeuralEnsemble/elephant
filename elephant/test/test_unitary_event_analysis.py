@@ -6,10 +6,11 @@ Unit tests for the Unitary Events analysis
 """
 
 import os
+import shutil
 import ssl
+import sys
 import types
 import unittest
-import shutil
 
 import neo
 import numpy as np
@@ -24,6 +25,8 @@ except ImportError:
 
 
 import elephant.unitary_event_analysis as ue
+
+python_version_major = sys.version_info.major
 
 
 class UETestCase(unittest.TestCase):
@@ -111,6 +114,17 @@ class UETestCase(unittest.TestCase):
                                     [[1, 1, 1, 1, 1],
                                      [0, 1, 1, 1, 1],
                                      [1, 1, 0, 1, 0]]])
+
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_deprecated_N(self):
+        n_patterns = 10
+        m = np.random.randint(low=0, high=2, size=(n_patterns, 2))
+        with self.assertWarns(DeprecationWarning):
+            # check *args
+            h = ue.hash_from_pattern(m, n_patterns)
+        with self.assertWarns(DeprecationWarning):
+            # check **kwargs
+            h = ue.hash_from_pattern(m, N=n_patterns)
 
     def test_hash_default(self):
         m = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0],

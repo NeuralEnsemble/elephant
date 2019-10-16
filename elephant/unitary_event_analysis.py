@@ -29,6 +29,24 @@ import scipy
 import elephant.conversion as conv
 
 
+def decorate_deprecated_N(func):
+    def decorated_func(*args, **kwargs):
+        N = None
+        if 'N' in kwargs:
+            N = kwargs.pop('N')
+        elif len(args) > 1 and isinstance(args[1], int):
+            args = list(args)
+            N = args.pop(1)
+        if N is not None:
+            warnings.warn("'N' is deprecated in '{func_name}' and will be "
+                          "removed in the next Elephant release. Now 'N' is "
+                          "extracted from the data shape.".format(
+                            func_name=func.__name__), DeprecationWarning)
+        return func(*args, **kwargs)
+
+    return decorated_func
+
+
 def _is_binary(array):
     """
     Parameters
@@ -44,6 +62,7 @@ def _is_binary(array):
     return ((array == 0) | (array == 1)).all()
 
 
+@decorate_deprecated_N
 def hash_from_pattern(m, base=2):
     """
     Calculate for a spike pattern or a matrix of spike patterns
@@ -164,6 +183,7 @@ def inverse_hash_from_pattern(h, N, base=2):
     return m
 
 
+@decorate_deprecated_N
 def n_emp_mat(mat, pattern_hash, base=2):
     """
     Count the occurrences of spike coincidence patterns
@@ -221,6 +241,7 @@ def n_emp_mat(mat, pattern_hash, base=2):
     return N_emp, indices
 
 
+@decorate_deprecated_N
 def n_emp_mat_sum_trial(mat, pattern_hash):
     """
     Calculates empirical number of observed patterns summed across trials
@@ -291,6 +312,7 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     return N_emp, idx_trials
 
 
+@decorate_deprecated_N
 def _n_exp_mat_analytic(mat, pattern_hash):
     """
     Calculates the expected joint probability for each spike pattern
@@ -311,6 +333,7 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 
+@decorate_deprecated_N
 def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
     """
     Calculates the expected joint probability for each spike pattern with spike
@@ -327,6 +350,7 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
     return N_exp_array
 
 
+@decorate_deprecated_N
 def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
     """
     Calculates the expected joint probability for each spike pattern
@@ -625,6 +649,7 @@ def _winpos(t_start, t_stop, winsize, winstep, position='left-edge'):
     return ts_winpos
 
 
+@decorate_deprecated_N
 def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
     """
     returns the default results of unitary events analysis
