@@ -444,13 +444,20 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assert_dicts_equal(targ, res111)
         self.assert_dicts_equal(targ, res211)
 
+    @staticmethod
+    def _fix_neo_issue_749(obj, targ):
+        # TODO: remove once fixed
+        # https://github.com/NeuralEnsemble/python-neo/issues/749
+        num_times = len(targ['times'])
+        obj = obj[:num_times]
+        del targ['array_annotations']
+        return obj
+
     def test__extract_neo_attrs__epoch_parents_empty_array(self):
         obj = fake_neo('Epoch', seed=0)
         targ = get_fake_values('Epoch', seed=0)
-        num_times = len(targ['times'])
-        obj = obj[:num_times]
 
-        del targ['array_annotations']
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res000 = nt.extract_neo_attrs(obj, parents=False)
@@ -622,10 +629,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('Epoch')[0]
         targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
 
-        num_times = len(targ['times'])
-        obj = obj[:num_times]
-
-        del targ['array_annotations']
+        # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=False, skip_array=False)
@@ -877,10 +882,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
 
-        num_times = len(targ['times'])
-        obj = obj[:num_times]
-
-        del targ['array_annotations']
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=True, skip_array=False)
@@ -975,10 +977,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
 
-        num_times = len(targ['times'])
-        obj = obj[:num_times]
-
-        del targ['array_annotations']
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res0 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,
