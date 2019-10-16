@@ -19,6 +19,7 @@ References:
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import sys
 import warnings
 
 import neo
@@ -167,7 +168,11 @@ def inverse_hash_from_pattern(h, N, base=2):
             [0, 0]])
     """
     h = np.asarray(h)  # this will cast to object type if h > int64
-    if not all(isinstance(v, int) for v in h.tolist()):
+    if sys.version_info < (3,):
+        integer_types = (int, long)
+    else:
+        integer_types = (int,)
+    if not all(isinstance(v, integer_types) for v in h.tolist()):
         # .tolist() is necessary because np.int[64] is not int
         raise ValueError("hash values should be integers")
 
