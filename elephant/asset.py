@@ -51,14 +51,33 @@ import elephant.conversion as conv
 import elephant.spike_train_surrogates as spike_train_surrogates
 from sklearn.cluster import dbscan as dbscan
 
+try:
+    from mpi4py import MPI
+
+    mpi_accelerated = True
+
+except:
+    mpi_accelerated = False
+
 
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================
 
 
+def _xrange(x, *args):
+    """
+    Auxiliary function to use both in python 3 and python 2 to have a range
+    function as a generator.
+    """
+    try:
+        return xrange(x, *args)
+    except NameError:
+        return range(x, *args)
+
+
 def _signals_same_tstart(signals):
-    '''
+    """
     Check whether a list of signals (AnalogSignals or SpikeTrains) have same
     attribute t_start. If so return that value. Otherwise raise a ValueError.
 
@@ -67,13 +86,13 @@ def _signals_same_tstart(signals):
     signals : list
         a list of signals (e.g. AnalogSignals or SpikeTrains) having
         attribute `t_start`
-        
+
     Returns
     -------
     t_start : Quantity
         The common attribute `t_start` of the list of signals.
         Raises a `ValueError` if the signals have a different `t_start`.
-    '''
+    """
 
     t_start = signals[0].t_start
 
@@ -87,7 +106,7 @@ def _signals_same_tstart(signals):
 
 
 def _signals_same_tstop(signals):
-    '''
+    """
     Check whether a list of signals (AnalogSignals or SpikeTrains) have same
     attribute t_stop. If so return that value. Otherwise raise a ValueError.
 
@@ -102,7 +121,7 @@ def _signals_same_tstop(signals):
     t_stop : Quantity
         The common attribute t_stop of the list of signals.
         If the signals have a different t_stop, a ValueError is raised.
-    '''
+    """
 
     t_stop = signals[0].t_stop
 
@@ -116,7 +135,7 @@ def _signals_same_tstop(signals):
 
 
 def _quantities_almost_equal(x, y):
-    '''
+    """
     Returns True if two quantities are almost equal, i.e. if x-y is
     "very close to 0" (not larger than machine precision for floats).
 
@@ -138,7 +157,7 @@ def _quantities_almost_equal(x, y):
     arr : ndarray of bool
         an array of bools, which is True at any position where x-y is almost
         zero
-    '''
+    """
     eps = np.finfo(float).eps
     relative_diff = (x - y).magnitude
     return np.all([-eps <= relative_diff, relative_diff <= eps], axis=0)
@@ -146,7 +165,7 @@ def _quantities_almost_equal(x, y):
 
 def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
     """
-    Transform parallel spike trains a into list of sublists, called
+    Transform parallel spike trains into a list of sublists, called
     transactions, each corresponding to a time bin and containing the list
     of spikes in spiketrains falling into that bin.
 
@@ -203,7 +222,7 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
                         'SpikeTrains or a list of (id, SpikeTrain) pairs')
 
     # Take the minimum and maximum t_start and t_stop of all spike trains
-    # TODO: the block below should be ageneral routine in elephant
+    # TODO: the block below should be a general routine in elephant
     tstarts = [xx.t_start for xx in trains]
     tstops = [xx.t_stop for xx in trains]
     max_tstart = max(tstarts)
@@ -237,11 +256,11 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
 
     # Compute and return the transaction list
     return [[train_id for train_id, b in zip(ids, filled_bins)
-             if bin_id in b] for bin_id in range(Nbins)]
+             if bin_id in b] for bin_id in _xrange(Nbins)]
 
 
 def _analog_signal_step_interp(signal, times):
-    '''
+    """
     Compute the step-wise interpolation of a signal at desired times.
 
     Given a signal (e.g. an AnalogSignal) s taking value s(t0) and s(t1)
@@ -260,7 +279,7 @@ def _analog_signal_step_interp(signal, times):
     -------
     quantities.Quantity object with same shape of `times`, and containing
     the values of the interpolated signal at the time points in `times`
-    '''
+    """
     dt = signal.sampling_period
 
     # Compute the ids of the signal times to the left of each time in times
@@ -272,7 +291,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _sample_quantiles(sample, p):
-    '''
+    """
     Given a sample of values extracted from a probability distribution,
     estimates the quantile(s) associated to p-value(s) p.
 
@@ -297,7 +316,7 @@ def _sample_quantiles(sample, p):
     -------
     q : float, or array of floats
         quantile(s) associated to the input p-value(s).
-    '''
+    """
     # Compute the cumulative probabilities associated to the p-values
     if not isinstance(p, np.ndarray):
         p = np.array([p])
@@ -311,7 +330,7 @@ def _sample_quantiles(sample, p):
 
 
 def _sample_pvalue(sample, x):
-    '''
+    """
     Estimates the p-value of each value in x, given a sample of values
     extracted from a probability distribution.
 
@@ -336,7 +355,7 @@ def _sample_pvalue(sample, x):
     -------
     pv : same type and shape as x
         p-values associated to the input values x.
-    '''
+    """
     # Convert x to an array
     if not isinstance(x, np.ndarray):
         x = np.array([x])
@@ -351,9 +370,9 @@ def _sample_pvalue(sample, x):
 
 
 def _time_slice(signal, t_start, t_stop):
-    '''
+    """
     Get the time slice of an AnalogSignal between t_start and t_stop.
-    '''
+    """
 
     # Check which elements of the signal are between t_start and t_stop.
     # Retain those and the corresponding times
@@ -375,7 +394,8 @@ def _time_slice(signal, t_start, t_stop):
 
 
 def intersection_matrix(
-        spiketrains, binsize, dt, t_start_x=None, t_start_y=None, norm=None):
+        spiketrains, binsize, spiketrains_y=None, t_start_x=None, t_start_y=None,
+        t_stop_x=None, t_stop_y=None, norm=None):
     """
     Generates the intersection matrix from a list of spike trains.
 
@@ -385,7 +405,7 @@ def intersection_matrix(
     intersection matrix M of the two binned data, where M[i,j] is the overlap
     of bin i in the first binned data and bin j in the second binned data
     (i.e. the number of spike trains spiking both at bin i and at bin j).
-    The matrix  entries can be normalized to values between 0 and 1 via
+    The matrix entries can be normalized to values between 0 and 1 via
     different normalizations (see below).
 
     Parameters
@@ -430,29 +450,42 @@ def intersection_matrix(
         edges of the bins used for the vertical axis of imat. If imat is
         a matrix of shape (n, n), y_edges has length n+1
     """
+    # TODO: Don't do anything twice for x and y if they are the same
+
+    if spiketrains_y is None:
+        spiketrains_y = spiketrains
+
     # Setting the start and stop time for the x and y axes:
     if t_start_x is None:
         t_start_x = _signals_same_tstart(spiketrains)
     if t_start_y is None:
-        t_start_y = _signals_same_tstart(spiketrains)
+        t_start_y = _signals_same_tstart(spiketrains_y)
 
-    t_stop_x = dt + t_start_x
-    t_stop_y = dt + t_start_y
+    if t_stop_x is None:
+        t_stop_x = _signals_same_tstop(spiketrains)
+    if t_stop_y is None:
+        t_stop_y = _signals_same_tstop(spiketrains_y)
 
     # Check that all SpikeTrains are defined until t_stop at least
-    t_stop_max = max(t_stop_x, t_stop_y)
     for i, st in enumerate(spiketrains):
-        if not (st.t_stop > t_stop_max or
-                _quantities_almost_equal(st.t_stop, t_stop_max)):
-            msg = 'SpikeTrain %d is shorter than the required time ' % i + \
-                  'span: t_stop (%s) < %s' % (st.t_stop, t_stop_max)
+        if not (st.t_stop > t_stop_x or
+                _quantities_almost_equal(st.t_stop, t_stop_x)):
+            msg = 'SpikeTrain %d on x axis is shorter than the required time ' % i + \
+                  'span: t_stop (%s) < %s' % (st.t_stop, t_stop_x)
+            raise ValueError(msg)
+
+    for i, st in enumerate(spiketrains_y):
+        if not (st.t_stop > t_stop_y or
+                _quantities_almost_equal(st.t_stop, t_stop_y)):
+            msg = 'SpikeTrain %d on y axis is shorter than the required time ' % i + \
+                  'span: t_stop (%s) < %s' % (st.t_stop, t_stop_y)
             raise ValueError(msg)
 
     # For both x and y axis, cut all SpikeTrains between t_start and t_stop
     sts_x = [st.time_slice(t_start=t_start_x, t_stop=t_stop_x)
              for st in spiketrains]
     sts_y = [st.time_slice(t_start=t_start_y, t_stop=t_stop_y)
-             for st in spiketrains]
+             for st in spiketrains_y]
 
     # Compute imat either by matrix multiplication (~20x faster) or by
     # nested for loops (more memory efficient)
@@ -460,19 +493,24 @@ def intersection_matrix(
         # Compute the binned spike train matrices, along both time axes
         bsts_x = conv.BinnedSpikeTrain(
             sts_x, binsize=binsize,
-            t_start=t_start_x, t_stop=t_stop_x).to_bool_array()
+            t_start=t_start_x, t_stop=t_stop_x)
         bsts_y = conv.BinnedSpikeTrain(
             sts_y, binsize=binsize,
-            t_start=t_start_y, t_stop=t_stop_y).to_bool_array()
+            t_start=t_start_y, t_stop=t_stop_y)
+        xx = bsts_x.bin_edges.rescale(binsize.units)
+        yy = bsts_y.bin_edges.rescale(binsize.units)
+        bsts_x = bsts_x.to_bool_array()
+        bsts_y = bsts_y.to_bool_array()
 
         # Compute the number of spikes in each bin, for both time axes
         spikes_per_bin_x = bsts_x.sum(axis=0)
         spikes_per_bin_y = bsts_y.sum(axis=0)
 
         # Compute the intersection matrix imat
-        N_bins = len(spikes_per_bin_x)
-        imat = np.zeros((N_bins, N_bins), dtype=float)
-        for ii in range(N_bins):
+        N_bins_x = len(spikes_per_bin_x)
+        N_bins_y = len(spikes_per_bin_y)
+        imat = np.zeros((N_bins_x, N_bins_y)) * 1.
+        for ii in _xrange(N_bins_x):
             # Compute the ii-th row of imat
             bin_ii = bsts_x[:, ii].reshape(-1, 1)
             imat[ii, :] = (bin_ii * bsts_y).sum(axis=0)
@@ -497,7 +535,7 @@ def intersection_matrix(
             for y_id in ybins_equal_0:
                 imat[:, y_id] = 0
 
-            np.fill_diagonal(imat, val=1.)
+            imat[_xrange(N_bins_x), _xrange(N_bins_y)] = 1.
 
     except MemoryError:  # use the memory-efficient version
         # Compute the list spiking neurons per bin, along both axes
@@ -507,10 +545,11 @@ def intersection_matrix(
             sts_y, binsize, t_start=t_start_y, t_stop=t_stop_y)
 
         # Generate the intersection matrix
-        N_bins = len(ids_per_bin_x)
-        imat = np.zeros((N_bins, N_bins))
-        for ii in range(N_bins):
-            for jj in range(N_bins):
+        N_bins_x = len(spikes_per_bin_x)
+        N_bins_y = len(spikes_per_bin_y)
+        imat = np.zeros((N_bins_x, N_bins_y))
+        for ii in _xrange(N_bins_x):
+            for jj in _xrange(N_bins_y):
                 if len(ids_per_bin_x[ii]) * len(ids_per_bin_y[jj]) != 0:
                     imat[ii, jj] = len(set(ids_per_bin_x[ii]).intersection(
                         set(ids_per_bin_y[jj])))
@@ -526,12 +565,12 @@ def intersection_matrix(
                             ids_per_bin_x[ii]).union(set(ids_per_bin_y[jj]))))
 
     # Compute the time edges corresponding to the binning employed
-    t_start_x_dl = t_start_x.rescale(binsize.units).magnitude
-    t_start_y_dl = t_start_y.rescale(binsize.units).magnitude
-    t_stop_x_dl = t_stop_x.rescale(binsize.units).magnitude
-    t_stop_y_dl = t_stop_y.rescale(binsize.units).magnitude
-    xx = np.linspace(t_start_x_dl, t_stop_x_dl, N_bins + 1) * binsize.units
-    yy = np.linspace(t_start_y_dl, t_stop_y_dl, N_bins + 1) * binsize.units
+    # t_start_x_dl = t_start_x.rescale(binsize.units).magnitude
+    # t_start_y_dl = t_start_y.rescale(binsize.units).magnitude
+    # t_stop_x_dl = t_stop_x.rescale(binsize.units).magnitude
+    # t_stop_y_dl = t_stop_y.rescale(binsize.units).magnitude
+    # xx = np.linspace(t_start_x_dl, t_stop_x_dl, N_bins_x + 1) * binsize.units
+    # yy = np.linspace(t_start_y_dl, t_stop_y_dl, N_bins_y + 1) * binsize.units
 
     # Return the intersection matrix and the edges of the bins used for the
     # x and y axes, respectively.
@@ -539,7 +578,7 @@ def intersection_matrix(
 
 
 def _reference_diagonal(x_edges, y_edges):
-    '''
+    """
     Given two arrays of time bin edges :math:`x_edges = (X_1, X_2, ..., X_k)`
     and :math:`y_edges = (Y_1, Y_2, ..., Y_k)`, considers the matrix `M`
     such that :math:`M_{ij} = (X_i, Y_j)` and finds the reference diagonal of
@@ -551,7 +590,7 @@ def _reference_diagonal(x_edges, y_edges):
     (first off-diagonal below the main diagonal) and its elements are
     (-1, 0), (0, 1), (1, 2), (2, 3).
 
-    '''
+    """
     diag_id = None
     error_msg = \
         'the time axes (%s-%s and %s-%s)' % (
@@ -578,17 +617,15 @@ def _reference_diagonal(x_edges, y_edges):
     if diag_id is None:
         return diag_id, np.array([])
     elif diag_id >= 0:
-        elements = np.column_stack([np.arange(m - diag_id),
-                                    np.arange(diag_id, m)])
+        elements = np.array([_xrange(m - diag_id), _xrange(diag_id, m)]).T
     else:
-        elements = np.column_stack([np.arange(diag_id, m),
-                                    np.arange(m - diag_id)])
+        elements = np.array([_xrange(diag_id, m), _xrange(m - diag_id)]).T
 
     return diag_id, elements
 
 
 def mask_matrices(matrices, thresholds):
-    '''
+    """
     Given a list of matrices and a list of thresholds, return a boolean matrix
     B ("mask") such that B[i,j] is True if each input matrix in the list
     strictly exceeds the corresponding threshold at that position.
@@ -605,7 +642,7 @@ def mask_matrices(matrices, thresholds):
     -------
     mask : numpy.ndarray of bools
         mask matrix with same shape of the input matrices.
-    '''
+    """
 
     # Check that input lists have same length
     L = len(matrices)
@@ -618,15 +655,14 @@ def mask_matrices(matrices, thresholds):
         for (mat, thresh) in zip(matrices, thresholds):
             mask = mask * (mat > thresh)
 
-    # Replace nans, coming from False * np.inf, with 0s
-    # (trick to find nans in masked: a number is nan if it's not >= - np.inf)
-    mask[np.logical_xor(True, (mask >= -np.inf))] = False
+    # Replace nans, coming from False * np.inf, with zeros
+    mask[np.isnan(mask)] = False
 
     return np.array(mask, dtype=bool)
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle):
-    '''
+    """
     Given a list of points on the real plane, identified by their absciss x
     and ordinate y, compute a stretched transformation of the Euclidean
     distance among each of them.
@@ -660,7 +696,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     D : numpy.ndarray
         square matrix of distances between all pairs of points. If x and y
         have shape (n, ) then D has shape (n, n).
-    '''
+    """
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
     # Create the array of points (one per row) for which to compute the
@@ -671,30 +707,26 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     D = scipy.spatial.distance_matrix(points, points)
 
     # Compute the angular coefficients of the line between each pair of points
-    x_array = np.tile(x, reps=(len(x), 1))
-    y_array = np.tile(y, reps=(len(y), 1))
+    x_array = 1. * np.vstack([x for i in x])
+    y_array = 1. * np.vstack([y for i in y])
     dX = x_array.T - x_array  # dX[i,j]: x difference between points i and j
     dY = y_array.T - y_array  # dY[i,j]: y difference between points i and j
+    AngCoeff = dY / dX
 
     # Compute the matrix Theta of angles between each pair of points
-    theta = np.arctan2(dY, dX)
-
-    # Transform [-pi, pi] back to [-pi/2, pi/2]
-    theta[theta < -np.pi / 2] += np.pi
-    theta[theta > np.pi / 2] -= np.pi
-    assert np.allclose(np.diagonal(theta), 0), \
-        "Diagonal elements should be zero due to `np.arctan2(0, 0) == 0` " \
-        "convention."
+    Theta = np.arctan(AngCoeff)
+    n = Theta.shape[0]
+    Theta[_xrange(n), _xrange(n)] = 0  # set angle to 0 if points identical
 
     # Compute the matrix of stretching factors for each pair of points
-    stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
+    stretch_mat = (1 + ((stretch - 1.) * np.abs(np.sin(alpha - Theta))))
 
     # Return the stretched distance matrix
     return D * stretch_mat
 
 
 def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
-    '''
+    """
     Given a matrix mat, replaces its positive elements with integers
     representing different cluster ids. Each cluster comprises close-by
     elements.
@@ -716,7 +748,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
         * Non-positive elements are assigned the value 0.
 
     The distance between the positions of two positive elements in mat is
-    given by an Euclidean metric which is stretched if the two positions are
+    given by a Euclidean metric which is stretched if the two positions are
     not aligned along the 45 degree direction (the main diagonal direction),
     as more, with maximal stretching along the anti-diagonal. Specifically,
     the Euclidean distance between positions (i1, j1) and (i2, j2) is
@@ -754,7 +786,8 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
             * a positive int (cluster id) if the element is part of a cluster
             * 0 if the corresponding element in mat was non-positive
             * -1 if the element does not belong to any cluster
-    '''
+    """
+    # TODO: maybe check if mat is symmetrical and then only do this on one half?
 
     # Don't do anything if mat is identically zero
     if np.all(mat == 0):
@@ -783,9 +816,10 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
 
 
 def probability_matrix_montecarlo(
-        spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
-        surr_method='dither_spike_train', j=None, n_surr=100, verbose=False):
-    '''
+        spiketrains, binsize, spiketrains_y=None,
+        t_start_x=None, t_start_y=None, t_stop_x=None, t_stop_y=None,
+        surr_method='dither_spike_train', j=None, n_surr=100, verbose=False, return_imat=False):
+    """
     Given a list of parallel spike trains, estimate the cumulative probability
      of each entry in their intersection matrix (see: intersection_matrix())
     by a Monte Carlo approach using surrogate data.
@@ -801,7 +835,7 @@ def probability_matrix_montecarlo(
                         #(spike_train_surrogates)
 
     If P[i, j] is large (close to 1), I[i, j] is statistically significant:
-    the probability to observe an overlap equal to or larger then I[i, j]
+    the probability to observe an overlap equal to or larger than I[i, j]
     under the null hypothesis is 1-P[i, j], very small.
 
     Parameters
@@ -838,11 +872,13 @@ def probability_matrix_montecarlo(
         number of spike_train_surrogates to generate for the bootstrap
         procedure. Default: 100
     verbose : bool, optional
-        Print the progress bar.
+        whether to print messages during the computation.
+        Default: False
+
 
     Returns
     -------
-    pmat : np.ndarray
+    pmat : ndarray
         the cumulative probability matrix. pmat[i, j] represents the
         estimated probability of having an overlap between bins i and j
         STRICTLY LOWER than the observed overlap, under the null hypothesis
@@ -850,13 +886,15 @@ def probability_matrix_montecarlo(
 
     See also
     --------
-    probability_matrix_analytical : for analytical derivation of the matrix
-    '''
+    probability_matrix_analytical() for analytical derivation of the matrix
+    """
 
     # Compute the intersection matrix of the original data
     imat, x_edges, y_edges = intersection_matrix(
-        spiketrains, binsize=binsize, dt=dt, t_start_x=t_start_x,
-        t_start_y=t_start_y)
+        spiketrains, binsize=binsize, spiketrains_y=spiketrains_y,
+        t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x, t_stop_y=t_stop_y)
+
+    # TODO: check performance, parallelise where possible
 
     # Generate surrogate spike trains as a list surrs; for each spike train
     # i, surrs[i] is a list of length n_surr, containing the
@@ -865,32 +903,42 @@ def probability_matrix_montecarlo(
         st, n=n_surr, surr_method=surr_method, dt=j, decimals=None, edges=True)
         for st in spiketrains]
 
+    if spiketrains_y is None:
+        surrs_y = surrs
+    else:
+        surrs_y = [spike_train_surrogates.surrogates(st, n=n_surr, surr_method=surr_method,
+                                                     dt=j, decimals=None, edges=True)
+                   for st in spiketrains_y]
+
     # Compute the p-value matrix pmat; pmat[i, j] counts the fraction of
-    # surrogate data whose intersection value at (i, j) whose lower than or
+    # surrogate data whose intersection value at (i, j) is lower than or
     # equal to that of the original data
     pmat = np.array(np.zeros(imat.shape), dtype=int)
     if verbose:
-        # todo: move to tqdm
         print('pmat_bootstrap(): begin of bootstrap...')
-    for i in range(n_surr):  # For each surrogate id i
+    for i in _xrange(n_surr):  # For each surrogate id i
         if verbose:
             print('    surr %d' % i)
         surrs_i = [st[i] for st in surrs]  # Take each i-th surrogate
+        surrs_y_i = [st[i] for st in surrs_y]  # Take each i-th surrogate
         imat_surr, xx, yy = intersection_matrix(  # compute the related imat
-            surrs_i, binsize=binsize, dt=dt,
-            t_start_x=t_start_x, t_start_y=t_start_y)
+            surrs_i, binsize=binsize, spiketrains_y=surrs_y_i,
+            t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x, t_stop_y=t_stop_y)
         pmat += (imat_surr <= imat - 1)
     pmat = pmat * 1. / n_surr
     if verbose:
         print('pmat_bootstrap(): done')
 
+    if return_imat:
+        return imat, pmat, x_edges, y_edges
     return pmat, x_edges, y_edges
 
 
 def probability_matrix_analytical(
-        spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
-        fir_rates='estimate', kernel_width=100 * pq.ms, verbose=False):
-    '''
+        spiketrains, binsize, spiketrains_y=None,
+        t_start_x=None, t_start_y=None, t_stop_x=None, t_stop_y=None,
+        fir_rates_x='estimate', fir_rates_y='estimate', kernel_width=100 * pq.ms, verbose=False, return_imat=False):
+    """
     Given a list of spike trains, approximates the cumulative probability of
     each entry in their intersection matrix (see: intersection_matrix()).
 
@@ -899,15 +947,15 @@ def probability_matrix_analytical(
 
         * Bin each spike train at the specified binsize: this yields a binary
           array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
-        * If required, estimate the rate profile of each spike train by 
-          convolving the binned array with a boxcar kernel of user-defined 
+        * If required, estimate the rate profile of each spike train by
+          convolving the binned array with a boxcar kernel of user-defined
           length
         * For each neuron k and each pair of bins i and j, compute the
           probability p_ijk that neuron k fired in both bins i and j.
         * Approximate the probability distribution of the intersection value
           at (i, j) by a Poisson distribution with mean parameter
           l = \sum_k (p_ijk),
-          justified by Le Cam's approximation of a sum of independent 
+          justified by Le Cam's approximation of a sum of independent
           Bernouilli random variables with a Poisson distribution.
 
     Parameters
@@ -951,29 +999,32 @@ def probability_matrix_analytical(
     y_edges : numpy.ndarray
         edges of the bins used for the vertical axis of pmat. If pmat is
         a matrix of shape (n, n), y_edges has length n+1
-    '''
+    """
+
+    # TODO: Don't do anything twice for x and y if they are the same
+
+    if spiketrains_y is None:
+        spiketrains_y = spiketrains
 
     # Bin the spike trains
-    t_stop_x = None if t_start_x is None else t_start_x + dt
-    t_stop_y = None if t_start_y is None else t_start_y + dt
     bsts_x = conv.BinnedSpikeTrain(
         spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x)
     bsts_y = conv.BinnedSpikeTrain(
-        spiketrains, binsize=binsize, t_start=t_start_y, t_stop=t_stop_y)
+        spiketrains_y, binsize=binsize, t_start=t_start_y, t_stop=t_stop_y)
 
     bsts_x_matrix = bsts_x.to_bool_array()
     bsts_y_matrix = bsts_y.to_bool_array()
 
-    # Check that the duration and nr. neurons is identical between the two axes
-    if bsts_x_matrix.shape != bsts_y_matrix.shape:
+    # Check that the nr. neurons is identical between the two axes
+    if bsts_x_matrix.shape[0] != bsts_y_matrix.shape[0]:
         raise ValueError(
-            'Different spike train durations along the x and y axis!')
+            'Different number of neurons along the x and y axis!')
 
     # Define the firing rate profiles
 
     # If rates are to be estimated, create the rate profiles as Quantity
     # objects obtained by boxcar-kernel convolution
-    if fir_rates == 'estimate':
+    if fir_rates_x == 'estimate':
         if verbose is True:
             print('compute rates by boxcar-kernel convolution...')
 
@@ -982,30 +1033,25 @@ def probability_matrix_analytical(
         kernel = np.ones(k) * 1. / k
         fir_rate_x = np.vstack([np.convolve(bst, kernel, mode='same')
                                 for bst in bsts_x_matrix])
-        fir_rate_y = np.vstack([np.convolve(bst, kernel, mode='same')
-                                for bst in bsts_y_matrix])
 
         # The convolution results in an array decreasing at the borders due
         # to absence of spikes beyond the borders. Replace the first and last
         # (k//2) elements with the (k//2)-th / (n-k//2)-th ones, respectively
         k2 = k // 2
-        for i in range(fir_rate_x.shape[0]):
+        for i in _xrange(fir_rate_x.shape[0]):
             fir_rate_x[i, :k2] = fir_rate_x[i, k2]
             fir_rate_x[i, -k2:] = fir_rate_x[i, -k2 - 1]
-            fir_rate_y[i, :k2] = fir_rate_y[i, k2]
-            fir_rate_y[i, -k2:] = fir_rate_y[i, -k2 - 1]
 
         # Multiply the firing rates by the proper unit
         fir_rate_x = fir_rate_x * (1. / binsize).rescale('Hz')
-        fir_rate_y = fir_rate_y * (1. / binsize).rescale('Hz')
 
     # If rates provided as lists of AnalogSignals, create time slices for both
     # axes, interpolate in the time bins of interest and convert to Quantity
-    elif isinstance(fir_rates, list):
+    elif isinstance(fir_rates_x, list):
         # Reshape all rates to one-dimensional array object (e.g. AnalogSignal)
-        for i, rate in enumerate(fir_rates):
+        for i, rate in enumerate(fir_rates_x):
             if len(rate.shape) == 2:
-                fir_rates[i] = rate.reshape((-1,))
+                fir_rates_x[i] = rate.reshape((-1,))
             elif len(rate.shape) > 2:
                 raise ValueError(
                     'elements in fir_rates have too many dimensions')
@@ -1013,21 +1059,56 @@ def probability_matrix_analytical(
         if verbose is True:
             print('create time slices of the rates...')
 
-        # Define the rate by time slices
-        fir_rate_x = [_time_slice(signal, bsts_x.t_start, bsts_x.t_stop)
-                      for signal in fir_rates]
-        fir_rate_y = [_time_slice(signal, bsts_y.t_start, bsts_y.t_stop)
-                      for signal in fir_rates]
-        # Interpolate in the time bins and convert to Quantities
+        # Interpolate in the time bins
         times_x = bsts_x.bin_edges[:-1]
-        times_y = bsts_y.bin_edges[:-1]
         fir_rate_x = pq.Hz * np.vstack([_analog_signal_step_interp(
-            signal, times_x).rescale('Hz').magnitude for signal in fir_rates])
-        fir_rate_y = pq.Hz * np.vstack([_analog_signal_step_interp(
-            signal, times_y).rescale('Hz').magnitude for signal in fir_rates])
+            signal, times_x).rescale('Hz').magnitude for signal in fir_rates_x])
 
     else:
-        raise ValueError('fir_rates must be a list or the string "estimate"')
+        raise ValueError('fir_rates_x must be a list or the string "estimate"')
+
+    if fir_rates_y == 'estimate':
+        if verbose is True:
+            print('compute rates by boxcar-kernel convolution...')
+
+        # Create the boxcar kernel and convolve it with the binned spike trains
+        k = int((kernel_width / binsize).rescale(pq.dimensionless))
+        kernel = np.ones(k) * 1. / k
+        fir_rate_y = np.vstack([np.convolve(bst, kernel, mode='same')
+                                for bst in bsts_y_matrix])
+
+        # The convolution results in an array decreasing at the borders due
+        # to absence of spikes beyond the borders. Replace the first and last
+        # (k//2) elements with the (k//2)-th / (n-k//2)-th ones, respectively
+        k2 = k // 2
+        for i in _xrange(fir_rate_y.shape[0]):
+            fir_rate_y[i, :k2] = fir_rate_y[i, k2]
+            fir_rate_y[i, -k2:] = fir_rate_y[i, -k2 - 1]
+
+        # Multiply the firing rates by the proper unit
+        fir_rate_y = fir_rate_y * (1. / binsize).rescale('Hz')
+
+    # If rates provided as lists of AnalogSignals, create time slices for both
+    # axes, interpolate in the time bins of interest and convert to Quantity
+    elif isinstance(fir_rates_y, list):
+        # Reshape all rates to one-dimensional array object (e.g. AnalogSignal)
+        for i, rate in enumerate(fir_rates_y):
+            if len(rate.shape) == 2:
+                fir_rates_y[i] = rate.reshape((-1,))
+            elif len(rate.shape) > 2:
+                raise ValueError(
+                    'elements in fir_rates_y have too many dimensions')
+
+        if verbose is True:
+            print('create time slices of the rates...')
+
+        # Interpolate in the time bins
+        times_y = bsts_y.bin_edges[:-1]
+        fir_rate_y = pq.Hz * np.vstack([_analog_signal_step_interp(
+            signal, times_y).rescale('Hz').magnitude for signal in fir_rates_y])
+
+    else:
+        raise ValueError('fir_rates_y must be a list or the string "estimate"')
 
     # For each neuron, compute the prob. that that neuron spikes in any bin
     if verbose is True:
@@ -1055,13 +1136,25 @@ def probability_matrix_analytical(
 
     # Compute the probability matrix obtained from imat using the Poisson pdfs
     imat, xx, yy = intersection_matrix(
-        spiketrains, binsize=binsize, dt=dt, t_start_x=t_start_x,
-        t_start_y=t_start_y)
+        spiketrains, spiketrains_y=spiketrains_y, binsize=binsize, t_start_x=t_start_x,
+        t_start_y=t_start_y, t_stop_x=t_stop_x, t_stop_y=t_stop_y)
 
     pmat = np.zeros(imat.shape)
-    for i in range(imat.shape[0]):
-        for j in range(imat.shape[1]):
+
+    if mpi_accelerated:
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+
+    for i in _xrange(imat.shape[0]):
+        if mpi_accelerated and i % size != rank:
+            continue
+        for j in _xrange(imat.shape[1]):
             pmat[i, j] = scipy.stats.poisson.cdf(imat[i, j] - 1, Mu[i, j])
+
+    if mpi_accelerated:
+        for i in _xrange(imat.shape[0]):
+            pmat[i] = comm.bcast(pmat[i], root=i % size)
 
     # Substitute 0.5 to the elements along the main diagonal
     diag_id, elems = _reference_diagonal(xx, yy)
@@ -1071,11 +1164,20 @@ def probability_matrix_analytical(
         for elem in elems:
             pmat[elem[0], elem[1]] = 0.5
 
+    if return_imat:
+        return imat, pmat, xx, yy
     return pmat, xx, yy
 
 
-def _jsf_uniform_orderstat_3d(u, alpha, n):
-    '''
+def wrong_order(a):
+    for i in range(len(a)-1):
+        if a[i] < a[i+1]:
+            return True
+    return False
+
+
+def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
+    """
     Considered n independent random variables X1, X2, ..., Xn all having
     uniform distribution in the interval (alpha, 1):
 
@@ -1113,12 +1215,13 @@ def _jsf_uniform_orderstat_3d(u, alpha, n):
         probability of the values {u_ijk, k=0,...,d-1}.
         Note: the joint probability matrix computed for the ASSET analysis
         is 1-S.
-    '''
+    """
     d, A, B = u.shape
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
     # used to compute the integral as a sum over several possibilities
-    lists = [range(j, n + 1) for j in range(d, 0, -1)]
+    lists = [_xrange(j, n + 1) for j in _xrange(d, 0, -1)]
+    it_todo = np.prod([n + 1 - j for j in _xrange(d, 0, -1)])
 
     # Compute the log of the integral's coefficient
     logK = np.sum(np.log(np.arange(1, n + 1))) - n * np.log(1 - alpha)
@@ -1126,45 +1229,96 @@ def _jsf_uniform_orderstat_3d(u, alpha, n):
     # Add to the 3D matrix u a bottom layer identically equal to alpha and a
     # top layer identically equal to 1. Then compute the difference dU along
     # the first dimension.
-    u_extended = np.ones((d + 2, A, B))
+    u_extended = np.ones((d + 2, A, B), dtype=np.float32)
     u_extended[0] = u_extended[0] * alpha
     for layer_idx, uu in enumerate(u):
         u_extended[layer_idx + 1] = u[layer_idx]
     dU = np.diff(u_extended, axis=0)  # shape (d+1, A, B)
     del u_extended
 
+    # Log calculation outside of the inner loop
+    dU_log = np.log(dU)
+    dU_scratch = np.empty_like(dU_log)
+    log_point1 = np.log(1.)
+
+    # faster way to fill array
+    dI = np.empty((d + 1, A, B), dtype=np.int)
+
+    if mpi_accelerated:
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+
     # Compute the probabilities at each (a, b), a=0,...,A-1, b=0,...,B-1
     # by matrix algebra, working along the third dimension (axis 0)
-    Ptot = np.zeros((A, B))  # initialize all A x B probabilities to 0
+    Ptot = np.zeros((A, B), dtype=np.float32)  # initialize all A x B probabilities to 0
     iter_id = 0
-    for i in itertools.product(*lists):
+    progress = -1
+    for matrix_entries in itertools.product(*lists):
+        # if we are running with MPI
+        if mpi_accelerated and iter_id % size != rank:
+            iter_id += 1
+            continue
+
+        if mpi_accelerated and verbose:
+            current_progress = (iter_id * 100) // it_todo
+            if current_progress != progress:
+                print('on rank ', rank, ': ', current_progress, '% done')
+                progress = current_progress
+
         iter_id += 1
-        di = -np.diff(np.hstack([n, list(i), 0]))
-        if np.all(di >= 0):
-            dI = di.reshape((-1, 1, 1)) * np.ones((A, B))  # shape (d+1, A, B)
 
-            # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace dU_abk with 1
-            # whenever dI_abk = 0, so that dU_abk ** dI_abk = 1 (this avoids
-            # nans when both dU_abk and dI_abk are 0, and is mathematically
-            # correct). dU2 still contains 0s, so that when below exp(log(U2))
-            # is computed, warnings are arosen; they are no problem though.
-            dU2 = dU.copy()
-            dU2[dI == 0] = 1.
+        # 2. Test for valid pyramid and exit loop early
+        if wrong_order(matrix_entries):
+            continue
 
-            # Compute for each i=0,...,A-1 and j=0,...,B-1: log(I_ij !)
-            # Creates a matrix log_dIfactorial of shape (A, B)
-            log_di_factorial = np.sum([np.log(np.arange(1, di_k + 1)).sum()
-                                       for di_k in di if di_k >= 1])
+        di = -np.diff(np.hstack([n, list(matrix_entries), 0]))
 
-            # Compute for each i,j the contribution to the total
-            # probability given by this step, and add it to the total prob.
-            logP = (dI * np.log(dU2)).sum(axis=0) - log_di_factorial
-            Ptot += np.exp(logP + logK)
+        # 3. faster way to reshape the matrix for usage
+        for idx in range(len(di)):
+            dI[idx, :, :].fill(di[idx])
+
+        # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace dU_abk with 1
+        # whenever dI_abk = 0, so that dU_abk ** dI_abk = 1 (this avoids
+        # nans when both dU_abk and dI_abk are 0, and is mathematically
+        # correct). dU2 still contains 0s, so that when below exp(log(U2))
+        # is computed, warnings are arosen; they are no problem though.
+
+        # Compute for each i=0,...,A-1 and j=0,...,B-1: log(I_ij !)
+        # Creates a matrix log_dIfactorial of shape (A, B)
+        log_di_factorial = np.sum([np.log(np.arange(1, di_k + 1)).sum()
+                                   for di_k in di if di_k >= 1])
+        # Compute for each i,j the contribution to the total
+        # probability given by this step, and add it to the total prob.
+
+        # Use precomputed log
+        np.copyto(dU_scratch, dU_log)
+        dU_scratch[dI == 0] = log_point1
+
+        log_DU2 = dU_scratch
+        prod_DU2 = dI * log_DU2
+        sum_DU2 = prod_DU2.sum(axis=0)
+        logP = sum_DU2 - log_di_factorial
+
+        Ptot += np.exp(logP + logK)
+
+    if mpi_accelerated:
+        totals = np.zeros((A, B)).astype(np.float32)
+
+        # exchange all the results
+        comm.Allreduce(
+            [Ptot, MPI.FLOAT],
+            [totals, MPI.FLOAT],
+            op=MPI.SUM)
+
+        # We need to return the collected totals instead of the local Ptot
+        return totals
+
     return Ptot
 
 
 def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
-    '''
+    """
     Build the 3D matrix L of largest neighbors of elements in a 2D matrix mat.
 
     For each entry mat[i, j], collects the nr_largest elements with largest
@@ -1201,12 +1355,13 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
         a matrix of shape (nr_largest, l, w) containing along the first
         dimension lmat[:, i, j] the largest neighbors of mat[i, j]
 
-    '''
+    """
     l, w = filter_shape
     d = l if nr_largest is None else nr_largest
 
     # Check consistent arguments
-    assert mat.shape[0] == mat.shape[1], 'mat must be a square matrix'
+    # TODO: generalise this for non-square matrices
+    # assert mat.shape[0] == mat.shape[1], 'mat must be a square matrix'
     assert diag == 0 or diag == 1, \
         'diag must be 0 (45 degree filtering) or 1 (135 degree filtering)'
     assert w < l, 'w must be lower than l'
@@ -1226,28 +1381,34 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     lmat = np.zeros((d, mat.shape[0], mat.shape[1]), dtype=np.float32)
 
     # TODO: make this on a 3D matrix to parallelize...
-    N_bin = mat.shape[0]
-    bin_range = range(N_bin - l + 1)
+    N_bin_y = mat.shape[0]
+    N_bin_x = mat.shape[1]
+    bin_range_y = _xrange(N_bin_y - l + 1)
+    bin_range_x = _xrange(N_bin_x - l + 1)
 
     # Compute fmat
     try:  # try by stacking the different patches of each row of mat
+        print('pmat neighbours fast version')
         flattened_filt = filt.flatten()
-        for y in bin_range:
+        for y in bin_range_y:
             # creates a 2D matrix of shape (N_bin-l+1, l**2), where each row
             # is a flattened patch (length l**2) from the y-th row of mat
-            row_patches = np.zeros((len(bin_range), l ** 2))
-            for x in bin_range:
+            row_patches = np.zeros((len(bin_range_x), l ** 2))
+            for x in bin_range_x:
                 row_patches[x, :] = (mat[y:y + l, x:x + l]).flatten()
+
             # take the l largest values in each row (patch) and assign them
             # to the corresponding row in lmat
             largest_vals = np.sort(
                 row_patches * flattened_filt, axis=1)[:, -d:]
+
             lmat[:, y + (l // 2),
-                 (l // 2): (l // 2) + N_bin - l + 1] = largest_vals.T
+            (l // 2): (l // 2) + N_bin_x - l + 1] = largest_vals.T
 
     except MemoryError:  # if too large, do it serially by for loops
-        for y in bin_range:  # one step to the right;
-            for x in bin_range:  # one step down
+        print('pmat neighbours slow version due to memory error')
+        for y in bin_range_y:  # one step to the right;
+            for x in bin_range_x:  # one step down
                 patch = mat[y: y + l, x: x + l]
                 mskd = np.multiply(filt, patch)
                 largest_vals = np.sort(d, mskd.flatten())[-d:]
@@ -1257,8 +1418,8 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
 
 
 def joint_probability_matrix(
-        pmat, filter_shape, nr_largest=None, alpha=0, pvmin=1e-5):
-    '''
+        pmat, filter_shape, nr_largest=None, alpha=0, pvmin=1e-5, verbose=False):
+    """
     Map a probability matrix pmat to a joint probability matrix jmat, where
     jmat[i, j] is the joint p-value of the largest neighbors of pmat[i, j].
 
@@ -1311,23 +1472,26 @@ def joint_probability_matrix(
     >>> pmat = probability_matrix_analytical(sts, binsize, dt=T)
     >>> jmat = joint_probability_matrix(pmat, filter_shape=(fl, fw))
 
-    '''
+    """
+    # TODO: maybe check if pmat is symmetrical and then only do this on one half?
+
     # Find for each P_ij in the probability matrix its neighbors and maximize
     # them by the maximum value 1-pvmin
     pmat_neighb = _pmat_neighbors(
         pmat, filter_shape=filter_shape, nr_largest=nr_largest, diag=0)
+
     pmat_neighb = np.minimum(pmat_neighb, 1. - pvmin)
 
     # Compute the joint p-value matrix jpvmat
     l, w = filter_shape
     n = l * (1 + 2 * w) - w * (w + 1)  # number of entries covered by kernel
-    jpvmat = _jsf_uniform_orderstat_3d(pmat_neighb, alpha, n)
+    jpvmat = _jsf_uniform_orderstat_3d(pmat_neighb, alpha, n, verbose=verbose)
 
     return 1. - jpvmat
 
 
-def extract_sse(spiketrains, x_edges, y_edges, cmat, ids=None):
-    '''
+def extract_sse(spiketrains, x_edges, y_edges, cmat, spiketrains_y=None, ids=None):
+    """
     Given a list of spike trains, two arrays of bin edges and a clustered
     intersection matrix obtained from those spike trains via worms analysis
     using the specified edges, extracts the sequences of synchronous events
@@ -1371,22 +1535,25 @@ def extract_sse(spiketrains, x_edges, y_edges, cmat, ids=None):
         therefore belong to the same cluster), and the values Sk are sets of
         neuron ids representing a repeated synchronous event (i.e. spiking
         at time bins i and j).
-    '''
+    """
+
+    if spiketrains_y is None:
+        spiketrains_y = spiketrains
 
     nr_worms = cmat.max()  # number of different clusters ("worms") in cmat
     if nr_worms <= 0:
         return {}
 
     # Compute the transactions associated to the two binnings
-    binsize_x = x_edges[1] - x_edges[0]
+    binsize_x = (x_edges[-1] - x_edges[0]) / (len(x_edges) - 1)
     t_start_x, t_stop_x = x_edges[0], x_edges[-1]
     tracts_x = _transactions(
         spiketrains, binsize=binsize_x, t_start=t_start_x, t_stop=t_stop_x,
         ids=ids)
-    binsize_y = y_edges[1] - y_edges[0]
+    binsize_y = (y_edges[-1] - y_edges[0]) / (len(y_edges) - 1)
     t_start_y, t_stop_y = y_edges[0], y_edges[-1]
     tracts_y = _transactions(
-        spiketrains, binsize=binsize_y, t_start=t_start_y, t_stop=t_stop_y,
+        spiketrains_y, binsize=binsize_y, t_start=t_start_y, t_stop=t_stop_y,
         ids=ids)
 
     # Find the reference diagonal, whose elements correspond to same time bins
@@ -1394,7 +1561,91 @@ def extract_sse(spiketrains, x_edges, y_edges, cmat, ids=None):
 
     # Reconstruct each worm, link by link
     sse_dict = {}
-    for k in range(1, nr_worms + 1):  # for each worm
+    for k in _xrange(1, nr_worms + 1):  # for each worm
+        worm_k = {}  # worm k is a list of links (each link will be 1 sublist)
+        pos_worm_k = np.array(np.where(cmat == k)).T  # position of all links
+        # if no link lies on the reference diagonal
+        if all([y - x != diag_id for (x, y) in pos_worm_k]):
+            for l, (bin_x, bin_y) in enumerate(pos_worm_k):  # for each link
+                link_l = set(tracts_x[bin_x]).intersection(
+                    tracts_y[bin_y])  # reconstruct the link
+                worm_k[(bin_x, bin_y)] = link_l  # and assign it to its pixel
+            sse_dict[k] = worm_k
+
+    return sse_dict
+
+
+def extract_sse_fix_bins(spiketrains, binsize, cmat, spiketrains_y=None, ids=None):
+    """
+    Given a list of spike trains, two arrays of bin edges and a clustered
+    intersection matrix obtained from those spike trains via worms analysis
+    using the specified edges, extracts the sequences of synchronous events
+    (SSEs) corresponding to clustered elements in the cluster matrix.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrain
+        the spike trains analyzed for repeated sequences of synchronous
+        events.
+    binsize : quantities.Quantity
+        the binsize used in the computation of cmat
+    cmat: numpy.ndarray
+        matrix of shape (n, n), where n is the length of x_edges and
+        y_edges, representing the cluster matrix in worms analysis
+        (see: cluster_matrix_entries())
+    ids : list or None, optional
+        a list of spike train IDs. If provided, ids[i] is the identity
+        of spiketrains[i]. If None, the IDs 0,1,...,n-1 are used
+        Default: None
+
+    Returns
+    -------
+    sse : dict
+        a dictionary D of SSEs, where each SSE is a sub-dictionary Dk,
+        k=1,...,K, where K is the max positive integer in cmat (the
+        total number of clusters in cmat):
+
+        .. centered:: D = {1: D1, 2: D2, ..., K: DK}
+
+        Each sub-dictionary Dk represents the k-th diagonal structure
+        (i.e. the k-th cluster) in cmat, and is of the form
+
+        .. centered:: Dk = {(i1, j1): S1, (i2, j2): S2, ..., (iL, jL): SL}.
+
+        The keys (i, j) represent the positions (time bin ids) of all
+        elements in cmat that compose the SSE, i.e. that take value l (and
+        therefore belong to the same cluster), and the values Sk are sets of
+        neuron ids representing a repeated synchronous event (i.e. spiking
+        at time bins i and j).
+    """
+
+    nr_worms = cmat.max()  # number of different clusters ("worms") in cmat
+    if nr_worms <= 0:
+        return {}
+
+    # TODO: this diag_id calculation is hacky and breaks down for partial x-y-overlap
+
+    if spiketrains_y is None:
+        spiketrains_y = spiketrains
+        diag_id = 0
+    else:
+        diag_id = None
+
+    # Compute the transactions associated to the two binnings
+    t_start_x = _signals_same_tstart(spiketrains)
+    t_stop_x = _signals_same_tstop(spiketrains)
+    tracts_x = _transactions(
+        spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x,
+        ids=ids)
+    t_start_y = _signals_same_tstart(spiketrains_y)
+    t_stop_y = _signals_same_tstop(spiketrains_y)
+    tracts_y = _transactions(
+        spiketrains_y, binsize=binsize, t_start=t_start_y, t_stop=t_stop_y,
+        ids=ids)
+
+    # Reconstruct each worm, link by link
+    sse_dict = {}
+    for k in _xrange(1, nr_worms + 1):  # for each worm
         worm_k = {}  # worm k is a list of links (each link will be 1 sublist)
         pos_worm_k = np.array(np.where(cmat == k)).T  # position of all links
         # if no link lies on the reference diagonal
@@ -1409,7 +1660,7 @@ def extract_sse(spiketrains, x_edges, y_edges, cmat, ids=None):
 
 
 def sse_intersection(sse1, sse2, intersection='linkwise'):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of positions (iK, jK) of matrix entries and
     associated synchronous events SK, finds the intersection among them.
@@ -1447,7 +1698,7 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
         events of sse1 associated to keys present both in sse1 and sse2.
         If intersection = 'linkwise', such events are additionally
         intersected with the associated events in sse2 (see above).
-    '''
+    """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
         if pixel1 not in sse2.keys():
@@ -1469,7 +1720,7 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
 
 
 def sse_difference(sse1, sse2, difference='linkwise'):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
     (see below), computes the difference between sse1 and sse2.
@@ -1509,7 +1760,7 @@ def sse_difference(sse1, sse2, difference='linkwise'):
     sse : dict
         a new SSE (same structure as sse1 and sse2) which retains the
         difference between sse1 and sse2 (see above).
-    '''
+    """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
         if pixel1 in sse2.keys():
@@ -1528,7 +1779,7 @@ def sse_difference(sse1, sse2, difference='linkwise'):
 
 
 def _remove_empty_events(sse):
-    '''
+    """
     Given a sequence of synchronous events (SSE) sse consisting of a pool of
     pixel positions and associated synchronous events (see below), returns a
     copy of sse where all empty events have been removed.
@@ -1550,7 +1801,7 @@ def _remove_empty_events(sse):
     -------
     sse_new : dict
         a copy of sse where all empty events have been removed.
-    '''
+    """
     sse_new = sse.copy()
     for pixel, link in sse.items():
         if link == set([]):
@@ -1560,7 +1811,7 @@ def _remove_empty_events(sse):
 
 
 def sse_isequal(sse1, sse2):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
     (see below), determines whether sse1 is strictly contained in sse2.
@@ -1587,7 +1838,7 @@ def sse_isequal(sse1, sse2):
     is_equal : bool
         returns True if sse1 is identical to sse2
 
-    '''
+    """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
     sse22 = _remove_empty_events(sse2)
@@ -1597,7 +1848,7 @@ def sse_isequal(sse1, sse2):
 
 
 def sse_isdisjoint(sse1, sse2):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
     (see below), determines whether sse1 and sse2 are disjoint.
@@ -1622,7 +1873,7 @@ def sse_isdisjoint(sse1, sse2):
     is_disjoint : bool
         returns True if sse1 is disjoint from sse2.
 
-    '''
+    """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
     sse22 = _remove_empty_events(sse2)
@@ -1641,7 +1892,7 @@ def sse_isdisjoint(sse1, sse2):
 
 
 def sse_issub(sse1, sse2):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
     (see below), determines whether sse1 is strictly contained in sse2.
@@ -1653,6 +1904,7 @@ def sse_issub(sse1, sse2):
     Both sse1 and sse2 must be provided as dictionaries of the type
             {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
     where each i, j is an integer and each S is a set of neuron ids.
+    (See also: extract_sse() that extracts SSEs from given spiketrains).
 
     Parameters
     ----------
@@ -1665,11 +1917,7 @@ def sse_issub(sse1, sse2):
     is_sub : bool
         returns True if sse1 is a subset of sse2
 
-    See Also
-    -------
-    extract_sse : extracts SSEs from given spiketrains
-
-    '''
+    """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
     sse22 = _remove_empty_events(sse2)
@@ -1693,7 +1941,7 @@ def sse_issub(sse1, sse2):
 
 
 def sse_issuper(sse1, sse2):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
     (see below), determines whether sse1 strictly contains sse2.
@@ -1719,12 +1967,12 @@ def sse_issuper(sse1, sse2):
     is_super : bool
         returns True if sse1 strictly contains sse2.
 
-    '''
+    """
     return sse_issub(sse2, sse1)
 
 
 def sse_overlap(sse1, sse2):
-    '''
+    """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
     (see below), determines whether sse1 strictly contains sse2.
@@ -1750,6 +1998,7 @@ def sse_overlap(sse1, sse2):
     is_super : bool
         returns True if sse1 strictly contains sse2.
 
-    '''
+    """
     return not (sse_issub(sse1, sse2) or sse_issuper(sse1, sse2) or
                 sse_isequal(sse1, sse2) or sse_isdisjoint(sse1, sse2))
+
