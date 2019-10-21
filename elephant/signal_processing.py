@@ -126,6 +126,8 @@ def zscore(signal, inplace=True):
             sig_normalized = sig
         else:
             sig_normalized = sig.duplicate_with_new_data(sig_normalized)
+            # todo use flag once is fixed
+            #      https://github.com/NeuralEnsemble/python-neo/issues/752
             sig_normalized.array_annotate(**sig.array_annotations)
         sig_dimless = sig_normalized / sig.units
         result.append(sig_dimless)
@@ -396,6 +398,8 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
     if isinstance(signal, neo.AnalogSignal):
         filtered_data = np.rollaxis(filtered_data, -1, 0)
         signal_out = signal.duplicate_with_new_data(filtered_data)
+        # todo use flag once is fixed
+        #      https://github.com/NeuralEnsemble/python-neo/issues/752
         signal_out.array_annotate(**signal.array_annotations)
         return signal_out
     elif isinstance(signal, pq.quantity.Quantity):
@@ -631,6 +635,8 @@ def hilbert(signal, N='nextpow'):
 
     output = signal.duplicate_with_new_data(
         scipy.signal.hilbert(signal.magnitude, N=n, axis=0)[:n_org])
+    # todo use flag once is fixed
+    #      https://github.com/NeuralEnsemble/python-neo/issues/752
     output.array_annotate(**signal.array_annotations)
     return output / output.units
 

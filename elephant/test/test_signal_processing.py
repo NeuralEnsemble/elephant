@@ -195,6 +195,15 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is untouched
         self.assertEqual(signal[0, 0].magnitude, self.test_seq1[0])
 
+    def test_zscore_array_annotations(self):
+        signal = neo.AnalogSignal(
+            self.test_seq1, units='mV',
+            t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz,
+            array_annotations=dict(valid=True, my_list=[0]))
+        zscored = elephant.signal_processing.zscore(signal, inplace=False)
+        self.assertDictEqual(signal.array_annotations,
+                             zscored.array_annotations)
+
     def test_zscore_single_multidim_inplace(self):
         """
         Test z-score on a single AnalogSignal with multiple dimensions, asking
@@ -391,7 +400,8 @@ class ButterTestCase(unittest.TestCase):
         # generate white noise AnalogSignal
         noise = neo.AnalogSignal(
             np.random.normal(size=5000),
-            sampling_rate=1000 * pq.Hz, units='mV')
+            sampling_rate=1000 * pq.Hz, units='mV',
+            array_annotations=dict(valid=True, my_list=[0]))
 
         kwds = {'signal': noise, 'highpass_freq': 250.0 * pq.Hz,
                 'lowpass_freq': None, 'filter_function': 'filtfilt'}
@@ -411,6 +421,10 @@ class ButterTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(psd_filtfilt[0, 0], psd_lfilter[0, 0])
         self.assertAlmostEqual(psd_filtfilt[0, 0], psd_sosfiltfilt[0, 0])
+
+        # Test if array_annotations are preserved
+        self.assertDictEqual(noise.array_annotations,
+                             filtered_noise.array_annotations)
 
     def test_butter_invalid_filter_function(self):
         # generate a dummy AnalogSignal
@@ -521,11 +535,13 @@ class HilbertTestCase(unittest.TestCase):
             self.amplitude[:, 2] * np.cos(self.phase[:, 2]),
             self.amplitude[:, 3] * np.cos(self.phase[:, 3])])
 
+        array_annotations = dict(my_list=np.arange(sigs.shape[0]))
         self.long_signals = neo.AnalogSignal(
             sigs.T, units='mV',
             t_start=0. * pq.ms,
             sampling_rate=(len(time) / (time[-1] - time[0])).rescale(pq.Hz),
-            dtype=float)
+            dtype=float,
+            array_annotations=array_annotations)
 
         # Generate test data covering a single oscillation cycle in 1s only
         phases = np.arange(0, 2 * np.pi, np.pi / 256)
@@ -563,6 +579,14 @@ class HilbertTestCase(unittest.TestCase):
             self.long_signals, N=16384)
         self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
+
+    def test_hilbert_array_annotations(self):
+        output = elephant.signal_processing.hilbert(self.long_signals,
+                                                    N='nextpow')
+        # Test if array_annotations are preserved
+        self.assertSetEqual(set(output.array_annotations.keys()), {"my_list"})
+        assert_array_equal(output.array_annotations['my_list'],
+                           self.long_signals.array_annotations['my_list'])
 
     def test_hilbert_theoretical_long_signals(self):
         """
