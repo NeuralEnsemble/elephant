@@ -19,15 +19,16 @@ def covariance(binned_sts, binary=False):
 
     For each pair of spike trains :math:`(i,j)`, the covariance :math:`C[i,j]`
     is obtained by binning :math:`i` and :math:`j` at the desired bin size. Let
-    :math:`b_i` and :math:`b_j` denote the binary vectors and :math:`m_i` and
-    :math:`m_j` their respective averages. Then
+    :math:`b_i` and :math:`b_j` denote the binned spike trains and :math:`m_i`
+    and :math:`m_j` their respective averages. Then
 
     .. math::
          C[i,j] = <b_i-m_i, b_j-m_j> / (l-1)
 
-    where <..,.> is the scalar product of two vectors.
+    where <..,.> is the scalar product of two vectors and :math:`l` is the
+    number of bins.
 
-    For an input of n spike trains, a n x n matrix is returned containing the
+    For an input of n spike trains, an n x n matrix is returned containing the
     covariances for each combination of input spike trains.
 
     If binary is True, the binned spike trains are clipped to 0 or 1 before
@@ -39,7 +40,7 @@ def covariance(binned_sts, binary=False):
     binned_sts : elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
-        If True, two spikes of a particular spike train falling in the same bin
+        If True, the spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False
@@ -84,8 +85,8 @@ def corrcoef(binned_sts, binary=False):
 
     For each pair of spike trains :math:`(i,j)`, the correlation coefficient
     :math:`C[i,j]` is obtained by binning :math:`i` and :math:`j` at the
-    desired bin size. Let :math:`b_i` and :math:`b_j` denote the binary vectors
-    and :math:`m_i` and :math:`m_j` their respective averages. Then
+    desired bin size. Let :math:`b_i` and :math:`b_j` denote the binned spike
+    trains and :math:`m_i` and :math:`m_j` their respective averages. Then
 
     .. math::
          C[i,j] = <b_i-m_i, b_j-m_j> /
@@ -93,7 +94,7 @@ def corrcoef(binned_sts, binary=False):
 
     where <..,.> is the scalar product of two vectors.
 
-    For an input of n spike trains, a n x n matrix is returned.
+    For an input of n spike trains, an n x n matrix is returned.
     Each entry in the matrix is a real number ranging between -1 (perfectly
     anti-correlated spike trains) and +1 (perfectly correlated spike trains).
     However, if k-th spike train is empty, k-th row and k-th column of the
@@ -141,7 +142,7 @@ def corrcoef(binned_sts, binary=False):
     The correlation coefficient between the spike trains is stored in
     cc_matrix[0,1] (or cc_matrix[1,0]).
 
-    
+
 
     Notes
     -----
