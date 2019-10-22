@@ -19,13 +19,14 @@ def covariance(binned_sts, binary=False):
 
     For each pair of spike trains :math:`(i,j)`, the covariance :math:`C[i,j]`
     is obtained by binning :math:`i` and :math:`j` at the desired bin size. Let
-    :math:`b_i` and :math:`b_j` denote the binned spike trains and :math:`m_i` and
-    :math:`m_j` their respective averages. Then
+    :math:`b_i` and :math:`b_j` denote the binned spike trains and :math:`m_i`
+    and :math:`m_j` their respective averages. Then
 
     .. math::
          C[i,j] = <b_i-m_i, b_j-m_j> / (l-1)
 
-    where <..,.> is the scalar product of two vectors and :math:`l` is the number of bins.
+    where <..,.> is the scalar product of two vectors and :math:`l` is the
+    number of bins.
 
     For an input of n spike trains, an n x n matrix is returned containing the
     covariances for each combination of input spike trains.
@@ -84,8 +85,8 @@ def corrcoef(binned_sts, binary=False):
 
     For each pair of spike trains :math:`(i,j)`, the correlation coefficient
     :math:`C[i,j]` is obtained by binning :math:`i` and :math:`j` at the
-    desired bin size. Let :math:`b_i` and :math:`b_j` denote the binned spike trains
-    and :math:`m_i` and :math:`m_j` their respective averages. Then
+    desired bin size. Let :math:`b_i` and :math:`b_j` denote the binned spike
+    trains and :math:`m_i` and :math:`m_j` their respective averages. Then
 
     .. math::
          C[i,j] = <b_i-m_i, b_j-m_j> /
