@@ -15,7 +15,7 @@ import unittest
 import neo
 import numpy as np
 import quantities as pq
-from neo.rawio.tests.tools import create_local_temp_dir
+from neo.test.rawiotest.tools import create_local_temp_dir
 from numpy.testing import assert_array_equal
 
 try:
