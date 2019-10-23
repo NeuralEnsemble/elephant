@@ -12,11 +12,13 @@ An example is the representation of a spike train as a sequence of 0-1 values
 
 from __future__ import division, print_function
 
+import warnings
+
 import neo
-import scipy
-import scipy.sparse as sps
 import numpy as np
 import quantities as pq
+import scipy
+import scipy.sparse as sps
 
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
@@ -437,6 +439,12 @@ class BinnedSpikeTrain(object):
                                 self.t_start, self.t_stop)
         # Now create sparse matrix
         self._convert_to_binned(spiketrains)
+
+        n_spikes = sum(map(len, spiketrains))
+        n_spikes_binned = sum(map(len, self.spike_indices))
+        if n_spikes != n_spikes_binned:
+            warnings.warn("Binning discarded {n} last spike(s) in the input "
+                          "spiketrain.".format(n=n_spikes - n_spikes_binned))
 
     # =========================================================================
     # There are four cases the given parameters must fulfill
