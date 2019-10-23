@@ -11,6 +11,12 @@ import elephant.spike_train_surrogates as surr
 import numpy as np
 import quantities as pq
 import neo
+try:
+    from elephant.joint_isi_dithering_class import Joint_ISI_Space
+except:
+    sys.path.insert(0,'.')
+    sys.path.insert(0,'..')
+    from joint_isi_dithering_class import Joint_ISI_Space
 
 np.random.seed(0)
 
@@ -309,6 +315,31 @@ class SurrogatesTestCase(unittest.TestCase):
             self.assertEqual(len(surrog), len(st))
         self.assertTrue(len(surrs2) == nr_surr2)
 
+    def test_joint_isi_dithering_format(self):
+
+        rate = 100.*pq.Hz
+        t_stop = 1.*pq.s
+        st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
+        n_surr = 2
+        dither = 10 * pq.ms
+        surrs = Joint_ISI_Space(st, n_surr=n_surr).dithering()
+
+        self.assertIsInstance(surrs, list)
+        self.assertEqual(len(surrs), n_surr)
+
+        for surrog in surrs:
+            self.assertIsInstance(surrog, neo.SpikeTrain)
+            self.assertEqual(surrog.units, st.units)
+            self.assertEqual(surrog.t_start, st.t_start)
+            self.assertEqual(surrog.t_stop, st.t_stop)
+            self.assertEqual(len(surrog), len(st))
+
+    def test_joint_isi_dithering_empty_train(self):
+
+        st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+
+        surrog = Joint_ISI_Space(st).dithering()[0]
+        self.assertEqual(len(surrog), 0)
 
 def suite():
     suite = unittest.makeSuite(SurrogatesTestCase, 'test')

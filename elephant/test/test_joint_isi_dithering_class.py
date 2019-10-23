@@ -11,7 +11,12 @@ import unittest
 import neo
 import numpy as np
 import quantities as pq
-import elephant.joint_isi_dithering as jisid
+try:
+    from elephant.joint_isi_dithering_class import Joint_ISI_Space
+except:
+    sys.path.insert(0,'.')
+    sys.path.insert(0,'..')
+    from joint_isi_dithering_class import Joint_ISI_Space
 import elephant.spike_train_generation as stg
 
 python_version_major = sys.version_info.major
@@ -28,7 +33,7 @@ class JointISITestCase(unittest.TestCase):
         st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
         n_surr = 2
         dither = 10 * pq.ms
-        surrs = jisid.joint_isi_dithering(st, n_surr=n_surr)
+        surrs = Joint_ISI_Space(st, n_surr=n_surr).dithering()
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
@@ -44,7 +49,7 @@ class JointISITestCase(unittest.TestCase):
 
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = jisid.joint_isi_dithering(st, n_surr=1)[0]
+        surrog = Joint_ISI_Space(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
 
 
