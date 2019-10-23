@@ -49,6 +49,7 @@ except ImportError:
     from .statistics import isi  # Convenience when in elephant working dir.
 from elephant.joint_isi_dithering_class import Joint_ISI_Space
 
+
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     """
     Generates surrogates of a spike train by spike dithering.
@@ -104,7 +105,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         818.84446913]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
         786.1807108 ]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print dither_spikes(st, dither = 20*pq.ms, decimals=0)   # doctest: +SKIP
+    >>> print dither_spikes(st, dither = 20*pq.ms,
+                            decimals=0)   # doctest: +SKIP
     [<SpikeTrain(array([  81.,  242.,  595.,  799.]) * ms,
         [0.0 ms, 1000.0 ms])>]
     """
@@ -123,12 +125,12 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         # Move all spikes outside [spiketrain.t_start, spiketrain.t_stop] to
         # the range's ends
         surr = np.minimum(np.maximum(surr.simplified.magnitude,
-            spiketrain.t_start.simplified.magnitude),
-            spiketrain.t_stop.simplified.magnitude) * pq.s
+                                     spiketrain.t_start.simplified.magnitude),
+                          spiketrain.t_stop.simplified.magnitude) * pq.s
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-                        spiketrain.t_stop.simplified.magnitude
+            spiketrain.t_stop.simplified.magnitude
         surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
                 for s in surr.simplified.magnitude]
 
@@ -198,7 +200,8 @@ def randomise_spikes(spiketrain, n=1, decimals=None):
         sts = sts.round(decimals)
 
     # Convert the Quantity array to a list of SpikeTrains, and return them
-    return [neo.SpikeTrain(np.sort(st), t_start=spiketrain.t_start, t_stop=spiketrain.t_stop)
+    return [neo.SpikeTrain(np.sort(st), t_start=spiketrain.t_start,
+                           t_stop=spiketrain.t_stop)
             for st in sts]
 
 
@@ -331,7 +334,8 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
         792.89084054]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
         784.61079043]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print dither_spike_train(st, shift = 20*pq.ms, decimals=0)   # doctest: +SKIP
+    >>> print dither_spike_train(st, shift = 20*pq.ms,
+                                 decimals=0)   # doctest: +SKIP
     [<SpikeTrain(array([  82.,  232.,  582.,  782.]) * ms,
         [0.0 ms, 1000.0 ms])>]
     """
@@ -351,12 +355,12 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
         # Move all spikes outside [spiketrain.t_start, spiketrain.t_stop] to
         # the range's ends
         surr = np.minimum(np.maximum(surr.simplified.magnitude,
-            spiketrain.t_start.simplified.magnitude),
-            spiketrain.t_stop.simplified.magnitude) * pq.s
+                                     spiketrain.t_start.simplified.magnitude),
+                          spiketrain.t_stop.simplified.magnitude) * pq.s
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-                        spiketrain.t_stop.simplified.magnitude
+            spiketrain.t_stop.simplified.magnitude
         surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
                 for s in surr.simplified.magnitude]
 
@@ -455,21 +459,21 @@ def jitter_spikes(spiketrain, binsize, n=1):
 
 
 def joint_isi_dithering(spiketrain,
-    n=1,
-    dither=15.*pq.ms,
-    unit=pq.s,
-    window_length=120.*pq.ms,
-    num_bins=120,
-    sigma=1.*pq.ms,
-    isi_median_threshold=30*pq.ms,
-    alternate=True,
-    show_plot=False,
-    print_mode=False,
-    use_sqrt=False,
-    method='fast',
-    cutoff=True,
-    min_spikes=10
-    ):
+                        n=1,
+                        dither=15.*pq.ms,
+                        unit=pq.s,
+                        window_length=120.*pq.ms,
+                        num_bins=120,
+                        sigma=1.*pq.ms,
+                        isi_median_threshold=30*pq.ms,
+                        alternate=True,
+                        show_plot=False,
+                        print_mode=False,
+                        use_sqrt=False,
+                        method='fast',
+                        cutoff=True,
+                        min_spikes=10
+                        ):
     '''
     Implementation of Joint-ISI-dithering for spiketrains that pass the
     threshold of the dense rate, if not a uniform dithered spiketrain is
@@ -562,26 +566,26 @@ def joint_isi_dithering(spiketrain,
         used.
     '''
     return Joint_ISI_Space(st,
-        n_surr=n,
-        dither=dither,
-        unit=unit,
-        window_length=window_length,
-        num_bins=num_bins,
-        sigma=sigma,
-        isi_median_threshold=isi_median_threshold,
-        alternate=alternate,
-        show_plot=show_plot,
-        print_mode=print_mode,
-        use_sqrt=use_sqrt,
-        method=method,
-        cutoff=cutoff,
-        min_spikes=min_spikes
-        ).dithering()
+                           n_surr=n,
+                           dither=dither,
+                           unit=unit,
+                           window_length=window_length,
+                           num_bins=num_bins,
+                           sigma=sigma,
+                           isi_median_threshold=isi_median_threshold,
+                           alternate=alternate,
+                           show_plot=show_plot,
+                           print_mode=print_mode,
+                           use_sqrt=use_sqrt,
+                           method=method,
+                           cutoff=cutoff,
+                           min_spikes=min_spikes
+                           ).dithering()
 
 
 def surrogates(
-        spiketrain, n=1, surr_method='dither_spike_train', dt=None, decimals=None,
-        edges=True):
+        spiketrain, n=1, surr_method='dither_spike_train', dt=None,
+        decimals=None, edges=True):
     """
     Generates surrogates of a :attr:`spiketrain` by a desired generation
     method.
@@ -652,5 +656,5 @@ def surrogates(
         return surrogate_types[surr_method](
             spiketrain, n=n, decimals=decimals)
     elif surr_method == 'joint_isi_dithering'
-        return surrogate_types[surr_method](
-            spiketrain, n=n)
+    return surrogate_types[surr_method](
+        spiketrain, n=n)

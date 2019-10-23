@@ -115,6 +115,7 @@ class Joint_ISI_Space:
             'uniform' if the dense_rate was too low and uniform dithering was
              used.
     '''
+
     def __init__(self,
                  st,
                  n_surr=1,
@@ -154,7 +155,6 @@ class Joint_ISI_Space:
 
         self.preprocessing()
 
-
     def preprocessing(self):
         '''
         All preprocessing steps for the joint-ISI dithering are done here.
@@ -187,14 +187,15 @@ class Joint_ISI_Space:
         isi_median = np.median(self.isi)
 
         if isi_median > self.isi_median_threshold.rescale(
-            self.unit).magnitude:
+                self.unit).magnitude:
             self.method = 'uniform'
             return None
 
         if isinstance(self.dither, pq.Quantity):
-            self.dither =  self.dither.rescale(self.unit).magnitude
+            self.dither = self.dither.rescale(self.unit).magnitude
         if isinstance(self.window_length, pq.Quantity):
-            self.window_length = self.window_length.rescale(self.unit).magnitude
+            self.window_length = self.window_length.rescale(
+                self.unit).magnitude
         if isinstance(self.sigma, pq.Quantity):
             self.sigma = self.sigma.rescale(self.unit).magnitude
 
@@ -239,7 +240,7 @@ class Joint_ISI_Space:
             return None
 
         error_message = ('method must can only be \'uniform\' or \'fast\' '
-                        'or \'window\', but not \''+self.method+'\' .')
+                         'or \'window\', but not \''+self.method+'\' .')
         raise ValueError(error_message)
 
     def dithering(self):
@@ -264,12 +265,12 @@ class Joint_ISI_Space:
         if self.method == 'uniform':
             if self.print_mode:
                 return surr.dither_spikes(
-                        self.st, self.dither,
-                        n=self.n_surr), 'uniform'
+                    self.st, self.dither,
+                    n=self.n_surr), 'uniform'
             else:
                 return surr.dither_spikes(
-                        self.st, self.dither,
-                        n=self.n_surr)
+                    self.st, self.dither,
+                    n=self.n_surr)
 
         if self.method == 'fast' or self.method == 'window':
             if self.print_mode:
@@ -278,7 +279,7 @@ class Joint_ISI_Space:
                 return self._dithering_process()
 
         error_message = ('method must can only be \'uniform\' or \'fast\' '
-                        'or \'window\', but not \''+self.method+'\' .')
+                         'or \'window\', but not \''+self.method+'\' .')
         raise ValueError(error_message)
 
     def _get_joint_isi_histogram(self):
@@ -322,7 +323,7 @@ class Joint_ISI_Space:
             plt.show()
         return None
 
-    def _window_diagonal_cumulatives(self,flipped_jisih):
+    def _window_diagonal_cumulatives(self, flipped_jisih):
         self.max_change_index = self.isi_to_index(self.dither)
         self.max_change_isi = self.indices_to_isi[self.max_change_index]
 
@@ -354,8 +355,8 @@ class Joint_ISI_Space:
     def _window_cumulatives(self, flipped_jisih):
         jisih_diag_cums = self._window_diagonal_cumulatives(flipped_jisih)
         jisih_cumulatives = np.zeros(
-                            (self.num_bins, self.num_bins,
-                             2*self.max_change_index+1))
+            (self.num_bins, self.num_bins,
+             2*self.max_change_index+1))
         for back_index in range(self.num_bins):
             for for_index in range(self.num_bins-back_index):
                 double_index = for_index+back_index
@@ -383,7 +384,7 @@ class Joint_ISI_Space:
             dithered_isi = self._get_dithered_isi()
 
             dithered_st = self.first_spike+np.hstack(
-                            (np.array(0.), np.cumsum(dithered_isi)))
+                (np.array(0.), np.cumsum(dithered_isi)))
             dithered_st = neo.SpikeTrain(dithered_st*self.unit,
                                          t_stop=self.t_stop)
             dithered_sts.append(dithered_st)
@@ -398,9 +399,9 @@ class Joint_ISI_Space:
                 for i in range(start, self.number_of_isis-1,
                                self.sampling_rhythm):
                     self._update_dithered_isi_fast(dithered_isi,
-                                                  dithered_isi_indices,
-                                                  random_list[i],
-                                                  i)
+                                                   dithered_isi_indices,
+                                                   random_list[i],
+                                                   i)
         else:
             for start in range(self.sampling_rhythm):
                 dithered_isi_indices = self.isi_to_index(dithered_isi)
@@ -447,9 +448,9 @@ class Joint_ISI_Space:
             if cum_dist_func[-1]:
                 cond = cum_dist_func > random_list[i]
                 new_index = np.where(
-                       cond,
-                       cum_dist_func,
-                       np.inf).argmin()
+                    cond,
+                    cum_dist_func,
+                    np.inf).argmin()
                 step = (self.indices_to_isi[new_index]
                         - self.max_change_isi)
                 dithered_isi[i] += step
