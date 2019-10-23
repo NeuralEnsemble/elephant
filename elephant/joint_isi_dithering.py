@@ -1,7 +1,6 @@
 '''
 Module to generate surrogates of spike trains by using the joint-ISI dithering.
-Features are provided to separate the preprocessing from the main process, also
-some plot routines to analyze the results.
+Features are provided to separate the preprocessing from the main process.
 
 Original implementation by: Peter Bouss [p.bouss@fz-juelich.de]
 :copyright: Copyright 2019 by the Elephant team, see `doc/authors.rst`.
@@ -27,8 +26,8 @@ def joint_isi_dithering(st, **kwargs):
     back. The implementation continued the ideas of Louis et al. (2010) and
     Gerstein (2004).
 
-    Inputs:
-    st
+    Inputs
+    st:
         neo.SpikeTrain: For this spiketrain the surrogates will be created
 
     **kwargs non-necessary parameters
