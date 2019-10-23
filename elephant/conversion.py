@@ -431,7 +431,7 @@ class BinnedSpikeTrain(object):
         self._sparse_mat_u = None
         # Check all parameter, set also missing values
         if self.is_binned:
-            self.num_bins = np.array(spiketrains).shape[1]
+            self.num_bins = np.shape(spiketrains)[1]
         self._calc_start_stop(spiketrains)
         self._check_init_params(
             self.binsize, self.num_bins, self.t_start, self.t_stop)
@@ -440,11 +440,13 @@ class BinnedSpikeTrain(object):
         # Now create sparse matrix
         self._convert_to_binned(spiketrains)
 
-        n_spikes = sum(map(len, spiketrains))
-        n_spikes_binned = sum(map(len, self.spike_indices))
-        if n_spikes != n_spikes_binned:
-            warnings.warn("Binning discarded {n} last spike(s) in the input "
-                          "spiketrain.".format(n=n_spikes - n_spikes_binned))
+        if self.is_spiketrain:
+            n_spikes = sum(map(len, spiketrains))
+            n_spikes_binned = sum(map(len, self.spike_indices))
+            if n_spikes != n_spikes_binned:
+                warnings.warn("Binning discarded {n} last spike(s) in the "
+                              "input spiketrain.".format(
+                               n=n_spikes - n_spikes_binned))
 
     # =========================================================================
     # There are four cases the given parameters must fulfill
@@ -829,9 +831,6 @@ class BinnedSpikeTrain(object):
         indices = []
         # data
         counts = []
-        # to be downwards compatible compare numpy versions, if the used
-        # version is smaller than v1.9 use different functions
-        smaller_version = StrictVersion(np.__version__) < '1.9.0'
         for idx, elem in enumerate(spiketrains):
             ev = elem.view(pq.Quantity)
             scale = np.array(((ev - self.t_start).rescale(
@@ -840,11 +839,7 @@ class BinnedSpikeTrain(object):
                                 ev <= self.t_stop.rescale(self.binsize.units))
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
-            if smaller_version:
-                f = np.unique(filled_tmp)
-                c = np.bincount(f.searchsorted(filled_tmp))
-            else:
-                f, c = np.unique(filled_tmp, return_counts=True)
+            f, c = np.unique(filled_tmp, return_counts=True)
             filled.extend(f)
             counts.extend(c)
             indices.extend([idx] * len(f))
@@ -875,30 +870,24 @@ def _check_neo_spiketrain(matrix):
     if isinstance(matrix, neo.SpikeTrain):
         return True
     # Check for list or tuple
-    elif isinstance(matrix, list) or isinstance(matrix, tuple):
-        ts = True
-        for m in matrix:
-            if not isinstance(m, neo.SpikeTrain):
-                return False
-        return ts
+    elif isinstance(matrix, (list, tuple)):
+        return all(map(_check_neo_spiketrain, matrix))
+    else:
+        return False
 
 
 def _check_binned_array(matrix):
     """
     Checks if given input is a binned array
     """
-    # Try to convert to numpy array
-    if isinstance(matrix, list):
-        matrix = np.array(matrix)
-    # Check for numpy arrays
-    if isinstance(matrix, np.ndarray):
-        # Check for proper dimension MxN
-        if matrix.ndim == 2:
-            return True
-        elif matrix.dtype == np.dtype('O') or matrix.ndim != 2:
-            raise TypeError('Please check the dimensions of the input, '
-                            'it should be an MxN array, '
-                            'the input has the shape: {}'.format(matrix.shape))
+    matrix = np.asarray(matrix)
+    # Check for proper dimension MxN
+    if matrix.ndim == 2:
+        return True
+    elif matrix.dtype == np.dtype('O'):
+        raise TypeError('Please check the dimensions of the input, '
+                        'it should be an MxN array, '
+                        'the input has the shape: {}'.format(matrix.shape))
     else:
         # Otherwise not supported
         return TypeError('Input not supported. Please check again')
