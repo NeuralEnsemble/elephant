@@ -14,8 +14,8 @@ import neo
 try:
     from elephant.joint_isi_dithering_class import Joint_ISI_Space
 except:
-    sys.path.insert(0,'.')
-    sys.path.insert(0,'..')
+    sys.path.insert(0, '.')
+    sys.path.insert(0, '..')
     from joint_isi_dithering_class import Joint_ISI_Space
 
 np.random.seed(0)
@@ -60,7 +60,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         np.random.seed(42)
         dither_values = np.random.random_sample((nr_surr, len(st)))
-        expected_non_dithered = np.sum(dither_values==0)
+        expected_non_dithered = np.sum(dither_values == 0)
 
         observed_non_dithered = 0
         for surrog in surrs:
@@ -341,9 +341,11 @@ class SurrogatesTestCase(unittest.TestCase):
         surrog = Joint_ISI_Space(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
 
+
 def suite():
     suite = unittest.makeSuite(SurrogatesTestCase, 'test')
     return suite
+
 
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)

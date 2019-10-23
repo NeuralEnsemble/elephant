@@ -13,9 +13,9 @@ import numpy as np
 import quantities as pq
 try:
     from elephant.joint_isi_dithering_class import Joint_ISI_Space
-except:
-    sys.path.insert(0,'.')
-    sys.path.insert(0,'..')
+except ImportError:
+    sys.path.insert(0, '.')
+    sys.path.insert(0, '..')
     from joint_isi_dithering_class import Joint_ISI_Space
 import elephant.spike_train_generation as stg
 
