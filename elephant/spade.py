@@ -56,7 +56,6 @@ plt.show()
 :copyright: Copyright 2017 by the Elephant team, see AUTHORS.txt.
 :license: BSD, see LICENSE.txt for details.
 '''
-from elephant.spade_src import fast_fca
 import numpy
 import neo
 import elephant.spike_train_surrogates as surr
@@ -77,11 +76,11 @@ try:
     from elephant.spade_src import fim
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
+    from elephant.spade_src import fast_fca
     HAVE_FIM = False
     warnings.warn(
         'fim.so not found in elephant/spade_src folder,' +
         'you are using the python implementation of fast fca')
-
 
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
