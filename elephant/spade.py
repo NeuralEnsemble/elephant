@@ -82,6 +82,7 @@ except ImportError:  # pragma: no cover
         'fim.so not found in elephant/spade_src folder,' +
         'you are using the python implementation of fast fca')
 
+
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
