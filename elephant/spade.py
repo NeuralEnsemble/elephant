@@ -10,9 +10,9 @@ artificial spike trains of exhibiting fully synchronous events of order 10.
 This modules relies on the implementation of the fp-growth algorithm contained
 in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
 and should be available in the spade_src folder (elephant/spade_src/).
-If the fim.so module is not present in the correct location or cannot be 
-imported (only available for linux OS) SPADE will make use of a python 
-implementation of the fast fca algorithm contained in 
+If the fim.so module is not present in the correct location or cannot be
+imported (only available for linux OS) SPADE will make use of a python
+implementation of the fast fca algorithm contained in
 elephant/spade_src/fast_fca.py, which is about 10 times slower.
 
 
@@ -56,6 +56,7 @@ plt.show()
 :copyright: Copyright 2017 by the Elephant team, see AUTHORS.txt.
 :license: BSD, see LICENSE.txt for details.
 '''
+from elephant.spade_src import fast_fca
 import numpy
 import neo
 import elephant.spike_train_surrogates as surr
@@ -80,7 +81,6 @@ except ImportError:  # pragma: no cover
     warnings.warn(
         'fim.so not found in elephant/spade_src folder,' +
         'you are using the python implementation of fast fca')
-from elephant.spade_src import fast_fca
 
 
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
@@ -169,7 +169,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrence)
         '3d#': pattern spectrum using the as signature the triplets:
-            (number of spikes, number of occurrence, difference between last 
+            (number of spikes, number of occurrence, difference between last
             and first spike of the pattern)
         Default: '#'
     alpha: float
@@ -435,8 +435,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         '#': pattern spectrum using as signature the pair:
             (number of spikes, number of occurrence)
         '3d#': pattern spectrum using as signature the triplets:
-            (number of spikes, number of occurrence, difference between last 
-            and first spike of the pattern)        
+            (number of spikes, number of occurrence, difference between last
+            and first spike of the pattern)
         Default: 'a'
 
     Returns
@@ -490,7 +490,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # spikes in a window
     if max_spikes is None:
         max_spikes = np.max((int(np.max(np.sum(rel_matrix, axis=1))),
-                            min_spikes + 1))
+                             min_spikes + 1))
     # By default, set maximum number of occurrences to number of non-empty
     # windows
     if max_occ is None:
@@ -711,10 +711,10 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             while keep_concept:
                 intent_comp, supp_comp = fpgrowth_output[c_idx]
                 if intent != intent_comp and supp <= supp_comp and set(
-                                np.array(intent_comp) % winlen).issuperset(
-                    set(np.array(intent) % winlen)) and set(
-                    np.array(intent_comp) // winlen).issuperset(
-                    set(np.array(intent) // winlen)):
+                        np.array(intent_comp) % winlen).issuperset(
+                        set(np.array(intent) % winlen)) and set(
+                        np.array(intent_comp) // winlen).issuperset(
+                        set(np.array(intent) // winlen)):
                     keep_concept = False
                 c_idx += 1
                 if c_idx > len(fpgrowth_output) - 1:
@@ -754,7 +754,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
 def _fpgrowth_filter(concept, winlen, max_c, min_neu):
     """
     Filter for selecting closed frequent items set with a minimum number of
-    neurons and a maximum number of occurrences and first spike in the first 
+    neurons and a maximum number of occurrences and first spike in the first
     bin position
     """
     keep_concepts = len(
@@ -852,10 +852,10 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
             # print(set(np.array(intent_comp) % winlen).issuperset(set(
             #     np.array(intent) % winlen)))
             if intent != intent_comp and supp <= supp_comp and set(
-                            np.array(intent_comp) % winlen).issuperset(set(
+                    np.array(intent_comp) % winlen).issuperset(set(
                         np.array(intent) % winlen)) and set(
-                        np.array(intent_comp) // winlen).issuperset(
-                set(np.array(intent) // winlen)):
+                    np.array(intent_comp) // winlen).issuperset(
+                    set(np.array(intent) // winlen)):
                 keep_concept = False
             c_idx += 1
             if c_idx > len(fca_concepts) - 1:
@@ -952,7 +952,7 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     max_occ: int (positive)
         Maximum number of occurrences of a sequence to be considered as a
         pattern. If None, no maximal number of occurrences is considered.
-        Default: None    
+        Default: None
     min_neu: int (positive)
         Minimum number of neurons in a sequence to considered a pattern.
         Default: 1
@@ -1121,8 +1121,8 @@ def _fdr(pvalues, alpha):
 
 def _holm_bonferroni(pvalues, alpha):
     id_sorted = np.argsort(pvalues)
-    tests = [pval <= alpha/float(
-        len(pvalues)-id_sorted[pval_idx]) for pval_idx, pval in enumerate(
+    tests = [pval <= alpha / float(
+        len(pvalues) - id_sorted[pval_idx]) for pval_idx, pval in enumerate(
         pvalues)]
     return tests
 
@@ -1227,7 +1227,8 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
         keep_concept = (len(concept[0]), len(concept[1]), max(
-            np.abs(np.diff(np.array(concept[0])%winlen)))) not in ns_signature
+            np.abs(np.diff(np.array(concept[0])
+                           % winlen)))) not in ns_signature
     return keep_concept
 
 
@@ -1240,7 +1241,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     ----------
     concepts: list
         All the pattern candidates (concepts) found in the data. Each
-        pattern is represented as a tuple containing (spike IDs, 
+        pattern is represented as a tuple containing (spike IDs,
         discrete times (window position)
         of the  occurrences of the pattern). The spike IDs are defined as:
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
@@ -1275,12 +1276,12 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     Returns
     ------
     output: list
-        List of all the pattern candidates (concepts) given in input, each with 
+        List of all the pattern candidates (concepts) given in input, each with
         the correspondent intensional and extensional stability. Each
         pattern is represented as a tuple containing:
-         (spike IDs, 
-        discrete times of the  occurrences of the pattern, intensional 
-        stability of the pattern, extensional stability of the pattern). 
+         (spike IDs,
+        discrete times of the  occurrences of the pattern, intensional
+        stability of the pattern, extensional stability of the pattern).
         The spike IDs are defined as:
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
         bin_id in [0, winlen].
@@ -1622,7 +1623,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                 # if conc1 is  of conc2 are disjoint or they have both been
                 # already de-selected, skip the step
                 if set(conc1_new) == set(
-                    conc2) and selected[id1] and selected[id2]:
+                        conc2) and selected[id1] and selected[id2]:
                     selected[id2] = False
                     break
                 if len(set(conc1_new) & set(conc2)) == 0 or (
@@ -1662,13 +1663,13 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         len_sub = max(
                             np.abs(np.diff(np.array(conc2) % winlen)))
                         reject_sub = (size2, supp_diff, len_sub) in excluded \
-                                     or supp_diff < min_occ
+                            or supp_diff < min_occ
                         # Determine whether the superset (conc1_new) should be
                         # rejected according to the test for excess items
                         len_sup = max(
                             np.abs(np.diff(np.array(conc1_new) % winlen)))
                         reject_sup = (size_diff, count1, len_sup) in excluded \
-                                     or size_diff < min_spikes
+                            or size_diff < min_spikes
                     # Reject the superset and/or the subset accordingly:
                     if reject_sub and not reject_sup:
                         selected[id2] = False
@@ -1707,14 +1708,14 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         len_sub = max(
                             np.abs(np.diff(np.array(conc1) % winlen)))
                         reject_sub = (size2, supp_diff, len_sub) in excluded \
-                                     or supp_diff < min_occ
+                            or supp_diff < min_occ
                         # Determine whether the superset (conc1_new) should be
                         # rejected according to the test for excess items
                         len_sup = max(
                             np.abs(np.diff(np.array(conc2) % winlen)))
 
                         reject_sup = (size_diff, count1, len_sup) in excluded \
-                                     or size_diff < min_spikes
+                            or size_diff < min_spikes
                     # Reject the superset and/or the subset accordingly:
                     if reject_sub and not reject_sup:
                         selected[id1] = False
@@ -1756,7 +1757,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                             size1 - inter_size + k < min_spikes
                         reject_2 = (
                             size2 - inter_size + k, count2, len_2) \
-                                   in excluded or \
+                            in excluded or \
                             size2 - inter_size + k < min_spikes
 
                     # Reject accordingly:
@@ -1800,7 +1801,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     pvalue_spectrum: None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all the pvalues are set to -1
-    t_start: Quantity 
+    t_start: Quantity
         t_start of the analyzed spike trains
 
     Returns
@@ -1860,7 +1861,9 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             binsize + t_start
         # Signature (size, n occ) of the pattern
         if spectrum == '3d#':
-            duration = (max(conc[0]) - min(conc[0])) % winlen
+            # The duration is effectively the delay between the last neuron and
+            # the first one, measured in bins.
+            duration = bin_ids[-1] - bin_ids[0]
             sgnt = (len(conc[0]), len(conc[1]), duration)
             output_dict['signature'] = sgnt
             # If None is given in input to the pval spectrum the pvalue
