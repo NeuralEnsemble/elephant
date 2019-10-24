@@ -1119,19 +1119,29 @@ def homogeneous_poisson_process_with_refr_period(rate, refr_period=3.*ms,
     if t_stop.units != t_start.units:
         t_stop = t_stop.rescale(t_start.units)
 
-    rate = rate.rescale(1 / t_start.units).magnitude
+    rate_mag = rate.rescale(1 / t_start.units).magnitude
+    refr_period_mag = refr_period.rescale(t_start.units).magnitude
+
+    if rate_mag >= 1./refr_period_mag:
+        raise ValueError('The firing rate must be sufficiently smaller than'+
+                         ' the inverse of the refractory period, otherwise'+
+                         ' the effective firing rate diverges. '+
+                         'But now we have rate: '+str(rate)+' and refractory '+
+                         'period: '+str(refr_period))
+
     duration = (t_stop-t_start).magnitude
-    mean_spike_count = rate * duration
+    mean_spike_count = rate_mag * duration
     spike_count = np.random.poisson(lam=mean_spike_count)
 
-    refr_period = refr_period.rescale(t_start.units).magnitude
-    eff_duration = duration - (spike_count - 1) * refr_period
-    if eff_duration <= 0.:
-        raise ValueError('The duration is too short to place this number of ' +
-                         'spikes. You have to change one of the parameters.')
+    # Check that the number of spikes drawn from the Poisson distributions,
+    # can fit in the duration regarding the refractory period.
+    if spike_count >= 1. + duration / refr_period_mag:
+        spike_count = np.ceil(duration / refr_period_mag).astype(int)
+
+    eff_duration = duration - (spike_count - 1) * refr_period_mag
 
     st = np.sort(np.random.random(spike_count)) * eff_duration
-    st += refr_period * np.arange(spike_count)
+    st += refr_period_mag * np.arange(spike_count)
     st += t_start.magnitude
     if not as_array:
         return SpikeTrain(st*t_start.units, t_start=t_start, t_stop=t_stop)
