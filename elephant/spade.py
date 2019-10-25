@@ -472,7 +472,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # If data is a list of SpikeTrains
     if not all([isinstance(elem, neo.SpikeTrain) for elem in data]):
         raise TypeError(
-            'data must be either a list of SpikeTrains')
+            'data must be a list of SpikeTrains')
     # Check taht all spiketrains have same t_start and same t_stop
     if not all([st.t_start == data[0].t_start for st in data]) or not all(
             [st.t_stop == data[0].t_stop for st in data]):
