@@ -544,7 +544,7 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         Length of the binsize used to bin the data
     only_windows_with_first_spike : bool
         Whether to consider every window or only the one with a spike in the
-        first bin. It is passible to discard windows without a spike in the
+        first bin. It is possible to discard windows without a spike in the
         first bin because the same configuration of spikes will be repeated
         in a following window, just with different position for the first spike
         Default: True
@@ -1287,8 +1287,10 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     if spectrum == '3d#':
         bin_ids = sorted(np.array(conc[0]) % winlen)
         # The duration is effectively the delay between the last neuron and
-        # the first one, measured in bins.
-        duration = bin_ids[-1] - bin_ids[0]
+        # the first one, measured in bins. Since we only allow the first spike
+        # to be in the first bin (see concepts_mining, _build_context and
+        # _fpgrowth), it is the the position of the latest spike.
+        duration = bin_ids[-1]
         keep_concept = (len(concept[0]), len(concept[1]),
                         duration) not in ns_signature
     return keep_concept
@@ -1937,8 +1939,10 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         # Signature (size, n occ) of the pattern
         elif spectrum == '3d#':
             # The duration is effectively the delay between the last neuron and
-            # the first one, measured in bins.
-            duration = bin_ids[-1] - bin_ids[0]
+            # the first one, measured in bins. Since we only allow the first spike
+            # to be in the first bin (see concepts_mining, _build_context and
+            # _fpgrowth), it is the the position of the latest spike.
+            duration = bin_ids[-1]
             sgnt = (len(conc[0]), len(conc[1]), duration)
             output_dict['signature'] = sgnt
             # p-value assigned to the pattern from the pvalue spectrum
