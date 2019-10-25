@@ -1284,9 +1284,12 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     if spectrum == '#':
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
-        keep_concept = (len(concept[0]), len(concept[1]), max(
-            np.abs(
-                np.diff(np.array(concept[0]) % winlen)))) not in ns_signature
+        bin_ids = sorted(np.array(conc[0]) % winlen)
+        # The duration is effectively the delay between the last neuron and
+        # the first one, measured in bins.
+        duration = bin_ids[-1] - bin_ids[0]
+        keep_concept = (len(concept[0]), len(concept[1]),
+                        duration) not in ns_signature
     return keep_concept
 
 
@@ -1915,10 +1918,11 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         output_dict['windows_ids'] = conc[1]
         # Bins relative to the sliding window in which the spikes of patt fall
         bin_ids_unsort = np.array(conc[0]) % winlen
-        bin_ids = sorted(np.array(conc[0]) % winlen)
+        order_bin_ids = np.argsort(bin_ids_unsort)
+        bin_ids = bin_ids_unsort[order_bin_ids]
         # id of the neurons forming the pattern
         output_dict['neurons'] = list(np.array(
-            conc[0])[np.argsort(bin_ids_unsort)] // winlen)
+            conc[0])[order_bin_ids] // winlen)
         # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
         # Times (in binsize units) in which the pattern occurres
@@ -1931,7 +1935,9 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             output_dict['pvalue'] = -1
         # Signature (size, n occ) of the pattern
         elif spectrum == '3d#':
-            duration = (max(conc[0]) - min(conc[0])) % winlen
+            # The duration is effectively the delay between the last neuron and
+            # the first one, measured in bins.
+            duration = bin_ids[-1] - bin_ids[0]
             sgnt = (len(conc[0]), len(conc[1]), duration)
             output_dict['signature'] = sgnt
             # p-value assigned to the pattern from the pvalue spectrum
