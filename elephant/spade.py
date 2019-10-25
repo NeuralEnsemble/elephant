@@ -181,6 +181,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             '' : no statistical correction
             'f', 'fdr' : false discovery rate
             'b', 'bonf': Bonferroni correction
+            'hb', 'holm_bonf': Holm-Bonferroni correction
          Default: 'fdr'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
@@ -1201,9 +1202,10 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         Significance level of the statistical test
     corr: str
         Statistical correction to be applied:
-        '' : no statistical correction
-        'f'|'fdr' : false discovery rate
-        'b'|'bonf': Bonferroni correction
+            '' : no statistical correction
+            'f', 'fdr' : false discovery rate
+            'b', 'bonf': Bonferroni correction
+            'hb', 'holm_bonf': Holm-Bonferroni correction
          Default: ''
     report: str
         Format to be returned for the significance spectrum:
