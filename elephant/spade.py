@@ -178,7 +178,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         Default: 1
     stat_corr: str
         Statistical correction to be applied:
-            '' : no statistical correction
+            '', 'no' : no statistical correction
             'f', 'fdr' : false discovery rate
             'b', 'bonf': Bonferroni correction
             'hb', 'holm_bonf': Holm-Bonferroni correction
@@ -1202,7 +1202,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         Significance level of the statistical test
     corr: str
         Statistical correction to be applied:
-            '' : no statistical correction
+            '', 'no' : no statistical correction
             'f', 'fdr' : false discovery rate
             'b', 'bonf': Bonferroni correction
             'hb', 'holm_bonf': Holm-Bonferroni correction
@@ -1235,7 +1235,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         return []
     x_array = np.array(pvalue_spectrum)
     # Compute significance...
-    if corr == '' or corr == 'no':  # ...without statistical correction
+    if corr in ['', 'no']:  # ...without statistical correction
         tests = x_array[:, -1] <= alpha
     elif corr in ['b', 'bonf']:  # or with Bonferroni correction
         tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
@@ -1245,7 +1245,8 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
         raise AttributeError(
-            "Parameter corr must be either '', 'b'('bonf') or 'f'('fdr')")
+            "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')"+
+            " or 'hb'('holm_bonf'), but not '"+str(corr)+"'.")
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
