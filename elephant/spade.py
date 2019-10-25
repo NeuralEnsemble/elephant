@@ -470,11 +470,11 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         neuron, the entry [0,winlen] to the first bin of the first window
         position for the second neuron.
     """
-    # If data is a list of SpikeTrains
+    # Check that data is a list of SpikeTrains
     if not all([isinstance(elem, neo.SpikeTrain) for elem in data]):
         raise TypeError(
             'data must be a list of SpikeTrains')
-    # Check taht all spiketrains have same t_start and same t_stop
+    # Check that all spiketrains have same t_start and same t_stop
     if not all([st.t_start == data[0].t_start for st in data]) or not all(
             [st.t_stop == data[0].t_stop for st in data]):
         raise AttributeError(
@@ -733,11 +733,12 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 # TODO: optimize this while removing from the list
                 # fpgrowth_output the correspondent concept when
                 # intent_to_compare is a subset of intent
-                if intent != intent_to_compare and supp <= supp_to_compare and set(
-                        np.array(intent_to_compare) % winlen).issuperset(
+                if (intent != intent_to_compare
+                    and supp <= supp_to_compare
+                    and set(np.array(intent_to_compare) % winlen).issuperset(
                         set(np.array(intent) % winlen)) and set(
                         np.array(intent_to_compare) // winlen).issuperset(
-                        set(np.array(intent) // winlen)):
+                        set(np.array(intent) // winlen))):
                     keep_concept = False
                 c_idx += 1
                 if c_idx > len(fpgrowth_output) - 1:
@@ -1245,7 +1246,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
         raise AttributeError(
-            "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')"+
+            "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')" +
             " or 'hb'('holm_bonf'), but not '"+str(corr)+"'.")
     # Return the specified results:
     if spectrum == '#':
