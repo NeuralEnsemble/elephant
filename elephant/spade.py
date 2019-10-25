@@ -1939,7 +1939,8 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         # Signature (size, n occ) of the pattern
         elif spectrum == '3d#':
             # The duration is effectively the delay between the last neuron and
-            # the first one, measured in bins. Since we only allow the first spike
+            # the first one, measured in bins.
+            # Since we only allow the first spike
             # to be in the first bin (see concepts_mining, _build_context and
             # _fpgrowth), it is the the position of the latest spike.
             duration = bin_ids[-1]
