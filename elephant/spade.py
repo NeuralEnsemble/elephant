@@ -186,11 +186,11 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
-                (see parameter h of psr()).
+                (see parameter h of pattern_set_reduction()).
             psr_param[1]: correction parameter for superset filtering
-                (see parameter k of psr()).
+                (see parameter k of pattern_set_reduction()).
             psr_param[2]: correction parameter for covered-spikes criterion
-                (see parameter l for psr()).
+                (see parameter l for pattern_set_reduction()).
     output_format: str
         distinguish the format of the output (see Returns). Can assume values
         'concepts' and 'patterns'.
