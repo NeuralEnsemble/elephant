@@ -377,7 +377,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             # Transforming concepts to dictionary containing pattern's infos
             output['patterns'] = concept_output_to_patterns(concepts,
                                                             winlen, binsize,
-                                                            pv_spec,
+                                                            pv_spec, spectrum,
                                                             data[0].t_start)
         elif output_format == 'concepts':
             output['patterns'] = concepts
@@ -1847,7 +1847,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
 
 
 def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
-                               t_start=0 * pq.ms):
+                               spectrum=None, t_start=0 * pq.ms):
     """
     Construction of dictionaries containing all the information about a pattern
     starting from a list of concepts and its associated pvalue_spectrum.
@@ -1865,6 +1865,15 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     pvalue_spectrum: None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all pvalues are set to -1
+    spectrum: None or str
+        The signature of the given concepts, it can assume values:
+        None: the signature is determined from the pvalue_spectrum
+        '#': pattern spectrum using the as signature the pair:
+            (number of spikes, number of occurrences)
+        '3d#': pattern spectrum using the as signature the triplets:
+            (number of spikes, number of occurrence, difference between last
+            and first spike of the pattern)
+        Default: None
     t_start: Quantity
         t_start of the analyzed spike trains
 
@@ -1892,15 +1901,17 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
              then all pvalues are set to -1.
     """
     if pvalue_spectrum is None:
-        spectrum = '#'
+        if spectrum is None:
+            spectrum = '#'
     else:
-        if len(pvalue_spectrum) == 0:
-            spectrum = '#'
-            pass
-        elif len(pvalue_spectrum[0]) == 4:
-            spectrum = '3d#'
-        elif len(pvalue_spectrum[0]) == 3:
-            spectrum = '#'
+        if spectrum is None:
+            if len(pvalue_spectrum) == 0:
+                spectrum = '#'
+                pass
+            elif len(pvalue_spectrum[0]) == 4:
+                spectrum = '3d#'
+            elif len(pvalue_spectrum[0]) == 3:
+                spectrum = '#'
         pvalue_dict = {}
         # Creating a dictionary for the pvalue spectrum
         for entry in pvalue_spectrum:
