@@ -759,21 +759,22 @@ def spike_train_timescale(binned_st, tau_max):
     Uses the definition of the auto-correlation time proposed in [1, Eq. (6)]:
 
     .. math::
-        \\tau_\mathrm{corr} = \\int_{-\\tau_\mathrm{max}}^{\\tau_\mathrm{max}} \left[ \\frac{\hat{C}(\\tau)}{\hat{C}(0)} \\right]^2 d\\tau
+        \\tau_\mathrm{corr} = \\int_{-\\tau_\mathrm{max}}^{\\tau_\mathrm{max}}\
+            \left[ \\frac{\hat{C}(\\tau)}{\hat{C}(0)} \\right]^2 d\\tau
 
-    where :math:`\hat{C}(\\tau)` denotes the auto-correlation function excluding
-    the delta spikes at zero timelag.
+    where :math:`\hat{C}(\\tau) = C(\\tau)-\\nu\delta(\\tau)` denotes
+    the auto-correlation function excluding the Dirac delta at zero timelag.
 
     Parameters
     ----------
     binned_st : elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike train to be evaluated.
-    tau_max : float
+    tau_max : quantities.Quantity
         Maximal integration time of the auto-correlation function.
 
     Returns
     -------
-    timescale : float
+    timescale : quantities.Quantity
         The auto-correlation time of the binned spiketrain.
 
     Notes
@@ -784,6 +785,9 @@ def spike_train_timescale(binned_st, tau_max):
       necessary to introduce a cutoff for the numerical integration - this
       cutoff should be neither smaller than the true auto-correlation time
       nor much bigger.
+    * The binsize of binned_st is another critical parameter as it defines the
+      discretisation of the integral :math:`d\\tau`. If it is too big, the
+      numerical approximation of the integral is inaccurate.
 
     References
     ----------
@@ -796,7 +800,7 @@ def spike_train_timescale(binned_st, tau_max):
 
     rate = np.sum(binned_st.to_array()) / T
 
-    assert (tau_max/binsize).units == pq.dimensionless
+    tau_max.units = binsize.units
     tau_max_bins = int(np.round(tau_max/binsize))
     cch_window = [-tau_max_bins, tau_max_bins]
     cch, bin_ids = cross_correlation_histogram(binned_st, binned_st,
@@ -806,9 +810,9 @@ def spike_train_timescale(binned_st, tau_max):
     # Subtract the squared first moment to arrive at the correlation function.
     corrfct = cch / binsize / T - rate**2
     # Take only t > 0 values, in particular neglecting the delta peak.
-    corrfct_pos = corrfct.time_slice(binsize/2, corrfct.t_stop)
+    corrfct_pos = corrfct.time_slice(binsize/2, corrfct.t_stop).flatten()
 
     # Calculate the timescale using trapezoidal integration
     integr = np.abs((corrfct_pos / corrfct_pos[0]).magnitude)**2
-    timescale = 2*integrate.trapz(integr.flatten(), dx=binsize)
+    timescale = 2*integrate.trapz(integr, dx=binsize)
     return timescale
