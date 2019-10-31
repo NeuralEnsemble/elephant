@@ -2,6 +2,38 @@
 Release Notes
 *************
 
+Elephant 0.6.4 release notes
+============================
+
+This release has been made for the "1st Elephant User Workshop" (https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/1st-elephant-user-workshop-accelerate-structured-and-reproducibl).
+
+
+Main features
+-------------
+* neo v0.8.0 compatible
+
+
+New modules
+-----------
+* GPFA - Gaussian-process factor analysis - dimensionality reduction method for neural trajectory visualization (https://github.com/NeuralEnsemble/elephant/pull/233). _Note: the API could change in the future._
+
+
+Buf fixes
+---------
+* [signal processing] Keep `array_annotations` in the output of signal processing functions (https://github.com/NeuralEnsemble/elephant/pull/258).
+* [SPADE] Fixed the calculation of the duration of a pattern in the output (https://github.com/NeuralEnsemble/elephant/pull/254).
+* [statistics] Fixed automatic kernel selection yields incorrect values (https://github.com/NeuralEnsemble/elephant/pull/246).
+
+
+Improvements
+------------
+* Vectorized `spike_time_tiling_coefficient()` function - got rid of a double for-loop (https://github.com/NeuralEnsemble/elephant/pull/244)
+* Reduced the number of warnings during the tests (https://github.com/NeuralEnsemble/elephant/pull/238).
+* Removed unused debug code in `spade/fast_fca.py` (https://github.com/NeuralEnsemble/elephant/pull/249).
+* Improved doc string of `covariance()` and `corrcoef()` (https://github.com/NeuralEnsemble/elephant/pull/260).
+
+
+
 Elephant 0.6.3 release notes
 ============================
 July 22nd 2019
