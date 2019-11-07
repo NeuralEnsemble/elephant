@@ -754,15 +754,15 @@ sttc = spike_time_tiling_coefficient
 
 
 def spike_train_timescale(binned_st, tau_max):
-    """
+    r"""
     Calculates the auto-correlation time of a binned spike train.
     Uses the definition of the auto-correlation time proposed in [1, Eq. (6)]:
 
     .. math::
-        \\tau_\mathrm{corr} = \\int_{-\\tau_\mathrm{max}}^{\\tau_\mathrm{max}}\
-            \left[ \\frac{\hat{C}(\\tau)}{\hat{C}(0)} \\right]^2 d\\tau
+        \tau_\mathrm{corr} = \int_{-\tau_\mathrm{max}}^{\tau_\mathrm{max}}\
+            \left[ \frac{\hat{C}(\tau)}{\hat{C}(0)} \right]^2 d\tau
 
-    where :math:`\hat{C}(\\tau) = C(\\tau)-\\nu\delta(\\tau)` denotes
+    where :math:`\hat{C}(\tau) = C(\tau)-\nu\delta(\tau)` denotes
     the auto-correlation function excluding the Dirac delta at zero timelag.
 
     Parameters
@@ -779,14 +779,14 @@ def spike_train_timescale(binned_st, tau_max):
 
     Notes
     -----
-    * :math:`\\tau_\mathrm{max}` is a critical parameter: numerical estimates
+    * :math:`\tau_\mathrm{max}` is a critical parameter: numerical estimates
       of the auto-correlation functions are inherently noisy. Due to the
       square in the definition above, this noise is integrated. Thus, it is
       necessary to introduce a cutoff for the numerical integration - this
       cutoff should be neither smaller than the true auto-correlation time
       nor much bigger.
     * The binsize of binned_st is another critical parameter as it defines the
-      discretisation of the integral :math:`d\\tau`. If it is too big, the
+      discretisation of the integral :math:`d\tau`. If it is too big, the
       numerical approximation of the integral is inaccurate.
 
     References
