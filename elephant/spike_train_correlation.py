@@ -795,20 +795,21 @@ def spike_train_timescale(binned_st, tau_max):
         Slow fluctuations in recurrent networks of spiking neurons.
         Physical Review E, 92(4), 040901.
     """
-    T = binned_st.t_stop - binned_st.t_start
+    time_interval = binned_st.t_stop - binned_st.t_start
     binsize = binned_st.binsize
 
-    rate = np.sum(binned_st.to_array()) / T
+    rate = binned_st._sparse_mat_u.sum() / time_interval
 
-    tau_max.units = binsize.units
-    tau_max_bins = int(np.round(tau_max/binsize))
+    if not (tau_max/binsize).units == pq.dimensionless:
+        raise AssertionError("tau_max needs units of time")
+    tau_max_bins = int(np.round((tau_max/binsize).simplified.magnitude))
     cch_window = [-tau_max_bins, tau_max_bins]
     cch, bin_ids = cross_correlation_histogram(binned_st, binned_st,
                                                window=cch_window)
     # CCH is dimensionless. Should have dimension 1/time^2, thus 1/dt^2.
-    # Furthermore, a multiplicative factor dt/T arises from the convolution.
+    # Furthermore, a multiplicative factor dt/time_interval from convolution.
     # Subtract the squared first moment to arrive at the correlation function.
-    corrfct = cch / binsize / T - rate**2
+    corrfct = cch / binsize / time_interval - rate**2
     # Take only t > 0 values, in particular neglecting the delta peak.
     corrfct_pos = corrfct.time_slice(binsize/2, corrfct.t_stop).flatten()
 

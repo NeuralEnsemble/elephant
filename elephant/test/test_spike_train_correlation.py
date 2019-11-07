@@ -664,14 +664,14 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         timescale.units = pq.ms
 
         timescale_num = []
-        for _ in range(50):
+        for _ in range(10):
             spikes = homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
             spikes_bin = BinnedSpikeTrain(spikes, binsize)
             timescale_i = spike_train_timescale(spikes_bin, 10*timescale)
             timescale_i.units = timescale.units
             timescale_num.append(timescale_i.magnitude)
-        correct = np.isclose(timescale.magnitude, timescale_num, rtol=1e-1)
-        self.assertTrue(correct.mean() > 0.9)
+        target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
+        self.assertTrue(target)
 
 
 if __name__ == '__main__':
