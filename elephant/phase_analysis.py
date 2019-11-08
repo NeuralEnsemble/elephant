@@ -108,7 +108,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         # Find index into signal for each spike
         ind_at_spike = np.round(
             (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
-            hilbert_transform[phase_i].sampling_period).magnitude.astype(int)
+            hilbert_transform[phase_i].sampling_period). \
+            simplified.magnitude.astype(int)
 
         # Extract times for speed reasons
         times = hilbert_transform[phase_i].times
