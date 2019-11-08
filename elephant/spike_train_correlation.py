@@ -11,6 +11,8 @@ import neo
 import quantities as pq
 import warnings
 
+from scipy import integrate
+
 
 def covariance(binned_sts, binary=False):
     '''
@@ -749,3 +751,69 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
 
 sttc = spike_time_tiling_coefficient
+
+
+def spike_train_timescale(binned_st, tau_max):
+    r"""
+    Calculates the auto-correlation time of a binned spike train.
+    Uses the definition of the auto-correlation time proposed in [1, Eq. (6)]:
+
+    .. math::
+        \tau_\mathrm{corr} = \int_{-\tau_\mathrm{max}}^{\tau_\mathrm{max}}\
+            \left[ \frac{\hat{C}(\tau)}{\hat{C}(0)} \right]^2 d\tau
+
+    where :math:`\hat{C}(\tau) = C(\tau)-\nu\delta(\tau)` denotes
+    the auto-correlation function excluding the Dirac delta at zero timelag.
+
+    Parameters
+    ----------
+    binned_st : elephant.conversion.BinnedSpikeTrain
+        A binned spike train containing the spike train to be evaluated.
+    tau_max : quantities.Quantity
+        Maximal integration time of the auto-correlation function.
+
+    Returns
+    -------
+    timescale : quantities.Quantity
+        The auto-correlation time of the binned spiketrain.
+
+    Notes
+    -----
+    * :math:`\tau_\mathrm{max}` is a critical parameter: numerical estimates
+      of the auto-correlation functions are inherently noisy. Due to the
+      square in the definition above, this noise is integrated. Thus, it is
+      necessary to introduce a cutoff for the numerical integration - this
+      cutoff should be neither smaller than the true auto-correlation time
+      nor much bigger.
+    * The binsize of binned_st is another critical parameter as it defines the
+      discretisation of the integral :math:`d\tau`. If it is too big, the
+      numerical approximation of the integral is inaccurate.
+
+    References
+    ----------
+    [1] Wieland, S., Bernardi, D., Schwalger, T., & Lindner, B. (2015).
+        Slow fluctuations in recurrent networks of spiking neurons.
+        Physical Review E, 92(4), 040901.
+    """
+    time_interval = binned_st.t_stop - binned_st.t_start
+    binsize = binned_st.binsize
+
+    rate = binned_st._sparse_mat_u.sum() / time_interval
+
+    if not (tau_max/binsize).units == pq.dimensionless:
+        raise AssertionError("tau_max needs units of time")
+    tau_max_bins = int(np.round((tau_max/binsize).simplified.magnitude))
+    cch_window = [-tau_max_bins, tau_max_bins]
+    cch, bin_ids = cross_correlation_histogram(binned_st, binned_st,
+                                               window=cch_window)
+    # CCH is dimensionless. Should have dimension 1/time^2, thus 1/dt^2.
+    # Furthermore, a multiplicative factor dt/time_interval from convolution.
+    # Subtract the squared first moment to arrive at the correlation function.
+    corrfct = cch / binsize / time_interval - rate**2
+    # Take only t > 0 values, in particular neglecting the delta peak.
+    corrfct_pos = corrfct.time_slice(binsize/2, corrfct.t_stop).flatten()
+
+    # Calculate the timescale using trapezoidal integration
+    integr = np.abs((corrfct_pos / corrfct_pos[0]).magnitude)**2
+    timescale = 2*integrate.trapz(integr, dx=binsize)
+    return timescale
