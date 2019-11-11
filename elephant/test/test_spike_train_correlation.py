@@ -656,10 +656,9 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
             processes. Stochastic Methods in Neuroscience, 1.
         '''
         nu = 25/pq.s
-        T = 1000*pq.s
+        T = 15*pq.min
         binsize = 1*pq.ms
         timescale = 1 / (4*nu)
-        timescale.units = pq.ms
 
         timescale_num = []
         for _ in range(10):

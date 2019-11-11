@@ -796,9 +796,15 @@ def spike_train_timescale(binned_st, tau_max):
         Physical Review E, 92(4), 040901.
     """
     binsize = binned_st.binsize
-    if not (tau_max/binsize).units == pq.dimensionless:
+    if not (tau_max/binsize).simplified.units == pq.dimensionless:
         raise AssertionError("tau_max needs units of time")
+
+    # safe casting of tau_max/binsize to integer
     tau_max_bins = int(np.round((tau_max/binsize).simplified.magnitude))
+    if not np.isclose(tau_max.simplified.magnitude,
+                      (tau_max_bins*binsize).simplified.magnitude):
+        raise AssertionError("tau_max has to be a multiple of the binsize")
+
     cch_window = [-tau_max_bins, tau_max_bins]
     corrfct, bin_ids = cross_correlation_histogram(
         binned_st, binned_st, window=cch_window, cross_corr_coef=True
