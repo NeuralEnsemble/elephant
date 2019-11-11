@@ -20,6 +20,8 @@ import quantities as pq
 import scipy
 import scipy.sparse as sps
 
+from elephant.utils import is_binary
+
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
              return_times=None):
@@ -713,7 +715,7 @@ class BinnedSpikeTrain(object):
         sparse (i.e. only one spike per bin at maximum).
         """
 
-        return _check_binary_matrix(self.lst_input)
+        return is_binary(self.lst_input)
 
     def to_bool_array(self):
         """
@@ -848,18 +850,6 @@ class BinnedSpikeTrain(object):
                                            self.matrix_columns),
                                     dtype=int)
         self._sparse_mat_u = csr_matrix
-
-
-def _check_binary_matrix(binary_matrix):
-    """ Checks if given matrix is binary """
-    # Convert to numpy array if binary_matrix is a list
-    if not isinstance(binary_matrix, np.ndarray):
-        binary_matrix = np.array(binary_matrix)
-    # Check for binary rows
-    for row in binary_matrix:
-        if not len(np.where(row == 1)[0]) == np.count_nonzero(row):
-            return False
-    return True
 
 
 def _check_neo_spiketrain(matrix):

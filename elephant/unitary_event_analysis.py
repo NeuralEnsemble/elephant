@@ -28,6 +28,7 @@ import quantities as pq
 import scipy
 
 import elephant.conversion as conv
+from elephant.utils import is_binary
 
 
 def decorate_deprecated_N(func):
@@ -46,21 +47,6 @@ def decorate_deprecated_N(func):
         return func(*args, **kwargs)
 
     return decorated_func
-
-
-def _is_binary(array):
-    """
-    Parameters
-    ----------
-    array: np.ndarray
-
-    Returns
-    -------
-    bool
-        Whether the input array is binary or nor.
-
-    """
-    return ((array == 0) | (array == 1)).all()
 
 
 @decorate_deprecated_N
@@ -116,7 +102,7 @@ def hash_from_pattern(m, base=2):
     n_neurons = m.shape[0]
 
     # check the entries of the matrix
-    if not _is_binary(m):
+    if not is_binary(m):
         raise ValueError('Patterns should be binary: 0 or 1')
 
     # generate the representation
@@ -234,7 +220,7 @@ def n_emp_mat(mat, pattern_hash, base=2):
     [array([]), array([0, 3])]
     """
     # check if the mat is zero-one matrix
-    if not _is_binary(mat):
+    if not is_binary(mat):
         raise ValueError("entries of mat should be either one or zero")
     h = hash_from_pattern(mat, base=base)
     N_emp = np.zeros(len(pattern_hash))
@@ -306,7 +292,7 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
 
     idx_trials = []
     # check if the mat is zero-one matrix
-    if not _is_binary(mat):
+    if not is_binary(mat):
         raise ValueError("entries of mat should be either one or zero")
 
     for mat_tr in mat:
