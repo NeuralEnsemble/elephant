@@ -6,14 +6,17 @@ Unit tests for the conversion module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import sys
 import unittest
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
+from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 
 import elephant.conversion as cv
+
+python_version_major = sys.version_info.major
 
 
 def get_nearest(times, time):
@@ -173,6 +176,16 @@ class binarize_TestCase(unittest.TestCase):
                           t_start=0., t_stop=pq.Quantity(10, 'ms'))
         self.assertRaises(ValueError, cv.binarize, st1)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_bin_edges(self):
+        st = neo.SpikeTrain(times=np.array([2.5]) * pq.s, t_start=0 * pq.s,
+                            t_stop=3 * pq.s)
+        with self.assertWarns(UserWarning):
+            bst = cv.BinnedSpikeTrain(st, binsize=2 * pq.s, t_start=0 * pq.s,
+                                      t_stop=3 * pq.s)
+        assert_array_equal(bst.bin_edges, [0., 2.] * pq.s)
+        assert_array_equal(bst.spike_indices, [[]])  # no binned spikes
+
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):
@@ -236,6 +249,7 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array([1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0])]
         self.assertTrue(np.array_equal(x.to_bool_array(), y))
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_binned_spiketrain_neg_times_list(self):
         a = neo.SpikeTrain(
             [-6.5, 0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
@@ -246,7 +260,8 @@ class TimeHistogramTestCase(unittest.TestCase):
         c = [a, b]
 
         binsize = self.binsize
-        x_bool = cv.BinnedSpikeTrain(c, binsize=binsize)
+        with self.assertWarns(UserWarning):
+            x_bool = cv.BinnedSpikeTrain(c, binsize=binsize)
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
                   [1, 0, 1, 1, 0, 1, 1, 0]]
 
