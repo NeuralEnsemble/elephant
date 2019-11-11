@@ -14,9 +14,7 @@ import quantities as pq
 import neo
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
-from elephant.spike_train_generation import homogeneous_gamma_process
-from elephant.conversion import BinnedSpikeTrain
-from elephant.spike_train_correlation import spike_train_timescale
+import elephant.spike_train_generation as st_gen
 import warnings
 
 
@@ -665,9 +663,9 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
 
         timescale_num = []
         for _ in range(10):
-            spikes = homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
-            spikes_bin = BinnedSpikeTrain(spikes, binsize)
-            timescale_i = spike_train_timescale(spikes_bin, 10*timescale)
+            spikes = st_gen.homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
+            spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
+            timescale_i = sc.spike_train_timescale(spikes_bin, 10*timescale)
             timescale_i.units = timescale.units
             timescale_num.append(timescale_i.magnitude)
         target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
