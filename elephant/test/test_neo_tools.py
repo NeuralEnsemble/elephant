@@ -444,29 +444,20 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assert_dicts_equal(targ, res111)
         self.assert_dicts_equal(targ, res211)
 
+    @staticmethod
+    def _fix_neo_issue_749(obj, targ):
+        # TODO: remove once fixed
+        # https://github.com/NeuralEnsemble/python-neo/issues/749
+        num_times = len(targ['times'])
+        obj = obj[:num_times]
+        del targ['array_annotations']
+        return obj
+
     def test__extract_neo_attrs__epoch_parents_empty_array(self):
         obj = fake_neo('Epoch', seed=0)
         targ = get_fake_values('Epoch', seed=0)
-        
-        # TODO: Circumvent bug in neo 0.7.1, where fake objects are not
-        # properly constructed. Here, the returned fake values do not match
-        # with the corresponding object in terms of the length of the Epoch
-        # object. We introduce a manual fix, cutting the fake Neo object to the
-        # number of items returned by the get_fake_values() function.
-        num_times = len(targ['times'])
-        array_annotation_save = obj.array_annotations
-        obj.array_annotations = {
-            'durations': array_annotation_save['durations'],
-            'labels': array_annotation_save['labels']}
-        obj.durations = obj.durations[:num_times]
-        obj.labels = obj.labels[:num_times]
-        for k in array_annotation_save:
-            obj.array_annotations[k] = array_annotation_save[k][:num_times]
 
-        # TODO: Fix once inconsistencies in handling array annotations
-        # are properly fixed in neo
-        del targ['array_annotations']
-        
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res000 = nt.extract_neo_attrs(obj, parents=False)
@@ -638,25 +629,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('Epoch')[0]
         targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
 
-        # TODO: Circumvent bug in neo 0.7.1, where fake objects are not
-        # properly constructed. Here, the returned fake values do not match
-        # with the corresponding object in terms of the length of the Epoch
-        # object. We introduce a manual fix, cutting the fake Neo object to the
-        # number of items returned by the get_fake_values() function.
-        num_times = len(targ['times'])
-        array_annotation_save = obj.array_annotations
-        obj.array_annotations = {
-            'durations': array_annotation_save['durations'],
-            'labels': array_annotation_save['labels']}
-        obj.durations = obj.durations[:num_times]
-        obj.labels = obj.labels[:num_times]
-        for k in array_annotation_save:
-            obj.array_annotations[k] = array_annotation_save[k][:num_times]
-
-        # TODO: Fix once inconsistencies in handling array annotations
-        # are properly fixed in neo
-        del targ['array_annotations']
-
+        # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=False, skip_array=False)
@@ -667,15 +641,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res01 = nt.extract_neo_attrs(obj, parents=False)
         res11 = nt.extract_neo_attrs(obj, parents=False, child_first=True)
         res21 = nt.extract_neo_attrs(obj, parents=False, child_first=False)
-
-        for k in res00:
-            print(k,res00[k])
-        print('-=-')
-        for k in res01:
-            print(k,res01[k])
-        print('-=-')
-        for k in targ:
-            print(k,targ[k])
 
         del res00['i']
         del res10['i']
@@ -917,25 +882,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
 
-        # TODO: Circumvent bug in neo 0.7.1, where fake objects are not
-        # properly constructed. Here, the returned fake values do not match
-        # with the corresponding object in terms of the length of the Epoch
-        # object. We introduce a manual fix, cutting the fake Neo object to the
-        # number of items returned by the get_fake_values() function.
-        num_times = len(targ['times'])
-        array_annotation_save = obj.array_annotations
-        obj.array_annotations = {
-            'durations': array_annotation_save['durations'],
-            'labels': array_annotation_save['labels']}
-        obj.durations = obj.durations[:num_times]
-        obj.labels = obj.labels[:num_times]
-        for k in array_annotation_save:
-            obj.array_annotations[k] = array_annotation_save[k][:num_times]
-
-        # TODO: Fix once inconsistencies in handling array annotations
-        # are properly fixed in neo
-        del targ['array_annotations']
-
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res00 = nt.extract_neo_attrs(obj, parents=True, skip_array=False)
@@ -1029,26 +976,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
-        
-        # TODO: Circumvent bug in neo 0.7.1, where fake objects are not
-        # properly constructed. Here, the returned fake values do not match
-        # with the corresponding object in terms of the length of the Epoch
-        # object. We introduce a manual fix, cutting the fake Neo object to the
-        # number of items returned by the get_fake_values() function.
-        num_times = len(targ['times'])
-        array_annotation_save = obj.array_annotations
-        obj.array_annotations = {
-            'durations': array_annotation_save['durations'],
-            'labels': array_annotation_save['labels']}
-        obj.durations = obj.durations[:num_times]
-        obj.labels = obj.labels[:num_times]
-        for k in array_annotation_save:
-            obj.array_annotations[k] = array_annotation_save[k][:num_times]
 
-        # TODO: Fix once inconsistencies in handling array annotations
-        # are properly fixed in neo
-        del targ['array_annotations']
-
+        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res0 = nt.extract_neo_attrs(obj, parents=True, skip_array=False,

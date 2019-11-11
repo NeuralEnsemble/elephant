@@ -45,17 +45,14 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
 
     """
     attrs = obj.annotations.copy()
-    if not skip_array:
-        try:
-            for a in obj.array_annotations:
-                # Exclude labels and durations (and maybe other attributes) that are handled as array_annotations
-                # These would be duplicate
-                if a not in [_[0] for _ in obj._necessary_attrs + obj._recommended_attrs]:
-                    if "array_annotations" not in attrs:
-                        attrs["array_annotations"] = {}
-                    attrs["array_annotations"][a] = obj.array_annotations[a].copy()
-        except AttributeError:
-            pass
+    if not skip_array and hasattr(obj, "array_annotations"):
+        # Exclude labels and durations, and any other fields that should not
+        # be a part of array_annotation.
+        required_keys = set(obj.array_annotations).difference(dir(obj))
+        for a in required_keys:
+            if "array_annotations" not in attrs:
+                attrs["array_annotations"] = {}
+            attrs["array_annotations"][a] = obj.array_annotations[a].copy()
     for attr in obj._necessary_attrs + obj._recommended_attrs:
         if skip_array and len(attr) >= 3 and attr[2]:
             continue

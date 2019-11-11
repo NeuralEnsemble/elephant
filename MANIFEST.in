@@ -7,6 +7,7 @@ include elephant/current_source_density_src/README.md
 include elephant/current_source_density_src/test_data.mat
 include elephant/neural_trajectory_src/README.md
 include elephant/spade_src/LICENCE
+include elephant/gpfa_src/INFO.md
 recursive-include elephant/spade_src *.so *.pyd
 include elephant/test/spike_extraction_test_data.txt
 recursive-include doc *
