@@ -446,7 +446,7 @@ class Joint_ISI_Space:
             cum_dist_func = self.jisih_cumulatives[
                 back_index][for_index]
             if cum_dist_func[-1]:
-                cond = cum_dist_func > random_list[i]
+                cond = cum_dist_func > random_number
                 new_index = np.where(
                     cond,
                     cum_dist_func,
