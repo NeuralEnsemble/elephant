@@ -1285,7 +1285,7 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     if spectrum == '#':
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
-        bin_ids = sorted(np.array(conc[0]) % winlen)
+        bin_ids = sorted(np.array(concept[0]) % winlen)
         # The duration is effectively the delay between the last neuron and
         # the first one, measured in bins. Since we only allow the first spike
         # to be in the first bin (see concepts_mining, _build_context and
