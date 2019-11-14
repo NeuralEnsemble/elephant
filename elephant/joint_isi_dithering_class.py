@@ -7,7 +7,6 @@ Original implementation by: Peter Bouss [p.bouss@fz-juelich.de]
 :license: Modified BSD, see LICENSE.txt for details.
 '''
 
-
 import numpy as np
 import quantities as pq
 import neo
@@ -18,9 +17,11 @@ from scipy.ndimage import gaussian_filter
 
 try:
     import matplotlib.pyplot as plt
+
     HAVE_PLT = True
 except ImportError:
     HAVE_PLT = False
+
 
 class Joint_ISI_Space:
     '''
@@ -123,12 +124,12 @@ class Joint_ISI_Space:
     def __init__(self,
                  st,
                  n_surr=1,
-                 dither=15.*pq.ms,
+                 dither=15. * pq.ms,
                  unit=pq.s,
-                 window_length=120.*pq.ms,
+                 window_length=120. * pq.ms,
                  num_bins=120,
-                 sigma=1.*pq.ms,
-                 isi_median_threshold=30*pq.ms,
+                 sigma=1. * pq.ms,
+                 isi_median_threshold=30 * pq.ms,
                  alternate=True,
                  show_plot=False,
                  print_mode=False,
@@ -205,14 +206,16 @@ class Joint_ISI_Space:
 
         self.sampling_rhythm = self.alternate + 1
 
-        self.bin_width = self.window_length/self.num_bins
+        self.bin_width = self.window_length / self.num_bins
 
         def index_to_isi(ind):
-            return (ind+0.5)*self.bin_width
+            return (ind + 0.5) * self.bin_width
+
         self.index_to_isi = index_to_isi
 
         def isi_to_index(isi):
-            return np.rint(isi/self.bin_width-0.5).astype(int)
+            return np.rint(isi / self.bin_width - 0.5).astype(int)
+
         self.isi_to_index = isi_to_index
 
         self.number_of_isis = len(self.isi)
@@ -226,15 +229,16 @@ class Joint_ISI_Space:
         flipped_jisih = np.flip(self.jisih.T, 0)
 
         def normalize(v):
-            if v[-1]-v[0] > 0.:
-                return (v-v[0])/(v[-1]-v[0])
+            if v[-1] - v[0] > 0.:
+                return (v - v[0]) / (v[-1] - v[0])
             return np.zeros_like(v)
+
         self.normalize = normalize
 
         if self.method == 'fast':
             self.jisih_cumulatives = [normalize(
                 np.cumsum(np.diagonal(flipped_jisih,
-                                      -self.num_bins+double_index+1)))
+                                      -self.num_bins + double_index + 1)))
                 for double_index in range(self.num_bins)]
             return None
 
@@ -243,7 +247,7 @@ class Joint_ISI_Space:
             return None
 
         error_message = ('method must can only be \'uniform\' or \'fast\' '
-                         'or \'window\', but not \''+self.method+'\' .')
+                         'or \'window\', but not \'' + self.method + '\' .')
         raise ValueError(error_message)
 
     def dithering(self):
@@ -271,8 +275,8 @@ class Joint_ISI_Space:
                     self.st, self.dither,
                     n=self.n_surr), 'uniform'
             return surr.dither_spikes(
-                    self.st, self.dither,
-                    n=self.n_surr)
+                self.st, self.dither,
+                n=self.n_surr)
 
         if self.method == 'fast' or self.method == 'window':
             if self.print_mode:
@@ -280,7 +284,7 @@ class Joint_ISI_Space:
             return self._dithering_process()
 
         error_message = ('method must can only be \'uniform\' or \'fast\' '
-                         'or \'window\', but not \''+self.method+'\' .')
+                         'or \'window\', but not \'' + self.method + '\' .')
         raise ValueError(error_message)
 
     def _get_joint_isi_histogram(self):
@@ -300,13 +304,13 @@ class Joint_ISI_Space:
             start_index = self.isi_to_index(minimal_isi)
             jisih[start_index:, start_index:] = gaussian_filter(
                 jisih[start_index:, start_index:],
-                self.sigma/self.bin_width)
+                self.sigma / self.bin_width)
 
-            jisih[:start_index+1, :] = np.zeros_like(jisih[:start_index+1, :])
-            jisih[:, :start_index+1] = np.zeros_like(jisih[:, :start_index+1])
+            jisih[:start_index + 1, :] = np.zeros_like(jisih[:start_index + 1, :])
+            jisih[:, :start_index + 1] = np.zeros_like(jisih[:, :start_index + 1])
 
         else:
-            jisih = gaussian_filter(jisih, self.sigma/self.bin_width)
+            jisih = gaussian_filter(jisih, self.sigma / self.bin_width)
         self.jisih = jisih
 
         if self.show_plot:
@@ -340,9 +344,9 @@ class Joint_ISI_Space:
                                              - self.num_bins
                                              + double_index + 1))
             jisih_diag_cums[double_index,
-                            self.max_change_index:
-                            double_index
-                            + self.max_change_index + 1] = cum_diag
+            self.max_change_index:
+            double_index
+            + self.max_change_index + 1] = cum_diag
 
             cum_bound = np.repeat(jisih_diag_cums[double_index,
                                                   double_index +
@@ -350,24 +354,24 @@ class Joint_ISI_Space:
                                   self.max_change_index)
 
             jisih_diag_cums[double_index,
-                            double_index
-                            + self.max_change_index + 1:
-                            double_index
-                            + 2 * self.max_change_index + 1] = cum_bound
+            double_index
+            + self.max_change_index + 1:
+            double_index
+            + 2 * self.max_change_index + 1] = cum_bound
         return jisih_diag_cums
 
     def _window_cumulatives(self, flipped_jisih):
         jisih_diag_cums = self._window_diagonal_cumulatives(flipped_jisih)
         jisih_cumulatives = np.zeros(
             (self.num_bins, self.num_bins,
-             2*self.max_change_index+1))
+             2 * self.max_change_index + 1))
         for back_index in range(self.num_bins):
-            for for_index in range(self.num_bins-back_index):
-                double_index = for_index+back_index
+            for for_index in range(self.num_bins - back_index):
+                double_index = for_index + back_index
                 cum_slice = jisih_diag_cums[double_index,
-                                            back_index:
-                                            back_index +
-                                            2*self.max_change_index + 1]
+                            back_index:
+                            back_index +
+                            2 * self.max_change_index + 1]
                 normalized_cum = self.normalize(cum_slice)
                 jisih_cumulatives[back_index][for_index] = normalized_cum
         return jisih_cumulatives
@@ -387,9 +391,9 @@ class Joint_ISI_Space:
         for surr_number in range(self.n_surr):
             dithered_isi = self._get_dithered_isi()
 
-            dithered_st = self.first_spike+np.hstack(
+            dithered_st = self.first_spike + np.hstack(
                 (np.array(0.), np.cumsum(dithered_isi)))
-            dithered_st = neo.SpikeTrain(dithered_st*self.unit,
+            dithered_st = neo.SpikeTrain(dithered_st * self.unit,
                                          t_stop=self.t_stop)
             dithered_sts.append(dithered_st)
         return dithered_sts
@@ -400,7 +404,7 @@ class Joint_ISI_Space:
         if self.method == 'fast':
             for start in range(self.sampling_rhythm):
                 dithered_isi_indices = self.isi_to_index(dithered_isi)
-                for i in range(start, self.number_of_isis-1,
+                for i in range(start, self.number_of_isis - 1,
                                self.sampling_rhythm):
                     self._update_dithered_isi_fast(dithered_isi,
                                                    dithered_isi_indices,
@@ -409,7 +413,7 @@ class Joint_ISI_Space:
         else:
             for start in range(self.sampling_rhythm):
                 dithered_isi_indices = self.isi_to_index(dithered_isi)
-                for i in range(start, self.number_of_isis-1,
+                for i in range(start, self.number_of_isis - 1,
                                self.sampling_rhythm):
                     self._update_dithered_isi_window(dithered_isi,
                                                      dithered_isi_indices,
@@ -423,8 +427,8 @@ class Joint_ISI_Space:
                                   random_number,
                                   i):
         back_index = dithered_isi_indices[i]
-        for_index = dithered_isi_indices[i+1]
-        double_index = back_index+for_index
+        for_index = dithered_isi_indices[i + 1]
+        double_index = back_index + for_index
         if double_index < self.num_bins:
             if self.jisih_cumulatives[double_index][-1]:
                 cond = (self.jisih_cumulatives[double_index]
@@ -436,7 +440,7 @@ class Joint_ISI_Space:
                 step = (self.indices_to_isi[new_index]
                         - self.indices_to_isi[back_index])
                 dithered_isi[i] += step
-                dithered_isi[i+1] -= step
+                dithered_isi[i + 1] -= step
         return None
 
     def _update_dithered_isi_window(self,
@@ -445,7 +449,7 @@ class Joint_ISI_Space:
                                     random_number,
                                     i):
         back_index = dithered_isi_indices[i]
-        for_index = dithered_isi_indices[i+1]
+        for_index = dithered_isi_indices[i + 1]
         if back_index + for_index < self.num_bins:
             cum_dist_func = self.jisih_cumulatives[
                 back_index][for_index]
@@ -458,5 +462,5 @@ class Joint_ISI_Space:
                 step = (self.indices_to_isi[new_index]
                         - self.max_change_isi)
                 dithered_isi[i] += step
-                dithered_isi[i+1] -= step
+                dithered_isi[i + 1] -= step
         return None
