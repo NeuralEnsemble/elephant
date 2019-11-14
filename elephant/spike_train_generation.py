@@ -1132,7 +1132,8 @@ def homogeneous_poisson_process_with_refr_period(rate,
         raise ValueError(
             'The refractory period implies an upper limit to the firing rate i.e. the firing rate if every spike is '
             'separated exactly by the refractory period. This firing rate is the inverse of refractory period. '
-            f'At the moment there is the refractory period: {str(refr_period)} and the firing rate: {str(rate)}. '
+            'At the moment there is the refractory period: {}'.format(str(refr_period)) +
+            ' and the firing rate: {}. '.format(str(rate)) +
             'One of these parameters need to be changed.'
         )
 
