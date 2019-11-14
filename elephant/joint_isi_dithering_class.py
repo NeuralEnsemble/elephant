@@ -224,8 +224,7 @@ class Joint_ISI_Space:
         def normalize(v):
             if v[-1]-v[0] > 0.:
                 return (v-v[0])/(v[-1]-v[0])
-            else:
-                return np.zeros_like(v)
+            return np.zeros_like(v)
         self.normalize = normalize
 
         if self.method == 'fast':
@@ -267,16 +266,14 @@ class Joint_ISI_Space:
                 return surr.dither_spikes(
                     self.st, self.dither,
                     n=self.n_surr), 'uniform'
-            else:
-                return surr.dither_spikes(
+            return surr.dither_spikes(
                     self.st, self.dither,
                     n=self.n_surr)
 
         if self.method == 'fast' or self.method == 'window':
             if self.print_mode:
                 return self._dithering_process(), 'jisid'
-            else:
-                return self._dithering_process()
+            return self._dithering_process()
 
         error_message = ('method must can only be \'uniform\' or \'fast\' '
                          'or \'window\', but not \''+self.method+'\' .')

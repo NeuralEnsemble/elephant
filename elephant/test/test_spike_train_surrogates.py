@@ -13,7 +13,7 @@ import quantities as pq
 import neo
 try:
     from elephant.joint_isi_dithering_class import Joint_ISI_Space
-except:
+except ImportError:
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
     from joint_isi_dithering_class import Joint_ISI_Space
