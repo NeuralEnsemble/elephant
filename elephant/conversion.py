@@ -458,7 +458,7 @@ class BinnedSpikeTrain(object):
     # t_start, num_bins, t_stop
     # t_start, bin_size, t_stop
     # t_stop, num_bins, binsize
-    # ==========================================================================
+    # =========================================================================
 
     def _check_init_params(self, binsize, num_bins, t_start, t_stop):
         """
@@ -799,16 +799,22 @@ class BinnedSpikeTrain(object):
 
         """
         if self._mat_u is None:
-            self._mat_u = self.to_sparse_array().toarray()
+            self._mat_u = self._sparse_mat_u.toarray()
 
     def remove_stored_array(self):
         """
-        Removes the matrix with counted time points from memory.
+        Unlinks the matrix with counted time points from memory.
 
         """
+        self._mat_u = None
+
+    def binarize(self):
+        """
+        In-place clipping the internal array to have 0 or 1 values.
+        """
+        self._sparse_mat_u.data.clip(max=1, out=self._sparse_mat_u.data)
         if self._mat_u is not None:
-            del self._mat_u
-            self._mat_u = None
+            self._mat_u.clip(max=1, out=self._mat_u)
 
     def _convert_to_binned(self, spiketrains):
         """
@@ -826,11 +832,7 @@ class BinnedSpikeTrain(object):
             self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=int)
             return
 
-        from distutils.version import StrictVersion
-        # column
-        filled = []
-        # row
-        indices = []
+        row_ids, column_ids = [], []
         # data
         counts = []
         for idx, elem in enumerate(spiketrains):
@@ -842,10 +844,10 @@ class BinnedSpikeTrain(object):
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
             f, c = np.unique(filled_tmp, return_counts=True)
-            filled.extend(f)
+            column_ids.extend(f)
             counts.extend(c)
-            indices.extend([idx] * len(f))
-        csr_matrix = sps.csr_matrix((counts, (indices, filled)),
+            row_ids.extend([idx] * len(f))
+        csr_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
                                     shape=(self.matrix_rows,
                                            self.matrix_columns),
                                     dtype=int)
@@ -860,10 +862,9 @@ def _check_neo_spiketrain(matrix):
     if isinstance(matrix, neo.SpikeTrain):
         return True
     # Check for list or tuple
-    elif isinstance(matrix, (list, tuple)):
+    if isinstance(matrix, (list, tuple)):
         return all(map(_check_neo_spiketrain, matrix))
-    else:
-        return False
+    return False
 
 
 def _check_binned_array(matrix):

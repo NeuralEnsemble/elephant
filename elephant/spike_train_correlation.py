@@ -8,6 +8,7 @@ This modules provides functions to calculate correlations between spike trains.
 from __future__ import division
 
 import warnings
+from copy import deepcopy
 
 import neo
 import numpy as np
@@ -16,6 +17,124 @@ import scipy.signal
 from scipy import integrate
 
 import elephant.conversion
+
+
+class CrossCorrHist(object):
+    """
+    Cross-correlation histogram for `BinnedSpikeTrain`s.
+    """
+
+    def __init__(self, binned_st1, binned_st2, window):
+        self.binned_st1 = binned_st1
+        self.binned_st2 = binned_st2
+        self.window = window
+
+    def correlate_memory(self):
+        """
+        Slow, but memory safe mode.
+
+        Returns
+        -------
+        cross_corr : np.ndarray
+            Cross-correlation of `self.binned_st` and `self.binned_st2`.
+
+        """
+        st1_spmat = self.binned_st1._sparse_mat_u
+        st2_spmat = self.binned_st2._sparse_mat_u
+        left_edge, right_edge = self.window
+
+        # extract the nonzero column indices of 1-d matrices
+        st1_bin_idx_unique = st1_spmat.nonzero()[1]
+        st2_bin_idx_unique = st2_spmat.nonzero()[1]
+
+        st1_spmat = st1_spmat.data
+        st2_spmat = st2_spmat.data
+
+        # Initialize the counts to an array of zeroes,
+        # and the bin IDs to integers
+        # spanning the time axis
+        cross_corr = np.zeros(np.abs(left_edge) + np.abs(right_edge) + 1)
+        # Compute the CCH at lags in left_edge,...,right_edge only
+        for idx, i in enumerate(st1_bin_idx_unique):
+            il = np.searchsorted(st2_bin_idx_unique, left_edge + i)
+            ir = np.searchsorted(st2_bin_idx_unique,
+                                 right_edge + i, side='right')
+            timediff = st2_bin_idx_unique[il:ir] - i
+            assert ((timediff >= left_edge) & (
+                timediff <= right_edge)).all(), 'Not all the '
+            'entries of cch lie in the window'
+            cross_corr[timediff + np.abs(left_edge)] += (
+                    st1_spmat[idx] * st2_spmat[il:ir])
+            st2_bin_idx_unique = st2_bin_idx_unique[il:]
+            st2_spmat = st2_spmat[il:]
+        return cross_corr
+
+    def correlate_speed(self, cch_mode):
+        """
+        Fast, but might require a lot of memory.
+
+        Parameters
+        ----------
+        cch_mode : str
+            Cross-correlation mode.
+
+        Returns
+        -------
+        cross_corr : np.ndarray
+            Cross-correlation of `self.binned_st` and `self.binned_st2`.
+
+        """
+        # Retrieve the array of the binned spike trains
+        st1_arr = self.binned_st1.to_array()[0]
+        st2_arr = self.binned_st2.to_array()[0]
+        left_edge, right_edge = self.window
+        if cch_mode == 'pad':
+            # Zero padding to stay between left_edge and right_edge
+            pad_width = max(-left_edge, 0), max(right_edge, 0)
+            st1_arr = np.pad(st1_arr, pad_width=pad_width, mode='constant')
+            cch_mode = 'valid'
+        # Cross correlate the spike trains
+        cross_corr = scipy.signal.fftconvolve(st2_arr, st1_arr[::-1],
+                                              mode=cch_mode)
+        # convolution of integers is integers
+        cross_corr = np.round(cross_corr)
+        return cross_corr
+
+    def border_correction(self, cross_corr):
+        max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
+        left_edge, right_edge = self.window
+        n_values_fall_in_window = max_num_bins + 1 - \
+                                  np.abs(np.arange(left_edge, right_edge + 1))
+        correction = float(max_num_bins + 1) / n_values_fall_in_window
+        return cross_corr * correction
+
+    def cross_corr_coef(self, cross_corr):
+        # Normalizes the CCH to obtain the cross-correlation
+        # coefficient function ranging from -1 to 1
+        max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
+        Nx = len(self.binned_st1.spike_indices[0])
+        Ny = len(self.binned_st2.spike_indices[0])
+        bin_counts_unique = [self.binned_st1._sparse_mat_u.data,
+                             self.binned_st2._sparse_mat_u.data]
+        ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
+        jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
+        rho_xy = (cross_corr - Nx * Ny / max_num_bins) / \
+            np.sqrt((ii - Nx**2. / max_num_bins) * (
+                    jj - Ny**2. / max_num_bins))
+        return rho_xy
+
+    def kernel_smoothing(self, cross_corr, kernel):
+        left_edge, right_edge = self.window
+        kern_len_max = abs(left_edge) + abs(right_edge) + 1
+        # Define the kern for smoothing as an ndarray
+        if len(kernel) > kern_len_max:
+            raise ValueError(
+                'The length of the kernel {} cannot be larger than the '
+                'length {} of the resulting CCH.'.format(len(kernel),
+                                                         kern_len_max))
+        kernel = np.divide(kernel, kernel.sum())
+        # Smooth the cross-correlation histogram with the kern
+        return np.convolve(cross_corr, kernel, mode='same')
 
 
 def covariance(binned_sts, binary=False):
@@ -401,142 +520,6 @@ def cross_correlation_histogram(
     `cch`
     """
 
-    def _cross_corr_coef(cch_result, binned_st1, binned_st2):
-        # Normalizes the CCH to obtain the cross-correlation
-        # coefficient function ranging from -1 to 1
-        N = max(binned_st1.num_bins, binned_st2.num_bins)
-        Nx = len(binned_st1.spike_indices[0])
-        Ny = len(binned_st2.spike_indices[0])
-        spmat = [binned_st1.to_sparse_array(), binned_st2.to_sparse_array()]
-        bin_counts_unique = []
-        for s in spmat:
-            bin_counts_unique.append(s.data)
-        ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
-        jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
-        rho_xy = (cch_result - Nx * Ny / N) / \
-            np.sqrt((ii - Nx**2. / N) * (jj - Ny**2. / N))
-        return rho_xy
-
-    def _border_correction(counts, max_num_bins, l, r):
-        # Correct the values taking into account lacking contributes
-        # at the edges
-        n_values_fall_in_window = max_num_bins + 1 - \
-                                  np.abs(np.arange(l, r + 1))
-        correction = float(max_num_bins + 1) / n_values_fall_in_window
-        return counts * correction
-
-    def _kernel_smoothing(counts, kern, l, r):
-        # Define the kern for smoothing as an ndarray
-        if len(kern) > np.abs(l) + np.abs(r) + 1:
-            raise ValueError(
-                'The length of the kernel cannot be larger than the '
-                'length %d of the resulting CCH.' % (
-                    np.abs(l) + np.abs(r) + 1))
-        kern = np.divide(kern, kern.sum())
-        # Smooth the cross-correlation histogram with the kern
-        return np.convolve(counts, kern, mode='same')
-
-    def _cch_memory(binned_st1, binned_st2, left_edge, right_edge,
-                    border_corr, binary, kern):
-
-        # Retrieve unclipped matrix
-        st1_spmat = binned_st1.to_sparse_array()
-        st2_spmat = binned_st2.to_sparse_array()
-
-        # For each row, extract the nonzero column indices
-        # and the corresponding # data in the matrix (for performance reasons)
-        st1_bin_idx_unique = st1_spmat.nonzero()[1]
-        st2_bin_idx_unique = st2_spmat.nonzero()[1]
-
-        # Case with binary entries
-        if binary:
-            st1_bin_counts_unique = np.array(st1_spmat.data > 0, dtype=int)
-            st2_bin_counts_unique = np.array(st2_spmat.data > 0, dtype=int)
-        # Case with all values
-        else:
-            st1_bin_counts_unique = st1_spmat.data
-            st2_bin_counts_unique = st2_spmat.data
-
-        # Initialize the counts to an array of zeroes,
-        # and the bin IDs to integers
-        # spanning the time axis
-        counts = np.zeros(np.abs(left_edge) + np.abs(right_edge) + 1)
-        bin_ids = np.arange(left_edge, right_edge + 1)
-        # Compute the CCH at lags in left_edge,...,right_edge only
-        for idx, i in enumerate(st1_bin_idx_unique):
-            il = np.searchsorted(st2_bin_idx_unique, left_edge + i)
-            ir = np.searchsorted(st2_bin_idx_unique,
-                                 right_edge + i, side='right')
-            timediff = st2_bin_idx_unique[il:ir] - i
-            assert ((timediff >= left_edge) & (
-                timediff <= right_edge)).all(), 'Not all the '
-            'entries of cch lie in the window'
-            counts[timediff + np.abs(left_edge)] += (
-                    st1_bin_counts_unique[idx] * st2_bin_counts_unique[il:ir])
-            st2_bin_idx_unique = st2_bin_idx_unique[il:]
-            st2_bin_counts_unique = st2_bin_counts_unique[il:]
-        # Border correction
-        if border_corr is True:
-            counts = _border_correction(
-                counts, max_num_bins, left_edge, right_edge)
-        if kern is not None:
-            # Smoothing
-            counts = _kernel_smoothing(counts, kern, left_edge, right_edge)
-        # Transform the array count into an AnalogSignal
-        cch_result = neo.AnalogSignal(
-            signal=counts.reshape(counts.size, 1),
-            units=pq.dimensionless,
-            t_start=(bin_ids[0] - 0.5) * binned_st1.binsize,
-            sampling_period=binned_st1.binsize)
-        # Return only the hist_bins bins and counts before and after the
-        # central one
-        return cch_result, bin_ids
-
-    def _cch_speed(binned_st1, binned_st2, left_edge, right_edge, cch_mode,
-                   border_corr, binary, kern):
-
-        # Retrieve the array of the binned spike trains
-        st1_arr = binned_st1.to_array()[0]
-        st2_arr = binned_st2.to_array()[0]
-
-        # Convert the to binary version
-        if binary:
-            st1_arr = np.array(st1_arr > 0, dtype=int)
-            st2_arr = np.array(st2_arr > 0, dtype=int)
-        if cch_mode == 'pad':
-            # Zero padding to stay between left_edge and right_edge
-            pad_width = max(-left_edge, 0), max(right_edge, 0)
-            st1_arr = np.pad(st1_arr, pad_width=pad_width, mode='constant')
-            cch_mode = 'valid'
-        # Cross correlate the spike trains
-        if cch_mode == 'valid':
-            counts = np.correlate(st2_arr, st1_arr, mode=cch_mode)
-        else:
-            counts = scipy.signal.fftconvolve(st2_arr, st1_arr[::-1],
-                                              mode=cch_mode)
-
-            # cross-corr of integers is an integer
-            counts = np.round(counts)
-            # counts = np.correlate(st2_arr, st1_arr, mode=cch_mode)
-
-        bin_ids = np.arange(left_edge, right_edge + 1)
-        # Border correction
-        if border_corr is True:
-            counts = _border_correction(
-                counts, max_num_bins, left_edge, right_edge)
-        if kern is not None:
-            # Smoothing
-            counts = _kernel_smoothing(counts, kern, left_edge, right_edge)
-        # Transform the array count into an AnalogSignal
-        cch_result = neo.AnalogSignal(
-            signal=counts.reshape(counts.size, 1),
-            units=pq.dimensionless,
-            t_start=(bin_ids[0] - 0.5) * binned_st1.binsize,
-            sampling_period=binned_st1.binsize)
-        # Return only the hist_bins bins and counts before and after the
-        # central one
-        return cch_result, bin_ids
-
     # Check that the spike trains are binned with the same temporal
     # resolution
     if not binned_st1.matrix_rows == 1:
@@ -586,19 +569,35 @@ def cross_correlation_histogram(
     # Check the mode parameter
     else:
         raise ValueError("Invalid window parameter")
+    
+    if binary:
+        binned_st1 = deepcopy(binned_st1)
+        binned_st2 = deepcopy(binned_st2)
+        binned_st1.binarize()
+        binned_st2.binarize()
 
-    if method == "memory":
-        cch_result, bin_ids = _cch_memory(
-            binned_st1, binned_st2, left_edge, right_edge, border_correction,
-            binary, kernel)
-    else:  # speed
-        cch_result, bin_ids = _cch_speed(
-            binned_st1, binned_st2, left_edge, right_edge, cch_mode,
-            border_correction, binary, kernel)
-
+    cch_builder = CrossCorrHist(binned_st1, binned_st2,
+                                window=(left_edge, right_edge))
+    if method == 'memory':
+        cross_corr = cch_builder.correlate_memory()
+    else:
+        cross_corr = cch_builder.correlate_speed(cch_mode=cch_mode)
+    bin_ids = np.arange(left_edge, right_edge + 1)
+    if border_correction:
+        cross_corr = cch_builder.border_correction(cross_corr)
+    if kernel is not None:
+        cross_corr = cch_builder.kernel_smoothing(cross_corr, kernel=kernel)
     if cross_corr_coef:
-        cch_result = _cross_corr_coef(cch_result, binned_st1, binned_st2)
+        cross_corr = cch_builder.cross_corr_coef(cross_corr)
 
+    # Transform the array count into an AnalogSignal
+    cch_result = neo.AnalogSignal(
+        signal=cross_corr.reshape(cross_corr.size, 1),
+        units=pq.dimensionless,
+        t_start=(bin_ids[0] - 0.5) * binned_st1.binsize,
+        sampling_period=binned_st1.binsize)
+    # Return only the hist_bins bins and counts before and after the
+    # central one
     return cch_result, bin_ids
 
 
