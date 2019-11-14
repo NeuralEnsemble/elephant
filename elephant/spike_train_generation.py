@@ -1157,5 +1157,4 @@ def homogeneous_poisson_process_with_refr_period(rate,
     st += t_start.magnitude
     if not as_array:
         return SpikeTrain(st * t_start.units, t_start=t_start, t_stop=t_stop)
-    else:
-        return st
+    return st
