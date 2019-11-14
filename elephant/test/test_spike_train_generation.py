@@ -729,6 +729,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
                                 spiketrain[-1], 7*expected_mean_isi)
 
     def test_low_rates(self):
+        hppr = stgen.homogeneous_poisson_process_with_refr_period
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             """
@@ -742,6 +743,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         spiketrain = hppr(1*Hz, t_stop=1000*ms)
 
     def test_buffer_overrun(self):
+        hppr = stgen.homogeneous_poisson_process_with_refr_period
         np.random.seed(6085)  # this seed should produce a buffer overrun
         t_stop = 1000*ms
         rate = 10*Hz
