@@ -1130,9 +1130,11 @@ def homogeneous_poisson_process_with_refr_period(rate,
 
     if rate_mag >= 1. / refr_period_mag:
         raise ValueError(
-            'The firing rate must be sufficiently smaller than the inverse of the refractory period, otherwise' +
-            f' the effective firing rate diverges. But now we have rate: {str(rate)} and' +
-            f' refractory period: {str(refr_period)}')
+            'The refractory period implies an upper limit to the firing rate i.e. the firing rate if every spike is '
+            'separated exactly by the refractory period. This firing rate is the inverse of refractory period. '
+            f'At the moment there is the refractory period: {str(refr_period)} and the firing rate: {str(rate)}. '
+            'One of these parameters need to be changed.'
+        )
 
     duration = (t_stop - t_start).magnitude
     mean_spike_count = rate_mag * duration
