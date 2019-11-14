@@ -1138,13 +1138,17 @@ def homogeneous_poisson_process_with_refr_period(rate,
     mean_spike_count = rate_mag * duration
     spike_count = np.random.poisson(lam=mean_spike_count)
 
-    # Check that the number of spikes drawn from the Poisson distributions,
+    # Check that the number of spikes drawn from the Poisson distribution,
     # can fit in the duration regarding the refractory period.
     if spike_count >= 1. + duration / refr_period_mag:
         spike_count = np.ceil(duration / refr_period_mag).astype(int)
 
+    # Due to the refractory period the effective space in where the spikes can be placed is
+    # shortened by (spike-count - 1) times the refr. period.
     eff_duration = duration - (spike_count - 1) * refr_period_mag
 
+    # In this effective time interval each spike is placed uniformly, and after sorting to each ISI
+    # one refractory period is added.
     st = np.sort(np.random.random(spike_count)) * eff_duration
     st += refr_period_mag * np.arange(spike_count)
     st += t_start.magnitude
