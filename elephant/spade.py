@@ -64,6 +64,7 @@ from itertools import chain, combinations
 import time
 import quantities as pq
 import warnings
+from elephant.spade_src import fast_fca
 
 warnings.simplefilter('once', UserWarning)
 
@@ -78,7 +79,6 @@ try:
     from elephant.spade_src import fim
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
-    from elephant.spade_src import fast_fca
     HAVE_FIM = False
 
 
