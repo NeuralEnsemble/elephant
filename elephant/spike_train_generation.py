@@ -1069,7 +1069,8 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
 cpp = compound_poisson_process
 
 
-def homogeneous_poisson_process_with_refr_period(rate, refr_period=3. * ms,
+def homogeneous_poisson_process_with_refr_period(rate,
+                                                 refr_period=2. * ms,
                                                  t_start=0.0 * ms,
                                                  t_stop=1000.0 * ms,
                                                  as_array=False):
@@ -1088,13 +1089,17 @@ def homogeneous_poisson_process_with_refr_period(rate, refr_period=3. * ms,
     refr_period : Quantity scalar with dimension time
                   The time period the after one spike no other spike is
                   emitted.
+                  Default: 2 ms
     t_start : Quantity scalar with dimension time
               The beginning of the spike train.
+              Default: 0 ms
     t_stop : Quantity scalar with dimension time
              The end of the spike train.
+             Default: 1000 ms
     as_array : bool
                If True, a NumPy array of sorted spikes is returned,
                rather than a SpikeTrain object.
+               Default: False
 
     Raises
     ------
