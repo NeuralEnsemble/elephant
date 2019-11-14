@@ -732,10 +732,8 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         hppr = stgen.homogeneous_poisson_process_with_refr_period
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            """
-            Catch RuntimeWarning: divide by zero encountered in true_divide
-            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            """
+            # Catch RuntimeWarning: divide by zero encountered in true_divide
+            # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
             spiketrain = stgen.homogeneous_poisson_process(0*Hz,
                                                            t_stop=1000*ms)
         self.assertEqual(spiketrain.size, 0)
