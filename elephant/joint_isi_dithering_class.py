@@ -9,7 +9,6 @@ Original implementation by: Peter Bouss [p.bouss@fz-juelich.de]
 
 
 import numpy as np
-import matplotlib.pyplot as plt
 import quantities as pq
 import neo
 
@@ -17,6 +16,11 @@ import elephant.spike_train_surrogates as surr
 import elephant.statistics as stats
 from scipy.ndimage import gaussian_filter
 
+try:
+    import matplotlib.pyplot as plt
+    HAVE_PLT = True
+except:
+    HAVE_PLT = False
 
 class Joint_ISI_Space:
     '''
@@ -306,6 +310,9 @@ class Joint_ISI_Space:
         self.jisih = jisih
 
         if self.show_plot:
+            if not HAVE_PLT:
+                print('You need to install matplotlib to see plots.')
+                return None
             plt.figure(figsize=[12.8, 9.6])
             plt.imshow(jisih, origin='lower',
                        extent=(0., self.window_length,
