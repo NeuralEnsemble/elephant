@@ -8,9 +8,11 @@ unittests for spike_train_surrogates module.
 
 import unittest
 import elephant.spike_train_surrogates as surr
+import elephant.spike_train_generation as stg
 import numpy as np
 import quantities as pq
 import neo
+import sys
 try:
     from elephant.joint_isi_dithering_class import Joint_ISI_Space
 except ImportError:
@@ -322,7 +324,7 @@ class SurrogatesTestCase(unittest.TestCase):
         st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
         n_surr = 2
         dither = 10 * pq.ms
-        surrs = Joint_ISI_Space(st, n_surr=n_surr).dithering()
+        surrs = Joint_ISI_Space(st, n_surr=n_surr, dither=dither).dithering()
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)

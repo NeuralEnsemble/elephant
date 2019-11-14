@@ -19,7 +19,7 @@ from scipy.ndimage import gaussian_filter
 try:
     import matplotlib.pyplot as plt
     HAVE_PLT = True
-except:
+except ImportError:
     HAVE_PLT = False
 
 class Joint_ISI_Space:
