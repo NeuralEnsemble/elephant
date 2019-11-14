@@ -490,8 +490,8 @@ def joint_isi_dithering(spiketrain,
 
     Attributes
     ----------
-    st: neo.SpikeTrain
-        For this spiketrain the surrogates will be created
+    spiketrain: neo.SpikeTrain
+                For this spiketrain the surrogates will be created
 
     n_surr: int, optional
         Number of surrogates to be created.
@@ -565,7 +565,7 @@ def joint_isi_dithering(spiketrain,
         'uniform' if the ISI median was too low and uniform dithering was
         used.
     '''
-    return Joint_ISI_Space(st,
+    return Joint_ISI_Space(spiketrain,
                            n_surr=n,
                            dither=dither,
                            unit=unit,
@@ -655,6 +655,6 @@ def surrogates(
     elif surr_method in ['randomise_spikes', 'shuffle_isis']:
         return surrogate_types[surr_method](
             spiketrain, n=n, decimals=decimals)
-    elif surr_method == 'joint_isi_dithering'
-    return surrogate_types[surr_method](
-        spiketrain, n=n)
+    elif surr_method == 'joint_isi_dithering':
+        return surrogate_types[surr_method](
+            spiketrain, n=n)
