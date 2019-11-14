@@ -1,11 +1,11 @@
-'''
+"""
 Module to generate surrogates of spike trains by using the joint-ISI dithering.
 Features are provided to separate the preprocessing from the main process.
 
 Original implementation by: Peter Bouss [p.bouss@fz-juelich.de]
 :copyright: Copyright 2019 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
-'''
+"""
 
 import numpy as np
 import quantities as pq
@@ -15,16 +15,9 @@ import elephant.spike_train_surrogates as surr
 import elephant.statistics as stats
 from scipy.ndimage import gaussian_filter
 
-try:
-    import matplotlib.pyplot as plt
-
-    HAVE_PLT = True
-except ImportError:
-    HAVE_PLT = False
-
 
 class JointISISpace:
-    '''
+    """
     The class :class:`Joint_ISI_Space` is implemented for Joint-ISI dithering
     as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).
 
@@ -70,9 +63,6 @@ class JointISISpace:
         dithered. Else: in acending order from the first to the last spike, all
         spikes are moved.
         Default: True.
-    show_plot: boolean
-        if show_plot == True the joint-ISI distribution will be plotted
-        Default: False
     print_mode: boolean
         If True, also the way of how the dithered spikes are evaluated
         is returned so 'uniform' for uniform and dithering and 'jisid' for
@@ -119,7 +109,7 @@ class JointISISpace:
             'jisih' if joint-ISI was used,
             'uniform' if the dense_rate was too low and uniform dithering was
              used.
-    '''
+    """
 
     def __init__(self,
                  st,
@@ -131,7 +121,6 @@ class JointISISpace:
                  sigma=1. * pq.ms,
                  isi_median_threshold=30 * pq.ms,
                  alternate=True,
-                 show_plot=False,
                  print_mode=False,
                  use_sqrt=False,
                  method='fast',
@@ -151,7 +140,6 @@ class JointISISpace:
         self.num_bins = num_bins
 
         self.alternate = alternate
-        self.show_plot = show_plot
         self.print_mode = print_mode
         self.use_sqrt = use_sqrt
         self.method = method
@@ -161,7 +149,7 @@ class JointISISpace:
         self.preprocessing()
 
     def preprocessing(self):
-        '''
+        """
         All preprocessing steps for the joint-ISI dithering are done here.
 
         So first to checks are done. If they are not passed, self.method is
@@ -183,7 +171,7 @@ class JointISISpace:
         calculate the cumulative distribution function.
 
         The function has no output, but stores its result inside the class.
-        '''
+        """
         if len(self.st) < self.min_spikes:
             self.method = 'uniform'
             return None
@@ -251,7 +239,7 @@ class JointISISpace:
         raise ValueError(error_message)
 
     def dithering(self):
-        '''
+        """
         Implementation of Joint-ISI-dithering for spiketrains that pass the
         threshold of the dense rate, if not a uniform dithered spiketrain is
         given back. The implementation continued the ideas of Louis et al.
@@ -268,7 +256,7 @@ class JointISISpace:
             'jisid' if joint-ISI was used,
             'uniform' if the ISI median was too low and uniform dithering was
             used.
-        '''
+        """
         if self.method == 'uniform':
             if self.print_mode:
                 return surr.dither_spikes(
@@ -288,9 +276,9 @@ class JointISISpace:
         raise ValueError(error_message)
 
     def _get_joint_isi_histogram(self):
-        '''
+        """
         This function calculates the joint-ISI histogram.
-        '''
+        """
         jisih = np.histogram2d(self.isi[:-1], self.isi[1:],
                                bins=[self.num_bins, self.num_bins],
                                range=[[0., self.window_length],
@@ -312,23 +300,6 @@ class JointISISpace:
         else:
             jisih = gaussian_filter(jisih, self.sigma / self.bin_width)
         self.jisih = jisih
-
-        if self.show_plot:
-            if not HAVE_PLT:
-                print('You need to install matplotlib to see plots.')
-                return None
-            plt.figure(figsize=[12.8, 9.6])
-            plt.imshow(jisih, origin='lower',
-                       extent=(0., self.window_length,
-                               0., self.window_length))
-            plt.xlabel('ISI(i+1) in s')
-            plt.ylabel('ISI(i) in s')
-            if self.use_sqrt:
-                plt.title('Joint-ISI-distribution (sqrt)')
-            else:
-                plt.title('Joint-ISI-distribution')
-            plt.colorbar()
-            plt.show()
         return None
 
     def _window_diagonal_cumulatives(self, flipped_jisih):
@@ -344,9 +315,9 @@ class JointISISpace:
                                              - self.num_bins
                                              + double_index + 1))
             jisih_diag_cums[double_index,
-            self.max_change_index:
-            double_index
-            + self.max_change_index + 1] = cum_diag
+                            self.max_change_index:
+                            double_index
+                            + self.max_change_index + 1] = cum_diag
 
             cum_bound = np.repeat(jisih_diag_cums[double_index,
                                                   double_index +
@@ -354,10 +325,8 @@ class JointISISpace:
                                   self.max_change_index)
 
             jisih_diag_cums[double_index,
-            double_index
-            + self.max_change_index + 1:
-            double_index
-            + 2 * self.max_change_index + 1] = cum_bound
+                            double_index + self.max_change_index + 1:
+                            double_index + 2 * self.max_change_index + 1] = cum_bound
         return jisih_diag_cums
 
     def _window_cumulatives(self, flipped_jisih):
@@ -369,15 +338,15 @@ class JointISISpace:
             for for_index in range(self.num_bins - back_index):
                 double_index = for_index + back_index
                 cum_slice = jisih_diag_cums[double_index,
-                            back_index:
-                            back_index +
-                            2 * self.max_change_index + 1]
+                                            back_index:
+                                            back_index +
+                                            2 * self.max_change_index + 1]
                 normalized_cum = self.normalize(cum_slice)
                 jisih_cumulatives[back_index][for_index] = normalized_cum
         return jisih_cumulatives
 
     def _dithering_process(self):
-        '''
+        """
         Dithering process for the Joint-ISI dithering.
 
         Returns
@@ -385,7 +354,7 @@ class JointISISpace:
         dithered_sts
             list of neo.SpikeTrain: A list of len n_surr,
             each entry is one dithered spiketrain.
-        '''
+        """
 
         dithered_sts = []
         for surr_number in range(self.n_surr):
