@@ -474,7 +474,7 @@ def joint_isi_dithering(spiketrain,
                         cutoff=True,
                         min_spikes=10
                         ):
-    '''
+    """
     Implementation of Joint-ISI-dithering for spiketrains that pass the
     threshold of the dense rate, if not a uniform dithered spiketrain is
     given back. The implementation continued the ideas of Louis et al.
@@ -493,7 +493,7 @@ def joint_isi_dithering(spiketrain,
     spiketrain: neo.SpikeTrain
                 For this spiketrain the surrogates will be created
 
-    n_surr: int, optional
+    n: int, optional
         Number of surrogates to be created.
         Default: 1
     dither: pq.Quantity
@@ -564,23 +564,23 @@ def joint_isi_dithering(spiketrain,
         'jisid' if joint-ISI was used,
         'uniform' if the ISI median was too low and uniform dithering was
         used.
-    '''
+    """
     return JointISISpace(spiketrain,
-                           n_surr=n,
-                           dither=dither,
-                           unit=unit,
-                           window_length=window_length,
-                           num_bins=num_bins,
-                           sigma=sigma,
-                           isi_median_threshold=isi_median_threshold,
-                           alternate=alternate,
-                           show_plot=show_plot,
-                           print_mode=print_mode,
-                           use_sqrt=use_sqrt,
-                           method=method,
-                           cutoff=cutoff,
-                           min_spikes=min_spikes
-                           ).dithering()
+                         n_surr=n,
+                         dither=dither,
+                         unit=unit,
+                         window_length=window_length,
+                         num_bins=num_bins,
+                         sigma=sigma,
+                         isi_median_threshold=isi_median_threshold,
+                         alternate=alternate,
+                         show_plot=show_plot,
+                         print_mode=print_mode,
+                         use_sqrt=use_sqrt,
+                         method=method,
+                         cutoff=cutoff,
+                         min_spikes=min_spikes
+                         ).dithering()
 
 
 def surrogates(
