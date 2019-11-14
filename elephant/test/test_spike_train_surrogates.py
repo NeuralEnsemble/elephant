@@ -12,13 +12,7 @@ import elephant.spike_train_generation as stg
 import numpy as np
 import quantities as pq
 import neo
-import sys
-try:
-    from elephant.joint_isi_dithering_class import Joint_ISI_Space
-except ImportError:
-    sys.path.insert(0, '.')
-    sys.path.insert(0, '..')
-    from joint_isi_dithering_class import JointISISpace
+from elephant.joint_isi_dithering_class import JointISISpace
 
 np.random.seed(0)
 
