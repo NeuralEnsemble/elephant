@@ -18,7 +18,7 @@ try:
 except ImportError:
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
-    from joint_isi_dithering_class import Joint_ISI_Space
+    from joint_isi_dithering_class import JointISISpace
 
 np.random.seed(0)
 
@@ -324,7 +324,7 @@ class SurrogatesTestCase(unittest.TestCase):
         st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
         n_surr = 2
         dither = 10 * pq.ms
-        surrs = Joint_ISI_Space(st, n_surr=n_surr, dither=dither).dithering()
+        surrs = JointISISpace(st, n_surr=n_surr, dither=dither).dithering()
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
@@ -340,7 +340,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = Joint_ISI_Space(st).dithering()[0]
+        surrog = JointISISpace(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
 
 

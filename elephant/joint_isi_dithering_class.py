@@ -23,7 +23,7 @@ except ImportError:
     HAVE_PLT = False
 
 
-class Joint_ISI_Space:
+class JointISISpace:
     '''
     The class :class:`Joint_ISI_Space` is implemented for Joint-ISI dithering
     as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).

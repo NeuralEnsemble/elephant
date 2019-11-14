@@ -47,7 +47,7 @@ try:
     isi = es.isi
 except ImportError:
     from .statistics import isi  # Convenience when in elephant working dir.
-from elephant.joint_isi_dithering_class import Joint_ISI_Space
+from elephant.joint_isi_dithering_class import JointISISpace
 
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
@@ -565,7 +565,7 @@ def joint_isi_dithering(spiketrain,
         'uniform' if the ISI median was too low and uniform dithering was
         used.
     '''
-    return Joint_ISI_Space(spiketrain,
+    return JointISISpace(spiketrain,
                            n_surr=n,
                            dither=dither,
                            unit=unit,
