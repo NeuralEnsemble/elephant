@@ -294,8 +294,10 @@ class JointISISpace:
                 jisih[start_index:, start_index:],
                 self.sigma / self.bin_width)
 
-            jisih[:start_index + 1, :] = np.zeros_like(jisih[:start_index + 1, :])
-            jisih[:, :start_index + 1] = np.zeros_like(jisih[:, :start_index + 1])
+            jisih[:start_index + 1, :] = np.zeros_like(
+                jisih[:start_index + 1, :])
+            jisih[:, :start_index + 1] = np.zeros_like(
+                jisih[:, :start_index + 1])
 
         else:
             jisih = gaussian_filter(jisih, self.sigma / self.bin_width)
@@ -326,7 +328,8 @@ class JointISISpace:
 
             jisih_diag_cums[double_index,
                             double_index + self.max_change_index + 1:
-                            double_index + 2 * self.max_change_index + 1] = cum_bound
+                            double_index
+                            + 2 * self.max_change_index + 1] = cum_bound
         return jisih_diag_cums
 
     def _window_cumulatives(self, flipped_jisih):
