@@ -47,7 +47,7 @@ class JointISISpace:
         The extent in which the joint-ISI-distribution is calculated.
         Default: 120*pq.ms
     num_bins: int
-        The size of the joint-ISI-ditribution will be num_bins*num_bins.
+        The size of the joint-ISI-distribution will be num_bins*num_bins.
         Default: 120
     sigma: pq.Quantity
         The standard deviation of the Gaussian kernel, with which
@@ -60,7 +60,7 @@ class JointISISpace:
         Default: 30*pq.ms
     alternate: boolean
         If alternate == True: then first all even and then all odd spikes are
-        dithered. Else: in acending order from the first to the last spike, all
+        dithered. Else: in ascending order from the first to the last spike, all
         spikes are moved.
         Default: True.
     print_mode: boolean
@@ -93,7 +93,7 @@ class JointISISpace:
     ----------
     preprocessing()
         The preprocessing function is called in the initialization process.
-        Wutside of it is only necessary if the attributes of the
+        Outside of it is only necessary if the attributes of the
         :class:`Joint_ISI_Space` were changed after the initialization, than it
         prepares the class again to create dithered spiketrains.
     dithering()
@@ -162,12 +162,12 @@ class JointISISpace:
 
         If method is 'fast':
         For each slice of the joint-ISI
-        distribution (parallel to the antidiagonal) a cumulative distr.
+        distribution (parallel to the anti-diagonal) a cumulative distribution
         function is calculated.
 
         If method is 'window':
         For each point in the joint-ISI distribution a on the line parallel to
-        the antidiagonal all points up to the dither-parameter are included, to
+        the anti-diagonal all points up to the dither-parameter are included, to
         calculate the cumulative distribution function.
 
         The function has no output, but stores its result inside the class.
