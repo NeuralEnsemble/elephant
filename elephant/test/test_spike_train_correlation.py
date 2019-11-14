@@ -445,10 +445,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
 
         # Check for wrong window parameter setting
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window='dsaij')
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window='dsaij', method='memory')
 
     def test_raising_error_wrong_inputs(self):
@@ -456,22 +456,22 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         fullfilling the requirement of the function'''
         # Check the binsizes are the same
         self.assertRaises(
-            AssertionError,
+            ValueError,
             sc.cross_correlation_histogram, self.binned_st1,
             self.st_check_binsize)
         # Check different t_start and t_stop
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.st_check_t_start, self.binned_st2)
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.st_check_t_stop, self.binned_st2)
         # Check input are one dimensional
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.st_check_dimension, self.binned_st2)
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.binned_st2, self.st_check_dimension)
 
     def test_window(self):
@@ -522,10 +522,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             self.binned_st2, window=[-50, 60])
         # Test for no integer or wrong string in input
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window=[-25.5, 25.5])
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window='test')
 
     def test_border_correction(self):
@@ -571,12 +571,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, sc.cch, self.binned_st1, self.binned_st2,
             kernel=np.ones(100), method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cch, self.binned_st1, self.binned_st2, kernel='BOX')
-        self.assertRaises(
-            ValueError, sc.cch, self.binned_st1, self.binned_st2, kernel='BOX',
-            method='memory')
 
     def test_exist_alias(self):
         '''
