@@ -313,7 +313,7 @@ class Analysis(object):
         ----------
         annotations: dict
             Arguments passed as key=value pairs are stored inside `_custom_annotations` dictionary.
-            It can be acessed by the `annotations` class property.
+            It can be accessed by the `annotations` class property.
 
         """
         _check_annotations(annotations)      # Use Neo constraints to check each individual annotation item
