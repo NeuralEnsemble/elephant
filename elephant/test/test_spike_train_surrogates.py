@@ -12,7 +12,7 @@ import elephant.spike_train_generation as stg
 import numpy as np
 import quantities as pq
 import neo
-from elephant.joint_isi_dithering_class import JointISISpace
+from elephant.spike_train_surrogates import JointISISpace
 
 np.random.seed(0)
 
