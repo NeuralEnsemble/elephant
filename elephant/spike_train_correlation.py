@@ -103,8 +103,8 @@ class CrossCorrHist(object):
     def border_correction(self, cross_corr):
         max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
         left_edge, right_edge = self.window
-        n_values_fall_in_window = max_num_bins + 1 - \
-                                  np.abs(np.arange(left_edge, right_edge + 1))
+        n_values_fall_in_window = max_num_bins + 1 - np.abs(
+            np.arange(left_edge, right_edge + 1))
         correction = float(max_num_bins + 1) / n_values_fall_in_window
         return cross_corr * correction
 
@@ -112,15 +112,13 @@ class CrossCorrHist(object):
         # Normalizes the CCH to obtain the cross-correlation
         # coefficient function ranging from -1 to 1
         max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
-        Nx = len(self.binned_st1.spike_indices[0])
-        Ny = len(self.binned_st2.spike_indices[0])
-        bin_counts_unique = [self.binned_st1._sparse_mat_u.data,
-                             self.binned_st2._sparse_mat_u.data]
-        ii = np.dot(bin_counts_unique[0], bin_counts_unique[0])
-        jj = np.dot(bin_counts_unique[1], bin_counts_unique[1])
-        rho_xy = (cross_corr - Nx * Ny / max_num_bins) / \
-            np.sqrt((ii - Nx**2. / max_num_bins) * (
-                    jj - Ny**2. / max_num_bins))
+        n_spikes1 = self.binned_st1.get_num_of_spikes()
+        n_spikes2 = self.binned_st2.get_num_of_spikes()
+        ii = np.square(self.binned_st1._sparse_mat_u.data).sum()
+        jj = np.square(self.binned_st2._sparse_mat_u.data).sum()
+        rho_xy = (cross_corr - n_spikes1 * n_spikes2 / max_num_bins) / \
+            np.sqrt((ii - n_spikes1 ** 2. / max_num_bins) * (
+                jj - n_spikes2 ** 2. / max_num_bins))
         return rho_xy
 
     def kernel_smoothing(self, cross_corr, kernel):
@@ -569,7 +567,6 @@ def cross_correlation_histogram(
     # Check the mode parameter
     else:
         raise ValueError("Invalid window parameter")
-    
     if binary:
         binned_st1 = deepcopy(binned_st1)
         binned_st2 = deepcopy(binned_st2)

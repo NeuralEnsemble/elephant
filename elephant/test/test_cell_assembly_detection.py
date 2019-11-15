@@ -92,11 +92,11 @@ class CadTestCase(unittest.TestCase):
             range(self.n_spk1 + self.n_spk2,
                   self.n_spk1 + self.n_spk2 + self.n_spk3)]
         self.occ1 = np.unique(conv.BinnedSpikeTrain(
-            self.patt1_times, self.binsize).spike_indices[0])
+            self.patt1_times, self.binsize).get_num_of_spikes())
         self.occ2 = np.unique(conv.BinnedSpikeTrain(
-            self.patt2_times, self.binsize).spike_indices[0])
+            self.patt2_times, self.binsize).get_num_of_spikes())
         self.occ3 = np.unique(conv.BinnedSpikeTrain(
-            self.patt3_times, self.binsize).spike_indices[0])
+            self.patt3_times, self.binsize).get_num_of_spikes())
         self.occ_msip = [list(self.occ1), list(self.occ2), list(self.occ3)]
         self.lags_msip = [self.output_lags1,
                           self.output_lags2,
