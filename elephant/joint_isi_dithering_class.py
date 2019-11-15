@@ -44,7 +44,10 @@ class JointISISpace:
         The unit of the spiketrain in the output.
         Default: pq.s
     window_length: pq.Quantity
-        The extent in which the joint-ISI-distribution is calculated.
+        The Joint-ISI distribution is as such defined on a range for ISI_i and
+        ISI_(i+1) from 0 to inf. Since this is computationally not feasible,
+        the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
+        histogram is calculated for ISI_i, ISI_(i+1) from 0 to window_length.
         Default: 120*pq.ms
     num_bins: int
         The size of the joint-ISI-distribution will be num_bins*num_bins.
@@ -60,8 +63,8 @@ class JointISISpace:
         Default: 30*pq.ms
     alternate: boolean
         If alternate == True: then first all even and then all odd spikes are
-        dithered. Else: in ascending order from the first to the last spike, all
-        spikes are moved.
+        dithered. Else: in ascending order from the first to the last spike,
+        all spikes are moved.
         Default: True.
     print_mode: boolean
         If True, also the way of how the dithered spikes are evaluated
@@ -73,16 +76,17 @@ class JointISISpace:
         following Gerstein et al. 2004
         Default: False
     method: string
-        if 'fast' the entire diagonals of the joint-ISI histograms are
-        used if 'window' only the values of the diagonals are used, whose
-        distance is lower than dither
+        if 'window': the spike movement is limited to the parameter dither.
+        if 'fast': the spike can move in all the range between the previous
+            spike and the subsequent spike. This is computationally much faster
+            and thus is called 'fast'.
         Default: 'fast'
     cutoff: boolean
-        if True than the Filtering of the Joint-ISI histogram is
+        if True then the Filtering of the Joint-ISI histogram is
         limited to the lower side by the minimal ISI.
-        This can be necessary, if in the data there is a certain dead time,
-        which would be destroyed by the convolution with the 2d-Gaussian
-        function.
+        This can be necessary, if in the data there is a certain refractory
+        period, which would be destroyed by the convolution with the
+        2d-Gaussian function.
         Default: True
     min_spikes: int
         if the number of spikes is lower than this number, the spiketrain
@@ -150,9 +154,12 @@ class JointISISpace:
 
     def preprocessing(self):
         """
-        All preprocessing steps for the joint-ISI dithering are done here.
+        To perform the Joint-ISI dithering a preprocessing procedure for each
+        spiketrain is necessary. This is part of the initializer (__init___).
+        If after calling the class for the first time, a parameter is changed,
+        the preprocessing needs to be done again.
 
-        So first to checks are done. If they are not passed, self.method is
+        First, two checks are done. If they are not passed, self.method is
         set to 'uniform'. The first one asks for the number of spikes.
         The second compares the median of the ISI-distribution against a
         threshold.
@@ -167,8 +174,8 @@ class JointISISpace:
 
         If method is 'window':
         For each point in the joint-ISI distribution a on the line parallel to
-        the anti-diagonal all points up to the dither-parameter are included, to
-        calculate the cumulative distribution function.
+        the anti-diagonal all points up to the dither-parameter are included,
+        to calculate the cumulative distribution function.
 
         The function has no output, but stores its result inside the class.
         """
