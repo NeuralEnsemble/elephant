@@ -242,6 +242,7 @@ class Analysis(object):
     def execution_time(self):
         return self._ts_execute
 
+    @property
     def finish_time(self):
         return self._ts_end
 
