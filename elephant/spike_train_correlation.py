@@ -22,9 +22,21 @@ import elephant.conversion
 class CrossCorrHist(object):
     """
     Cross-correlation histogram for `BinnedSpikeTrain`s.
+    This class is used inside the `cross_correlation_histogram()` function
+    and is not meant to be used outside of it.
     """
 
     def __init__(self, binned_st1, binned_st2, window):
+        """
+        Parameters
+        ----------
+        binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
+            Binned spike trains to cross-correlate. The two spike trains must
+            have the same `t_start` and `t_stop`.
+        window : list or tuple
+            List of integers - (left_edge, right_edge).
+            Refer to the docs of `cross_correlation_histogram()`.
+        """
         self.binned_st1 = binned_st1
         self.binned_st2 = binned_st2
         self.window = window
@@ -37,7 +49,6 @@ class CrossCorrHist(object):
         -------
         cross_corr : np.ndarray
             Cross-correlation of `self.binned_st` and `self.binned_st2`.
-
         """
         st1_spmat = self.binned_st1._sparse_mat_u
         st2_spmat = self.binned_st2._sparse_mat_u
@@ -82,7 +93,6 @@ class CrossCorrHist(object):
         -------
         cross_corr : np.ndarray
             Cross-correlation of `self.binned_st` and `self.binned_st2`.
-
         """
         # Retrieve the array of the binned spike trains
         st1_arr = self.binned_st1.to_array()[0]
@@ -101,6 +111,18 @@ class CrossCorrHist(object):
         return cross_corr
 
     def border_correction(self, cross_corr):
+        """
+        Parameters
+        ----------
+        cross_corr : np.ndarray
+            Cross-correlation array. The output of `self.correlate_speed()`
+            or `self.correlate_memory()`.
+
+        Returns
+        -------
+        np.ndarray
+            Cross-correlation array with the border correction applied.
+        """
         max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
         left_edge, right_edge = self.window
         n_values_fall_in_window = max_num_bins + 1 - np.abs(
@@ -109,8 +131,21 @@ class CrossCorrHist(object):
         return cross_corr * correction
 
     def cross_corr_coef(self, cross_corr):
-        # Normalizes the CCH to obtain the cross-correlation
-        # coefficient function ranging from -1 to 1
+        """
+        Normalizes the CCH to obtain the cross-correlation coefficient
+        function, ranging from -1 to 1.
+
+        Parameters
+        ----------
+        cross_corr : np.ndarray
+            Cross-correlation array. The output of `self.correlate_speed()`
+            or `self.correlate_memory()`.
+
+        Returns
+        -------
+        rho_xy : np.ndarray
+            Normalized cross-correlation array in range [-1, 1].
+        """
         max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
         n_spikes1 = self.binned_st1.get_num_of_spikes()
         n_spikes2 = self.binned_st2.get_num_of_spikes()
@@ -122,6 +157,22 @@ class CrossCorrHist(object):
         return rho_xy
 
     def kernel_smoothing(self, cross_corr, kernel):
+        """
+        Performs 1-d convolution with the `kernel`.
+
+        Parameters
+        ----------
+        cross_corr : np.ndarray
+            Cross-correlation array. The output of `self.correlate_speed()`
+            or `self.correlate_memory()`.
+        kernel : list
+            1-d kernel.
+
+        Returns
+        -------
+        np.ndarray
+            Smoothed array.
+        """
         left_edge, right_edge = self.window
         kern_len_max = abs(left_edge) + abs(right_edge) + 1
         # Define the kern for smoothing as an ndarray
@@ -400,7 +451,7 @@ def cross_correlation_histogram(
     ----------
     binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
         Binned spike trains to cross-correlate. The two spike trains must have
-        same t_start and t_stop
+        same `t_start` and `t_stop`.
     window : {'valid', 'full', list}, optional
         String or list of integers.
         ‘full’: This returns the cross-correlation at each point of overlap,
@@ -452,6 +503,8 @@ def cross_correlation_histogram(
         Normalizes the CCH to obtain the cross-correlation  coefficient
         function ranging from -1 to 1 according to Equation (5.10) in
         "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7
+        or "Neural interaction in cat primary auditory cortex. Dependence on
+        recording depth, electrode separation, and age", 1992, Eggermont.
 
     Returns
     -------
