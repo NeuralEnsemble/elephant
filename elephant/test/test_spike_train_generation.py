@@ -695,9 +695,6 @@ class cppTestCase(unittest.TestCase):
 
 class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_statistics(self):
         # This is a statistical test that has a non-zero chance of failure
         # during normal operation. Thus, we set the random seed to a value that
@@ -750,6 +747,13 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         expected_mean_isi = (1/rate).rescale(ms)
         self.assertLess(expected_last_spike -
                         spiketrain[-1], 4*expected_mean_isi)
+
+    def test_empty_output(self):
+        np.random.seed(26)
+        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        spiketrain = hppr(rate=10 * Hz, refr_period=20 * ms,
+                          t_stop=20 * ms)
+        self.assertEqual(spiketrain.tolist(), [])
 
 
 if __name__ == '__main__':

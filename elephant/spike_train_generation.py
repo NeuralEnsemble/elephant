@@ -11,12 +11,16 @@ written by Eilif Muller, or from the NeuroTools signals.analogs module.
 """
 
 from __future__ import division
-import numpy as np
-from quantities import ms, mV, Hz, Quantity, dimensionless
-from neo import SpikeTrain
+
+import math
 import random
-from elephant.spike_train_surrogates import dither_spike_train
 import warnings
+
+import numpy as np
+from neo import SpikeTrain
+from quantities import ms, mV, Hz, Quantity, dimensionless
+
+from elephant.spike_train_surrogates import dither_spike_train
 
 
 def spike_extraction(signal, threshold=0.0 * mV, sign='above',
@@ -1078,22 +1082,26 @@ def homogeneous_poisson_process_with_refr_period(rate,
     Returns a spike train whose spikes are a realization of a Poisson process
     with the given rate and refractory period starting at time `t_start` and
     stopping time `t_stop`.
+    If `t_stop - t_start <= refr_perioud`, returns an empty array.
 
     All numerical values should be given as Quantities, e.g. 100*Hz.
 
     Parameters
     ----------
-
-    rate : Quantity scalar with dimension 1/time
+    rate : Quantity
+           Quantity scalar with dimension 1/time
            The rate of the discharge.
-    refr_period : Quantity scalar with dimension time
+    refr_period : Quantity
+                  Quantity scalar with dimension time
                   The time period the after one spike no other spike is
                   emitted.
                   Default: 2 ms
-    t_start : Quantity scalar with dimension time
+    t_start : Quantity
+              Quantity scalar with dimension time
               The beginning of the spike train.
               Default: 0 ms
-    t_stop : Quantity scalar with dimension time
+    t_stop : Quantity
+             Quantity scalar with dimension time
              The end of the spike train.
              Default: 1000 ms
     as_array : bool
@@ -1101,10 +1109,18 @@ def homogeneous_poisson_process_with_refr_period(rate,
                rather than a SpikeTrain object.
                Default: False
 
+    Returns
+    -------
+    st : SpikeTrain or np.ndarray
+        Array of spike times.
+        If `as_array` is False, the output is wrapped in `neo.SpikeTrain`.
+
     Raises
     ------
     ValueError : If one of `rate`, `refr_period`, `t_start` and `t_stop`
                  is not of type `pq.Quantity`.
+                 If the period between two sucessive spikes (`1 / rate`) is
+                 smaller than the `refr_period`.
 
     Examples
     --------
@@ -1128,33 +1144,33 @@ def homogeneous_poisson_process_with_refr_period(rate,
     rate_mag = rate.rescale(1 / t_start.units).magnitude
     refr_period_mag = refr_period.rescale(t_start.units).magnitude
 
-    if rate_mag >= 1. / refr_period_mag:
-        raise ValueError(
-            'The refractory period implies an upper limit to the firing rate i.e. the firing rate if every spike is '
-            'separated exactly by the refractory period. This firing rate is the inverse of refractory period. '
-            'At the moment there is the refractory period: {}'.format(str(refr_period)) +
-            ' and the firing rate: {}. '.format(str(rate)) +
-            'One of these parameters need to be changed.'
-        )
+    if 1. / rate_mag <= refr_period_mag:
+        raise ValueError("Period between two successive spikes must be larger"
+                         "than the refractory period. Decrease either the"
+                         "firing rate or the refractory period.")
 
     duration = (t_stop - t_start).magnitude
-    mean_spike_count = rate_mag * duration
-    spike_count = np.random.poisson(lam=mean_spike_count)
+    if duration <= refr_period:
+        st = []
+    else:
+        mean_spike_count = rate_mag * duration
+        spike_count = np.random.poisson(lam=mean_spike_count)
 
-    # Check that the number of spikes drawn from the Poisson distribution,
-    # can fit in the duration regarding the refractory period.
-    if spike_count >= 1. + duration / refr_period_mag:
-        spike_count = np.ceil(duration / refr_period_mag).astype(int)
+        # Check that the number of spikes drawn from the Poisson distribution,
+        # can fit in the duration regarding the refractory period.
+        spike_count = min(spike_count, math.ceil(duration / refr_period) - 1)
 
-    # Due to the refractory period the effective space in where the spikes can be placed is
-    # shortened by (spike-count - 1) times the refr. period.
-    eff_duration = duration - (spike_count - 1) * refr_period_mag
+        # Due to the refractory period the effective space in where the spikes
+        # can be placed is shortened by (spike_count - 1) times the
+        # refr. period.
+        eff_duration = duration - (spike_count - 1) * refr_period_mag
 
-    # In this effective time interval each spike is placed uniformly, and after sorting to each ISI
-    # one refractory period is added.
-    st = np.sort(np.random.random(spike_count)) * eff_duration
-    st += refr_period_mag * np.arange(spike_count)
-    st += t_start.magnitude
+        # In this effective time interval each spike is placed uniformly,
+        # and after sorting to each ISI one refractory period is added
+        st = np.sort(np.random.uniform(high=eff_duration, size=spike_count))
+        st += refr_period_mag * np.arange(spike_count)
+        st += t_start.magnitude
     if not as_array:
-        return SpikeTrain(st * t_start.units, t_start=t_start, t_stop=t_stop)
+        return SpikeTrain(st, t_start=t_start, t_stop=t_stop,
+                          units=t_start.units)
     return st
