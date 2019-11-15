@@ -8,7 +8,6 @@ Unit tests for the Buffalo analysis objects.
 
 from __future__ import print_function, unicode_literals
 
-from itertools import chain
 import unittest
 import elephant.buffalo as buf
 
@@ -17,7 +16,70 @@ import elephant.buffalo as buf
 # We create local Analysis subclasses for testing the superclass basic behaviors
 #######################################################################################################################
 
-class BasicClassBehavior(buf.base.Analysis):
+class BasicClass(buf.base.Analysis):
+    """
+    This class only sets the required class attributes such as `name`, `description` and `_process` function,
+    to avoid code redundancy in the following classes supporting the tests.
+    In actual Buffalo objects, every inherited class should always set these attributes. They should not be inherited.
+    See class `BasicClassExample` below.
+    """
+
+    _name = "Base class"
+    _description = "Base class for testing Buffalo superclasses"
+
+    def _process(self, *args, **kwargs):
+        pass   # dummy process
+
+
+class BasicClassNoProcess(buf.base.Analysis):
+    """Should throw NotImplementedError since `name` and `description` are present, but no `_process` function"""
+
+    _name = "Base class without function"
+    _description = "Base class without `_process` for testing Buffalo superclasses"
+
+
+class BasicClassBehavior(BasicClass):
+    _required_params = ['low_cutoff', 'high_cutoff']
+
+    _required_types = {'low_cutoff': (int, float),
+                       'high_cutoff': (int, float),
+                       'method': (str,)               # optional parameter
+                       }
+
+
+class BasicNoParameters(BasicClass):
+    pass
+
+
+class BasicClassWrongRequiredParams(BasicClass):
+    _required_params = None
+
+
+class BasicClassWrongRequiredParamsItems(BasicClass):
+    _required_params = [1, 2]
+
+
+class BasicClassWrongRequiredTypes(BasicClass):
+    _required_types = None
+
+
+class BasicClassWrongRequiredTypesItems(BasicClass):
+    # no commas. Values are going to be evaluated as int or str directly, not tuple
+    _required_types = {'low_cutoff': (int),
+                       'high_cutoff': (int),
+                       'method': (str)
+                       }
+
+
+class BasicClassNoRequiredTypes(BasicClass):
+    _required_params = ['low_cutoff', 'high_cutoff']
+
+
+class BasicClassNoRequiredParams(BasicClass):
+    _required_types = {'low_cutoff': (int,)}
+
+
+class BasicClassNoAttributes(buf.base.Analysis):
     _required_params = ['low_cutoff', 'high_cutoff']
 
     _required_types = {'low_cutoff': (int, float),
@@ -26,62 +88,26 @@ class BasicClassBehavior(buf.base.Analysis):
                        }
 
     def _process(self, *args, **kwargs):
-        return
+        pass  # dummy process
 
 
-class BasicClassNoProcess(buf.base.Analysis):
-    """Should throw NotImplementedError"""
+TEST_NAME = "Standard Buffalo analysis"
+TEST_DESCRIPTION = "The structure that a working Buffalo object should have"
 
 
-class BasicNoParameters(buf.base.Analysis):
+class BasicClassExample(buf.base.Analysis):
+    _name = TEST_NAME
+    _description = TEST_DESCRIPTION
 
-    def _process(self, *args, **kwargs):
-        return
+    _required_params = ['low_cutoff', 'high_cutoff']
 
-class BasicClassWrongRequiredParams(buf.base.Analysis):
-    _required_params = None
-
-    def _process(self, *args, **kwargs):
-        return
-
-
-class BasicClassWrongRequiredParamsItems(buf.base.Analysis):
-    _required_params = [1, 2]
-
-    def _process(self, *args, **kwargs):
-        return
-
-
-class BasicClassWrongRequiredTypes(buf.base.Analysis):
-    _required_types = None
-
-    def _process(self, *args, **kwargs):
-        return
-
-
-class BasicClassWrongRequiredTypesItems(buf.base.Analysis):
-    # no commas. Values are going to be evaluated as int or str directly, not tuple
-    _required_types = {'low_cutoff': (int),
-                       'high_cutoff': (int),
-                       'method': (str)
+    _required_types = {'low_cutoff': (int, float),
+                       'high_cutoff': (int, float),
+                       'method': (str,)               # optional parameter
                        }
 
     def _process(self, *args, **kwargs):
-        return
-
-
-class BasicClassNoRequiredTypes(buf.base.Analysis):
-    _required_params = ['low_cutoff', 'high_cutoff']
-
-    def _process(self, *args, **kwargs):
-        return
-
-
-class BasicClassNoRequiredParams(buf.base.Analysis):
-    _required_types = {'low_cutoff': (int,)}
-
-    def _process(self, *args, **kwargs):
-        return
+        pass  # dummy process
 
 
 ########################################################################################################################
@@ -192,6 +218,35 @@ class AnalysisBaseClassTestCase(unittest.TestCase):
         # Should fail because doing type checking only
         with self.assertRaises(buf.exceptions.BuffaloWrongParameterType):
             BasicClassNoRequiredParams(params=types_error_analysis_params)
+
+    def test_required_attributes(self):
+        analysis_params = {'low_cutoff': 10,
+                           'high_cutoff': 20}
+
+        with self.assertRaises(AssertionError):
+            BasicClassNoAttributes(params=analysis_params)
+        self.assertIsInstance(BasicClassExample(params=analysis_params), BasicClassExample)
+
+    # def test_annotations(self):
+    #     pass
+
+    def test_class_attributes(self):
+        analysis_params = {'low_cutoff': 10,
+                           'high_cutoff': 20}
+
+        extra_analysis_params = {'low_cutoff': 10,
+                                 'high_cutoff': 20,
+                                 'method': 'raw'}
+
+        analysis = BasicClassExample(params=analysis_params)
+        extra_analysis_params = BasicClassExample(params=extra_analysis_params)
+
+        for test_object in [analysis, extra_analysis_params]:
+            self.assertIsInstance(test_object, BasicClassExample)
+            self.assertEqual(test_object.name, TEST_NAME)
+            self.assertEqual(test_object.description, TEST_DESCRIPTION)
+            self.assertEqual(test_object.params['low_cutoff'], 10)
+            self.assertEqual(test_object.params['high_cutoff'], 20)
 
 
 if __name__ == '__main__':

@@ -12,6 +12,7 @@ information.
 from __future__ import print_function
 from datetime import datetime
 from copy import deepcopy
+from neo.core.baseneo import _check_annotations
 
 from .exceptions import (BuffaloMissingRequiredParameters, BuffaloWrongParametersDictionary, BuffaloWrongParameterType,
                          BuffaloInputValidationFailed)
@@ -28,15 +29,27 @@ class Analysis(object):
     Methods
     -------
 
-    set_annotations
-        Stores any dictionary as custom annotations inside the class
+    annotate
+        Stores custom values as items in a dictionary inside the class
 
 
     Properties
     ----------
 
+    params: dict
+        The analysis input parameters that are passed during class initializaition (`params` keyed argument)
+
+    name: str
+        Required class attribute that provides a name for the object
+
+    description: str
+        Required class attribute that provides a human-readable description for the object
+
+    cno_name: str
+        Optional class attribute that describes the object according to the Common Neuroscience Ontology schema
+
     annotations: dict
-        Any custom annotations that were stored
+        Any custom annotations that are stored in the object
 
     creation_time: datetime
         Time the instance was created (UTC)
@@ -80,10 +93,16 @@ class Analysis(object):
     """
 
     _params = None                    # Internal copy of the dictionary of input parameters for the analysis
+
     _ts_create = None                 # UTC time of instance creation
     _ts_execute = None                # UTC time of analysis execution
     _ts_end = None                    # UTC time of analysis execution end
+
     _custom_annotations = None        # Dictionary with custom annotations
+
+    _name = None                      # Name of the analysis
+    _cno_name = None                  # Name according to the CNO ontology TODO: check against official schema
+    _description = None               # Human readable description of the object
 
     _required_params = []    # List of keys that must be present in the 'params' dictionary during class initialization
 
@@ -99,19 +118,23 @@ class Analysis(object):
 
         Parameters
         ----------
+
         params : dict
             All input parameters relevant for the analysis.
             An input parameter is defined as any input that controls the analysis, but that is not the data that is the
             subject of the analysis.
+
         args : list
             Input **data** necessary for the analysis.
             Should be validated accordingly by each subclass.
+
         kwargs: dict
             Keyed-arguments describing input **data** necessary for the analysis.
             Should be validated accordingly by each subclass.
 
         Raises
         ------
+
         BuffaloWrongParametersDictionary
             If `params` is not a dictionary.
 
@@ -126,13 +149,24 @@ class Analysis(object):
                 analysis.
 
         AssertionError
-            If there was an error in the implementation of `_required_params` or `_required_types`
+            If there was an error in the implementation of `_required_params` or `_required_types`, or the required
+            class attributes `name` and `description`
 
         NotImplementedError
             If `_process` is not overriddn by the child class
 
         """
         self._ts_create = datetime.utcnow()    # Stores the timestamp when the instance was created
+
+        # Check required class attributes are present
+        assert isinstance(self.name, str) and len(self.name), "Must define 'name' attribute with non-empty string"
+        assert isinstance(self.description, str) is not None and len(self._description), ("Must define 'description'"
+                                                                                          "attribute with non-empty"
+                                                                                          "string")
+
+        # Check if optional class attributes are valid if present
+        if self.cno_name is not None:
+            assert isinstance(self.cno_name, str) and len(self.cno_name), "CNO name must be non-empty string"
 
         # Check that protected variables are correct
         assert isinstance(self._required_params, list), "Required params must be 'list'"
@@ -174,13 +208,16 @@ class Analysis(object):
 
         Parameters
         ----------
+
         args : list
             Input **data** necessary for the analysis.
+
         kwargs: dict
             Keyed-arguments describing input **data** necessary for the analysis.
 
         Returns
         -------
+
             boolean
                 True if validation passed, False if anything happened
         """
@@ -199,11 +236,12 @@ class Analysis(object):
 
         Returns
         -------
+
         boolean
             True if check is OK, False if missing any of the parameters.
             If required params list is empty, returns True.
         """
-        parameters = list(self._params.keys())
+        parameters = list(self.params.keys())
         if len(self._required_params):
             if len(parameters) >= len(self._required_params):
                 for required in self._required_params:
@@ -222,11 +260,12 @@ class Analysis(object):
 
         Returns
         -------
+
         boolean
             True if check is OK, False if wrong type was passed.
             If type checking dictionary is empty, returns True
         """
-        for key, value in self._params.items():
+        for key, value in self.params.items():
             if key in self._required_types.keys():
                 assert isinstance(self._required_types[key], tuple), "Values of required types dict must be tuples"
                 if type(value) not in self._required_types[key]:
@@ -246,14 +285,43 @@ class Analysis(object):
     def finish_time(self):
         return self._ts_end
 
-    # TODO: check Neo framework for annotations
     @property
     def annotations(self):
         return self._custom_annotations
 
-    def set_annotations(self, annotation):
-        if not isinstance(annotation, dict):
-            raise TypeError("Annotations must be a dictionary")
-        self._custom_annotations = deepcopy(annotation)
+    @property
+    def name(self):
+        return self._name
 
-    #TODO: insert provenance object support and PROV object creation
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def cno_name(self):
+        return self._cno_name
+
+    @property
+    def params(self):
+        return self._params
+
+    def annotate(self, **annotations):
+        """
+        Inserts annotations in the object.
+
+        Parameters
+        ----------
+        annotations: dict
+            Arguments passed as key=value pairs are stored inside `_custom_annotations` dictionary.
+            It can be acessed by the `annotations` class property.
+
+        """
+        _check_annotations(annotations)      # Use Neo constraints to check each individual annotation item
+        self._custom_annotations.update(annotations)
+
+    def describe(self):
+        """
+        This method must be implemented by each analysis to save provenance information to an object that supports
+        W3C PROV model.
+        """
+        return NotImplementedError
