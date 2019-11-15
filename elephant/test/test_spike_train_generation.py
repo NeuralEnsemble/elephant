@@ -731,8 +731,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
             warnings.simplefilter("ignore")
             # Catch RuntimeWarning: divide by zero encountered in true_divide
             # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            spiketrain = stgen.homogeneous_poisson_process(0*Hz,
-                                                           t_stop=1000*ms)
+            spiketrain = hppr(rate=0 * Hz, t_stop=1000*ms)
         self.assertEqual(spiketrain.size, 0)
         # not really a test, just making sure that all code paths are covered
         spiketrain = hppr(1*Hz, t_stop=1000*ms)
@@ -748,12 +747,22 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         self.assertLess(expected_last_spike -
                         spiketrain[-1], 4*expected_mean_isi)
 
-    def test_empty_output(self):
-        np.random.seed(26)
+    def test_as_array(self):
         hppr = stgen.homogeneous_poisson_process_with_refr_period
-        spiketrain = hppr(rate=10 * Hz, refr_period=20 * ms,
-                          t_stop=20 * ms)
-        self.assertEqual(spiketrain.tolist(), [])
+        spiketrain = hppr(rate=10 * Hz, as_array=True)
+        self.assertTrue(isinstance(spiketrain, np.ndarray))
+
+    def test_invalid(self):
+        rate = 10 * Hz
+        # t_stop < t_start
+        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        self.assertRaises(ValueError, hppr, rate=rate, t_start=5 * ms,
+                          t_stop=1 * ms)
+
+        # no units provided
+        self.assertRaises(ValueError, hppr, rate=10)
+        self.assertRaises(ValueError, hppr, rate=rate, t_stop=5)
+        self.assertRaises(ValueError, hppr, rate=rate, refr_period=2)
 
 
 if __name__ == '__main__':

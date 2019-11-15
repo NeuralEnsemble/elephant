@@ -1082,7 +1082,6 @@ def homogeneous_poisson_process_with_refr_period(rate,
     Returns a spike train whose spikes are a realization of a Poisson process
     with the given rate and refractory period starting at time `t_start` and
     stopping time `t_stop`.
-    If `t_stop - t_start <= refr_perioud`, returns an empty array.
 
     All numerical values should be given as Quantities, e.g. 100*Hz.
 
@@ -1117,10 +1116,12 @@ def homogeneous_poisson_process_with_refr_period(rate,
 
     Raises
     ------
-    ValueError : If one of `rate`, `refr_period`, `t_start` and `t_stop`
-                 is not of type `pq.Quantity`.
-                 If the period between two sucessive spikes (`1 / rate`) is
-                 smaller than the `refr_period`.
+    ValueError
+        If one of `rate`, `refr_period`, `t_start` and `t_stop` is not
+        of type `pq.Quantity`.
+        If `t_stop <= t_start`.
+        If the period between two successive spikes (`1 / rate`) is
+        smaller than the `refr_period`.
 
     Examples
     --------
@@ -1141,6 +1142,9 @@ def homogeneous_poisson_process_with_refr_period(rate,
     if t_stop.units != t_start.units:
         t_stop = t_stop.rescale(t_start.units)
 
+    if t_stop <= t_start:
+        raise ValueError("t_stop must be larger than t_start")
+
     rate_mag = rate.rescale(1 / t_start.units).magnitude
     refr_period_mag = refr_period.rescale(t_start.units).magnitude
 
@@ -1150,26 +1154,24 @@ def homogeneous_poisson_process_with_refr_period(rate,
                          "firing rate or the refractory period.")
 
     duration = (t_stop - t_start).magnitude
-    if duration <= refr_period:
-        st = []
-    else:
-        mean_spike_count = rate_mag * duration
-        spike_count = np.random.poisson(lam=mean_spike_count)
+    mean_spike_count = rate_mag * duration
+    spike_count = np.random.poisson(lam=mean_spike_count)
 
-        # Check that the number of spikes drawn from the Poisson distribution,
-        # can fit in the duration regarding the refractory period.
-        spike_count = min(spike_count, math.ceil(duration / refr_period) - 1)
+    # Check that the number of spikes drawn from the Poisson distribution,
+    # can fit in the duration regarding the refractory period.
+    spike_count = min(spike_count, math.ceil(duration / refr_period))
 
-        # Due to the refractory period the effective space in where the spikes
-        # can be placed is shortened by (spike_count - 1) times the
-        # refr. period.
-        eff_duration = duration - (spike_count - 1) * refr_period_mag
+    # Due to the refractory period the effective space in where the spikes
+    # can be placed is shortened by (spike_count - 1) times the
+    # refr. period.
+    eff_duration = duration - (spike_count - 1) * refr_period_mag
 
-        # In this effective time interval each spike is placed uniformly,
-        # and after sorting to each ISI one refractory period is added
-        st = np.sort(np.random.uniform(high=eff_duration, size=spike_count))
-        st += refr_period_mag * np.arange(spike_count)
-        st += t_start.magnitude
+    # In this effective time interval each spike is placed uniformly,
+    # and after sorting to each ISI one refractory period is added
+    st = np.random.uniform(high=eff_duration, size=spike_count)
+    st.sort()
+    st += refr_period_mag * np.arange(spike_count)
+    st += t_start.magnitude
     if not as_array:
         return SpikeTrain(st, t_start=t_start, t_stop=t_stop,
                           units=t_start.units)
