@@ -12,7 +12,6 @@ import elephant.spike_train_generation as stg
 import numpy as np
 import quantities as pq
 import neo
-from elephant.spike_train_surrogates import JointISISpace
 
 np.random.seed(0)
 
@@ -318,7 +317,7 @@ class SurrogatesTestCase(unittest.TestCase):
         st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
         n_surr = 2
         dither = 10 * pq.ms
-        surrs = JointISISpace(st, n_surr=n_surr, dither=dither).dithering()
+        surrs = surr.JointISI(st, n_surr=n_surr, dither=dither).dithering()
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
@@ -334,7 +333,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = JointISISpace(st).dithering()[0]
+        surrog = surr.JointISI(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
 
 

@@ -461,13 +461,11 @@ def jitter_spikes(spiketrain, binsize, n=1):
 def joint_isi_dithering(spiketrain,
                         n=1,
                         dither=15.*pq.ms,
-                        unit=pq.s,
                         window_length=120.*pq.ms,
                         num_bins=120,
                         sigma=1.*pq.ms,
                         isi_median_threshold=30*pq.ms,
                         alternate=True,
-                        show_plot=False,
                         print_mode=False,
                         use_sqrt=False,
                         method='fast',
@@ -491,7 +489,7 @@ def joint_isi_dithering(spiketrain,
     Attributes
     ----------
     spiketrain: neo.SpikeTrain
-                For this spiketrain the surrogates will be created
+        For this spiketrain the surrogates will be created
 
     n: int, optional
         Number of surrogates to be created.
@@ -500,14 +498,14 @@ def joint_isi_dithering(spiketrain,
         The range of the dithering for the uniform dithering,
         which is also used for the method 'window'.
         Default: 15.*pq.ms
-    unit: pq.unit
-        The unit of the spiketrain in the output.
-        Default: pq.s
     window_length: pq.Quantity
-        The extent in which the joint-ISI-distribution is calculated.
+        The Joint-ISI distribution is as such defined on a range for ISI_i and
+        ISI_(i+1) from 0 to inf. Since this is computationally not feasible,
+        the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
+        histogram is calculated for ISI_i, ISI_(i+1) from 0 to window_length.
         Default: 120*pq.ms
     num_bins: int
-        The size of the joint-ISI-ditribution will be num_bins*num_bins.
+        The size of the joint-ISI-distribution will be num_bins*num_bins.
         Default: 120
     sigma: pq.Quantity
         The standard deviation of the Gaussian kernel, with which
@@ -520,12 +518,9 @@ def joint_isi_dithering(spiketrain,
         Default: 30*pq.ms
     alternate: boolean
         If alternate == True: then first all even and then all odd spikes are
-        dithered. Else: in acending order from the first to the last spike, all
-        spikes are moved.
+        dithered. Else: in ascending order from the first to the last spike,
+        all spikes are moved.
         Default: True.
-    show_plot: boolean
-        if show_plot == True the joint-ISI distribution will be plotted
-        Default: False
     print_mode: boolean
         If True, also the way of how the dithered spikes are evaluated
         is returned so 'uniform' for uniform and dithering and 'jisid' for
@@ -536,16 +531,17 @@ def joint_isi_dithering(spiketrain,
         following Gerstein et al. 2004
         Default: False
     method: string
-        if 'fast' the entire diagonals of the joint-ISI histograms are
-        used if 'window' only the values of the diagonals are used, whose
-        distance is lower than dither
+        if 'window': the spike movement is limited to the parameter dither.
+        if 'fast': the spike can move in all the range between the previous
+            spike and the subsequent spike. This is computationally much faster
+            and thus is called 'fast'.
         Default: 'fast'
     cutoff: boolean
-        if True than the Filtering of the Joint-ISI histogram is
+        if True then the Filtering of the Joint-ISI histogram is
         limited to the lower side by the minimal ISI.
-        This can be necessary, if in the data there is a certain dead time,
-        which would be destroyed by the convolution with the 2d-Gaussian
-        function.
+        This can be necessary, if in the data there is a certain refractory
+        period, which would be destroyed by the convolution with the
+        2d-Gaussian function.
         Default: True
     min_spikes: int
         if the number of spikes is lower than this number, the spiketrain
@@ -565,27 +561,25 @@ def joint_isi_dithering(spiketrain,
         'uniform' if the ISI median was too low and uniform dithering was
         used.
     """
-    return JointISISpace(spiketrain,
-                         n_surr=n,
-                         dither=dither,
-                         unit=unit,
-                         window_length=window_length,
-                         num_bins=num_bins,
-                         sigma=sigma,
-                         isi_median_threshold=isi_median_threshold,
-                         alternate=alternate,
-                         show_plot=show_plot,
-                         print_mode=print_mode,
-                         use_sqrt=use_sqrt,
-                         method=method,
-                         cutoff=cutoff,
-                         min_spikes=min_spikes
-                         ).dithering()
+    return JointISI(spiketrain,
+                    n_surr=n,
+                    dither=dither,
+                    window_length=window_length,
+                    num_bins=num_bins,
+                    sigma=sigma,
+                    isi_median_threshold=isi_median_threshold,
+                    alternate=alternate,
+                    print_mode=print_mode,
+                    use_sqrt=use_sqrt,
+                    method=method,
+                    cutoff=cutoff,
+                    min_spikes=min_spikes
+                    ).dithering()
 
 
-class JointISISpace:
+class JointISI:
     """
-    The class :class:`Joint_ISI_Space` is implemented for Joint-ISI dithering
+    The class :class:`JointISI` is implemented for Joint-ISI dithering
     as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).
 
     When creating an class instance all necessary preprocessing steps are done,
@@ -758,10 +752,17 @@ class JointISISpace:
 
         self._bin_width = self.window_length / self.num_bins
 
-        def isi_to_index(isi):
+        # A function that gives for each ISI the corresponding index in the
+        # Joint-ISI distribution.
+        def _isi_to_index(isi):
             return np.rint(isi / self._bin_width - 0.5).astype(int)
 
-        self._isi_to_index = isi_to_index
+        self._isi_to_index = _isi_to_index
+
+        # Gives an array, taking an element with an index of the Joint-ISI
+        # distribution gives back the corresponding ISI.
+        self._indices_to_isi = (np.arange(self.num_bins)
+                                + 0.5) * self._bin_width
 
         self._number_of_isis = len(self._isi)
         self._first_spike = self.st[0].rescale(self._unit).magnitude
@@ -769,22 +770,17 @@ class JointISISpace:
 
         self._get_joint_isi_histogram()
 
-        # Gives an array, taking an element with an index of the Joint-ISI
-        # distribution gives back the corresponding ISI.
-        self._indices_to_isi = (np.arange(self.num_bins)
-                                + 0.5) * self._bin_width
-
         flipped_jisih = np.flip(self.jisih.T, 0)
 
-        def normalize(v):
+        def _normalize(v):
             if v[-1] - v[0] > 0.:
                 return (v - v[0]) / (v[-1] - v[0])
             return np.zeros_like(v)
 
-        self._normalize = normalize
+        self._normalize = _normalize
 
         if self.method == 'fast':
-            self._jisih_cumulatives = [normalize(
+            self._jisih_cumulatives = [_normalize(
                 np.cumsum(np.diagonal(flipped_jisih,
                                       -self.num_bins + double_index + 1)))
                 for double_index in range(self.num_bins)]
@@ -794,8 +790,9 @@ class JointISISpace:
             self._jisih_cumulatives = self._window_cumulatives(flipped_jisih)
             return None
 
-        error_message = ('method must can only be \'uniform\' or \'fast\' '
-                         'or \'window\', but not \'' + self.method + '\' .')
+        error_message = (
+            'method can only be \'uniform\' or \'fast\' or \'window\','
+            ' but not \'{0}\' .'.format(self.method))
         raise ValueError(error_message)
 
     def dithering(self):
