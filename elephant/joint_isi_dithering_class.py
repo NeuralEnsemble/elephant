@@ -104,15 +104,6 @@ class JointISISpace:
         Returns a list of dithered spiketrains and if print_mode it returns
         also a string 'uniform' or 'jisid' indicating the way, how the dithered
         spiketrains were obtained.
-
-    Output:
-    dithered_sts
-        List of spiketrains, dithered with Joint-ISI-dithering
-    mode (only if print_mode=True)
-        string: Indicates, which method was used to dither the spikes.
-            'jisih' if joint-ISI was used,
-            'uniform' if the dense_rate was too low and uniform dithering was
-             used.
     """
 
     def __init__(self,
@@ -183,8 +174,8 @@ class JointISISpace:
             self.method = 'uniform'
             return None
 
-        self.isi = stats.isi(self.st.rescale(self.unit).magnitude)
-        isi_median = np.median(self.isi)
+        self._isi = stats.isi(self.st.rescale(self.unit).magnitude)
+        isi_median = np.median(self._isi)
 
         if isi_median > self.isi_median_threshold.rescale(
                 self.unit).magnitude:
@@ -199,27 +190,25 @@ class JointISISpace:
         if isinstance(self.sigma, pq.Quantity):
             self.sigma = self.sigma.rescale(self.unit).magnitude
 
-        self.sampling_rhythm = self.alternate + 1
+        self._sampling_rhythm = self.alternate + 1
 
-        self.bin_width = self.window_length / self.num_bins
-
-        def index_to_isi(ind):
-            return (ind + 0.5) * self.bin_width
-
-        self.index_to_isi = index_to_isi
+        self._bin_width = self.window_length / self.num_bins
 
         def isi_to_index(isi):
-            return np.rint(isi / self.bin_width - 0.5).astype(int)
+            return np.rint(isi / self._bin_width - 0.5).astype(int)
 
-        self.isi_to_index = isi_to_index
+        self._isi_to_index = isi_to_index
 
-        self.number_of_isis = len(self.isi)
-        self.first_spike = self.st[0].rescale(self.unit).magnitude
-        self.t_stop = self.st.t_stop.rescale(self.unit).magnitude
+        self._number_of_isis = len(self._isi)
+        self._first_spike = self.st[0].rescale(self.unit).magnitude
+        self._t_stop = self.st.t_stop.rescale(self.unit).magnitude
 
         self._get_joint_isi_histogram()
 
-        self.indices_to_isi = self.index_to_isi(np.arange(self.num_bins))
+        # Gives an array, taking an element with an index of the Joint-ISI
+        # distribution gives back the corresponding ISI.
+        self._indices_to_isi = (np.arange(self.num_bins)
+                                + 0.5) * self._bin_width
 
         flipped_jisih = np.flip(self.jisih.T, 0)
 
@@ -228,17 +217,17 @@ class JointISISpace:
                 return (v - v[0]) / (v[-1] - v[0])
             return np.zeros_like(v)
 
-        self.normalize = normalize
+        self._normalize = normalize
 
         if self.method == 'fast':
-            self.jisih_cumulatives = [normalize(
+            self._jisih_cumulatives = [normalize(
                 np.cumsum(np.diagonal(flipped_jisih,
                                       -self.num_bins + double_index + 1)))
                 for double_index in range(self.num_bins)]
             return None
 
         if self.method == 'window':
-            self.jisih_cumulatives = self._window_cumulatives(flipped_jisih)
+            self._jisih_cumulatives = self._window_cumulatives(flipped_jisih)
             return None
 
         error_message = ('method must can only be \'uniform\' or \'fast\' '
@@ -286,7 +275,7 @@ class JointISISpace:
         """
         This function calculates the joint-ISI histogram.
         """
-        jisih = np.histogram2d(self.isi[:-1], self.isi[1:],
+        jisih = np.histogram2d(self._isi[:-1], self._isi[1:],
                                bins=[self.num_bins, self.num_bins],
                                range=[[0., self.window_length],
                                       [0., self.window_length]])[0]
@@ -295,11 +284,11 @@ class JointISISpace:
             jisih = np.sqrt(jisih)
 
         if self.cutoff:
-            minimal_isi = np.min(self.isi)
-            start_index = self.isi_to_index(minimal_isi)
+            minimal_isi = np.min(self._isi)
+            start_index = self._isi_to_index(minimal_isi)
             jisih[start_index:, start_index:] = gaussian_filter(
                 jisih[start_index:, start_index:],
-                self.sigma / self.bin_width)
+                self.sigma / self._bin_width)
 
             jisih[:start_index + 1, :] = np.zeros_like(
                 jisih[:start_index + 1, :])
@@ -307,13 +296,13 @@ class JointISISpace:
                 jisih[:, :start_index + 1])
 
         else:
-            jisih = gaussian_filter(jisih, self.sigma / self.bin_width)
+            jisih = gaussian_filter(jisih, self.sigma / self._bin_width)
         self.jisih = jisih
         return None
 
     def _window_diagonal_cumulatives(self, flipped_jisih):
-        self.max_change_index = self.isi_to_index(self.dither)
-        self.max_change_isi = self.indices_to_isi[self.max_change_index]
+        self.max_change_index = self._isi_to_index(self.dither)
+        self.max_change_isi = self._indices_to_isi[self.max_change_index]
 
         jisih_diag_cums = np.zeros((self.num_bins,
                                     self.num_bins
@@ -351,7 +340,7 @@ class JointISISpace:
                                             back_index:
                                             back_index +
                                             2 * self.max_change_index + 1]
-                normalized_cum = self.normalize(cum_slice)
+                normalized_cum = self._normalize(cum_slice)
                 jisih_cumulatives[back_index][for_index] = normalized_cum
         return jisih_cumulatives
 
@@ -370,30 +359,30 @@ class JointISISpace:
         for surr_number in range(self.n_surr):
             dithered_isi = self._get_dithered_isi()
 
-            dithered_st = self.first_spike + np.hstack(
+            dithered_st = self._first_spike + np.hstack(
                 (np.array(0.), np.cumsum(dithered_isi)))
             dithered_st = neo.SpikeTrain(dithered_st * self.unit,
-                                         t_stop=self.t_stop)
+                                         t_stop=self._t_stop)
             dithered_sts.append(dithered_st)
         return dithered_sts
 
     def _get_dithered_isi(self):
-        dithered_isi = self.isi
-        random_list = np.random.random(self.number_of_isis)
+        dithered_isi = self._isi
+        random_list = np.random.random(self._number_of_isis)
         if self.method == 'fast':
-            for start in range(self.sampling_rhythm):
-                dithered_isi_indices = self.isi_to_index(dithered_isi)
-                for i in range(start, self.number_of_isis - 1,
-                               self.sampling_rhythm):
+            for start in range(self._sampling_rhythm):
+                dithered_isi_indices = self._isi_to_index(dithered_isi)
+                for i in range(start, self._number_of_isis - 1,
+                               self._sampling_rhythm):
                     self._update_dithered_isi_fast(dithered_isi,
                                                    dithered_isi_indices,
                                                    random_list[i],
                                                    i)
         else:
-            for start in range(self.sampling_rhythm):
-                dithered_isi_indices = self.isi_to_index(dithered_isi)
-                for i in range(start, self.number_of_isis - 1,
-                               self.sampling_rhythm):
+            for start in range(self._sampling_rhythm):
+                dithered_isi_indices = self._isi_to_index(dithered_isi)
+                for i in range(start, self._number_of_isis - 1,
+                               self._sampling_rhythm):
                     self._update_dithered_isi_window(dithered_isi,
                                                      dithered_isi_indices,
                                                      random_list[i],
@@ -409,15 +398,15 @@ class JointISISpace:
         for_index = dithered_isi_indices[i + 1]
         double_index = back_index + for_index
         if double_index < self.num_bins:
-            if self.jisih_cumulatives[double_index][-1]:
-                cond = (self.jisih_cumulatives[double_index]
+            if self._jisih_cumulatives[double_index][-1]:
+                cond = (self._jisih_cumulatives[double_index]
                         > random_number)
                 new_index = np.where(
                     cond,
-                    self.jisih_cumulatives[double_index],
+                    self._jisih_cumulatives[double_index],
                     np.inf).argmin()
-                step = (self.indices_to_isi[new_index]
-                        - self.indices_to_isi[back_index])
+                step = (self._indices_to_isi[new_index]
+                        - self._indices_to_isi[back_index])
                 dithered_isi[i] += step
                 dithered_isi[i + 1] -= step
         return None
@@ -430,7 +419,7 @@ class JointISISpace:
         back_index = dithered_isi_indices[i]
         for_index = dithered_isi_indices[i + 1]
         if back_index + for_index < self.num_bins:
-            cum_dist_func = self.jisih_cumulatives[
+            cum_dist_func = self._jisih_cumulatives[
                 back_index][for_index]
             if cum_dist_func[-1]:
                 cond = cum_dist_func > random_number
@@ -438,7 +427,7 @@ class JointISISpace:
                     cond,
                     cum_dist_func,
                     np.inf).argmin()
-                step = (self.indices_to_isi[new_index]
+                step = (self._indices_to_isi[new_index]
                         - self.max_change_isi)
                 dithered_isi[i] += step
                 dithered_isi[i + 1] -= step
