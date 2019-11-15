@@ -40,9 +40,6 @@ class JointISISpace:
         The range of the dithering for the uniform dithering,
         which is also used for the method 'window'.
         Default: 15.*pq.ms
-    unit: pq.unit
-        The unit of the spiketrain in the output.
-        Default: pq.s
     window_length: pq.Quantity
         The Joint-ISI distribution is as such defined on a range for ISI_i and
         ISI_(i+1) from 0 to inf. Since this is computationally not feasible,
@@ -110,7 +107,6 @@ class JointISISpace:
                  st,
                  n_surr=1,
                  dither=15. * pq.ms,
-                 unit=pq.s,
                  window_length=120. * pq.ms,
                  num_bins=120,
                  sigma=1. * pq.ms,
