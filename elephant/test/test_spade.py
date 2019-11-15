@@ -99,11 +99,11 @@ class SpadeTestCase(unittest.TestCase):
                     self.n_spk2 +
                     self.n_spk3))]
         self.occ1 = np.unique(conv.BinnedSpikeTrain(
-            self.patt1_times, self.binsize).get_num_of_spikes())
+            self.patt1_times, self.binsize).spike_indices[0])
         self.occ2 = np.unique(conv.BinnedSpikeTrain(
-            self.patt2_times, self.binsize).get_num_of_spikes())
+            self.patt2_times, self.binsize).spike_indices[0])
         self.occ3 = np.unique(conv.BinnedSpikeTrain(
-            self.patt3_times, self.binsize).get_num_of_spikes())
+            self.patt3_times, self.binsize).spike_indices[0])
         self.occ_msip = [
             list(self.occ1), list(self.occ2), list(self.occ3)]
         self.lags_msip = [self.lags1, self.lags2, self.lags3]
