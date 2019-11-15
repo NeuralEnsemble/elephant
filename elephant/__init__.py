@@ -24,8 +24,7 @@ from . import (statistics,
                neo_tools,
                spade,
                cell_assembly_detection,
-               waveform_features,
-               joint_isi_dithering_class)
+               waveform_features)
 
 try:
     from . import pandas_bridge
