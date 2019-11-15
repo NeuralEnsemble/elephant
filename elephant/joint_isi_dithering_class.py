@@ -126,7 +126,6 @@ class JointISISpace:
 
         self.n_surr = n_surr
 
-        self.unit = unit
         self.dither = dither
         self.window_length = window_length
         self.sigma = sigma
@@ -174,21 +173,23 @@ class JointISISpace:
             self.method = 'uniform'
             return None
 
-        self._isi = stats.isi(self.st.rescale(self.unit).magnitude)
+        self._unit = self.st.units
+
+        self._isi = stats.isi(self.st.rescale(self._unit).magnitude)
         isi_median = np.median(self._isi)
 
         if isi_median > self.isi_median_threshold.rescale(
-                self.unit).magnitude:
+                self._unit).magnitude:
             self.method = 'uniform'
             return None
 
         if isinstance(self.dither, pq.Quantity):
-            self.dither = self.dither.rescale(self.unit).magnitude
+            self.dither = self.dither.rescale(self._unit).magnitude
         if isinstance(self.window_length, pq.Quantity):
             self.window_length = self.window_length.rescale(
-                self.unit).magnitude
+                self._unit).magnitude
         if isinstance(self.sigma, pq.Quantity):
-            self.sigma = self.sigma.rescale(self.unit).magnitude
+            self.sigma = self.sigma.rescale(self._unit).magnitude
 
         self._sampling_rhythm = self.alternate + 1
 
@@ -200,8 +201,8 @@ class JointISISpace:
         self._isi_to_index = isi_to_index
 
         self._number_of_isis = len(self._isi)
-        self._first_spike = self.st[0].rescale(self.unit).magnitude
-        self._t_stop = self.st.t_stop.rescale(self.unit).magnitude
+        self._first_spike = self.st[0].rescale(self._unit).magnitude
+        self._t_stop = self.st.t_stop.rescale(self._unit).magnitude
 
         self._get_joint_isi_histogram()
 
@@ -361,7 +362,7 @@ class JointISISpace:
 
             dithered_st = self._first_spike + np.hstack(
                 (np.array(0.), np.cumsum(dithered_isi)))
-            dithered_st = neo.SpikeTrain(dithered_st * self.unit,
+            dithered_st = neo.SpikeTrain(dithered_st * self._unit,
                                          t_stop=self._t_stop)
             dithered_sts.append(dithered_st)
         return dithered_sts
