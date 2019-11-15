@@ -98,7 +98,7 @@ class Analysis(object):
     _ts_execute = None                # UTC time of analysis execution
     _ts_end = None                    # UTC time of analysis execution end
 
-    _custom_annotations = None        # Dictionary with custom annotations
+    _custom_annotations = {}          # Dictionary with custom annotations
 
     _name = None                      # Name of the analysis
     _cno_name = None                  # Name according to the CNO ontology TODO: check against official schema

@@ -227,8 +227,29 @@ class AnalysisBaseClassTestCase(unittest.TestCase):
             BasicClassNoAttributes(params=analysis_params)
         self.assertIsInstance(BasicClassExample(params=analysis_params), BasicClassExample)
 
-    # def test_annotations(self):
-    #     pass
+    def test_annotations(self):
+        analysis = BasicNoParameters()
+        self.assertEqual(len(list(analysis.annotations.keys())), 0)
+
+        analysis.annotate(annotation1=56)
+        self.assertEqual(len(list(analysis.annotations.keys())), 1)
+        self.assertTrue('annotation1' in analysis.annotations.keys())
+        self.assertEqual(analysis.annotations['annotation1'], 56)
+
+        analysis.annotate(annotation2='teste', annotation3=56.7)
+        self.assertEqual(len(list(analysis.annotations.keys())), 3)
+        self.assertTrue('annotation2' in analysis.annotations.keys())
+        self.assertTrue('annotation3' in analysis.annotations.keys())
+        self.assertEqual(analysis.annotations['annotation2'], "teste")
+        self.assertEqual(analysis.annotations['annotation3'], 56.7)
+
+        analysis.annotate(annotation1=45, annotation4={'a': 5, 'b': 6})
+        self.assertEqual(len(list(analysis.annotations.keys())), 4)
+        self.assertEqual(analysis.annotations['annotation1'], 45)
+        self.assertNotEqual(analysis.annotations['annotation1'], 56)
+        self.assertIsInstance(analysis.annotations['annotation4'], dict)
+        self.assertEqual(analysis.annotations['annotation4']['a'], 5)
+        self.assertEqual(analysis.annotations['annotation4']['b'], 6)
 
     def test_class_attributes(self):
         analysis_params = {'low_cutoff': 10,
@@ -239,14 +260,16 @@ class AnalysisBaseClassTestCase(unittest.TestCase):
                                  'method': 'raw'}
 
         analysis = BasicClassExample(params=analysis_params)
-        extra_analysis_params = BasicClassExample(params=extra_analysis_params)
+        extra_analysis = BasicClassExample(params=extra_analysis_params)
 
-        for test_object in [analysis, extra_analysis_params]:
+        for test_object in [analysis, extra_analysis]:
             self.assertIsInstance(test_object, BasicClassExample)
             self.assertEqual(test_object.name, TEST_NAME)
             self.assertEqual(test_object.description, TEST_DESCRIPTION)
             self.assertEqual(test_object.params['low_cutoff'], 10)
             self.assertEqual(test_object.params['high_cutoff'], 20)
+        self.assertTrue('method' not in analysis.params)
+        self.assertEqual(extra_analysis.params['method'], "raw")
 
 
 if __name__ == '__main__':
