@@ -6,19 +6,22 @@ Unit tests for the spike_train_correlation module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import sys
 import unittest
 
-import numpy as np
-from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
-import quantities as pq
 import neo
+import numpy as np
+import quantities as pq
+from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
+
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
 import elephant.spike_train_generation as st_gen
-import warnings
+
+python_version_major = sys.version_info.major
 
 
-class covariance_TestCase(unittest.TestCase):
+class CovarianceTestCase(unittest.TestCase):
 
     def setUp(self):
         # These two arrays must be such that they do not have coincidences
@@ -225,6 +228,7 @@ class corrcoeff_TestCase(unittest.TestCase):
         self.assertEqual(target.ndim, 0)
         self.assertEqual(target, 1.)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
         '''
         Test whether a warning is yielded in case of empty spike train.
@@ -234,16 +238,14 @@ class corrcoeff_TestCase(unittest.TestCase):
         binned_12 = conv.BinnedSpikeTrain([self.st_1, self.st_2],
                                           binsize=1 * pq.ms)
 
-        # test for a warning
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            ccmat = sc.corrcoef(binned_12)
-            self.assertTrue(issubclass(w.pop().category, UserWarning))
+        with self.assertWarns(UserWarning):
+            ccmat = sc.corrcoef(binned_12, fast=False)
 
         # test for NaNs in the output array
         target = np.zeros((2, 2)) * np.NaN
-        target[0,0] = 1.0
+        target[0, 0] = 1.0
         assert_array_equal(ccmat, target)
+
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):
 
@@ -368,7 +370,7 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
                                 cross_corr_coef=True)
             left_edge = - binned_st1.num_bins + 1
             tau_bin = int(t / float(binned_st1.binsize.magnitude))
-            assert_array_equal(
+            assert_array_almost_equal(
                 corrcoef, CCHcoef[tau_bin - left_edge].magnitude)
 
         # Check correlation using binary spike trains

@@ -394,7 +394,7 @@ class SpadeTestCase(unittest.TestCase):
         # Test negative minimum number of spikes
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
-            [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, min_neu=-3)
+            [3, 4, 4.5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, min_neu=-3)
         # Test negative number of surrogates
         self.assertRaises(AttributeError, spade.pvalue_spectrum, [
             neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
