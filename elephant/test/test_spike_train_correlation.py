@@ -16,7 +16,8 @@ from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
-import elephant.spike_train_generation as st_gen
+from elephant.spike_train_generation import homogeneous_poisson_process,\
+    homogeneous_gamma_process
 
 python_version_major = sys.version_info.major
 
@@ -49,9 +50,9 @@ class CovarianceTestCase(unittest.TestCase):
 
         # Calculate clipped and unclipped
         res_clipped = sc.covariance(
-            self.binned_st, binary=True)
+            self.binned_st, binary=True, fast=False)
         res_unclipped = sc.covariance(
-            self.binned_st, binary=False)
+            self.binned_st, binary=False, fast=False)
 
         # Check dimensions
         self.assertEqual(len(res_clipped), 2)
@@ -96,7 +97,7 @@ class CovarianceTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_0], t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-        target = sc.covariance(binned_st)
+        target = sc.covariance(binned_st, fast=False)
 
         # Check dimensions
         self.assertEqual(len(target), 2)
@@ -112,7 +113,7 @@ class CovarianceTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             self.st_0, t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-        target = sc.covariance(binned_st)
+        target = sc.covariance(binned_st, binary=True, fast=False)
 
         # Check result unclipped against result calculated by numpy.corrcoef
         mat = binned_st.to_bool_array()
@@ -122,8 +123,15 @@ class CovarianceTestCase(unittest.TestCase):
         self.assertEqual(target.ndim, target_numpy.ndim)
         self.assertAlmostEqual(target, target_numpy)
 
+    def test_covariance_fast_mode(self):
+        np.random.seed(27)
+        st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
+        binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
+        assert_array_almost_equal(sc.covariance(binned_st, fast=False),
+                                  sc.covariance(binned_st, fast=True))
 
-class corrcoeff_TestCase(unittest.TestCase):
+
+class CorrCoefTestCase(unittest.TestCase):
 
     def setUp(self):
         # These two arrays must be such that they do not have coincidences
@@ -244,7 +252,15 @@ class corrcoeff_TestCase(unittest.TestCase):
         # test for NaNs in the output array
         target = np.zeros((2, 2)) * np.NaN
         target[0, 0] = 1.0
-        assert_array_equal(ccmat, target)
+        assert_array_almost_equal(ccmat, target)
+
+    def test_corrcoef_fast_mode(self):
+        np.random.seed(27)
+        st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
+        binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
+        assert_array_almost_equal(sc.corrcoef(binned_st, fast=False),
+                                  sc.corrcoef(binned_st, fast=True))
+
 
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):
@@ -658,7 +674,7 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
 
         timescale_num = []
         for _ in range(10):
-            spikes = st_gen.homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
+            spikes = homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
             spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
             timescale_i = sc.spike_train_timescale(spikes_bin, 10*timescale)
             timescale_i.units = timescale.units

@@ -17,6 +17,11 @@ from scipy import integrate, sparse
 
 import elephant.conversion
 
+# The highest sparsity of the `BinnedSpikeTrain` matrix for which
+# memory-efficient (sparse) implementation of `covariance()` is faster than
+# with the corresponding numpy dense array.
+_SPARSITY_MEMORY_EFFICIENT_THR = 0.1
+
 
 class CrossCorrHist(object):
     """
@@ -143,7 +148,7 @@ class CrossCorrHist(object):
         Returns
         -------
         rho_xy : np.ndarray
-            Normalized cross-correlation array in range [-1, 1].
+            Normalized cross-correlation array in range `[-1, 1]`.
         """
         max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
         n_spikes1 = self.binned_st1.get_num_of_spikes()
@@ -152,10 +157,11 @@ class CrossCorrHist(object):
         data2 = self.binned_st2._sparse_mat_u.data
         ii = data1.dot(data1)
         jj = data2.dot(data2)
-        rho_xy = (cross_corr - n_spikes1 * n_spikes2 / max_num_bins) / \
-            np.sqrt((ii - n_spikes1 ** 2. / max_num_bins) * (
-                jj - n_spikes2 ** 2. / max_num_bins))
-        return rho_xy
+        cov_mean = n_spikes1 * n_spikes2 / max_num_bins
+        std_xy = np.sqrt((ii - n_spikes1 ** 2. / max_num_bins) * (
+                          jj - n_spikes2 ** 2. / max_num_bins))
+        cross_corr_normalized = (cross_corr - cov_mean) / std_xy
+        return cross_corr_normalized
 
     def kernel_smoothing(self, cross_corr, kernel):
         """
@@ -220,8 +226,9 @@ def covariance(binned_sts, binary=False, fast=True):
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False
     fast : bool, optional
-        Use fast `np.cov` (True) or memory efficient implementation?
-        Default: True
+        If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
+        `np.cov()`. Otherwise, use memory efficient implementation.
+        Default: `True`
 
     Returns
     -------
@@ -255,11 +262,11 @@ def covariance(binned_sts, binary=False, fast=True):
     if binary:
         binned_sts = binned_sts.binarize(copy=True)
 
-    if fast:
+    if fast and binned_sts.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
         array = binned_sts.to_array()
         return np.cov(array)
 
-    return __calculate_correlation_or_covariance(
+    return _covariance_sparse(
         binned_sts, corrcoef_norm=False)
 
 
@@ -297,10 +304,11 @@ def corrcoef(binned_sts, binary=False, fast=True):
         If True, two spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
-        Default: False
+        Default: `False`
     fast : bool, optional
-        Use fast `np.corrcoef` (True) or memory efficient implementation?
-        Default: True
+        If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
+        `np.corrcoef()`. Otherwise, use memory efficient implementation.
+        Default: `True`
 
     Returns
     -------
@@ -340,25 +348,25 @@ def corrcoef(binned_sts, binary=False, fast=True):
     if binary:
         binned_sts = binned_sts.binarize(copy=True)
 
-    if fast:
+    if fast and binned_sts.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
         array = binned_sts.to_array()
         return np.corrcoef(array)
 
-    return __calculate_correlation_or_covariance(
+    return _covariance_sparse(
         binned_sts, corrcoef_norm=True)
 
 
-def __calculate_correlation_or_covariance(binned_sts, corrcoef_norm):
+def _covariance_sparse(binned_sts, corrcoef_norm):
     """
-    Helper function for covariance() and corrcoef() that performs the complete
-    calculation for either the covariance (corrcoef_norm=False) or correlation
-    coefficient (corrcoef_norm=True). Both calculations differ only by the
-    denominator.
+    Memory efficient helper function for `covariance()` and `corrcoef()`
+    that performs the complete calculation for either the covariance
+    (`corrcoef_norm=False`) or correlation coefficient (`corrcoef_norm=True`).
+    Both calculations differ only by the denominator.
 
     Parameters
     ----------
     binned_sts : elephant.conversion.BinnedSpikeTrain
-        See covariance() or corrcoef(), respectively.
+        See `covariance()` or `corrcoef()`, respectively.
     corrcoef_norm : bool
         Use normalization factor for the correlation coefficient rather than
         for the covariance.
@@ -368,71 +376,25 @@ def __calculate_correlation_or_covariance(binned_sts, corrcoef_norm):
     np.ndarray
         Pearson correlation or covariance matrix.
     """
-    num_neurons = binned_sts.matrix_rows
-
-    # Pre-allocate correlation matrix
-    C = np.zeros((num_neurons, num_neurons))
-
-    # Retrieve unclipped matrix
     spmat = binned_sts._sparse_mat_u
+    n_bins = binned_sts.num_bins
 
     # Check for empty spike trains
-    row_counts = spmat.getnnz(axis=1)
-    if row_counts.min() == 0:
+    n_spikes_per_row = spmat.sum(axis=1)
+    if n_spikes_per_row.min() == 0:
         warnings.warn(
             'Detected empty spike trains (rows) in the argument binned_sts.')
 
-    # Extract each row
-    bin_counts = [row for row in spmat]
-
-    # All combinations of spike trains
-    for i in range(num_neurons):
-        for j in range(i, num_neurons):
-            if row_counts[j] == 0:
-                C[j, :] = np.NaN
-                C[:, j] = np.NaN
-                break
-            # Enumerator:
-            # $$ <b_i-m_i, b_j-m_j>
-            #      = <b_i, b_j> + l*m_i*m_j - <b_i, M_j> - <b_j, M_i>
-            #      =:    ij     + l*m_i*m_j - n_i * m_j  - n_j * m_i
-            #      =     ij     - n_i*n_j/l                         $$
-            # where $n_i$ is the spike count of spike train $i$,
-            # $l$ is the number of bins used (i.e., length of $b_i$ or $b_j$),
-            # and $M_i$ is a vector [m_i, m_i,..., m_i].
-
-            row_i = bin_counts[i]
-            row_j = bin_counts[j]
-
-            # Calculate dot product b_i*b_j between unclipped matrices
-            ij = row_i.dot(row_j.T).data.item()
-
-            # Number of spikes in i and j
-            n_i = row_i.sum()
-            n_j = row_j.sum()
-
-            enumerator = ij - n_i * n_j / binned_sts.num_bins
-
-            # Denominator:
-            if corrcoef_norm:
-                # Correlation coefficient
-                # directly calculate the dot product based on the counts of
-                # all filled entries (more efficient than using the dot
-                # product of the rows of the sparse matrix)
-                ii = row_i.dot(row_i.T).data.item()
-                jj = row_j.dot(row_j.T).data.item()
-
-                denominator = np.sqrt(
-                    (ii - (n_i ** 2) / binned_sts.num_bins) *
-                    (jj - (n_j ** 2) / binned_sts.num_bins))
-            else:
-                # Covariance
-                # $$ l-1 $$
-                denominator = binned_sts.num_bins - 1
-
-            # Fill entry of correlation matrix
-            C[i, j] = C[j, i] = enumerator / denominator
-    return np.squeeze(C)
+    res = spmat.dot(spmat.T) - n_spikes_per_row * n_spikes_per_row.T / n_bins
+    res = np.asarray(res)
+    if corrcoef_norm:
+        stdx = np.sqrt(res.diagonal())
+        stdx = np.expand_dims(stdx, axis=0)
+        res /= (stdx.T * stdx)
+    else:
+        res /= (n_bins - 1)
+    res = np.squeeze(res)
+    return res
 
 
 def cross_correlation_histogram(
@@ -497,9 +459,10 @@ def cross_correlation_histogram(
     cross_corr_coef : bool, optional
         Normalizes the CCH to obtain the cross-correlation  coefficient
         function ranging from -1 to 1 according to Equation (5.10) in
-        "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7
-        or "Neural interaction in cat primary auditory cortex. Dependence on
-        recording depth, electrode separation, and age", 1992, Eggermont.
+        "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
+        Note: the Eq. (5.10) is valid for binned spike trains with at most one
+        spike per bin. For a general case, refer to the implementation of
+        `_covariance_sparse()`.
 
     Returns
     -------

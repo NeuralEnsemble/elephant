@@ -493,7 +493,7 @@ class BinnedSpikeTrain(object):
         """
         # Check if num_bins is an integer (special case)
         if num_bins is not None:
-            if not isinstance(num_bins, int):
+            if not np.issubdtype(type(num_bins), int):
                 raise TypeError("num_bins is not an integer!")
         # Check if all parameters can be calculated, otherwise raise ValueError
         if t_start is None:
@@ -778,7 +778,7 @@ class BinnedSpikeTrain(object):
         scipy.sparse.csr_matrix
         scipy.sparse.csr_matrix.toarray
         """
-        return abs(scipy.sign(self.to_array())).astype(bool)
+        return self.to_array().astype(bool)
 
     def to_array(self, store_array=False):
         """
@@ -861,6 +861,17 @@ class BinnedSpikeTrain(object):
         if bst._mat_u is not None:
             bst._mat_u.clip(max=1, out=bst._mat_u)
         return bst
+
+    @property
+    def sparsity(self):
+        """
+        Returns
+        -------
+        float
+            Matrix sparsity, defined as matrix size, divided by no. of
+            nonzero elements.
+        """
+        return np.prod(self._sparse_mat_u.shape) / len(self._sparse_mat_u.data)
 
     def _convert_to_binned(self, spiketrains):
         """
