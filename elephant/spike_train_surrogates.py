@@ -28,7 +28,7 @@ the original data:
     profile
 * joint_isi_dithering:
     calculate the Joint-ISI distribution and moves spike according to the
-    probability distribution, that results from a fiexed sum of ISI_before
+    probability distribution, that results from a fixed sum of ISI_before
     and the ISI_afterwards. For further details see [1].
 
 [1] Louis et al (2010) Surrogate Spike Train Generation Through Dithering in
@@ -382,7 +382,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
 
     The surrogates retain the :attr:`t_start and :attr:`t_stop` of the
     :attr:`spike train`. Note that within each time bin the surrogate
-    `neo.SpikeTrain` objects are locally poissonian (the inter-spike-interval
+    `neo.SpikeTrain` objects are locally Poissonian (the inter-spike-interval
     are exponentially distributed).
 
     Parameters
@@ -451,7 +451,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
     offsets = start_dl + np.array([bin_edges[bin_id] for bin_id in bin_ids])
     dilats = np.array([bin_sizes_dl[bin_id] for bin_id in bin_ids])
 
-    # Compute each surrogate by dilatating and shifting each spike s in the
+    # Compute each surrogate by dilating and shifting each spike s in the
     # poisson 0-1 spike trains to dilat * s + offset. Attach time unit again
     surr = np.sort(surr_poiss01 * dilats + offsets, axis=1) * std_unit
 
@@ -463,9 +463,9 @@ def jitter_spikes(spiketrain, binsize, n=1):
 def joint_isi_dithering(spiketrain,
                         n=1,
                         dither=15. * pq.ms,
-                        truncation_limit=120. * pq.ms,
-                        num_bins=120,
-                        sigma=1. * pq.ms,
+                        truncation_limit=100. * pq.ms,
+                        num_bins=100,
+                        sigma=2. * pq.ms,
                         alternate=True,
                         use_sqrt=False,
                         method='fast',
@@ -503,14 +503,14 @@ def joint_isi_dithering(spiketrain,
         the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
         histogram is calculated for ISI_i, ISI_(i+1) from 0 to
         truncation_limit.
-        Default: 120*pq.ms
+        Default: 100*pq.ms
     num_bins: int
-        The size of the joint-ISI-distribution will be num_bins*num_bins.
-        Default: 120
+        The size of the joint-ISI-distribution will be num_bins*num_bins/2.
+        Default: 100
     sigma: pq.Quantity
         The standard deviation of the Gaussian kernel, with which
         the data is convoluted.
-        Default: 0.001*pq.s
+        Default: 2.*pq.ms
     alternate: boolean
         If alternate == True: then first all even and then all odd spikes are
         dithered. Else: in ascending order from the first to the last spike,
@@ -595,14 +595,14 @@ class JointISI:
         the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
         histogram is calculated for ISI_i, ISI_(i+1) from 0 to
         truncation_limit.
-        Default: 120*pq.ms
+        Default: 100*pq.ms
     num_bins: int
-        The size of the joint-ISI-distribution will be num_bins*num_bins.
-        Default: 120
+        The size of the joint-ISI-distribution will be num_bins*num_bins/2.
+        Default: 100
     sigma: pq.Quantity
         The standard deviation of the Gaussian kernel, with which
         the data is convoluted.
-        Default: 0.001*pq.s
+        Default: 2.*pq.ms
     alternate: boolean
         If alternate == True: then first all even and then all odd spikes are
         dithered. Else: in ascending order from the first to the last spike,
@@ -645,9 +645,9 @@ class JointISI:
                  st,
                  n_surr=1,
                  dither=15. * pq.ms,
-                 truncation_limit=120. * pq.ms,
-                 num_bins=120,
-                 sigma=1. * pq.ms,
+                 truncation_limit=100. * pq.ms,
+                 num_bins=100,
+                 sigma=2. * pq.ms,
                  alternate=True,
                  use_sqrt=False,
                  method='fast',
