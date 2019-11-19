@@ -470,7 +470,8 @@ def joint_isi_dithering(spiketrain,
                         use_sqrt=False,
                         method='fast',
                         cutoff=True,
-                        expected_refr_period=4. * pq.ms):
+                        expected_refr_period=4. * pq.ms,
+                        min_spikes=5):
     """
     Implementation of Joint-ISI-dithering for spiketrains that pass the
     threshold of the dense rate, if not a uniform dithered spiketrain is
@@ -538,6 +539,10 @@ def joint_isi_dithering(spiketrain,
         internally calculated as the minimum of the value expected_refr_period
         and the least ISI in the spiketrain.
         Default: 4.*pq.ms
+    min_spikes: int
+         if the number of spikes is lower than this number, the spiketrain
+         is directly passed to the uniform dithering.
+         Default: 5
 
     Returns
     ----------
@@ -561,7 +566,8 @@ def joint_isi_dithering(spiketrain,
                     use_sqrt=use_sqrt,
                     method=method,
                     cutoff=cutoff,
-                    expected_refr_period=expected_refr_period
+                    expected_refr_period=expected_refr_period,
+                    min_spikes=min_spikes
                     ).dithering()
 
 
@@ -630,6 +636,10 @@ class JointISI:
         internally calculated as the minimum of the value expected_refr_period
         and the least ISI in the spiketrain.
         Default: 4.*pq.ms
+    min_spikes: int
+         if the number of spikes is lower than this number, the spiketrain
+         is directly passed to the uniform dithering.
+         Default: 5
 
     Methods
     ----------
@@ -652,13 +662,15 @@ class JointISI:
                  use_sqrt=False,
                  method='fast',
                  cutoff=True,
-                 expected_refr_period=4. * pq.ms
+                 expected_refr_period=4. * pq.ms,
+                 min_spikes=5
                  ):
         self._st = st
 
         self._n_surr = n_surr
 
         self._dither = dither
+
         self._truncation_limit = truncation_limit
         self._sigma = sigma
 
@@ -677,6 +689,12 @@ class JointISI:
 
         self._expected_refr_period = expected_refr_period
 
+        if len(st) < min_spikes:
+            self._to_less_spikes = True
+            return None
+
+        self._to_less_spikes = False
+
         self._preprocessing()
 
     def update_parameters(self,
@@ -689,7 +707,8 @@ class JointISI:
                           use_sqrt=None,
                           method=None,
                           cutoff=None,
-                          expected_refr_period=None
+                          expected_refr_period=None,
+                          min_spikes=None
                           ):
         """
         With this function the parameters inside the class :class:`JointISI`
@@ -701,6 +720,14 @@ class JointISI:
         spiketrain (st).
         Default for each entry is None, i.e. it is not updated.
         """
+
+        if min_spikes is not None:
+            if self._to_less_spikes and min_spikes >= len(self._st):
+                self._to_less_spikes = False
+                self._preprocessing()
+            elif not self._to_less_spikes and min_spikes < len(self._st):
+                self._to_less_spikes = True
+
         redo_cumulatives = False
         if n_surr is not None:
             self._n_surr = n_surr
@@ -774,7 +801,7 @@ class JointISI:
                 redo_cumulatives = True
             self._expected_refr_period = expected_refr_period
 
-        if redo_cumulatives:
+        if redo_cumulatives and not self._to_less_spikes:
             self._determine_cumulative_functions()
 
     def _preprocessing(self):
@@ -876,6 +903,9 @@ class JointISI:
             list of spiketrains, that are dithered versions of the given
             spiketrain
         """
+        if self._to_less_spikes:
+            return dither_spikes(self._st, self._dither, self.n_surr)
+
         dithered_sts = []
         for surr_number in range(self._n_surr):
             dithered_isi = self._get_dithered_isi()
