@@ -79,7 +79,7 @@ class CrossCorrHist(object):
                 timediff <= right_edge)).all(), 'Not all the '
             'entries of cch lie in the window'
             cross_corr[timediff + np.abs(left_edge)] += (
-                    st1_spmat[idx] * st2_spmat[il:ir])
+                st1_spmat[idx] * st2_spmat[il:ir])
             st2_bin_idx_unique = st2_bin_idx_unique[il:]
             st2_spmat = st2_spmat[il:]
         return cross_corr
@@ -145,9 +145,13 @@ class CrossCorrHist(object):
             Cross-correlation array. The output of `self.correlate_speed()`
             or `self.correlate_memory()`.
 
+        Notes
+        -----
+        See Notes in `cross_correlation_histogram()`.
+
         Returns
         -------
-        rho_xy : np.ndarray
+        np.ndarray
             Normalized cross-correlation array in range `[-1, 1]`.
         """
         max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
@@ -159,7 +163,7 @@ class CrossCorrHist(object):
         jj = data2.dot(data2)
         cov_mean = n_spikes1 * n_spikes2 / max_num_bins
         std_xy = np.sqrt((ii - n_spikes1 ** 2. / max_num_bins) * (
-                          jj - n_spikes2 ** 2. / max_num_bins))
+            jj - n_spikes2 ** 2. / max_num_bins))
         cross_corr_normalized = (cross_corr - cov_mean) / std_xy
         return cross_corr_normalized
 
@@ -228,6 +232,7 @@ def covariance(binned_sts, binary=False, fast=True):
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
         `np.cov()`. Otherwise, use memory efficient implementation.
+        See Notes [2].
         Default: `True`
 
     Returns
@@ -236,28 +241,43 @@ def covariance(binned_sts, binary=False, fast=True):
         The square matrix of covariances. The element :math:`C[i,j]=C[j,i]` is
         the covariance between binned_sts[i] and binned_sts[j].
 
+    Raises
+    ------
+    MemoryError
+        When using `fast=True` and `binned_sts` shape is large.
+
+    Warnings
+    --------
+    UserWarning
+        If at least one row in `binned_sts` is empty (has no spikes).
+
+    See Also
+    --------
+    corrcoef : Pearson correlation coefficient
+
+    Notes
+    -----
+    1. The spike trains in the binned structure are assumed to cover the
+       complete time span `[t_start, t_stop)` of `binned_sts`.
+    2. Using `fast=True` might lead to `MemoryError`. If it's the case,
+       switch to `fast=False`.
+
     Examples
     --------
     Generate two Poisson spike trains
 
+    >>> import neo
+    >>> from quantities import s, Hz, ms
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> st1 = homogeneous_poisson_process(
-            rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = homogeneous_poisson_process(
-            rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-
-    Calculate the covariance matrix.
-
     >>> from elephant.conversion import BinnedSpikeTrain
+    >>> st1 = homogeneous_poisson_process(
+    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    >>> st2 = homogeneous_poisson_process(
+    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], binsize=5*ms))
+    >>> print(cov_matrix[0, 1])
+    -0.001668334167083546
 
-    The covariance between the spike trains is stored in cc_matrix[0,1] (or
-    cov_matrix[1,0]).
-
-    Notes
-    -----
-    * The spike trains in the binned structure are assumed to all cover the
-      complete time span of binned_sts [t_start,t_stop).
     """
     if binary:
         binned_sts = binned_sts.binarize(copy=True)
@@ -271,7 +291,7 @@ def covariance(binned_sts, binary=False, fast=True):
 
 
 def corrcoef(binned_sts, binary=False, fast=True):
-    """
+    r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
 
@@ -308,6 +328,7 @@ def corrcoef(binned_sts, binary=False, fast=True):
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
         `np.corrcoef()`. Otherwise, use memory efficient implementation.
+        See Notes[2]
         Default: `True`
 
     Returns
@@ -318,32 +339,43 @@ def corrcoef(binned_sts, binary=False, fast=True):
         binned_sts[i] and binned_sts[j]. If binned_sts contains only one
         SpikeTrain, C=1.0.
 
+    Raises
+    ------
+    MemoryError
+        When using `fast=True` and `binned_sts` shape is large.
+
+    Warnings
+    --------
+    UserWarning
+        If at least one row in `binned_sts` is empty (has no spikes).
+
+    See Also
+    --------
+    covariance
+
+    Notes
+    -----
+    1. The spike trains in the binned structure are assumed to cover the
+       complete time span `[t_start, t_stop)` of `binned_sts`.
+    2. Using `fast=True` might lead to `MemoryError`. If it's the case,
+       switch to `fast=False`.
+
     Examples
     --------
     Generate two Poisson spike trains
 
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> from quantities import s, Hz
     >>> import neo
-    >>> st1 = homogeneous_poisson_process(
-            rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = homogeneous_poisson_process(
-            rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-
-    Calculate the correlation matrix.
-
+    >>> from quantities import s, Hz, ms
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
+    >>> st1 = homogeneous_poisson_process(
+    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    >>> st2 = homogeneous_poisson_process(
+    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
+    >>> print(cc_matrix[0, 1])
+    0.015477320222075359
 
-    The correlation coefficient between the spike trains is stored in
-    cc_matrix[0,1] (or cc_matrix[1,0]).
-
-
-
-    Notes
-    -----
-    * The spike trains in the binned structure are assumed to all cover the
-      complete time span of binned_sts [t_start,t_stop).
     """
     if binary:
         binned_sts = binned_sts.binarize(copy=True)
@@ -370,6 +402,11 @@ def _covariance_sparse(binned_sts, corrcoef_norm):
     corrcoef_norm : bool
         Use normalization factor for the correlation coefficient rather than
         for the covariance.
+
+    Warnings
+    --------
+    UserWarning
+        If at least one row in `binned_sts` is empty (has no spikes).
 
     Returns
     -------
@@ -458,11 +495,8 @@ def cross_correlation_histogram(
         Default: "speed"
     cross_corr_coef : bool, optional
         Normalizes the CCH to obtain the cross-correlation  coefficient
-        function ranging from -1 to 1 according to Equation (5.10) in
-        "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
-        Note: the Eq. (5.10) is valid for binned spike trains with at most one
-        spike per bin. For a general case, refer to the implementation of
-        `_covariance_sparse()`.
+        function ranging from -1 to 1 according to Equation (5.10) in [1]_.
+        See Notes.
 
     Returns
     -------
@@ -493,6 +527,16 @@ def cross_correlation_histogram(
         bin has ID 0, bins the left have negative IDs and bins to the right
         have positive IDs, e.g.,:
         `np.array([-3, -2, -1, 0, 1, 2, 3])`
+
+    Notes
+    -----
+    The Eq. (5.10) in [1]_ is valid for binned spike trains with at most one
+    spike per bin. For a general case, refer to the implementation of
+    `_covariance_sparse()`.
+
+    References
+    ----------
+    .. [1] "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
 
     Example
     -------
@@ -758,7 +802,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
             index = 0.5 + 0.5 * (PA - TB) / (1 - PA * TB)
         else:
             index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
-                    1 - PB * TA)
+                1 - PB * TA)
     return index
 
 
@@ -808,13 +852,13 @@ def spike_train_timescale(binned_st, tau_max):
         Physical Review E, 92(4), 040901.
     """
     binsize = binned_st.binsize
-    if not (tau_max/binsize).simplified.units == pq.dimensionless:
+    if not (tau_max / binsize).simplified.units == pq.dimensionless:
         raise AssertionError("tau_max needs units of time")
 
     # safe casting of tau_max/binsize to integer
-    tau_max_bins = int(np.round((tau_max/binsize).simplified.magnitude))
+    tau_max_bins = int(np.round((tau_max / binsize).simplified.magnitude))
     if not np.isclose(tau_max.simplified.magnitude,
-                      (tau_max_bins*binsize).simplified.magnitude):
+                      (tau_max_bins * binsize).simplified.magnitude):
         raise AssertionError("tau_max has to be a multiple of the binsize")
 
     cch_window = [-tau_max_bins, tau_max_bins]
@@ -822,9 +866,9 @@ def spike_train_timescale(binned_st, tau_max):
         binned_st, binned_st, window=cch_window, cross_corr_coef=True
     )
     # Take only t > 0 values, in particular neglecting the delta peak.
-    corrfct_pos = corrfct.time_slice(binsize/2, corrfct.t_stop).flatten()
+    corrfct_pos = corrfct.time_slice(binsize / 2, corrfct.t_stop).flatten()
 
     # Calculate the timescale using trapezoidal integration
     integr = np.abs((corrfct_pos / corrfct_pos[0]).magnitude)**2
-    timescale = 2*integrate.trapz(integr, dx=binsize)
+    timescale = 2 * integrate.trapz(integr, dx=binsize)
     return timescale
