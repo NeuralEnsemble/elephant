@@ -425,8 +425,6 @@ class BinnedSpikeTrain(object):
         self.t_stop = t_stop
         self.num_bins = num_bins
         self.binsize = binsize
-        self.matrix_columns = self.num_bins
-        self.matrix_rows = len(spiketrains)
         # Empty matrix for storage, time points matrix
         self._mat_u = None
         # Variables to store the sparse matrix
@@ -444,11 +442,19 @@ class BinnedSpikeTrain(object):
 
         if self.is_spiketrain:
             n_spikes = sum(map(len, spiketrains))
-            n_spikes_binned = sum(map(len, self.spike_indices))
+            n_spikes_binned = self.get_num_of_spikes()
             if n_spikes != n_spikes_binned:
                 warnings.warn("Binning discarded {n} last spike(s) in the "
                               "input spiketrain.".format(
                                n=n_spikes - n_spikes_binned))
+
+    @property
+    def matrix_rows(self):
+        return self._sparse_mat_u.shape[0]
+
+    @property
+    def matrix_columns(self):
+        return self._sparse_mat_u.shape[1]
 
     # =========================================================================
     # There are four cases the given parameters must fulfill
@@ -458,7 +464,7 @@ class BinnedSpikeTrain(object):
     # t_start, num_bins, t_stop
     # t_start, bin_size, t_stop
     # t_stop, num_bins, binsize
-    # ==========================================================================
+    # =========================================================================
 
     def _check_init_params(self, binsize, num_bins, t_start, t_stop):
         """
@@ -495,8 +501,6 @@ class BinnedSpikeTrain(object):
             self.t_stop = _calc_tstop(num_bins, binsize, t_start)
         elif num_bins is None:
             self.num_bins = _calc_num_bins(binsize, t_start, t_stop)
-            if self.matrix_columns is None:
-                self.matrix_columns = self.num_bins
         elif binsize is None:
             self.binsize = _calc_binsize(num_bins, t_start, t_stop)
 
@@ -672,6 +676,30 @@ class BinnedSpikeTrain(object):
         tmp_mat[tmp_mat.nonzero()] = 1
         return tmp_mat.astype(bool)
 
+    def get_num_of_spikes(self, axis=None):
+        """
+        Compute the number of binned spikes.
+
+        Parameters
+        ----------
+        axis : int, optional
+            If `None`, compute the total num. of spikes.
+            Otherwise, compute num. of spikes along axis.
+            If axis is `1`, compute num. of spikes per spike train (row).
+            Default is `None`.
+
+        Returns
+        -------
+        int or np.ndarray
+            The number of binned spikes.
+
+        """
+        if axis is None:
+            return self._sparse_mat_u.sum(axis=axis)
+        n_spikes_per_row = self._sparse_mat_u.sum(axis=axis)
+        n_spikes_per_row = np.asarray(n_spikes_per_row)[:, 0]
+        return n_spikes_per_row
+
     @property
     def spike_indices(self):
         """
@@ -693,16 +721,15 @@ class BinnedSpikeTrain(object):
         [[0, 0, 1, 3, 4, 5, 6]]
         >>> print(x.to_sparse_array().nonzero()[1])
         [0 1 3 4 5 6]
+        >>> print(x.to_array())
+        [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0]]
 
         """
         spike_idx = []
         for row in self._sparse_mat_u:
-            n_cols = []
             # Extract each non-zeros column index and how often it exists,
             # i.e., how many spikes fall in this column
-            for col, count in zip(row.nonzero()[1], row.data):
-                # Append the column index for each spike
-                n_cols.extend([col] * count)
+            n_cols = np.repeat(row.indices, row.data)
             spike_idx.append(n_cols)
         return spike_idx
 
@@ -799,16 +826,22 @@ class BinnedSpikeTrain(object):
 
         """
         if self._mat_u is None:
-            self._mat_u = self.to_sparse_array().toarray()
+            self._mat_u = self._sparse_mat_u.toarray()
 
     def remove_stored_array(self):
         """
-        Removes the matrix with counted time points from memory.
+        Unlinks the matrix with counted time points from memory.
 
         """
+        self._mat_u = None
+
+    def binarize(self):
+        """
+        In-place clipping the internal array to have 0 or 1 values.
+        """
+        self._sparse_mat_u.data.clip(max=1, out=self._sparse_mat_u.data)
         if self._mat_u is not None:
-            del self._mat_u
-            self._mat_u = None
+            self._mat_u.clip(max=1, out=self._mat_u)
 
     def _convert_to_binned(self, spiketrains):
         """
@@ -826,11 +859,7 @@ class BinnedSpikeTrain(object):
             self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=int)
             return
 
-        from distutils.version import StrictVersion
-        # column
-        filled = []
-        # row
-        indices = []
+        row_ids, column_ids = [], []
         # data
         counts = []
         for idx, elem in enumerate(spiketrains):
@@ -842,12 +871,12 @@ class BinnedSpikeTrain(object):
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
             f, c = np.unique(filled_tmp, return_counts=True)
-            filled.extend(f)
+            column_ids.extend(f)
             counts.extend(c)
-            indices.extend([idx] * len(f))
-        csr_matrix = sps.csr_matrix((counts, (indices, filled)),
-                                    shape=(self.matrix_rows,
-                                           self.matrix_columns),
+            row_ids.extend([idx] * len(f))
+        csr_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
+                                    shape=(len(spiketrains),
+                                           self.num_bins),
                                     dtype=int)
         self._sparse_mat_u = csr_matrix
 
@@ -860,10 +889,9 @@ def _check_neo_spiketrain(matrix):
     if isinstance(matrix, neo.SpikeTrain):
         return True
     # Check for list or tuple
-    elif isinstance(matrix, (list, tuple)):
+    if isinstance(matrix, (list, tuple)):
         return all(map(_check_neo_spiketrain, matrix))
-    else:
-        return False
+    return False
 
 
 def _check_binned_array(matrix):
