@@ -904,7 +904,7 @@ class JointISI:
             spiketrain
         """
         if self._to_less_spikes:
-            return dither_spikes(self._st, self._dither, self.n_surr)
+            return dither_spikes(self._st, self._dither, self._n_surr)
 
         dithered_sts = []
         for surr_number in range(self._n_surr):
