@@ -738,6 +738,8 @@ class JointISI:
             truncation_limit=truncation_limit,
             num_bins=num_bins)
 
+        significant_changes += self._update_sigma(sigma=sigma)
+
         significant_changes += self._update_dither(dither=dither)
 
         self._update_alternate(alternate=alternate)
@@ -827,8 +829,9 @@ class JointISI:
 
             # A function that gives for each ISI the corresponding index in the
             # Joint-ISI distribution.
-            def _isi_to_index(isi):
-                return np.rint(isi / self._bin_width - 0.5).astype(int)
+            def _isi_to_index(inter_spike_interval):
+                return np.rint(
+                    inter_spike_interval / self._bin_width - 0.5).astype(int)
 
             self._isi_to_index = _isi_to_index
 
@@ -908,8 +911,9 @@ class JointISI:
 
         # A function that gives for each ISI the corresponding index in the
         # Joint-ISI distribution.
-        def _isi_to_index(isi):
-            return np.rint(isi / self._bin_width - 0.5).astype(int)
+        def _isi_to_index(inter_spike_interval):
+            return np.rint(
+                inter_spike_interval / self._bin_width - 0.5).astype(int)
 
         self._isi_to_index = _isi_to_index
 
