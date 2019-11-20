@@ -863,7 +863,6 @@ class JointISI:
             elif not self._to_less_spikes and min_spikes < len(self._st):
                 self._to_less_spikes = True
 
-
     def _preprocessing(self):
         """
         To perform the Joint-ISI dithering a preprocessing procedure for each
