@@ -317,8 +317,52 @@ class SurrogatesTestCase(unittest.TestCase):
         st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
         n_surr = 2
         dither = 10 * pq.ms
-        surrs = surr.JointISI(st, n_surr=n_surr, dither=dither).dithering()
 
+        # Test fast version
+        DitherClass = surr.JointISI(st, n_surr=n_surr, dither=dither)
+        surrs = DitherClass.dithering()
+
+        self.assertIsInstance(surrs, list)
+        self.assertEqual(len(surrs), n_surr)
+        self.assertEqual(DitherClass._method, 'fast')
+
+        for surrog in surrs:
+            self.assertIsInstance(surrog, neo.SpikeTrain)
+            self.assertEqual(surrog.units, st.units)
+            self.assertEqual(surrog.t_start, st.t_start)
+            self.assertEqual(surrog.t_stop, st.t_stop)
+            self.assertEqual(len(surrog), len(st))
+
+        # Test window_version
+        DitherClass.update_parameters(method='window')
+        surrs = DitherClass.dithering()
+
+        self.assertIsInstance(surrs, list)
+        self.assertEqual(len(surrs), n_surr)
+        self.assertEqual(DitherClass._method, 'window')
+
+        for surrog in surrs:
+            self.assertIsInstance(surrog, neo.SpikeTrain)
+            self.assertEqual(surrog.units, st.units)
+            self.assertEqual(surrog.t_start, st.t_start)
+            self.assertEqual(surrog.t_stop, st.t_stop)
+            self.assertEqual(len(surrog), len(st))
+
+        # Test function wrapper
+        surrs = surr.joint_isi_dithering(st, n=n_surr, dither=dither)
+        self.assertIsInstance(surrs, list)
+        self.assertEqual(len(surrs), n_surr)
+
+        for surrog in surrs:
+            self.assertIsInstance(surrog, neo.SpikeTrain)
+            self.assertEqual(surrog.units, st.units)
+            self.assertEqual(surrog.t_start, st.t_start)
+            self.assertEqual(surrog.t_stop, st.t_stop)
+            self.assertEqual(len(surrog), len(st))
+
+        # Test surrogate methods wrapper
+        surrs = surr.surrogates(
+            st, n=n_surr, surr_method='joint_isi_dithering')
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
 
