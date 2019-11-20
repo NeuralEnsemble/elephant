@@ -694,13 +694,10 @@ class JointISI:
         # least 2 spikes with a previous and a subsequent spike.
         # If this is not fulfilled the _preprocessing function is not called.
         # And for the dithering the uniform dithering is used.
-        if len(st) < min_spikes:
-            self._to_less_spikes = True
-            return None
+        self._to_less_spikes = len(st) < min_spikes
 
-        self._to_less_spikes = False
-
-        self._preprocessing()
+        if not self._to_less_spikes:
+            self._preprocessing()
 
     def update_parameters(self,
                           n_surr=None,
@@ -768,6 +765,10 @@ class JointISI:
             if expected_refr_period < self._refr_period:
                 significant_change = 1
             self._expected_refr_period = expected_refr_period
+            if significant_change:
+                minimal_isi = np.min(self._isi)
+                self._refr_period = np.min((self._expected_refr_period,
+                                            minimal_isi))
             return significant_change
         return 0
 
@@ -901,6 +902,10 @@ class JointISI:
             self._expected_refr_period = self._expected_refr_period.rescale(
                 self._unit).magnitude
 
+        minimal_isi = np.min(self._isi)
+        self._refr_period = np.min((self._expected_refr_period,
+                                    minimal_isi))
+
         self._sampling_rhythm = self._alternate + 1
 
         self._number_of_isis = len(self._isi)
@@ -986,9 +991,6 @@ class JointISI:
             jisih = np.sqrt(jisih)
 
         if self._cutoff:
-            minimal_isi = np.min(self._isi)
-            self._refr_period = np.min((self._expected_refr_period,
-                                        minimal_isi))
             start_index = self._isi_to_index(self._refr_period)
             jisih[start_index:, start_index:] = gaussian_filter(
                 jisih[start_index:, start_index:],
