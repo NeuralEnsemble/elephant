@@ -990,20 +990,21 @@ class JointISI:
         if self._use_sqrt:
             jisih = np.sqrt(jisih)
 
-        if self._cutoff:
-            start_index = self._isi_to_index(self._refr_period)
-            jisih[start_index:, start_index:] = gaussian_filter(
-                jisih[start_index:, start_index:],
-                self._sigma / self._bin_width)
+        if self._sigma:
+            if self._cutoff:
+                start_index = self._isi_to_index(self._refr_period)
+                jisih[start_index:, start_index:] = gaussian_filter(
+                    jisih[start_index:, start_index:],
+                    self._sigma / self._bin_width)
 
-            jisih[:start_index + 1, :] = np.zeros_like(
-                jisih[:start_index + 1, :])
-            jisih[:, :start_index + 1] = np.zeros_like(
-                jisih[:, :start_index + 1])
+                jisih[:start_index + 1, :] = np.zeros_like(
+                    jisih[:start_index + 1, :])
+                jisih[:, :start_index + 1] = np.zeros_like(
+                    jisih[:, :start_index + 1])
 
-        else:
-            jisih = gaussian_filter(jisih, self._sigma / self._bin_width)
-        self._jisih = jisih
+            else:
+                jisih = gaussian_filter(jisih, self._sigma / self._bin_width)
+            self._jisih = jisih
         return None
 
     def _window_diagonal_cumulatives(self, flipped_jisih):
