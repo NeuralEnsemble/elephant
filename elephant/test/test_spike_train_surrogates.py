@@ -449,7 +449,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         # Check that a square root is applied to the Joint-ISI histogram.
         joint_isi_instance.update_parameters(sigma=0.*pq.ms)
-        assertEqual(joint_isi_instance._sigma, 0.)
+        self.assertEqual(joint_isi_instance._sigma, 0.)
         jisih_with_sqrt = joint_isi_instance._jisih
 
         joint_isi_instance.update_parameters(use_sqrt=False)
