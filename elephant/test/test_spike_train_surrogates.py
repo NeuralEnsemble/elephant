@@ -380,6 +380,77 @@ class SurrogatesTestCase(unittest.TestCase):
         surrog = surr.JointISI(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
 
+    def test_update_class_parameters(self):
+        rate = 100. * pq.Hz
+        t_stop = 1. * pq.s
+        np.random.seed(0)
+        st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
+        n_surr = 2
+        dither = 10 * pq.ms
+
+        DitherClass = surr.JointISI(st, n_surr=n_surr, dither=dither)
+
+        old_jisih = DitherClass._jisih
+
+        # Set Minimal number of spikes higher than spikes in spiketrain (107)
+        DitherClass.update_parameters(min_spikes=200)
+        self.assertEqual(DitherClass._to_less_spikes, True)
+
+        new_n_surr = 4
+        new_dither = 15. * pq.ms
+        new_truncation_limit = 120 * pq.ms
+        new_num_bins = 120
+        new_sigma = 5. * pq.ms
+        new_alternate = 2
+        new_use_sqrt = False
+        new_cutoff = False
+        new_expected_refr_period = 0.0001 * pq.ms
+        unit = st.units
+
+        DitherClass.update_parameters(
+            min_spikes=4,
+            n_surr=new_n_surr,
+            dither=new_dither,
+            truncation_limit=new_truncation_limit,
+            num_bins=new_num_bins,
+            sigma=new_sigma,
+            alternate=new_alternate,
+            use_sqrt=new_use_sqrt,
+            cut_off=new_cutoff,
+            expected_refr_period=new_expected_refr_period)
+
+        self.assertEqual(DitherClass._to_less_spikes, False)
+        self.assertEqual(DitherClass._n_surr, new_n_surr)
+        self.assertEqual(
+            DitherClass._dither,
+            new_dither.rescale(unit).magnitude)
+        self.assertEqual(
+            DitherClass._truncation_limit,
+            new_truncation_limit.rescale(unit).magnitude)
+        self.assertEqual(DitherClass._num_bins, new_num_bins)
+        self.assertEqual(
+            DitherClass._bin_width,
+            new_truncation_limit.rescale(unit).magnitude/new_num_bins)
+        self.assertEqual(
+            DitherClass._sigma,
+            new_sigma.rescale(unit).magnitude)
+        self.assertEqual(DitherClass._sampling_rhythm, new_alternate+1)
+        self.assertEqual(DitherClass._use_sqrt, new_use_sqrt)
+        self.assertEqual(DitherClass._cutoff, new_cutoff)
+        self.assertEqual(
+            DitherClass._refr_period,
+            new_expected_refr_period.rescale(unit).magnitude)
+
+        self.assertNotEqual(old_jisih.shape[0], DitherClass._jisih.shape[0])
+
+        with self.assertRaises(ValueError):
+            DitherClass.update_parameters(method='non existing method')
+
+        # do this error check also for initializing the calss
+
+        with self.assertRaises(ValueError):
+            surr.JointISI(st, n_surr=n_surr, dither=dither,
+                          method='non existing method')
 
 def suite():
     suite = unittest.makeSuite(SurrogatesTestCase, 'test')
