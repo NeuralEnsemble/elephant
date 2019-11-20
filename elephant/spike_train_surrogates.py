@@ -689,6 +689,11 @@ class JointISI:
 
         self._expected_refr_period = expected_refr_period
 
+        # This is a check if the spiketrain has enough spikes to evaluate the
+        # joint-ISI histogram. With a default value of 4. There need to be at
+        # least 2 spikes with a previous and a subsequent spike.
+        # If this is not fulfilled the _preprocessing function is not called.
+        # And for the dithering the uniform dithering is used.
         if len(st) < min_spikes:
             self._to_less_spikes = True
             return None
@@ -863,16 +868,9 @@ class JointISI:
         """
         To perform the Joint-ISI dithering a preprocessing procedure for each
         spiketrain is necessary. This is part of the initializer (__init___).
-        If after calling the class for the first time, a parameter is changed,
-        the preprocessing needs to be done again.
 
-        First, two checks are done. If they are not passed, self._method is
-        set to 'uniform'. The first one asks for the number of spikes.
-        The second compares the median of the ISI-distribution against a
-        threshold.
-
-        If the method is not 'uniform' the cumulative distribution functions
-        for the Joint-ISI dither process are evaluated.
+        The cumulative distribution functions for the Joint-ISI dither process
+        are calculated in this function.
 
         If method is 'fast':
         For each slice of the joint-ISI
