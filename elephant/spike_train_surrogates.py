@@ -1004,7 +1004,7 @@ class JointISI:
 
             else:
                 jisih = gaussian_filter(jisih, self._sigma / self._bin_width)
-            self._jisih = jisih
+        self._jisih = jisih
         return None
 
     def _window_diagonal_cumulatives(self, flipped_jisih):
