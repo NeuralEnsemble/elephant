@@ -334,7 +334,9 @@ class SurrogatesTestCase(unittest.TestCase):
             self.assertEqual(len(surrog), len(st))
 
         # Test window_version
-        joint_isi_instance.update_parameters(method='window')
+        joint_isi_instance.update_parameters(method='window',
+                                             dither=2*dither,
+                                             num_bins=50)
         surrs = joint_isi_instance.dithering()
 
         self.assertIsInstance(surrs, list)
