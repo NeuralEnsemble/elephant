@@ -860,10 +860,10 @@ class JointISI:
     def _update_min_spikes(self,
                            min_spikes=None):
         if min_spikes is not None:
-            if self._to_less_spikes and min_spikes >= len(self._st):
+            if self._to_less_spikes and min_spikes <= len(self._st):
                 self._to_less_spikes = False
                 self._preprocessing()
-            elif not self._to_less_spikes and min_spikes < len(self._st):
+            elif not self._to_less_spikes and min_spikes > len(self._st):
                 self._to_less_spikes = True
 
     def _preprocessing(self):
