@@ -416,7 +416,7 @@ class SurrogatesTestCase(unittest.TestCase):
             sigma=new_sigma,
             alternate=new_alternate,
             use_sqrt=new_use_sqrt,
-            cut_off=new_cutoff,
+            cutoff=new_cutoff,
             expected_refr_period=new_expected_refr_period)
 
         self.assertEqual(DitherClass._to_less_spikes, False)
