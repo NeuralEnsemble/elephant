@@ -721,24 +721,93 @@ class JointISI:
         Default for each entry is None, i.e. it is not updated.
         """
 
-        if min_spikes is not None:
-            if self._to_less_spikes and min_spikes >= len(self._st):
-                self._to_less_spikes = False
-                self._preprocessing()
-            elif not self._to_less_spikes and min_spikes < len(self._st):
-                self._to_less_spikes = True
+        significant_changes = 0
 
-        redo_cumulatives = False
-        if n_surr is not None:
-            self._n_surr = n_surr
+        self._update_min_spikes(min_spikes=min_spikes)
 
-        if dither is not None:
-            self._dither = dither
-            if isinstance(self._dither, pq.Quantity):
-                self._dither = self._dither.rescale(self._unit).magnitude
-            if self._method == 'window':
-                redo_cumulatives = True
+        self._update_n_surr(n_surr=n_surr)
 
+        significant_changes += self._update_dither(dither=dither)
+
+        significant_changes += self._update_joint_isi_grid(
+            truncation_limit=truncation_limit,
+            num_bins=num_bins)
+
+        significant_changes += self._update_dither(dither=dither)
+
+        self._update_alternate(alternate=alternate)
+
+        significant_changes += self._update_use_sqrt(use_sqrt=use_sqrt)
+
+        significant_changes += self._update_method(method=method)
+
+        significant_changes += self._update_cutoff(cutoff=cutoff)
+
+        significant_changes += self._update_expected_refr_period(
+            expected_refr_period=expected_refr_period)
+
+        if significant_changes and not self._to_less_spikes:
+            self._determine_cumulative_functions()
+
+    def _update_expected_refr_period(self,
+                                     expected_refr_period):
+        if expected_refr_period is not None:
+            significant_change = 0
+            if self._expected_refr_period == self._refr_period:
+                significant_change = 1
+            if isinstance(expected_refr_period, pq.Quantity):
+                expected_refr_period = expected_refr_period.rescale(
+                    self._unit).magnitude
+            if expected_refr_period < self._refr_period:
+                significant_change = 1
+            self._expected_refr_period = expected_refr_period
+            return significant_change
+        return 0
+
+    def _update_cutoff(self,
+                       cutoff=None):
+        if cutoff is not None:
+            self._cutoff = cutoff
+            return 1
+        return 0
+
+    def _update_method(self,
+                       method=None):
+        if method is not None:
+            if method not in ['fast', 'window']:
+                error_message = (
+                    'method can only be \'uniform\' or \'fast\' or \'window\','
+                    ' but not \'{0}\' .'.format(method))
+                raise ValueError(error_message)
+            self._method = method
+            return 1
+        return 0
+
+    def _update_use_sqrt(self,
+                         use_sqrt=None):
+        if use_sqrt is not None:
+            self._use_sqrt = use_sqrt
+            return 1
+        return 0
+
+    def _update_alternate(self,
+                          alternate=None):
+        if alternate is not None:
+            self._alternate = alternate
+            self._sampling_rhythm = self._alternate + 1
+
+    def _update_sigma(self,
+                      sigma=None):
+        if sigma is not None:
+            self._sigma = sigma
+            if isinstance(self._sigma, pq.Quantity):
+                self._sigma = self._sigma.rescale(self._unit).magnitude
+            return 1
+        return 0
+
+    def _update_joint_isi_grid(self,
+                               truncation_limit=None,
+                               num_bins=None):
         if truncation_limit is not None:
             self._truncation_limit = truncation_limit
             if isinstance(self._truncation_limit, pq.Quantity):
@@ -762,47 +831,33 @@ class JointISI:
             # distribution gives back the corresponding ISI.
             self._indices_to_isi = (np.arange(self._num_bins)
                                     + 0.5) * self._bin_width
-            redo_cumulatives = True
+            return 1
+        return 0
 
-        if sigma is not None:
-            self._sigma = sigma
-            if isinstance(self._sigma, pq.Quantity):
-                self._sigma = self._sigma.rescale(self._unit).magnitude
-            redo_cumulatives = True
+    def _update_dither(self,
+                       dither=None):
+        if dither is not None:
+            self._dither = dither
+            if isinstance(self._dither, pq.Quantity):
+                self._dither = self._dither.rescale(self._unit).magnitude
+            if self._method == 'window':
+                return 1
+        return 0
 
-        if alternate is not None:
-            self._alternate = alternate
-            self._sampling_rhythm = self._alternate + 1
+    def _update_n_surr(self,
+                       n_surr=None):
+        if n_surr is not None:
+            self._n_surr = n_surr
 
-        if use_sqrt is not None:
-            self._use_sqrt = use_sqrt
-            redo_cumulatives = True
+    def _update_min_spikes(self,
+                           min_spikes=None):
+        if min_spikes is not None:
+            if self._to_less_spikes and min_spikes >= len(self._st):
+                self._to_less_spikes = False
+                self._preprocessing()
+            elif not self._to_less_spikes and min_spikes < len(self._st):
+                self._to_less_spikes = True
 
-        if method is not None:
-            if method not in ['fast', 'window']:
-                error_message = (
-                    'method can only be \'uniform\' or \'fast\' or \'window\','
-                    ' but not \'{0}\' .'.format(method))
-                raise ValueError(error_message)
-            self._method = method
-            redo_cumulatives = True
-
-        if cutoff is not None:
-            self._cutoff = cutoff
-            redo_cumulatives = True
-
-        if expected_refr_period is not None:
-            if self._expected_refr_period == self._refr_period:
-                redo_cumulatives = True
-            if isinstance(expected_refr_period, pq.Quantity):
-                expected_refr_period = expected_refr_period.rescale(
-                    self._unit).magnitude
-            if expected_refr_period < self._refr_period:
-                redo_cumulatives = True
-            self._expected_refr_period = expected_refr_period
-
-        if redo_cumulatives and not self._to_less_spikes:
-            self._determine_cumulative_functions()
 
     def _preprocessing(self):
         """
