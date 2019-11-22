@@ -43,6 +43,7 @@ import numpy as np
 import quantities as pq
 import neo
 from scipy.ndimage import gaussian_filter
+import math
 
 try:
     import elephant.statistics as es
@@ -460,118 +461,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
             for s in surr]
 
 
-def joint_isi_dithering(spiketrain,
-                        n=1,
-                        dither=15. * pq.ms,
-                        truncation_limit=100. * pq.ms,
-                        num_bins=100,
-                        sigma=2. * pq.ms,
-                        alternate=True,
-                        use_sqrt=False,
-                        method='fast',
-                        cutoff=True,
-                        expected_refr_period=4. * pq.ms,
-                        min_spikes=5):
-    """
-    Implementation of Joint-ISI-dithering for spiketrains that pass the
-    threshold of the dense rate, if not a uniform dithered spiketrain is
-    given back. The implementation continued the ideas of Louis et al.
-    (2010) and Gerstein (2004).
-
-    If you want to further analyse the results or if you want to speed up the
-    runtime saving the preprocessing results, it is useful to work with the
-    class :class:`Joint_ISI_Space` of the module: joint_isi_dithering_class.
-
-    To make the dithering-procedure stable, the spiketrain needs to pass two
-    thresholds, that the Joint-ISI dithering is applied, if not uniform
-    dithering is used.
-
-    Attributes
-    ----------
-    spiketrain: neo.SpikeTrain
-        For this spiketrain the surrogates will be created
-
-    n: int, optional
-        Number of surrogates to be created.
-        Default: 1
-    dither: pq.Quantity
-        The range of the dithering for the uniform dithering,
-        which is also used for the method 'window'.
-        Default: 15.*pq.ms
-    truncation_limit: pq.Quantity
-        The Joint-ISI distribution is as such defined on a range for ISI_i and
-        ISI_(i+1) from 0 to inf. Since this is computationally not feasible,
-        the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
-        histogram is calculated for ISI_i, ISI_(i+1) from 0 to
-        truncation_limit.
-        Default: 100*pq.ms
-    num_bins: int
-        The size of the joint-ISI-distribution will be num_bins*num_bins/2.
-        Default: 100
-    sigma: pq.Quantity
-        The standard deviation of the Gaussian kernel, with which
-        the data is convoluted.
-        Default: 2.*pq.ms
-    alternate: boolean
-        If alternate == True: then first all even and then all odd spikes are
-        dithered. Else: in ascending order from the first to the last spike,
-        all spikes are moved.
-        Default: True.
-    use_sqrt: boolean
-        if use_sqrt == True a sqrt is applied to the joint-ISI histogram,
-        following Gerstein et al. 2004
-        Default: False
-    method: string
-        if 'window': the spike movement is limited to the parameter dither.
-        if 'fast': the spike can move in all the range between the previous
-            spike and the subsequent spike. This is computationally much faster
-            and thus is called 'fast'.
-        Default: 'fast'
-    cutoff: boolean
-        if True then the Filtering of the Joint-ISI histogram is
-        limited to the lower side by the minimal ISI.
-        This can be necessary, if in the data there is a certain refractory
-        period, which would be destroyed by the convolution with the
-        2d-Gaussian function.
-        Default: True
-    expected_refr_period:
-        Since this dither-method should conserve the refractory period. It is
-        internally calculated as the minimum of the value expected_refr_period
-        and the least ISI in the spiketrain.
-        Default: 4.*pq.ms
-    min_spikes: int
-         if the number of spikes is lower than this number, the spiketrain
-         is directly passed to the uniform dithering.
-         Default: 5
-
-    Returns
-    ----------
-    dithered_sts: list
-        list of spiketrains, that are dithered versions of the given
-        spiketrain
-    if print_mode == True
-    mode: string
-        Indicates, which method was used to dither the spikes.
-        'jisid' if joint-ISI was used,
-        'uniform' if the ISI median was too low and uniform dithering was
-        used.
-    """
-    return JointISI(spiketrain,
-                    n_surr=n,
-                    dither=dither,
-                    truncation_limit=truncation_limit,
-                    num_bins=num_bins,
-                    sigma=sigma,
-                    alternate=alternate,
-                    use_sqrt=use_sqrt,
-                    method=method,
-                    cutoff=cutoff,
-                    expected_refr_period=expected_refr_period,
-                    min_spikes=min_spikes
-                    ).dithering()
-
-
-class JointISI:
+class JointISI(object):
     """
     The class :class:`JointISI` is implemented for Joint-ISI dithering
     as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).
@@ -585,13 +475,11 @@ class JointISI:
 
     Attributes
     ----------
-    st: neo.SpikeTrain
+    spiketrain: neo.SpikeTrain
         For this spiketrain the surrogates will be created
 
-    n_surr: int, optional
-        Number of surrogates to be created.
-        Default: 1
     dither: pq.Quantity
+        #TODO: specify bit more.
         The range of the dithering for the uniform dithering,
         which is also used for the method 'window'.
         Default: 15.*pq.ms
@@ -652,8 +540,7 @@ class JointISI:
     """
 
     def __init__(self,
-                 st,
-                 n_surr=1,
+                 spiketrain,
                  dither=15. * pq.ms,
                  truncation_limit=100. * pq.ms,
                  num_bins=100,
@@ -663,44 +550,180 @@ class JointISI:
                  method='fast',
                  cutoff=True,
                  expected_refr_period=4. * pq.ms,
-                 min_spikes=5
+                 min_spikes=3
                  ):
-        self._st = st
+        """
+        
+        Parameters
+        ----------
+        spiketrain: neo.SpikeTrain
+            For this spiketrain the surrogates will be created
+    
+        dither: pq.Quantity
+            #TODO: specify bit more.
+            The range of the dithering for the uniform dithering,
+            which is also used for the method 'window'.
+            Default: 15.*pq.ms
+        truncation_limit: pq.Quantity
+            The Joint-ISI distribution is as such defined on a range for ISI_i and
+            ISI_(i+1) from 0 to inf. Since this is computationally not feasible,
+            the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
+            histogram is calculated for ISI_i, ISI_(i+1) from 0 to
+            truncation_limit.
+            Default: 100*pq.ms
+        num_bins: int
+            The size of the joint-ISI-distribution will be num_bins*num_bins/2.
+            Default: 100
+        sigma: pq.Quantity
+            The standard deviation of the Gaussian kernel, with which
+            the data is convoluted.
+            Default: 2.*pq.ms
+        alternate: boolean
+            If alternate == True: then first all even and then all odd spikes are
+            dithered. Else: in ascending order from the first to the last spike,
+            all spikes are moved.
+            Default: True.
+        use_sqrt: boolean
+            if use_sqrt == True a sqrt is applied to the joint-ISI histogram,
+            following Gerstein et al. 2004
+            Default: False
+        method: string
+            if 'window': the spike movement is limited to the parameter dither.
+            if 'fast': the spike can move in all the range between the previous
+                spike and the subsequent spike. This is computationally much faster
+                and thus is called 'fast'.
+            Default: 'fast'
+        cutoff: boolean
+            if True then the Filtering of the Joint-ISI histogram is
+            limited to the lower side by the minimal ISI.
+            This can be necessary, if in the data there is a certain refractory
+            period, which would be destroyed by the convolution with the
+            2d-Gaussian function.
+            Default: True
+        expected_refr_period:
+            Since this dither-method should conserve the refractory period. It is
+            internally calculated as the minimum of the value expected_refr_period
+            and the least ISI in the spiketrain.
+            Default: 4.*pq.ms
+        min_spikes: int
+             if the number of spikes is lower than this number, the spiketrain
+             is directly passed to the uniform dithering.
+             Default: 3
+        """
+        # TODO: replace this with public attributes.
 
-        self._n_surr = n_surr
-
-        self._dither = dither
-
-        self._truncation_limit = truncation_limit
-        self._sigma = sigma
-
-        self._num_bins = num_bins
-
-        self._alternate = alternate
-        self._use_sqrt = use_sqrt
-
-        if method not in ['fast', 'window']:
-            error_message = (
-                'method can only be \'uniform\' or \'fast\' or \'window\','
-                ' but not \'{0}\' .'.format(method))
-            raise ValueError(error_message)
-        self._method = method
-        self._cutoff = cutoff
-
-        self._expected_refr_period = expected_refr_period
+        self.spiketrain = spiketrain
 
         # This is a check if the spiketrain has enough spikes to evaluate the
         # joint-ISI histogram. With a default value of 4. There need to be at
         # least 2 spikes with a previous and a subsequent spike.
         # If this is not fulfilled the _preprocessing function is not called.
         # And for the dithering the uniform dithering is used.
-        self._to_less_spikes = len(st) < min_spikes
+        self.to_less_spikes = len(spiketrain) < min_spikes
+
+        self.unit = spiketrain.units
+
+        if isinstance(dither, pq.Quantity):
+            dither = dither.rescale(self.unit).magnitude
+        self.dither = dither
+
+        if isinstance(truncation_limit, pq.Quantity):
+            truncation_limit = truncation_limit.rescale(
+                self.unit).magnitude
+        self.truncation_limit = truncation_limit
+
+        if isinstance(sigma, pq.Quantity):
+            sigma = sigma.rescale(self.unit).magnitude
+        self.sigma = sigma
+
+        self.num_bins = num_bins
+
+        self.alternate = alternate
+        self.use_sqrt = use_sqrt   # TODO. pass only to the joint-isi hist. func.
+
+        if method not in ['fast', 'window']:
+            error_message = (
+                'method can only be either \'fast\' or \'window\','
+                ' but not \'{0}\' .'.format(method))
+            raise ValueError(error_message)
+        self.method = method
+        self.cutoff = cutoff  # TODO. pass only to the joint-isi hist. func.
+
+        if isinstance(expected_refr_period, pq.Quantity):
+            expected_refr_period = expected_refr_period.rescale(
+                self.unit).magnitude
+
+        self.refr_period = expected_refr_period
+        self.isi = None
+        self.first_spike = None
+        if not self.to_less_spikes:
+            self.isi = isi(spiketrain.magnitude)
+            minimal_isi = np.min(self.isi)
+            self.refr_period = min(self.refr_period, minimal_isi)
+            self.first_spike = spiketrain[0].magnitude
+            self._determine_cumulative_functions()
+
+        self.t_stop = spiketrain.t_stop.magnitude
+
+
 
         if not self._to_less_spikes:
             self._preprocessing()
 
+    @property
+    def bin_width(self):
+        return self.truncation_limit/self.num_bins
+
+
+    def isi_to_index(self, inter_spike_interval):
+        """
+        A function that gives for each ISI the corresponding index in the
+        Joint-ISI distribution.
+
+        Parameters
+        ----------
+        inter_spike_interval
+
+        Returns
+        -------
+
+        """
+        return math.floor(inter_spike_interval / self.bin_width)
+
+    def index_to_isi(self, isi_index):
+        """
+        Gives an array, taking an element with an index of the Joint-ISI
+        distribution gives back the corresponding ISI.
+        And this is effectively the middle of the ISI bin.
+
+        Parameters
+        ----------
+        isi_index
+
+        Returns
+        -------
+
+        """
+        return (isi_index + 0.5) * self.bin_width
+
+    @staticmethod
+    def normalize_cumulative_distribution(array):
+        """
+
+        Parameters
+        ----------
+        array
+
+        Returns
+        -------
+
+        """
+
+        if array[-1] - array[0] > 0.:
+            return (array - array[0]) / (array[-1] - array[0])
+        return np.zeros_like(array)
+
     def update_parameters(self,
-                          n_surr=None,
                           dither=None,
                           truncation_limit=None,
                           num_bins=None,
@@ -727,8 +750,6 @@ class JointISI:
 
         self._update_min_spikes(min_spikes=min_spikes)
 
-        self._update_n_surr(n_surr=n_surr)
-
         significant_changes += self._update_dither(dither=dither)
 
         significant_changes += self._update_joint_isi_grid(
@@ -739,7 +760,7 @@ class JointISI:
 
         significant_changes += self._update_dither(dither=dither)
 
-        self._update_alternate(alternate=alternate)
+        self._updatealternate(alternate=alternate)
 
         significant_changes += self._update_use_sqrt(use_sqrt=use_sqrt)
 
@@ -757,25 +778,25 @@ class JointISI:
                                      expected_refr_period):
         if expected_refr_period is not None:
             significant_change = 0
-            if self._expected_refr_period == self._refr_period:
+            if self._expected_refr_period == self.refr_period:
                 significant_change = 1
             if isinstance(expected_refr_period, pq.Quantity):
                 expected_refr_period = expected_refr_period.rescale(
-                    self._unit).magnitude
-            if expected_refr_period < self._refr_period:
+                    self.unit).magnitude
+            if expected_refr_period < self.refr_period:
                 significant_change = 1
             self._expected_refr_period = expected_refr_period
             if significant_change:
-                minimal_isi = np.min(self._isi)
-                self._refr_period = np.min((self._expected_refr_period,
-                                            minimal_isi))
+                minimal_isi = np.min(self.isi)
+                self.refr_period = np.min((self._expected_refr_period,
+                                           minimal_isi))
             return significant_change
         return 0
 
     def _update_cutoff(self,
                        cutoff=None):
         if cutoff is not None:
-            self._cutoff = cutoff
+            self.cutoff = cutoff
             return 1
         return 0
 
@@ -787,29 +808,28 @@ class JointISI:
                     'method can only be \'uniform\' or \'fast\' or \'window\','
                     ' but not \'{0}\' .'.format(method))
                 raise ValueError(error_message)
-            self._method = method
+            self.method = method
             return 1
         return 0
 
     def _update_use_sqrt(self,
                          use_sqrt=None):
         if use_sqrt is not None:
-            self._use_sqrt = use_sqrt
+            self.use_sqrt = use_sqrt
             return 1
         return 0
 
     def _update_alternate(self,
                           alternate=None):
         if alternate is not None:
-            self._alternate = alternate
-            self._sampling_rhythm = self._alternate + 1
+            self.alternate = alternate
 
     def _update_sigma(self,
                       sigma=None):
         if sigma is not None:
-            self._sigma = sigma
-            if isinstance(self._sigma, pq.Quantity):
-                self._sigma = self._sigma.rescale(self._unit).magnitude
+            self.sigma = sigma
+            if isinstance(self.sigma, pq.Quantity):
+                self.sigma = self.sigma.rescale(self.unit).magnitude
             return 1
         return 0
 
@@ -817,54 +837,43 @@ class JointISI:
                                truncation_limit=None,
                                num_bins=None):
         if truncation_limit is not None:
-            self._truncation_limit = truncation_limit
-            if isinstance(self._truncation_limit, pq.Quantity):
-                self._truncation_limit = self._truncation_limit.rescale(
-                    self._unit).magnitude
+            self.truncation_limit = truncation_limit
+            if isinstance(self.truncation_limit, pq.Quantity):
+                self.truncation_limit = self.truncation_limit.rescale(
+                    self.unit).magnitude
 
         if num_bins is not None:
-            self._num_bins = num_bins
+            self.num_bins = num_bins
 
         if truncation_limit is not None or num_bins is not None:
-            self._bin_width = self._truncation_limit / self._num_bins
+            self.bin_width = self.truncation_limit / self.num_bins
 
-            # A function that gives for each ISI the corresponding index in the
-            # Joint-ISI distribution.
-            def _isi_to_index(inter_spike_interval):
-                return np.rint(
-                    inter_spike_interval / self._bin_width - 0.5).astype(int)
-
-            self._isi_to_index = _isi_to_index
 
             # Gives an array, taking an element with an index of the Joint-ISI
             # distribution gives back the corresponding ISI.
-            self._indices_to_isi = (np.arange(self._num_bins)
-                                    + 0.5) * self._bin_width
+            self._indices_to_isi = (np.arange(self.num_bins)
+                                    + 0.5) * self.bin_width
             return 1
         return 0
 
     def _update_dither(self,
                        dither=None):
         if dither is not None:
-            self._dither = dither
-            if isinstance(self._dither, pq.Quantity):
-                self._dither = self._dither.rescale(self._unit).magnitude
-            if self._method == 'window':
+            self.dither = dither
+            if isinstance(self.dither, pq.Quantity):
+                self.dither = self.dither.rescale(self.unit).magnitude
+            if self.method == 'window':
                 return 1
         return 0
 
-    def _update_n_surr(self,
-                       n_surr=None):
-        if n_surr is not None:
-            self._n_surr = n_surr
 
     def _update_min_spikes(self,
                            min_spikes=None):
         if min_spikes is not None:
-            if self._to_less_spikes and min_spikes <= len(self._st):
+            if self._to_less_spikes and min_spikes <= len(self.spiketrain):
                 self._to_less_spikes = False
                 self._preprocessing()
-            elif not self._to_less_spikes and min_spikes > len(self._st):
+            elif not self._to_less_spikes and min_spikes > len(self.spiketrain):
                 self._to_less_spikes = True
 
     def _preprocessing(self):
@@ -887,71 +896,24 @@ class JointISI:
 
         The function has no output, but stores its result inside the class.
         """
-        self._unit = self._st.units
-
-        self._isi = isi(self._st.rescale(self._unit).magnitude)
-
-        if isinstance(self._dither, pq.Quantity):
-            self._dither = self._dither.rescale(self._unit).magnitude
-        if isinstance(self._truncation_limit, pq.Quantity):
-            self._truncation_limit = self._truncation_limit.rescale(
-                self._unit).magnitude
-        if isinstance(self._sigma, pq.Quantity):
-            self._sigma = self._sigma.rescale(self._unit).magnitude
-        if isinstance(self._expected_refr_period, pq.Quantity):
-            self._expected_refr_period = self._expected_refr_period.rescale(
-                self._unit).magnitude
-
-        minimal_isi = np.min(self._isi)
-        self._refr_period = np.min((self._expected_refr_period,
-                                    minimal_isi))
-
-        self._sampling_rhythm = self._alternate + 1
-
-        self._number_of_isis = len(self._isi)
-        self._first_spike = self._st[0].rescale(self._unit).magnitude
-        self._t_stop = self._st.t_stop.rescale(self._unit).magnitude
-
-        self._bin_width = self._truncation_limit / self._num_bins
-
-        # A function that gives for each ISI the corresponding index in the
-        # Joint-ISI distribution.
-        def _isi_to_index(inter_spike_interval):
-            return np.rint(
-                inter_spike_interval / self._bin_width - 0.5).astype(int)
-
-        self._isi_to_index = _isi_to_index
-
-        # Gives an array, taking an element with an index of the Joint-ISI
-        # distribution gives back the corresponding ISI.
-        self._indices_to_isi = (np.arange(self._num_bins)
-                                + 0.5) * self._bin_width
-
-        def _normalize(v):
-            if v[-1] - v[0] > 0.:
-                return (v - v[0]) / (v[-1] - v[0])
-            return np.zeros_like(v)
-
-        self._normalize = _normalize
-
-        self._determine_cumulative_functions()
+        #TODO: What will survive from this comment?
+        return 1234567890
 
     def _determine_cumulative_functions(self):
-        self._get_joint_isi_histogram()
+        self._jisih = self._get_joint_isi_histogram()
 
         flipped_jisih = np.flip(self._jisih.T, 0)
 
-        if self._method == 'fast':
-            self._jisih_cumulatives = [self._normalize(
+        if self.method == 'fast':
+            self._jisih_cumulatives = [self.normalize_cumulative_distribution(
                 np.cumsum(np.diagonal(flipped_jisih,
-                                      -self._num_bins + double_index + 1)))
-                for double_index in range(self._num_bins)]
-            return None
+                                      -self.num_bins + double_index + 1)))
+                for double_index in range(self.num_bins)]
+            return
 
         self._jisih_cumulatives = self._window_cumulatives(flipped_jisih)
-        return None
 
-    def dithering(self):
+    def dithering(self, n_surr):
         """
         Implementation of Joint-ISI-dithering for spiketrains that pass the
         threshold of the dense rate, if not a uniform dithered spiketrain is
@@ -965,16 +927,16 @@ class JointISI:
             spiketrain
         """
         if self._to_less_spikes:
-            return dither_spikes(self._st, self._dither, self._n_surr)
+            return [self.spiketrain] * n_surr
 
         dithered_sts = []
-        for surr_number in range(self._n_surr):
+        for surr_number in range(n_surr):
             dithered_isi = self._get_dithered_isi()
 
-            dithered_st = self._first_spike + np.hstack(
+            dithered_st = self.first_spike + np.hstack(
                 (np.array(0.), np.cumsum(dithered_isi)))
-            dithered_st = neo.SpikeTrain(dithered_st * self._unit,
-                                         t_stop=self._t_stop)
+            dithered_st = neo.SpikeTrain(dithered_st * self.unit,
+                                         t_stop=self.t_stop)
             dithered_sts.append(dithered_st)
         return dithered_sts
 
@@ -982,20 +944,20 @@ class JointISI:
         """
         This function calculates the joint-ISI histogram.
         """
-        jisih = np.histogram2d(self._isi[:-1], self._isi[1:],
-                               bins=[self._num_bins, self._num_bins],
-                               range=[[0., self._truncation_limit],
-                                      [0., self._truncation_limit]])[0]
+        jisih = np.histogram2d(self.isi[:-1], self.isi[1:],
+                               bins=[self.num_bins, self.num_bins],
+                               range=[[0., self.truncation_limit],
+                                      [0., self.truncation_limit]])[0]
 
-        if self._use_sqrt:
+        if self.use_sqrt:
             jisih = np.sqrt(jisih)
 
-        if self._sigma:
-            if self._cutoff:
-                start_index = self._isi_to_index(self._refr_period)
+        if self.sigma:
+            if self.cutoff:
+                start_index = self.isi_to_index(self.refr_period)
                 jisih[start_index:, start_index:] = gaussian_filter(
                     jisih[start_index:, start_index:],
-                    self._sigma / self._bin_width)
+                    self.sigma / self.bin_width)
 
                 jisih[:start_index + 1, :] = np.zeros_like(
                     jisih[:start_index + 1, :])
@@ -1003,21 +965,20 @@ class JointISI:
                     jisih[:, :start_index + 1])
 
             else:
-                jisih = gaussian_filter(jisih, self._sigma / self._bin_width)
-        self._jisih = jisih
-        return None
+                jisih = gaussian_filter(jisih, self.sigma / self.bin_width)
+        return jisih
 
     def _window_diagonal_cumulatives(self, flipped_jisih):
-        self._max_change_index = self._isi_to_index(self._dither)
+        self._max_change_index = self.isi_to_index(self.dither)
         self._max_change_isi = self._indices_to_isi[self._max_change_index]
 
-        jisih_diag_cums = np.zeros((self._num_bins,
-                                    self._num_bins
+        jisih_diag_cums = np.zeros((self.num_bins,
+                                    self.num_bins
                                     + 2 * self._max_change_index))
 
-        for double_index in range(self._num_bins):
+        for double_index in range(self.num_bins):
             cum_diag = np.cumsum(np.diagonal(flipped_jisih,
-                                             - self._num_bins
+                                             - self.num_bins
                                              + double_index + 1))
             jisih_diag_cums[double_index,
                             self._max_change_index:
@@ -1040,27 +1001,34 @@ class JointISI:
     def _window_cumulatives(self, flipped_jisih):
         jisih_diag_cums = self._window_diagonal_cumulatives(flipped_jisih)
         jisih_cumulatives = np.zeros(
-            (self._num_bins, self._num_bins,
+            (self.num_bins, self.num_bins,
              2 * self._max_change_index + 1))
-        for back_index in range(self._num_bins):
-            for for_index in range(self._num_bins - back_index):
+        for back_index in range(self.num_bins):
+            for for_index in range(self.num_bins - back_index):
                 double_index = for_index + back_index
                 cum_slice = jisih_diag_cums[double_index,
                                             back_index:
                                             back_index +
                                             2 * self._max_change_index + 1]
-                normalized_cum = self._normalize(cum_slice)
+                normalized_cum = self.normalize_cumulative_distribution(cum_slice)
                 jisih_cumulatives[back_index][for_index] = normalized_cum
         return jisih_cumulatives
 
     def _get_dithered_isi(self):
-        dithered_isi = self._isi
-        random_list = np.random.random(self._number_of_isis)
-        if self._method == 'fast':
-            for start in range(self._sampling_rhythm):
-                dithered_isi_indices = self._isi_to_index(dithered_isi)
-                for i in range(start, self._number_of_isis - 1,
-                               self._sampling_rhythm):
+        dithered_isi = self.isi
+        # if alternate is true, a sampling_rhythm of 2 means that we have two
+        # partitions of spikes, the "odd" and the "even" spikes and first
+        # dither the "even" ones and then the "odd" ones.
+        # if alternate is false, we just go dither from the first to the last
+        # spike, which corresponds to a sampling_rhythm of 1.
+        sampling_rhythm = self.alternate + 1
+        number_of_isis = len(self.isi)
+        random_list = np.random.random(number_of_isis)
+        if self.method == 'fast':
+            for start in range(sampling_rhythm):
+                dithered_isi_indices = self.isi_to_index(dithered_isi)
+                for i in range(start, number_of_isis - 1,
+                               sampling_rhythm):
                     step = self._update_dithered_isi_fast(
                         dithered_isi,
                         dithered_isi_indices,
@@ -1069,10 +1037,10 @@ class JointISI:
                     dithered_isi[i] += step
                     dithered_isi[i + 1] -= step
         else:
-            for start in range(self._sampling_rhythm):
-                dithered_isi_indices = self._isi_to_index(dithered_isi)
-                for i in range(start, self._number_of_isis - 1,
-                               self._sampling_rhythm):
+            for start in range(sampling_rhythm):
+                dithered_isi_indices = self.isi_to_index(dithered_isi)
+                for i in range(start, number_of_isis - 1,
+                               sampling_rhythm):
                     step = self._update_dithered_isi_window(
                         dithered_isi,
                         dithered_isi_indices,
@@ -1090,7 +1058,7 @@ class JointISI:
         back_index = dithered_isi_indices[i]
         for_index = dithered_isi_indices[i + 1]
         double_index = back_index + for_index
-        if double_index < self._num_bins:
+        if double_index < self.num_bins:
             if self._jisih_cumulatives[double_index][-1]:
                 cond = (self._jisih_cumulatives[double_index]
                         > random_number)
@@ -1098,8 +1066,8 @@ class JointISI:
                     cond,
                     self._jisih_cumulatives[double_index],
                     np.inf).argmin()
-                step = (self._indices_to_isi[new_index]
-                        - self._indices_to_isi[back_index])
+                step = (self.index_to_isi(new_index)
+                        - self.index_to_isi(back_index))
                 return step
         return self._uniform_dither_not_jisi_movable_spikes(
             dithered_isi[i],
@@ -1113,7 +1081,7 @@ class JointISI:
                                     i):
         back_index = dithered_isi_indices[i]
         for_index = dithered_isi_indices[i + 1]
-        if back_index + for_index < self._num_bins:
+        if back_index + for_index < self.num_bins:
             cum_dist_func = self._jisih_cumulatives[
                 back_index][for_index]
             if cum_dist_func[-1]:
@@ -1122,7 +1090,7 @@ class JointISI:
                     cond,
                     cum_dist_func,
                     np.inf).argmin()
-                step = (self._indices_to_isi[new_index]
+                step = (self.index_to_isi(new_index)
                         - self._max_change_isi)
                 return step
         return self._uniform_dither_not_jisi_movable_spikes(
@@ -1134,10 +1102,8 @@ class JointISI:
                                                 previous_isi,
                                                 subsequent_isi,
                                                 random_number):
-        left_dither = np.min((previous_isi - self._refr_period,
-                              self._dither))
-        right_dither = np.min((subsequent_isi - self._refr_period,
-                               self._dither))
+        left_dither = min(previous_isi - self.refr_period, self.dither)
+        right_dither = min(subsequent_isi - self.refr_period, self.dither)
         step = random_number * (right_dither + left_dither) - left_dither
         return step
 
@@ -1203,7 +1169,7 @@ def surrogates(
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
-        'joint_isi_dithering': joint_isi_dithering}
+        'joint_isi_dithering': None}
 
     if surr_method not in surrogate_types.keys():
         raise ValueError('specified surr_method (=%s) not valid' % surr_method)
@@ -1215,5 +1181,4 @@ def surrogates(
         return surrogate_types[surr_method](
             spiketrain, n=n, decimals=decimals)
     elif surr_method == 'joint_isi_dithering':
-        return surrogate_types[surr_method](
-            spiketrain, n=n)
+        return JointISI(spiketrain).dithering(n)
