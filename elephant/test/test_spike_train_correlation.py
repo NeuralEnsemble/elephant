@@ -14,6 +14,7 @@ import quantities as pq
 import neo
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
+import elephant.spike_train_generation as st_gen
 import warnings
 
 
@@ -444,10 +445,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
 
         # Check for wrong window parameter setting
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window='dsaij')
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window='dsaij', method='memory')
 
     def test_raising_error_wrong_inputs(self):
@@ -455,22 +456,22 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         fullfilling the requirement of the function'''
         # Check the binsizes are the same
         self.assertRaises(
-            AssertionError,
+            ValueError,
             sc.cross_correlation_histogram, self.binned_st1,
             self.st_check_binsize)
         # Check different t_start and t_stop
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.st_check_t_start, self.binned_st2)
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.st_check_t_stop, self.binned_st2)
         # Check input are one dimensional
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.st_check_dimension, self.binned_st2)
         self.assertRaises(
-            AssertionError, sc.cross_correlation_histogram,
+            ValueError, sc.cross_correlation_histogram,
             self.binned_st2, self.st_check_dimension)
 
     def test_window(self):
@@ -521,10 +522,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             self.binned_st2, window=[-50, 60])
         # Test for no integer or wrong string in input
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window=[-25.5, 25.5])
         self.assertRaises(
-            KeyError, sc.cross_correlation_histogram, self.binned_st1,
+            ValueError, sc.cross_correlation_histogram, self.binned_st1,
             self.binned_st2, window='test')
 
     def test_border_correction(self):
@@ -570,12 +571,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, sc.cch, self.binned_st1, self.binned_st2,
             kernel=np.ones(100), method='memory')
-
-        self.assertRaises(
-            ValueError, sc.cch, self.binned_st1, self.binned_st2, kernel='BOX')
-        self.assertRaises(
-            ValueError, sc.cch, self.binned_st1, self.binned_st2, kernel='BOX',
-            method='memory')
 
     def test_exist_alias(self):
         '''
@@ -636,6 +631,38 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
     def test_exist_alias(self):
         # Test if alias cch still exists.
         self.assertEqual(sc.spike_time_tiling_coefficient, sc.sttc)
+
+
+class SpikeTrainTimescaleTestCase(unittest.TestCase):
+
+    def test_timescale_calculation(self):
+        '''
+        Test the timescale generation using an alpha-shaped ISI distribution,
+        see [1, eq. 1.68]. This is equivalent to a homogeneous gamma process
+        with alpha=2 and beta=2*nu where nu is the rate.
+
+        For this process, the autocorrelation function is given by a sum of a
+        delta peak and a (negative) exponential, see [1, eq. 1.69].
+        The exponential decays with \tau_corr = 1 / (4*nu), thus this fixes
+        timescale.
+
+        [1] Lindner, B. (2009). A brief introduction to some simple stochastic
+            processes. Stochastic Methods in Neuroscience, 1.
+        '''
+        nu = 25/pq.s
+        T = 15*pq.min
+        binsize = 1*pq.ms
+        timescale = 1 / (4*nu)
+
+        timescale_num = []
+        for _ in range(10):
+            spikes = st_gen.homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
+            spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
+            timescale_i = sc.spike_train_timescale(spikes_bin, 10*timescale)
+            timescale_i.units = timescale.units
+            timescale_num.append(timescale_i.magnitude)
+        target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
+        self.assertTrue(target)
 
 
 if __name__ == '__main__':

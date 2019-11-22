@@ -185,6 +185,22 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             interpolate=False)
         self.assertEqual(len(phases_noint[0]), 1)
 
+    # This test handles the correct dealing with input signals that have
+    # different time units, including a CompoundUnit
+    def test_regression_269(self):
+        # This is a spike train on a 30KHz sampling, one spike at 1s, one just
+        # before the end of the signal
+        cu = pq.CompoundUnit("1/30000.*s")
+        st = SpikeTrain(
+            [30000., (self.anasig0.t_stop-1*pq.s).rescale(cu).magnitude],
+            units=pq.CompoundUnit("1/30000.*s"),
+            t_start=-1*pq.s, t_stop=300*pq.s)
+        phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            st,
+            interpolate=False)
+        self.assertEqual(len(phases_noint[0]), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

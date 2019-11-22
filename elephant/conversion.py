@@ -12,11 +12,15 @@ An example is the representation of a spike train as a sequence of 0-1 values
 
 from __future__ import division, print_function
 
+import warnings
+
 import neo
-import scipy
-import scipy.sparse as sps
 import numpy as np
 import quantities as pq
+import scipy
+import scipy.sparse as sps
+
+from elephant.utils import is_binary
 
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
@@ -421,15 +425,13 @@ class BinnedSpikeTrain(object):
         self.t_stop = t_stop
         self.num_bins = num_bins
         self.binsize = binsize
-        self.matrix_columns = self.num_bins
-        self.matrix_rows = len(spiketrains)
         # Empty matrix for storage, time points matrix
         self._mat_u = None
         # Variables to store the sparse matrix
         self._sparse_mat_u = None
         # Check all parameter, set also missing values
         if self.is_binned:
-            self.num_bins = np.array(spiketrains).shape[1]
+            self.num_bins = np.shape(spiketrains)[1]
         self._calc_start_stop(spiketrains)
         self._check_init_params(
             self.binsize, self.num_bins, self.t_start, self.t_stop)
@@ -437,6 +439,22 @@ class BinnedSpikeTrain(object):
                                 self.t_start, self.t_stop)
         # Now create sparse matrix
         self._convert_to_binned(spiketrains)
+
+        if self.is_spiketrain:
+            n_spikes = sum(map(len, spiketrains))
+            n_spikes_binned = self.get_num_of_spikes()
+            if n_spikes != n_spikes_binned:
+                warnings.warn("Binning discarded {n} last spike(s) in the "
+                              "input spiketrain.".format(
+                               n=n_spikes - n_spikes_binned))
+
+    @property
+    def matrix_rows(self):
+        return self._sparse_mat_u.shape[0]
+
+    @property
+    def matrix_columns(self):
+        return self._sparse_mat_u.shape[1]
 
     # =========================================================================
     # There are four cases the given parameters must fulfill
@@ -446,7 +464,7 @@ class BinnedSpikeTrain(object):
     # t_start, num_bins, t_stop
     # t_start, bin_size, t_stop
     # t_stop, num_bins, binsize
-    # ==========================================================================
+    # =========================================================================
 
     def _check_init_params(self, binsize, num_bins, t_start, t_stop):
         """
@@ -483,8 +501,6 @@ class BinnedSpikeTrain(object):
             self.t_stop = _calc_tstop(num_bins, binsize, t_start)
         elif num_bins is None:
             self.num_bins = _calc_num_bins(binsize, t_start, t_stop)
-            if self.matrix_columns is None:
-                self.matrix_columns = self.num_bins
         elif binsize is None:
             self.binsize = _calc_binsize(num_bins, t_start, t_stop)
 
@@ -546,7 +562,7 @@ class BinnedSpikeTrain(object):
                                  "at least one of the parameter which are "
                                  "None.\n"
                                  "t_start: %s, t_stop: %s, binsize: %s, "
-                                 "numb_bins: %s" % (
+                                 "num_bins: %s" % (
                                      self.t_start,
                                      self.t_stop,
                                      self.binsize,
@@ -584,21 +600,25 @@ class BinnedSpikeTrain(object):
         """
         Returns all time edges with :attr:`num_bins` bins as a quantity array.
 
-        The borders of all time steps between start and stop [start, stop]
-        with:attr:`num_bins` bins are regarded as edges.
-        The border of the last bin is included.
+        The borders of all time steps between :attr:`t_start` and
+        :attr:`t_stop` with a step :attr:`binsize`. It is crucial for many
+        analyses that all bins have the same size, so if
+        :attr:`t_stop` - :attr:`t_start` is not divisible by :attr:`binsize`,
+        there will be some leftover time at the end
+        (see https://github.com/NeuralEnsemble/elephant/issues/255).
+        The length of the returned array should match :attr:`num_bins`.
 
         Returns
         -------
-        bin_edges : quantities.Quantity array
-            All edges in interval [start, stop] with :attr:`num_bins` bins
-            are returned as a quantity array.
-
+        bin_edges : pq.Quantity
+            All edges in interval [:attr:`t_start`, :attr:`t_stop`] with
+            :attr:`num_bins` bins are returned as a quantity array.
         """
-        return pq.Quantity(np.linspace(self.t_start.rescale('s').magnitude,
-                                       self.t_stop.rescale('s').magnitude,
-                                       self.num_bins + 1, endpoint=True),
-                           units='s').rescale(self.binsize.units)
+        t_start = self.t_start.rescale(self.binsize.units).magnitude
+        bin_edges = np.linspace(t_start, t_start + self.num_bins *
+                                self.binsize.magnitude,
+                                num=self.num_bins + 1, endpoint=True)
+        return pq.Quantity(bin_edges, units=self.binsize.units)
 
     @property
     def bin_centers(self):
@@ -656,6 +676,30 @@ class BinnedSpikeTrain(object):
         tmp_mat[tmp_mat.nonzero()] = 1
         return tmp_mat.astype(bool)
 
+    def get_num_of_spikes(self, axis=None):
+        """
+        Compute the number of binned spikes.
+
+        Parameters
+        ----------
+        axis : int, optional
+            If `None`, compute the total num. of spikes.
+            Otherwise, compute num. of spikes along axis.
+            If axis is `1`, compute num. of spikes per spike train (row).
+            Default is `None`.
+
+        Returns
+        -------
+        int or np.ndarray
+            The number of binned spikes.
+
+        """
+        if axis is None:
+            return self._sparse_mat_u.sum(axis=axis)
+        n_spikes_per_row = self._sparse_mat_u.sum(axis=axis)
+        n_spikes_per_row = np.asarray(n_spikes_per_row)[:, 0]
+        return n_spikes_per_row
+
     @property
     def spike_indices(self):
         """
@@ -677,16 +721,15 @@ class BinnedSpikeTrain(object):
         [[0, 0, 1, 3, 4, 5, 6]]
         >>> print(x.to_sparse_array().nonzero()[1])
         [0 1 3 4 5 6]
+        >>> print(x.to_array())
+        [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0]]
 
         """
         spike_idx = []
         for row in self._sparse_mat_u:
-            n_cols = []
             # Extract each non-zeros column index and how often it exists,
             # i.e., how many spikes fall in this column
-            for col, count in zip(row.nonzero()[1], row.data):
-                # Append the column index for each spike
-                n_cols.extend([col] * count)
+            n_cols = np.repeat(row.indices, row.data)
             spike_idx.append(n_cols)
         return spike_idx
 
@@ -699,7 +742,7 @@ class BinnedSpikeTrain(object):
         sparse (i.e. only one spike per bin at maximum).
         """
 
-        return _check_binary_matrix(self.lst_input)
+        return is_binary(self.lst_input)
 
     def to_bool_array(self):
         """
@@ -783,16 +826,22 @@ class BinnedSpikeTrain(object):
 
         """
         if self._mat_u is None:
-            self._mat_u = self.to_sparse_array().toarray()
+            self._mat_u = self._sparse_mat_u.toarray()
 
     def remove_stored_array(self):
         """
-        Removes the matrix with counted time points from memory.
+        Unlinks the matrix with counted time points from memory.
 
         """
+        self._mat_u = None
+
+    def binarize(self):
+        """
+        In-place clipping the internal array to have 0 or 1 values.
+        """
+        self._sparse_mat_u.data.clip(max=1, out=self._sparse_mat_u.data)
         if self._mat_u is not None:
-            del self._mat_u
-            self._mat_u = None
+            self._mat_u.clip(max=1, out=self._mat_u)
 
     def _convert_to_binned(self, spiketrains):
         """
@@ -810,16 +859,9 @@ class BinnedSpikeTrain(object):
             self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=int)
             return
 
-        from distutils.version import StrictVersion
-        # column
-        filled = []
-        # row
-        indices = []
+        row_ids, column_ids = [], []
         # data
         counts = []
-        # to be downwards compatible compare numpy versions, if the used
-        # version is smaller than v1.9 use different functions
-        smaller_version = StrictVersion(np.__version__) < '1.9.0'
         for idx, elem in enumerate(spiketrains):
             ev = elem.view(pq.Quantity)
             scale = np.array(((ev - self.t_start).rescale(
@@ -828,31 +870,15 @@ class BinnedSpikeTrain(object):
                                 ev <= self.t_stop.rescale(self.binsize.units))
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
-            if smaller_version:
-                f = np.unique(filled_tmp)
-                c = np.bincount(f.searchsorted(filled_tmp))
-            else:
-                f, c = np.unique(filled_tmp, return_counts=True)
-            filled.extend(f)
+            f, c = np.unique(filled_tmp, return_counts=True)
+            column_ids.extend(f)
             counts.extend(c)
-            indices.extend([idx] * len(f))
-        csr_matrix = sps.csr_matrix((counts, (indices, filled)),
-                                    shape=(self.matrix_rows,
-                                           self.matrix_columns),
+            row_ids.extend([idx] * len(f))
+        csr_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
+                                    shape=(len(spiketrains),
+                                           self.num_bins),
                                     dtype=int)
         self._sparse_mat_u = csr_matrix
-
-
-def _check_binary_matrix(binary_matrix):
-    """ Checks if given matrix is binary """
-    # Convert to numpy array if binary_matrix is a list
-    if not isinstance(binary_matrix, np.ndarray):
-        binary_matrix = np.array(binary_matrix)
-    # Check for binary rows
-    for row in binary_matrix:
-        if not len(np.where(row == 1)[0]) == np.count_nonzero(row):
-            return False
-    return True
 
 
 def _check_neo_spiketrain(matrix):
@@ -863,30 +889,23 @@ def _check_neo_spiketrain(matrix):
     if isinstance(matrix, neo.SpikeTrain):
         return True
     # Check for list or tuple
-    elif isinstance(matrix, list) or isinstance(matrix, tuple):
-        ts = True
-        for m in matrix:
-            if not isinstance(m, neo.SpikeTrain):
-                return False
-        return ts
+    if isinstance(matrix, (list, tuple)):
+        return all(map(_check_neo_spiketrain, matrix))
+    return False
 
 
 def _check_binned_array(matrix):
     """
     Checks if given input is a binned array
     """
-    # Try to convert to numpy array
-    if isinstance(matrix, list):
-        matrix = np.array(matrix)
-    # Check for numpy arrays
-    if isinstance(matrix, np.ndarray):
-        # Check for proper dimension MxN
-        if matrix.ndim == 2:
-            return True
-        elif matrix.dtype == np.dtype('O') or matrix.ndim != 2:
-            raise TypeError('Please check the dimensions of the input, '
-                            'it should be an MxN array, '
-                            'the input has the shape: {}'.format(matrix.shape))
+    matrix = np.asarray(matrix)
+    # Check for proper dimension MxN
+    if matrix.ndim == 2:
+        return True
+    elif matrix.dtype == np.dtype('O'):
+        raise TypeError('Please check the dimensions of the input, '
+                        'it should be an MxN array, '
+                        'the input has the shape: {}'.format(matrix.shape))
     else:
         # Otherwise not supported
         return TypeError('Input not supported. Please check again')

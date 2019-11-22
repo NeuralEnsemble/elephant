@@ -56,12 +56,11 @@ plt.show()
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 '''
-import numpy
+import numpy as np
 import neo
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
 from itertools import chain, combinations
-import numpy as np
 import time
 import quantities as pq
 import warnings
@@ -163,7 +162,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         filtering the pattern spectrum. A spike at time t is placed randomly
         within ]t-dither, t+dither[ (see also
         elephant.spike_train_surrogates.dither_spikes).
-        Default: 15*pq.s
+        Default: 15*pq.ms
     spectrum: str
         Define the signature of the patterns, it can assume values:
         '#': pattern spectrum using the as signature the pair:
@@ -179,18 +178,19 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         Default: 1
     stat_corr: str
         Statistical correction to be applied:
-            '' : no statistical correction
+            '', 'no' : no statistical correction
             'f', 'fdr' : false discovery rate
             'b', 'bonf': Bonferroni correction
+            'hb', 'holm_bonf': Holm-Bonferroni correction
          Default: 'fdr'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
-                (see parameter h of psr()).
+                (see parameter h of pattern_set_reduction()).
             psr_param[1]: correction parameter for superset filtering
-                (see parameter k of psr()).
+                (see parameter k of pattern_set_reduction()).
             psr_param[2]: correction parameter for covered-spikes criterion
-                (see parameter l for psr()).
+                (see parameter l for pattern_set_reduction()).
     output_format: str
         distinguish the format of the output (see Returns). Can assume values
         'concepts' and 'patterns'.
@@ -244,7 +244,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                     pattern.
                 lags: array containing the lags (integers corresponding to the
                     number of bins) between the spikes of the patterns. The
-                    first lag is always assumed to be 0 and correspond to the
+                    first lag is always assumed to be 0 and corresponds to the
                     first spike ['times'] array containing the times.
             (integers corresponding to the bin idx) of the occurrences of the
             patterns
@@ -377,10 +377,14 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             # Transforming concepts to dictionary containing pattern's infos
             output['patterns'] = concept_output_to_patterns(concepts,
                                                             winlen, binsize,
-                                                            pv_spec,
+                                                            pv_spec, spectrum,
                                                             data[0].t_start)
-        else:
+        elif output_format == 'concepts':
             output['patterns'] = concepts
+        else:
+            raise ValueError(
+                "The output_format value has to be one between"
+                "'patterns' and 'concepts'")
         return output
     # rank!=0 returning None
     else:
@@ -459,18 +463,18 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     rel_matrix : numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to their position in
-        time). Each column correspond to one bin and one neuron and it is 0 if
+        time). Each column corresponds to one bin and one neuron and it is 0 if
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
         neuron, the entry [0,winlen] to the first bin of the first window
         position for the second neuron.
     """
-    # If data is a list of SpikeTrains
+    # Check that data is a list of SpikeTrains
     if not all([isinstance(elem, neo.SpikeTrain) for elem in data]):
         raise TypeError(
-            'data must be either a list of SpikeTrains')
-    # Check taht all spiketrains have same t_start and same t_stop
+            'data must be a list of SpikeTrains')
+    # Check that all spiketrains have same t_start and same t_stop
     if not all([st.t_start == data[0].t_start for st in data]) or not all(
             [st.t_stop == data[0].t_stop for st in data]):
         raise AttributeError(
@@ -540,7 +544,7 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         Length of the binsize used to bin the data
     only_windows_with_first_spike : bool
         Whether to consider every window or only the one with a spike in the
-        first bin. It is passible to discard windows without a spike in the
+        first bin. It is possible to discard windows without a spike in the
         first bin because the same configuration of spikes will be repeated
         in a following window, just with different position for the first spike
         Default: True
@@ -555,11 +559,12 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         attributes of the corresponding object.
     rel_matrix : numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
-        row correspond to a window (order according to their position in time).
-        Each column correspond to one bin and one neuron and it is 0 if no
+        row corresponds to a window (order according to
+        their position in time).
+        Each column corresponds to one bin and one neuron and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
-        E.g. the entry [0,0] of this matrix correspond to the first bin of the
+        E.g. the entry [0,0] of this matrix corresponds to the first bin of the
         first window position for the first neuron, the entry [0,winlen] to the
         first bin of the first window position for the second neuron.
     """
@@ -646,11 +651,12 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         Default: 'a'
     rel_matrix : None or numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
-        row correspond to a window (order according to their position in time).
-        Each column correspond to one bin and one neuron and it is 0 if no
+        row corresponds to a window (order according to
+        their position in time).
+        Each column corresponds to one bin and one neuron and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
-        E.g. the entry [0,0] of this matrix correspond to the first bin of the
+        E.g. the entry [0,0] of this matrix corresponds to the first bin of the
         first window position for the first neuron, the entry [0,winlen] to the
         first bin of the first window position for the second neuron.
         If == None only the closed frequent itemsets (intent) are returned and
@@ -727,11 +733,12 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 # TODO: optimize this while removing from the list
                 # fpgrowth_output the correspondent concept when
                 # intent_to_compare is a subset of intent
-                if intent != intent_to_compare and supp <= supp_to_compare and set(
-                        np.array(intent_to_compare) % winlen).issuperset(
+                if (intent != intent_to_compare
+                    and supp <= supp_to_compare
+                    and set(np.array(intent_to_compare) % winlen).issuperset(
                         set(np.array(intent) % winlen)) and set(
                         np.array(intent_to_compare) // winlen).issuperset(
-                        set(np.array(intent) // winlen)):
+                        set(np.array(intent) // winlen))):
                     keep_concept = False
                 c_idx += 1
                 if c_idx > len(fpgrowth_output) - 1:
@@ -863,7 +870,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         spec_matrix = np.zeros((max_z, max_c, winlen))
     spectrum = []
     # Mining the data with fast fca algorithm
-    fca_out = fast_fca.formalConcepts(context)
+    fca_out = fast_fca.FormalConcepts(context)
     fca_out.computeLattice()
     fca_concepts = fca_out.concepts
     fca_concepts = list(filter(
@@ -1130,8 +1137,8 @@ def _fdr(pvalues, alpha):
     """
 
     # Sort the p-values from largest to smallest
-    pvs_array = numpy.array(pvalues)              # Convert PVs to an array
-    pvs_sorted = numpy.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
+    pvs_array = np.array(pvalues)              # Convert PVs to an array
+    pvs_sorted = np.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
 
     # Perform FDR on the sorted p-values
     m = len(pvalues)
@@ -1196,9 +1203,10 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         Significance level of the statistical test
     corr: str
         Statistical correction to be applied:
-        '' : no statistical correction
-        'f'|'fdr' : false discovery rate
-        'b'|'bonf': Bonferroni correction
+            '', 'no' : no statistical correction
+            'f', 'fdr' : false discovery rate
+            'b', 'bonf': Bonferroni correction
+            'hb', 'holm_bonf': Holm-Bonferroni correction
          Default: ''
     report: str
         Format to be returned for the significance spectrum:
@@ -1226,9 +1234,9 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     # If alpha == 1 all signatures are significant
     if alpha == 1:
         return []
-    x_array = numpy.array(pvalue_spectrum)
+    x_array = np.array(pvalue_spectrum)
     # Compute significance...
-    if corr == '' or corr == 'no':  # ...without statistical correction
+    if corr in ['', 'no']:  # ...without statistical correction
         tests = x_array[:, -1] <= alpha
     elif corr in ['b', 'bonf']:  # or with Bonferroni correction
         tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
@@ -1238,7 +1246,8 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
         raise AttributeError(
-            "Parameter corr must be either '', 'b'('bonf') or 'f'('fdr')")
+            "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')" +
+            " or 'hb'('holm_bonf'), but not '"+str(corr)+"'.")
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
@@ -1276,9 +1285,14 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     if spectrum == '#':
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
-        keep_concept = (len(concept[0]), len(concept[1]), max(
-            np.abs(
-                np.diff(np.array(concept[0]) % winlen)))) not in ns_signature
+        bin_ids = sorted(np.array(concept[0]) % winlen)
+        # The duration is effectively the delay between the last neuron and
+        # the first one, measured in bins. Since we only allow the first spike
+        # to be in the first bin (see concepts_mining, _build_context and
+        # _fpgrowth), it is the the position of the latest spike.
+        duration = bin_ids[-1]
+        keep_concept = (len(concept[0]), len(concept[1]),
+                        duration) not in ns_signature
     return keep_concept
 
 
@@ -1299,7 +1313,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     rel_matrix: numpy.array
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to their position in
-        time). Each column correspond to one bin and one neuron and it is 0 if
+        time). Each column corresponds to one bin and one neuron and it is 0 if
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
@@ -1833,7 +1847,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
 
 
 def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
-                               t_start=0 * pq.ms):
+                               spectrum=None, t_start=0 * pq.ms):
     """
     Construction of dictionaries containing all the information about a pattern
     starting from a list of concepts and its associated pvalue_spectrum.
@@ -1841,7 +1855,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     Parameters
     ----------
     concepts: tuple
-        Each element of the tuple correspond to a pattern and it is itself a
+        Each element of the tuple corresponds to a pattern and it is itself a
         tuple consisting of:
             ((spikes in the pattern), (occurrences of the patterns))
     winlen: int
@@ -1850,14 +1864,23 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         The time precision used to discretize the data (binning).
     pvalue_spectrum: None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
-        to None all the pvalues are set to -1
+        to None all pvalues are set to -1
+    spectrum: None or str
+        The signature of the given concepts, it can assume values:
+        None: the signature is determined from the pvalue_spectrum
+        '#': pattern spectrum using the as signature the pair:
+            (number of spikes, number of occurrences)
+        '3d#': pattern spectrum using the as signature the triplets:
+            (number of spikes, number of occurrence, difference between last
+            and first spike of the pattern)
+        Default: None
     t_start: Quantity
         t_start of the analyzed spike trains
 
     Returns
     --------
     output: list
-        List of dictionaries. Each dictionary correspond to a patterns and
+        List of dictionaries. Each dictionary corresponds to a pattern and
         has the following entries:
             ['itemset'] list of the spikes in the pattern
                 expressed in the form of itemset, each spike is encoded by:
@@ -1867,24 +1890,28 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['neurons'] array containing the idx of the neurons of the pattern
             ['lags'] array containing the lags (integers corresponding to the
                 number of bins) between the spikes of the patterns. The first
-                lag is always assumed to be 0 and correspond to the first
+                lag is always assumed to be 0 and corresponds to the first
                 spike.
-            ['times'] array contianing the times (integers corresponding to the
+            ['times'] array containing the times (integers corresponding to the
                 bin idx) of the occurrences of the patterns.
             ['signature'] tuple containing two integers
                 (number of spikes of the patterns,
                 number of occurrences of the pattern)
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
-                the pvalues are set to -1.
+             then all pvalues are set to -1.
     """
-    if pvalue_spectrum is not None:
-        if len(pvalue_spectrum) == 0:
+    if pvalue_spectrum is None:
+        if spectrum is None:
             spectrum = '#'
-            pass
-        elif len(pvalue_spectrum[0]) == 4:
-            spectrum = '3d#'
-        elif len(pvalue_spectrum[0]) == 3:
-            spectrum = '#'
+    else:
+        if spectrum is None:
+            if len(pvalue_spectrum) == 0:
+                spectrum = '#'
+                pass
+            elif len(pvalue_spectrum[0]) == 4:
+                spectrum = '3d#'
+            elif len(pvalue_spectrum[0]) == 3:
+                spectrum = '#'
         pvalue_dict = {}
         # Creating a dictionary for the pvalue spectrum
         for entry in pvalue_spectrum:
@@ -1905,10 +1932,11 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         output_dict['windows_ids'] = conc[1]
         # Bins relative to the sliding window in which the spikes of patt fall
         bin_ids_unsort = np.array(conc[0]) % winlen
-        bin_ids = sorted(np.array(conc[0]) % winlen)
+        order_bin_ids = np.argsort(bin_ids_unsort)
+        bin_ids = bin_ids_unsort[order_bin_ids]
         # id of the neurons forming the pattern
         output_dict['neurons'] = list(np.array(
-            conc[0])[np.argsort(bin_ids_unsort)] // winlen)
+            conc[0])[order_bin_ids] // winlen)
         # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
         # Times (in binsize units) in which the pattern occurres
@@ -1921,8 +1949,13 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             output_dict['pvalue'] = -1
         # Signature (size, n occ) of the pattern
         elif spectrum == '3d#':
-            sgnt = (len(conc[0]), len(conc[1]), max(
-                np.abs(np.diff(np.array(conc[0]) % winlen))))
+            # The duration is effectively the delay between the last neuron and
+            # the first one, measured in bins.
+            # Since we only allow the first spike
+            # to be in the first bin (see concepts_mining, _build_context and
+            # _fpgrowth), it is the the position of the latest spike.
+            duration = bin_ids[-1]
+            sgnt = (len(conc[0]), len(conc[1]), duration)
             output_dict['signature'] = sgnt
             # p-value assigned to the pattern from the pvalue spectrum
             try:

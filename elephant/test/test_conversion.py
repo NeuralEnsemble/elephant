@@ -6,14 +6,17 @@ Unit tests for the conversion module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import sys
 import unittest
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal
 import quantities as pq
+from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 
 import elephant.conversion as cv
+
+python_version_major = sys.version_info.major
 
 
 def get_nearest(times, time):
@@ -173,6 +176,17 @@ class binarize_TestCase(unittest.TestCase):
                           t_start=0., t_stop=pq.Quantity(10, 'ms'))
         self.assertRaises(ValueError, cv.binarize, st1)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_bin_edges(self):
+        st = neo.SpikeTrain(times=np.array([2.5]) * pq.s, t_start=0 * pq.s,
+                            t_stop=3 * pq.s)
+        with self.assertWarns(UserWarning):
+            bst = cv.BinnedSpikeTrain(st, binsize=2 * pq.s, t_start=0 * pq.s,
+                                      t_stop=3 * pq.s)
+        assert_array_equal(bst.bin_edges, [0., 2.] * pq.s)
+        assert_array_equal(bst.spike_indices, [[]])  # no binned spikes
+        self.assertEqual(bst.get_num_of_spikes(), 0)
+
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):
@@ -188,6 +202,22 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.spiketrain_b = None
         del self.spiketrain_b
 
+    def test_get_num_of_spikes(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        for spiketrain in spiketrains:
+            binned = cv.BinnedSpikeTrain(spiketrain, num_bins=10,
+                                         binsize=1 * pq.s, t_start=0 * pq.s)
+            self.assertEqual(binned.get_num_of_spikes(),
+                             len(binned.spike_indices[0]))
+        binned_matrix = cv.BinnedSpikeTrain(spiketrains, num_bins=10,
+                                            binsize=1 * pq.s)
+        n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
+        n_spikes_per_row_from_indices = list(map(len,
+                                                 binned_matrix.spike_indices))
+        assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
+        self.assertEqual(binned_matrix.get_num_of_spikes(),
+                         sum(n_spikes_per_row_from_indices))
+
     def test_binned_spiketrain_sparse(self):
         a = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
         b = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
@@ -198,8 +228,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         x_sparse = [2, 1, 2, 1]
         s = x.to_sparse_array()
         self.assertTrue(np.array_equal(s.data, x_sparse))
-        self.assertTrue(
-            np.array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]]))
+        assert_array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]])
 
     def test_binned_spiketrain_shape(self):
         a = self.spiketrain_a
@@ -236,6 +265,7 @@ class TimeHistogramTestCase(unittest.TestCase):
             np.array([1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0])]
         self.assertTrue(np.array_equal(x.to_bool_array(), y))
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_binned_spiketrain_neg_times_list(self):
         a = neo.SpikeTrain(
             [-6.5, 0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
@@ -246,7 +276,8 @@ class TimeHistogramTestCase(unittest.TestCase):
         c = [a, b]
 
         binsize = self.binsize
-        x_bool = cv.BinnedSpikeTrain(c, binsize=binsize)
+        with self.assertWarns(UserWarning):
+            x_bool = cv.BinnedSpikeTrain(c, binsize=binsize)
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
                   [1, 0, 1, 1, 0, 1, 1, 0]]
 
