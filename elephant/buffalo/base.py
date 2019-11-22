@@ -15,7 +15,7 @@ from copy import deepcopy
 from neo.core.baseneo import _check_annotations
 
 from .exceptions import (BuffaloMissingRequiredParameters, BuffaloWrongParametersDictionary, BuffaloWrongParameterType,
-                         BuffaloInputValidationFailed)
+                         BuffaloInputValidationFailed, BuffaloImplementationError, BuffaloDataValidationFailed)
 
 
 class Analysis(object):
@@ -26,18 +26,28 @@ class Analysis(object):
     Input parameters are passed as the `params` keyed argument in class initialization.
     Any other initialization argument/keyed-argument is treated as input data.
 
+    Attributes
+    ----------
+        args: list
+            Input data as positional arguments
+
+        kwargs: dict
+            Input data as keyed arguments
+
+        params: dict
+            Input parameters for the analysis
+
+
     Methods
     -------
-
     annotate
         Stores custom values as items in a dictionary inside the class
 
 
     Properties
     ----------
-
     params: dict
-        The analysis input parameters that are passed during class initializaition (`params` keyed argument)
+        The analysis input parameters that are passed during class initialization (`params` keyed argument)
 
     name: str
         Required class attribute that provides a name for the object
@@ -86,19 +96,22 @@ class Analysis(object):
         This is the function that contains the logic of the analysis.
         Must be overridden, otherwise NotImplementedError is raised.
 
-    _validate: function
-        This is an optional function that is used to validate input data and parameters values.
-        It happens after the basic type validation of input parameters was done.
-        Returns True if not overridden.
+    _validate_parameters: function
+        This is an optional function that is used to validate input parameters values.
+        It is executed after the basic type validation of input parameters was done.
+
+    _validate_data: function
+        This is an optional function that is used to validate input data specifically.
+        It is executed after input parameters are validated.
     """
 
-    _params = None                    # Internal copy of the dictionary of input parameters for the analysis
+    _input_parameters = None          # Internal copy of the dictionary of input parameters for the analysis
 
     _ts_create = None                 # UTC time of instance creation
     _ts_execute = None                # UTC time of analysis execution
     _ts_end = None                    # UTC time of analysis execution end
 
-    _custom_annotations = {}          # Dictionary with custom annotations
+    _annotations = {}                 # Dictionary with custom annotations
 
     _name = None                      # Name of the analysis
     _cno_name = None                  # Name according to the CNO ontology TODO: check against official schema
@@ -110,7 +123,7 @@ class Analysis(object):
     # additional, non required parameters known in advance, and that can be automatically checked
     _required_types = {}
 
-    def __init__(self, *args, params={}, **kwargs):
+    def __init__(self, *args, params=None, **kwargs):
         """
         Initializes the Analysis object.
         Automatic validation is performed, by checking if all required parameters were passed and if inputs are correct.
@@ -118,7 +131,6 @@ class Analysis(object):
 
         Parameters
         ----------
-
         params : dict
             All input parameters relevant for the analysis.
             An input parameter is defined as any input that controls the analysis, but that is not the data that is the
@@ -132,9 +144,9 @@ class Analysis(object):
             Keyed-arguments describing input **data** necessary for the analysis.
             Should be validated accordingly by each subclass.
 
+
         Raises
         ------
-
         BuffaloWrongParametersDictionary
             If `params` is not a dictionary.
 
@@ -148,47 +160,71 @@ class Analysis(object):
             If the '_validate' function returns False (i.e., the input parameters and data are not adequate for the
                 analysis.
 
-        AssertionError
+        BuffaloImplementationError
             If there was an error in the implementation of `_required_params` or `_required_types`, or the required
             class attributes `name` and `description`
 
         NotImplementedError
-            If `_process` is not overriddn by the child class
+            If `_process` is not overridden by the child class
 
         """
         self._ts_create = datetime.utcnow()    # Stores the timestamp when the instance was created
 
+        if params is None:
+            params = dict()
+
         # Check required class attributes are present
-        assert isinstance(self.name, str) and len(self.name), "Must define 'name' attribute with non-empty string"
-        assert isinstance(self.description, str) is not None and len(self._description), ("Must define 'description'"
-                                                                                          "attribute with non-empty"
-                                                                                          "string")
+        if not (isinstance(self.name, str) and len(self.name)):
+            raise BuffaloImplementationError("Must define 'name' attribute with non-empty string")
+        if not (isinstance(self.description, str) and len(self._description)):
+            raise BuffaloImplementationError("Must define 'description' attribute with non-empty string")
 
         # Check if optional class attributes are valid if present
         if self.cno_name is not None:
-            assert isinstance(self.cno_name, str) and len(self.cno_name), "CNO name must be non-empty string"
+            if not (isinstance(self.cno_name, str) and len(self.cno_name)):
+                raise BuffaloImplementationError("CNO name must be non-empty string")
 
         # Check that protected variables are correct
-        assert isinstance(self._required_params, list), "Required params must be 'list'"
-        assert isinstance(self._required_types, dict), "Required types must be 'dict'"
+        if not isinstance(self._required_params, list):
+            raise BuffaloImplementationError("'_required_params' class variable must be 'list'")
+        if not isinstance(self._required_types, dict):
+            raise BuffaloImplementationError("'_required_types' class variable must be 'dict'")
 
-        # Check that analysis parameters were passed, and store
+        # Check that the analysis parameters were passed, and store them in `_input_parameters`
         if not isinstance(params, dict):
             raise BuffaloWrongParametersDictionary("The analysis parameters must be passed as a dictionary in the "
                                                    "'params' keyed argument")
-        self._params = deepcopy(params)
+        self._input_parameters = deepcopy(params)
 
-        # Verify that analysis parameters are valid.
+        # Verify that analysis parameters are present and valid.
         # This is a type validation, not value validation.
-        if not self._has_required_params():
-            raise BuffaloMissingRequiredParameters(f"Check that '{', '.join(self._required_params)} are present in the"
-                                                   "parameters dictionary")
-        if not self._params_are_valid():
-            raise BuffaloWrongParameterType("Check that the analysis input parameters types are correct")
+        # Any value in `_required_params` that is not a string is treated as an implementation error
+        # If any key of `_required_types` has a value that is not a tuple, this is also treated as implementation error.
+        try:
+            self._has_required_input_parameters()
+        except NameError as error:
+            raise BuffaloMissingRequiredParameters(error)
+        except ValueError as error:
+            raise BuffaloImplementationError(error)
 
-        # Performs the optional validation on the input parameters/data
-        if not self._validate(*args, **kwargs):
-            raise BuffaloInputValidationFailed("Check that parameters/data are correct for the analysis")
+        try:
+            self._input_parameters_are_valid()
+        except TypeError as error:
+            raise BuffaloWrongParameterType(error)
+        except ValueError as error:
+            raise BuffaloImplementationError(error)
+
+        # Performs the optional validation on the input parameters
+        try:
+            self._validate_parameters()
+        except ValueError as error:
+            raise BuffaloInputValidationFailed(error)
+
+        # Performs the optional validation on the input data
+        try:
+            self._validate_data(*args, **kwargs)
+        except (NameError, ValueError) as error:
+            raise BuffaloDataValidationFailed(error)
 
         # Run the analysis for the provided data
         # 'params' are removed as any other arg/kwarg is supposed to be data, which is the only input for the '_process'
@@ -200,78 +236,85 @@ class Analysis(object):
         self._process(*args, **kwargs)         # Run the analysis on the given input data
         self._ts_end = datetime.utcnow()       # Stores the timestamp when analysis finished
 
-    def _validate(self, *args, **kwargs):
+    def _validate_parameters(self):
         """
-        This functions performs a check in the input parameters and input data, to assert that they are correct
+        This functions performs a check in the input parameters, to assert that they are correct
         according to the analysis algorithm.
-        This is optional. If not overridden, the function always returns True.
+        This is optional. If overridden, the function should raise ValueError exceptions when a validation fails.
 
-        Parameters
-        ----------
-
-        args : list
-            Input **data** necessary for the analysis.
-
-        kwargs: dict
-            Keyed-arguments describing input **data** necessary for the analysis.
-
-        Returns
+        Raises
         -------
-
-            boolean
-                True if validation passed, False if anything happened
+            ValueError
+                If input parameters are not correct
         """
-        return True
+        pass
+
+    def _validate_data(self, *args, **kwargs):
+        """
+        This functions performs a check in the input data, to assert that they are correct
+        according to the analysis algorithm.
+        This is optional. If overridden, the function should raise ValueError or NameError exceptions when a validation
+        fails.
+
+        Raises
+        -------
+            ValueError
+                If input parameters are not correct
+
+            NameError
+                If missing input data
+        """
+        pass
 
     def _process(self, *args, **kwargs):
         """
         This is the main logic for the analysis.
-        Input data is passed from the class initialization
+        Input data is passed from the class initialization.
         """
         raise NotImplementedError
 
-    def _has_required_params(self):
+    def _has_required_input_parameters(self):
         """
         Internal function that checks if the parameters dictionary stored inside the class has the necessary items.
 
-        Returns
+        Raises
         -------
+        NameError
+            If any of the parameters listed in `_required_params` are missing.
 
-        boolean
-            True if check is OK, False if missing any of the parameters.
-            If required params list is empty, returns True.
+        ValueError
+            If `_required_params` contains an item that is not a string.
         """
-        parameters = list(self.params.keys())
+        parameters = list(self.input_parameters.keys())
         if len(self._required_params):
             if len(parameters) >= len(self._required_params):
                 for required in self._required_params:
-                    assert isinstance(required, str), "Required params must contain strings"
+                    if not isinstance(required, str):
+                        raise ValueError(f"Required params must contain strings. '{type(required)}' was passed")
                     if required not in parameters:
-                        print(f"Missing parameter '{required}'")
-                        return False
-                return True
-            print("Fewer than the number of required parameters passed")
-            return False
-        return True
+                        raise NameError(f"Missing parameter '{required}'")
+            else:
+                raise NameError(f"Parameters '{', '.join(self._required_params)}' are expected.")
 
-    def _params_are_valid(self):
+    def _input_parameters_are_valid(self):
         """
-        Internal function that checks if the input parameters types are acceptable
+        Internal function that checks if the input parameters types are acceptable.
 
-        Returns
+        Raises
         -------
+        TypeError
+            If the type of the parameter is not any listed for that key in `_required_types`
 
-        boolean
-            True if check is OK, False if wrong type was passed.
-            If type checking dictionary is empty, returns True
+        ValueError
+            If the value of the item in `_required_types` dict is not a tuple
         """
-        for key, value in self.params.items():
+        for key, value in self.input_parameters.items():
             if key in self._required_types.keys():
-                assert isinstance(self._required_types[key], tuple), "Values of required types dict must be tuples"
+                if not isinstance(self._required_types[key], tuple):
+                    raise ValueError(f"Values for dictionary item '{key}' must be passed as a tuple")
                 if type(value) not in self._required_types[key]:
-                    print(f"Parameter '{key}' should be one of: {', '.join(map(str, self._required_types[key]))}")
-                    return False
-        return True
+                    raise TypeError(f"Parameter '{key}' should be one of: "
+                                    ', '.join(map(str, self._required_types[key])))
 
     @property
     def creation_time(self):
@@ -287,7 +330,7 @@ class Analysis(object):
 
     @property
     def annotations(self):
-        return self._custom_annotations
+        return self._annotations
 
     @property
     def name(self):
@@ -302,8 +345,8 @@ class Analysis(object):
         return self._cno_name
 
     @property
-    def params(self):
-        return self._params
+    def input_parameters(self):
+        return self._input_parameters
 
     def annotate(self, **annotations):
         """
@@ -312,12 +355,12 @@ class Analysis(object):
         Parameters
         ----------
         annotations: dict
-            Arguments passed as key=value pairs are stored inside `_custom_annotations` dictionary.
+            Arguments passed as key=value pairs are stored inside `_annotations` dictionary.
             It can be accessed by the `annotations` class property.
 
         """
         _check_annotations(annotations)      # Use Neo constraints to check each individual annotation item
-        self._custom_annotations.update(annotations)
+        self._annotations.update(annotations)
 
     def describe(self):
         """

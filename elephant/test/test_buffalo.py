@@ -20,7 +20,7 @@ class BasicClass(buf.base.Analysis):
     """
     This class only sets the required class attributes such as `name`, `description` and `_process` function,
     to avoid code redundancy in the following classes supporting the tests.
-    In actual Buffalo objects, every inherited class should always set these attributes. They should not be inherited.
+    In actual Buffalo objects, every inherited class should always set these attributes. They should never be inherited.
     See class `BasicClassExample` below.
     """
 
@@ -194,15 +194,15 @@ class AnalysisBaseClassTestCase(unittest.TestCase):
         self.assertIsInstance(BasicNoParameters(), BasicNoParameters)
 
         # Wrong implementations of `_required_types` and `_required_args`
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(buf.exceptions.BuffaloImplementationError):
             BasicClassWrongRequiredParams(params=analysis_params)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(buf.exceptions.BuffaloImplementationError):
             BasicClassWrongRequiredParamsItems(params=analysis_params)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(buf.exceptions.BuffaloImplementationError):
             BasicClassWrongRequiredParamsItems(params=analysis_params)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(buf.exceptions.BuffaloImplementationError):
             BasicClassWrongRequiredTypes(params=analysis_params)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(buf.exceptions.BuffaloImplementationError):
             BasicClassWrongRequiredTypesItems(params=analysis_params)
 
         # Despite string, should work because not checking types
@@ -223,7 +223,7 @@ class AnalysisBaseClassTestCase(unittest.TestCase):
         analysis_params = {'low_cutoff': 10,
                            'high_cutoff': 20}
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(buf.exceptions.BuffaloImplementationError):
             BasicClassNoAttributes(params=analysis_params)
         self.assertIsInstance(BasicClassExample(params=analysis_params), BasicClassExample)
 
@@ -266,10 +266,10 @@ class AnalysisBaseClassTestCase(unittest.TestCase):
             self.assertIsInstance(test_object, BasicClassExample)
             self.assertEqual(test_object.name, TEST_NAME)
             self.assertEqual(test_object.description, TEST_DESCRIPTION)
-            self.assertEqual(test_object.params['low_cutoff'], 10)
-            self.assertEqual(test_object.params['high_cutoff'], 20)
-        self.assertTrue('method' not in analysis.params)
-        self.assertEqual(extra_analysis.params['method'], "raw")
+            self.assertEqual(test_object.input_parameters['low_cutoff'], 10)
+            self.assertEqual(test_object.input_parameters['high_cutoff'], 20)
+        self.assertTrue('method' not in analysis.input_parameters)
+        self.assertEqual(extra_analysis.input_parameters['method'], "raw")
 
 
 if __name__ == '__main__':
