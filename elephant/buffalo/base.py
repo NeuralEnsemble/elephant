@@ -43,10 +43,13 @@ class Analysis(object):
     annotate
         Stores custom values as items in a dictionary inside the class
 
+    get_input_parameter
+        Quickly retrieves the value of an input parameter, if it is available
+
 
     Properties
     ----------
-    params: dict
+    input_parameters: dict
         The analysis input parameters that are passed during class initialization (`params` keyed argument)
 
     name: str
@@ -73,7 +76,6 @@ class Analysis(object):
 
     Notes
     -----
-
     Child classes can be easily derived by just overriding a few protected variables or functions.
 
     _required_params: list of str
@@ -131,10 +133,11 @@ class Analysis(object):
 
         Parameters
         ----------
-        params : dict
+        params : dict, None
             All input parameters relevant for the analysis.
             An input parameter is defined as any input that controls the analysis, but that is not the data that is the
             subject of the analysis.
+            If no parameters are required, None should be passed.
 
         args : list
             Input **data** necessary for the analysis.
@@ -236,43 +239,6 @@ class Analysis(object):
         self._process(*args, **kwargs)         # Run the analysis on the given input data
         self._ts_end = datetime.utcnow()       # Stores the timestamp when analysis finished
 
-    def _validate_parameters(self):
-        """
-        This functions performs a check in the input parameters, to assert that they are correct
-        according to the analysis algorithm.
-        This is optional. If overridden, the function should raise ValueError exceptions when a validation fails.
-
-        Raises
-        -------
-            ValueError
-                If input parameters are not correct
-        """
-        pass
-
-    def _validate_data(self, *args, **kwargs):
-        """
-        This functions performs a check in the input data, to assert that they are correct
-        according to the analysis algorithm.
-        This is optional. If overridden, the function should raise ValueError or NameError exceptions when a validation
-        fails.
-
-        Raises
-        -------
-            ValueError
-                If input parameters are not correct
-
-            NameError
-                If missing input data
-        """
-        pass
-
-    def _process(self, *args, **kwargs):
-        """
-        This is the main logic for the analysis.
-        Input data is passed from the class initialization.
-        """
-        raise NotImplementedError
-
     def _has_required_input_parameters(self):
         """
         Internal function that checks if the parameters dictionary stored inside the class has the necessary items.
@@ -316,6 +282,43 @@ class Analysis(object):
                     raise TypeError(f"Parameter '{key}' should be one of: "
                                     ', '.join(map(str, self._required_types[key])))
 
+    def _validate_parameters(self):
+        """
+        This function performs a check in the input parameters, to assert that they are correct
+        according to the analysis algorithm.
+        This is optional. If overridden, the function should raise ValueError exceptions when a validation fails.
+
+        Raises
+        -------
+            ValueError
+                If input parameters are not correct
+        """
+        pass
+
+    def _validate_data(self, *args, **kwargs):
+        """
+        This function performs a check in the input data, to assert that they are correct
+        according to the analysis algorithm.
+        This is optional. If overridden, the function should raise ValueError or NameError exceptions when a validation
+        fails.
+
+        Raises
+        -------
+            ValueError
+                If input parameters are not correct
+
+            NameError
+                If missing input data
+        """
+        pass
+
+    def _process(self, *args, **kwargs):
+        """
+        This is the main logic for the analysis.
+        Input data is passed from the class initialization.
+        """
+        raise NotImplementedError
+
     @property
     def creation_time(self):
         return self._ts_create
@@ -346,6 +349,9 @@ class Analysis(object):
 
     @property
     def input_parameters(self):
+        """
+        All parameters that were given for the analysis.
+        """
         return self._input_parameters
 
     def annotate(self, **annotations):
@@ -362,9 +368,30 @@ class Analysis(object):
         _check_annotations(annotations)      # Use Neo constraints to check each individual annotation item
         self._annotations.update(annotations)
 
+    def get_input_parameter(self, parameter):
+        """
+        Fetches the value of any input parameter passed using the `params` argument.
+        If that parameter is not found (optional), returns None
+
+        Parameters
+        ----------
+        parameter: str
+            Name of the parameter
+
+        Returns
+        -------
+            object, None
+                Value of the parameter.
+                None if the parameter is not found in the `_input_parameters` dictionary.
+        """
+        if parameter in self.input_parameters:
+            return self.input_parameters[parameter]
+        return None
+
     def describe(self):
         """
         This method must be implemented by each analysis to save provenance information to an object that supports
         W3C PROV model.
         """
+        #TODO: implement according to `prov` package objects
         return NotImplementedError
