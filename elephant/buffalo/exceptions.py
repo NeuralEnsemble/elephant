@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This module implements exceptions definitions to be used by Buffalo analysis objects.
+This module implements exception definitions to be used by Buffalo analysis objects.
 
 :copyright: Copyright 2014-2019 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
@@ -9,11 +9,14 @@ This module implements exceptions definitions to be used by Buffalo analysis obj
 
 class BuffaloException(Exception):
     """
-    Generic class for exceptions for Buffalo objects.
-    It may take two types of inputs:
-        1. Another exception: this exception's message (args[0] value) will be used.
-        2. A string: will be used as exception message
-    If no message was passed, BuffaloException uses the default message '(no details)'
+    Generic class for exceptions in Buffalo objects.
+
+    Attributes
+    ----------
+    source: Exception, str
+        If source is an Exception object, its message will be used.
+        If source is a string, this will be the exception message.
+        If no source is passed, BuffaloException will use the default message '(no details)'
     """
 
     def __init__(self, source):
