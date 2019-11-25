@@ -1,4 +1,4 @@
-'''
+"""
 SPADE is the combination of a mining technique and multiple statistical tests
 to detect and assess the statistical significance of repeated occurrences of
 spike sequences (spatio-temporal patterns, STP).
@@ -55,7 +55,7 @@ plt.show()
 
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
-'''
+"""
 import numpy as np
 import neo
 import elephant.spike_train_surrogates as surr
@@ -725,33 +725,14 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             lambda c: _fpgrowth_filter(
                 c, winlen, max_c, min_neu), fpgrowth_output))
         for (intent, supp) in fpgrowth_output:
-            # Removing subset occurring in different window positions
-            keep_concept = True
-            c_idx = 0
-            while keep_concept:
-                intent_to_compare, supp_to_compare = fpgrowth_output[c_idx]
-                # TODO: optimize this while removing from the list
-                # fpgrowth_output the correspondent concept when
-                # intent_to_compare is a subset of intent
-                if (intent != intent_to_compare
-                    and supp <= supp_to_compare
-                    and set(np.array(intent_to_compare) % winlen).issuperset(
-                        set(np.array(intent) % winlen)) and set(
-                        np.array(intent_to_compare) // winlen).issuperset(
-                        set(np.array(intent) // winlen))):
-                    keep_concept = False
-                c_idx += 1
-                if c_idx > len(fpgrowth_output) - 1:
-                    break
-            if not keep_concept:
-                continue
+            # TODO: Remove subset occurring in different window positions
             if report == 'a':
                 if rel_matrix is not None:
                     # Computing the extent of the concept (patterns
                     # occurrences), checking in rel_matrix in which windows
                     # the intent occurred
                     extent = tuple(np.where(
-                        np.prod(rel_matrix[:, intent], axis=1) == 1)[0])
+                        np.all(rel_matrix[:, intent], axis=1) == 1)[0])
                 concepts.append((intent, extent))
             # Computing 2d spectrum
             elif report == '#':
@@ -881,23 +862,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         intent = tuple(fca_concept.intent)
         extent = tuple(fca_concept.extent)
         supp = len(extent)
-        # Removing subset occurring in different window positions
-        keep_concept = True
-        c_idx = 0
-        while keep_concept:
-            intent_comp = tuple(fca_concepts[c_idx].intent)
-            supp_comp = len(tuple(fca_concepts[c_idx].extent))
-            if intent != intent_comp and supp <= supp_comp and set(
-                    np.array(intent_comp) % winlen).issuperset(set(
-                        np.array(intent) % winlen)) and set(
-                    np.array(intent_comp) // winlen).issuperset(
-                    set(np.array(intent) // winlen)):
-                keep_concept = False
-            c_idx += 1
-            if c_idx > len(fca_concepts) - 1:
-                break
-        if not keep_concept:
-            continue
+        # TODO: Remove subset occurring in different window positions
 
         concepts.append((intent, extent))
         # computing spectrum
@@ -1027,63 +992,39 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     if n_surr <= 0:
         raise AttributeError('n_surr has to be >0')
     len_partition = n_surr // size  # length of each MPI task
-    len_remainder = n_surr if len_partition == 0 else n_surr % len_partition
+    len_remainder = n_surr % size
 
     # For each surrogate collect the signatures (z,c) such that (z*,c*)>=(z,c)
     # exists in that surrogate. Group such signatures (with repetition)
     # list of all signatures found in surrogates, initialized to []
     surr_sgnts = []
 
-    if rank == 0:
-        for i in range(len_partition + len_remainder):
-            surrs = [surr.dither_spikes(
-                xx, dither=dither, n=1)[0] for xx in data]
-            # Find all pattern signatures in the current surrogate data set
-            surr_sgnt = concepts_mining(
-                surrs, binsize, winlen, min_spikes=min_spikes,
-                max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
-                min_neu=min_neu, report=spectrum)[0]
-            filled_sgnt = []
-            # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
-            # current surrogate, and add it to the list of all signatures
-            if spectrum == '#':
-                for sgnt in surr_sgnt:
-                    for j in range(min_spikes, sgnt[0] + 1):
-                        for k in range(min_occ, sgnt[1] + 1):
-                            filled_sgnt.append((j, k))
-            # List all signatures (z,c,l) <= (z*, c*, l*), for each (z*,c*,l*)
-            # in the current surrogate, and add it to the list of
-            # all signatures
-            if spectrum == '3d#':
-                for sgnt in surr_sgnt:
-                    for j in range(min_spikes, sgnt[0] + 1):
-                        for k in range(min_occ, sgnt[1] + 1):
-                            filled_sgnt.append((j, k, sgnt[2]))
-            surr_sgnts.extend(list(set(filled_sgnt)))
-    # Same procedure on different PCU
-    else:  # pragma: no cover
-        for i in range(len_partition):
-            surrs = [surr.dither_spikes(
-                xx, dither=dither, n=1)[0] for xx in data]
-            # Find all pattern signatures in the current surrogate data set
-            surr_sgnt = concepts_mining(
-                surrs, binsize, winlen, min_spikes=min_spikes,
-                max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
-                min_neu=min_neu, report=spectrum)[0]
-            # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
-            # current surrogate, and add it to the list of all signatures
-            filled_sgnt = []
-            if spectrum == '#':
-                for sgnt in surr_sgnt:
-                    for j in range(min_spikes, sgnt[0] + 1):
-                        for k in range(min_occ, sgnt[1] + 1):
-                            filled_sgnt.append((j, k))
-            if spectrum == '3d#':
-                for sgnt in surr_sgnt:
-                    for j in range(min_spikes, sgnt[0] + 1):
-                        for k in range(min_occ, sgnt[1] + 1):
-                            filled_sgnt.append((j, k, sgnt[2]))
-            surr_sgnts.extend(list(set(filled_sgnt)))
+    add_remainder = rank < len_remainder
+    for i in range(len_partition + add_remainder):
+        surrs = [surr.dither_spikes(
+            xx, dither=dither, n=1)[0] for xx in data]
+        # Find all pattern signatures in the current surrogate data set
+        surr_sgnt = concepts_mining(
+            surrs, binsize, winlen, min_spikes=min_spikes,
+            max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
+            min_neu=min_neu, report=spectrum)[0]
+        filled_sgnt = []
+        # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
+        # current surrogate, and add it to the list of all signatures
+        if spectrum == '#':
+            for sgnt in surr_sgnt:
+                for j in range(min_spikes, sgnt[0] + 1):
+                    for k in range(min_occ, sgnt[1] + 1):
+                        filled_sgnt.append((j, k))
+        # List all signatures (z,c,l) <= (z*, c*, l*), for each (z*,c*,l*)
+        # in the current surrogate, and add it to the list of
+        # all signatures
+        if spectrum == '3d#':
+            for sgnt in surr_sgnt:
+                for j in range(min_spikes, sgnt[0] + 1):
+                    for k in range(min_occ, sgnt[1] + 1):
+                        filled_sgnt.append((j, k, sgnt[2]))
+        surr_sgnts.extend(list(set(filled_sgnt)))
     # Collecting results on the first PCU
     if rank != 0:  # pragma: no cover
         comm.send(surr_sgnts, dest=0)
@@ -1098,7 +1039,7 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
         pv_spec = []
         for sgnt in set(surr_sgnts):
             sgnt = list(sgnt)
-            sgnt.append((sum(np.prod(np.array(surr_sgnts) == sgnt, axis=1)
+            sgnt.append((sum(np.all(np.array(surr_sgnts) == sgnt, axis=1)
                              ) / float(n_surr)))
             pv_spec.append(sgnt)
         return pv_spec
@@ -1553,7 +1494,7 @@ def _closure_probability_extensional(intent, subset, rel_matrix):
     0 else
     """
     # computation of the ' operator for the subset
-    subset_prime = np.where(np.prod(rel_matrix[subset, :], axis=0) == 1)[0]
+    subset_prime = np.where(np.all(rel_matrix[subset, :], axis=0) == 1)[0]
     if set(subset_prime) == set(list(intent)):
         return 1
     return 0
@@ -1579,7 +1520,7 @@ def _closure_probability_intensional(extent, subset, rel_matrix):
     0 else
     """
     # computation of the ' operator for the subset
-    subset_prime = np.where(np.prod(rel_matrix[:, subset], axis=1) == 1)[0]
+    subset_prime = np.where(np.all(rel_matrix[:, subset], axis=1) == 1)[0]
     if set(subset_prime) == set(list(extent)):
         return 1
     return 0
@@ -1922,14 +1863,12 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
     # Initializing list containing all the patterns
     output = []
     for conc in concepts:
-        # Vocabulary for each of the patterns
-        output_dict = {}
-        # The pattern expressed in form of Itemset, each spike in the pattern
+        # Vocabulary for each of the patterns, containing:
+        # - The pattern expressed in form of Itemset, each spike in the pattern
         # is represented as spiketrain_id * winlen + bin_id
-        output_dict['itemset'] = conc[0]
-        # The ids of the windows in which the pattern occurred in discretized
+        # - The ids of the windows in which the pattern occurred in discretized
         # time (binning)
-        output_dict['windows_ids'] = conc[1]
+        output_dict = {'itemset': conc[0], 'windows_ids': conc[1]}
         # Bins relative to the sliding window in which the spikes of patt fall
         bin_ids_unsort = np.array(conc[0]) % winlen
         order_bin_ids = np.argsort(bin_ids_unsort)
@@ -1939,7 +1878,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             conc[0])[order_bin_ids] // winlen)
         # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
-        # Times (in binsize units) in which the pattern occurres
+        # Times (in binsize units) in which the pattern occurs
         output_dict['times'] = sorted(conc[1]) * binsize + bin_ids[0] * \
             binsize + t_start
         # If None is given in input to the pval spectrum the pvalue
