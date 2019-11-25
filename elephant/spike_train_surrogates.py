@@ -727,7 +727,7 @@ class JointISI(object):
 
         self._jisih_cumulatives = self._window_cumulatives(flipped_jisih)
 
-    def dithering(self, n_surr):
+    def dithering(self, n_surr=1):
         """
         Implementation of Joint-ISI-dithering for spiketrains that pass the
         threshold of the dense rate, if not a uniform dithered spiketrain is
