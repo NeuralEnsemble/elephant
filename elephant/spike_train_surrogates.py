@@ -545,12 +545,10 @@ class JointISI(object):
                  min_spikes=3
                  ):
         """
-        
         Parameters
         ----------
         spiketrain: neo.SpikeTrain
             For this spiketrain the surrogates will be created
-    
         dither: pq.Quantity
             This quantity describes the maximum displacement of a spike, when
             method is 'window'. It is also used for the uniform dithering for
