@@ -39,7 +39,7 @@ class BasicClassNoProcess(buf.base.Analysis):
 
 
 class BasicClassBehavior(BasicClass):
-    _required_params = ['low_cutoff', 'high_cutoff']
+    _required_params = ('low_cutoff', 'high_cutoff')
 
     _required_types = {'low_cutoff': (int, float),
                        'high_cutoff': (int, float),
@@ -56,7 +56,7 @@ class BasicClassWrongRequiredParams(BasicClass):
 
 
 class BasicClassWrongRequiredParamsItems(BasicClass):
-    _required_params = [1, 2]
+    _required_params = (1, 2)
 
 
 class BasicClassWrongRequiredTypes(BasicClass):
@@ -72,7 +72,7 @@ class BasicClassWrongRequiredTypesItems(BasicClass):
 
 
 class BasicClassNoRequiredTypes(BasicClass):
-    _required_params = ['low_cutoff', 'high_cutoff']
+    _required_params = ('low_cutoff', 'high_cutoff')
 
 
 class BasicClassNoRequiredParams(BasicClass):
@@ -80,8 +80,7 @@ class BasicClassNoRequiredParams(BasicClass):
 
 
 class BasicClassNoAttributes(buf.base.Analysis):
-    _required_params = ['low_cutoff', 'high_cutoff']
-
+    _required_params = ('low_cutoff', 'high_cutoff')
     _required_types = {'low_cutoff': (int, float),
                        'high_cutoff': (int, float),
                        'method': (str,)               # optional parameter
@@ -99,7 +98,7 @@ class BasicClassExample(buf.base.Analysis):
     _name = TEST_NAME
     _description = TEST_DESCRIPTION
 
-    _required_params = ['low_cutoff', 'high_cutoff']
+    _required_params = ('low_cutoff', 'high_cutoff')
 
     _required_types = {'low_cutoff': (int, float),
                        'high_cutoff': (int, float),

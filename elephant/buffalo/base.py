@@ -119,7 +119,7 @@ class Analysis(object):
     _cno_name = None                  # Name according to the CNO ontology TODO: check against official schema
     _description = None               # Human readable description of the object
 
-    _required_params = []    # List of keys that must be present in the 'params' dictionary during class initialization
+    _required_params = ()    # Tuple of key names that must be present in the 'params' dictionary
 
     # Dictionary with tuples describing the accepted types for each item in the 'params' dictionary. May include
     # additional, non required parameters known in advance, and that can be automatically checked
@@ -188,8 +188,8 @@ class Analysis(object):
                 raise BuffaloImplementationError("CNO name must be non-empty string")
 
         # Check that protected variables are correct
-        if not isinstance(self._required_params, list):
-            raise BuffaloImplementationError("'_required_params' class variable must be 'list'")
+        if not isinstance(self._required_params, tuple):
+            raise BuffaloImplementationError("'_required_params' class variable must be 'tuple'")
         if not isinstance(self._required_types, dict):
             raise BuffaloImplementationError("'_required_types' class variable must be 'dict'")
 
@@ -350,7 +350,10 @@ class Analysis(object):
     @property
     def input_parameters(self):
         """
-        All parameters that were given for the analysis.
+        Returns
+        -------
+        dict
+            All parameters that were given for the analysis.
         """
         return self._input_parameters
 
