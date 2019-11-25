@@ -671,7 +671,7 @@ class JointISI(object):
         """
         if isinstance(inter_spike_interval, np.ndarray):
             return np.floor(inter_spike_interval / self.bin_width).astype(int)
-        return math.floor(inter_spike_interval / self.bin_width)
+        return int(math.floor(inter_spike_interval / self.bin_width))
 
     def index_to_isi(self, isi_index):
         """
@@ -733,6 +733,12 @@ class JointISI(object):
         threshold of the dense rate, if not a uniform dithered spiketrain is
         given back. The implementation continued the ideas of Louis et al.
         (2010) and Gerstein (2004).
+
+        Parameters
+        ----------
+        n_surr: int
+            The number of dithered spiketrains to be returned.
+            Default: 1
 
         Returns
         ----------
