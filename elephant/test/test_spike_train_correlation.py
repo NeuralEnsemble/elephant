@@ -97,12 +97,12 @@ class CovarianceTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_0], t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-        target = sc.covariance(binned_st, fast=False)
+        result = sc.covariance(binned_st, fast=False)
 
         # Check dimensions
-        self.assertEqual(len(target), 2)
+        self.assertEqual(len(result), 2)
         # Check result
-        assert_array_equal(target[0][0], target[1][1])
+        assert_array_equal(result[0][0], result[1][1])
 
     def test_covariance_binned_short_input(self):
         '''
@@ -113,15 +113,18 @@ class CovarianceTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             self.st_0, t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-        target = sc.covariance(binned_st, binary=True, fast=False)
+        result = sc.covariance(binned_st, binary=True, fast=False)
 
         # Check result unclipped against result calculated by numpy.corrcoef
         mat = binned_st.to_bool_array()
-        target_numpy = np.cov(mat)
+        target = np.cov(mat)
 
         # Check result and dimensionality of result
-        self.assertEqual(target.ndim, target_numpy.ndim)
-        self.assertAlmostEqual(target, target_numpy)
+        self.assertEqual(result.ndim, target.ndim)
+        assert_array_almost_equal(result, target)
+        assert_array_almost_equal(target,
+                                  sc.covariance(binned_st, binary=True,
+                                                fast=True))
 
     def test_covariance_fast_mode(self):
         np.random.seed(27)
@@ -215,12 +218,14 @@ class CorrCoefTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_0], t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-        target = sc.corrcoef(binned_st)
+        result = sc.corrcoef(binned_st, fast=False)
+        target = np.ones((2, 2))
 
         # Check dimensions
-        self.assertEqual(len(target), 2)
+        self.assertEqual(len(result), 2)
         # Check result
-        assert_array_equal(target, 1.)
+        assert_array_almost_equal(result, target)
+        assert_array_almost_equal(result, sc.corrcoef(binned_st, fast=True))
 
     def test_corrcoef_binned_short_input(self):
         '''
@@ -230,11 +235,13 @@ class CorrCoefTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             self.st_0, t_start=0 * pq.ms, t_stop=50. * pq.ms,
             binsize=1 * pq.ms)
-        target = sc.corrcoef(binned_st)
+        result = sc.corrcoef(binned_st, fast=False)
+        target = np.array(1.)
 
         # Check result and dimensionality of result
-        self.assertEqual(target.ndim, 0)
-        self.assertEqual(target, 1.)
+        self.assertEqual(result.ndim, 0)
+        assert_array_almost_equal(result, target)
+        assert_array_almost_equal(result, sc.corrcoef(binned_st, fast=True))
 
     @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
@@ -247,12 +254,12 @@ class CorrCoefTestCase(unittest.TestCase):
                                           binsize=1 * pq.ms)
 
         with self.assertWarns(UserWarning):
-            ccmat = sc.corrcoef(binned_12, fast=False)
+            result = sc.corrcoef(binned_12, fast=False)
 
         # test for NaNs in the output array
         target = np.zeros((2, 2)) * np.NaN
         target[0, 0] = 1.0
-        assert_array_almost_equal(ccmat, target)
+        assert_array_almost_equal(result, target)
 
     def test_corrcoef_fast_mode(self):
         np.random.seed(27)
@@ -260,7 +267,6 @@ class CorrCoefTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
         assert_array_almost_equal(sc.corrcoef(binned_st, fast=False),
                                   sc.corrcoef(binned_st, fast=True))
-
 
 
 class cross_correlation_histogram_TestCase(unittest.TestCase):

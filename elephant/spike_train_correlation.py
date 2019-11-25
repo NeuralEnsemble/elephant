@@ -198,19 +198,19 @@ class CrossCorrHist(object):
 
 
 def covariance(binned_sts, binary=False, fast=True):
-    """
+    r"""
     Calculate the NxN matrix of pairwise covariances between all combinations
     of N binned spike trains.
 
     For each pair of spike trains :math:`(i,j)`, the covariance :math:`C[i,j]`
     is obtained by binning :math:`i` and :math:`j` at the desired bin size. Let
-    :math:`b_i` and :math:`b_j` denote the binned spike trains and :math:`m_i`
-    and :math:`m_j` their respective averages. Then
+    :math:`b_i` and :math:`b_j` denote the binned spike trains and
+    :math:`\mu_i` and :math:`\mu_j` their respective averages. Then
 
     .. math::
-         C[i,j] = <b_i-m_i, b_j-m_j> / (l-1)
+         C[i,j] = <b_i-\mu_i, b_j-\mu_j> / (L-1)
 
-    where <..,.> is the scalar product of two vectors and :math:`l` is the
+    where `<., .>` is the scalar product of two vectors, and :math:`L` is the
     number of bins.
 
     For an input of n spike trains, an n x n matrix is returned containing the
@@ -298,13 +298,13 @@ def corrcoef(binned_sts, binary=False, fast=True):
     For each pair of spike trains :math:`(i,j)`, the correlation coefficient
     :math:`C[i,j]` is obtained by binning :math:`i` and :math:`j` at the
     desired bin size. Let :math:`b_i` and :math:`b_j` denote the binned spike
-    trains and :math:`m_i` and :math:`m_j` their respective averages. Then
+    trains and :math:`\mu_i` and :math:`\mu_j` their respective means. Then
 
     .. math::
-         C[i,j] = <b_i-m_i, b_j-m_j> /
-                      \sqrt{<b_i-m_i, b_i-m_i>*<b_j-m_j,b_j-m_j>}
+         C[i,j] = <b_i-\mu_i, b_j-\mu_j> /
+                  \sqrt{<b_i-\mu_i, b_i-\mu_i> \cdot <b_j-\mu_j, b_j-\mu_j>}
 
-    where <..,.> is the scalar product of two vectors.
+    where `<., .>` is the scalar product of two vectors.
 
     For an input of n spike trains, an n x n matrix is returned.
     Each entry in the matrix is a real number ranging between -1 (perfectly
@@ -389,11 +389,24 @@ def corrcoef(binned_sts, binary=False, fast=True):
 
 
 def _covariance_sparse(binned_sts, corrcoef_norm):
-    """
+    r"""
     Memory efficient helper function for `covariance()` and `corrcoef()`
     that performs the complete calculation for either the covariance
     (`corrcoef_norm=False`) or correlation coefficient (`corrcoef_norm=True`).
     Both calculations differ only by the denominator.
+
+    For any two `BinnedSpikeTrain`s :math:`\hat{b_x}` and :math:`\hat{b_y}`
+    with mean :math:`\vec{\mu_x}` and :math:`\vec{mu_y}` respectively
+    computes the dot product
+
+    .. math::
+        <\hat{b_x} - \vec{\mu_x}, \hat{b_y} - \vec{\mu_y}>_{ij} =
+            (\hat{b_x} \cdot \hat{b_y}^T)_{ij} -
+            \frac{(\vec{N_x}^T \cdot \vec{N_y})_{ij}}{L}
+
+    where :math:`N_x^i = \sum_j{b_x^{ij}}` - the number of spikes in `i`th row
+    of :math:`\hat{b_x}`, :math:`L` - the number of bins, and
+    :math:`\vec{\mu_x} = \frac{\vec{N_x}}{L}`.
 
     Parameters
     ----------
