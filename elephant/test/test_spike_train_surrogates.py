@@ -319,12 +319,12 @@ class SurrogatesTestCase(unittest.TestCase):
         dither = 10 * pq.ms
 
         # Test fast version
-        joint_isi_instance = surr.JointISI(st, n_surr=n_surr, dither=dither)
-        surrs = joint_isi_instance.dithering()
+        joint_isi_instance = surr.JointISI(st, dither=dither)
+        surrs = joint_isi_instance.dithering(n_surr=n_surr)
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
-        self.assertEqual(joint_isi_instance._method, 'fast')
+        self.assertEqual(joint_isi_instance.method, 'fast')
 
         for surrog in surrs:
             self.assertIsInstance(surrog, neo.SpikeTrain)
@@ -334,26 +334,14 @@ class SurrogatesTestCase(unittest.TestCase):
             self.assertEqual(len(surrog), len(st))
 
         # Test window_version
-        joint_isi_instance.update_parameters(method='window',
-                                             dither=2*dither,
-                                             num_bins=50)
-        surrs = joint_isi_instance.dithering()
+        joint_isi_instance = surr.JointISI(method='window',
+                                           dither=2*dither,
+                                           num_bins=50)
+        surrs = joint_isi_instance.dithering(n_surr=n_surr)
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
-        self.assertEqual(joint_isi_instance._method, 'window')
-
-        for surrog in surrs:
-            self.assertIsInstance(surrog, neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
-
-        # Test function wrapper
-        surrs = surr.joint_isi_dithering(st, n=n_surr, dither=dither)
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), n_surr)
+        self.assertEqual(joint_isi_instance.method, 'window')
 
         for surrog in surrs:
             self.assertIsInstance(surrog, neo.SpikeTrain)
@@ -381,105 +369,6 @@ class SurrogatesTestCase(unittest.TestCase):
 
         surrog = surr.JointISI(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
-
-    def test_update_class_parameters(self):
-        rate = 100. * pq.Hz
-        t_stop = 1. * pq.s
-        np.random.seed(0)
-        st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
-        n_surr = 2
-        dither = 10 * pq.ms
-
-        joint_isi_instance = surr.JointISI(st, n_surr=n_surr, dither=dither)
-
-        old_jisih = joint_isi_instance._jisih
-
-        # Set Minimal number of spikes higher than spikes in spiketrain (107)
-        joint_isi_instance.update_parameters(min_spikes=200)
-        self.assertEqual(joint_isi_instance._to_less_spikes, True)
-
-        new_n_surr = 4
-        new_dither = 15. * pq.ms
-        new_truncation_limit = 120 * pq.ms
-        new_num_bins = 120
-        new_sigma = 5. * pq.ms
-        new_alternate = 2
-        new_use_sqrt = True
-        new_cutoff = False
-        new_expected_refr_period = 0.0001 * pq.ms
-        unit = st.units
-
-        joint_isi_instance.update_parameters(
-            min_spikes=4,
-            n_surr=new_n_surr,
-            dither=new_dither,
-            truncation_limit=new_truncation_limit,
-            num_bins=new_num_bins,
-            sigma=new_sigma,
-            alternate=new_alternate,
-            use_sqrt=new_use_sqrt,
-            cutoff=new_cutoff,
-            expected_refr_period=new_expected_refr_period)
-
-        self.assertEqual(joint_isi_instance._to_less_spikes, False)
-        self.assertEqual(joint_isi_instance._n_surr, new_n_surr)
-        self.assertEqual(
-            joint_isi_instance._dither,
-            new_dither.rescale(unit).magnitude)
-        self.assertEqual(
-            joint_isi_instance._truncation_limit,
-            new_truncation_limit.rescale(unit).magnitude)
-        self.assertEqual(joint_isi_instance._num_bins, new_num_bins)
-        self.assertEqual(
-            joint_isi_instance._bin_width,
-            new_truncation_limit.rescale(unit).magnitude/new_num_bins)
-        self.assertEqual(
-            joint_isi_instance._sigma,
-            new_sigma.rescale(unit).magnitude)
-        self.assertEqual(joint_isi_instance._sampling_rhythm, new_alternate+1)
-        self.assertEqual(joint_isi_instance._use_sqrt, new_use_sqrt)
-        self.assertEqual(joint_isi_instance._cutoff, new_cutoff)
-        self.assertEqual(
-            joint_isi_instance._refr_period,
-            new_expected_refr_period.rescale(unit).magnitude)
-
-        self.assertNotEqual(
-            old_jisih.shape[0],
-            joint_isi_instance._jisih.shape[0])
-
-        # Check that a square root is applied to the Joint-ISI histogram.
-        joint_isi_instance.update_parameters(sigma=0.*pq.ms)
-        self.assertEqual(joint_isi_instance._sigma, 0.)
-        jisih_with_sqrt = joint_isi_instance._jisih
-
-        joint_isi_instance.update_parameters(use_sqrt=False)
-
-        jisih_without_sqrt = joint_isi_instance._jisih
-
-        epsilon = 0.05
-        self.assertEqual(
-            np.all(np.abs(jisih_with_sqrt - np.sqrt(jisih_without_sqrt))
-                   < epsilon),
-            True)
-
-        # Check if it sets the refr period to the least isi.
-        high_expected_refr_period = 1.*pq.s
-        joint_isi_instance.update_parameters(
-            expected_refr_period=high_expected_refr_period)
-
-        self.assertNotEqual(joint_isi_instance._refr_period,
-                            high_expected_refr_period.rescale(unit).magnitude)
-        self.assertEqual(joint_isi_instance._refr_period,
-                         np.min(joint_isi_instance._isi))
-
-        with self.assertRaises(ValueError):
-            joint_isi_instance.update_parameters(method='non existing method')
-
-        # do this error check also for initializing the calss
-
-        with self.assertRaises(ValueError):
-            surr.JointISI(st, n_surr=n_surr, dither=dither,
-                          method='non existing method')
 
 
 def suite():
