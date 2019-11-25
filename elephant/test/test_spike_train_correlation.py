@@ -570,7 +570,8 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             method='memory')
 
         self.assertEqual(np.any(np.not_equal(cch, cch_corrected)), True)
-        self.assertEqual(np.any(np.not_equal(cch_mem, cch_corrected_mem)), True)
+        self.assertEqual(np.any(np.not_equal(cch_mem, cch_corrected_mem)),
+                         True)
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
@@ -646,7 +647,7 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
 
         # test for TA = PB = 1 but TB /= PA /= 1 and vice versa
         st3 = neo.SpikeTrain([1, 5, 9], units='ms', t_stop=10.)
-        target2 = 1./3.
+        target2 = 1. / 3.
         self.assertAlmostEqual(target2, sc.sttc(st3, st2,
                                                 0.003 * pq.s))
         self.assertAlmostEqual(target2, sc.sttc(st2, st3,
@@ -673,16 +674,16 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         [1] Lindner, B. (2009). A brief introduction to some simple stochastic
             processes. Stochastic Methods in Neuroscience, 1.
         '''
-        nu = 25/pq.s
-        T = 15*pq.min
-        binsize = 1*pq.ms
-        timescale = 1 / (4*nu)
+        nu = 25 / pq.s
+        T = 15 * pq.min
+        binsize = 1 * pq.ms
+        timescale = 1 / (4 * nu)
 
         timescale_num = []
         for _ in range(10):
-            spikes = homogeneous_gamma_process(2, 2*nu, 0*pq.ms, T)
+            spikes = homogeneous_gamma_process(2, 2 * nu, 0 * pq.ms, T)
             spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
-            timescale_i = sc.spike_train_timescale(spikes_bin, 10*timescale)
+            timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
             timescale_i.units = timescale.units
             timescale_num.append(timescale_i.magnitude)
         target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
