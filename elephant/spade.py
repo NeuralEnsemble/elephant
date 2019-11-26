@@ -569,10 +569,12 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         first bin of the first window position for the second neuron.
     """
     # Initialization of the outputs
+    # TODO: Include sparse representation for the binary matrix
     context = []
     transactions = []
     # Shape of the rel_matrix:
     # (num of window positions, num of bins in one window * number of neurons)
+    # TODO: moving the last window until the last bin.
     shape = (
         binary_matrix.shape[1] - winlen + 1,
         binary_matrix.shape[0] * winlen)
@@ -700,7 +702,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     if max_c is None:
         max_c = len(transactions)
     if min_neu >= 1:
-        # Inizializing outputs
+        # Initializing outputs
         concepts = []
         if report == '#':
             spec_matrix = np.zeros((max_z + 1, max_c + 1))
