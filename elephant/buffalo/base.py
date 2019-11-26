@@ -176,6 +176,12 @@ class Analysis(object):
         if params is None:
             params = dict()
 
+        # Check that the analysis parameters were passed, and store them in `_input_parameters`
+        if not isinstance(params, dict):
+            raise BuffaloWrongParametersDictionary("The analysis parameters must be passed as a dictionary in the "
+                                                   "'params' keyed argument")
+        self._input_parameters = deepcopy(params)
+
         # Check required class attributes are present
         if not (isinstance(self.name, str) and len(self.name)):
             raise BuffaloImplementationError("Must define 'name' attribute with non-empty string")
@@ -192,12 +198,6 @@ class Analysis(object):
             raise BuffaloImplementationError("'_required_params' class variable must be 'tuple'")
         if not isinstance(self._required_types, dict):
             raise BuffaloImplementationError("'_required_types' class variable must be 'dict'")
-
-        # Check that the analysis parameters were passed, and store them in `_input_parameters`
-        if not isinstance(params, dict):
-            raise BuffaloWrongParametersDictionary("The analysis parameters must be passed as a dictionary in the "
-                                                   "'params' keyed argument")
-        self._input_parameters = deepcopy(params)
 
         # Verify that analysis parameters are present and valid.
         # This is a type validation, not value validation.
@@ -280,7 +280,7 @@ class Analysis(object):
                     raise ValueError(f"Values for dictionary item '{key}' must be passed as a tuple")
                 if type(value) not in self._required_types[key]:
                     raise TypeError(f"Parameter '{key}' should be one of: "
-                                    ', '.join(map(str, self._required_types[key])))
+                                    f"{', '.join(map(str, self._required_types[key]))}")
 
     def _validate_parameters(self):
         """
