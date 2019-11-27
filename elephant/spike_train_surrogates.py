@@ -647,8 +647,7 @@ class JointISI(object):
     def isi(self):
         if self.to_less_spikes:
             return None
-        else:
-            return isi(self.spiketrain.magnitude)
+        return isi(self.spiketrain.magnitude)
 
     @property
     def dither(self):
