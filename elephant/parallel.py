@@ -41,8 +41,8 @@ class parallel_context():
         self.comm_size = self.comm.Get_size()
 
         # Save ranks for slaves
-        if not worker_ranks:
-            self.worker_ranks = range(1, self.comm_size)
+        if worker_ranks is None:
+            self.worker_ranks = set(range(1, self.comm_size))
         else:
             worker_ranks = set(worker_ranks)
             if (len(worker_ranks) > self.comm_size-1 or
@@ -61,7 +61,7 @@ class parallel_context():
 
         # If this is the master node or any node not in the current
         # communicator, continue with main program. Otherwise start a worker.
-        if self.rank in worker_ranks:
+        if self.rank in self.worker_ranks:
             self.__run_worker()
 
     def terminate(self):
@@ -93,7 +93,7 @@ class parallel_context():
 
 
 def main():
-    pc = parallel_context(worker_ranks=[1, 2, 3])
+    pc = parallel_context()
     print("%s, %i" % (pc.rank_name, pc.comm_size))
 
     s = [elephant.spike_train_generation.homogeneous_poisson_process(
