@@ -599,10 +599,10 @@ class JointISI(object):
             Default: 4.*pq.ms
         """
         self.spiketrain = spiketrain
-        self.dither = dither
         self.truncation_limit = truncation_limit
-        self.sigma = sigma
         self.num_bins = num_bins
+        self.dither = dither
+        self.sigma = sigma
         self.alternate = alternate
         self.method = method
         self.refr_period = refr_period
