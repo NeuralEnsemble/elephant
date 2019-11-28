@@ -383,9 +383,8 @@ class Analysis(object):
 
         Returns
         -------
-            object, None
-                Value of the parameter.
-                None if the parameter is not found in the `_input_parameters` dictionary.
+            Value of the parameter.
+            None if the parameter is not found in the `_input_parameters` dictionary.
         """
         if parameter in self.input_parameters:
             return self.input_parameters[parameter]
