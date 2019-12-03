@@ -50,7 +50,7 @@ class ParallelContext():
 
         # Save ranks for slaves
         if worker_ranks is None:
-            self.worker_ranks = set(range(1, self.comm_size))
+            self.worker_ranks = range(1, self.comm_size)
         else:
             worker_ranks = set(worker_ranks)
             if (len(worker_ranks) > self.comm_size-1 or
@@ -59,7 +59,7 @@ class ParallelContext():
                 raise ValueError(
                     "Elements of worker_ranks must be >0 and <N, "
                     "where N is the communicator size.")
-            self.worker_ranks = worker_ranks
+            self.worker_ranks = list(worker_ranks).sort()
         
         # Save number of workers
         self.num_workers = len(self.worker_ranks)
@@ -95,32 +95,31 @@ class ParallelContext():
         """
         # Shut down workers
         for worker in self.worker_ranks:
-            req = self.parallel_context.comm.isend(
-                self.handler, worker, tag=MPI_TERM_WORKER)
+            req = self.comm.isend(
+                0, worker, tag=MPI_TERM_WORKER)
             req.wait()
 
     def __run_worker(self):
         keep_working = True
         
         while keep_working:
-            # Await a handler function
-            incoming = self.comm.iprobe(source=0, tag=MPI.ANY_TAG)
-            if incoming.tag() == MPI_SEND_HANDLER:
+            if self.comm.iprobe(source=0, tag=MPI_SEND_HANDLER):
+                # Await a handler function
                 req = self.comm.irecv(source=0, tag=MPI_SEND_HANDLER)
                 handler = req.wait()
-    
+
                 # Await data
                 req = self.comm.irecv(source=0, tag=MPI_SEND_INPUT)
                 data = req.wait()
-    
+
                 # Execute handler
                 handler.worker(data)
-    
+
                 # Report back that we are done
-    #             req = self.parallel_context.comm.isend(
-    #                 0, 0, tag=MPI_WORKER_DONE)
-    #             req.wait()
-            elif incoming.tag() == MPI_TERM_WORKER:
+                req = self.comm.isend(
+                    True, 0, tag=MPI_WORKER_DONE)
+                req.wait()
+            elif self.comm.iprobe(source=0, tag=MPI_TERM_WORKER):
                 keep_working = False
 
         sys.exit(0)
@@ -135,37 +134,43 @@ class JobQ:
         self.handler = handler
 
     def execute(self):
-#         # Send handler to all processes
-#         for i in range(self.parallel_context.comm_size-1):
-#             req = self.parallel_context.comm.isend(
-#                 self.handler, i+1, tag=MPI_SEND_HANDLER)
-#             req.wait()
-
         # Save status of each worker
         worker_busy = [False for _ in range(self.parallel_context.num_workers)]
 
         # Send all spike trains
-        while len(self.spiketrain_list) > 0:
+        while len(self.spiketrain_list) > 0 or True not in worker_busy:
             if False in worker_busy:
-                available_worker = worker_busy.index(False)
+                idle_worker_index = worker_busy.index(False)
+                idle_worker = self.parallel_context.worker_ranks[
+                    idle_worker_index]
 
                 next = self.spiketrain_list.pop()
 
                 # Send handler
                 req = self.parallel_context.comm.isend(
-                    self.handler, available_worker+1, tag=MPI_SEND_HANDLER)
+                    self.handler, idle_worker, tag=MPI_SEND_HANDLER)
                 req.wait()
 
                 # Send data
                 req = self.parallel_context.comm.isend(
-                    next, available_worker+1, tag=MPI_SEND_INPUT)
+                    next, idle_worker, tag=MPI_SEND_INPUT)
                 req.wait()
 
-                worker_busy[available_worker] = True
+                worker_busy[idle_worker_index] = True
+                # TODO: Remove
+                # print("%i loaded" % (idle_worker))
 
-#             # Completing worker?
-#             req = self.comm.irecv(source=0, tag=MPI_WORKER_DONE)
-
+            # Any completing worker?
+            for worker_index, worker in enumerate(
+                    self.parallel_context.worker_ranks):
+                if self.parallel_context.comm.iprobe(
+                        source=worker, tag=MPI_WORKER_DONE):
+                    req = self.parallel_context.comm.irecv(
+                        source=worker, tag=MPI_WORKER_DONE)
+                    _ = req.wait()
+                    worker_busy[worker_index] = False
+                    # TODO: Remove
+                    # print("%i complete" % (worker))
 
 class JobQHandlers():
     def __init__(self):
@@ -190,7 +195,7 @@ def main():
     # Create a list of spike trains, one per worker
     s = [elephant.spike_train_generation.homogeneous_poisson_process(
         10*pq.Hz, t_start=0*pq.s, t_stop=20*pq.s)
-        for _ in range(pc.comm_size-1)]
+        for _ in range(10)] #range(pc.comm_size-1)]
 
     # Create a new queue operating on the current context
     handler = JobQSpikeTrainListHandler()
@@ -198,12 +203,8 @@ def main():
     new_q = JobQ(pc)
     new_q.add_spiketrain_list_job(s, handler)
     new_q.execute()
-    
-    # Send one spike train to each worker, tag=11
-#     for i in range(pc.comm_size-1):
-#         req = pc.comm.isend(s[i], i+1, tag=11)
-#         req.wait()
 
+    # Send one spike train to each worker, tag=11
     pc.terminate()
 
 
