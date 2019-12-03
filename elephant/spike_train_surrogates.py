@@ -627,7 +627,7 @@ class JointISI(object):
         return x
 
     @property
-    def to_less_spikes(self):
+    def too_less_spikes(self):
         """
         This is a check if the spiketrain has enough spikes to evaluate the
         joint-ISI histogram. With a default value of 4. There need to be at
@@ -645,7 +645,7 @@ class JointISI(object):
 
     @property
     def isi(self):
-        if self.to_less_spikes:
+        if self.too_less_spikes:
             return None
         return isi(self.spiketrain.magnitude)
 
@@ -692,7 +692,7 @@ class JointISI(object):
     @refr_period.setter
     def refr_period(self, refr_period):
         refr_period = self.get_magnitude(refr_period)
-        if not self.to_less_spikes:
+        if not self.too_less_spikes:
             minimal_isi = np.min(self.isi)
             refr_period = min(refr_period, minimal_isi)
         self._refr_period = refr_period
@@ -777,7 +777,7 @@ class JointISI(object):
         """
         This function calculates the joint-ISI histogram.
         """
-        if self.to_less_spikes:
+        if self.too_less_spikes:
             return None
         isis = self.isi
         joint_isi_histogram = np.histogram2d(isis[:-1], isis[1:],
@@ -862,7 +862,7 @@ class JointISI(object):
             list of spiketrains, that are dithered versions of the given
             spiketrain
         """
-        if self.to_less_spikes:
+        if self.too_less_spikes:
             return [self.spiketrain] * n_surr
 
         if not self._system_up_to_date:
