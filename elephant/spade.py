@@ -57,6 +57,7 @@ plt.show()
 :license: BSD, see LICENSE.txt for details.
 """
 import numpy as np
+from scipy import sparse
 import neo
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
@@ -484,7 +485,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the data and clipping (binary matrix)
-    binary_matrix = conv.BinnedSpikeTrain(data, binsize).to_bool_array()
+    binary_matrix = conv.BinnedSpikeTrain(data,
+                                          binsize).to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
@@ -569,40 +571,67 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         first bin of the first window position for the second neuron.
     """
     # Initialization of the outputs
-    # TODO: Include sparse representation for the binary matrix
     context = []
     transactions = []
-    # Shape of the rel_matrix:
-    # (num of window positions, num of bins in one window * number of neurons)
-    # TODO: moving the last window until the last bin.
-    shape = (
-        binary_matrix.shape[1] - winlen + 1,
-        binary_matrix.shape[0] * winlen)
-    rel_matrix = np.zeros(shape)
+    num_neurons, num_bins = binary_matrix.shape
+    indices = np.argsort(binary_matrix.col)
+    binary_matrix.row = binary_matrix.row[indices]
+    binary_matrix.col = binary_matrix.col[indices]
+    if only_windows_with_first_spike:
+        # out of all window positions
+        # get all non-empty first bins
+        window_indices = np.unique(binary_matrix.col)
+        windows_row = []
+        windows_col = []
+        for window_idx in window_indices:
+            for col in range(window_idx, window_idx + winlen):
+                if col in binary_matrix.col:
+                    nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
+                    windows_col.extend(binary_matrix.row[nonzero_indices] * winlen
+                                       + (col - window_idx))
+                    windows_row.extend([window_idx] * len(nonzero_indices))
+        # Shape of the rel_matrix:
+        # (num of window positions, num of bins in one window * number of neurons)
+        num_windows = window_indices.shape[0]
+        rel_matrix = sparse.coo_matrix((np.ones((len(windows_col)), dtype=bool),
+                                       (windows_row, windows_col)),
+                                       shape=(num_bins, winlen * num_neurons),
+                                       dtype=bool).A
+    else:
+        window_indices = np.arange(num_bins - winlen + 1)
+        windows_row = []
+        windows_col = []
+        for window_idx in window_indices:
+            for col in range(window_idx, window_idx + winlen):
+                if col in binary_matrix.col:
+                    nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
+                    windows_col.append(binary_matrix.row[nonzero_indices] * winlen
+                                       + (col - window_idx))
+                    windows_row.extend([window_idx] * len(nonzero_indices))
+        # Shape of the rel_matrix:
+        # (num of window positions, num of bins in one window * number of neurons)
+        num_windows = window_indices.shape[0]
+        rel_matrix = sparse.coo_matrix((np.ones((len(windows_col)), dtype=bool),
+                                       (windows_row, windows_col)),
+                                       shape=(num_windows, winlen * num_neurons),
+                                       dtype=bool).A
     # Array containing all the possible attributes (each spike is indexed by
     # a number equal to neu idx*winlen + bin_idx)
     attributes = np.array(
-        [s * winlen + t for s in range(len(binary_matrix))
+        [s * winlen + t for s in range(binary_matrix.shape[0])
          for t in range(winlen)])
     # Building context and rel_matrix
     # Looping all the window positions w
-    for w in range(binary_matrix.shape[1] - winlen + 1):
+    for w in window_indices:
         # spikes in the current window
-        current_window = binary_matrix[:, w:w + winlen]
-        # only keep windows that start with a spike
-        if only_windows_with_first_spike and np.add.reduce(
-                current_window[:, 0]) == 0:
-            continue
-        # concatenating horizontally the boolean arrays of spikes
-        times = current_window.flatten()
+        times = rel_matrix[w]
+        current_transactions = attributes[times]
         # adding to the context the window positions and the correspondent
         # attributes (spike idx) (fast_fca input)
-        context += [(w, a) for a in attributes[times]]
-        # placing in the w row of the rel matrix the boolean array of spikes
-        rel_matrix[w, :] = times
+        context += [(w, a) for a in current_transactions]
         # appending to the transactions spike idx (fast_fca input) of the
         # current window (fpgrowth input)
-        transactions.append(list(attributes[times]))
+        transactions.append(list(current_transactions))
     # Return context and rel_matrix
     return context, transactions, rel_matrix
 
