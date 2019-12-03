@@ -14,6 +14,7 @@ MPI_SEND_HANDLER = 1
 MPI_SEND_INPUT = 2
 MPI_SEND_OUTPUT = 3
 MPI_WORKER_DONE = 4
+MPI_TERM_WORKER = 5
 
 
 # TODO: Rename as stampede?
@@ -92,26 +93,35 @@ class ParallelContext():
             will be used.
             Default: None
         """
-        # TODO: Shut down workers
-        pass
+        # Shut down workers
+        for worker in self.worker_ranks:
+            req = self.parallel_context.comm.isend(
+                self.handler, worker, tag=MPI_TERM_WORKER)
+            req.wait()
 
     def __run_worker(self):
-        while True:
+        keep_working = True
+        
+        while keep_working:
             # Await a handler function
-            req = self.comm.irecv(source=0, tag=MPI_SEND_HANDLER)
-            handler = req.wait()
-
-            # Await data
-            req = self.comm.irecv(source=0, tag=MPI_SEND_INPUT)
-            data = req.wait()
-
-            # Execute handler
-            handler.worker(data)
-
-            # Report back that we are done
-#             req = self.parallel_context.comm.isend(
-#                 0, 0, tag=MPI_WORKER_DONE)
-#             req.wait()
+            incoming = self.comm.iprobe(source=0, tag=MPI.ANY_TAG)
+            if incoming.tag() == MPI_SEND_HANDLER:
+                req = self.comm.irecv(source=0, tag=MPI_SEND_HANDLER)
+                handler = req.wait()
+    
+                # Await data
+                req = self.comm.irecv(source=0, tag=MPI_SEND_INPUT)
+                data = req.wait()
+    
+                # Execute handler
+                handler.worker(data)
+    
+                # Report back that we are done
+    #             req = self.parallel_context.comm.isend(
+    #                 0, 0, tag=MPI_WORKER_DONE)
+    #             req.wait()
+            elif incoming.tag() == MPI_TERM_WORKER:
+                keep_working = False
 
         sys.exit(0)
 
@@ -123,7 +133,7 @@ class JobQ:
     def add_spiketrain_list_job(self, spiketrain_list, handler):
         self.spiketrain_list = spiketrain_list
         self.handler = handler
-        
+
     def execute(self):
 #         # Send handler to all processes
 #         for i in range(self.parallel_context.comm_size-1):
@@ -193,6 +203,8 @@ def main():
 #     for i in range(pc.comm_size-1):
 #         req = pc.comm.isend(s[i], i+1, tag=11)
 #         req.wait()
+
+    pc.terminate()
 
 
 if __name__ == "__main__":
