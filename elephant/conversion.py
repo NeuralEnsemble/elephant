@@ -13,6 +13,7 @@ An example is the representation of a spike train as a sequence of 0-1 values
 from __future__ import division, print_function
 
 import warnings
+from copy import deepcopy
 
 import neo
 import numpy as np
@@ -492,7 +493,7 @@ class BinnedSpikeTrain(object):
         """
         # Check if num_bins is an integer (special case)
         if num_bins is not None:
-            if not isinstance(num_bins, int):
+            if not np.issubdtype(type(num_bins), int):
                 raise TypeError("num_bins is not an integer!")
         # Check if all parameters can be calculated, otherwise raise ValueError
         if t_start is None:
@@ -777,7 +778,7 @@ class BinnedSpikeTrain(object):
         scipy.sparse.csr_matrix
         scipy.sparse.csr_matrix.toarray
         """
-        return abs(scipy.sign(self.to_array())).astype(bool)
+        return self.to_array().astype(bool)
 
     def to_array(self, store_array=False):
         """
@@ -832,16 +833,46 @@ class BinnedSpikeTrain(object):
         """
         Unlinks the matrix with counted time points from memory.
 
+    def binarize(self):
         """
         self._mat_u = None
 
-    def binarize(self):
+    def binarize(self, copy=True):
         """
-        In-place clipping the internal array to have 0 or 1 values.
+        Clip the internal array (no. of spikes in a bin) to have `0` or `1`
+        values only.
+
+        Parameters
+        ----------
+        copy : bool
+            Make the clipping in-place (False) or with a copy (True).
+            Default is True.
+
+        Returns
+        -------
+        bst : BinnedSpikeTrain
+            Binarized `BinnedSpikeTrain`.
+
         """
-        self._sparse_mat_u.data.clip(max=1, out=self._sparse_mat_u.data)
-        if self._mat_u is not None:
-            self._mat_u.clip(max=1, out=self._mat_u)
+        if copy:
+            bst = deepcopy(self)
+        else:
+            bst = self
+        bst._sparse_mat_u.data.clip(max=1, out=bst._sparse_mat_u.data)
+        if bst._mat_u is not None:
+            bst._mat_u.clip(max=1, out=bst._mat_u)
+        return bst
+
+    @property
+    def sparsity(self):
+        """
+        Returns
+        -------
+        float
+            Matrix sparsity, defined as matrix size, divided by no. of
+            nonzero elements.
+        """
+        return np.prod(self._sparse_mat_u.shape) / len(self._sparse_mat_u.data)
 
     def _convert_to_binned(self, spiketrains):
         """
