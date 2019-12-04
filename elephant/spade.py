@@ -57,10 +57,13 @@ plt.show()
 :license: BSD, see LICENSE.txt for details.
 """
 import numpy as np
+from scipy import sparse
+import operator
 import neo
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
 from itertools import chain, combinations
+from functools import reduce
 import time
 import quantities as pq
 import warnings
@@ -369,6 +372,18 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                                      l=psr_param[2],
                                                      min_spikes=min_spikes,
                                                      min_occ=min_occ)
+                else:
+                    # if no pattern set reduction is performed
+                    # filter out subsets of patterns that are found as a side-effect
+                    # of using the moving window strategy
+                    concepts = _filter_for_moving_window_subsets(concepts, winlen)
+
+        else:
+            # if no pattern set reduction is performed
+            # filter out subsets of patterns that are found as a side-effect
+            # of using the moving window strategy
+            concepts = _filter_for_moving_window_subsets(concepts, winlen)
+
         # Storing patterns
         if output_format == 'patterns':
             # If the p-value spectra was not computed, is set to an empty list
@@ -484,7 +499,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the data and clipping (binary matrix)
-    binary_matrix = conv.BinnedSpikeTrain(data, binsize).to_bool_array()
+    binary_matrix = conv.BinnedSpikeTrain(data,
+                                          binsize).to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
@@ -568,40 +584,67 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         first bin of the first window position for the second neuron.
     """
     # Initialization of the outputs
-    # TODO: Include sparse representation for the binary matrix
     context = []
     transactions = []
-    # Shape of the rel_matrix:
-    # (num of window positions, num of bins in one window * number of neurons)
-    # TODO: moving the last window until the last bin.
-    shape = (
-        binary_matrix.shape[1] - winlen + 1,
-        binary_matrix.shape[0] * winlen)
-    rel_matrix = np.zeros(shape)
+    num_neurons, num_bins = binary_matrix.shape
+    indices = np.argsort(binary_matrix.col)
+    binary_matrix.row = binary_matrix.row[indices]
+    binary_matrix.col = binary_matrix.col[indices]
+    if only_windows_with_first_spike:
+        # out of all window positions
+        # get all non-empty first bins
+        window_indices = np.unique(binary_matrix.col)
+        windows_row = []
+        windows_col = []
+        for window_idx in window_indices:
+            for col in range(window_idx, window_idx + winlen):
+                if col in binary_matrix.col:
+                    nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
+                    windows_col.extend(binary_matrix.row[nonzero_indices] * winlen
+                                       + (col - window_idx))
+                    windows_row.extend([window_idx] * len(nonzero_indices))
+        # Shape of the rel_matrix:
+        # (num of window positions, num of bins in one window * number of neurons)
+        num_windows = window_indices.shape[0]
+        rel_matrix = sparse.coo_matrix((np.ones((len(windows_col)), dtype=bool),
+                                       (windows_row, windows_col)),
+                                       shape=(num_bins, winlen * num_neurons),
+                                       dtype=bool).A
+    else:
+        window_indices = np.arange(num_bins - winlen + 1)
+        windows_row = []
+        windows_col = []
+        for window_idx in window_indices:
+            for col in range(window_idx, window_idx + winlen):
+                if col in binary_matrix.col:
+                    nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
+                    windows_col.append(binary_matrix.row[nonzero_indices] * winlen
+                                       + (col - window_idx))
+                    windows_row.extend([window_idx] * len(nonzero_indices))
+        # Shape of the rel_matrix:
+        # (num of window positions, num of bins in one window * number of neurons)
+        num_windows = window_indices.shape[0]
+        rel_matrix = sparse.coo_matrix((np.ones((len(windows_col)), dtype=bool),
+                                       (windows_row, windows_col)),
+                                       shape=(num_windows, winlen * num_neurons),
+                                       dtype=bool).A
     # Array containing all the possible attributes (each spike is indexed by
     # a number equal to neu idx*winlen + bin_idx)
     attributes = np.array(
-        [s * winlen + t for s in range(len(binary_matrix))
+        [s * winlen + t for s in range(binary_matrix.shape[0])
          for t in range(winlen)])
     # Building context and rel_matrix
     # Looping all the window positions w
-    for w in range(binary_matrix.shape[1] - winlen + 1):
+    for w in window_indices:
         # spikes in the current window
-        current_window = binary_matrix[:, w:w + winlen]
-        # only keep windows that start with a spike
-        if only_windows_with_first_spike and np.add.reduce(
-                current_window[:, 0]) == 0:
-            continue
-        # concatenating horizontally the boolean arrays of spikes
-        times = current_window.flatten()
+        times = rel_matrix[w]
+        current_transactions = attributes[times]
         # adding to the context the window positions and the correspondent
         # attributes (spike idx) (fast_fca input)
-        context += [(w, a) for a in attributes[times]]
-        # placing in the w row of the rel matrix the boolean array of spikes
-        rel_matrix[w, :] = times
+        context += [(w, a) for a in current_transactions]
         # appending to the transactions spike idx (fast_fca input) of the
         # current window (fpgrowth input)
-        transactions.append(list(attributes[times]))
+        transactions.append(list(current_transactions))
     # Return context and rel_matrix
     return context, transactions, rel_matrix
 
@@ -726,7 +769,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             lambda c: _fpgrowth_filter(
                 c, winlen, max_c, min_neu), fpgrowth_output))
         for (intent, supp) in fpgrowth_output:
-            # TODO: Remove subset occurring in different window positions
             if report == 'a':
                 if rel_matrix is not None:
                     # Computing the extent of the concept (patterns
@@ -771,6 +813,77 @@ def _fpgrowth_filter(concept, winlen, max_c, min_neu):
             concept[0]) // winlen)) >= min_neu and concept[1] <= max_c and min(
                 np.array(concept[0]) % winlen) == 0
     return keep_concepts
+
+
+def _rereference_to_last_spike(transactions, winlen):
+    """
+    Converts transactions from the default format
+    neu_idx * winlen + bin_idx (relative to window start)
+    into the format
+    neu_idx * winlen + bin_idx (relative to last spike)
+    """
+    len_transactions = len(transactions)
+    neurons = np.zeros(len_transactions, dtype=int)
+    bins = np.zeros(len_transactions, dtype=int)
+
+    # extract neuron and bin indices
+    for idx, attribute in enumerate(transactions):
+        neurons[idx] = attribute // winlen
+        bins[idx] = attribute % winlen
+
+    # rereference bins to last spike
+    bins = bins.max() - bins
+
+    # calculate converted transactions
+    converted_transactions = neurons * winlen + bins
+
+    return converted_transactions
+
+
+def _filter_for_moving_window_subsets(concepts, winlen):
+    """
+    Since we're using a moving window subpatterns starting from
+    subsequent spikes after the first pattern spike will also be found.
+    This filter removes them if they do not occur on their own in
+    addition to the occurrences explained by their superset.
+    Uses a reverse map with a set representation.
+    """
+    # don't do anything if the input list is empty
+    if not len(concepts):
+        return concepts
+
+    # sort the concepts by (decreasing) support
+    concepts.sort(key=lambda c: -len(c[1]))
+
+    support = np.array([len(c[1]) for c in concepts])
+
+    # convert transactions relative to last pattern spike
+    converted_transactions = [_rereference_to_last_spike(c[0],
+                                                         winlen=winlen)
+                              for c in concepts]
+
+    output = []
+
+    for current_support in np.unique(support):
+        support_indices = np.nonzero(support == current_support)[0]
+
+        # construct reverse map
+        reverse_map = {}
+        for map_idx, i in enumerate(support_indices):
+            for window_bin in converted_transactions[i]:
+                try:
+                    reverse_map[window_bin].add(map_idx)
+                except KeyError:
+                    reverse_map[window_bin] = set((map_idx,))
+
+        for i in support_indices:
+            intersection = reduce(operator.and_,
+                                  (reverse_map[window_bin]
+                                   for window_bin in converted_transactions[i]))
+            if len(intersection) == 1:
+                output.append(concepts[i])
+
+    return output
 
 
 def _fast_fca(context, min_c=2, min_z=2, max_z=None,
@@ -862,9 +975,6 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     for fca_concept in fca_concepts:
         intent = tuple(fca_concept.intent)
         extent = tuple(fca_concept.extent)
-        supp = len(extent)
-        # TODO: Remove subset occurring in different window positions
-
         concepts.append((intent, extent))
         # computing spectrum
         if report == '#':
