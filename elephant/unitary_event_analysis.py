@@ -21,6 +21,7 @@ References:
 
 import sys
 import warnings
+from functools import wraps
 
 import neo
 import numpy as np
@@ -32,6 +33,7 @@ from elephant.utils import is_binary
 
 
 def decorate_deprecated_N(func):
+    @wraps(func)
     def decorated_func(*args, **kwargs):
         N = None
         if 'N' in kwargs:
@@ -107,8 +109,7 @@ def hash_from_pattern(m, base=2):
 
     # generate the representation
     # don't use numpy - it's upperbounded by int64
-    powers = np.array([base ** x for x in range(n_neurons)])
-    powers = sorted(powers, reverse=True)
+    powers = [base ** x for x in range(n_neurons)][::-1]
 
     # calculate the binary number by use of scalar product
     return np.dot(powers, m)
