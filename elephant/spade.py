@@ -343,7 +343,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if rank == 0:
         # Decide whether filter concepts with psf
         if n_surr > 0:
-            if len(pv_spec) == 0:
+            if not pv_spec:
                 ns_sgnt = []
             else:
                 # Computing non-significant entries of the spectrum applying
@@ -355,7 +355,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             # Storing non-significant entries of the pvalue spectrum
             output['non_sgnf_sgnt'] = ns_sgnt
             # Filter concepts with pvalue spectrum (psf)
-            if len(ns_sgnt) != 0:
+            if ns_sgnt:
                 concepts = list(filter(
                     lambda c: _pattern_spectrum_filter(
                         c, ns_sgnt, spectrum, winlen), concepts))
@@ -513,23 +513,22 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             report=report)
         return mining_results, rel_matrix
     # Otherwise use fast_fca python implementation
-    else:
-        warnings.warn(
-            'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
-            'in elephant/spade_src folder, or not compatible with this ' +
-            'Python version. You are using the pure Python implementation ' +
-            'of fast fca.')
-        # Return output
-        mining_results = _fast_fca(
-            context,
-            min_c=min_occ,
-            min_z=min_spikes,
-            max_z=max_spikes,
-            max_c=max_occ,
-            winlen=winlen,
-            min_neu=min_neu,
-            report=report)
-        return mining_results, rel_matrix
+    warnings.warn(
+        'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
+        'in elephant/spade_src folder, or not compatible with this ' +
+        'Python version. You are using the pure Python implementation ' +
+        'of fast fca.')
+    # Return output
+    mining_results = _fast_fca(
+        context,
+        min_c=min_occ,
+        min_z=min_spikes,
+        max_z=max_spikes,
+        max_c=max_occ,
+        winlen=winlen,
+        min_neu=min_neu,
+        report=report)
+    return mining_results, rel_matrix
 
 
 def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
@@ -1312,7 +1311,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         size = 1
     if n_subsets <= 0 and delta + epsilon <= 0:
         raise AttributeError('n_subsets has to be >=0 or delta + epsilon > 0')
-    if len(concepts) == 0:
+    if not concepts:
         return []
     elif len(concepts) <= size:
         rank_idx = [0] * (size + 1) + [len(concepts)]
@@ -1538,8 +1537,7 @@ def _give_random_idx(r_unique, n):
     if r_tuple not in r_unique:
         r_unique.add(r_tuple)
         return np.unique(r)
-    else:
-        return _give_random_idx(r_unique, n)
+    return _give_random_idx(r_unique, n)
 
 
 def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
@@ -1644,7 +1642,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         - count2 + h < min_occ:
                     selected[id1] = False
                     break
-                if len(excluded) == 0:
+                if not excluded:
                     break
                 # Test the case conc1 is a superset of conc2
                 if set(conc1_new).issuperset(conc2):
@@ -1848,9 +1846,8 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             spectrum = '#'
     else:
         if spectrum is None:
-            if len(pvalue_spectrum) == 0:
+            if not pvalue_spectrum:
                 spectrum = '#'
-                pass
             elif len(pvalue_spectrum[0]) == 4:
                 spectrum = '3d#'
             elif len(pvalue_spectrum[0]) == 3:
