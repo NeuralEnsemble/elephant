@@ -128,12 +128,12 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         normalized = elephant.signal_processing.pairwise_cross_correlation(
             signal, [0, 1], scaleopt='coeff'
         )
-        sig1, sig2 = signal.T
+        sig1, sig2 = signal.magnitude.T
         target_numpy = np.correlate(sig1, sig2, mode="same")
         target_numpy /= np.sqrt((sig1 ** 2).sum() * (sig2 ** 2).sum())
         target_numpy = np.expand_dims(target_numpy, axis=1)
         assert_array_almost_equal(normalized.magnitude,
-                                  target_numpy.magnitude,
+                                  target_numpy,
                                   decimal=3)
 
     def test_cross_correlation_coeff_autocorr(self):
