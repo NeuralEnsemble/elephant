@@ -11,22 +11,22 @@ import unittest
 
 import neo
 import numpy as np
+import quantities as pq
 import scipy.signal as spsig
 import scipy.stats
-from numpy.testing.utils import assert_array_almost_equal
-import quantities as pq
-import elephant.signal_processing
 from numpy.ma.testutils import assert_array_equal, assert_allclose
+from numpy.testing.utils import assert_array_almost_equal
+
+import elephant.signal_processing
 
 
-class XCorrelationTestCase(unittest.TestCase):
-
+class PairwiseCrossCorrelationTest(unittest.TestCase):
     # Set parameters
-    sampling_period = 0.02*pq.s
-    sampling_rate = 1./sampling_period
+    sampling_period = 0.02 * pq.s
+    sampling_rate = 1. / sampling_period
     n_samples = 2018
-    time = np.arange(n_samples)*sampling_period
-    freq = 1.*pq.Hz
+    times = np.arange(n_samples) * sampling_period
+    freq = 1. * pq.Hz
 
     def test_cross_correlation_freqs(self):
         '''
@@ -35,19 +35,23 @@ class XCorrelationTestCase(unittest.TestCase):
         E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
         '''
         freq_arr = np.linspace(0.5, 15, 8) * pq.Hz
-        signal = np.zeros((self.n_samples, 2))
+        signal = np.zeros((self.n_samples, 3))
         for freq in freq_arr:
-            signal[:, 0] = np.sin(2.*np.pi*freq*self.time)
-            signal[:, 1] = np.cos(2.*np.pi*freq*self.time)
+            signal[:, 0] = np.sin(2. * np.pi * freq * self.times)
+            signal[:, 1] = np.cos(2. * np.pi * freq * self.times)
+            signal[:, 2] = np.cos(2. * np.pi * freq * self.times + 0.2)
             # Convert signal to neo.AnalogSignal
-            signal_neo = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
-                                      sampling_rate=self.sampling_rate,
-                                      dtype=float)
-            rho = elephant.signal_processing.cross_correlation_function(
-                signal_neo, [0, 1])
+            signal_neo = neo.AnalogSignal(signal, units='mV',
+                                          t_start=0. * pq.ms,
+                                          sampling_rate=self.sampling_rate,
+                                          dtype=float)
+            rho = elephant.signal_processing.pairwise_cross_correlation(
+                signal_neo, [[0, 1], [0, 2]])
             # Cross-correlation of sine and cosine should be sine
             assert_array_almost_equal(
-                rho.magnitude[:, 0], np.sin(2.*np.pi*freq*rho.times), decimal=2)
+                rho.magnitude[:, 0], np.sin(2. * np.pi * freq * rho.times),
+                decimal=2)
+            self.assertEqual(rho.shape, (signal.shape[0], 2))  # 2 pairs
 
     def test_cross_correlation_nlags(self):
         '''
@@ -55,13 +59,13 @@ class XCorrelationTestCase(unittest.TestCase):
         '''
         nlags = 30
         signal = np.zeros((self.n_samples, 2))
-        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
-        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        rho = elephant.signal_processing.cross_correlation_function(
+        rho = elephant.signal_processing.pairwise_cross_correlation(
             signal, [0, 1], nlags=nlags)
         # Test if vector of lags tau has correct length
         assert len(rho.times) == 2*int(nlags)+1
@@ -72,36 +76,77 @@ class XCorrelationTestCase(unittest.TestCase):
         '''
         phi = np.pi/6.
         signal = np.zeros((self.n_samples, 2))
-        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time+phi)
-        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times + phi)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        rho = elephant.signal_processing.cross_correlation_function(
+        rho = elephant.signal_processing.pairwise_cross_correlation(
             signal, [0, 1])
         # Cross-correlation of sine and cosine should be sine + phi
         assert_array_almost_equal(
             rho.magnitude[:, 0], np.sin(2.*np.pi*self.freq*rho.times+phi),
             decimal=2)
 
-    def test_cross_correlation_env(self):
+    def test_cross_correlation_envelope(self):
         '''
         Envelope of sine vs cosine
         '''
         # Sine with phase shift phi vs cosine for different frequencies
         nlags = 800 # nlags need to be smaller than N/2 b/c border effects
         signal = np.zeros((self.n_samples, 2))
-        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
-        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        env = elephant.signal_processing.cross_correlation_function(
+        envelope = elephant.signal_processing.pairwise_cross_correlation(
             signal, [0, 1], nlags=nlags, env=True)
         # Envelope should be one for sinusoidal function
-        assert_array_almost_equal(env, np.ones_like(env), decimal=2)
+        assert_array_almost_equal(envelope, np.ones_like(envelope), decimal=2)
+
+    def test_cross_correlation_biased(self):
+        signal = np.c_[np.sin(2. * np.pi * self.freq * self.times),
+                       np.cos(2. * np.pi * self.freq * self.times)] * pq.mV
+        signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate)
+        raw = elephant.signal_processing.pairwise_cross_correlation(
+            signal, [0, 1], scaleopt='none'
+        )
+        biased = elephant.signal_processing.pairwise_cross_correlation(
+            signal, [0, 1], scaleopt='biased'
+        )
+        assert_array_almost_equal(biased, raw / biased.shape[0])
+
+    def test_cross_correlation_coeff(self):
+        signal = np.c_[np.sin(2. * np.pi * self.freq * self.times),
+                       np.cos(2. * np.pi * self.freq * self.times)] * pq.mV
+        signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate)
+        normalized = elephant.signal_processing.pairwise_cross_correlation(
+            signal, [0, 1], scaleopt='coeff'
+        )
+        sig1, sig2 = signal.T
+        target_numpy = np.correlate(sig1, sig2, mode="same")
+        target_numpy /= np.sqrt((sig1 ** 2).sum() * (sig2 ** 2).sum())
+        target_numpy = np.expand_dims(target_numpy, axis=1)
+        assert_array_almost_equal(normalized.magnitude,
+                                  target_numpy.magnitude,
+                                  decimal=3)
+
+    def test_cross_correlation_coeff_autocorr(self):
+        # Numpy/Matlab equivalent
+        signal = np.sin(2. * np.pi * self.freq * self.times)
+        signal = signal[:, np.newaxis] * pq.mV
+        signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate)
+        normalized = elephant.signal_processing.pairwise_cross_correlation(
+            signal, [0, 0], scaleopt='coeff'
+        )
+        # auto-correlation at zero lag should equal 1
+        self.assertAlmostEqual(normalized[normalized.shape[0] // 2], 1)
 
 
 class ZscoreTestCase(unittest.TestCase):

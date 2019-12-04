@@ -8,11 +8,14 @@ signal, or filtering a signal).
 '''
 
 from __future__ import division, print_function
-import numpy as np
-import scipy.signal
-import quantities as pq
+
+import warnings
+
 import neo
+import numpy as np
 import numpy.matlib as npm
+import quantities as pq
+import scipy.signal
 
 
 def zscore(signal, inplace=True):
@@ -46,7 +49,8 @@ def zscore(signal, inplace=True):
 
     Returns
     -------
-    neo.AnalogSignal or list of neo.AnalogSignal
+    neo.AnalogSignal or list
+        Or list of AnalogSignals.
         The output format matches the input format: for each supplied
         AnalogSignal object a corresponding object is returned containing
         the z-transformed signal with the unit dimensionless.
@@ -139,44 +143,67 @@ def zscore(signal, inplace=True):
         return result
 
 
-def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
-
-    """
-    Computes unbiased estimator of the cross-correlation function.
-
-    Calculates the unbiased estimator of the cross-correlation function [1]_
+def pairwise_cross_correlation(signal, ch_pairs, env=False, nlags=None,
+                               scaleopt='unbiased'):
+    r"""
+    Calculates the pairwise cross-correlation estimate of `signal[ch_pairs]`
+    [1]_.
 
     .. math::
-             R(\\tau) = \\frac{1}{N-|k|} R'(\\tau) \\ ,
+             R_{xy}(\tau) = \frac{1}{normalizer} \left<x(t),y(t+\tau)\right>
 
-    where :math:`R'(\\tau) = \\left<x(t)y(t+\\tau)\\right>` in a pairwise
-    manner, i.e. `signal[ch_pairs[0,0]]` vs `signal2[ch_pairs[0,1]]`,
-    `signal[ch_pairs[1,0]]` vs `signal2[ch_pairs[1,1]]`, and so on. The
-    cross-correlation function is obtained by `scipy.signal.fftconvolve`.
-    Time series in signal are zscored beforehand. Alternatively returns the
-    Hilbert envelope of :math:`R(\\tau)`, which is useful to determine the
+    :math:`R_{xy}(\tau)` is calculated in a pairwise manner, i.e.
+    `signal[ch_pairs[0,0]]` vs `signal[ch_pairs[0,1]]`,
+    `signal[ch_pairs[1,0]]` vs `signal[ch_pairs[1,1]]`, and so on.
+    The input time series are z-scored beforehand. `scaleopt` controls the
+    choice of :math:`R_{xy}(\tau)` normalizer. Alternatively, returns the
+    Hilbert envelope of :math:`R_{xy}(\tau)`, which is useful to determine the
     correlation length of oscillatory signals.
 
     Parameters
-    -----------
-    signal : neo.AnalogSignal (`nt` x `nch`)
-        Signal with nt number of samples that contains nch LFP channels
-    ch_pairs : list (or array with shape `(n,2)`)
-        list with n channel pairs for which to compute cross-correlation,
+    ----------
+    signal : neo.AnalogSignal
+        Shape: `[nt, nch]`
+        Signal with `nt` number of samples that contains `nch` LFP channels
+    ch_pairs : np.ndarray or list
+        Shape: `[n, 2]`
+        List with `n` channel pairs for which to compute cross-correlation,
         each element of list must contain 2 channel indices
-    env : bool
+    env : bool, optional
         Return Hilbert envelope of cross-correlation function
         Default: False
-    nlags : int
-        Defines number of lags for cross-correlation function. Float will be
-        rounded to nearest integer. Number of samples of output is `2*nlags+1`.
-        If None, number of samples of output is equal to number of samples of
-        input signal, namely `nt`
+    nlags : int, optional
+        Defines the number of lags for the cross-correlation function. The
+        number of output samples is `2*nlags+1`. If `None`, the number of
+        output samples is equal to the number of input samples, namely `nt`.
         Default: None
+    scaleopt : {'none', 'biased', 'unbiased', 'normalized', 'coeff'}, optional
+        Normalization option, equivalent to matlab `xcorr(..., scaleopt)`.
+        Specified as one of the following.
+        * 'none': raw, unscaled cross-correlation :math:`R_{xy}(\tau)`.
+        * 'biased': biased estimate of the cross-correlation:
+
+        .. math::
+            R_{xy,biased}(\tau) = \frac{1}{N} R_{xy}(\tau)
+
+        * 'unbiased': unbiased estimate of the cross-correlation:
+
+        .. math::
+            R_{xy,unbiased}(\tau) = \frac{1}{N-\tau) R_{xy}{\tau)
+
+        * 'normalized' or 'coeff': normalizes the sequence so that the
+           autocorrelations at zero lag equal 1:
+
+        .. math::
+            R_{xy,coeff}(\tau) = \frac{1}{\sqrt{R_{xx}(0) R_{yy}(0)}
+                                 R_{xy}(\tau)
+
+        Default: 'unbiased'
 
     Returns
     -------
-    cross_corr : neo.AnalogSignal (`2*nlag+1` x `n`)
+    cross_corr : neo.AnalogSignal
+        Shape: `[2*nlags+1, n]`
         Pairwise cross-correlation functions for channel pairs given by
         `ch_pairs`. If `env=True`, the output is the Hilbert envelope of the
         pairwise cross-correlation function. This is helpful to compute the
@@ -185,13 +212,15 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
     Raises
     ------
     ValueError
-        If the input signal is not a neo.AnalogSignal.
+        If the input signal is not an object of `neo.AnalogSignal`.
     ValueError
         If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
-    KeyError
-        If keyword `env` is not a boolean.
-    KeyError
-        If `nlags` is not an integer or float larger than 0.
+    ValueError
+        If `env` is not a boolean.
+    ValueError
+        If `nlags` is not a positive integer.
+    ValueError
+        If `scaleopt` is not one of the predefined above keywords.
 
     Examples
     --------
@@ -215,71 +244,81 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
 
     References
     ----------
-    .. [1] Hall & River (2009) "Spectral Analysis of Signals, Spectral Element
-       Method in Structural Dynamics", Eq. 2.2.3
+    .. [1] Stoica, P., & Moses, R. (2005). Spectral Analysis of Signals.
+       Prentice Hall. Retrieved from http://user.it.uu.se/~ps/SAS-new.pdf,
+       Eq. 2.2.3.
     """
 
     # Make ch_pairs a 2D array
-    pairs = np.array(ch_pairs)
+    pairs = np.asarray(ch_pairs)
     if pairs.ndim == 1:
-        pairs = pairs[:, np.newaxis]
+        pairs = np.expand_dims(pairs, axis=0)
 
     # Check input
     if not isinstance(signal, neo.AnalogSignal):
-        raise ValueError('Input signal is not a neo.AnalogSignal!')
-    if np.shape(pairs)[1] != 2:
-        pairs = pairs.T
-    if np.shape(pairs)[1] != 2:
-        raise ValueError('ch_pairs is not a list of channel pair indices.'\
+        raise ValueError('Input signal must be of type neo.AnalogSignal')
+    if pairs.shape[1] != 2:
+        raise ValueError('`ch_pairs` is not a list of channel pair indices. '
                          'Cannot define pairs for cross-correlation.')
     if not isinstance(env, bool):
-        raise KeyError('env is not a boolean!')
+        raise ValueError('`env` must be a boolean value')
     if nlags is not None:
-        if not isinstance(nlags, (int, float)):
-            raise KeyError('nlags must be an integer or float larger than 0!')
-        if nlags <= 0:
-            raise KeyError('nlags must be an integer or float larger than 0!')
+        if not isinstance(nlags, int) or nlags <= 0:
+            raise ValueError('nlags must be a non-negative integer')
 
     # z-score analog signal and store channel time series in different arrays
     # Cross-correlation will be calculated between xsig and ysig
-    xsig = np.array([zscore(signal).magnitude[:, pair[0]] \
-        for pair in pairs]).T
-    ysig = np.array([zscore(signal).magnitude[:, pair[1]] \
-        for pair in pairs]).T
+    z_transformed = zscore(signal, inplace=False).magnitude
+    # transpose (nch, xy, nt) -> (xy, nt, nch)
+    xsig, ysig = np.transpose(z_transformed.T[pairs], (1, 2, 0))
 
     # Define vector of lags tau
-    nt, nch = np.shape(xsig)
-    tau = (np.arange(nt) - nt//2)
+    nt, nch = xsig.shape
+    tau = np.arange(nt) - nt // 2
 
     # Calculate cross-correlation by taking Fourier transform of signal,
     # multiply in Fourier space, and transform back. Correct for bias due
     # to zero-padding
-    xcorr = np.zeros((nt, nch))
-    for i in range(nch):
-        xcorr[:, i] = scipy.signal.fftconvolve(xsig[:, i], ysig[::-1, i],
-                                               mode='same')
-    xcorr = xcorr / npm.repmat((nt-abs(tau)), nch, 1).T
+    xcorr = scipy.signal.fftconvolve(xsig, ysig[::-1], mode='same', axes=0)
+    if scaleopt == 'biased':
+        xcorr /= nt
+    elif scaleopt == 'unbiased':
+        normalizer = np.expand_dims(nt - np.abs(tau), axis=1)
+        xcorr /= normalizer
+    elif scaleopt in ('normalized', 'coeff'):
+        normalizer = np.sqrt((xsig ** 2).sum(axis=0) * (ysig ** 2).sum(axis=0))
+        xcorr /= normalizer
+    elif scaleopt != 'none':
+        raise ValueError("Invalid scaleopt mode: '{}'".format(scaleopt))
 
     # Calculate envelope of cross-correlation function with Hilbert transform.
     # This is useful for transient oscillatory signals.
     if env:
-        for i in range(nch):
-            xcorr[:, i] = np.abs(scipy.signal.hilbert(xcorr[:, i]))
+        xcorr = np.abs(scipy.signal.hilbert(xcorr, axis=0))
 
-    # Cut off lags outside desired range
+    # Cut off lags outside the desired range
     if nlags is not None:
-        nlags = int(np.round(nlags))
-        tau0 = int(np.argwhere(tau == 0))
-        xcorr = xcorr[tau0-nlags:tau0+nlags+1, :]
+        tau0 = np.argwhere(tau == 0).item()
+        xcorr = xcorr[tau0 - nlags: tau0 + nlags + 1, :]
 
     # Return neo.AnalogSignal
     cross_corr = neo.AnalogSignal(xcorr,
                                   units='',
-                                  t_start=np.min(tau)*signal.sampling_period,
-                                  t_stop=np.max(tau)*signal.sampling_period,
+                                  t_start=tau[0]*signal.sampling_period,
+                                  t_stop=tau[-1]*signal.sampling_period,
                                   sampling_rate=signal.sampling_rate,
                                   dtype=float)
     return cross_corr
+
+
+def cross_correlation_function(*args, **kwargs):
+    # The name 'cross_correlation_function' is ambiguous and clashes with
+    # 'cross_correlation_histogram()' and 'corrcoef()' functions in
+    # spike_train_correlation.py
+    warnings.warn("'cross_correlation_function()' is deprecated. "
+                  "Use 'pairwise_cross_correlation()' instead.",
+                  DeprecationWarning)
+    return pairwise_cross_correlation(*args, **kwargs)
 
 
 def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
