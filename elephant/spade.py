@@ -58,10 +58,12 @@ plt.show()
 """
 import numpy as np
 from scipy import sparse
+import operator
 import neo
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
 from itertools import chain, combinations
+from functools import reduce
 import time
 import quantities as pq
 import warnings
@@ -370,6 +372,18 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                                      l=psr_param[2],
                                                      min_spikes=min_spikes,
                                                      min_occ=min_occ)
+                else:
+                    # if no pattern set reduction is performed
+                    # filter out subsets of patterns that are found as a side-effect
+                    # of using the moving window strategy
+                    concepts = _filter_for_moving_window_subsets(concepts, winlen)
+
+        else:
+            # if no pattern set reduction is performed
+            # filter out subsets of patterns that are found as a side-effect
+            # of using the moving window strategy
+            concepts = _filter_for_moving_window_subsets(concepts, winlen)
+
         # Storing patterns
         if output_format == 'patterns':
             # If the p-value spectra was not computed, is set to an empty list
@@ -756,7 +770,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             lambda c: _fpgrowth_filter(
                 c, winlen, max_c, min_neu), fpgrowth_output))
         for (intent, supp) in fpgrowth_output:
-            # TODO: Remove subset occurring in different window positions
             if report == 'a':
                 if rel_matrix is not None:
                     # Computing the extent of the concept (patterns
@@ -801,6 +814,77 @@ def _fpgrowth_filter(concept, winlen, max_c, min_neu):
             concept[0]) // winlen)) >= min_neu and concept[1] <= max_c and min(
                 np.array(concept[0]) % winlen) == 0
     return keep_concepts
+
+
+def _rereference_to_last_spike(transactions, winlen):
+    """
+    Converts transactions from the default format
+    neu_idx * winlen + bin_idx (relative to window start)
+    into the format
+    neu_idx * winlen + bin_idx (relative to last spike)
+    """
+    len_transactions = len(transactions)
+    neurons = np.zeros(len_transactions, dtype=int)
+    bins = np.zeros(len_transactions, dtype=int)
+
+    # extract neuron and bin indices
+    for idx, attribute in enumerate(transactions):
+        neurons[idx] = attribute // winlen
+        bins[idx] = attribute % winlen
+
+    # rereference bins to last spike
+    bins = bins.max() - bins
+
+    # calculate converted transactions
+    converted_transactions = neurons * winlen + bins
+
+    return converted_transactions
+
+
+def _filter_for_moving_window_subsets(concepts, winlen):
+    """
+    Since we're using a moving window subpatterns starting from
+    subsequent spikes after the first pattern spike will also be found.
+    This filter removes them if they do not occur on their own in
+    addition to the occurrences explained by their superset.
+    Uses a reverse map with a set representation.
+    """
+    # don't do anything if the input list is empty
+    if not len(concepts):
+        return concepts
+
+    # sort the concepts by (decreasing) support
+    concepts.sort(key=lambda c: -len(c[1]))
+
+    support = np.array([len(c[1]) for c in concepts])
+
+    # convert transactions relative to last pattern spike
+    converted_transactions = [_rereference_to_last_spike(c[0],
+                                                         winlen=winlen)
+                              for c in concepts]
+
+    output = []
+
+    for current_support in np.unique(support):
+        support_indices = np.nonzero(support == current_support)[0]
+
+        # construct reverse map
+        reverse_map = {}
+        for map_idx, i in enumerate(support_indices):
+            for window_bin in converted_transactions[i]:
+                try:
+                    reverse_map[window_bin].add(map_idx)
+                except KeyError:
+                    reverse_map[window_bin] = set((map_idx,))
+
+        for i in support_indices:
+            intersection = reduce(operator.and_,
+                                  (reverse_map[window_bin]
+                                   for window_bin in converted_transactions[i]))
+            if len(intersection) == 1:
+                output.append(concepts[i])
+
+    return output
 
 
 def _fast_fca(context, min_c=2, min_z=2, max_z=None,
@@ -892,9 +976,6 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     for fca_concept in fca_concepts:
         intent = tuple(fca_concept.intent)
         extent = tuple(fca_concept.extent)
-        supp = len(extent)
-        # TODO: Remove subset occurring in different window positions
-
         concepts.append((intent, extent))
         # computing spectrum
         if report == '#':
