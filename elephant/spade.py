@@ -346,7 +346,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if rank == 0:
         # Decide whether filter concepts with psf
         if n_surr > 0:
-            if len(pv_spec) == 0:
+            if not pv_spec:
                 ns_sgnt = []
             else:
                 # Computing non-significant entries of the spectrum applying
@@ -358,7 +358,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             # Storing non-significant entries of the pvalue spectrum
             output['non_sgnf_sgnt'] = ns_sgnt
             # Filter concepts with pvalue spectrum (psf)
-            if len(ns_sgnt) != 0:
+            if ns_sgnt:
                 concepts = list(filter(
                     lambda c: _pattern_spectrum_filter(
                         c, ns_sgnt, spectrum, winlen), concepts))
@@ -529,23 +529,22 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             report=report)
         return mining_results, rel_matrix
     # Otherwise use fast_fca python implementation
-    else:
-        warnings.warn(
-            'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
-            'in elephant/spade_src folder, or not compatible with this ' +
-            'Python version. You are using the pure Python implementation ' +
-            'of fast fca.')
-        # Return output
-        mining_results = _fast_fca(
-            context,
-            min_c=min_occ,
-            min_z=min_spikes,
-            max_z=max_spikes,
-            max_c=max_occ,
-            winlen=winlen,
-            min_neu=min_neu,
-            report=report)
-        return mining_results, rel_matrix
+    warnings.warn(
+        'Optimized C implementation of FCA (fim.so/fim.pyd) not found ' +
+        'in elephant/spade_src folder, or not compatible with this ' +
+        'Python version. You are using the pure Python implementation ' +
+        'of fast fca.')
+    # Return output
+    mining_results = _fast_fca(
+        context,
+        min_c=min_occ,
+        min_z=min_spikes,
+        max_z=max_spikes,
+        max_c=max_occ,
+        winlen=winlen,
+        min_neu=min_neu,
+        report=report)
+    return mining_results, rel_matrix
 
 
 def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
@@ -1172,8 +1171,8 @@ def _fdr(pvalues, alpha):
 
     Parameters
     ----------
-    pvalues: list
-        list of p-values, each corresponding to a statistical test
+    pvalues: numpy.ndarray
+        array of p-values, each corresponding to a statistical test
     alpha: float
         significance level (desired FDR-ratio)
 
@@ -1190,23 +1189,22 @@ def _fdr(pvalues, alpha):
     """
 
     # Sort the p-values from largest to smallest
-    pvs_array = np.array(pvalues)              # Convert PVs to an array
-    pvs_sorted = np.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
+    pvs_sorted = np.sort(pvalues)[::-1]  # Sort PVs in decreasing order
 
     # Perform FDR on the sorted p-values
     m = len(pvalues)
-    stop = False  # check whether the loop stopped due to a significant p-value
-    for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
-        if pv > alpha * ((m - i) * 1. / m):  # continue if PV > fdr-threshold
-            pass
-        else:
-            stop = True
-            break                          # otherwise stop
 
-    thresh = alpha * ((m - i - 1 + stop) * 1. / m)
+    for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
+        k = m - i
+        if pv <= alpha * (k * 1. / m):  # continue if PV > fdr-threshold
+            break                          # otherwise stop
+    # this applies, when loop is not stopped due to significant pvalue
+    else:
+        k = 0
+    thresh = alpha * (k * 1. / m)
 
     # Return outcome of the test, critical p-value and its order
-    return pvalues <= thresh, thresh, m - i - 1 + stop
+    return pvalues <= thresh, thresh, k
 
 
 def _holm_bonferroni(pvalues, alpha):
@@ -1294,7 +1292,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     elif corr in ['b', 'bonf']:  # or with Bonferroni correction
         tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
     elif corr in ['f', 'fdr']:  # or with FDR correction
-        tests, pval, rank = _fdr(x_array[:, -1], alpha=alpha)
+        tests = _fdr(x_array[:, -1], alpha=alpha)[0]
     elif corr in ['hb', 'holm_bonf']:
         tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
@@ -1313,6 +1311,9 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
             return [
                 (size, supp) for ((size, supp, pv), test) in zip(
                     pvalue_spectrum, tests) if not test]
+        raise AttributeError("report must be either 'spectrum'," +
+                             "  'significant' or 'non_significant'," +
+                             "got {} instead".format(report))
     elif spectrum == '3d#':
         if report == 'spectrum':
             return [(size, supp, l, test)
@@ -1325,10 +1326,11 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
             return [
                 (size, supp, l) for ((size, supp, l, pv), test) in zip(
                     pvalue_spectrum, tests) if not test]
-    else:
         raise AttributeError("report must be either 'spectrum'," +
                              "  'significant' or 'non_significant'," +
                              "got {} instead".format(report))
+    raise AttributeError("spectrum must be either '#' or '3d#', "
+                         "got {} instead".format(spectrum))
 
 
 def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
@@ -1422,7 +1424,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         size = 1
     if n_subsets <= 0 and delta + epsilon <= 0:
         raise AttributeError('n_subsets has to be >=0 or delta + epsilon > 0')
-    if len(concepts) == 0:
+    if not concepts:
         return []
     elif len(concepts) <= size:
         rank_idx = [0] * (size + 1) + [len(concepts)]
@@ -1648,8 +1650,7 @@ def _give_random_idx(r_unique, n):
     if r_tuple not in r_unique:
         r_unique.add(r_tuple)
         return np.unique(r)
-    else:
-        return _give_random_idx(r_unique, n)
+    return _give_random_idx(r_unique, n)
 
 
 def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
@@ -1754,7 +1755,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         - count2 + h < min_occ:
                     selected[id1] = False
                     break
-                if len(excluded) == 0:
+                if not excluded:
                     break
                 # Test the case conc1 is a superset of conc2
                 if set(conc1_new).issuperset(conc2):
@@ -1958,9 +1959,8 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             spectrum = '#'
     else:
         if spectrum is None:
-            if len(pvalue_spectrum) == 0:
+            if not pvalue_spectrum:
                 spectrum = '#'
-                pass
             elif len(pvalue_spectrum[0]) == 4:
                 spectrum = '3d#'
             elif len(pvalue_spectrum[0]) == 3:
