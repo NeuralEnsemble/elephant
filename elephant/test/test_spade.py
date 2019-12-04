@@ -28,7 +28,7 @@ class SpadeTestCase(unittest.TestCase):
         self.binsize = 1 * pq.ms
         self.winlen = 10
         self.n_subset = 10
-        self.n_surr = 10
+        self.n_surr = 100
         self.alpha = 0.05
         self.stability_thresh = [0.1, 0.1]
         self.psr_param = [0, 0, 0]
@@ -48,14 +48,14 @@ class SpadeTestCase(unittest.TestCase):
         self.n_occ3 = 15
         # Patterns lags
         self.lags1 = [2]
-        self.lags2 = [1, 2]
-        self.lags3 = [1, 2, 3, 4, 5]
+        self.lags2 = [1, 3]
+        self.lags3 = [1, 2, 4, 5, 7]
         # Length of the spiketrain
         self.t_stop = 3000
         # Patterns times
         self.patt1_times = neo.SpikeTrain(
             np.arange(
-                0, 1000, 1000 // self.n_occ1)[:-1] *
+                0, 1000, 1000 // self.n_occ1) *
             pq.ms, t_stop=self.t_stop * pq.ms)
         self.patt2_times = neo.SpikeTrain(
             np.arange(
@@ -273,7 +273,7 @@ class SpadeTestCase(unittest.TestCase):
     def test_fpgrowth_fca(self):
         print("fim.so is found.")
         binary_matrix = conv.BinnedSpikeTrain(
-            self.patt1, self.binsize).to_bool_array()
+            self.patt1, self.binsize).to_sparse_bool_array().tocoo()
         context, transactions, rel_matrix = spade._build_context(
             binary_matrix, self.winlen)
         # mining the data with python fast_fca
@@ -325,10 +325,10 @@ class SpadeTestCase(unittest.TestCase):
             self.winlen,
             min_spikes=self.min_spikes,
             n_subsets=self.n_subset,
-            n_surr=self.n_surr,
+            n_surr=0,
             spectrum='3d#',
-            alpha=self.alpha,
-            psr_param=self.psr_param,
+            alpha=0,
+            psr_param=None,
             output_format='patterns')['patterns']
         # collecting spade output
         elements_msip_min_spikes = []
@@ -360,6 +360,7 @@ class SpadeTestCase(unittest.TestCase):
         # collect spade output
         occ_msip_min_occ = []
         for out in output_msip_min_occ:
+            print(out)
             occ_msip_min_occ.append(list(out['times'].magnitude))
         occ_msip_min_occ = sorted(occ_msip_min_occ, key=lambda d: len(d))
         # test occurrences time
@@ -369,14 +370,14 @@ class SpadeTestCase(unittest.TestCase):
     # Test computation spectrum
     def test_spectrum(self):
         # test 2d spectrum
-        spectrum = spade.concepts_mining(self.patt3, self.binsize,
+        spectrum = spade.concepts_mining(self.patt1, self.binsize,
                                          self.winlen, report='#')[0]
         # test 3d spectrum
-        assert_array_equal(spectrum, [[len(self.lags3) + 1, self.n_occ3, 1]])
-        spectrum_3d = spade.concepts_mining(self.patt3, self.binsize,
+        assert_array_equal(spectrum, [[len(self.lags1) + 1, self.n_occ1, 1]])
+        spectrum_3d = spade.concepts_mining(self.patt1, self.binsize,
                                             self.winlen, report='3d#')[0]
         assert_array_equal(spectrum_3d, [
-            [len(self.lags3) + 1, self.n_occ3, max(self.lags3), 1]])
+            [len(self.lags1) + 1, self.n_occ1, max(self.lags1), 1]])
 
     def test_spade_raise_error(self):
         # Test list not using neo.Spiketrain
