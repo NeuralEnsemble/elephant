@@ -1061,8 +1061,8 @@ def _fdr(pvalues, alpha):
 
     Parameters
     ----------
-    pvalues: list
-        list of p-values, each corresponding to a statistical test
+    pvalues: numpy.ndarray
+        array of p-values, each corresponding to a statistical test
     alpha: float
         significance level (desired FDR-ratio)
 
@@ -1079,8 +1079,7 @@ def _fdr(pvalues, alpha):
     """
 
     # Sort the p-values from largest to smallest
-    pvs_array = np.array(pvalues)  # Convert PVs to an array
-    pvs_sorted = np.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
+    pvs_sorted = np.sort(pvalues)[::-1]  # Sort PVs in decreasing order
 
     # Perform FDR on the sorted p-values
     m = len(pvalues)
@@ -1095,7 +1094,7 @@ def _fdr(pvalues, alpha):
     thresh = alpha * (k * 1. / m)
 
     # Return outcome of the test, critical p-value and its order
-    return pvs_array <= thresh, thresh, k
+    return pvalues <= thresh, thresh, k
 
 
 def _holm_bonferroni(pvalues, alpha):
@@ -1183,7 +1182,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     elif corr in ['b', 'bonf']:  # or with Bonferroni correction
         tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
     elif corr in ['f', 'fdr']:  # or with FDR correction
-        tests, pval, rank = _fdr(x_array[:, -1], alpha=alpha)
+        tests = _fdr(x_array[:, -1], alpha=alpha)[0]
     elif corr in ['hb', 'holm_bonf']:
         tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
     else:
@@ -1202,6 +1201,9 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
             return [
                 (size, supp) for ((size, supp, pv), test) in zip(
                     pvalue_spectrum, tests) if not test]
+        raise AttributeError("report must be either 'spectrum'," +
+                             "  'significant' or 'non_significant'," +
+                             "got {} instead".format(report))
     elif spectrum == '3d#':
         if report == 'spectrum':
             return [(size, supp, l, test)
@@ -1214,10 +1216,11 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
             return [
                 (size, supp, l) for ((size, supp, l, pv), test) in zip(
                     pvalue_spectrum, tests) if not test]
-    else:
         raise AttributeError("report must be either 'spectrum'," +
                              "  'significant' or 'non_significant'," +
                              "got {} instead".format(report))
+    raise AttributeError("spectrum must be either '#' or '3d#', "
+                         "got {} instead".format(spectrum))
 
 
 def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
