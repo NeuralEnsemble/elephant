@@ -1079,23 +1079,23 @@ def _fdr(pvalues, alpha):
     """
 
     # Sort the p-values from largest to smallest
-    pvs_array = np.array(pvalues)              # Convert PVs to an array
+    pvs_array = np.array(pvalues)  # Convert PVs to an array
     pvs_sorted = np.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
 
     # Perform FDR on the sorted p-values
     m = len(pvalues)
-    stop = False  # check whether the loop stopped due to a significant p-value
-    for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
-        if pv > alpha * ((m - i) * 1. / m):  # continue if PV > fdr-threshold
-            pass
-        else:
-            stop = True
-            break                          # otherwise stop
 
-    thresh = alpha * ((m - i - 1 + stop) * 1. / m)
+    for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
+        k = m - i
+        if pv <= alpha * (k * 1. / m):  # continue if PV > fdr-threshold
+            break                          # otherwise stop
+    # this applies, when loop is not stopped due to significant pvalue
+    else:
+        k = 0
+    thresh = alpha * (k * 1. / m)
 
     # Return outcome of the test, critical p-value and its order
-    return pvalues <= thresh, thresh, m - i - 1 + stop
+    return pvs_array <= thresh, thresh, k
 
 
 def _holm_bonferroni(pvalues, alpha):
