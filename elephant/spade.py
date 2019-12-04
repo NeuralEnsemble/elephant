@@ -372,17 +372,6 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                                      l=psr_param[2],
                                                      min_spikes=min_spikes,
                                                      min_occ=min_occ)
-                else:
-                    # if no pattern set reduction is performed
-                    # filter out subsets of patterns that are found as a side-effect
-                    # of using the moving window strategy
-                    concepts = _filter_for_moving_window_subsets(concepts, winlen)
-
-        else:
-            # if no pattern set reduction is performed
-            # filter out subsets of patterns that are found as a side-effect
-            # of using the moving window strategy
-            concepts = _filter_for_moving_window_subsets(concepts, winlen)
 
         # Storing patterns
         if output_format == 'patterns':
@@ -768,6 +757,9 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         fpgrowth_output = list(filter(
             lambda c: _fpgrowth_filter(
                 c, winlen, max_c, min_neu), fpgrowth_output))
+        # filter out subsets of patterns that are found as a side-effect
+        # of using the moving window strategy
+        fpgrowth_output = _filter_for_moving_window_subsets(fpgrowth_output, winlen)
         for (intent, supp) in fpgrowth_output:
             if report == 'a':
                 if rel_matrix is not None:
@@ -852,15 +844,28 @@ def _filter_for_moving_window_subsets(concepts, winlen):
     if not len(concepts):
         return concepts
 
-    # sort the concepts by (decreasing) support
-    concepts.sort(key=lambda c: -len(c[1]))
+    if hasattr(concepts[0], 'intent'):
+        # fca format
+        # sort the concepts by (decreasing) support
+        concepts.sort(key=lambda c: -len(c.extent))
 
-    support = np.array([len(c[1]) for c in concepts])
+        support = np.array([len(c.extent) for c in concepts])
 
-    # convert transactions relative to last pattern spike
-    converted_transactions = [_rereference_to_last_spike(c[0],
-                                                         winlen=winlen)
-                              for c in concepts]
+        # convert transactions relative to last pattern spike
+        converted_transactions = [_rereference_to_last_spike(c.intent,
+                                                             winlen=winlen)
+                                  for c in concepts]
+    else:
+        # fim.fpgrowth format
+        # sort the concepts by (decreasing) support
+        concepts.sort(key=lambda c: -c[1])
+
+        support = np.array([c[1] for c in concepts])
+
+        # convert transactions relative to last pattern spike
+        converted_transactions = [_rereference_to_last_spike(c[0],
+                                                             winlen=winlen)
+                                  for c in concepts]
 
     output = []
 
@@ -971,6 +976,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     fca_concepts = list(filter(
         lambda c: _fca_filter(
             c, winlen, min_c, min_z, max_c, max_z, min_neu), fca_concepts))
+    fca_concepts = _filter_for_moving_window_subsets(fca_concepts, winlen)
     # Applying min/max conditions
     for fca_concept in fca_concepts:
         intent = tuple(fca_concept.intent)

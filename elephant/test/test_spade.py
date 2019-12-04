@@ -28,7 +28,7 @@ class SpadeTestCase(unittest.TestCase):
         self.binsize = 1 * pq.ms
         self.winlen = 10
         self.n_subset = 10
-        self.n_surr = 100
+        self.n_surr = 10
         self.alpha = 0.05
         self.stability_thresh = [0.1, 0.1]
         self.psr_param = [0, 0, 0]
@@ -325,10 +325,10 @@ class SpadeTestCase(unittest.TestCase):
             self.winlen,
             min_spikes=self.min_spikes,
             n_subsets=self.n_subset,
-            n_surr=0,
+            n_surr=self.n_surr,
             spectrum='3d#',
-            alpha=0,
-            psr_param=None,
+            alpha=self.alpha,
+            psr_param=self.psr_param,
             output_format='patterns')['patterns']
         # collecting spade output
         elements_msip_min_spikes = []
@@ -360,7 +360,6 @@ class SpadeTestCase(unittest.TestCase):
         # collect spade output
         occ_msip_min_occ = []
         for out in output_msip_min_occ:
-            print(out)
             occ_msip_min_occ.append(list(out['times'].magnitude))
         occ_msip_min_occ = sorted(occ_msip_min_occ, key=lambda d: len(d))
         # test occurrences time
