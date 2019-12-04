@@ -784,7 +784,9 @@ class JointISI(object):
         if self.too_less_spikes:
             return [self.spiketrain] * n_surr
 
-        self._determine_cumulative_functions()
+        # Checks, whether the preprocessing is already done.
+        if self._jisih_cumulatives is not None:
+            self._determine_cumulative_functions()
 
         dithered_sts = []
         isi_to_dither = self.isi
