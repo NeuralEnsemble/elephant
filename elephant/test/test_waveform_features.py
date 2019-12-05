@@ -19,6 +19,39 @@ from elephant import waveform_features
 python_version_major = sys.version_info.major
 
 
+class WaveformWidthTestCase(unittest.TestCase):
+    def setUp(self):
+        self.waveform = [29., 42., 41., 18., 24., 28., 34., 34., 9.,
+                         -31., -100., -145., -125., -88., -48., -18., 14., 36.,
+                         30., 33., -4., -25., -3., 30., 51., 47., 70.,
+                         76., 78., 57., 53., 49., 22., 15., 88., 109.,
+                         79., 68.]
+        self.target_width = 24
+
+    def test_list(self):
+        width = waveform_features.waveform_width(self.waveform)
+        self.assertEqual(width, self.target_width)
+
+    def test_np_array(self):
+        waveform = np.asarray(self.waveform)
+        width = waveform_features.waveform_width(waveform)
+        self.assertEqual(width, self.target_width)
+
+    def test_pq_quantity(self):
+        waveform = np.asarray(self.waveform) * pq.mV
+        width = waveform_features.waveform_width(waveform)
+        self.assertEqual(width, self.target_width)
+
+    def test_np_array_2d(self):
+        waveform = np.asarray(self.waveform)
+        waveform = np.vstack([waveform, waveform])
+        self.assertRaises(ValueError, waveform_features.waveform_width,
+                          waveform)
+
+    def test_empty_list(self):
+        self.assertRaises(ValueError, waveform_features.waveform_width, [])
+
+
 class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
     def setUp(self):
         self.spiketrain_without_waveforms = neo.SpikeTrain(

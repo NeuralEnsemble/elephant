@@ -9,9 +9,39 @@ Features of waveforms (e.g waveform_snr).
 from __future__ import division, print_function
 
 import numpy as np
-import quantities as pq
-import neo
 import warnings
+
+
+def waveform_width(waveform):
+    '''
+    Calculate the width (through-to-peak TTP) of a waveform.
+
+    Searches for an index of a minimum within first 3/4 of the waveform vector,
+    next for a maximum after the identified minimum, and returns the difference
+    between them.
+
+    Parameters
+    ----------
+    waveform : np.ndarray or list or pq.Quantity
+        Time course of a single waveform
+
+    Returns
+    -------
+    width : float
+        Width of a waveform expressed as a number of data points
+    '''
+    waveform = np.squeeze(waveform)
+    if np.ndim(waveform) != 1:
+        raise ValueError('Expected 1-dimensional waveform.')
+    if len(waveform) < 2:
+        raise ValueError('Too short waveform.')
+
+    min_border = int(len(waveform) * 3 / 4)
+    idxMin = np.argmin(waveform[:min_border])
+    idxMax = np.argmax(waveform[idxMin:]) + idxMin
+    width = idxMax - idxMin
+
+    return width
 
 
 def waveform_snr(spiketrain):
