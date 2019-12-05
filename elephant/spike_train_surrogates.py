@@ -43,7 +43,7 @@ import numpy as np
 import quantities as pq
 import neo
 from scipy.ndimage import gaussian_filter
-import math
+import random
 
 try:
     import elephant.statistics as es
@@ -133,7 +133,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-            spiketrain.t_stop.simplified.magnitude
+                        spiketrain.t_stop.simplified.magnitude
         surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
                 for s in surr.simplified.magnitude]
 
@@ -266,7 +266,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
         sts = []
         for i in range(n):
             surr_times = np.cumsum(np.random.permutation(ISIs)) * \
-                spiketrain.units + spiketrain.t_start
+                         spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
                 surr_times, t_start=spiketrain.t_start,
                 t_stop=spiketrain.t_stop))
@@ -363,7 +363,7 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-            spiketrain.t_stop.simplified.magnitude
+                        spiketrain.t_stop.simplified.magnitude
         surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
                 for s in surr.simplified.magnitude]
 
@@ -714,7 +714,7 @@ class JointISI(object):
             if self.cutoff:
                 start_index = self.isi_to_index(self.refr_period)
                 joint_isi_histogram[
-                    start_index:, start_index:] = gaussian_filter(
+                start_index:, start_index:] = gaussian_filter(
                     joint_isi_histogram[start_index:, start_index:],
                     sigma=self.sigma / self.bin_width)
                 joint_isi_histogram[:start_index, :] = 0
@@ -776,7 +776,7 @@ class JointISI(object):
             dithered_isi = self._get_dithered_isi(isi_to_dither)
 
             dithered_st = self.spiketrain[0].magnitude + \
-                np.r_[0., np.cumsum(dithered_isi)]
+                          np.r_[0., np.cumsum(dithered_isi)]
             dithered_st = neo.SpikeTrain(dithered_st * self.unit,
                                          t_start=self.spiketrain.t_start,
                                          t_stop=self.spiketrain.t_stop)
@@ -789,60 +789,62 @@ class JointISI(object):
         if self.method == 'fast':
             self._jisih_cumulatives = []
             for double_index in range(self.num_bins):
+                # Taking anti-diagonals of the original joint-ISI histogram
                 diagonal = np.diagonal(
                     rotated_jisih, offset=-self.num_bins + double_index + 1)
                 jisih_cum = self.normalize_cumulative_distribution(
                     np.cumsum(diagonal))
                 self._jisih_cumulatives.append(jisih_cum)
+            self._jisih_cumulatives = np.array(self._jisih_cumulatives)
         else:
             self._jisih_cumulatives = self._window_cumulatives(rotated_jisih)
 
-    def _window_cumulatives(self, flipped_jisih):
-        jisih_diag_cums = self._window_diagonal_cumulatives(flipped_jisih)
+    def _window_cumulatives(self, rotated_jisih):
+        jisih_diag_cums = self._window_diagonal_cumulatives(rotated_jisih)
         jisih_cumulatives = np.zeros(
             (self.num_bins, self.num_bins,
              2 * self.max_change_index + 1))
-        for back_index in range(self.num_bins):
-            for for_index in range(self.num_bins - back_index):
-                double_index = for_index + back_index
-                cum_slice = jisih_diag_cums[double_index,
-                                            back_index:
-                                            back_index +
-                                            2 * self.max_change_index + 1]
+        for curr_isi_id in range(self.num_bins):
+            for next_isi_id in range(self.num_bins - curr_isi_id):
+                double_index = next_isi_id + curr_isi_id
+                cum_slice = jisih_diag_cums[
+                    double_index,
+                    curr_isi_id: curr_isi_id + 2 * self.max_change_index + 1]
+
                 normalized_cum = self.normalize_cumulative_distribution(
                     cum_slice)
-                jisih_cumulatives[back_index][for_index] = normalized_cum
+                jisih_cumulatives[curr_isi_id][next_isi_id] = normalized_cum
         return jisih_cumulatives
 
-    def _window_diagonal_cumulatives(self, flipped_jisih):
+    def _window_diagonal_cumulatives(self, rotated_jisih):
+        # An element of the first axis is defined as the sum of indices
+        # for previous and subsequent ISI.
+
         jisih_diag_cums = np.zeros((self.num_bins,
                                     self.num_bins
                                     + 2 * self.max_change_index))
 
+        # double_index corresponds to the sum of the indices for the previous
+        # and the subsequent ISI.
         for double_index in range(self.num_bins):
-            cum_diag = np.cumsum(np.diagonal(flipped_jisih,
+            cum_diag = np.cumsum(np.diagonal(rotated_jisih,
                                              - self.num_bins
                                              + double_index + 1))
-            jisih_diag_cums[double_index,
-                            self.max_change_index:
-                            double_index
-                            + self.max_change_index + 1
-                            ] = cum_diag
 
-            cum_bound = np.repeat(jisih_diag_cums[double_index,
-                                                  double_index +
-                                                  self.max_change_index],
-                                  self.max_change_index)
+            right_padding = jisih_diag_cums.shape[1] - \
+                len(cum_diag) - self.max_change_index
 
-            jisih_diag_cums[double_index,
-                            double_index + self.max_change_index + 1:
-                            double_index
-                            + 2 * self.max_change_index + 1
-                            ] = cum_bound
+            jisih_diag_cums[double_index] = np.pad(
+                cum_diag,
+                pad_width=(self.max_change_index, right_padding),
+                mode='constant',
+                constant_values=(cum_diag[0], cum_diag[-1])
+            )
+
         return jisih_diag_cums
 
     def _get_dithered_isi(self, isi_to_dither):
-        dithered_isi = isi_to_dither
+        dithered_isi = np.copy(isi_to_dither)
         # if alternate is true, a sampling_rhythm of 2 means that we have two
         # partitions of spikes, the "odd" and the "even" spikes and first
         # dither the "even" ones and then the "odd" ones.
@@ -850,81 +852,54 @@ class JointISI(object):
         # spike, which corresponds to a sampling_rhythm of 1.
         sampling_rhythm = self.alternate + 1
         number_of_isis = len(dithered_isi)
-        random_list = np.random.random(number_of_isis)
-        if self.method == 'fast':
-            update_dithered_isi = self._update_dithered_isi_fast
-        else:
-            update_dithered_isi = self._update_dithered_isi_window
 
         for start in range(sampling_rhythm):
             dithered_isi_indices = self.isi_to_index(dithered_isi)
             for i in range(start, number_of_isis - 1,
                            sampling_rhythm):
-                step = update_dithered_isi(
+                step = self._get_dithering_step(
                     dithered_isi,
                     dithered_isi_indices,
-                    random_list[i],
                     i)
                 dithered_isi[i] += step
                 dithered_isi[i + 1] -= step
 
         return dithered_isi
 
-    def _update_dithered_isi_fast(self,
-                                  dithered_isi,
-                                  dithered_isi_indices,
-                                  random_number,
-                                  i):
-        back_index = dithered_isi_indices[i]
-        for_index = dithered_isi_indices[i + 1]
-        double_index = back_index + for_index
-        if double_index < self.num_bins:
-            if self._jisih_cumulatives[double_index][-1]:
-                cond = (self._jisih_cumulatives[double_index]
-                        > random_number)
-                new_index = np.where(
-                    cond,
-                    self._jisih_cumulatives[double_index],
-                    np.inf).argmin()
-                step = (self.index_to_isi(new_index)
-                        - self.index_to_isi(back_index))
-                return step
-        return self._uniform_dither_not_jisi_movable_spikes(
-            dithered_isi[i],
-            dithered_isi[i + 1],
-            random_number)
-
-    def _update_dithered_isi_window(self,
+    def _get_dithering_step(self,
                                     dithered_isi,
                                     dithered_isi_indices,
-                                    random_number,
                                     i):
-        back_index = dithered_isi_indices[i]
-        for_index = dithered_isi_indices[i + 1]
-        if back_index + for_index < self.num_bins:
-            cum_dist_func = self._jisih_cumulatives[
-                back_index][for_index]
-            if cum_dist_func[-1]:
-                cond = cum_dist_func > random_number
-                new_index = np.where(
-                    cond,
-                    cum_dist_func,
-                    np.inf).argmin()
-                step = (self.index_to_isi(new_index)
-                        - self.max_change_isi)
+        curr_isi_id = dithered_isi_indices[i]
+        next_isi_id = dithered_isi_indices[i + 1]
+        double_index = curr_isi_id + next_isi_id
+        if double_index < self.num_bins:
+            if self.method == 'fast':
+                cum_dist_func = self._jisih_cumulatives[
+                    double_index]
+                compare_isi = self.index_to_isi(curr_isi_id)
+            else:
+                cum_dist_func = self._jisih_cumulatives[
+                    curr_isi_id][next_isi_id]
+                compare_isi = self.max_change_isi
+
+            if cum_dist_func[-1] > 0.:
+                # when the method is 'fast', new_isi_id is where the current
+                # ISI id should go to.
+                new_isi_id = np.searchsorted(cum_dist_func, random.random())
+                step = self.index_to_isi(new_isi_id) - compare_isi
                 return step
+
         return self._uniform_dither_not_jisi_movable_spikes(
             dithered_isi[i],
-            dithered_isi[i + 1],
-            random_number)
+            dithered_isi[i + 1])
 
     def _uniform_dither_not_jisi_movable_spikes(self,
-                                                previous_isi,
-                                                subsequent_isi,
-                                                random_number):
-        left_dither = min(previous_isi - self.refr_period, self.dither)
-        right_dither = min(subsequent_isi - self.refr_period, self.dither)
-        step = random_number * (right_dither + left_dither) - left_dither
+                                                curr_isi,
+                                                next_isi):
+        left_dither = min(curr_isi - self.refr_period, self.dither)
+        right_dither = min(next_isi - self.refr_period, self.dither)
+        step = random.random() * (right_dither + left_dither) - left_dither
         return step
 
 

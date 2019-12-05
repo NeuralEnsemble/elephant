@@ -10,13 +10,17 @@ import unittest
 import elephant.spike_train_surrogates as surr
 import elephant.spike_train_generation as stg
 import numpy as np
+from numpy.testing import assert_array_almost_equal
 import quantities as pq
 import neo
-
-np.random.seed(0)
+import random
 
 
 class SurrogatesTestCase(unittest.TestCase):
+
+    def setUp(self):
+        np.random.seed(0)
+        random.seed(0)
 
     def test_dither_spikes_output_format(self):
 
@@ -365,11 +369,23 @@ class SurrogatesTestCase(unittest.TestCase):
             self.assertEqual(len(surrog), len(st))
 
     def test_joint_isi_dithering_empty_train(self):
-
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
-
         surrog = surr.JointISI(st).dithering()[0]
         self.assertEqual(len(surrog), 0)
+
+    def test_joint_isi_dithering_output(self):
+        st = stg.homogeneous_poisson_process_with_refr_period(
+            rate=100. * pq.Hz,
+            refr_period=3 * pq.ms,
+            t_stop=0.1 * pq.s)
+        surrog_st = surr.JointISI(st).dithering()[0]
+        ground_truth = [27.99123087, 33.92680035, 39.94386642, 46.60932914,
+                        51.77647236, 58.00172645,
+                        68.15027025, 75.79592778, 84.09942906, 97.34738152]
+        assert_array_almost_equal(surrog_st.magnitude, ground_truth)
+
+
+
 
 
 def suite():
