@@ -133,7 +133,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-                        spiketrain.t_stop.simplified.magnitude
+            spiketrain.t_stop.simplified.magnitude
         surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
                 for s in surr.simplified.magnitude]
 
@@ -266,7 +266,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
         sts = []
         for i in range(n):
             surr_times = np.cumsum(np.random.permutation(ISIs)) * \
-                         spiketrain.units + spiketrain.t_start
+                spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
                 surr_times, t_start=spiketrain.t_start,
                 t_stop=spiketrain.t_stop))
@@ -363,7 +363,7 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
     else:
         # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-                        spiketrain.t_stop.simplified.magnitude
+            spiketrain.t_stop.simplified.magnitude
         surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
                 for s in surr.simplified.magnitude]
 
@@ -714,7 +714,7 @@ class JointISI(object):
             if self.cutoff:
                 start_index = self.isi_to_index(self.refr_period)
                 joint_isi_histogram[
-                start_index:, start_index:] = gaussian_filter(
+                    start_index:, start_index:] = gaussian_filter(
                     joint_isi_histogram[start_index:, start_index:],
                     sigma=self.sigma / self.bin_width)
                 joint_isi_histogram[:start_index, :] = 0
@@ -776,7 +776,7 @@ class JointISI(object):
             dithered_isi = self._get_dithered_isi(isi_to_dither)
 
             dithered_st = self.spiketrain[0].magnitude + \
-                          np.r_[0., np.cumsum(dithered_isi)]
+                np.r_[0., np.cumsum(dithered_isi)]
             dithered_st = neo.SpikeTrain(dithered_st * self.unit,
                                          t_start=self.spiketrain.t_start,
                                          t_stop=self.spiketrain.t_stop)
@@ -867,9 +867,9 @@ class JointISI(object):
         return dithered_isi
 
     def _get_dithering_step(self,
-                                    dithered_isi,
-                                    dithered_isi_indices,
-                                    i):
+                            dithered_isi,
+                            dithered_isi_indices,
+                            i):
         curr_isi_id = dithered_isi_indices[i]
         next_isi_id = dithered_isi_indices[i + 1]
         double_index = curr_isi_id + next_isi_id
