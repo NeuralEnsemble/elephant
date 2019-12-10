@@ -488,8 +488,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the data and clipping (binary matrix)
-    binary_matrix = conv.BinnedSpikeTrain(data,
-                                          binsize).to_sparse_bool_array().tocoo()
+    binary_matrix = conv.BinnedSpikeTrain(
+        data, binsize).to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
@@ -589,16 +589,19 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
             for col in range(window_idx, window_idx + winlen):
                 if col in binary_matrix.col:
                     nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
-                    windows_col.extend(binary_matrix.row[nonzero_indices] * winlen
-                                       + (col - window_idx))
+                    windows_col.extend(
+                        binary_matrix.row[nonzero_indices] * winlen
+                        + (col - window_idx))
                     windows_row.extend([window_idx] * len(nonzero_indices))
         # Shape of the rel_matrix:
-        # (num of window positions, num of bins in one window * number of neurons)
+        # (num of window positions,
+        # num of bins in one window * number of neurons)
         num_windows = window_indices.shape[0]
-        rel_matrix = sparse.coo_matrix((np.ones((len(windows_col)), dtype=bool),
-                                       (windows_row, windows_col)),
-                                       shape=(num_bins, winlen * num_neurons),
-                                       dtype=bool).A
+        rel_matrix = sparse.coo_matrix(
+            (np.ones((len(windows_col)), dtype=bool),
+             (windows_row, windows_col)),
+            shape=(num_bins, winlen * num_neurons),
+            dtype=bool).A
     else:
         window_indices = np.arange(num_bins - winlen + 1)
         windows_row = []
@@ -607,16 +610,19 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
             for col in range(window_idx, window_idx + winlen):
                 if col in binary_matrix.col:
                     nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
-                    windows_col.append(binary_matrix.row[nonzero_indices] * winlen
-                                       + (col - window_idx))
+                    windows_col.append(
+                        binary_matrix.row[nonzero_indices] * winlen
+                        + (col - window_idx))
                     windows_row.extend([window_idx] * len(nonzero_indices))
         # Shape of the rel_matrix:
-        # (num of window positions, num of bins in one window * number of neurons)
+        # (num of window positions,
+        # num of bins in one window * number of neurons)
         num_windows = window_indices.shape[0]
-        rel_matrix = sparse.coo_matrix((np.ones((len(windows_col)), dtype=bool),
-                                       (windows_row, windows_col)),
-                                       shape=(num_windows, winlen * num_neurons),
-                                       dtype=bool).A
+        rel_matrix = sparse.coo_matrix(
+            (np.ones((len(windows_col)), dtype=bool),
+             (windows_row, windows_col)),
+            shape=(num_windows, winlen * num_neurons),
+            dtype=bool).A
     # Array containing all the possible attributes (each spike is indexed by
     # a number equal to neu idx*winlen + bin_idx)
     attributes = np.array(
@@ -759,7 +765,8 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 c, winlen, max_c, min_neu), fpgrowth_output))
         # filter out subsets of patterns that are found as a side-effect
         # of using the moving window strategy
-        fpgrowth_output = _filter_for_moving_window_subsets(fpgrowth_output, winlen)
+        fpgrowth_output = _filter_for_moving_window_subsets(
+            fpgrowth_output, winlen)
         for (intent, supp) in fpgrowth_output:
             if report == 'a':
                 if rel_matrix is not None:
@@ -882,9 +889,10 @@ def _filter_for_moving_window_subsets(concepts, winlen):
                     reverse_map[window_bin] = set((map_idx,))
 
         for i in support_indices:
-            intersection = reduce(operator.and_,
-                                  (reverse_map[window_bin]
-                                   for window_bin in converted_transactions[i]))
+            intersection = reduce(
+                operator.and_,
+                (reverse_map[window_bin]
+                 for window_bin in converted_transactions[i]))
             if len(intersection) == 1:
                 output.append(concepts[i])
 
