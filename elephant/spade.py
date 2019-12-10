@@ -1113,79 +1113,9 @@ def _stability_filter(c, stab_thr):
     return keep_concept
 
 
-def _fdr(pvalues, alpha):
-    """
-    performs False Discovery Rate (FDR) statistical correction on a list of
-    p-values, and assesses accordingly which of the associated statistical
-    tests is significant at the desired level *alpha*
-
-    Parameters
-    ----------
-    pvalues: list
-        list of p-values, each corresponding to a statistical test
-    alpha: float
-        significance level (desired FDR-ratio)
-
-    Returns
-    ------
-    Returns a triplet containing:
-    * an array of bool, indicating for each p-value whether it was
-      significantly low or not
-    * the largest p-value that was below the FDR linear threshold
-      (effective confidence level). That and each lower p-value are
-      considered significant.
-    * the rank of the largest significant p-value
-
-    """
-
-    # Sort the p-values from largest to smallest
-    pvs_array = np.array(pvalues)              # Convert PVs to an array
-    pvs_sorted = np.sort(pvs_array)[::-1]  # Sort PVs in decreasing order
-
-    # Perform FDR on the sorted p-values
-    m = len(pvalues)
-    stop = False  # check whether the loop stopped due to a significant p-value
-    for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
-        if pv > alpha * ((m - i) * 1. / m):  # continue if PV > fdr-threshold
-            pass
-        else:
-            stop = True
-            break                          # otherwise stop
-
-    thresh = alpha * ((m - i - 1 + stop) * 1. / m)
-
-    # Return outcome of the test, critical p-value and its order
-    return pvalues <= thresh, thresh, m - i - 1 + stop
-
-
-def _holm_bonferroni(pvalues, alpha):
-    """
-    performs Holm Bonferroni statistical correction on a list of
-    p-values, and assesses accordingly which of the associated statistical
-    tests is significant at the desired level *alpha*
-
-    Parameters
-    ----------
-    pvalues: list
-       list of p-values, each corresponding to a statistical test
-    alpha: float
-       significance level
-
-    Returns
-    -------
-    tests : list
-        A list of boolean values, indicating for each p-value whether it was
-        significantly low or not
-   """
-    id_sorted = np.argsort(pvalues)
-    tests = [pval <= alpha / float(
-        len(pvalues) - id_sorted[pval_idx]) for pval_idx, pval in enumerate(
-        pvalues)]
-    return tests
-
-
 def test_signature_significance(pvalue_spectrum, alpha, corr='',
                                 report='spectrum', spectrum='#'):
+    # TODO: adapt documentation accordingly
     """
     Compute the significance spectrum of a pattern spectrum.
 
@@ -1261,6 +1191,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     for index, value in enumerate(indexes_zeros):
         tests[value] = True
 
+    # TODO: check if test has the correct type
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
