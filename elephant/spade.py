@@ -64,6 +64,8 @@ from itertools import chain, combinations
 import time
 import quantities as pq
 import warnings
+import statsmodels.stats.multitest as sm
+
 from elephant.spade_src import fast_fca
 
 warnings.simplefilter('once', UserWarning)
@@ -1235,19 +1237,30 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     if alpha == 1:
         return []
     x_array = np.array(pvalue_spectrum)
-    # Compute significance...
+    pvalues = x_array[:, -1]
+    pvalues_totest = pvalues[(pvalues != 0) & (pvalues != 1)]
+
+    # Compute significance for only the non trivial tests
     if corr in ['', 'no']:  # ...without statistical correction
-        tests = x_array[:, -1] <= alpha
-    elif corr in ['b', 'bonf']:  # or with Bonferroni correction
-        tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
-    elif corr in ['f', 'fdr']:  # or with FDR correction
-        tests, pval, rank = _fdr(x_array[:, -1], alpha=alpha)
-    elif corr in ['hb', 'holm_bonf']:
-        tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
+        tests_selected = pvalues_totest <= alpha
     else:
-        raise AttributeError(
-            "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')" +
-            " or 'hb'('holm_bonf'), but not '"+str(corr)+"'.")
+        tests_selected = sm.multipletests(pvalues_totest,
+                                 alpha=alpha,
+                                 method=corr)[0]
+
+    # Remerge test output
+    indexes_totest = np.where((pvalues != 0) & (pvalues != 1))[0]
+    indexes_zeros = np.where(pvalues == 0)[0]
+
+    # Initialize test array to False
+    tests = np.zeros(len(pvalues), dtype=bool)
+    # assign each corrected pvalue to its corresponding entry
+    for index, value in enumerate(indexes_totest):
+        tests[value] = tests_selected[index]
+    # assign
+    for index, value in enumerate(indexes_zeros):
+        tests[value] = True
+
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
