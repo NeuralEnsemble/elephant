@@ -188,19 +188,13 @@ class binarize_TestCase(unittest.TestCase):
         self.assertEqual(bst.get_num_of_spikes(), 0)
 
 
-class TimeHistogramTestCase(unittest.TestCase):
+class BinnedSpikeTrainTestCase(unittest.TestCase):
     def setUp(self):
         self.spiketrain_a = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
         self.spiketrain_b = neo.SpikeTrain(
             [0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
         self.binsize = 1 * pq.s
-
-    def tearDown(self):
-        self.spiketrain_a = None
-        del self.spiketrain_a
-        self.spiketrain_b = None
-        del self.spiketrain_b
 
     def test_get_num_of_spikes(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
@@ -620,6 +614,11 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
         self.assertTrue(bst.bin_centers.units == pq.ms)
         self.assertTrue(bst.bin_edges.units == pq.ms)
+
+    def test_binned_sparsity(self):
+        train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)
+        bst = cv.BinnedSpikeTrain(train, num_bins=100)
+        self.assertAlmostEqual(bst.sparsity, 0.1)
 
 
 if __name__ == '__main__':
