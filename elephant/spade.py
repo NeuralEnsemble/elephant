@@ -1209,7 +1209,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     indexes_zeros = np.where(pvalues == 0)[0]
 
     # Initialize test array to False
-    tests = np.zeros(len(pvalues), dtype=bool)
+    tests = [False for i in range(len(pvalues))]
     # assign each corrected pvalue to its corresponding entry
     for index, value in enumerate(indexes_totest):
         tests[value] = tests_selected[index]
@@ -1217,7 +1217,6 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     for index, value in enumerate(indexes_zeros):
         tests[value] = True
 
-    # TODO: check if test has the correct type
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
