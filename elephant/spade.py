@@ -87,7 +87,7 @@ except ImportError:  # pragma: no cover
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr', psr_param=None, output_format='concepts'):
+          alpha=1, stat_corr='fdr_bh', psr_param=None, output_format='concepts'):
     """
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
@@ -179,12 +179,22 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         are filtered according to their signature in the p-value spectrum.
         Default: 1
     stat_corr: str
-        Statistical correction to be applied:
-            '', 'no' : no statistical correction
-            'f', 'fdr' : false discovery rate
-            'b', 'bonf': Bonferroni correction
-            'hb', 'holm_bonf': Holm-Bonferroni correction
-         Default: 'fdr'
+        Method used for testing and adjustment of pvalues.
+        Can be either the full name or initial letters.
+        Available methods are:
+            bonferroni : one-step correction
+            sidak : one-step correction
+            holm-sidak : step down method using Sidak adjustments
+            holm : step-down method using Bonferroni adjustments
+            simes-hochberg : step-up method (independent)
+            hommel : closed method based on Simes tests (non-negative)
+            fdr_bh : Benjamini/Hochberg (non-negative)
+            fdr_by : Benjamini/Yekutieli (negative)
+            fdr_tsbh : two stage fdr correction (non-negative)
+            fdr_tsbky : two stage fdr correction (non-negative)
+        Also possible as input:
+            '', 'no': no statistical correction
+        Default: 'fdr_bh'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
@@ -1134,12 +1144,23 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     alpha: float
         Significance level of the statistical test
     corr: str
-        Statistical correction to be applied:
-            '', 'no' : no statistical correction
-            'f', 'fdr' : false discovery rate
-            'b', 'bonf': Bonferroni correction
-            'hb', 'holm_bonf': Holm-Bonferroni correction
-         Default: ''
+        Method used for testing and adjustment of pvalues.
+        Can be either the full name or initial letters.
+        Available methods are:
+            bonferroni : one-step correction
+            sidak : one-step correction
+            holm-sidak : step down method using Sidak adjustments
+            holm : step-down method using Bonferroni adjustments
+            simes-hochberg : step-up method (independent)
+            hommel : closed method based on Simes tests (non-negative)
+            fdr_bh : Benjamini/Hochberg (non-negative)
+            fdr_by : Benjamini/Yekutieli (negative)
+            fdr_tsbh : two stage fdr correction (non-negative)
+            fdr_tsbky : two stage fdr correction (non-negative)
+        Also possible as input:
+            '', 'no': no statistical correction
+        Default: 'fdr_bh'
+
     report: str
         Format to be returned for the significance spectrum:
         'spectrum': list of triplets (z,c,b), where b is a boolean specifying
@@ -1166,6 +1187,11 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     # If alpha == 1 all signatures are significant
     if alpha == 1:
         return []
+    if corr not in ['bonferroni', 'sidak', 'holm-sidak', 'holm',
+                    'simes-hochberg', 'hommel', 'fdr_bh', 'fdr_by',
+                    'fdr_tsbh', 'fdr_tsbky', '', 'no']:
+        raise AttributeError("Parameter corr not recognized")
+
     x_array = np.array(pvalue_spectrum)
     pvalues = x_array[:, -1]
     pvalues_totest = pvalues[(pvalues != 0) & (pvalues != 1)]
