@@ -346,7 +346,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if rank == 0:
         # Decide whether filter concepts with psf
         if n_surr > 0:
-            if not pv_spec:
+            if len(pv_spec) == 0:
                 ns_sgnt = []
             else:
                 # Computing non-significant entries of the spectrum applying
@@ -358,7 +358,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             # Storing non-significant entries of the pvalue spectrum
             output['non_sgnf_sgnt'] = ns_sgnt
             # Filter concepts with pvalue spectrum (psf)
-            if ns_sgnt:
+            if len(ns_sgnt) > 0:
                 concepts = list(filter(
                     lambda c: _pattern_spectrum_filter(
                         c, ns_sgnt, spectrum, winlen), concepts))
@@ -464,7 +464,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
              formed by:
                 (pattern size, number of occurrences, difference between last
                 and first spike of the pattern, number of patterns)
-    rel_matrix : numpy.array
+    rel_matrix : sparse.coo_matrix
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to their position in
         time). Each column corresponds to one bin and one neuron and it is 0 if
@@ -542,7 +542,7 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     binned spike trains
     Parameters
     ----------
-    binary_matrix : numpy.array
+    binary_matrix : sparse.coo_matrix
         Binary matrix containing the binned spike trains
     winlen : int
         Length of the binsize used to bin the data
@@ -561,7 +561,7 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     transactions : list
         List of all transactions, each element of the list contains the
         attributes of the corresponding object.
-    rel_matrix : numpy.array
+    rel_matrix : sparse.coo_matrix
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to
         their position in time).
@@ -688,7 +688,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             (number of spikes, number of occurrence, difference between the
             times of the last and the first spike of the pattern)
         Default: 'a'
-    rel_matrix : None or numpy.array
+    rel_matrix : None or sparse.coo_matrix
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to
         their position in time).
@@ -1379,7 +1379,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         of the  occurrences of the pattern). The spike IDs are defined as:
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
         bin_id in [0, winlen].
-    rel_matrix: numpy.array
+    rel_matrix: sparse.coo_matrix
         A binary matrix with shape (number of windows, winlen*len(data)). Each
         row corresponds to a window (order according to their position in
         time). Each column corresponds to one bin and one neuron and it is 0 if
@@ -1438,7 +1438,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         size = 1
     if n_subsets <= 0 and delta + epsilon <= 0:
         raise AttributeError('n_subsets has to be >=0 or delta + epsilon > 0')
-    if not concepts:
+    if len(concepts) == 0:
         return []
     elif len(concepts) <= size:
         rank_idx = [0] * (size + 1) + [len(concepts)]
@@ -1772,7 +1772,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         - count2 + h < min_occ:
                     selected[id1] = False
                     break
-                if not excluded:
+                if len(excluded) == 0:
                     break
                 # Test the case conc1 is a superset of conc2
                 if set(conc1_new).issuperset(conc2):
@@ -1976,7 +1976,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             spectrum = '#'
     else:
         if spectrum is None:
-            if not pvalue_spectrum:
+            if len(pvalue_spectrum) == 0:
                 spectrum = '#'
             elif len(pvalue_spectrum[0]) == 4:
                 spectrum = '3d#'
