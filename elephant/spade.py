@@ -68,6 +68,7 @@ import time
 import quantities as pq
 import warnings
 from elephant.spade_src import fast_fca
+from collections import defaultdict
 
 warnings.simplefilter('once', UserWarning)
 
@@ -583,46 +584,27 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         # out of all window positions
         # get all non-empty first bins
         window_indices = np.unique(binary_matrix.col)
-        windows_row = []
-        windows_col = []
-        for window_idx in window_indices:
-            for col in range(window_idx, window_idx + winlen):
-                if col in binary_matrix.col:
-                    nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
-                    windows_col.extend(
-                        binary_matrix.row[nonzero_indices] * winlen
-                        + (col - window_idx))
-                    windows_row.extend([window_idx] * len(nonzero_indices))
-        # Shape of the rel_matrix:
-        # (num of window positions,
-        # num of bins in one window * number of neurons)
-        num_windows = window_indices.shape[0]
-        rel_matrix = sparse.coo_matrix(
-            (np.ones((len(windows_col)), dtype=bool),
-             (windows_row, windows_col)),
-            shape=(num_bins, winlen * num_neurons),
-            dtype=bool).A
     else:
         window_indices = np.arange(num_bins - winlen + 1)
-        windows_row = []
-        windows_col = []
-        for window_idx in window_indices:
-            for col in range(window_idx, window_idx + winlen):
-                if col in binary_matrix.col:
-                    nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
-                    windows_col.append(
-                        binary_matrix.row[nonzero_indices] * winlen
-                        + (col - window_idx))
-                    windows_row.extend([window_idx] * len(nonzero_indices))
-        # Shape of the rel_matrix:
-        # (num of window positions,
-        # num of bins in one window * number of neurons)
-        num_windows = window_indices.shape[0]
-        rel_matrix = sparse.coo_matrix(
-            (np.ones((len(windows_col)), dtype=bool),
-             (windows_row, windows_col)),
-            shape=(num_windows, winlen * num_neurons),
-            dtype=bool).A
+    windows_row = []
+    windows_col = []
+    for window_idx in window_indices:
+        for col in range(window_idx, window_idx + winlen):
+            if col in binary_matrix.col:
+                nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
+                windows_col.extend(
+                    binary_matrix.row[nonzero_indices] * winlen
+                    + (col - window_idx))
+                windows_row.extend([window_idx] * len(nonzero_indices))
+    # Shape of the rel_matrix:
+    # (num of window positions,
+    # num of bins in one window * number of neurons)
+    num_windows = window_indices.shape[0]
+    rel_matrix = sparse.coo_matrix(
+        (np.ones((len(windows_col)), dtype=bool),
+         (windows_row, windows_col)),
+        shape=(num_bins, winlen * num_neurons),
+        dtype=bool).A
     # Array containing all the possible attributes (each spike is indexed by
     # a number equal to neu idx*winlen + bin_idx)
     attributes = np.array(
@@ -880,13 +862,10 @@ def _filter_for_moving_window_subsets(concepts, winlen):
         support_indices = np.nonzero(support == current_support)[0]
 
         # construct reverse map
-        reverse_map = {}
+        reverse_map = defaultdict(set)
         for map_idx, i in enumerate(support_indices):
             for window_bin in converted_transactions[i]:
-                try:
-                    reverse_map[window_bin].add(map_idx)
-                except KeyError:
-                    reverse_map[window_bin] = set((map_idx,))
+                reverse_map[window_bin].add(map_idx)
 
         for i in support_indices:
             intersection = reduce(
