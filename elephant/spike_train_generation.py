@@ -1159,7 +1159,7 @@ def homogeneous_poisson_process_with_refr_period(rate,
 
     # Check that the number of spikes drawn from the Poisson distribution,
     # can fit in the duration regarding the refractory period.
-    spike_count = min(spike_count, math.ceil(duration / refr_period))
+    spike_count = min(spike_count, math.ceil(duration / refr_period_mag))
 
     # Due to the refractory period the effective space in where the spikes
     # can be placed is shortened by (spike_count - 1) times the
