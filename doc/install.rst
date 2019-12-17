@@ -1,98 +1,100 @@
 .. _install:
 
-****************************
-Prerequisites / Installation
-****************************
+************
+Installation
+************
 
-Elephant is a pure Python package so that it should be easy to install on any system.
+Elephant requires Python 2.7, 3.5, 3.6, 3.7, or 3.8. If you do not already have a Python environment configured on your computer, please see the instructions for installing the :ref:`dependencies`. Otherwise, scroll to :ref:`installation`.
 
+
+.. _dependencies:
 
 Dependencies
 ============
 
-The following packages are required to use Elephant:
-    * Python_ >= 2.7
-    * numpy_ >= 1.8.2
-    * scipy_ >= 0.14.0
-    * quantities_ >= 0.10.1
-    * neo_ >= 0.7.1, <0.8.0
+The following packages are required to use Elephant (refer to requirements_ for the exact package versions):
+    * Python_ 2.7, 3.5
+    * numpy_ - fast array computations
+    * scipy_ - scientific library for Python
+    * quantities_ - support for physical quantities with units (mV, ms, etc.)
+    * neo_ - electrophysiology data manipulations
+    * tqdm_ - progress bar
+    * six_ - Python 2 and 3 compatibility utilities
 
 The following packages are optional in order to run certain parts of Elephant:
-    * For using the pandas_bridge module: 
-        * pandas >= 0.14.1
-    * For using the ASSET analysis
-        * scikit-learn >= 0.15.1
-    * For building the documentation:
-        * numpydoc >= 0.5
-        * sphinx >= 1.2.2
-    * For running tests:
-        * nose >= 1.3.3
+    * `pandas <https://pypi.org/project/pandas/>`_ - for the :doc:`pandas_bridge <reference/pandas_bridge>` module
+    * `scikit-learn <https://pypi.org/project/scikit-learn/>`_ - for the :doc:`ASSET <reference/asset>` analysis
+    * `nose <https://pypi.org/project/nose/>`_ - for running tests
+    * `numpydoc <https://pypi.org/project/numpydoc/>`_ and `sphinx <https://pypi.org/project/Sphinx/>`_ - for building the documentation
 
-All dependencies can be found on the Python package index (PyPI).
+All dependencies can be found on the Python package index (PyPI_).
+
+
+Conda (Windows/Linux/macOS)
+--------------------------
+
+We recommend using the Anaconda_ Python distribution and installing all dependencies in a `Conda environment`_, e.g.::
+
+    $ conda create -n neuroscience python numpy scipy pip six tqdm
+    $ conda activate neuroscience
+    $ pip install quantities neo
+
 
 
 Debian/Ubuntu
 -------------
-For Debian/Ubuntu, we recommend to install numpy and scipy as system packages using apt-get::
-    
-    $ apt-get install python-numpy python-scipy python-pip python-six
+For Debian/Ubuntu, you can install numpy and scipy as system packages using apt-get::
 
-Further packages are found on the Python package index (pypi) and should be installed with pip_::
-    
-    $ pip install quantities
-    $ pip install neo
+    $ sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
 
-We highly recommend to install these packages using a virtual environment provided by virtualenv_ or locally in the home directory using the ``--user`` option of pip (e.g., ``pip install --user quantities``), neither of which require administrator privileges.
+Further packages are found on the Python package index (PyPI_) and can only be installed with pip_::
 
-Windows/Mac OS X
-----------------
+    $ pip install quantities neo
 
-On non-Linux operating systems we recommend using the Anaconda_ Python distribution, and installing all dependencies in a `Conda environment`_, e.g.::
 
-    $ conda create -n neuroscience python numpy scipy pip six
-    $ source activate neuroscience
-    $ pip install quantities
-    $ pip install neo
-
+.. _installation:
 
 Installation
 ============
 
-Automatic installation from PyPI
---------------------------------
+Install the released version
+----------------------------
 
 The easiest way to install Elephant is via pip_::
 
     $ pip install elephant    
 
+To upgrade to a newer release use the ``--upgrade`` flag::
 
-Manual installation from pypi
------------------------------
+    $ pip install --upgrade elephant
 
-To download and install manually, download the latest package from http://pypi.python.org/pypi/elephant
+If you do not have permission to install software systemwide, you can install into your user directory using the ``--user`` flag::
 
-Then::
+    $ pip install --user elephant
 
-    $ tar xzf elephant-0.6.2.tar.gz
-    $ cd elephant-0.6.2
-    $ python setup.py install
-    
-or::
+To install Elephant with all extra packages, do::
 
-    $ python3 setup.py install
-    
-depending on which version of Python you are using.
+    $ pip install elephant[extras]
 
 
-Installation of the latest build from source
---------------------------------------------
+Install the development version
+-------------------------------
 
-To install the latest version of Elephant from the Git repository::
+If you have `Git <https://git-scm.com/>`_ installed on your system, it is also possible to install the development version of Elephant.
+
+Before installing the development version, you may need to uninstall the standard version of Elephant using pip::
+
+    $ pip uninstall elephant
+
+Then do::
 
     $ git clone git://github.com/NeuralEnsemble/elephant.git
     $ cd elephant
-    $ python setup.py install
+    $ pip install -e .
 
+or::
+
+    $ pip install git+https://github.com/NeuralEnsemble/elephant.git
 
 
 .. _`Python`: http://python.org/
@@ -101,7 +103,9 @@ To install the latest version of Elephant from the Git repository::
 .. _`quantities`: http://pypi.python.org/pypi/quantities
 .. _`neo`: http://pypi.python.org/pypi/neo
 .. _`pip`: http://pypi.python.org/pypi/pip
-.. _`virtualenv`: https://virtualenv.pypa.io/en/latest/
-.. _`this snapshot`: https://github.com/NeuralEnsemble/python-neo/archive/snapshot-20150821.zip
-.. _Anaconda: http://continuum.io/downloads
-.. _`Conda environment`: http://conda.pydata.org/docs/faq.html#creating-new-environments
+.. _Anaconda: https://docs.anaconda.com/anaconda/install/
+.. _`Conda environment`: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+.. _`tqdm`: https://pypi.org/project/tqdm/
+.. _`six`: https://pypi.org/project/six/
+.. _requirements: https://github.com/NeuralEnsemble/elephant/blob/master/requirements.txt
+.. _PyPI: https://pypi.org/
