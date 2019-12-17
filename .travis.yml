@@ -21,14 +21,6 @@ matrix:
       python: 3.5
       env: DISTRIB="pip"
 
-    - name: "conda 3.6"
-      python: 3.6
-      env: DISTRIB="conda"
-
-    - name: "pip 3.6"
-      python: 3.6
-      env: DISTRIB="pip"
-
     - name: "pip 3.6 requirements-extras"
       python: 3.6
       env: DISTRIB="pip"
@@ -40,6 +32,14 @@ matrix:
     - name: "conda 3.7"
       python: 3.7
       env: DISTRIB="conda"
+
+    - name: "conda 3.8"
+      python: 3.8
+      env: DISTRIB="conda"
+
+    - name: "pip 3.8"
+      python: 3.8
+      env: DISTRIB="pip"
 
   exclude:
     - name: "pip 3.6 requirements-extras min version"
