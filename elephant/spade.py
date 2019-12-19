@@ -56,19 +56,19 @@ plt.show()
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
-import numpy as np
-from scipy import sparse
+import time
+import warnings
 import operator
-import neo
-import elephant.spike_train_surrogates as surr
-import elephant.conversion as conv
 from itertools import chain, combinations
 from functools import reduce
-import time
-import quantities as pq
-import warnings
-from elephant.spade_src import fast_fca
 from collections import defaultdict
+import numpy as np
+from scipy import sparse
+import neo
+import quantities as pq
+import elephant.spike_train_surrogates as surr
+import elephant.conversion as conv
+from elephant.spade_src import fast_fca
 
 warnings.simplefilter('once', UserWarning)
 
@@ -284,32 +284,33 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
      Parallel Spike Train Data with SPADE.
     Frontiers in Computational Neuroscience, 11.
     """
+    if spectrum not in ['concepts', 'patterns']:
+        raise ValueError(
+            "The output_format value has to be one between"
+            "'patterns' and 'concepts'")
+
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD   # create MPI communicator
         rank = comm.Get_rank()  # get rank of current MPI task
     else:
         rank = 0
-    output = {}
-    # Decide whether compute pvalue spectrum
-    if n_surr > 0:
-        # Compute pvalue spectrum
-        time_pvalue_spectrum = time.time()
-        pv_spec = pvalue_spectrum(data, binsize, winlen, dither=dither,
-                                  n_surr=n_surr, min_spikes=min_spikes,
-                                  min_occ=min_occ, max_spikes=max_spikes,
-                                  max_occ=max_occ, min_neu=min_neu,
-                                  spectrum=spectrum)
-        time_pvalue_spectrum = time.time() - time_pvalue_spectrum
-        print("Time for pvalue spectrum computation: {}".format(
-            time_pvalue_spectrum))
-        # Storing pvalue spectrum
-        output['pvalue_spectrum'] = pv_spec
-    elif 0 < alpha < 1:
-        warnings.warn('0<alpha<1 but p-value spectrum has not been '
-                      'computed (n_surr==0)')
+
     time_mining = time.time()
+
+    if rank == 0:
+        # Mine the data for extraction of concepts
+        concepts, rel_matrix = concepts_mining(data, binsize, winlen,
+                                               min_spikes=min_spikes,
+                                               min_occ=min_occ,
+                                               max_spikes=max_spikes,
+                                               max_occ=max_occ,
+                                               min_neu=min_neu,
+                                               report='a')
+        time_mining = time.time() - time_mining
+        print("Time for data mining: {}".format(time_mining))
+
     # Decide if compute the approximated stability
-    if n_subsets > 0:
+    elif n_subsets > 0:
         # Mine the data for extraction of concepts
         concepts, rel_matrix = concepts_mining(data, binsize, winlen,
                                                min_spikes=min_spikes,
@@ -333,68 +334,72 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     elif stability_thresh is not None:
         warnings.warn('Stability_thresh not None but stability has not been '
                       'computed (n_subsets==0)')
-    elif rank == 0:
-        # Mine the data for extraction of concepts
-        concepts, rel_matrix = concepts_mining(data, binsize, winlen,
-                                               min_spikes=min_spikes,
-                                               min_occ=min_occ,
-                                               max_spikes=max_spikes,
-                                               max_occ=max_occ,
-                                               min_neu=min_neu,
-                                               report='a')
-        time_mining = time.time() - time_mining
-        print("Time for data mining: {}".format(time_mining))
-    if rank == 0:
-        # Decide whether filter concepts with psf
-        if n_surr > 0:
-            if len(pv_spec) == 0:
-                ns_sgnt = []
-            else:
-                # Computing non-significant entries of the spectrum applying
-                # the statistical correction
-                ns_sgnt = test_signature_significance(pv_spec, alpha,
-                                                      corr=stat_corr,
-                                                      report='non_significant',
-                                                      spectrum=spectrum)
-            # Storing non-significant entries of the pvalue spectrum
-            output['non_sgnf_sgnt'] = ns_sgnt
-            # Filter concepts with pvalue spectrum (psf)
-            if len(ns_sgnt) > 0:
-                concepts = list(filter(
-                    lambda c: _pattern_spectrum_filter(
-                        c, ns_sgnt, spectrum, winlen), concepts))
-                # Decide whether to filter concepts using psr
-                if psr_param is not None:
-                    # Filter using conditional tests (psr)
-                    concepts = pattern_set_reduction(concepts, ns_sgnt,
-                                                     winlen=winlen,
-                                                     h=psr_param[0],
-                                                     k=psr_param[1],
-                                                     l=psr_param[2],
-                                                     min_spikes=min_spikes,
-                                                     min_occ=min_occ)
 
-        # Storing patterns
-        if output_format == 'patterns':
-            # If the p-value spectra was not computed, is set to an empty list
-            if n_surr == 0:
-                pv_spec = None
-            # Transforming concepts to dictionary containing pattern's infos
-            output['patterns'] = concept_output_to_patterns(concepts,
-                                                            winlen, binsize,
-                                                            pv_spec, spectrum,
-                                                            data[0].t_start)
-        elif output_format == 'concepts':
-            output['patterns'] = concepts
-        else:
-            raise ValueError(
-                "The output_format value has to be one between"
-                "'patterns' and 'concepts'")
-        return output
+    output = {}
+    pv_spec = None   # initialize pv_spec to None
+    # Decide whether compute pvalue spectrum
+    if n_surr > 0:
+        # Compute pvalue spectrum
+        time_pvalue_spectrum = time.time()
+        pv_spec = get_pvalue_spectrum(data, binsize, winlen, dither=dither,
+                                      n_surr=n_surr, min_spikes=min_spikes,
+                                      min_occ=min_occ, max_spikes=max_spikes,
+                                      max_occ=max_occ, min_neu=min_neu,
+                                      spectrum=spectrum)
+        time_pvalue_spectrum = time.time() - time_pvalue_spectrum
+        print("Time for pvalue spectrum computation: {}".format(
+            time_pvalue_spectrum))
+        # Storing pvalue spectrum
+        output['pvalue_spectrum'] = pv_spec
+
     # rank!=0 returning None
-    else:
+    if rank != 0:
         warnings.warn('Returning None because executed on a process != 0')
         return None
+
+    # Initialize non-significant signatures as empty list:
+    ns_sgnt = []
+    # Decide whether filter concepts with psf
+    if n_surr > 0:
+        if 0 < alpha < 1:
+            warnings.warn('0<alpha<1 but p-value spectrum has not been '
+                          'computed (n_surr==0)')
+
+        if len(pv_spec) > 0:
+            # Computing non-significant entries of the spectrum applying
+            # the statistical correction
+            ns_sgnt = test_signature_significance(pv_spec, alpha,
+                                                  corr=stat_corr,
+                                                  report='non_significant',
+                                                  spectrum=spectrum)
+        # Storing non-significant entries of the pvalue spectrum
+        output['non_sgnf_sgnt'] = ns_sgnt
+    # Filter concepts with pvalue spectrum (psf)
+    if len(ns_sgnt) > 0:
+        concepts = list(filter(
+            lambda c: _pattern_spectrum_filter(
+                c, ns_sgnt, spectrum, winlen), concepts))
+        # Decide whether to filter concepts using psr
+        if psr_param is not None:
+            # Filter using conditional tests (psr)
+            concepts = pattern_set_reduction(concepts, ns_sgnt,
+                                             winlen=winlen,
+                                             h=psr_param[0],
+                                             k=psr_param[1],
+                                             l=psr_param[2],
+                                             min_spikes=min_spikes,
+                                             min_occ=min_occ)
+    # Storing patterns for ouput format concepts
+    if output_format == 'concepts':
+        output['patterns'] = concepts
+        return output
+
+    # Transforming concepts to dictionary containing pattern's infos
+    output['patterns'] = concept_output_to_patterns(concepts,
+                                                    winlen, binsize,
+                                                    pv_spec, spectrum,
+                                                    data[0].t_start)
+    return output
 
 
 def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
@@ -599,7 +604,6 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     # Shape of the rel_matrix:
     # (num of window positions,
     # num of bins in one window * number of neurons)
-    num_windows = window_indices.shape[0]
     rel_matrix = sparse.coo_matrix(
         (np.ones((len(windows_col)), dtype=bool),
          (windows_row, windows_col)),
@@ -714,73 +718,72 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             and first spike of the pattern, number of patterns)
 
     """
+    if min_neu < 1:
+        raise AttributeError('min_neu must be an integer >=1')
     # By default, set the maximum pattern size to the number of spiketrains
     if max_z is None:
         max_z = np.max((np.max([len(tr) for tr in transactions]), min_z + 1))
     # By default set maximum number of data to number of bins
     if max_c is None:
         max_c = len(transactions)
-    if min_neu >= 1:
-        # Initializing outputs
-        concepts = []
-        if report == '#':
-            spec_matrix = np.zeros((max_z + 1, max_c + 1))
-        if report == '3d#':
-            spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
-        spectrum = []
-        # Mining the data with fpgrowth algorithm
-        if np.unique(transactions, return_counts=True)[1][0] == len(
-                transactions):
-            fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
-        else:
-            fpgrowth_output = fim.fpgrowth(
-                tracts=transactions,
-                target=target,
-                supp=-min_c,
-                zmin=min_z,
-                zmax=max_z,
-                report='a',
-                algo='s')
-        # Applying min/max conditions and computing extent (window positions)
-        fpgrowth_output = list(filter(
-            lambda c: _fpgrowth_filter(
-                c, winlen, max_c, min_neu), fpgrowth_output))
-        # filter out subsets of patterns that are found as a side-effect
-        # of using the moving window strategy
-        fpgrowth_output = _filter_for_moving_window_subsets(
-            fpgrowth_output, winlen)
-        for (intent, supp) in fpgrowth_output:
-            if report == 'a':
-                if rel_matrix is not None:
-                    # Computing the extent of the concept (patterns
-                    # occurrences), checking in rel_matrix in which windows
-                    # the intent occurred
-                    extent = tuple(np.where(
-                        np.all(rel_matrix[:, intent], axis=1) == 1)[0])
-                concepts.append((intent, extent))
-            # Computing 2d spectrum
-            elif report == '#':
-                spec_matrix[len(intent) - 1, supp - 1] += 1
-            # Computing 3d spectrum
-            elif report == '3d#':
-                spec_matrix[len(intent) - 1, supp - 1, max(
-                    np.array(intent) % winlen)] += 1
-        del fpgrowth_output
-        if report == 'a':
-            return concepts
-        else:
-            if report == '#':
-                for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-                    spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
 
-            elif report == '3d#':
-                for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
-                    spectrum.append(
-                        (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
-            del spec_matrix
-            return spectrum
+    # Initializing outputs
+    concepts = []
+    if report == '#':
+        spec_matrix = np.zeros((max_z + 1, max_c + 1))
+    if report == '3d#':
+        spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
+    spectrum = []
+    # Mining the data with fpgrowth algorithm
+    if np.unique(transactions, return_counts=True)[1][0] == len(
+            transactions):
+        fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
     else:
-        raise AttributeError('min_neu must be an integer >=1')
+        fpgrowth_output = fim.fpgrowth(
+            tracts=transactions,
+            target=target,
+            supp=-min_c,
+            zmin=min_z,
+            zmax=max_z,
+            report='a',
+            algo='s')
+    # Applying min/max conditions and computing extent (window positions)
+    fpgrowth_output = list(filter(
+        lambda c: _fpgrowth_filter(
+            c, winlen, max_c, min_neu), fpgrowth_output))
+    # filter out subsets of patterns that are found as a side-effect
+    # of using the moving window strategy
+    fpgrowth_output = _filter_for_moving_window_subsets(
+        fpgrowth_output, winlen)
+    for (intent, supp) in fpgrowth_output:
+        if report == 'a':
+            if rel_matrix is not None:
+                # Computing the extent of the concept (patterns
+                # occurrences), checking in rel_matrix in which windows
+                # the intent occurred
+                extent = tuple(np.where(
+                    np.all(rel_matrix[:, intent], axis=1) == 1)[0])
+            concepts.append((intent, extent))
+        # Computing 2d spectrum
+        elif report == '#':
+            spec_matrix[len(intent) - 1, supp - 1] += 1
+        # Computing 3d spectrum
+        elif report == '3d#':
+            spec_matrix[len(intent) - 1, supp - 1, max(
+                np.array(intent) % winlen)] += 1
+    del fpgrowth_output
+    if report == 'a':
+        return concepts
+
+    if report == '#':
+        for (z, c) in np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
+    elif report == '3d#':
+        for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append(
+                (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
+    del spec_matrix
+    return spectrum
 
 
 def _fpgrowth_filter(concept, winlen, max_c, min_neu):
@@ -977,19 +980,19 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
                 np.array(intent) % winlen)] += 1
     if report == 'a':
         return concepts
-    else:
-        del concepts
-        # returning spectrum
-        if report == '#':
-            for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-                spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
 
-        if report == '3d#':
-            for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
-                spectrum.append(
-                    (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
-        del spec_matrix
-        return spectrum
+    del concepts
+    # returning spectrum
+    if report == '#':
+        for (z, c) in np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
+
+    if report == '3d#':
+        for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append(
+                (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
+    del spec_matrix
+    return spectrum
 
 
 def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
@@ -1006,9 +1009,9 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
     return keep_concepts
 
 
-def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
-                    min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
-                    spectrum='#'):
+def get_pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
+                        min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
+                        spectrum='#'):
     """
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -1291,7 +1294,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     else:
         raise AttributeError(
             "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')" +
-            " or 'hb'('holm_bonf'), but not '"+str(corr)+"'.")
+            " or 'hb'('holm_bonf'), but not '" + str(corr) + "'.")
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
@@ -1311,7 +1314,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         if report == 'spectrum':
             return [(size, supp, l, test)
                     for (size, supp, l, pv), test in zip(
-                    pvalue_spectrum, tests)]
+                        pvalue_spectrum, tests)]
         elif report == 'significant':
             return [(size, supp, l) for ((size, supp, l, pv), test)
                     in zip(pvalue_spectrum, tests) if test]
@@ -1419,7 +1422,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         raise AttributeError('n_subsets has to be >=0 or delta + epsilon > 0')
     if len(concepts) == 0:
         return []
-    elif len(concepts) <= size:
+    if len(concepts) <= size:
         rank_idx = [0] * (size + 1) + [len(concepts)]
     else:
         rank_idx = list(
@@ -1429,155 +1432,85 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     # Calculate optimal n
     if delta + epsilon > 0 and n_subsets == 0:
         n_subsets = np.log(2. / delta) / (2 * epsilon ** 2) + 1
-    output = []
+
     if rank == 0:
-        for concept in concepts[
-                rank_idx[rank]:rank_idx[rank + 1]] + concepts[
-                rank_idx[-2]:rank_idx[-1]]:
-            stab_ext = 0.0
-            stab_int = 0.0
-            intent = np.array(list(concept[0]))
-            extent = np.array(list(concept[1]))
-            r_unique_ext = set()
-            r_unique_int = set()
-            excluded_subset = []
-            # Calculate all subsets if n is larger than the power set of
-            # the extent
-            if n_subsets > 2 ** len(extent):
-                subsets_ext = chain.from_iterable(
-                    combinations(extent, r) for r in range(
-                        len(extent) + 1))
-                for s in subsets_ext:
-                    if any(
-                            [set(s).issubset(se) for se in excluded_subset]):
-                        continue
-                    if _closure_probability_extensional(
-                            intent, s, rel_matrix):
-                        stab_ext += 1
-                    else:
-                        excluded_subset.append(s)
-            else:
-                for _ in range(n_subsets):
-                    subset_ext = extent[
-                        _give_random_idx(r_unique_ext, len(extent))]
-                    if any([
-                        set(subset_ext).issubset(se) for
-                            se in excluded_subset]):
-                        continue
-                    if _closure_probability_extensional(
-                            intent, subset_ext, rel_matrix):
-                        stab_ext += 1
-                    else:
-                        excluded_subset.append(subset_ext)
-            stab_ext /= min(n_subsets, 2 ** len(extent))
-            excluded_subset = []
-            # Calculate all subsets if n is larger than the power set of
-            # the extent
-            if n_subsets > 2 ** len(intent):
-                subsets_int = chain.from_iterable(
-                    combinations(intent, r) for r in range(
-                        len(intent) + 1))
-                for s in subsets_int:
-                    if any(
-                            [set(s).issubset(se) for se in excluded_subset]):
-                        continue
-                    if _closure_probability_intensional(
-                            extent, s, rel_matrix):
-                        stab_int += 1
-                    else:
-                        excluded_subset.append(s)
-            else:
-                for _ in range(n_subsets):
-                    subset_int = intent[
-                        _give_random_idx(r_unique_int, len(intent))]
-                    if any([
-                        set(subset_int).issubset(se) for
-                            se in excluded_subset]):
-                        continue
-                    if _closure_probability_intensional(
-                            extent, subset_int, rel_matrix):
-                        stab_int += 1
-                    else:
-                        excluded_subset.append(subset_int)
-            stab_int /= min(n_subsets, 2 ** len(intent))
-            output.append((intent, extent, stab_int, stab_ext))
-    else:  # pragma: no cover
-        for concept in concepts[rank_idx[rank]:rank_idx[rank + 1]]:
-            stab_ext = 0.0
-            stab_int = 0.0
-            intent = np.array(list(concept[0]))
-            extent = np.array(list(concept[1]))
-            r_unique_ext = set()
-            r_unique_int = set()
-            excluded_subset = []
-            # Calculate all subsets if n is larger than the power set of
-            # the extent
-            if n_subsets > 2 ** len(extent):
-                subsets_ext = chain.from_iterable(
-                    combinations(extent, r) for r in range(
-                        len(extent) + 1))
-                for s in subsets_ext:
-                    if any(
-                            [set(s).issubset(se) for se in excluded_subset]):
-                        continue
-                    if _closure_probability_extensional(
-                            intent, s, rel_matrix):
-                        stab_ext += 1
-                    else:
-                        excluded_subset.append(s)
-            else:
-                for _ in range(n_subsets):
-                    subset_ext = extent[
-                        _give_random_idx(r_unique_ext, len(extent))]
-                    if any([
-                        set(subset_ext).issubset(se) for
-                            se in excluded_subset]):
-                        continue
-                    if _closure_probability_extensional(
-                            intent, subset_ext, rel_matrix):
-                        stab_ext += 1
-                    else:
-                        excluded_subset.append(subset_ext)
-            stab_ext /= min(n_subsets, 2 ** len(extent))
-            excluded_subset = []
-            # Calculate all subsets if n is larger than the power set of
-            # the extent
-            if n_subsets > 2 ** len(intent):
-                subsets_int = chain.from_iterable(
-                    combinations(intent, r) for r in range(
-                        len(intent) + 1))
-                for s in subsets_int:
-                    if any(
-                            [set(s).issubset(se) for se in excluded_subset]):
-                        continue
-                    if _closure_probability_intensional(
-                            extent, s, rel_matrix):
-                        stab_int += 1
-                    else:
-                        excluded_subset.append(s)
-            else:
-                for _ in range(n_subsets):
-                    subset_int = intent[
-                        _give_random_idx(r_unique_int, len(intent))]
-                    if any([
-                        set(subset_int).issubset(se) for
-                            se in excluded_subset]):
-                        continue
-                    if _closure_probability_intensional(
-                            extent, subset_int, rel_matrix):
-                        stab_int += 1
-                    else:
-                        excluded_subset.append(subset_int)
-            stab_int /= min(n_subsets, 2 ** len(intent))
-            output.append((intent, extent, stab_int, stab_ext))
+        concepts_on_partition = concepts[rank_idx[rank]:rank_idx[rank + 1]] +\
+            concepts[rank_idx[-2]:rank_idx[-1]]
+    else:
+        concepts_on_partition = concepts[rank_idx[rank]:rank_idx[rank + 1]]
 
-    if rank != 0:  # pragma: no cover
-        comm.send(output, dest=0)
-    if rank == 0:  # pragma: no cover
-        for i in range(1, size):
-            recv_list = comm.recv(source=i)
-            output.extend(recv_list)
+    output = []
+    for concept in concepts_on_partition:
+        stab_ext = 0.0
+        stab_int = 0.0
+        intent = np.array(list(concept[0]))
+        extent = np.array(list(concept[1]))
+        r_unique_ext = set()
+        r_unique_int = set()
+        excluded_subset = []
+        # Calculate all subsets if n is larger than the power set of
+        # the extent
+        if n_subsets > 2 ** len(extent):
+            subsets_ext = chain.from_iterable(
+                combinations(extent, r) for r in range(
+                    len(extent) + 1))
+            for s in subsets_ext:
+                if any(
+                        [set(s).issubset(se) for se in excluded_subset]):
+                    continue
+                if _closure_probability_extensional(
+                        intent, s, rel_matrix):
+                    stab_ext += 1
+                else:
+                    excluded_subset.append(s)
+        else:
+            for _ in range(n_subsets):
+                subset_ext = extent[
+                    _give_random_idx(r_unique_ext, len(extent))]
+                if any([set(subset_ext).issubset(se)
+                        for se in excluded_subset]):
+                    continue
+                if _closure_probability_extensional(
+                        intent, subset_ext, rel_matrix):
+                    stab_ext += 1
+                else:
+                    excluded_subset.append(subset_ext)
+        stab_ext /= min(n_subsets, 2 ** len(extent))
+        excluded_subset = []
+        # Calculate all subsets if n is larger than the power set of
+        # the extent
+        if n_subsets > 2 ** len(intent):
+            subsets_int = chain.from_iterable(
+                combinations(intent, r) for r in range(
+                    len(intent) + 1))
+            for s in subsets_int:
+                if any(
+                        [set(s).issubset(se) for se in excluded_subset]):
+                    continue
+                if _closure_probability_intensional(
+                        extent, s, rel_matrix):
+                    stab_int += 1
+                else:
+                    excluded_subset.append(s)
+        else:
+            for _ in range(n_subsets):
+                subset_int = intent[
+                    _give_random_idx(r_unique_int, len(intent))]
+                if any([set(subset_int).issubset(se) for
+                        se in excluded_subset]):
+                    continue
+                if _closure_probability_intensional(
+                        extent, subset_int, rel_matrix):
+                    stab_int += 1
+                else:
+                    excluded_subset.append(subset_int)
+        stab_int /= min(n_subsets, 2 ** len(intent))
+        output.append((intent, extent, stab_int, stab_ext))
 
+    recv_list = comm.gather(output, root=0)
+    if rank == 0:
+        for i in range(1, len(recv_list)):
+            output.extend(recv_list[i])
     return output
 
 
@@ -1637,8 +1570,7 @@ def _give_random_idx(r_unique, n):
     """ asd """
 
     r = np.random.randint(n,
-                          size=np.random.randint(low=1,
-                                                 high=n))
+                          size=np.random.randint(low=1, high=n))
     r_tuple = tuple(r)
     if r_tuple not in r_unique:
         r_unique.add(r_tuple)
@@ -1788,19 +1720,17 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     if reject_sub and not reject_sup:
                         selected[id2] = False
                         break
-                    elif reject_sup and not reject_sub:
+                    if reject_sup and not reject_sub:
                         selected[id1] = False
                         break
-                    elif reject_sub and reject_sup:
+                    if reject_sub and reject_sup:
                         if (size1 - l) * count1 >= (size2 - l) * count2:
                             selected[id2] = False
                             break
-                        else:
-                            selected[id1] = False
-                            break
+                        selected[id1] = False
+                        break
                     # if both sets are significant given the other, keep both
-                    else:
-                        continue
+                    continue
                 elif set(conc2).issuperset(conc1_new):
                     supp_diff = count1 - count2 + h
                     size1, size2 = len(conc1_new), len(conc2)
@@ -1816,7 +1746,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         reject_sup = (size_diff, count1) in excluded \
                             or size_diff < min_spikes
                     # 3d spectrum case
-                    if len(excluded[0]) == 3:
+                    elif len(excluded[0]) == 3:
                         # Determine whether the subset (conc2) should be
                         # rejected according to the test for excess occurrences
                         len_sub = max(
@@ -1834,19 +1764,17 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     if reject_sub and not reject_sup:
                         selected[id1] = False
                         break
-                    elif reject_sup and not reject_sub:
+                    if reject_sup and not reject_sub:
                         selected[id2] = False
                         break
-                    elif reject_sub and reject_sup:
+                    if reject_sub and reject_sup:
                         if (size1 - l) * count1 >= (size2 - l) * count2:
                             selected[id2] = False
                             break
-                        else:
-                            selected[id1] = False
-                            break
+                        selected[id1] = False
+                        break
                     # if both sets are significant given the other, keep both
-                    else:
-                        continue
+                    continue
                 else:
                     size1, size2 = len(conc1_new), len(conc2)
                     inter_size = len(set(conc1_new) & set(conc2))
@@ -1878,19 +1806,17 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     if reject_2 and not reject_1:
                         selected[id2] = False
                         break
-                    elif reject_1 and not reject_2:
+                    if reject_1 and not reject_2:
                         selected[id1] = False
                         break
-                    elif reject_1 and reject_2:
+                    if reject_1 and reject_2:
                         if (size1 - l) * count1 >= (size2 - l) * count2:
                             selected[id2] = False
                             break
-                        else:
-                            selected[id1] = False
-                            break
+                        selected[id1] = False
+                        break
                     # if both sets are significant given the other, keep both
-                    else:
-                        continue
+                    continue
 
     # Return the selected concepts
     return [p for i, p in enumerate(concepts) if selected[i]]
