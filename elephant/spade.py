@@ -1498,10 +1498,12 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         stab_int /= min(n_subsets, 2 ** len(intent))
         output.append((intent, extent, stab_int, stab_ext))
 
-    recv_list = comm.gather(output, root=0)
-    if rank == 0:
-        for i in range(1, len(recv_list)):
-            output.extend(recv_list[i])
+    if size != 1:
+        recv_list = comm.gather(output, root=0)
+        if rank == 0:
+            for i in range(1, len(recv_list)):
+                output.extend(recv_list[i])
+
     return output
 
 
