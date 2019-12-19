@@ -62,10 +62,12 @@ import operator
 from itertools import chain, combinations
 from functools import reduce
 from collections import defaultdict
+
 import numpy as np
-from scipy import sparse
 import neo
 import quantities as pq
+from scipy import sparse
+
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
 from elephant.spade_src import fast_fca
