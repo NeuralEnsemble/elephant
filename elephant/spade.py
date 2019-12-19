@@ -298,7 +298,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             "'patterns' and 'concepts'")
 
     time_mining = time.time()
-    if rank == 0:
+    if rank == 0 or n_subsets > 0:
         # Mine the data for extraction of concepts
         concepts, rel_matrix = concepts_mining(data, binsize, winlen,
                                                min_spikes=min_spikes,
@@ -311,17 +311,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         print("Time for data mining: {}".format(time_mining))
 
     # Decide if compute the approximated stability
-    elif n_subsets > 0:
-        # Mine the data for extraction of concepts
-        concepts, rel_matrix = concepts_mining(data, binsize, winlen,
-                                               min_spikes=min_spikes,
-                                               min_occ=min_occ,
-                                               min_neu=min_neu,
-                                               max_spikes=max_spikes,
-                                               max_occ=max_occ,
-                                               report='a')
-        time_mining = time.time() - time_mining
-        print("Time for data mining: {}".format(time_mining))
+    if n_subsets > 0:
         # Computing the approximated stability of all the concepts
         time_stability = time.time()
         concepts = approximate_stability(concepts, rel_matrix, n_subsets,
