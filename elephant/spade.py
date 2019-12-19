@@ -284,7 +284,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
      Parallel Spike Train Data with SPADE.
     Frontiers in Computational Neuroscience, 11.
     """
-    if spectrum not in ['concepts', 'patterns']:
+    if output_format not in ['concepts', 'patterns']:
         raise ValueError(
             "The output_format value has to be one between"
             "'patterns' and 'concepts'")
