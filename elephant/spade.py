@@ -284,19 +284,18 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
      Parallel Spike Train Data with SPADE.
     Frontiers in Computational Neuroscience, 11.
     """
-    if output_format not in ['concepts', 'patterns']:
-        raise ValueError(
-            "The output_format value has to be one between"
-            "'patterns' and 'concepts'")
-
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD   # create MPI communicator
         rank = comm.Get_rank()  # get rank of current MPI task
     else:
         rank = 0
 
-    time_mining = time.time()
+    if output_format not in ['concepts', 'patterns']:
+        raise ValueError(
+            "The output_format value has to be one between"
+            "'patterns' and 'concepts'")
 
+    time_mining = time.time()
     if rank == 0:
         # Mine the data for extraction of concepts
         concepts, rel_matrix = concepts_mining(data, binsize, winlen,
