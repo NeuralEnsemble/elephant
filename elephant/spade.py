@@ -332,7 +332,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if n_surr > 0:
         # Compute pvalue spectrum
         time_pvalue_spectrum = time.time()
-        pv_spec = get_pvalue_spectrum(data, binsize, winlen, dither=dither,
+        pv_spec = pvalue_spectrum(data, binsize, winlen, dither=dither,
                                       n_surr=n_surr, min_spikes=min_spikes,
                                       min_occ=min_occ, max_spikes=max_spikes,
                                       max_occ=max_occ, min_neu=min_neu,
@@ -1000,7 +1000,7 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
     return keep_concepts
 
 
-def get_pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
+def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                         min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
                         spectrum='#'):
     """
