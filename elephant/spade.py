@@ -1271,6 +1271,15 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     # If alpha == 1 all signatures are significant
     if alpha == 1:
         return []
+
+    if spectrum not in ['#', '3d#']:
+        raise AttributeError("spectrum must be either '#' or '3d#', "
+                             "got {} instead".format(spectrum))
+    if report not in ['spectrum', 'significant', 'non_significant']:
+        raise AttributeError("report must be either 'spectrum'," +
+                             "  'significant' or 'non_significant'," +
+                             "got {} instead".format(report))
+
     x_array = np.array(pvalue_spectrum)
     # Compute significance...
     if corr in ['', 'no']:  # ...without statistical correction
@@ -1290,33 +1299,25 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         if report == 'spectrum':
             return [(size, supp, test)
                     for (size, supp, pv), test in zip(pvalue_spectrum, tests)]
-        elif report == 'significant':
+        if report == 'significant':
             return [(size, supp) for ((size, supp, pv), test)
                     in zip(pvalue_spectrum, tests) if test]
-        elif report == 'non_significant':
-            return [
-                (size, supp) for ((size, supp, pv), test) in zip(
-                    pvalue_spectrum, tests) if not test]
-        raise AttributeError("report must be either 'spectrum'," +
-                             "  'significant' or 'non_significant'," +
-                             "got {} instead".format(report))
-    elif spectrum == '3d#':
-        if report == 'spectrum':
-            return [(size, supp, l, test)
-                    for (size, supp, l, pv), test in zip(
-                    pvalue_spectrum, tests)]
-        elif report == 'significant':
-            return [(size, supp, l) for ((size, supp, l, pv), test)
-                    in zip(pvalue_spectrum, tests) if test]
-        elif report == 'non_significant':
-            return [
-                (size, supp, l) for ((size, supp, l, pv), test) in zip(
-                    pvalue_spectrum, tests) if not test]
-        raise AttributeError("report must be either 'spectrum'," +
-                             "  'significant' or 'non_significant'," +
-                             "got {} instead".format(report))
-    raise AttributeError("spectrum must be either '#' or '3d#', "
-                         "got {} instead".format(spectrum))
+        # report == 'non_significant'
+        return [(size, supp)
+                for ((size, supp, pv), test) in zip(pvalue_spectrum, tests)
+                if not test]
+
+    # spectrum == '3d#'
+    if report == 'spectrum':
+        return [(size, supp, l, test)
+                for (size, supp, l, pv), test in zip(pvalue_spectrum, tests)]
+    if report == 'significant':
+        return [(size, supp, l) for ((size, supp, l, pv), test)
+                in zip(pvalue_spectrum, tests) if test]
+    # report == 'non_significant'
+    return [(size, supp, l)
+            for ((size, supp, l, pv), test) in zip(pvalue_spectrum, tests)
+            if not test]
 
 
 def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
