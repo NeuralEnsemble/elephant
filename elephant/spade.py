@@ -342,6 +342,9 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             time_pvalue_spectrum))
         # Storing pvalue spectrum
         output['pvalue_spectrum'] = pv_spec
+    elif 0 < alpha < 1:
+        warnings.warn('0<alpha<1 but p-value spectrum has not been '
+                      'computed (n_surr==0)')
 
     # rank!=0 returning None
     if rank != 0:
@@ -352,10 +355,6 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     ns_sgnt = []
     # Decide whether filter concepts with psf
     if n_surr > 0:
-        if 0 < alpha < 1:
-            warnings.warn('0<alpha<1 but p-value spectrum has not been '
-                          'computed (n_surr==0)')
-
         if len(pv_spec) > 0:
             # Computing non-significant entries of the spectrum applying
             # the statistical correction
