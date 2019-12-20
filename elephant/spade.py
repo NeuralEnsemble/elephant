@@ -294,8 +294,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
 
     if output_format not in ['concepts', 'patterns']:
         raise ValueError(
-            "The output_format value has to be one between"
-            "'patterns' and 'concepts'")
+            "The output_format value has to be"
+            "'patterns' or 'concepts'")
 
     time_mining = time.time()
     if rank == 0 or n_subsets > 0:
