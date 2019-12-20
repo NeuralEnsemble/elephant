@@ -333,10 +333,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         # Compute pvalue spectrum
         time_pvalue_spectrum = time.time()
         pv_spec = pvalue_spectrum(data, binsize, winlen, dither=dither,
-                                      n_surr=n_surr, min_spikes=min_spikes,
-                                      min_occ=min_occ, max_spikes=max_spikes,
-                                      max_occ=max_occ, min_neu=min_neu,
-                                      spectrum=spectrum)
+                                  n_surr=n_surr, min_spikes=min_spikes,
+                                  min_occ=min_occ, max_spikes=max_spikes,
+                                  max_occ=max_occ, min_neu=min_neu,
+                                  spectrum=spectrum)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
         print("Time for pvalue spectrum computation: {}".format(
             time_pvalue_spectrum))
@@ -1001,8 +1001,8 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
 
 
 def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
-                        min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
-                        spectrum='#'):
+                    min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
+                    spectrum='#'):
     """
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
