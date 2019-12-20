@@ -74,15 +74,16 @@ from elephant.spade_src import fast_fca
 
 warnings.simplefilter('once', UserWarning)
 
-
 try:
     from mpi4py import MPI  # for parallelized routines
+
     HAVE_MPI = True
 except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
     from elephant.spade_src import fim
+
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
     HAVE_FIM = False
@@ -92,7 +93,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
           alpha=1, stat_corr='fdr', psr_param=None, output_format='concepts'):
-    """
+    r"""
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
     in a sliding window of winlen*binsize milliseconds.
@@ -192,11 +193,11 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
-                (see parameter h of pattern_set_reduction()).
+                (see h_subset_filtering in pattern_set_reduction()).
             psr_param[1]: correction parameter for superset filtering
-                (see parameter k of pattern_set_reduction()).
+                (see k_superset_filtering in pattern_set_reduction()).
             psr_param[2]: correction parameter for covered-spikes criterion
-                (see parameter l for pattern_set_reduction()).
+                (see l_covered_spikes in pattern_set_reduction()).
     output_format: str
         distinguish the format of the output (see Returns). Can assume values
         'concepts' and 'patterns'.
@@ -287,15 +288,14 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     Frontiers in Computational Neuroscience, 11.
     """
     if HAVE_MPI:  # pragma: no cover
-        comm = MPI.COMM_WORLD   # create MPI communicator
+        comm = MPI.COMM_WORLD  # create MPI communicator
         rank = comm.Get_rank()  # get rank of current MPI task
     else:
         rank = 0
 
     if output_format not in ['concepts', 'patterns']:
-        raise ValueError(
-            "The output_format value has to be"
-            "'patterns' or 'concepts'")
+        raise ValueError("The output_format value has to be"
+                         "'patterns' or 'concepts'")
 
     time_mining = time.time()
     if rank == 0 or n_subsets > 0:
@@ -327,7 +327,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                       'computed (n_subsets==0)')
 
     output = {}
-    pv_spec = None   # initialize pv_spec to None
+    pv_spec = None  # initialize pv_spec to None
     # Decide whether compute pvalue spectrum
     if n_surr > 0:
         # Compute pvalue spectrum
@@ -375,11 +375,11 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
             # Filter using conditional tests (psr)
             concepts = pattern_set_reduction(concepts, ns_sgnt,
                                              winlen=winlen,
-                                             h=psr_param[0],
-                                             k=psr_param[1],
-                                             l=psr_param[2],
+                                             h_subset_filtering=psr_param[0],
+                                             k_superset_filtering=psr_param[1],
+                                             l_covered_spikes=psr_param[2],
                                              min_spikes=min_spikes,
-                                             min_occ=min_occ)
+                                             min_occ=min_occ)  # nopep8
     # Storing patterns for ouput format concepts
     if output_format == 'concepts':
         output['patterns'] = concepts
@@ -786,7 +786,7 @@ def _fpgrowth_filter(concept, winlen, max_c, min_neu):
     keep_concepts = len(
         np.unique(np.array(
             concept[0]) // winlen)) >= min_neu and concept[1] <= max_c and min(
-                np.array(concept[0]) % winlen) == 0
+        np.array(concept[0]) % winlen) == 0
     return keep_concepts
 
 
@@ -995,8 +995,8 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
     extent = tuple(concept.extent)
     keep_concepts = len(intent) >= min_z and len(extent) >= min_c and len(
         intent) <= max_z and len(extent) <= max_c and len(
-            np.unique(np.array(intent) // winlen)) >= min_neu and min(
-                np.array(intent) % winlen) == 0
+        np.unique(np.array(intent) // winlen)) >= min_neu and min(
+        np.array(intent) % winlen) == 0
     return keep_concepts
 
 
@@ -1080,7 +1080,7 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     """
     # Initializing variables for parallel computing
     if HAVE_MPI:  # pragma: no cover
-        comm = MPI.COMM_WORLD   # create MPI communicator
+        comm = MPI.COMM_WORLD  # create MPI communicator
         rank = comm.Get_rank()  # get rank of current MPI task
         size = comm.Get_size()  # get tot number of MPI tasks
     else:
@@ -1184,7 +1184,7 @@ def _fdr(pvalues, alpha):
     for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
         k = m - i
         if pv <= alpha * (k * 1. / m):  # continue if PV > fdr-threshold
-            break                          # otherwise stop
+            break  # otherwise stop
     # this applies, when loop is not stopped due to significant pvalue
     else:
         k = 0
@@ -1305,7 +1305,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         if report == 'spectrum':
             return [(size, supp, l, test)
                     for (size, supp, l, pv), test in zip(
-                        pvalue_spectrum, tests)]
+                    pvalue_spectrum, tests)]
         elif report == 'significant':
             return [(size, supp, l) for ((size, supp, l, pv), test)
                     in zip(pvalue_spectrum, tests) if test]
@@ -1339,7 +1339,7 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
 
 
 def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
-    """
+    r"""
     Approximate the stability of concepts. Uses the algorithm described
     in Babin, Kuznetsov (2012): Approximating Concept Stability
 
@@ -1403,7 +1403,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
 
     """
     if HAVE_MPI:  # pragma: no cover
-        comm = MPI.COMM_WORLD   # create MPI communicator
+        comm = MPI.COMM_WORLD  # create MPI communicator
         rank = comm.Get_rank()  # get rank of current MPI task
         size = comm.Get_size()  # get tot number of MPI tasks
     else:
@@ -1425,7 +1425,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         n_subsets = np.log(2. / delta) / (2 * epsilon ** 2) + 1
 
     if rank == 0:
-        concepts_on_partition = concepts[rank_idx[rank]:rank_idx[rank + 1]] +\
+        concepts_on_partition = concepts[rank_idx[rank]:rank_idx[rank + 1]] + \
             concepts[rank_idx[-2]:rank_idx[-1]]
     else:
         concepts_on_partition = concepts[rank_idx[rank]:rank_idx[rank + 1]]
@@ -1571,9 +1571,10 @@ def _give_random_idx(r_unique, n):
     return _give_random_idx(r_unique, n)
 
 
-def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
+def pattern_set_reduction(concepts, excluded, winlen, h_subset_filtering=0,
+                          k_superset_filtering=0, l_covered_spikes=0,
                           min_spikes=2, min_occ=2):
-    """
+    r"""
     Takes a list concepts and performs pattern set reduction (PSR).
 
     PSR determines which patterns in concepts_psf are statistically significant
@@ -1607,13 +1608,13 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
         List of concepts, each consisting in its intent and extent
     excluded: list
         A list of non-significant pattern signatures (z, c) (see above).
-    h: int
+    h_subset_filtering: int
         Correction parameter for subset filtering (see above).
         Defaults: 0
-    k: int
+    k_superset_filtering: int
         Correction parameter for superset filtering (see above).
         Default: 0
-    l: int ]
+    l_covered_spikes: int
         Correction parameter for covered-spikes criterion (see above).
         Default: 0
     min_size: int
@@ -1668,21 +1669,21 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     continue
                 if not selected[id2]:
                     continue
-                if set(conc1_new).issuperset(conc2) and count2\
-                        - count1 + h < min_occ:
+                if set(conc1_new).issuperset(conc2) and count2 \
+                        - count1 + h_subset_filtering < min_occ:
                     selected[id2] = False
                     break
-                if set(conc2).issuperset(conc1_new) and count1\
-                        - count2 + h < min_occ:
+                if set(conc2).issuperset(conc1_new) and count1 \
+                        - count2 + h_subset_filtering < min_occ:
                     selected[id1] = False
                     break
                 if len(excluded) == 0:
                     break
                 # Test the case conc1 is a superset of conc2
                 if set(conc1_new).issuperset(conc2):
-                    supp_diff = count2 - count1 + h
+                    supp_diff = count2 - count1 + h_subset_filtering
                     size1, size2 = len(conc1_new), len(conc2)
-                    size_diff = size1 - size2 + k
+                    size_diff = size1 - size2 + k_superset_filtering
                     # 2d spectrum case
                     if len(excluded[0]) == 2:
                         # Determine whether the subset (conc2)
@@ -1717,7 +1718,8 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         selected[id1] = False
                         break
                     if reject_sub and reject_sup:
-                        if (size1 - l) * count1 >= (size2 - l) * count2:
+                        if (size1 - l_covered_spikes) * \
+                                count1 >= (size2 - l_covered_spikes) * count2:
                             selected[id2] = False
                             break
                         selected[id1] = False
@@ -1725,9 +1727,9 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     # if both sets are significant given the other, keep both
                     continue
                 elif set(conc2).issuperset(conc1_new):
-                    supp_diff = count1 - count2 + h
+                    supp_diff = count1 - count2 + h_subset_filtering
                     size1, size2 = len(conc1_new), len(conc2)
-                    size_diff = size2 - size1 + k
+                    size_diff = size2 - size1 + k_superset_filtering
                     # 2d spectrum case
                     if len(excluded[0]) == 2:
                         # Determine whether the subset (conc2) should be
@@ -1761,7 +1763,8 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         selected[id2] = False
                         break
                     if reject_sub and reject_sup:
-                        if (size1 - l) * count1 >= (size2 - l) * count2:
+                        if (size1 - l_covered_spikes) * \
+                                count1 >= (size2 - l_covered_spikes) * count2:
                             selected[id2] = False
                             break
                         selected[id1] = False
@@ -1773,27 +1776,32 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                     inter_size = len(set(conc1_new) & set(conc2))
                     # 2d spectrum case
                     if len(excluded[0]) == 2:
-                        reject_1 = (
-                            size1 - inter_size + k,
-                            count1) in \
-                            excluded or size1 - inter_size + k < min_spikes
-                        reject_2 = (
-                            size2 - inter_size + k, count2) in excluded or \
-                            size2 - inter_size + k < min_spikes
+                        reject_1 = (size1 - inter_size + k_superset_filtering,
+                                    count1) in excluded
+                        reject_1 = reject_1 or \
+                            (size1 - inter_size + k_superset_filtering)\
+                            < min_spikes
+                        reject_2 = (size2 - inter_size + k_superset_filtering,
+                                    count2) in excluded
+                        reject_2 = reject_2 or \
+                            (size1 - inter_size + k_superset_filtering) \
+                            < min_spikes
                     # 3d spectrum case
                     if len(excluded[0]) == 3:
                         len_1 = max(
                             np.abs(np.diff(np.array(conc1_new) % winlen)))
                         len_2 = max(
                             np.abs(np.diff(np.array(conc2) % winlen)))
-                        reject_1 = (
-                            size1 - inter_size + k, count1,
-                            len_1) in excluded or \
-                            size1 - inter_size + k < min_spikes
-                        reject_2 = (
-                            size2 - inter_size + k, count2, len_2) \
-                            in excluded or \
-                            size2 - inter_size + k < min_spikes
+                        reject_1 = (size1 - inter_size + k_superset_filtering,
+                                    count1, len_1) in excluded
+                        reject_1 = reject_1 or \
+                            (size1 - inter_size + k_superset_filtering) \
+                            < min_spikes
+                        reject_2 = (size2 - inter_size + k_superset_filtering,
+                                    count2, len_2) in excluded
+                        reject_2 = reject_2 or \
+                            (size1 - inter_size + k_superset_filtering) \
+                            < min_spikes
 
                     # Reject accordingly:
                     if reject_2 and not reject_1:
@@ -1803,7 +1811,8 @@ def pattern_set_reduction(concepts, excluded, winlen, h=0, k=0, l=0,
                         selected[id1] = False
                         break
                     if reject_1 and reject_2:
-                        if (size1 - l) * count1 >= (size2 - l) * count2:
+                        if (size1 - l_covered_spikes) * \
+                                count1 >= (size2 - l_covered_spikes) * count2:
                             selected[id2] = False
                             break
                         selected[id1] = False
