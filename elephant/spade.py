@@ -1170,7 +1170,6 @@ def _stability_filter(c, stab_thr):
 
 def test_signature_significance(pvalue_spectrum, alpha, corr='',
                                 report='spectrum', spectrum='#'):
-    # TODO: adapt documentation accordingly
     """
     Compute the significance spectrum of a pattern spectrum.
 
@@ -1251,8 +1250,9 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
                                  method=corr)[0]
 
     # Remerge test output
-    indexes_totest = np.where((pvalues != 0) & (pvalues != 1))[0]
-    indexes_zeros = np.where(pvalues == 0)[0]
+    indexes_totest = np.where((~np.isclose(pvalues, [0])) &
+                              (~np.isclose(pvalues, [1])))[0]
+    indexes_zeros = np.where(np.isclose(pvalues, [0]))[0]
 
     # Initialize test array to False
     tests = [False for i in range(len(pvalues))]
