@@ -1194,6 +1194,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
 
     x_array = np.array(pvalue_spectrum)
     pvalues = x_array[:, -1]
+    # TODO: define epsilon for this  
     pvalues_totest = pvalues[(pvalues != 0) & (pvalues != 1)]
 
     # Compute significance for only the non trivial tests
