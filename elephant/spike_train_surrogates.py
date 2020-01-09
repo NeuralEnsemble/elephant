@@ -592,7 +592,7 @@ class JointISI(object):
             Default: True
         refr_period: pq.Quantity, optional
             Defines the refractory period of the dithered `spiketrain` unless
-            the least ISI of the `spiketrain` is lower than this value.
+            the smallest ISI of the `spiketrain` is lower than this value.
             Default: 4.*pq.ms
         """
         self.spiketrain = spiketrain
