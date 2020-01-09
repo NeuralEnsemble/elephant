@@ -519,7 +519,7 @@ class JointISI(object):
     refr_period:
         Since this dither-method should conserve the refractory period,
         It is internally calculated as the minimum of the value given here
-        and the least ISI in the spiketrain.
+        and the smallest ISI in the spiketrain.
         Default: 4.*pq.ms
     Methods
     ----------
@@ -631,7 +631,7 @@ class JointISI(object):
         Returns
         -------
         float
-            The maginute of `x`, rescaled to the units of the input
+            The magnitude of `x`, rescaled to the units of the input
             `spiketrain`.
         """
         if isinstance(x, pq.Quantity):
