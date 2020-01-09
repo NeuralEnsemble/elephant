@@ -872,7 +872,8 @@ class BinnedSpikeTrain(object):
             Matrix sparsity, defined as matrix size, divided by no. of
             nonzero elements.
         """
-        return np.prod(self._sparse_mat_u.shape) / len(self._sparse_mat_u.data)
+        num_nonzero = self._sparse_mat_u.data.shape[0]
+        return num_nonzero / np.prod(self._sparse_mat_u.shape)
 
     def _convert_to_binned(self, spiketrains):
         """
