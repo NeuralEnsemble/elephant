@@ -212,6 +212,22 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertEqual(binned_matrix.get_num_of_spikes(),
                          sum(n_spikes_per_row_from_indices))
 
+    def test_get_num_of_spikes(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        for spiketrain in spiketrains:
+            binned = cv.BinnedSpikeTrain(spiketrain, num_bins=10,
+                                         binsize=1 * pq.s, t_start=0 * pq.s)
+            self.assertEqual(binned.get_num_of_spikes(),
+                             len(binned.spike_indices[0]))
+        binned_matrix = cv.BinnedSpikeTrain(spiketrains, num_bins=10,
+                                            binsize=1 * pq.s)
+        n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
+        n_spikes_per_row_from_indices = list(map(len,
+                                                 binned_matrix.spike_indices))
+        assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
+        self.assertEqual(binned_matrix.get_num_of_spikes(),
+                         sum(n_spikes_per_row_from_indices))
+
     def test_binned_spiketrain_sparse(self):
         a = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
         b = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
