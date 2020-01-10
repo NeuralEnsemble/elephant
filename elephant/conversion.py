@@ -832,8 +832,6 @@ class BinnedSpikeTrain(object):
     def remove_stored_array(self):
         """
         Unlinks the matrix with counted time points from memory.
-
-    def binarize(self):
         """
         self._mat_u = None
 
