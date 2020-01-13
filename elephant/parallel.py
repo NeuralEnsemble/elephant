@@ -4,6 +4,7 @@ of Elephant functionalities, e.g., to perform analysis in sliding windows.
 """
 
 import sys
+import time
 import quantities as pq
 import elephant
 from mpi4py import MPI
@@ -125,7 +126,7 @@ class ParallelContext():
         sys.exit(0)
 
 
-class JobQ:
+class JobQueue:
     def __init__(self, parallel_context):
         self.parallel_context = parallel_context
 
@@ -158,7 +159,7 @@ class JobQ:
 
                 worker_busy[idle_worker_index] = True
                 # TODO: Remove
-                # print("%i loaded" % (idle_worker))
+                # print("%i started" % (idle_worker))
 
             # Any completing worker?
             for worker_index, worker in enumerate(
@@ -170,9 +171,9 @@ class JobQ:
                     _ = req.wait()
                     worker_busy[worker_index] = False
                     # TODO: Remove
-                    # print("%i complete" % (worker))
+                    # print("%i completed" % (worker))
 
-class JobQHandlers():
+class JobQueueHandlers():
     def __init__(self):
         pass
 
@@ -180,32 +181,48 @@ class JobQHandlers():
         pass
 
 
-class JobQSpikeTrainListHandler(JobQHandlers):
+class JobQueueSpikeTrainListHandler(JobQueueHandlers):
     def worker(self, spiketrain):
-        result = elephant.statistics.lv(spiketrain)
-        print(result)
+        # Do something complicated
+        for _ in range(1000):
+            result = elephant.statistics.lv(spiketrain)
+        # print(result)
         # return result
 
 
 def main():
     # Initialize context
     pc = ParallelContext()
+    # pc = ParallelContext(worker_ranks=[3,4])
     print("%s, %i" % (pc.rank_name, pc.comm_size))
 
-    # Create a list of spike trains, one per worker
-    s = [elephant.spike_train_generation.homogeneous_poisson_process(
-        10*pq.Hz, t_start=0*pq.s, t_stop=20*pq.s)
-        for _ in range(10)] #range(pc.comm_size-1)]
+    # Create a list of spike trains
+    spiketrain_list = [
+        elephant.spike_train_generation.homogeneous_poisson_process(
+            10*pq.Hz, t_start=0*pq.s, t_stop=20*pq.s)
+        for _ in range(100)]
 
     # Create a new queue operating on the current context
-    handler = JobQSpikeTrainListHandler()
+    handler = JobQueueSpikeTrainListHandler()
 
-    new_q = JobQ(pc)
-    new_q.add_spiketrain_list_job(s, handler)
+    ta = time.time()
+    for s in spiketrain_list:
+        # Do something complicated
+        for _ in range(1000):
+            result = elephant.statistics.lv(s)
+        # print(result)
+    ta = time.time()-ta
+
+    tb = time.time()
+    new_q = JobQueue(pc)
+    new_q.add_spiketrain_list_job(spiketrain_list, handler)
     new_q.execute()
+    tb = time.time()-tb
 
-    # Send one spike train to each worker, tag=11
+    # Send one spike train to each worker
     pc.terminate()
+
+    print("Standard: %f s, Parallel: %f s" % (ta, tb))
 
 
 if __name__ == "__main__":
