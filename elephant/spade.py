@@ -62,6 +62,7 @@ import operator
 from itertools import chain, combinations
 from functools import reduce
 from collections import defaultdict
+from __future__ import division
 
 import numpy as np
 import neo
@@ -530,7 +531,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         report=report)
     return mining_results, rel_matrix
 
-
+# TODO: Think about only_windows_with_first_spike
 def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     """
     Building the context given a matrix (number of trains x number of bins) of
@@ -582,6 +583,7 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         window_indices = np.arange(num_bins - winlen + 1)
     windows_row = []
     windows_col = []
+    # TODO: Please comment this code!
     for window_idx in window_indices:
         for col in range(window_idx, window_idx + winlen):
             if col in binary_matrix.col:
