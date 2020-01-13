@@ -56,13 +56,14 @@ plt.show()
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
+from __future__ import division
+
 import time
 import warnings
 import operator
 from itertools import chain, combinations
 from functools import reduce
 from collections import defaultdict
-from __future__ import division
 
 import numpy as np
 import neo
