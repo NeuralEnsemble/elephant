@@ -2,6 +2,9 @@
 """
 Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
 
+.. autosummary::
+    elephant.statistics
+    
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
