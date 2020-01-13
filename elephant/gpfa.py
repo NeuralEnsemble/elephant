@@ -236,9 +236,11 @@ class GPFA():
     >>>     spike_times = [homogeneous_poisson_process(rate=rate)
     >>>         for rate in firing_rates]
     >>>     data.append((trial, spike_times))
-    >>> gpfa = GPFA(bin_size=20 * pq.ms, x_dim=8)
+    >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
     >>> gpfa.fit(data)
     >>> seqs = gpfa.transform(data)
+    or simply
+    >>> seqs = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data)
     """
 
     def __init__(self, bin_size=20*pq.ms, x_dim=3, min_var_frac=0.01,
@@ -285,6 +287,11 @@ class GPFA():
             If `data` is an empty list.
             If `data[0][1][0]` is not a `neo.SpikeTrain`.
         """
+        self._check_training_data(data)
+        seqs_train = self._format_training_data(data, self.bin_size)
+        return self._fit(seqs_train, verbose)
+
+    def _check_training_data(self, data):
         # todo does it makes sense to explicitly pass trial_id?
         if len(data) == 0:
             raise ValueError("`data` cannot be empty")
@@ -293,16 +300,17 @@ class GPFA():
                              "should be trials, 1-axis neo spike trains "
                              "and 2-axis spike times")
 
+    def _format_training_data(self, data, bin_size):
         seqs = gpfa_util.get_seq(data, self.bin_size)
-
         # Remove inactive units based on training set
-        has_spikes_bool = (np.hstack(seqs['y']).mean(1) != 0)
+        self.has_spikes_bool = (np.hstack(seqs['y']).mean(1) != 0)
+        for seq in seqs:
+            seq['y'] = seq['y'][self.has_spikes_bool, :]
+        return seqs
 
-        for seq_train in seqs:
-            seq_train['y'] = seq_train['y'][has_spikes_bool, :]
-
+    def _fit(self, seqs_train, verbose):
         # Check if training data covariance is full rank
-        y_all = np.hstack(seqs['y'])
+        y_all = np.hstack(seqs_train['y'])
         y_dim = y_all.shape[0]
 
         if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
@@ -312,13 +320,13 @@ class GPFA():
             raise ValueError(errmesg)
 
         if verbose:
-            print('Number of training trials: {}'.format(len(seqs)))
+            print('Number of training trials: {}'.format(len(seqs_train)))
             print('Latent space dimensionality: {}'.format(self.x_dim))
-            print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
+            print('Observation dimensionality: {}'.format(self.has_spikes_bool.sum()))
 
         # The following does the heavy lifting.
         self.params_est, self.fit_info = gpfa_core.fit(
-            seq_train=seqs,
+            seq_train=seqs_train,
             x_dim=self.x_dim,
             bin_width=self.bin_size.rescale('ms').magnitude,
             min_var_frac=self.min_var_frac,
@@ -329,7 +337,7 @@ class GPFA():
             freq_ll = self.freq_ll,
             verbose=verbose)
 
-        self.fit_info['has_spikes_bool'] = has_spikes_bool
+        self.fit_info['has_spikes_bool'] = self.has_spikes_bool
         self.fit_info['min_var_frac'] = self.min_var_frac
         self.fit_info['bin_size'] = self.bin_size
 
@@ -371,15 +379,34 @@ class GPFA():
                     posterior covariance over time for each latent variable
                 * xorth: ndarray of shape (#latent_vars, #bins)
                     trajectory in the orthonormalized space
+
+        Raises
+        ------
+        ValueError
+            If the number of neurons in `data` is different from that in the
+            training data.
         """
+        if len(data[0][1]) != len(self.has_spikes_bool):
+            raise ValueError("`data` must contain the same number of neurons as the training data")
         seqs = gpfa_util.get_seq(data, self.bin_size)
+        for seq in seqs:
+            seq['y'] = seq['y'][self.has_spikes_bool, :]
+        return self._transform(seqs)
 
-        # Extract neural trajectories for original, unsegmented trials
-        # using learned parameters
+    def _transform(self, seqs):
         seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est, get_ll=True)
-
         self.fit_info['log_likelihood'] = ll
-
         self.params_est, seqs = postprocess(self.params_est, seqs)
-
         return seqs
+
+    def fit_transform(self, data, verbose=False):
+        """
+        Fit the model with the given data and apply dimensionality reduction to
+        the same data with the estimated parameters.
+        Refer to documentation of GPFA.fit() and GPFA.transform() for more
+        details.
+        """
+        self._check_training_data(data)
+        seqs_train = self._format_training_data(data, self.bin_size)
+        self._fit(seqs_train, verbose)
+        return self._transform(seqs_train)

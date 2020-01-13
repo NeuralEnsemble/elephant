@@ -125,6 +125,14 @@ class GPFATestCase(unittest.TestCase):
                              msg="Failed ndarray field {0}".format(key))
         self.assertEqual(len(seqs_train), n_trials)
 
+    def test_fit_transform(self):
+        gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
+        gpfa.fit(self.data2)
+        seqs1 = gpfa.transform(self.data2)
+        seqs2 = GPFA(bin_size=self.bin_size, x_dim=8,
+                     em_max_iters=self.n_iters).fit_transform(self.data2)
+        self.assertTrue(np.all(seqs1 == seqs2))
+
     def test_get_seq_sqrt(self):
         data = [self.data2[0]]
         seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
