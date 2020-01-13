@@ -145,23 +145,7 @@ def postprocess(params_est, seqs_train):
 
     params_est['Corth'] = Corth
 
-    if seqs_test is not None:
-        print("Extracting neural trajectories for test data...\n")
-
-        # Copy additional fields from extract_trajectory from training data to
-        # test data
-        seqs_test_dup = seqs_train.copy()
-        seqs_test_dup["T"] = seqs_test["T"]
-        seqs_test_dup["y"] = seqs_test["y"]
-        seqs_test_dup["trialId"] = seqs_test["trialId"]
-
-        seqs_test = seqs_test_dup
-        seqs_test = gpfa_core.exact_inference_with_ll(seqs_test, params_est)
-        X = np.hstack(seqs_test['xsm'])
-        Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
-        seqs_test = gpfa_util.segment_by_trial(seqs_test, Xorth, 'xorth')
-
-    return params_est, seqs_train, seqs_test
+    return params_est, seqs_train
 
 
 class GPFA():
@@ -396,6 +380,6 @@ class GPFA():
 
         self.fit_info['log_likelihood'] = ll
 
-        self.params_est, seqs, _ = postprocess(self.params_est, seqs)
+        self.params_est, seqs = postprocess(self.params_est, seqs)
 
         return seqs
