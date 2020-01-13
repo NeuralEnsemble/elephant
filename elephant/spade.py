@@ -493,8 +493,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
     # By default, set the maximum pattern size to the maximum number of
     # spikes in a window
     if max_spikes is None:
-        max_spikes = np.max((int(np.max(np.sum(rel_matrix, axis=1))),
-                             min_spikes + 1))
+        max_spikes = len(data) * winlen
     # By default, set maximum number of occurrences to number of non-empty
     # windows
     if max_occ is None:
@@ -773,6 +772,12 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
             spectrum.append(
                 (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
     del spec_matrix
+    if len(spectrum) > 0:
+        spectrum = np.array(spectrum)
+    elif report == '#':
+        spectrum = np.zeros(shape=(0, 3))
+    elif report == '3d#':
+        spectrum = np.zeros(shape=(0, 4))
     return spectrum
 
 
@@ -1091,55 +1096,165 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     len_partition = n_surr // size  # length of each MPI task
     len_remainder = n_surr % size
 
-    # For each surrogate collect the signatures (z,c) such that (z*,c*)>=(z,c)
-    # exists in that surrogate. Group such signatures (with repetition)
-    # list of all signatures found in surrogates, initialized to []
-    surr_sgnts = []
-
     add_remainder = rank < len_remainder
+
+    if max_spikes is None:
+        # if max_spikes not defined, set it to the number of spiketrains times
+        # number of bins per window.
+        max_spikes = len(data) * winlen
+
+    if spectrum == '#':
+        max_occs = np.empty(shape=(len_partition + add_remainder,
+                                   max_spikes - min_spikes + 1),
+                            dtype=np.uint16)
+    else:
+        max_occs = np.empty(shape=(len_partition + add_remainder,
+                                   max_spikes - min_spikes + 1, winlen),
+                            dtype=np.uint16)
+
     for i in range(len_partition + add_remainder):
+        current_time_surr_generation = time.time()
         surrs = [surr.dither_spikes(
             xx, dither=dither, n=1)[0] for xx in data]
         # Find all pattern signatures in the current surrogate data set
-        surr_sgnt = concepts_mining(
+        current_time_surr_mining = time.time()
+        surr_concepts = concepts_mining(
             surrs, binsize, winlen, min_spikes=min_spikes,
             max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
             min_neu=min_neu, report=spectrum)[0]
-        filled_sgnt = []
-        # List all signatures (z,c) <= (z*, c*), for each (z*,c*) in the
-        # current surrogate, and add it to the list of all signatures
-        if spectrum == '#':
-            for sgnt in surr_sgnt:
-                for j in range(min_spikes, sgnt[0] + 1):
-                    for k in range(min_occ, sgnt[1] + 1):
-                        filled_sgnt.append((j, k))
-        # List all signatures (z,c,l) <= (z*, c*, l*), for each (z*,c*,l*)
-        # in the current surrogate, and add it to the list of
-        # all signatures
-        if spectrum == '3d#':
-            for sgnt in surr_sgnt:
-                for j in range(min_spikes, sgnt[0] + 1):
-                    for k in range(min_occ, sgnt[1] + 1):
-                        filled_sgnt.append((j, k, sgnt[2]))
-        surr_sgnts.extend(list(set(filled_sgnt)))
-    # Collecting results on the first PCU
-    if rank != 0:  # pragma: no cover
-        comm.send(surr_sgnts, dest=0)
-        del surr_sgnts
-        return []
-    if rank == 0:
-        for i in range(1, size):
-            recv_list = comm.recv(source=i)
-            surr_sgnts.extend(recv_list)
+        # The last entry of the signature is the number of times the
+        # signature appeared. This entry is not needed here.
+        surr_concepts = surr_concepts[:, :-1]
 
-        # Compute the p-value spectrum, and return it
-        pv_spec = []
-        for sgnt in set(surr_sgnts):
-            sgnt = list(sgnt)
-            sgnt.append((sum(np.all(np.array(surr_sgnts) == sgnt, axis=1)
-                             ) / float(n_surr)))
-            pv_spec.append(sgnt)
-        return pv_spec
+        max_occs[i] = _get_max_occ(surr_concepts, min_spikes, max_spikes,
+                                   winlen, spectrum)
+
+    # Collecting results on the first PCU
+    if size != 1:
+        time_mpi = time.time()
+
+        max_occs = comm.gather(max_occs, root=0)
+
+        if rank != 0:  # pragma: no cover
+            return []
+
+        # The gather operator gives a list out. This is rearranged as a 2 resp.
+        # 3 dimensional numpy-array.
+        max_occs = np.vstack(max_occs)
+
+    # Compute the p-value spectrum, and return it
+    return _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ,
+                            n_surr, winlen, spectrum)
+
+
+def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
+                     spectrum):
+    """
+    This function converts the list of maximal occurrences into the
+    corresponding p-value spectrum.
+
+    Parameters
+    ----------
+    max_occs: np.ndarray
+    min_spikes: int
+    max_spikes: int
+    min_occ: int
+    n_surr: int
+    winlen: int
+    spectrum: str
+        can be '#' or '3d#'.
+
+    Returns
+    -------
+    if spectrum == '#':
+    List[List]:
+        each entry has the form: [pattern_size, pattern_occ, p_value]
+    if spectrum == '3d#':
+    List[List]:
+        each entry has the form:
+        [pattern_size, pattern_occ, pattern_dur, p_value]
+    """
+    pv_spec = []
+    if spectrum == '#':
+        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
+            max_occs_size = max_occs[:, size_id]
+            counts, occs = np.histogram(
+                max_occs_size,
+                bins=np.arange(min_occ, np.max(max_occs_size) + 2))
+            occs = occs[:-1].astype(np.uint16)
+
+            pvalues = np.cumsum(counts[::-1])[::-1] / n_surr
+
+            for occ_id, occ in enumerate(occs):
+                pv_spec.append([pt_size, occ, pvalues[occ_id]])
+
+    elif spectrum == '3d#':
+        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
+            for dur in range(winlen):
+                max_occs_size_dur = max_occs[:, size_id, dur]
+                counts, occs = np.histogram(
+                    max_occs_size_dur,
+                    bins=np.arange(min_occ,
+                                   np.max(max_occs_size_dur) + 2))
+                occs = occs[:-1].astype(np.uint16)
+
+                pvalues = np.cumsum(counts[::-1])[::-1] / n_surr
+
+                for occ_id, occ in enumerate(occs):
+                    pv_spec.append([pt_size, occ, dur, pvalues[occ_id]])
+    return pv_spec
+
+
+def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
+    """
+    This function takes from a list of surrogate_concepts those concepts which
+    have the highest occurrence for a given pattern size and duration.
+
+    Parameters
+    ----------
+    surr_concepts: List[List]
+    min_spikes: int
+    max_spikes: int
+    winlen: int
+
+    Returns
+    -------
+    np.ndarray:
+        Two-dimensional array. Each element corresponds to a highest occurrence
+        for a specific pattern size (which range from min_spikes to max_spikes)
+        and pattern duration (which range from 0 to winlen-1).
+        The first axis corresponds to the pattern size the second to the
+        duration.
+    """
+
+    if spectrum == '#':
+        max_occ = np.zeros(shape=(max_spikes - min_spikes + 1))
+
+        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
+            concepts_for_size = surr_concepts[
+                surr_concepts[:, 0] == pt_size][:, 1]
+            max_occ[size_id] = np.max(concepts_for_size, initial=0)
+
+        for pt_size in range(max_spikes - 1, min_spikes - 1, -1):
+            size_id = pt_size - min_spikes
+            max_occ[size_id] = np.max(max_occ[size_id:size_id + 2])
+
+    elif spectrum == '3d#':
+        max_occ = np.zeros(shape=(max_spikes - min_spikes + 1, winlen))
+
+        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
+            concepts_for_size = surr_concepts[
+                surr_concepts[:, 0] == pt_size][:, 1:]
+
+            for dur in range(winlen):
+                occs = concepts_for_size[concepts_for_size[:, 1] == dur][:, 0]
+                max_occ[size_id, dur] = np.max(occs, initial=0)
+
+        for pt_size in range(max_spikes - 1, min_spikes - 1, -1):
+            size_id = pt_size - min_spikes
+            max_occ[size_id] = np.max(max_occ[size_id:size_id + 2], axis=0)
+
+    return max_occ
 
 
 def _stability_filter(c, stab_thr):
