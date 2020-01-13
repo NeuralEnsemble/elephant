@@ -28,6 +28,7 @@ sys.path.insert(0, '..')
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
@@ -99,6 +100,9 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
+# Required to automatically create a summary page for each function listed in
+# the autosummary fields of each module.
+autosummary_generate = True
 
 # -- Options for HTML output ---------------------------------------------
 

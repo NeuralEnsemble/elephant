@@ -1,10 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
+Statistical measures of spike trains (e.g., Fano factor) and functions to
+estimate firing rates.
+
+.. current_module elephant.statistics
+
+Overview of Functions
+---------------------
 
 .. autosummary::
-    elephant.statistics
-    
+    :toctree: statistics/
+
+    mean_firing_rate
+    isi
+    cv
+    lv
+    cv2
+    fanofactor
+    instantaneous_rate
+    time_histogram
+    complexity_pdf
+    sskernel
+
+Detailed Functions
+------------------
+
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """

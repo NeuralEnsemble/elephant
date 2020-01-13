@@ -3,4 +3,3 @@
 =====================================
 
 .. automodule:: elephant.statistics
-   :members:
