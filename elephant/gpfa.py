@@ -67,153 +67,7 @@ import quantities as pq
 from elephant.gpfa_src import gpfa_core, gpfa_util
 
 
-def extract_trajectory(seqs, bin_size=20., x_dim=3, min_var_frac=0.01,
-                       em_max_iters=500, verbose=False):
-    """
-    Prepares data, estimates parameters of the latent variables and extracts
-    neural trajectories.
-
-    Parameters
-    ----------
-    seqs : np.recarray
-        data structure, whose nth entry (corresponding to the nth experimental
-        trial) has fields
-            * trialId: unique trial identifier
-            * T: (1 x 1) number of timesteps
-            * y: (yDim x T) neural data
-    bin_size : float, optional
-        Width of each time bin in ms (magnitude).
-        Default is 20 ms.
-    x_dim : int, optional
-        State dimensionality.
-        Default is 3.
-    min_var_frac : float, optional
-                   fraction of overall data variance for each observed
-                   dimension to set as the private variance floor.  This is
-                   used to combat Heywood cases, where ML parameter learning
-                   returns one or more zero private variances. (default: 0.01)
-                   (See Martin & McDonald, Psychometrika, Dec 1975.)
-    em_max_iters : int, optional
-        Number of EM iterations to run (default: 500).
-    verbose : bool, optional
-              specifies whether to display status messages (default: False)
-
-    Returns
-    -------
-
-    parameter_estimates: dict
-        Estimated model parameters.
-        When the GPFA method is used, following parameters are contained
-            covType: {'rbf', 'tri', 'logexp'}
-                type of GP covariance.
-                Currently, only 'rbf' is supported.
-            gamma: ndarray of shape (1, #latent_vars)
-                related to GP timescales by 'bin_width / sqrt(gamma)'
-            eps: ndarray of shape (1, #latent_vars)
-                GP noise variances
-            d: ndarray of shape (#units, 1)
-                observation mean
-            C: ndarray of shape (#units, #latent_vars)
-                mapping between the neuronal data space and the latent variable
-                space
-            R: ndarray of shape (#units, #latent_vars)
-                observation noise covariance
-
-    seqs_train: np.recarray
-        Contains the embedding of the training data into the latent variable
-        space.
-        Data structure, whose n-th entry (corresponding to the n-th
-        experimental trial) has fields
-            * trialId: int
-                unique trial identifier
-            * T: int
-                number of timesteps
-            * y: ndarray of shape (#units, #bins)
-                neural data
-            * xsm: ndarray of shape (#latent_vars, #bins)
-                posterior mean of latent variables at each time bin
-            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                posterior covariance between latent variables at each
-                timepoint
-            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
-                posterior covariance over time for each latent variable
-
-    fit_info: dict
-        Information of the fitting process and the parameters used there:
-            * iteration_time: A list containing the runtime for each iteration
-                step in the EM algorithm.
-            * log_likelihood: float, maximized likelihood obtained in the
-                E-step of the EM algorithm.
-            * bin_size: int, Width of the bins.
-            * cvf: int, number for cross-validation folding
-                Default is 0 (no cross-validation).
-            * has_spikes_bool: Indicates if a neuron has any spikes across
-                trials.
-            * method: str, Method name.
-
-    Raises
-    ------
-    ValueError
-        If `seqs` is empty.
-
-    """
-    if len(seqs) == 0:
-        raise ValueError("Got empty trials.")
-
-    # Set cross-validation folds
-    num_trials = len(seqs)
-
-    test_mask = np.full(num_trials, False, dtype=bool)
-    train_mask = ~test_mask
-
-    tr = np.arange(num_trials, dtype=np.int)
-    train_trial_idx = tr[train_mask]
-    test_trial_idx = tr[test_mask]
-    seqs_train = seqs[train_trial_idx]
-    seqs_test = seqs[test_trial_idx]
-
-    # Remove inactive units based on training set
-    has_spikes_bool = (np.hstack(seqs_train['y']).mean(1) != 0)
-
-    for seq_train in seqs_train:
-        seq_train['y'] = seq_train['y'][has_spikes_bool, :]
-    for seq_test in seqs_test:
-        seq_test['y'] = seq_test['y'][has_spikes_bool, :]
-
-    # Check if training data covariance is full rank
-    y_all = np.hstack(seqs_train['y'])
-    y_dim = y_all.shape[0]
-
-    if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
-        errmesg = 'Observation covariance matrix is rank deficient.\n' \
-                  'Possible causes: ' \
-                  'repeated units, not enough observations.'
-        raise ValueError(errmesg)
-
-    if verbose:
-        print('Number of training trials: {}'.format(len(seqs_train)))
-        print('Number of test trials: {}'.format(len(seqs_test)))
-        print('Latent space dimensionality: {}'.format(x_dim))
-        print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
-
-    # The following does the heavy lifting.
-    params_est, seqs_train, fit_info = gpfa_core.gpfa_engine(
-        seq_train=seqs_train,
-        seq_test=seqs_test,
-        x_dim=x_dim,
-        bin_width=bin_size,
-        min_var_frac=min_var_frac,
-        em_max_iters=em_max_iters,
-        verbose=verbose)
-
-    fit_info['has_spikes_bool'] = has_spikes_bool
-    fit_info['min_var_frac'] = min_var_frac
-    fit_info['bin_size'] = bin_size
-
-    return params_est, seqs_train, fit_info
-
-
-def postprocess(params_est, seqs_train, seqs_test=None):
+def postprocess(params_est, seqs_train):
     """
     Orthonormalization and other cleanup.
 
@@ -310,37 +164,44 @@ def postprocess(params_est, seqs_train, seqs_test=None):
     return params_est, seqs_train, seqs_test
 
 
-def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
+class GPFA():
     """
     Prepares data and calls functions for extracting neural trajectories in the
     orthonormal space.
 
-    The function combines calls to `extract_trajectory()` and `postprocess()`
-    in a scenario, where no cross-validation of the embedding is performed.
-
     Parameters
     ----------
-
-    data : list of list of Spiketrain objects
-        The outer list corresponds to trials and the inner list corresponds to
-        the neurons recorded in that trial, such that data[l][n] is the
-        Spiketrain of neuron n in trial l. Note that the number and order of
-        Spiketrains objects per trial must be fixed such that data[l][n] and
-        data[k][n] refer to the same spike generator for any choice of l,k and
-        n.
     bin_size : quantities.Quantity, optional
         Width of each time bin.
         Default is 20 ms.
     x_dim : int, optional
         State dimensionality.
         Default is 3.
+    min_var_frac : float, optional
+        fraction of overall data variance for each observed dimension to set as
+        the private variance floor.  This is used to combat Heywood cases,
+        where ML parameter learning returns one or more zero private variances.
+        (default: 0.01) (See Martin & McDonald, Psychometrika, Dec 1975.)
+    tau_init : quantities.Quantity, optional
+        GP timescale initialization in msec (default: 100 ms)
+    eps_init : float, optional
+        GP noise variance initialization (default: 1e-3)
+    tol : float, optional
+          stopping criterion for EM (default: 1e-8)
     em_max_iters : int, optional
         Number of EM iterations to run (default: 500).
 
-    Returns
-    -------
+    Raises
+    ------
+    ValueError
+        If `data` is an empty list.
+        If `bin_size` if not a `pq.Quantity`.
+        If `tau_init` if not a `pq.Quantity`.
+        If `data[0][1][0]` is not a `neo.SpikeTrain`.
 
-    parameter_estimates: dict
+    Attributes
+    ----------
+    params_est: dict
         Estimated model parameters.
         When the GPFA method is used, following parameters are contained
             covType: {'rbf', 'tri', 'logexp'}
@@ -361,26 +222,6 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
             R: ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
-    seqs_train: numpy.recarray
-        Contains the embedding of the data into the latent variable space.
-        Data structure, whose n-th entry (corresponding to the n-th
-        experimental trial) has fields
-            * trialId: int
-                unique trial identifier
-            * T: int
-                number of timesteps
-            * y: ndarray of shape (#units, #bins)
-                neural data
-            * xsm: ndarray of shape (#latent_vars, #bins)
-                posterior mean of latent variables at each time bin
-            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                posterior covariance between latent variables at each
-                timepoint
-            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
-                posterior covariance over time for each latent variable
-            * xorth: ndarray of shape (#latent_vars, #bins)
-                trajectory in the orthonormalized space
-
     fit_info: dict
         Information of the fitting process and the parameters used there:
             * iteration_time: A list containing the runtime for each iteration
@@ -394,22 +235,14 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
                 trials.
             * method: str, Method name.
 
-    Raises
-    ------
-    ValueError
-        If `data` is an empty list.
-        If `bin_size` if not a `pq.Quantity`.
-        If `data[0][1][0]` is not a `neo.SpikeTrain`.
-
     Examples
     --------
     In the following example, we calculate the neural trajectories of 20
     Poisson spike train generators recorded in 50 trials with randomized
     rates up to 100 Hz.
-
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.gpfa import gpfa
+    >>> from elephant.gpfa import GPFA
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> data = []
     >>> for trial in range(50):
@@ -419,24 +252,150 @@ def gpfa(data, bin_size=20*pq.ms, x_dim=3, em_max_iters=500):
     >>>     spike_times = [homogeneous_poisson_process(rate=rate)
     >>>         for rate in firing_rates]
     >>>     data.append((trial, spike_times))
-    >>> params_est, seqs_train, seqs_test, fit_info = gpfa(
-    >>>     data, bin_size=20 * pq.ms, x_dim=8)
-
+    >>> gpfa = GPFA(bin_size=20 * pq.ms, x_dim=8)
+    >>> gpfa.fit(data)
+    >>> seqs = gpfa.transform(data)
     """
-    # todo does it makes sense to explicitly pass trial_id?
-    if len(data) == 0:
-        raise ValueError("`data` cannot be empty")
-    if not isinstance(bin_size, pq.Quantity):
-        raise ValueError("'bin_size' must be of type pq.Quantity")
-    if not isinstance(data[0][1][0], neo.SpikeTrain):
-        raise ValueError("structure of the data is not correct: 0-axis "
-                         "should be trials, 1-axis neo spike trains "
-                         "and 2-axis spike times")
 
-    seqs = gpfa_util.get_seq(data, bin_size)
-    params_est, seqs_train, fit_info = extract_trajectory(
-        seqs, bin_size=bin_size.rescale('ms').magnitude, x_dim=x_dim,
-        em_max_iters=em_max_iters)
-    params_est, seqs_train, _ = postprocess(params_est, seqs_train)
+    def __init__(self, bin_size=20*pq.ms, x_dim=3, min_var_frac=0.01,
+                 tau_init=100.0*pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
+                 em_max_iters=500, freq_ll=5):
+        self.bin_size = bin_size
+        self.x_dim = x_dim
+        self.min_var_frac = min_var_frac
+        self.tau_init = tau_init
+        self.eps_init = eps_init
+        self.em_tol = em_tol
+        self.em_max_iters = em_max_iters
+        self.freq_ll = freq_ll
 
-    return params_est, seqs_train, fit_info
+        if not isinstance(self.bin_size, pq.Quantity):
+            raise ValueError("'bin_size' must be of type pq.Quantity")
+        if not isinstance(self.tau_init, pq.Quantity):
+            raise ValueError("'tau_init' must be of type pq.Quantity")
+
+    def fit(self, data, verbose=False):
+        """
+        Fit the model with the given training data.
+
+        Parameters
+        ----------
+        data : list of list of Spiketrain objects
+            The outer list corresponds to trials and the inner list corresponds
+            to the neurons recorded in that trial, such that data[l][n] is the
+            Spiketrain of neuron n in trial l. Note that the number and order
+            of Spiketrains objects per trial must be fixed such that data[l][n]
+            and data[k][n] refer to the same spike generator for any choice of
+            l,k and n.
+        verbose : bool, optional
+            specifies whether to display status messages (default: False)
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If `data` is an empty list.
+            If `data[0][1][0]` is not a `neo.SpikeTrain`.
+        """
+        # todo does it makes sense to explicitly pass trial_id?
+        if len(data) == 0:
+            raise ValueError("`data` cannot be empty")
+        if not isinstance(data[0][1][0], neo.SpikeTrain):
+            raise ValueError("structure of the data is not correct: 0-axis "
+                             "should be trials, 1-axis neo spike trains "
+                             "and 2-axis spike times")
+
+        seqs = gpfa_util.get_seq(data, self.bin_size)
+
+        # Remove inactive units based on training set
+        has_spikes_bool = (np.hstack(seqs['y']).mean(1) != 0)
+
+        for seq_train in seqs:
+            seq_train['y'] = seq_train['y'][has_spikes_bool, :]
+
+        # Check if training data covariance is full rank
+        y_all = np.hstack(seqs['y'])
+        y_dim = y_all.shape[0]
+
+        if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
+            errmesg = 'Observation covariance matrix is rank deficient.\n' \
+                      'Possible causes: ' \
+                      'repeated units, not enough observations.'
+            raise ValueError(errmesg)
+
+        if verbose:
+            print('Number of training trials: {}'.format(len(seqs)))
+            print('Latent space dimensionality: {}'.format(self.x_dim))
+            print('Observation dimensionality: {}'.format(has_spikes_bool.sum()))
+
+        # The following does the heavy lifting.
+        self.params_est, self.fit_info = gpfa_core.fit(
+            seq_train=seqs,
+            x_dim=self.x_dim,
+            bin_width=self.bin_size.rescale('ms').magnitude,
+            min_var_frac=self.min_var_frac,
+            em_max_iters=self.em_max_iters,
+            em_tol=self.em_tol,
+            tau_init = self.tau_init.rescale('ms').magnitude,
+            eps_init = self.eps_init,
+            freq_ll = self.freq_ll,
+            verbose=verbose)
+
+        self.fit_info['has_spikes_bool'] = has_spikes_bool
+        self.fit_info['min_var_frac'] = self.min_var_frac
+        self.fit_info['bin_size'] = self.bin_size
+
+        return self
+
+    def transform(self, data):
+        """
+        Apply dimensionality reduction to the given data with the estimated
+        parameters
+
+        Parameters
+        ----------
+        data : list of list of Spiketrain objects
+            The outer list corresponds to trials and the inner list corresponds
+            to the neurons recorded in that trial, such that data[l][n] is the
+            Spiketrain of neuron n in trial l. Note that the number and order
+            of Spiketrains objects per trial must be fixed such that data[l][n]
+            and data[k][n] refer to the same spike generator for any choice of
+            l,k and n.
+
+        Returns
+        -------
+        seqs_train: numpy.recarray
+            Contains the embedding of the data into the latent variable space.
+            Data structure, whose n-th entry (corresponding to the n-th
+            experimental trial) has fields
+                * trialId: int
+                    unique trial identifier
+                * T: int
+                    number of timesteps
+                * y: ndarray of shape (#units, #bins)
+                    neural data
+                * xsm: ndarray of shape (#latent_vars, #bins)
+                    posterior mean of latent variables at each time bin
+                * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
+                    posterior covariance between latent variables at each
+                    timepoint
+                * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
+                    posterior covariance over time for each latent variable
+                * xorth: ndarray of shape (#latent_vars, #bins)
+                    trajectory in the orthonormalized space
+        """
+        seqs = gpfa_util.get_seq(data, self.bin_size)
+
+        # Extract neural trajectories for original, unsegmented trials
+        # using learned parameters
+        seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est, get_ll=True)
+
+        self.fit_info['log_likelihood'] = ll
+
+        self.params_est, seqs, _ = postprocess(self.params_est, seqs)
+
+        return seqs

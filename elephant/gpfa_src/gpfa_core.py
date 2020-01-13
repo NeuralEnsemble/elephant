@@ -209,7 +209,7 @@ def exact_inference_with_ll(seq, params, get_ll=True):
     return seq_lat, ll
 
 
-def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
+def em(params_init, seq, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
        freq_ll=5, verbose=False):
     """
     Fits GPFA model parameters using expectation-maximization (EM) algorithm.
@@ -241,7 +241,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
                   number of bins
               y : ndarray (yDim x T)
                   neural data
-    em_max_iters : int, optional
+    max_iters : int, optional
                    number of EM iterations to run (default: 500)
     tol : float, optional
           stopping criterion for EM (default: 1e-8)
@@ -289,7 +289,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     seq_lat = None
 
     # Loop once for each iteration of EM algorithm
-    for iter_id in trange(1, em_max_iters + 1, desc='EM iteration'):
+    for iter_id in trange(1, max_iters + 1, desc='EM iteration'):
         if verbose:
             print()
         tic = time.time()
@@ -365,7 +365,7 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         elif (ll - ll_base) < (1 + tol) * (ll_old - ll_base):
             break
 
-    if len(lls) < em_max_iters:
+    if len(lls) < max_iters:
         print('Fitting has converged after {0} EM iterations.)'.format(
             len(lls)))
 
@@ -376,10 +376,11 @@ def em(params_init, seq, em_max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     return params, seq_lat, lls, iter_time
 
 
-def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
-                eps_init=1.0E-3, min_var_frac=0.01, em_max_iters=500,
-                verbose=False):
-    """Extract neural trajectories using GPFA.
+def fit(seq_train, x_dim=8, bin_width=20.0, min_var_frac=0.01,
+        em_tol=1.0E-8, em_max_iters=500, tau_init=100.0, eps_init=1.0E-3,
+        freq_ll=5, verbose=False):
+    """
+    Extract neural trajectories using GPFA.
 
     Parameters
     ----------
@@ -392,8 +393,6 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
                         number of bins
                     y : ndarray of shape (#units, #bins)
                         neural data
-    seq_test : np.recarray
-               test data structure (same format as seqTrain)
     x_dim : int, optional
             state dimensionality (default: 3)
     bin_width : float, optional
@@ -508,19 +507,8 @@ def gpfa_engine(seq_train, seq_test, x_dim=8, bin_width=20.0, tau_init=100.0,
 
     params_est, seq_train_cut, ll_cut, iter_time = em(
         params_init, seq_train_cut, min_var_frac=min_var_frac,
-        em_max_iters=em_max_iters, verbose=verbose)
+        max_iters=em_max_iters, tol=em_tol, freq_ll=freq_ll, verbose=verbose)
 
-    # Extract neural trajectories for original, unsegmented trials
-    # using learned parameters
-    seq_train, ll_train = exact_inference_with_ll(seq_train, params_est)
+    fit_info = {'iteration_time': iter_time}
 
-    if len(seq_test) > 0:
-        pass
-        # TODO: include the assessment of generalization performance
-
-    fit_info = {'iteration_time': iter_time, 'log_likelihood': ll_train}
-    return params_est, seq_train, fit_info
-
-
-def two_stage_engine(seqTrain, seqTest, typ='fa', xDim=3, binWidth=20.0):
-    raise NotImplemented
+    return params_est, fit_info

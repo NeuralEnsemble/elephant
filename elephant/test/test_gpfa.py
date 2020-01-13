@@ -23,7 +23,7 @@ except ImportError:
 else:
     HAVE_SKLEARN = True
     from elephant.gpfa_src import gpfa_util
-    from elephant.gpfa import gpfa
+    from elephant.gpfa import GPFA
 
 python_version_major = sys.version_info.major
 
@@ -78,12 +78,13 @@ class GPFATestCase(unittest.TestCase):
             self.data2.append((trial, spike_times))
 
     def test_data1(self):
-        params_est, seqs_train, fit_info = gpfa(
-            self.data1, x_dim=self.x_dim, em_max_iters=self.n_iters)
-        self.assertEqual(fit_info['bin_size'], 20*pq.ms)
-        self.assertEqual(fit_info['min_var_frac'], 0.01)
-        self.assertTrue(np.all(fit_info['has_spikes_bool']))
-        self.assertAlmostEqual(fit_info['log_likelihood'], -27.222600197474762)
+        gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa.fit(self.data1)
+        seqs_train = gpfa.transform(self.data1)
+        self.assertEqual(gpfa.fit_info['bin_size'], 20*pq.ms)
+        self.assertEqual(gpfa.fit_info['min_var_frac'], 0.01)
+        self.assertTrue(np.all(gpfa.fit_info['has_spikes_bool']))
+        self.assertAlmostEqual(gpfa.fit_info['log_likelihood'], -27.222600197474762)
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
         for i in [0, 1]:
@@ -96,18 +97,22 @@ class GPFATestCase(unittest.TestCase):
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
         invalid_bin_size = 10
+        invalid_tau_init = 100
         with self.assertRaises(ValueError):
-            gpfa(data=invalid_data)
+            _ = GPFA(bin_size=invalid_bin_size)
         with self.assertRaises(ValueError):
-            gpfa(data=[])
+            _ = GPFA(tau_init=invalid_tau_init)
+        gpfa = GPFA()
         with self.assertRaises(ValueError):
-            gpfa(data=self.data2, bin_size=invalid_bin_size)
+            gpfa.fit(data=invalid_data)
+        with self.assertRaises(ValueError):
+            gpfa.fit(data=[])
 
     def test_data2(self):
-        params_est, seqs_train, fit_info = gpfa(
-            self.data2, bin_size=self.bin_size, x_dim=8,
-            em_max_iters=self.n_iters)
-        self.assertEqual(fit_info['bin_size'], self.bin_size,
+        gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
+        gpfa.fit(self.data2)
+        seqs_train = gpfa.transform(self.data2)
+        self.assertEqual(gpfa.fit_info['bin_size'], self.bin_size,
                          "Input and output bin_size don't match")
         n_trials = len(self.data2)
         t_start = self.data2[0][1][0].t_stop
