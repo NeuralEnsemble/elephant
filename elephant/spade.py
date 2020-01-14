@@ -1221,7 +1221,7 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
     min_spikes: int
     max_spikes: int
     winlen: int
-    spectrum: {‘#’, ‘3d#’}
+    spectrum: {'#', '3d#'}
 
     Returns
     -------
