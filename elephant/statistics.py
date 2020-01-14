@@ -3,7 +3,7 @@
 This module provides function to extract various statistical measures of spike
 trains, including functions to estimate firing rates.
 
-.. include:: statistics/overview.rst
+.. include:: statistics-overview.rst
 
 .. current_module elephant.statistics
 
