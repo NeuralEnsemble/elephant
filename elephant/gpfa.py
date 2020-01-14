@@ -254,6 +254,7 @@ class GPFA():
         self.em_tol = em_tol
         self.em_max_iters = em_max_iters
         self.freq_ll = freq_ll
+        self.valid_data_names = ['xorth', 'xsm', 'Vsm', 'VsmGP', 'y']
 
         if not isinstance(self.bin_size, pq.Quantity):
             raise ValueError("'bin_size' must be of type pq.Quantity")
@@ -342,7 +343,7 @@ class GPFA():
 
         return self
 
-    def transform(self, data):
+    def transform(self, data, returned_data=['xorth']):
         """
         Apply dimensionality reduction to the given data with the estimated
         parameters
@@ -387,18 +388,26 @@ class GPFA():
         """
         if len(data[0]) != len(self.has_spikes_bool):
             raise ValueError("`data` must contain the same number of neurons as the training data")
+        for data_name in returned_data:
+            if data_name not in self.valid_data_names:
+                raise ValueError("`returned_data` can only have the following entries: {}".format(self.valid_data_names))
         seqs = gpfa_util.get_seq(data, self.bin_size)
         for seq in seqs:
             seq['y'] = seq['y'][self.has_spikes_bool, :]
-        return self._transform(seqs)
+        return self._transform(seqs, returned_data)
 
-    def _transform(self, seqs):
+    def _transform(self, seqs, returned_data):
         seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est, get_ll=True)
         self.fit_info['log_likelihood'] = ll
+        self.T = seqs['T']
+        self.trialId = seqs['trialId']
         self.params_est, seqs = postprocess(self.params_est, seqs)
-        return seqs
+        if len(returned_data) == 1:
+            return seqs[returned_data[0]]
+        else:
+            return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self, data, verbose=False):
+    def fit_transform(self, data, returned_data=['xorth'], verbose=False):
         """
         Fit the model with the given data and apply dimensionality reduction to
         the same data with the estimated parameters.
@@ -408,4 +417,4 @@ class GPFA():
         self._check_training_data(data)
         seqs_train = self._format_training_data(data)
         self._fit(seqs_train, verbose)
-        return self._transform(seqs_train)
+        return self._transform(seqs_train, returned_data)

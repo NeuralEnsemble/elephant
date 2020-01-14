@@ -78,7 +78,7 @@ class GPFATestCase(unittest.TestCase):
     def test_data1(self):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa.fit(self.data1)
-        seqs_train = gpfa.transform(self.data1)
+        xorth = gpfa.transform(self.data1)
         self.assertEqual(gpfa.fit_info['bin_size'], 20*pq.ms)
         self.assertEqual(gpfa.fit_info['min_var_frac'], 0.01)
         self.assertTrue(np.all(gpfa.fit_info['has_spikes_bool']))
@@ -86,11 +86,11 @@ class GPFATestCase(unittest.TestCase):
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
         for i in [0, 1]:
-            self.assertNotEqual(seqs_train['xorth'][0][i].mean(), 0)
-            self.assertNotEqual(seqs_train['xorth'][0][i].var(), 0)
+            self.assertNotEqual(xorth[0][i].mean(), 0)
+            self.assertNotEqual(xorth[0][i].var(), 0)
         for i in [2, 3]:
-            self.assertEqual(seqs_train['xorth'][0][i].mean(), 0)
-            self.assertEqual(seqs_train['xorth'][0][i].var(), 0)
+            self.assertEqual(xorth[0][i].mean(), 0)
+            self.assertEqual(xorth[0][i].var(), 0)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
@@ -109,27 +109,27 @@ class GPFATestCase(unittest.TestCase):
     def test_data2(self):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
         gpfa.fit(self.data2)
-        seqs_train = gpfa.transform(self.data2)
+        returned_data = ['y', 'xsm', 'Vsm', 'VsmGP', 'xorth']
+        seqs_train = gpfa.transform(self.data2, returned_data=returned_data)
         self.assertEqual(gpfa.fit_info['bin_size'], self.bin_size,
                          "Input and output bin_size don't match")
         n_trials = len(self.data2)
         t_start = self.data2[0][0].t_stop
         t_stop = self.data2[0][0].t_start
         n_bins = int(((t_start - t_stop) / self.bin_size).magnitude)
-        assert_array_equal(seqs_train['T'], [n_bins,] * n_trials)
-        assert_array_equal(seqs_train['trialId'], np.arange(n_trials))
-        for key in ['y', 'xsm', 'Vsm', 'VsmGP', 'xorth']:
-            self.assertEqual(len(seqs_train[key]), n_trials,
-                             msg="Failed ndarray field {0}".format(key))
-        self.assertEqual(len(seqs_train), n_trials)
+        assert_array_equal(gpfa.T, [n_bins,] * n_trials)
+        assert_array_equal(gpfa.trialId, np.arange(n_trials))
+        for key, data in seqs_train.items():
+            self.assertEqual(len(data), n_trials, msg="Failed ndarray field {0}".format(key))
 
     def test_fit_transform(self):
-        gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
-        gpfa.fit(self.data2)
-        seqs1 = gpfa.transform(self.data2)
-        seqs2 = GPFA(bin_size=self.bin_size, x_dim=8,
-                     em_max_iters=self.n_iters).fit_transform(self.data2)
-        self.assertTrue(np.all(seqs1 == seqs2))
+        gpfa1 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa1.fit(self.data1)
+        xorth1 = gpfa1.transform(self.data1)
+        xorth2 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim, em_max_iters=self.n_iters).fit_transform(self.data1)
+        for i in range(1):
+            for j in range(self.x_dim):
+                assert_array_almost_equal(xorth1[i][j], xorth2[i][j])
 
     def test_get_seq_sqrt(self):
         data = [self.data2[0]]
