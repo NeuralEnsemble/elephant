@@ -1267,11 +1267,18 @@ def _stability_filter(c, stab_thr):
 def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     """
     #TODO: write documentation
-    :param pv_spec:
-    :param concepts:
-    :param spectrum:
-    :param winlen:
-    :return:
+    Parameters
+    ----------
+    pv_spec: List[List]
+    concepts: List[Tuple]
+    spectrum: {'#', '3d#'}
+    winlen: int
+
+    Returns
+    -------
+    np.array
+        An array of boolean values, indicating if a signature of p-value
+        spectrum is also in the mined concepts of the original data.
     """
     if spectrum == '#':
         signatures = {(len(concept[0]), len(concept[1]))
@@ -1287,7 +1294,7 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     return mask
 
 
-def test_signature_significance(pvalue_spectrum, concepts, alpha,
+def test_signature_significance(pv_spec, concepts, alpha,
                                 winlen, corr='',
                                 report='spectrum', spectrum='#'):
     """
@@ -1303,11 +1310,14 @@ def test_signature_significance(pvalue_spectrum, concepts, alpha,
     Parameters
     ----------
     # TODO: add documentation for concepts and winlen
-    pvalue_spectrum: list
+    pv_spec: list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
+    concepts: List[Tuple]
+        Output of the concepts mining for the original data.
     alpha: float
         Significance level of the statistical test
+    winlen: int
     corr: str
         Method used for testing and adjustment of pvalues.
         Can be either the full name or initial letters.
@@ -1365,9 +1375,9 @@ def test_signature_significance(pvalue_spectrum, concepts, alpha,
                     'fdr_tsbh', 'fdr_tsbky', '', 'no']:
         raise AttributeError("Parameter corr not recognized")
 
-    pvalue_spectrum = np.array(pvalue_spectrum)
-    mask = _mask_pvalue_spectrum(pvalue_spectrum, concepts, spectrum, winlen)
-    pvalues = pvalue_spectrum[:, -1]
+    pv_spec = np.array(pv_spec)
+    mask = _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen)
+    pvalues = pv_spec[:, -1]
     pvalues_totest = pvalues[mask]
 
     # Initialize test array to False
@@ -1379,9 +1389,8 @@ def test_signature_significance(pvalue_spectrum, concepts, alpha,
         if corr in ['', 'no']:  # ...without statistical correction
             tests_selected = pvalues_totest <= alpha
         else:
-            tests_selected = sm.multipletests(pvalues_totest,
-                                     alpha=alpha,
-                                     method=corr)[0]
+            tests_selected = sm.multipletests(pvalues_totest, alpha=alpha,
+                                              method=corr)[0]
 
         # assign each corrected pvalue to its corresponding entry
         for index, value in zip(mask.nonzero(), tests_selected):
@@ -1391,25 +1400,25 @@ def test_signature_significance(pvalue_spectrum, concepts, alpha,
     if spectrum == '#':
         if report == 'spectrum':
             return [(size, supp, test)
-                    for (size, supp, pv), test in zip(pvalue_spectrum, tests)]
+                    for (size, supp, pv), test in zip(pv_spec, tests)]
         if report == 'significant':
             return [(size, supp) for ((size, supp, pv), test)
-                    in zip(pvalue_spectrum, tests) if test]
+                    in zip(pv_spec, tests) if test]
         # report == 'non_significant'
         return [(size, supp)
-                for ((size, supp, pv), test) in zip(pvalue_spectrum, tests)
+                for ((size, supp, pv), test) in zip(pv_spec, tests)
                 if not test]
 
     # spectrum == '3d#'
     if report == 'spectrum':
         return [(size, supp, l, test)
-                for (size, supp, l, pv), test in zip(pvalue_spectrum, tests)]
+                for (size, supp, l, pv), test in zip(pv_spec, tests)]
     if report == 'significant':
         return [(size, supp, l) for ((size, supp, l, pv), test)
-                in zip(pvalue_spectrum, tests) if test]
+                in zip(pv_spec, tests) if test]
     # report == 'non_significant'
     return [(size, supp, l)
-            for ((size, supp, l, pv), test) in zip(pvalue_spectrum, tests)
+            for ((size, supp, l, pv), test) in zip(pv_spec, tests)
             if not test]
 
 
@@ -1913,7 +1922,7 @@ def pattern_set_reduction(concepts, excluded, winlen, h_subset_filtering=0,
     return [p for i, p in enumerate(concepts) if selected[i]]
 
 
-def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
+def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
                                spectrum=None, t_start=0 * pq.ms):
     """
     Construction of dictionaries containing all the information about a pattern
@@ -1929,7 +1938,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         Length (in bins) of the sliding window used for the analysis
     binsize: Quantity
         The time precision used to discretize the data (binning).
-    pvalue_spectrum: None or tuple
+    pv_spec: None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all pvalues are set to -1
     spectrum: None or str
@@ -1967,20 +1976,20 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
             ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
              then all pvalues are set to -1.
     """
-    if pvalue_spectrum is None:
+    if pv_spec is None:
         if spectrum is None:
             spectrum = '#'
     else:
         if spectrum is None:
-            if len(pvalue_spectrum) == 0:
+            if len(pv_spec) == 0:
                 spectrum = '#'
-            elif len(pvalue_spectrum[0]) == 4:
+            elif len(pv_spec[0]) == 4:
                 spectrum = '3d#'
-            elif len(pvalue_spectrum[0]) == 3:
+            elif len(pv_spec[0]) == 3:
                 spectrum = '#'
         pvalue_dict = {}
         # Creating a dictionary for the pvalue spectrum
-        for entry in pvalue_spectrum:
+        for entry in pv_spec:
             if len(entry) == 4:
                 pvalue_dict[(entry[0], entry[1], entry[2])] = entry[-1]
             if len(entry) == 3:
@@ -2009,7 +2018,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pvalue_spectrum=None,
         # If None is given in input to the pval spectrum the pvalue
         # is set to -1 (pvalue spectrum not available)
         # pattern dictionary appended to the output
-        if pvalue_spectrum is None:
+        if pv_spec is None:
             output_dict['pvalue'] = -1
         # Signature (size, n occ) of the pattern
         elif spectrum == '3d#':
