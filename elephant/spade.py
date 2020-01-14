@@ -1393,7 +1393,7 @@ def test_signature_significance(pv_spec, concepts, alpha,
                                               method=corr)[0]
 
         # assign each corrected pvalue to its corresponding entry
-        for index, value in zip(mask.nonzero(), tests_selected):
+        for index, value in zip(mask.nonzero()[0], tests_selected):
             tests[index] = value
 
     # Return the specified results:
