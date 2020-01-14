@@ -28,19 +28,18 @@ class CrossCorrHist(object):
     Cross-correlation histogram for `BinnedSpikeTrain`s.
     This class is used inside the `cross_correlation_histogram()` function
     and is not meant to be used outside of it.
+
+    Parameters
+    ----------
+    binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
+        Binned spike trains to cross-correlate. The two spike trains must
+        have the same `t_start` and `t_stop`.
+    window : list or tuple
+        List of integers - (left_edge, right_edge).
+        Refer to the docs of `cross_correlation_histogram()`.
     """
 
     def __init__(self, binned_st1, binned_st2, window):
-        """
-        Parameters
-        ----------
-        binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
-            Binned spike trains to cross-correlate. The two spike trains must
-            have the same `t_start` and `t_stop`.
-        window : list or tuple
-            List of integers - (left_edge, right_edge).
-            Refer to the docs of `cross_correlation_histogram()`.
-        """
         self.binned_st1 = binned_st1
         self.binned_st2 = binned_st2
         self.window = window
@@ -65,7 +64,7 @@ class CrossCorrHist(object):
         st1_spmat = st1_spmat.data
         st2_spmat = st2_spmat.data
 
-        # Initialize the counts to an array of zeroes,
+        # Initialize the counts to an array of zeros,
         # and the bin IDs to integers
         # spanning the time axis
         cross_corr = np.zeros(np.abs(left_edge) + np.abs(right_edge) + 1)
@@ -213,7 +212,7 @@ def covariance(binned_sts, binary=False, fast=True):
     where `<., .>` is the scalar product of two vectors, and :math:`L` is the
     number of bins.
 
-    For an input of n spike trains, an n x n matrix is returned containing the
+    For an input of N spike trains, an N x N matrix is returned containing the
     covariances for each combination of input spike trains.
 
     If binary is True, the binned spike trains are clipped to 0 or 1 before
@@ -222,7 +221,7 @@ def covariance(binned_sts, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_sts : elephant.conversion.BinnedSpikeTrain
+    binned_sts : (N, ) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, the spikes of a particular spike train falling in the same bin
@@ -233,20 +232,20 @@ def covariance(binned_sts, binary=False, fast=True):
         If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
         `np.cov()`. Otherwise, use memory efficient implementation.
         See Notes [2].
-        Default: `True`
+        Default: True
 
     Returns
     -------
-    C : np.ndarray
+    C : (N, N) np.ndarray
         The square matrix of covariances. The element :math:`C[i,j]=C[j,i]` is
-        the covariance between binned_sts[i] and binned_sts[j].
+        the covariance between `binned_sts[i]` and `binned_sts[j]`.
 
     Raises
     ------
     MemoryError
         When using `fast=True` and `binned_sts` shape is large.
 
-    Warnings
+    Warns
     --------
     UserWarning
         If at least one row in `binned_sts` is empty (has no spikes).
@@ -306,11 +305,11 @@ def corrcoef(binned_sts, binary=False, fast=True):
 
     where `<., .>` is the scalar product of two vectors.
 
-    For an input of n spike trains, an n x n matrix is returned.
+    For an input of N spike trains, an N x N matrix is returned.
     Each entry in the matrix is a real number ranging between -1 (perfectly
     anti-correlated spike trains) and +1 (perfectly correlated spike trains).
     However, if k-th spike train is empty, k-th row and k-th column of the
-    returned matrix are set to NaN.
+    returned matrix are set to np.nan.
 
     If binary is True, the binned spike trains are clipped to 0 or 1 before
     computing the correlation coefficients, so that the binned vectors
@@ -318,33 +317,33 @@ def corrcoef(binned_sts, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_sts : elephant.conversion.BinnedSpikeTrain
+    binned_sts : (N, ) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, two spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
-        Default: `False`
+        Default: False
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
         `np.corrcoef()`. Otherwise, use memory efficient implementation.
         See Notes[2]
-        Default: `True`
+        Default: True
 
     Returns
     -------
-    C : ndarrray
+    C : (N, N) np.ndarray
         The square matrix of correlation coefficients. The element
         :math:`C[i,j]=C[j,i]` is the Pearson's correlation coefficient between
-        binned_sts[i] and binned_sts[j]. If binned_sts contains only one
-        SpikeTrain, C=1.0.
+        `binned_sts[i]` and `binned_sts[j]`. If `binned_sts` contains only one
+        `neo.SpikeTrain`, C=1.0.
 
     Raises
     ------
     MemoryError
         When using `fast=True` and `binned_sts` shape is large.
 
-    Warnings
+    Warns
     --------
     UserWarning
         If at least one row in `binned_sts` is empty (has no spikes).
@@ -410,20 +409,20 @@ def _covariance_sparse(binned_sts, corrcoef_norm):
 
     Parameters
     ----------
-    binned_sts : elephant.conversion.BinnedSpikeTrain
+    binned_sts : (N, ) elephant.conversion.BinnedSpikeTrain
         See `covariance()` or `corrcoef()`, respectively.
     corrcoef_norm : bool
         Use normalization factor for the correlation coefficient rather than
         for the covariance.
 
-    Warnings
+    Warns
     --------
     UserWarning
         If at least one row in `binned_sts` is empty (has no spikes).
 
     Returns
     -------
-    np.ndarray
+    (N, N) np.ndarray
         Pearson correlation or covariance matrix.
     """
     spmat = binned_sts._sparse_mat_u
@@ -457,8 +456,8 @@ def cross_correlation_histogram(
     Parameters
     ----------
     binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
-        Binned spike trains to cross-correlate. The two spike trains must have
-        same `t_start` and `t_stop`.
+        Binned spike trains of lengths N and M to cross-correlate. The two
+        spike trains must have same `t_start` and `t_stop`.
     window : {'valid', 'full', list}, optional
         String or list of integers.
         ‘full’: This returns the cross-correlation at each point of overlap,
@@ -476,40 +475,43 @@ def cross_correlation_histogram(
         Default: 'full'
     border_correction : bool, optional
         whether to correct for the border effect. If True, the value of the
-        CCH at bin b (for b=-H,-H+1, ...,H, where H is the CCH half-length)
-        is multiplied by the correction factor:
+        CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
+        the CCH half-length) is multiplied by the correction factor:
+
+        .. math::
                             (H+1)/(H+1-|b|),
+
         which linearly corrects for loss of bins at the edges.
         Default: False
     binary : bool, optional
-        whether to binary spikes from the same spike train falling in the
-        same bin. If True, such spikes are considered as a single spike;
-        otherwise they are considered as different spikes.
+        If True, spikes falling in the same bin are counted as a single spike;
+        otherwise they are counted as different spikes.
         Default: False.
-    kernel : array or None, optional
-        A one dimensional array containing an optional smoothing kernel applied
+    kernel : np.ndarray or None, optional
+        A one dimensional array containing a smoothing kernel applied
         to the resulting CCH. The length N of the kernel indicates the
         smoothing window. The smoothing window cannot be larger than the
         maximum lag of the CCH. The kernel is normalized to unit area before
         being applied to the resulting CCH. Popular choices for the kernel are
-          * normalized boxcar kernel: numpy.ones(N)
-          * hamming: numpy.hamming(N)
-          * hanning: numpy.hanning(N)
-          * bartlett: numpy.bartlett(N)
-        If None is specified, the CCH is not smoothed.
+          * normalized boxcar kernel: `numpy.ones(N)`
+          * hamming: `numpy.hamming(N)`
+          * hanning: `numpy.hanning(N)`
+          * bartlett: `numpy.bartlett(N)`
+        If None, the CCH is not smoothed.
         Default: None
-    method : string, optional
-        Defines the algorithm to use. "speed" uses numpy.correlate to calculate
-        the correlation between two binned spike trains using a non-sparse data
-        representation. Due to various optimizations, it is the fastest
-        realization. In contrast, the option "memory" uses an own
+    method : {'speed', 'memory'}, optional
+        Defines the algorithm to use. "speed" uses `numpy.correlate` to
+        calculate the correlation between two binned spike trains using a
+        non-sparse data representation. Due to various optimizations, it is the
+        fastest realization. In contrast, the option "memory" uses an own
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
         Default: "speed"
     cross_corr_coef : bool, optional
-        Normalizes the CCH to obtain the cross-correlation  coefficient
-        function ranging from -1 to 1 according to Equation (5.10) in [1]_.
-        See Notes.
+        If True, a normalization is applied to the CCH to obtain the
+        cross-correlation  coefficient function ranging from -1 to 1 according
+        to Equation (5.10) in [1]_. See Notes.
+        Default: False.
 
     Returns
     -------
@@ -519,25 +521,25 @@ def cross_correlation_histogram(
 
         The central bin of the histogram represents correlation at zero
         delay (instantaneous correlation).
-        Offset bins correspond to correlations at a delay equivalent
-        to the difference between the spike times of `binned_st1` and those of
-        `binned_st2`: an entry at positive lags corresponds to a spike in
+        Offset bins correspond to correlations at delays equivalent
+        to the differences between the spike times of `binned_st1` and those of
+        `binned_st2`: an entry at positive lag corresponds to a spike in
         `binned_st2` following a spike in `binned_st1` bins to the right, and
-        an entry at negative lags corresponds to a spike in `binned_st1`
+        an entry at negative lag corresponds to a spike in `binned_st1`
         following a spike in `binned_st2`.
 
         To illustrate this definition, consider the two spike trains:
         `binned_st1`: 0 0 0 0 1 0 0 0 0 0 0
         `binned_st2`: 0 0 0 0 0 0 0 1 0 0 0
-        Here, the CCH will have an entry of 1 at lag h=+3.
+        Here, the CCH will have an entry of 1 at lag :math:`h=+3`.
 
-        Consistent with the definition of AnalogSignals, the time axis
+        Consistent with the definition of `neo.AnalogSignals`, the time axis
         represents the left bin borders of each histogram bin. For example,
         the time axis might be:
         `np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms`
     bin_ids : np.ndarray
         Contains the IDs of the individual histogram bins, where the central
-        bin has ID 0, bins the left have negative IDs and bins to the right
+        bin has ID 0, bins to the left have negative IDs and bins to the right
         have positive IDs, e.g.,:
         `np.array([-3, -2, -1, 0, 1, 2, 3])`
 
@@ -551,8 +553,8 @@ def cross_correlation_histogram(
     ----------
     .. [1] "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
 
-    Example
-    -------
+    Examples
+    --------
         Plot the cross-correlation histogram between two Poisson spike trains
         >>> import elephant
         >>> import matplotlib.pyplot as plt
@@ -670,8 +672,8 @@ cch = cross_correlation_histogram
 
 def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     """
-    Calculates the Spike Time Tiling Coefficient (STTC) as described in
-    (Cutts & Eglen, 2014) following Cutts' implementation in C.
+    Calculates the Spike Time Tiling Coefficient (STTC) as described in [1]_
+    following their implementation in C.
     The STTC is a pairwise measure of correlation between spike trains.
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
@@ -700,26 +702,31 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
     Parameters
     ----------
-    spiketrain_1, spiketrain_2: neo.Spiketrain objects to cross-correlate.
-        Must have the same t_start and t_stop.
-    dt: Python Quantity.
+    spiketrain_1, spiketrain_2: neo.SpikeTrain
+        Spike trains to cross-correlate. They must have the same `t_start` and
+        `t_stop`.
+    dt: pq.Quantity.
         The synchronicity window is used for both: the quantification of the
-        proportion of total recording time that lies [-dt, +dt] of each spike
+        proportion of total recording time that lies `[-dt, +dt]` of each spike
         in each train and the proportion of spikes in `spiketrain_1` that lies
         `[-dt, +dt]` of any spike in `spiketrain_2`.
         Default : 0.005 * pq.s
 
     Returns
     -------
-    index:  float
+    index:  float or np.nan
         The spike time tiling coefficient (STTC). Returns np.nan if any spike
         train is empty.
 
     References
     ----------
-    Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations in
-    Spike Trains: An Objective Comparison of Methods and Application to the
+    .. [1] Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations
+    in Spike Trains: An Objective Comparison of Methods and Application to the
     Study of Retinal Waves. Journal of Neuroscience, 34(43), 14288–14303.
+
+    Alias
+    -----
+    `sttc`
     """
 
     def run_P(spiketrain_1, spiketrain_2):
@@ -825,7 +832,8 @@ sttc = spike_time_tiling_coefficient
 def spike_train_timescale(binned_st, tau_max):
     r"""
     Calculates the auto-correlation time of a binned spike train.
-    Uses the definition of the auto-correlation time proposed in [1, Eq. (6)]:
+    Uses the definition of the auto-correlation time proposed in [[1]_,
+    Eq. (6)]:
 
     .. math::
         \tau_\mathrm{corr} = \int_{-\tau_\mathrm{max}}^{\tau_\mathrm{max}}\
@@ -838,12 +846,12 @@ def spike_train_timescale(binned_st, tau_max):
     ----------
     binned_st : elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike train to be evaluated.
-    tau_max : quantities.Quantity
+    tau_max : pq.Quantity
         Maximal integration time of the auto-correlation function.
 
     Returns
     -------
-    timescale : quantities.Quantity
+    timescale : pq.Quantity
         The auto-correlation time of the binned spiketrain.
 
     Notes
@@ -854,13 +862,13 @@ def spike_train_timescale(binned_st, tau_max):
       necessary to introduce a cutoff for the numerical integration - this
       cutoff should be neither smaller than the true auto-correlation time
       nor much bigger.
-    * The binsize of binned_st is another critical parameter as it defines the
-      discretisation of the integral :math:`d\tau`. If it is too big, the
+    * The bin size of `binned_st` is another critical parameter as it defines
+      the discretization of the integral :math:`d\tau`. If it is too big, the
       numerical approximation of the integral is inaccurate.
 
     References
     ----------
-    [1] Wieland, S., Bernardi, D., Schwalger, T., & Lindner, B. (2015).
+    .. [1] Wieland, S., Bernardi, D., Schwalger, T., & Lindner, B. (2015).
         Slow fluctuations in recurrent networks of spiking neurons.
         Physical Review E, 92(4), 040901.
     """
