@@ -53,15 +53,18 @@ class GPFATestCase(unittest.TestCase):
         rates_b = (2, 2, 10, 2)
         durs = (2.5, 2.5, 2.5, 2.5)
         np.random.seed(0)
-        n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
-                            t_start=0*pq.s, t_stop=10*pq.s)
-        n2 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
-                            t_start=0*pq.s, t_stop=10*pq.s)
-        n3 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
-                            t_start=0*pq.s, t_stop=10*pq.s)
-        n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
-                            t_start=0*pq.s, t_stop=10*pq.s)
-        self.data1 = [[n1, n2, n3, n4],]
+        n_trials = 100
+        self.data1 = []
+        for trial in range(n_trials):
+            n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n2 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n3 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            self.data1.append([n1, n2, n3, n4])
         self.x_dim = 4
 
         # generate data2
@@ -82,7 +85,7 @@ class GPFATestCase(unittest.TestCase):
         self.assertEqual(gpfa.fit_info['bin_size'], 20*pq.ms)
         self.assertEqual(gpfa.fit_info['min_var_frac'], 0.01)
         self.assertTrue(np.all(gpfa.fit_info['has_spikes_bool']))
-        self.assertAlmostEqual(gpfa.fit_info['log_likelihood'], -27.222600197474762)
+        self.assertAlmostEqual(gpfa.fit_info['log_likelihood'], -1801.4969089766719)
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
         for i in [0, 1]:
@@ -91,6 +94,18 @@ class GPFATestCase(unittest.TestCase):
         for i in [2, 3]:
             self.assertEqual(xorth[0][i].mean(), 0)
             self.assertEqual(xorth[0][i].var(), 0)
+
+    def test_transform_testing_data(self):
+        gpfa1 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa1.fit(self.data1)
+        xorth1 = gpfa1.transform(self.data1)
+
+        gpfa2 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa2.fit(self.data1[:-2])
+        xorth2 = gpfa2.transform(self.data1[-2:])
+
+        print(list(zip(xorth1[-1][0], xorth2[-1][0])))
+        assert_array_almost_equal(xorth1[-1], xorth2[-1], decimal=3)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
