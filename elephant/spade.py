@@ -1127,11 +1127,9 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                             dtype=np.uint16)
 
     for i in range(len_partition + add_remainder):
-        current_time_surr_generation = time.time()
         surrs = [surr.dither_spikes(
             xx, dither=dither, n=1)[0] for xx in data]
         # Find all pattern signatures in the current surrogate data set
-        current_time_surr_mining = time.time()
         surr_concepts = concepts_mining(
             surrs, binsize, winlen, min_spikes=min_spikes,
             max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
@@ -1145,8 +1143,6 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
 
     # Collecting results on the first PCU
     if size != 1:
-        time_mpi = time.time()
-
         max_occs = comm.gather(max_occs, root=0)
 
         if rank != 0:  # pragma: no cover
