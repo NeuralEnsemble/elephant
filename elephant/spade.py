@@ -371,7 +371,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         if len(pv_spec) > 0:
             # Computing non-significant entries of the spectrum applying
             # the statistical correction
-            ns_sgnt = test_signature_significance(pv_spec, alpha,
+            ns_sgnt = test_signature_significance(pv_spec,
+                                                  concepts,
+                                                  alpha,
+                                                  winlen,
                                                   corr=stat_corr,
                                                   report='non_significant',
                                                   spectrum=spectrum)
@@ -1274,7 +1277,31 @@ def _stability_filter(c, stab_thr):
     return keep_concept
 
 
-def test_signature_significance(pvalue_spectrum, alpha, corr='',
+def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
+    """
+    #TODO: write documentation
+    :param pv_spec:
+    :param concepts:
+    :param spectrum:
+    :param winlen:
+    :return:
+    """
+    if spectrum == '#':
+        signatures = {(len(concept[0]), len(concept[1]))
+                      for concept in concepts}
+    if spectrum == '3d#':
+        # TODO: check why not maximum
+        signatures = {(len(concept[0]), len(concept[1]),
+                       sorted(np.array(concept[0]) % winlen)[-1])
+                      for concept in concepts}
+    mask = np.array([tuple(pvs[:-1]) in signatures
+                     and not np.isclose(pvs[-1], [1])
+                     for pvs in pv_spec])
+    return mask
+
+
+def test_signature_significance(pvalue_spectrum, concepts, alpha,
+                                winlen, corr='',
                                 report='spectrum', spectrum='#'):
     """
     Compute the significance spectrum of a pattern spectrum.
@@ -1288,6 +1315,7 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
 
     Parameters
     ----------
+    # TODO: add documentation for concepts and winlen
     pvalue_spectrum: list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
@@ -1350,32 +1378,27 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
                     'fdr_tsbh', 'fdr_tsbky', '', 'no']:
         raise AttributeError("Parameter corr not recognized")
 
-    x_array = np.array(pvalue_spectrum)
-    pvalues = x_array[:, -1]
-    # TODO: define epsilon for this
-    pvalues_totest = pvalues[(pvalues != 0) & (pvalues != 1)]
-
-    # Compute significance for only the non trivial tests
-    if corr in ['', 'no']:  # ...without statistical correction
-        tests_selected = pvalues_totest <= alpha
-    else:
-        tests_selected = sm.multipletests(pvalues_totest,
-                                 alpha=alpha,
-                                 method=corr)[0]
-
-    # Remerge test output
-    indexes_totest = np.where((~np.isclose(pvalues, [0])) &
-                              (~np.isclose(pvalues, [1])))[0]
-    indexes_zeros = np.where(np.isclose(pvalues, [0]))[0]
+    pvalue_spectrum = np.array(pvalue_spectrum)
+    mask = _mask_pvalue_spectrum(pvalue_spectrum, concepts, spectrum, winlen)
+    pvalues = pvalue_spectrum[:, -1]
+    pvalues_totest = pvalues[mask]
 
     # Initialize test array to False
     tests = [False for i in range(len(pvalues))]
-    # assign each corrected pvalue to its corresponding entry
-    for index, value in enumerate(indexes_totest):
-        tests[value] = tests_selected[index]
-    # assign
-    for index, value in enumerate(indexes_zeros):
-        tests[value] = True
+
+    if len(pvalues_totest):
+
+        # Compute significance for only the non trivial tests
+        if corr in ['', 'no']:  # ...without statistical correction
+            tests_selected = pvalues_totest <= alpha
+        else:
+            tests_selected = sm.multipletests(pvalues_totest,
+                                     alpha=alpha,
+                                     method=corr)[0]
+
+        # assign each corrected pvalue to its corresponding entry
+        for index, value in zip(mask.nonzero(), tests_selected):
+            tests[value] = tests_selected[index]
 
     # Return the specified results:
     if spectrum == '#':
@@ -1410,6 +1433,7 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     if spectrum == '#':
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
+        # TODO: check why not maximum
         bin_ids = sorted(np.array(concept[0]) % winlen)
         # The duration is effectively the delay between the last neuron and
         # the first one, measured in bins. Since we only allow the first spike

@@ -401,8 +401,12 @@ class SpadeTestCase(unittest.TestCase):
                 [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, 3 * pq.ms,
                           n_surr=-3)
         # Test wrong correction parameter
-        self.assertRaises(AttributeError, spade.test_signature_significance, (
-            (2, 3, 0.2), (2, 4, 0.1)), 0.01, corr='try')
+        self.assertRaises(AttributeError, spade.test_signature_significance,
+                          pvalue_spectrum=((2, 3, 0.2), (2, 4, 0.1)),
+                          concepts=([(2, 3), (1, 2, 3)]),
+                          alpha=0.01,
+                          winlen=1,
+                          corr='try')
         # Test negative number of subset for stability
         self.assertRaises(AttributeError, spade.approximate_stability, (),
                           np.array([]), n_subsets=-3)
