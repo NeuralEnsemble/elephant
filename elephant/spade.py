@@ -1174,7 +1174,7 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
     min_occ: int
     n_surr: int
     winlen: int
-    spectrum: {‘#’, ‘3d#’}
+    spectrum: {'#', '3d#'}
 
     Returns
     -------
