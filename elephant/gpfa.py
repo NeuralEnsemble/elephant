@@ -63,6 +63,7 @@ neural population activity. J Neurophysiol 102:614-635.
 import numpy as np
 import neo
 import quantities as pq
+import sklearn
 
 from elephant.gpfa_src import gpfa_core, gpfa_util
 
@@ -148,7 +149,7 @@ def postprocess(params_est, seqs_train):
     return params_est, seqs_train
 
 
-class GPFA():
+class GPFA(sklearn.base.BaseEstimator):
     """
     Prepares data and calls functions for extracting neural trajectories in the
     orthonormal space.
@@ -245,7 +246,7 @@ class GPFA():
 
     def __init__(self, bin_size=20*pq.ms, x_dim=3, min_var_frac=0.01,
                  tau_init=100.0*pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
-                 em_max_iters=500, freq_ll=5):
+                 em_max_iters=500, freq_ll=5, valid_data_names=('xorth', 'xsm', 'Vsm', 'VsmGP', 'y')):
         self.bin_size = bin_size
         self.x_dim = x_dim
         self.min_var_frac = min_var_frac
@@ -254,7 +255,7 @@ class GPFA():
         self.em_tol = em_tol
         self.em_max_iters = em_max_iters
         self.freq_ll = freq_ll
-        self.valid_data_names = ['xorth', 'xsm', 'Vsm', 'VsmGP', 'y']
+        self.valid_data_names = valid_data_names
 
         if not isinstance(self.bin_size, pq.Quantity):
             raise ValueError("'bin_size' must be of type pq.Quantity")
@@ -418,3 +419,7 @@ class GPFA():
         seqs_train = self._format_training_data(data)
         self._fit(seqs_train, verbose)
         return self._transform(seqs_train, returned_data)
+
+    def score(self, data):
+       self.transform(data)
+       return self.fit_info['log_likelihood']
