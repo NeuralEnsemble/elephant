@@ -395,7 +395,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                              l_covered_spikes=psr_param[2],
                                              min_spikes=min_spikes,
                                              min_occ=min_occ)  # nopep8
-    # Storing patterns for ouput format concepts
+    # Storing patterns for output format concepts
     if output_format == 'concepts':
         output['patterns'] = concepts
         return output
@@ -1290,9 +1290,9 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
         signatures = {(len(concept[0]), len(concept[1]))
                       for concept in concepts}
     if spectrum == '3d#':
-        # TODO: check why not maximum
+        # third entry of signatures is the duration, fixed as the maximum lag
         signatures = {(len(concept[0]), len(concept[1]),
-                       sorted(np.array(concept[0]) % winlen)[-1])
+                       max(np.array(concept[0]) % winlen))
                       for concept in concepts}
     mask = np.array([tuple(pvs[:-1]) in signatures
                      and not np.isclose(pvs[-1], [1])
@@ -1384,7 +1384,7 @@ def test_signature_significance(pvalue_spectrum, concepts, alpha,
     pvalues_totest = pvalues[mask]
 
     # Initialize test array to False
-    tests = [False for i in range(len(pvalues))]
+    tests = [False] * len(pvalues)
 
     if len(pvalues_totest):
 
@@ -1398,7 +1398,7 @@ def test_signature_significance(pvalue_spectrum, concepts, alpha,
 
         # assign each corrected pvalue to its corresponding entry
         for index, value in zip(mask.nonzero(), tests_selected):
-            tests[value] = tests_selected[index]
+            tests[index] = value
 
     # Return the specified results:
     if spectrum == '#':
@@ -1433,13 +1433,8 @@ def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
     if spectrum == '#':
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
     if spectrum == '3d#':
-        # TODO: check why not maximum
-        bin_ids = sorted(np.array(concept[0]) % winlen)
-        # The duration is effectively the delay between the last neuron and
-        # the first one, measured in bins. Since we only allow the first spike
-        # to be in the first bin (see concepts_mining, _build_context and
-        # _fpgrowth), it is the the position of the latest spike.
-        duration = bin_ids[-1]
+        # duration is fixed as the maximum lag
+        duration = max(np.array(concept[0]) % winlen)
         keep_concept = (len(concept[0]), len(concept[1]),
                         duration) not in ns_signature
     return keep_concept
