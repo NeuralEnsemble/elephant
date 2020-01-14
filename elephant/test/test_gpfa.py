@@ -52,18 +52,16 @@ class GPFATestCase(unittest.TestCase):
         rates_a = (2, 10, 2, 2)
         rates_b = (2, 2, 10, 2)
         durs = (2.5, 2.5, 2.5, 2.5)
-        self.data1 = []
-        for tr in range(1):
-            np.random.seed(tr)
-            n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
-                                t_start=0*pq.s, t_stop=10*pq.s)
-            n2 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
-                                t_start=0*pq.s, t_stop=10*pq.s)
-            n3 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
-                                t_start=0*pq.s, t_stop=10*pq.s)
-            n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
-                                t_start=0*pq.s, t_stop=10*pq.s)
-            self.data1.append((tr, [n1, n2, n3, n4]))
+        np.random.seed(0)
+        n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                            t_start=0*pq.s, t_stop=10*pq.s)
+        n2 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                            t_start=0*pq.s, t_stop=10*pq.s)
+        n3 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                            t_start=0*pq.s, t_stop=10*pq.s)
+        n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                            t_start=0*pq.s, t_stop=10*pq.s)
+        self.data1 = [[n1, n2, n3, n4],]
         self.x_dim = 4
 
         # generate data2
@@ -75,7 +73,7 @@ class GPFATestCase(unittest.TestCase):
             rates = np.random.randint(low=1, high=100, size=n_channels)
             spike_times = [homogeneous_poisson_process(rate=rate*pq.Hz)
                            for rate in rates]
-            self.data2.append((trial, spike_times))
+            self.data2.append(spike_times)
 
     def test_data1(self):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
@@ -115,8 +113,8 @@ class GPFATestCase(unittest.TestCase):
         self.assertEqual(gpfa.fit_info['bin_size'], self.bin_size,
                          "Input and output bin_size don't match")
         n_trials = len(self.data2)
-        t_start = self.data2[0][1][0].t_stop
-        t_stop = self.data2[0][1][0].t_start
+        t_start = self.data2[0][0].t_stop
+        t_stop = self.data2[0][0].t_start
         n_bins = int(((t_start - t_stop) / self.bin_size).magnitude)
         assert_array_equal(seqs_train['T'], [n_bins,] * n_trials)
         assert_array_equal(seqs_train['trialId'], np.arange(n_trials))

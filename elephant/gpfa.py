@@ -288,19 +288,18 @@ class GPFA():
             If `data[0][1][0]` is not a `neo.SpikeTrain`.
         """
         self._check_training_data(data)
-        seqs_train = self._format_training_data(data, self.bin_size)
+        seqs_train = self._format_training_data(data)
         return self._fit(seqs_train, verbose)
 
     def _check_training_data(self, data):
-        # todo does it makes sense to explicitly pass trial_id?
         if len(data) == 0:
             raise ValueError("`data` cannot be empty")
-        if not isinstance(data[0][1][0], neo.SpikeTrain):
+        if not isinstance(data[0][0], neo.SpikeTrain):
             raise ValueError("structure of the data is not correct: 0-axis "
                              "should be trials, 1-axis neo spike trains "
                              "and 2-axis spike times")
 
-    def _format_training_data(self, data, bin_size):
+    def _format_training_data(self, data):
         seqs = gpfa_util.get_seq(data, self.bin_size)
         # Remove inactive units based on training set
         self.has_spikes_bool = (np.hstack(seqs['y']).mean(1) != 0)
@@ -386,7 +385,7 @@ class GPFA():
             If the number of neurons in `data` is different from that in the
             training data.
         """
-        if len(data[0][1]) != len(self.has_spikes_bool):
+        if len(data[0]) != len(self.has_spikes_bool):
             raise ValueError("`data` must contain the same number of neurons as the training data")
         seqs = gpfa_util.get_seq(data, self.bin_size)
         for seq in seqs:
@@ -407,6 +406,6 @@ class GPFA():
         details.
         """
         self._check_training_data(data)
-        seqs_train = self._format_training_data(data, self.bin_size)
+        seqs_train = self._format_training_data(data)
         self._fit(seqs_train, verbose)
         return self._transform(seqs_train)

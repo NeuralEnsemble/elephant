@@ -58,16 +58,15 @@ def get_seq(data, bin_size, use_sqrt=True):
         raise ValueError("'bin_size' must be of type pq.Quantity")
 
     seq = []
-    for dat in data:
-        trial_id = dat[0]
-        sts = dat[1]
+    for i, dat in enumerate(data):
+        sts = dat
         binned_sts = BinnedSpikeTrain(sts, binsize=bin_size)
         if use_sqrt:
             binned = np.sqrt(binned_sts.to_array())
         else:
             binned = binned_sts.to_array()
         seq.append(
-            (trial_id, binned_sts.num_bins, binned))
+            (i, binned_sts.num_bins, binned))
     seq = np.array(seq,
                    dtype=[('trialId', np.int), ('T', np.int),
                           ('y', 'O')])
