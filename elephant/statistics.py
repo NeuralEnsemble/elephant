@@ -3,8 +3,7 @@
 This module provides function to extract various statistical measures of spike
 trains, including functions to estimate firing rates.
 
-.. plot
-
+.. include:: statistics/overview.rst
 
 .. current_module elephant.statistics
 
@@ -12,7 +11,7 @@ Overview of Functions
 ---------------------
 
 Rate estimation
-===============
+~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: statistics/
@@ -24,7 +23,7 @@ Rate estimation
 
 
 Spike interval statistics
-=========================
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: statistics/
@@ -36,7 +35,7 @@ Spike interval statistics
 
 
 Statistics across spike trains
-==============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: statistics/
@@ -318,10 +317,10 @@ def cv2(v, with_nan=False):
     Given a vector v containing a sequence of intervals, the CV2 is
     defined as:
 
-    .math $$ CV2 := \\frac{1}{N}\\sum_{i=1}^{N-1}
-
-                   \\frac{2|isi_{i+1}-isi_i|}
-                          {|isi_{i+1}+isi_i|} $$
+    .. math::
+        $$ CV2 := \frac{1}{N}\sum_{i=1}^{N-1}
+               \frac{2 isi_{i+1}-isi_i|}
+                 {isi_{i+1}+isi_i|} $$
 
     The CV2 is typically computed as a substitute for the classical
     coefficient of variation (CV) for sequences of events which include
