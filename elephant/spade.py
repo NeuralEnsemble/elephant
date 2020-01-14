@@ -1174,8 +1174,7 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
     min_occ: int
     n_surr: int
     winlen: int
-    spectrum: str
-        can be '#' or '3d#'.
+    spectrum: {‘#’, ‘3d#’}
 
     Returns
     -------
@@ -1187,33 +1186,26 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
         each entry has the form:
         [pattern_size, pattern_occ, pattern_dur, p_value]
     """
+    if spectrum not in ('#', '3d#'):
+        raise ValueError("Invalid spectrum: '{}'".format(spectrum))
+
     pv_spec = []
     if spectrum == '#':
-        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
-            max_occs_size = max_occs[:, size_id]
+        max_occs = np.expand_dims(max_occs, axis=2)
+        winlen = 1
+    for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
+        for dur in range(winlen):
+            max_occs_size_dur = max_occs[:, size_id, dur]
             counts, occs = np.histogram(
-                max_occs_size,
-                bins=np.arange(min_occ, np.max(max_occs_size) + 2))
+                max_occs_size_dur,
+                bins=np.arange(min_occ,
+                               np.max(max_occs_size_dur) + 2))
             occs = occs[:-1].astype(np.uint16)
-
             pvalues = np.cumsum(counts[::-1])[::-1] / n_surr
-
             for occ_id, occ in enumerate(occs):
-                pv_spec.append([pt_size, occ, pvalues[occ_id]])
-
-    elif spectrum == '3d#':
-        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
-            for dur in range(winlen):
-                max_occs_size_dur = max_occs[:, size_id, dur]
-                counts, occs = np.histogram(
-                    max_occs_size_dur,
-                    bins=np.arange(min_occ,
-                                   np.max(max_occs_size_dur) + 2))
-                occs = occs[:-1].astype(np.uint16)
-
-                pvalues = np.cumsum(counts[::-1])[::-1] / n_surr
-
-                for occ_id, occ in enumerate(occs):
+                if spectrum == '#':
+                    pv_spec.append([pt_size, occ, pvalues[occ_id]])
+                else:
                     pv_spec.append([pt_size, occ, dur, pvalues[occ_id]])
     return pv_spec
 
@@ -1229,43 +1221,38 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
     min_spikes: int
     max_spikes: int
     winlen: int
+    spectrum: {‘#’, ‘3d#’}
 
     Returns
     -------
-    np.ndarray:
+    np.ndarray
         Two-dimensional array. Each element corresponds to a highest occurrence
         for a specific pattern size (which range from min_spikes to max_spikes)
         and pattern duration (which range from 0 to winlen-1).
         The first axis corresponds to the pattern size the second to the
         duration.
     """
+    if spectrum not in ('#', '3d#'):
+        raise ValueError("Invalid spectrum: '{}'".format(spectrum))
 
     if spectrum == '#':
-        max_occ = np.zeros(shape=(max_spikes - min_spikes + 1))
-
-        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
-            concepts_for_size = surr_concepts[
-                surr_concepts[:, 0] == pt_size][:, 1]
-            max_occ[size_id] = np.max(concepts_for_size, initial=0)
-
-        for pt_size in range(max_spikes - 1, min_spikes - 1, -1):
-            size_id = pt_size - min_spikes
-            max_occ[size_id] = np.max(max_occ[size_id:size_id + 2])
-
-    elif spectrum == '3d#':
-        max_occ = np.zeros(shape=(max_spikes - min_spikes + 1, winlen))
-
-        for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
-            concepts_for_size = surr_concepts[
-                surr_concepts[:, 0] == pt_size][:, 1:]
-
-            for dur in range(winlen):
+        winlen = 1
+    max_occ = np.zeros(shape=(max_spikes - min_spikes + 1, winlen))
+    for size_id, pt_size in enumerate(range(min_spikes, max_spikes + 1)):
+        concepts_for_size = surr_concepts[
+            surr_concepts[:, 0] == pt_size][:, 1:]
+        for dur in range(winlen):
+            if spectrum == '#':
+                occs = concepts_for_size[:, 0]
+            else:
                 occs = concepts_for_size[concepts_for_size[:, 1] == dur][:, 0]
-                max_occ[size_id, dur] = np.max(occs, initial=0)
+            max_occ[size_id, dur] = np.max(occs, initial=0)
 
-        for pt_size in range(max_spikes - 1, min_spikes - 1, -1):
-            size_id = pt_size - min_spikes
-            max_occ[size_id] = np.max(max_occ[size_id:size_id + 2], axis=0)
+    for pt_size in range(max_spikes - 1, min_spikes - 1, -1):
+        size_id = pt_size - min_spikes
+        max_occ[size_id] = np.max(max_occ[size_id:size_id + 2], axis=0)
+    if spectrum == '#':
+        max_occ = np.squeeze(max_occ, axis=1)
 
     return max_occ
 
