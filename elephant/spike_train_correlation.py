@@ -47,7 +47,7 @@ class CrossCorrHist(object):
 
     def correlate_memory(self):
         """
-        Slow, but memory safe mode.
+        Slow, but memory-safe mode.
 
         Returns
         -------
