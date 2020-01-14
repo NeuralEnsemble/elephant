@@ -545,9 +545,10 @@ def cross_correlation_histogram(
 
     Notes
     -----
-    The Eq. (5.10) in [1]_ is valid for binned spike trains with at most one
-    spike per bin. For a general case, refer to the implementation of
-    `_covariance_sparse()`.
+    1. The Eq. (5.10) in [1]_ is valid for binned spike trains with at most one
+       spike per bin. For a general case, refer to the implementation of
+       `_covariance_sparse()`.
+    2. Alias: `cch`
 
     References
     ----------
@@ -556,10 +557,11 @@ def cross_correlation_histogram(
     Examples
     --------
         Plot the cross-correlation histogram between two Poisson spike trains
+
         >>> import elephant
         >>> import matplotlib.pyplot as plt
         >>> import quantities as pq
-
+        >>>
         >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
         >>>        elephant.spike_train_generation.homogeneous_poisson_process(
         >>>            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
@@ -568,13 +570,13 @@ def cross_correlation_histogram(
         >>>        elephant.spike_train_generation.homogeneous_poisson_process(
         >>>            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
         >>>        binsize=5. * pq.ms)
-
+        >>>
         >>> cc_hist = \
         >>>    elephant.spike_train_correlation.cross_correlation_histogram(
         >>>        binned_st1, binned_st2, window=[-30,30],
         >>>        border_correction=False,
         >>>        binary=False, kernel=None, method='memory')
-
+        >>>
         >>> plt.bar(left=cc_hist[0].times.magnitude,
         >>>         height=cc_hist[0][:, 0].magnitude,
         >>>         width=cc_hist[0].sampling_period.magnitude)
@@ -583,9 +585,6 @@ def cross_correlation_histogram(
         >>> plt.axis('tight')
         >>> plt.show()
 
-    Alias
-    -----
-    `cch`
     """
 
     # Check that the spike trains are binned with the same temporal
@@ -710,7 +709,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         proportion of total recording time that lies `[-dt, +dt]` of each spike
         in each train and the proportion of spikes in `spiketrain_1` that lies
         `[-dt, +dt]` of any spike in `spiketrain_2`.
-        Default : 0.005 * pq.s
+        Default : `0.005 * pq.s`
 
     Returns
     -------
@@ -721,12 +720,13 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     References
     ----------
     .. [1] Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations
-    in Spike Trains: An Objective Comparison of Methods and Application to the
-    Study of Retinal Waves. Journal of Neuroscience, 34(43), 14288–14303.
+           in Spike Trains: An Objective Comparison of Methods and Application
+           to the Study of Retinal Waves. Journal of Neuroscience, 34(43),
+           14288–14303.
 
-    Alias
+    Notes
     -----
-    `sttc`
+    Alias: `sttc`
     """
 
     def run_P(spiketrain_1, spiketrain_2):
