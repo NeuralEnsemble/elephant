@@ -546,8 +546,8 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         report=report)
     return mining_results, rel_matrix
 
-# TODO: Think about only_windows_with_first_spike
-def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
+
+def _build_context(binary_matrix, winlen):
     """
     Building the context given a matrix (number of trains x number of bins) of
     binned spike trains
@@ -557,12 +557,6 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
         Binary matrix containing the binned spike trains
     winlen : int
         Length of the binsize used to bin the data
-    only_windows_with_first_spike : bool
-        Whether to consider every window or only the one with a spike in the
-        first bin. It is possible to discard windows without a spike in the
-        first bin because the same configuration of spikes will be repeated
-        in a following window, just with different position for the first spike
-        Default: True
 
     Returns
     --------
@@ -590,15 +584,12 @@ def _build_context(binary_matrix, winlen, only_windows_with_first_spike=True):
     indices = np.argsort(binary_matrix.col)
     binary_matrix.row = binary_matrix.row[indices]
     binary_matrix.col = binary_matrix.col[indices]
-    if only_windows_with_first_spike:
-        # out of all window positions
-        # get all non-empty first bins
-        window_indices = np.unique(binary_matrix.col)
-    else:
-        window_indices = np.arange(num_bins - winlen + 1)
+    # out of all window positions
+    # get all non-empty first bins
+    window_indices = np.unique(binary_matrix.col)
     windows_row = []
     windows_col = []
-    # TODO: Please comment this code!
+    # TODO: Please comment this code - or change
     for window_idx in window_indices:
         for col in range(window_idx, window_idx + winlen):
             if col in binary_matrix.col:
