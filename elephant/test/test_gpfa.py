@@ -54,7 +54,7 @@ class GPFATestCase(unittest.TestCase):
         durs = (2.5, 2.5, 2.5, 2.5)
         np.random.seed(0)
         n_trials = 100
-        self.data1 = []
+        self.data0 = []
         for trial in range(n_trials):
             n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
                                 t_start=0*pq.s, t_stop=10*pq.s)
@@ -64,8 +64,18 @@ class GPFATestCase(unittest.TestCase):
                                 t_start=0*pq.s, t_stop=10*pq.s)
             n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
                                 t_start=0*pq.s, t_stop=10*pq.s)
-            self.data1.append([n1, n2, n3, n4])
+            n5 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n6 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n7 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            n8 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1*pq.s,
+                                t_start=0*pq.s, t_stop=10*pq.s)
+            self.data0.append([n1, n2, n3, n4, n5, n6, n7, n8])
         self.x_dim = 4
+
+        self.data1 = self.data0[:20]
 
         # generate data2
         np.random.seed(27)
@@ -85,27 +95,46 @@ class GPFATestCase(unittest.TestCase):
         self.assertEqual(gpfa.fit_info['bin_size'], 20*pq.ms)
         self.assertEqual(gpfa.fit_info['min_var_frac'], 0.01)
         self.assertTrue(np.all(gpfa.fit_info['has_spikes_bool']))
-        self.assertAlmostEqual(gpfa.fit_info['log_likelihood'], -1801.4969089766719)
+        self.assertAlmostEqual(gpfa.fit_info['log_likelihood'], -8172.004695554373)
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
         for i in [0, 1]:
             self.assertNotEqual(xorth[0][i].mean(), 0)
             self.assertNotEqual(xorth[0][i].var(), 0)
         for i in [2, 3]:
-            self.assertEqual(xorth[0][i].mean(), 0)
-            self.assertEqual(xorth[0][i].var(), 0)
+            self.assertAlmostEqual(xorth[0][i].mean(), 0, places=2)
+            self.assertAlmostEqual(xorth[0][i].var(), 0, places=2)
 
     def test_transform_testing_data(self):
         gpfa1 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa1.fit(self.data1)
-        xorth1 = gpfa1.transform(self.data1)
+        with self.assertRaises(ValueError):
+            gpfa1.transform(self.data2)
+
+        gpfa1 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa1.fit(self.data0)
+        xorth1 = gpfa1.transform(self.data0)
 
         gpfa2 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
-        gpfa2.fit(self.data1[:-2])
-        xorth2 = gpfa2.transform(self.data1[-2:])
+        gpfa2.fit(self.data0[:-2])
+        xorth2 = gpfa2.transform(self.data0[-2:])
 
-        print(list(zip(xorth1[-1][0], xorth2[-1][0])))
-        assert_array_almost_equal(xorth1[-1], xorth2[-1], decimal=3)
+        # we expect better consistency for the first 2 dimensions then for
+        # the rest, as the data is inherently 2 dimensional
+        # TODO: is this a good test?
+        assert_array_almost_equal(xorth1[-1][0], xorth2[-1][0], decimal=2)
+        assert_array_almost_equal(xorth1[-1][1], xorth2[-1][1], decimal=2)
+        assert_array_almost_equal(xorth1[-1][2], xorth2[-1][2], decimal=1)
+        assert_array_almost_equal(xorth1[-1][3], xorth2[-1][3], decimal=1)
+
+    def test_cross_validation(self):
+        from sklearn.model_selection import cross_val_score
+        lls = []
+        for x_dim in range(1, self.x_dim+1):
+            gpfa = GPFA(x_dim=x_dim, em_max_iters=self.n_iters)
+            lls.append(np.mean(cross_val_score(gpfa, self.data1, cv=5)))
+        print(lls)
+        self.assertTrue(np.argmax(lls)==1)
 
     def test_invalid_input_data(self):
         invalid_data = [(0, [0, 1, 2])]
@@ -142,7 +171,7 @@ class GPFATestCase(unittest.TestCase):
         gpfa1.fit(self.data1)
         xorth1 = gpfa1.transform(self.data1)
         xorth2 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim, em_max_iters=self.n_iters).fit_transform(self.data1)
-        for i in range(1):
+        for i in range(len(self.data1)):
             for j in range(self.x_dim):
                 assert_array_almost_equal(xorth1[i][j], xorth2[i][j])
 
