@@ -72,6 +72,7 @@ from scipy import sparse
 
 import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
+import statsmodels.stats.multitest as sm
 from elephant.spade_src import fast_fca
 
 warnings.simplefilter('once', UserWarning)
@@ -94,8 +95,8 @@ except ImportError:  # pragma: no cover
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr', psr_param=None, output_format='concepts'):
-    r"""
+          alpha=1, stat_corr='fdr_bh', psr_param=None, output_format='concepts'):
+    """
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
     in a sliding window of winlen*binsize milliseconds.
@@ -186,12 +187,22 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         are filtered according to their signature in the p-value spectrum.
         Default: 1
     stat_corr: str
-        Statistical correction to be applied:
-            '', 'no' : no statistical correction
-            'f', 'fdr' : false discovery rate
-            'b', 'bonf': Bonferroni correction
-            'hb', 'holm_bonf': Holm-Bonferroni correction
-         Default: 'fdr'
+        Method used for testing and adjustment of pvalues.
+        Can be either the full name or initial letters.
+        Available methods are:
+            bonferroni : one-step correction
+            sidak : one-step correction
+            holm-sidak : step down method using Sidak adjustments
+            holm : step-down method using Bonferroni adjustments
+            simes-hochberg : step-up method (independent)
+            hommel : closed method based on Simes tests (non-negative)
+            fdr_bh : Benjamini/Hochberg (non-negative)
+            fdr_by : Benjamini/Yekutieli (negative)
+            fdr_tsbh : two stage fdr correction (non-negative)
+            fdr_tsbky : two stage fdr correction (non-negative)
+        Also possible as input:
+            '', 'no': no statistical correction
+        Default: 'fdr_bh'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
@@ -1267,76 +1278,6 @@ def _stability_filter(c, stab_thr):
     return keep_concept
 
 
-def _fdr(pvalues, alpha):
-    """
-    performs False Discovery Rate (FDR) statistical correction on a list of
-    p-values, and assesses accordingly which of the associated statistical
-    tests is significant at the desired level *alpha*
-
-    Parameters
-    ----------
-    pvalues: numpy.ndarray
-        array of p-values, each corresponding to a statistical test
-    alpha: float
-        significance level (desired FDR-ratio)
-
-    Returns
-    ------
-    Returns a triplet containing:
-    * an array of bool, indicating for each p-value whether it was
-      significantly low or not
-    * the largest p-value that was below the FDR linear threshold
-      (effective confidence level). That and each lower p-value are
-      considered significant.
-    * the rank of the largest significant p-value
-
-    """
-
-    # Sort the p-values from largest to smallest
-    pvs_sorted = np.sort(pvalues)[::-1]  # Sort PVs in decreasing order
-
-    # Perform FDR on the sorted p-values
-    m = len(pvalues)
-
-    for i, pv in enumerate(pvs_sorted):  # For each PV, from the largest on
-        k = m - i
-        if pv <= alpha * (k * 1. / m):  # continue if PV > fdr-threshold
-            break  # otherwise stop
-    # this applies, when loop is not stopped due to significant pvalue
-    else:
-        k = 0
-    thresh = alpha * (k * 1. / m)
-
-    # Return outcome of the test, critical p-value and its order
-    return pvalues <= thresh, thresh, k
-
-
-def _holm_bonferroni(pvalues, alpha):
-    """
-    performs Holm Bonferroni statistical correction on a list of
-    p-values, and assesses accordingly which of the associated statistical
-    tests is significant at the desired level *alpha*
-
-    Parameters
-    ----------
-    pvalues: list
-       list of p-values, each corresponding to a statistical test
-    alpha: float
-       significance level
-
-    Returns
-    -------
-    tests : list
-        A list of boolean values, indicating for each p-value whether it was
-        significantly low or not
-   """
-    id_sorted = np.argsort(pvalues)
-    tests = [pval <= alpha / float(
-        len(pvalues) - id_sorted[pval_idx]) for pval_idx, pval in enumerate(
-        pvalues)]
-    return tests
-
-
 def test_signature_significance(pvalue_spectrum, alpha, corr='',
                                 report='spectrum', spectrum='#'):
     """
@@ -1357,12 +1298,23 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
     alpha: float
         Significance level of the statistical test
     corr: str
-        Statistical correction to be applied:
-            '', 'no' : no statistical correction
-            'f', 'fdr' : false discovery rate
-            'b', 'bonf': Bonferroni correction
-            'hb', 'holm_bonf': Holm-Bonferroni correction
-         Default: ''
+        Method used for testing and adjustment of pvalues.
+        Can be either the full name or initial letters.
+        Available methods are:
+            bonferroni : one-step correction
+            sidak : one-step correction
+            holm-sidak : step down method using Sidak adjustments
+            holm : step-down method using Bonferroni adjustments
+            simes-hochberg : step-up method (independent)
+            hommel : closed method based on Simes tests (non-negative)
+            fdr_bh : Benjamini/Hochberg (non-negative)
+            fdr_by : Benjamini/Yekutieli (negative)
+            fdr_tsbh : two stage fdr correction (non-negative)
+            fdr_tsbky : two stage fdr correction (non-negative)
+        Also possible as input:
+            '', 'no': no statistical correction
+        Default: 'fdr_bh'
+
     report: str
         Format to be returned for the significance spectrum:
         'spectrum': list of triplets (z,c,b), where b is a boolean specifying
@@ -1397,21 +1349,38 @@ def test_signature_significance(pvalue_spectrum, alpha, corr='',
         raise AttributeError("report must be either 'spectrum'," +
                              "  'significant' or 'non_significant'," +
                              "got {} instead".format(report))
+    if corr not in ['bonferroni', 'sidak', 'holm-sidak', 'holm',
+                    'simes-hochberg', 'hommel', 'fdr_bh', 'fdr_by',
+                    'fdr_tsbh', 'fdr_tsbky', '', 'no']:
+        raise AttributeError("Parameter corr not recognized")
 
     x_array = np.array(pvalue_spectrum)
-    # Compute significance...
+    pvalues = x_array[:, -1]
+    # TODO: define epsilon for this
+    pvalues_totest = pvalues[(pvalues != 0) & (pvalues != 1)]
+
+    # Compute significance for only the non trivial tests
     if corr in ['', 'no']:  # ...without statistical correction
-        tests = x_array[:, -1] <= alpha
-    elif corr in ['b', 'bonf']:  # or with Bonferroni correction
-        tests = x_array[:, -1] <= alpha * 1. / len(pvalue_spectrum)
-    elif corr in ['f', 'fdr']:  # or with FDR correction
-        tests = _fdr(x_array[:, -1], alpha=alpha)[0]
-    elif corr in ['hb', 'holm_bonf']:
-        tests = _holm_bonferroni(x_array[:, -1], alpha=alpha)
+        tests_selected = pvalues_totest <= alpha
     else:
-        raise AttributeError(
-            "Parameter corr must be either ''('no'), 'b'('bonf'), 'f'('fdr')" +
-            " or 'hb'('holm_bonf'), but not '" + str(corr) + "'.")
+        tests_selected = sm.multipletests(pvalues_totest,
+                                 alpha=alpha,
+                                 method=corr)[0]
+
+    # Remerge test output
+    indexes_totest = np.where((~np.isclose(pvalues, [0])) &
+                              (~np.isclose(pvalues, [1])))[0]
+    indexes_zeros = np.where(np.isclose(pvalues, [0]))[0]
+
+    # Initialize test array to False
+    tests = [False for i in range(len(pvalues))]
+    # assign each corrected pvalue to its corresponding entry
+    for index, value in enumerate(indexes_totest):
+        tests[value] = tests_selected[index]
+    # assign
+    for index, value in enumerate(indexes_zeros):
+        tests[value] = True
+
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
