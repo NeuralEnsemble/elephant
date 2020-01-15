@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Basic processing procedures for analog signals (e.g., performing a z-score of a
 signal, or filtering a signal).
 
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
-'''
+"""
 
 from __future__ import division, print_function
 import numpy as np
@@ -16,8 +16,8 @@ import numpy.matlib as npm
 
 
 def zscore(signal, inplace=True):
-    '''
-    Apply a z-score operation to one or several AnalogSignal objects.
+    """
+    Apply a z-score operation to one or several `neo.AnalogSignal` objects.
 
     The z-score operation subtracts the mean :math:`\\mu` of the signal, and
     divides by its standard deviation :math:`\\sigma`:
@@ -25,8 +25,8 @@ def zscore(signal, inplace=True):
     .. math::
          Z(x(t))= \\frac{x(t)-\\mu}{\\sigma}
 
-    If an AnalogSignal containing multiple signals is provided, the
-    z-transform is always calculated for each signal individually.
+    If a list of `neo.AnalogSignal` is provided, the z-transform is always
+    calculated for each signal individually.
 
     If a list of AnalogSignal objects is supplied, the mean and standard
     deviation are calculated across all objects of the list. Thus, all list
@@ -62,6 +62,7 @@ def zscore(signal, inplace=True):
 
     Examples
     --------
+    Calculates
     >>> a = neo.AnalogSignal(
     ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1)*mV,
     ...       t_start=0*s, sampling_rate=1000*Hz)
@@ -105,7 +106,7 @@ def zscore(signal, inplace=True):
        [ 1.11974608,  1.08576948],
        [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
        sampling rate: 1000.0 Hz)>]
-    '''
+    """
     # Transform input to a list
     if type(signal) is not list:
         signal = [signal]

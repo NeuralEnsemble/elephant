@@ -72,12 +72,20 @@ class Kernel(object):
 
     Parameters
     ----------
-    sigma : Quantity scalar
+    sigma : pq.Quantity
         Standard deviation of the kernel.
     invert: bool, optional
-        If true, asymmetric kernels (e.g., exponential
-        or alpha kernels) are inverted along the time axis.
-        Default: False
+        If True, asymmetric kernels (e.g., exponential or alpha kernels) are
+        inverted along the time axis.
+        Default is False.
+
+    Raises
+    ------
+    TypeError
+        If `sigma` is not `pq.Quantity`.
+        If `sigma` is negative.
+        If `invert` is not bool.
+
     """
 
     def __init__(self, sigma, invert=False):
@@ -98,16 +106,23 @@ class Kernel(object):
         """
         Evaluates the kernel at all points in the array `t`.
 
-        Parameter
-        ---------
-        t : Quantity 1D
-            Interval on which the kernel is evaluated, not necessarily
-            a time interval.
+        Parameters
+        ----------
+        t : pq.Quantity
+            Vector with the interval on which the kernel is evaluated,
+            not necessarily a time interval.
 
         Returns
         -------
-            Quantity 1D
-            The result of the kernel evaluations.
+        pq.Quantity
+            Vector with the result of the kernel evaluations.
+
+        Raises
+        ------
+        TypeError
+            If `t` is not `pq.Quantity`.
+            If the dimensionality of `t` and :attr:`sigma` are different.
+
         """
         if not (isinstance(t, pq.Quantity)):
             raise TypeError("The argument of the kernel callable must be "
@@ -130,16 +145,17 @@ class Kernel(object):
         """
         Evaluates the kernel.
 
-        Parameter
-        ---------
-        t : Quantity 1D
-            Interval on which the kernel is evaluated, not necessarily
-            a time interval.
+        Parameters
+        ----------
+        t : pq.Quantity
+            Vector with the interval on which the kernel is evaluated, not
+            necessarily a time interval.
 
         Returns
         -------
-            Quantity 1D
-            The result of the kernel evaluation.
+        pq.Quantity
+            Vector with the result of the kernel evaluation.
+
         """
         raise NotImplementedError("The Kernel class should not be used directly, "
                                   "instead the subclasses for the single kernels.")
@@ -148,10 +164,11 @@ class Kernel(object):
         """
         Calculates the boundary :math:`b` so that the integral from
         :math:`-b` to :math:`b` encloses a certain fraction of the
-        integral over the complete kernel. By definition the returned value
-        of the method boundary_enclosing_area_fraction is hence non-negative,
-        even if the whole probability mass of the kernel is concentrated over
-        negative support for inverted kernels.
+        integral over the complete kernel.
+
+        By definition the returned value is hence non-negative, even if the
+        whole probability mass of the kernel is concentrated over negative
+        support for inverted kernels.
 
         Parameter
         ---------
@@ -160,9 +177,17 @@ class Kernel(object):
 
         Returns
         -------
-            Quantity scalar
+        pq.Quantity
             Boundary of the kernel containing area `fraction` under the
             kernel density.
+
+        Raises
+        ------
+        ValueError
+            If fraction was chosen too close to one, such that in combination
+            with integral approximation errors the calculation of a boundary
+            was not possible.
+
         """
         self._check_fraction(fraction)
         sigma_division = 500            # arbitrary choice
@@ -185,13 +210,20 @@ class Kernel(object):
 
     def _check_fraction(self, fraction):
         """
-        Checks the input variable of the method boundary_enclosing_area_fraction
-        for validity of type and value.
+        Checks the input variable of the method
+        `.boundary_enclosing_area_fraction` for validity of type and value.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fraction : float or int
             Fraction of the area under the kernel function.
+
+        Raises
+        ------
+        TypeError
+            If `fraction` is neither a float nor an int.
+            If `fraction` is not in the interval [0, 1).
+
         """
         if not isinstance(fraction, (float, int)):
             raise TypeError("`fraction` must be float or integer!")
@@ -204,23 +236,24 @@ class Kernel(object):
         This parameter is not mandatory for symmetrical kernels but it is
         required when asymmetrical kernels have to be aligned at their median.
 
-        Parameter
-        ---------
-        t : Quantity 1D
-            Interval on which the kernel is evaluated,
+        Parameters
+        ----------
+        t : pq.Quantity
+            Vector with the interval on which the kernel is evaluated.
 
         Returns
         -------
-            int
+        int
             Index of the estimated value of the kernel median.
 
-        Remarks
-        -------
+        Notes
+        -----
         The formula in this method using retrieval of the sampling interval
-        from t only works for t with equidistant intervals!
+        from `t` only works for `t` with equidistant intervals!
         The formula calculates the Median slightly wrong by the potentially
         ignored probability in the distribution corresponding to lower values
-        than the minimum in the array t.
+        than the minimum in the array `t`.
+
         """
         return np.nonzero(self(t).cumsum() *
                           (t[len(t) - 1] - t[0]) / (len(t) - 1) >= 0.5)[0].min()
@@ -228,8 +261,13 @@ class Kernel(object):
     def is_symmetric(self):
         """
         In the case of symmetric kernels, this method is overwritten in the
-        class SymmetricKernel, where it returns 'True', hence leaving the
-        here returned value 'False' for the asymmetric kernels.
+        class `SymmetricKernel`, where it returns True, hence leaving the
+        here returned value False for the asymmetric kernels.
+        TODO: write the behavior for each case in the subclasses
+        Returns
+        -------
+        bool
+            False
         """
         return False
 
@@ -248,7 +286,7 @@ class SymmetricKernel(Kernel):
 
 class RectangularKernel(SymmetricKernel):
     """
-    Class for rectangular kernels
+    Class for rectangular kernels.
 
     .. math::
         K(t) = \\left\\{\\begin{array}{ll} \\frac{1}{2 \\tau}, & |t| < \\tau \\\\
@@ -261,8 +299,12 @@ class RectangularKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
+    TODO: Danylo will take a look on docstrings of new class attributes/
+    properties
+
     Derived from:
     """
+    # TODO: remove all __doc_ + and derived from
     __doc__ += SymmetricKernel.__doc__
 
     @property

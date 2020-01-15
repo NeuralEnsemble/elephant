@@ -12,36 +12,43 @@ import quantities as pq
 
 def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
-    Calculate the set of spike-triggered phases of an AnalogSignal.
+    Calculate the set of spike-triggered phases of a `neo.AnalogSignal`.
 
     Parameters
     ----------
-    hilbert_transform : AnalogSignal or list of AnalogSignal
-        AnalogSignal of the complex analytic signal (e.g., returned by the
-        elephant.signal_processing.hilbert()). All spike trains are compared to
-        this signal, if only one signal is given. Otherwise, length of
-        hilbert_transform must match the length of spiketrains.
-    spiketrains : Spiketrain or list of Spiketrain
-        Spiketrains on which to trigger hilbert_transform extraction
+    hilbert_transform : neo.AnalogSignal or list of neo.AnalogSignal
+        `neo.AnalogSignal` of the complex analytic signal (e.g., returned by
+        the `elephant.signal_processing.hilbert` function).
+        If `hilbert_transform` is only one signal, all spike trains are
+        compared to this signal. Otherwise, length of `hilbert_transform` must
+        match the length of `spiketrains`.
+    spiketrains : `neo.SpikeTrain` or list of `neo.SpikeTrain`
+        Spike trains on which to trigger `hilbert_transform` extraction.
     interpolate : bool
-        If True, the phases and amplitudes of hilbert_transform for spikes
-        falling between two samples of signal is interpolated. Otherwise, the
-        closest sample of hilbert_transform is used.
+        If True, the phases and amplitudes of `hilbert_transform` for spikes
+        falling between two samples of signal is interpolated.
+        Otherwise, the closest sample of `hilbert_transform` is used.
 
     Returns
     -------
-    phases : list of arrays
+    phases : list of np.ndarray
         Spike-triggered phases. Entries in the list correspond to the
-        SpikeTrains in spiketrains. Each entry contains an array with the
-        spike-triggered angles (in rad) of the signal.
-    amp : list of arrays
+        `neo.SpikeTrain`s in `spiketrains`. Each entry contains an array with
+        the spike-triggered angles (in rad) of the signal.
+    amp : list of pq.Quantity
         Corresponding spike-triggered amplitudes.
-    times : list of arrays
+    times : list of pq.Quantity
         A list of times corresponding to the signal
         Corresponding times (corresponds to the spike times).
 
-    Example
-    -------
+    Raises
+    ------
+    ValueError
+        If the number of spike trains and number of phase signals don't match,
+        and neither of the two are a single signal.
+
+    Examples
+    --------
     Create a 20 Hz oscillatory signal sampled at 1 kHz and a random Poisson
     spike train:
 
@@ -49,20 +56,22 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     >>> f_sampling = 1 * pq.ms
     >>> tlen = 100 * pq.s
     >>> time_axis = np.arange(
-            0, tlen.magnitude,
-            f_sampling.rescale(pq.s).magnitude) * pq.s
+    ...     0, tlen.magnitude,
+    ...     f_sampling.rescale(pq.s).magnitude) * pq.s
     >>> analogsignal = AnalogSignal(
-            np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
-            units=pq.mV, t_start=0 * pq.ms, sampling_period=f_sampling)
+    ...     np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
+    ...     units=pq.mV, t_start=0 * pq.ms, sampling_period=f_sampling)
     >>> spiketrain = elephant.spike_train_generation.
-            homogeneous_poisson_process(
-                50 * pq.Hz, t_start=0.0 * ms, t_stop=tlen.rescale(pq.ms))
+    ...     homogeneous_poisson_process(
+    ...     50 * pq.Hz, t_start=0.0 * ms, t_stop=tlen.rescale(pq.ms))
 
     Calculate spike-triggered phases and amplitudes of the oscillation:
+
     >>> phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
-            elephant.signal_processing.hilbert(analogsignal),
-            spiketrain,
-            interpolate=True)
+    ...     elephant.signal_processing.hilbert(analogsignal),
+    ...     spiketrain,
+    ...     interpolate=True)
+
     """
 
     # Convert inputs to lists

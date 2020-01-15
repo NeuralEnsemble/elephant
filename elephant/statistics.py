@@ -382,11 +382,6 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         rate estimation.
         Currently implemented kernel forms are rectangular, triangular,
         epanechnikovlike, gaussian, laplacian, exponential, and alpha function.
-
-        Example:
-
-        >>> kernel = kernels.RectangularKernel(sigma=10*ms, invert=False)
-
         Default is 'auto'. In this case, the optimized kernel width for the
         rate estimation is calculated according to [1] and with this width
         a gaussian kernel is constructed. Automatized calculation of the
@@ -458,8 +453,11 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Examples
     --------
-    >>> kernel = kernels.AlphaKernel(sigma = 0.05*s, invert = True)
-    >>> rate = instantaneous_rate(spiketrain, sampling_period = 2*ms, kernel)
+    >>> import quantities as pq
+    >>> from elephant import kernels
+    >>> kernel = kernels.AlphaKernel(sigma=0.05*pq.s, invert=True)
+    >>> rate = instantaneous_rate(spiketrain, sampling_period=2*pq.ms,
+    ...     kernel=kernel)
 
     """
     # Merge spike trains if list of spike trains given:
@@ -854,22 +852,6 @@ def cost_function(x, N, w, dt):
     Computes the cost function for `sskernel`.
 
     Cn(w) = sum_{i,j} int k(x - x_i) k(x - x_j) dx - 2 sum_{i~=j} k(x_i - x_j)
-
-    Parameters
-    ----------
-    x:
-
-    N:
-
-    w:
-
-    dt:
-
-    Returns
-    -------
-    C:
-
-    yh:
 
     """
     yh = np.abs(fftkernel(x, w / dt))  # density
