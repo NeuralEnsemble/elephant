@@ -99,8 +99,6 @@ def postprocess(params_est, seqs_train):
         space.
         Data structure, whose n-th entry (corresponding to the n-th
         experimental trial) has fields
-            * trialId: int
-                unique trial identifier
             * T: int
                 number of timesteps
             * y: ndarray of shape (#units, #bins)
@@ -365,8 +363,6 @@ class GPFA(sklearn.base.BaseEstimator):
             Contains the embedding of the data into the latent variable space.
             Data structure, whose n-th entry (corresponding to the n-th
             experimental trial) has fields
-                * trialId: int
-                    unique trial identifier
                 * T: int
                     number of timesteps
                 * y: ndarray of shape (#units, #bins)

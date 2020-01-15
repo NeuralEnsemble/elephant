@@ -235,8 +235,6 @@ def em(params_init, seq, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     seq : np.recarray
           training data structure, whose n-th entry (corresponding to the n-th
            experimental trial) has fields
-              trialId :
-                        unique trial identifier
               T : int
                   number of bins
               y : ndarray (yDim x T)
@@ -387,8 +385,6 @@ def fit(seq_train, x_dim=8, bin_width=20.0, min_var_frac=0.01,
     seq_train : np.recarray
                 training data structure, whose n-th element (corresponding to
                 the n-th experimental trial) has fields
-                    trialId :
-                              unique trial identifier
                     T : int
                         number of bins
                     y : ndarray of shape (#units, #bins)
@@ -435,8 +431,6 @@ def fit(seq_train, x_dim=8, bin_width=20.0, min_var_frac=0.01,
     seqs_train: np.recarray
         Data structure, whose n-th entry (corresponding to the n-th
         experimental trial) has fields
-            * trialId: int
-                unique trial identifier
             * T: int
                 number of timesteps
             * y: ndarray of shape (#units, #bins)

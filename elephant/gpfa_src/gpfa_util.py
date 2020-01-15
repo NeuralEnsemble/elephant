@@ -44,7 +44,6 @@ def get_seq(data, bin_size, use_sqrt=True):
     seq
         data structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
-            * trialId: unique trial identifier
             * T: (1 x 1) number of timesteps
             * y: (yDim x T) neural data
 
@@ -92,7 +91,6 @@ def cut_trials(seq_in, seg_length=20):
     seq_in
         data structure, whose nth entry (corresponding to
         the nth experimental trial) has fields
-            * trialId: unique trial identifier
             * T: (1 x 1) number of timesteps in trial
             * y: (yDim x T) neural data
 
@@ -108,7 +106,6 @@ def cut_trials(seq_in, seg_length=20):
     seqOut
         data structure, whose nth entry (corresponding to
         the nth experimental trial) has fields
-            * trialId: identifier of trial from which segment was taken
             * segId: segment identifier within trial
             * T: (1 x 1) number of timesteps in segment
             * y: (yDim x T) neural data
