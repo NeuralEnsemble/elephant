@@ -270,9 +270,9 @@ def covariance(binned_sts, binary=False, fast=True):
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> st1 = homogeneous_poisson_process(
-    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
-    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], binsize=5*ms))
     >>> print(cov_matrix[0, 1])
     -0.001668334167083546
@@ -368,9 +368,9 @@ def corrcoef(binned_sts, binary=False, fast=True):
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> st1 = homogeneous_poisson_process(
-    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
-    >>>       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
+    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
     >>> print(cc_matrix[0, 1])
     0.015477320222075359
@@ -561,25 +561,25 @@ def cross_correlation_histogram(
         >>> import elephant
         >>> import matplotlib.pyplot as plt
         >>> import quantities as pq
-        >>>
+        ...
         >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
-        >>>        elephant.spike_train_generation.homogeneous_poisson_process(
-        >>>            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-        >>>        binsize=5. * pq.ms)
+        ...        elephant.spike_train_generation.homogeneous_poisson_process(
+        ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+        ...        binsize=5. * pq.ms)
         >>> binned_st2 = elephant.conversion.BinnedSpikeTrain(
-        >>>        elephant.spike_train_generation.homogeneous_poisson_process(
-        >>>            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-        >>>        binsize=5. * pq.ms)
-        >>>
+        ...        elephant.spike_train_generation.homogeneous_poisson_process(
+        ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+        ...        binsize=5. * pq.ms)
+        ...
         >>> cc_hist = \
-        >>>    elephant.spike_train_correlation.cross_correlation_histogram(
-        >>>        binned_st1, binned_st2, window=[-30,30],
-        >>>        border_correction=False,
-        >>>        binary=False, kernel=None, method='memory')
-        >>>
+        >>>     elephant.spike_train_correlation.cross_correlation_histogram(
+        ...        binned_st1, binned_st2, window=[-30,30],
+        ...        border_correction=False,
+        ...        binary=False, kernel=None, method='memory')
+        ...
         >>> plt.bar(left=cc_hist[0].times.magnitude,
-        >>>         height=cc_hist[0][:, 0].magnitude,
-        >>>         width=cc_hist[0].sampling_period.magnitude)
+        ...         height=cc_hist[0][:, 0].magnitude,
+        ...         width=cc_hist[0].sampling_period.magnitude)
         >>> plt.xlabel('time (' + str(cc_hist[0].times.units) + ')')
         >>> plt.ylabel('cross-correlation histogram')
         >>> plt.axis('tight')
