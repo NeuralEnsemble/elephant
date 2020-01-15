@@ -95,7 +95,8 @@ except ImportError:  # pragma: no cover
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr_bh', psr_param=None, output_format='concepts'):
+          alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes', psr_param=None,
+          output_format='patterns'):
     """
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
@@ -203,6 +204,11 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         Also possible as input:
             '', 'no': no statistical correction
         Default: 'fdr_bh'
+    surr_method: str
+        Method that is used to generate the surrogates.
+            You can use every method defined in spike_train_surrogates module.
+            For documentation look there.
+        Default: 'dither_spikes'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
@@ -214,6 +220,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     output_format: str
         distinguish the format of the output (see Returns). Can assume values
         'concepts' and 'patterns'.
+        Default: 'patterns'
 
     Returns
     -------
@@ -256,6 +263,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                 output['pvalue_spectrum'] contains a tuple of signatures and
                 the corresponding p-value.
 
+    # TODO: rewrite output documentation
     If output_format is 'patterns':
         output: list
             List of dictionaries. Each dictionary corresponds to a patterns and
@@ -307,8 +315,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         rank = 0
 
     if output_format not in ['concepts', 'patterns']:
-        raise ValueError("The output_format value has to be"
+        raise AttributeError("The output_format value has to be"
                          "'patterns' or 'concepts'")
+    if surr_method not in surr.SURR_METHODS:
+        raise AttributeError('specified surr_method (=%s) not valid' % surr_method)
 
     time_mining = time.time()
     if rank == 0 or n_subsets > 0:
@@ -349,7 +359,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                   n_surr=n_surr, min_spikes=min_spikes,
                                   min_occ=min_occ, max_spikes=max_spikes,
                                   max_occ=max_occ, min_neu=min_neu,
-                                  spectrum=spectrum)
+                                  spectrum=spectrum,
+                                  surr_method=surr_method)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
         print("Time for pvalue spectrum computation: {}".format(
             time_pvalue_spectrum))
@@ -496,7 +507,7 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
         raise AttributeError(
             'All spiketrains must have the same t_start and t_stop')
     if report not in ['a', '#', '3d#']:
-        raise ValueError(
+        raise AttributeError(
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the data and clipping (binary matrix)
@@ -724,7 +735,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
 
     """
     if min_neu < 1:
-        raise AttributeError('min_neu must be an integer >=1')
+        raise ValueError('min_neu must be an integer >=1')
     # By default, set the maximum pattern size to the number of spiketrains
     if max_z is None:
         max_z = np.max((np.max([len(tr) for tr in transactions]), min_z + 1))
@@ -966,7 +977,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     concepts = []
     # Check parameters
     if min_neu < 1:
-        raise AttributeError('min_neu must be an integer >=1')
+        raise ValueError('min_neu must be an integer >=1')
     # By default set maximum number of attributes
     if max_z is None:
         max_z = len(context)
@@ -1011,6 +1022,12 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
             spectrum.append(
                 (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
     del spec_matrix
+    if len(spectrum) > 0:
+        spectrum = np.array(spectrum)
+    elif report == '#':
+        spectrum = np.zeros(shape=(0, 3))
+    elif report == '3d#':
+        spectrum = np.zeros(shape=(0, 4))
     return spectrum
 
 
@@ -1030,7 +1047,7 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
 
 def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                     min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
-                    spectrum='#'):
+                    spectrum='#', surr_method='dither_spikes'):
     """
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -1091,6 +1108,11 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
             (number of spikes, number of occurrence, difference between last
             and first spike of the pattern)
         Default: '#'
+    surr_method: str
+        Method that is used to generate the surrogates.
+            You can use every method defined in spike_train_surrogates module.
+            For documentation look there.
+        Default: 'dither_spikes'
 
     Returns
     ------
@@ -1116,7 +1138,10 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
         size = 1
     # Check on number of surrogates
     if n_surr <= 0:
-        raise AttributeError('n_surr has to be >0')
+        raise ValueError('n_surr has to be >0')
+    if surr_method not in surr.SURR_METHODS:
+        raise AttributeError('specified surr_method (=%s) not valid' % surr_method)
+
     len_partition = n_surr // size  # length of each MPI task
     len_remainder = n_surr % size
 
@@ -1136,9 +1161,19 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                                    max_spikes - min_spikes + 1, winlen),
                             dtype=np.uint16)
 
+    if surr_method == 'joint_isi_dithering':
+        joint_isi_instances = [surr.JointISI(xx, dither=dither,
+                                             method='window')
+                               for xx in data]
     for i in range(len_partition + add_remainder):
-        surrs = [surr.dither_spikes(
-            xx, dither=dither, n=1)[0] for xx in data]
+        if surr_method == 'joint_isi_dithering':
+            surrs = [instance.dithering()[0] for
+                     instance in joint_isi_instances]
+        else:
+            surrs = [surr.surrogates(
+                xx, n=1, surr_method=surr_method,
+                dt=dither)[0] for xx in data]
+
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
             surrs, binsize, winlen, min_spikes=min_spikes,
@@ -1194,7 +1229,7 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
         [pattern_size, pattern_occ, pattern_dur, p_value]
     """
     if spectrum not in ('#', '3d#'):
-        raise ValueError("Invalid spectrum: '{}'".format(spectrum))
+        raise AttributeError("Invalid spectrum: '{}'".format(spectrum))
 
     pv_spec = []
     if spectrum == '#':
@@ -1240,7 +1275,7 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
         duration.
     """
     if spectrum not in ('#', '3d#'):
-        raise ValueError("Invalid spectrum: '{}'".format(spectrum))
+        raise AttributeError("Invalid spectrum: '{}'".format(spectrum))
 
     if spectrum == '#':
         winlen = 1
@@ -1515,7 +1550,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         rank = 0
         size = 1
     if n_subsets <= 0 and delta + epsilon <= 0:
-        raise AttributeError('n_subsets has to be >=0 or delta + epsilon > 0')
+        raise ValueError('n_subsets has to be >=0 or delta + epsilon > 0')
     if len(concepts) == 0:
         return []
     if len(concepts) <= size:
