@@ -19,11 +19,20 @@ import scipy.special
 
 def inherit_docstring(fromfunc, sep=""):
     """
-    Decorator: Copy the docstring of `fromfunc`
+    Decorator: Copy the docstring of `fromfunc`.
 
-    based on:
-    http://stackoverflow.com/questions/13741998/
-    is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
+    Parameters
+    ----------
+    fromfunc: callable
+        Function that will have the docstring copied from
+    sep: str, optional
+        Separator used to concatenate docstrings.
+        Default is ''.
+
+    References
+    ----------
+    .. [1] http://stackoverflow.com/questions/13741998/
+           is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
     """
     def _decorator(func):
         parent_doc = fromfunc.__doc__
