@@ -307,7 +307,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
      Detection and Evaluation of Spatio-Temporal Spike Patterns in Massively
      Parallel Spike Train Data with SPADE.
     Frontiers in Computational Neuroscience, 11.
-    [3] Stella A., Quaglio P., Torre E., Grün S. (2019), 3d-SPADE: Significance
+    [3] Stella A., Quaglio P., Torre E., Gruen S. (2019), 3d-SPADE: Significance
      evaluation of spatio-temporal patterns of various temporal extents
      Biosystems, Volume 185, 2019, 104022, ISSN 0303-2647
      DOI: 10.1016/j.biosystems.2019.104022
