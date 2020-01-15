@@ -402,7 +402,7 @@ class SpadeTestCase(unittest.TestCase):
                           n_surr=-3)
         # Test wrong correction parameter
         self.assertRaises(AttributeError, spade.test_signature_significance,
-                          pvalue_spectrum=((2, 3, 0.2), (2, 4, 0.1)),
+                          pv_spec=((2, 3, 0.2), (2, 4, 0.1)),
                           concepts=([(2, 3), (1, 2, 3)]),
                           alpha=0.01,
                           winlen=1,
