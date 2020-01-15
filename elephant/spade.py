@@ -224,10 +224,28 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
 
     Returns
     -------
-    The output depends on the value of the parameter output_format.
+    output: dict
+        Dictionary containing the following keys:
+        - 'patterns':
+            if output_format is 'patterns':
+            output['patterns']: list
+            List of dictionaries. Each dictionary corresponds to a patterns
+            and has the following keys:
+                neurons: array containing the indices of the neurons of the
+                    pattern.
+                lags: array containing the lags (integers corresponding to
+                    the number of bins) between the spikes of the patterns.
+                    The first lag is always assumed to be 0 and corresponds
+                    to the first spike ['times'] array containing the
+                    times.
+                signature: tuple containing two integers:
+                    (number of spikes of the patterns,
+                    number of occurrences of the pattern)
+                pvalue: the p-value corresponding to the pattern.
+                    If n_surr==0 the p-values are set to 0.0.
 
-    If output_format is 'concepts':
-        output: dict
+            if output_format is 'concepts':
+            output['patterns']: dict
             Dictionary containing the following keys:
             patterns: tuple
                 Each element of the tuple corresponds to a pattern and is
@@ -235,56 +253,40 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                     (spikes in the pattern, occurrences of the patterns)
                 For details see function concepts_mining().
 
-                If n_subsets>0:
-                    (spikes in the pattern, occurrences of the patterns,
-                    (intensional stability, extensional stability))
-                    corresponding pvalue
+        - 'pvalue_spectrum' (only if n_surr > 0 and n_subsets == 0):
+            output['pvalue_spectrum']: list
+            contains a list of signatures in tuples format
+            (size, number of occurrences, duration (only if spectrum=='3d#')),
+            corresponding p-value)
 
-            The patterns are filtered depending on the parameters in input:
-            If stability_thresh==None and alpha==1:
-                output['patterns'] contains all the candidates patterns
-                (all concepts mined with the fca algorithm)
-            If stability_thresh!=None and alpha==1:
-                output contains only patterns candidates with:
-                    intensional stability>stability_thresh[0] or
-                    extensional stability>stability_thresh[1]
-            If stability_thresh==None and alpha!=1:
-                output contains only pattern candidates with a signature
-                significant in respect the significance level alpha corrected
-            If stability_thresh!=None and alpha!=1:
-                output['patterns'] contains only pattern candidates with a
-                signature significant in respect the significance level alpha
-                corrected and such that:
-                    intensional stability>stability_thresh[0] or
-                    extensional stability>stability_thresh[1]
-                In addition, output['non_sgnf_sgnt'] contains the list of
-                non-significant signature for the significance level alpha.
-            If n_surr>0:
-                output['pvalue_spectrum'] contains a tuple of signatures and
-                the corresponding p-value.
+        - 'non_sgnf_sgnt': list
+            Non significant signatures of pvalue_spectrum
 
-    # TODO: rewrite output documentation
-    If output_format is 'patterns':
-        output: list
-            List of dictionaries. Each dictionary corresponds to a patterns and
-            has the following keys:
-                neurons: array containing the indices of the neurons of the
-                    pattern.
-                lags: array containing the lags (integers corresponding to the
-                    number of bins) between the spikes of the patterns. The
-                    first lag is always assumed to be 0 and corresponds to the
-                    first spike ['times'] array containing the times.
-            (integers corresponding to the bin idx) of the occurrences of the
-            patterns
-                signature: tuple containing two integers:
-                    (number of spikes of the patterns,
-                    number of occurrences of the pattern)
-            pvalue: the p-value corresponding to the pattern. If n_surr==0 the
-                p-values are set to 0.0.
+        if n_subsets > 0:
+        (spikes in the pattern, occurrences of the patterns,
+                (intensional stability, extensional stability))
+                corresponding pvalue
+        The patterns are filtered depending on the parameters in input:
+        If stability_thresh==None and alpha==1:
+            output['patterns'] contains all the candidates patterns
+            (all concepts mined with the fca algorithm)
+        If stability_thresh!=None and alpha==1:
+            output contains only patterns candidates with:
+                intensional stability>stability_thresh[0] or
+                extensional stability>stability_thresh[1]
+        If stability_thresh==None and alpha!=1:
+            output contains only pattern candidates with a signature
+            significant in respect the significance level alpha corrected
+        If stability_thresh!=None and alpha!=1:
+            output['patterns'] contains only pattern candidates with a
+            signature significant in respect the significance level alpha
+            corrected and such that:
+                intensional stability>stability_thresh[0] or
+                extensional stability>stability_thresh[1]
 
     Notes
     -----
-    If detected, this function will utilize MPI to parallelize the analysis.
+    If detected, this function will use MPI to parallelize the analysis.
 
     Example
     -------
@@ -306,7 +308,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     [2] Quaglio, P., Yegenoglu, A., Torre, E., Endres, D. M., & Gruen, S.(2017)
      Detection and Evaluation of Spatio-Temporal Spike Patterns in Massively
      Parallel Spike Train Data with SPADE.
-    Frontiers in Computational Neuroscience, 11.
+     Frontiers in Computational Neuroscience, 11.
+    [3] Stella, A., Quaglio, P., Torre, E., & Grün, S. (2019).
+    3d-SPADE: Significance evaluation of spatio-temporal patterns of various
+    temporal extents. Biosystems, 185, 104022.
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -1308,7 +1313,12 @@ def _stability_filter(c, stab_thr):
 
 def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     """
-    #TODO: write documentation
+    The function filters the pvalue spectrum based on the number of
+    the statistical tests to be done. Only the entries of the pvalue spectrum
+    that coincide with concepts found in the original data are kept.
+    Moreover, entries of the pvalue spectrum with a value of 1 (all surrogates
+    datasets containing at least one mined pattern with that signature)
+    are discarded as well and considered trivial.
     Parameters
     ----------
     pv_spec: List[List]
@@ -1318,7 +1328,7 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
 
     Returns
     -------
-    np.array
+    mask: np.array
         An array of boolean values, indicating if a signature of p-value
         spectrum is also in the mined concepts of the original data.
     """
@@ -1351,7 +1361,6 @@ def test_signature_significance(pv_spec, concepts, alpha,
 
     Parameters
     ----------
-    # TODO: add documentation for concepts and winlen
     pv_spec: list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
@@ -1360,6 +1369,7 @@ def test_signature_significance(pv_spec, concepts, alpha,
     alpha: float
         Significance level of the statistical test
     winlen: int
+        Size (number of bins) of the sliding window used for the analysis
     corr: str
         Method used for testing and adjustment of pvalues.
         Can be either the full name or initial letters.
