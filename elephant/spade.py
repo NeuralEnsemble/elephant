@@ -476,21 +476,21 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
 
     Returns
     -------
-    mining_results: list
+    mining_results: numpy array
         If report == 'a':
-            All the pattern candidates (concepts) found in the data. Each
-            pattern is represented as a tuple containing
+            numpy array of all the pattern candidates (concepts) found in the
+            data. Each pattern is represented as a tuple containing
             (spike IDs, discrete times (window position)
             of the  occurrences of the pattern). The spike IDs are defined as:
             spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
             bin_id in [0, winlen].
         If report == '#':
-             The pattern spectrum is represented as a list of triplets each
-             formed by:
+             The pattern spectrum is represented as a  numpy array of triplets
+             each formed by:
                 (pattern size, number of occurrences, number of patterns)
         If report == '3d#':
-             The pattern spectrum is represented as a list of quadruplets each
-             formed by:
+             The pattern spectrum is represented as a numpy array of
+             quadruplets each formed by:
                 (pattern size, number of occurrences, difference between last
                 and first spike of the pattern, number of patterns)
     rel_matrix : sparse.coo_matrix
@@ -724,19 +724,19 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     Returns
     --------
     If report == 'a':
-        All the pattern candidates (concepts) found in the data. Each
-        pattern is represented as a tuple containing
+        numpy array of all the pattern candidates (concepts) found in the data.
+        Each pattern is represented as a tuple containing
         (spike IDs, discrete times (window position)
         of the  occurrences of the pattern). The spike IDs are defined as:
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
         bin_id in [0, winlen].
     If report == '#':
-         The pattern spectrum is represented as a list of triplets each
+         The pattern spectrum is represented as a numpy array of triplets each
          formed by:
             (pattern size, number of occurrences, number of patterns)
     If report == '3d#':
-         The pattern spectrum is represented as a list of quadruplets each
-         formed by:
+         The pattern spectrum is represented as a numpy array of quadruplets
+         each formed by:
             (pattern size, number of occurrences, difference between last
             and first spike of the pattern, number of patterns)
 
