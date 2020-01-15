@@ -49,7 +49,9 @@ followed by `postprocess()` on the training and test datasets.
 
 References:
 
-The code was ported from the MATLAB code (see INFO.md for more details).
+The code was ported from the MATLAB code based on Byron Yu's implementation.
+The original MATLAB code is available at Byron Yu's website:
+https://users.ece.cmu.edu/~byronyu/software.shtml
 
 [1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
 Gaussian-process factor analysis for low-dimensional single-trial analysis of
@@ -65,7 +67,7 @@ import neo
 import quantities as pq
 import sklearn
 
-from elephant.gpfa_src import gpfa_core, gpfa_util
+from elephant.gpfa import gpfa_core, gpfa_util
 
 
 def postprocess(params_est, seqs):

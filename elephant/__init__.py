@@ -22,9 +22,10 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               spade,
                cell_assembly_detection,
-               waveform_features)
+               spade,
+               waveform_features,
+               gpfa)
 
 try:
     from . import pandas_bridge

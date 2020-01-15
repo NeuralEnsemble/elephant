@@ -22,7 +22,7 @@ except ImportError:
     HAVE_SKLEARN = False
 else:
     HAVE_SKLEARN = True
-    from elephant.gpfa_src import gpfa_util
+    from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
 
@@ -133,7 +133,6 @@ class GPFATestCase(unittest.TestCase):
         for x_dim in range(1, self.x_dim+1):
             gpfa = GPFA(x_dim=x_dim, em_max_iters=self.n_iters)
             lls.append(np.mean(cross_val_score(gpfa, self.data1, cv=5)))
-        print(lls)
         self.assertTrue(np.argmax(lls)==1)
 
     def test_invalid_input_data(self):
