@@ -24,6 +24,7 @@ else:
     HAVE_SKLEARN = True
     from elephant.gpfa_src import gpfa_util
     from elephant.gpfa import GPFA
+    from sklearn.model_selection import cross_val_score
 
 python_version_major = sys.version_info.major
 
@@ -128,7 +129,6 @@ class GPFATestCase(unittest.TestCase):
         assert_array_almost_equal(xorth1[-1][3], xorth2[-1][3], decimal=1)
 
     def test_cross_validation(self):
-        from sklearn.model_selection import cross_val_score
         lls = []
         for x_dim in range(1, self.x_dim+1):
             gpfa = GPFA(x_dim=x_dim, em_max_iters=self.n_iters)
