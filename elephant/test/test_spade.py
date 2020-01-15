@@ -395,6 +395,11 @@ class SpadeTestCase(unittest.TestCase):
         self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, min_neu=-3)
+        # Test wrong dither method
+        self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
+            [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
+            [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4,
+                          dither_method='try')
         # Test negative number of surrogates
         self.assertRaises(AttributeError, spade.pvalue_spectrum, [
             neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
@@ -412,28 +417,31 @@ class SpadeTestCase(unittest.TestCase):
                           np.array([]), n_subsets=-3)
 
     def test_pattern_set_reduction(self):
-        output_msip = spade.spade(self.patt_psr, self.binsize, self.winlen,
-                                  n_subsets=self.n_subset,
-                                  stability_thresh=self.stability_thresh,
-                                  n_surr=self.n_surr, spectrum='3d#',
-                                  alpha=self.alpha, psr_param=self.psr_param,
-                                  output_format='patterns')['patterns']
-        elements_msip = []
-        occ_msip = []
-        lags_msip = []
-        # collecting spade output
-        for out in output_msip:
-            elements_msip.append(sorted(out['neurons']))
-            occ_msip.append(list(out['times'].magnitude))
-            lags_msip.append(list(out['lags'].magnitude))
-        elements_msip = sorted(elements_msip, key=lambda d: len(d))
-        occ_msip = sorted(occ_msip, key=lambda d: len(d))
-        lags_msip = sorted(lags_msip, key=lambda d: len(d))
-        # check neurons in the patterns
-        assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
-        # check the occurrences time of the patters
-        assert_array_equal(len(occ_msip[0]), self.n_occ3)
-
+        dither_methods = ['uniform', 'joint_isi']
+        for dither_method in dither_methods:
+            output_msip = spade.spade(self.patt_psr, self.binsize, self.winlen,
+                                      n_subsets=self.n_subset,
+                                      stability_thresh=self.stability_thresh,
+                                      n_surr=self.n_surr, spectrum='3d#',
+                                      alpha=self.alpha,
+                                      psr_param=self.psr_param,
+                                      output_format='patterns',
+                                      dither_method=dither_method)['patterns']
+            elements_msip = []
+            occ_msip = []
+            lags_msip = []
+            # collecting spade output
+            for out in output_msip:
+                elements_msip.append(sorted(out['neurons']))
+                occ_msip.append(list(out['times'].magnitude))
+                lags_msip.append(list(out['lags'].magnitude))
+            elements_msip = sorted(elements_msip, key=lambda d: len(d))
+            occ_msip = sorted(occ_msip, key=lambda d: len(d))
+            lags_msip = sorted(lags_msip, key=lambda d: len(d))
+            # check neurons in the patterns
+            assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
+            # check the occurrences time of the patters
+            assert_array_equal(len(occ_msip[0]), self.n_occ3)
 
 def suite():
     suite = unittest.makeSuite(SpadeTestCase, 'test')

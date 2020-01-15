@@ -208,7 +208,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         Method that is used to generate the surrogates.
         Available methods are:
             uniform : Uniform dithering
-            joint-isi : Joint-ISI dithering
+            joint_isi : Joint-ISI dithering
         Default: 'uniform'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
@@ -316,8 +316,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if output_format not in ['concepts', 'patterns']:
         raise ValueError("The output_format value has to be"
                          "'patterns' or 'concepts'")
-    if dither_method not in ['uniform', 'joint-isi']:
-        raise AttributeError("dither_method has to be 'uniform' or 'joint-isi'"
+    if dither_method not in ['uniform', 'joint_isi']:
+        raise AttributeError("dither_method has to be 'uniform' or 'joint_isi'"
                              "not :"+str(dither_method))
 
     time_mining = time.time()
@@ -1096,7 +1096,7 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
         Method that is used to generate the surrogates.
         Available methods are:
             uniform : Uniform dithering
-            joint-isi : Joint-ISI dithering
+            joint_isi : Joint-ISI dithering
         Default: 'uniform'
 
     Returns
@@ -1124,8 +1124,8 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     # Check on number of surrogates
     if n_surr <= 0:
         raise AttributeError('n_surr has to be >0')
-    if dither_method not in ['uniform', 'joint-isi']:
-        raise AttributeError("dither_method has to be 'uniform' or 'joint-isi'"
+    if dither_method not in ['uniform', 'joint_isi']:
+        raise AttributeError("dither_method has to be 'uniform' or 'joint_isi'"
                              "not :"+str(dither_method))
 
     len_partition = n_surr // size  # length of each MPI task
@@ -1147,14 +1147,15 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                                    max_spikes - min_spikes + 1, winlen),
                             dtype=np.uint16)
 
-    if dither_method == 'joint-isi':
-        joint_isi_instances = [surr.JointISI(xx, dither=dither, method='window')
-                              for xx in data]
+    if dither_method == 'joint_isi':
+        joint_isi_instances = [surr.JointISI(xx, dither=dither,
+                                             method='window')
+                               for xx in data]
     for i in range(len_partition + add_remainder):
         if dither_method == 'uniform':
             surrs = [surr.dither_spikes(
                 xx, dither=dither, n=1)[0] for xx in data]
-        elif dither_method == 'joint-isi':
+        elif dither_method == 'joint_isi':
             surrs = [instance.dithering()[0] for
                      instance in joint_isi_instances]
 
