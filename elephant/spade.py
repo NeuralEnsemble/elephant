@@ -995,6 +995,12 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
             spectrum.append(
                 (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
     del spec_matrix
+    if len(spectrum) > 0:
+        spectrum = np.array(spectrum)
+    elif report == '#':
+        spectrum = np.zeros(shape=(0, 3))
+    elif report == '3d#':
+        spectrum = np.zeros(shape=(0, 4))
     return spectrum
 
 
