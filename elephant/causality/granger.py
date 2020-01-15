@@ -14,12 +14,11 @@ trivariate Granger causality (`trivariate_granger`) and a method to estimate Gra
 
 [1] Granger CWJ (1969) Investigating causal relations by econometric models and cross-spectral methods. Econometrica 37:424-438.
 [2] Krumin M, Shoham S (2010) Multivariate autoregressive modeling and Granger causality analysis of multiple spike trains. Computational intelligence and neuroscience 2010:1-9.
+[3] Ding M, Chen Y, Bressler SL (2006) Granger causality: Basic theory and application to neuroscience. In Schelter S, Winterhalder N, Timmer J. Handbook of Time Series Analysis. Wiley, Wienheim.
 
 [Example] [1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
 Gaussian-process factor analysis for low-dimensional single-trial analysis of
 neural population activity. J Neurophysiol 102:614-635.
-
-
 
 
 :copyright: Copyright 2020 by the Elephant team, see AUTHORS.txt.
