@@ -95,7 +95,8 @@ except ImportError:  # pragma: no cover
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr_bh', psr_param=None, output_format='concepts'):
+          alpha=1, stat_corr='fdr_bh', dither_method='uniform', psr_param=None,
+          output_format='concepts', ):
     """
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
@@ -203,6 +204,12 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         Also possible as input:
             '', 'no': no statistical correction
         Default: 'fdr_bh'
+    dither_method: str
+        Method that is used to generate the surrogates.
+        Available methods are:
+            uniform : Uniform dithering
+            joint-isi : Joint-ISI dithering
+        Default: 'uniform'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
             psr_param[0]: correction parameter for subset filtering
@@ -309,6 +316,9 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if output_format not in ['concepts', 'patterns']:
         raise ValueError("The output_format value has to be"
                          "'patterns' or 'concepts'")
+    if dither_method not in ['uniform', 'joint-isi']:
+        raise AttributeError("dither_method has to be 'uniform' or 'joint-isi'"
+                             "not :"+str(dither_method))
 
     time_mining = time.time()
     if rank == 0 or n_subsets > 0:
@@ -349,7 +359,8 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                                   n_surr=n_surr, min_spikes=min_spikes,
                                   min_occ=min_occ, max_spikes=max_spikes,
                                   max_occ=max_occ, min_neu=min_neu,
-                                  spectrum=spectrum)
+                                  spectrum=spectrum,
+                                  dither_method=dither_method)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
         print("Time for pvalue spectrum computation: {}".format(
             time_pvalue_spectrum))
@@ -1020,7 +1031,7 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
 
 def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                     min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
-                    spectrum='#'):
+                    spectrum='#', dither_method='uniform'):
     """
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -1081,6 +1092,12 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
             (number of spikes, number of occurrence, difference between last
             and first spike of the pattern)
         Default: '#'
+    dither_method: str
+        Method that is used to generate the surrogates.
+        Available methods are:
+            uniform : Uniform dithering
+            joint-isi : Joint-ISI dithering
+        Default: 'uniform'
 
     Returns
     ------
@@ -1107,6 +1124,10 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     # Check on number of surrogates
     if n_surr <= 0:
         raise AttributeError('n_surr has to be >0')
+    if dither_method not in ['uniform', 'joint-isi']:
+        raise AttributeError("dither_method has to be 'uniform' or 'joint-isi'"
+                             "not :"+str(dither_method))
+
     len_partition = n_surr // size  # length of each MPI task
     len_remainder = n_surr % size
 
@@ -1126,9 +1147,17 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
                                    max_spikes - min_spikes + 1, winlen),
                             dtype=np.uint16)
 
+    if dither_method == 'joint-isi':
+        joint_isi_instances = [surr.JointISI(xx, dither=dither, method='window')
+                              for xx in data]
     for i in range(len_partition + add_remainder):
-        surrs = [surr.dither_spikes(
-            xx, dither=dither, n=1)[0] for xx in data]
+        if dither_method == 'uniform':
+            surrs = [surr.dither_spikes(
+                xx, dither=dither, n=1)[0] for xx in data]
+        elif dither_method == 'joint-isi':
+            surrs = [instance.dithering()[0] for
+                     instance in joint_isi_instances]
+
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
             surrs, binsize, winlen, min_spikes=min_spikes,
