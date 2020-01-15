@@ -85,7 +85,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    import fim
+    from elephant.spade_src import fim
 
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
@@ -586,21 +586,29 @@ def _build_context(binary_matrix, winlen):
     binary_matrix.col = binary_matrix.col[indices]
     # out of all window positions
     # get all non-empty first bins
-    window_indices = np.unique(binary_matrix.col)
+    unique_cols, unique_col_idx = np.unique(binary_matrix.col, return_index=True)
+    unique_col_idx = np.concatenate((unique_col_idx, [len(binary_matrix.col)]))
     windows_row = []
     windows_col = []
-    # TODO: Please comment this code - or change
-    for window_idx in window_indices:
-        for col in range(window_idx, window_idx + winlen):
-            if col in binary_matrix.col:
-                nonzero_indices = np.nonzero(binary_matrix.col == col)[0]
-                windows_col.extend(
-                    binary_matrix.row[nonzero_indices] * winlen
-                    + (col - window_idx))
-                windows_row.extend([window_idx] * len(nonzero_indices))
+    # all non-empty bins are starting positions for windows
+    for idx, window_idx in enumerate(unique_cols):
+        # find the end of the current window in unique_cols
+        end_of_window = np.searchsorted(unique_cols, window_idx+winlen)
+        # loop over all non-empty bins in the current window
+        for rel_idx, col in enumerate(unique_cols[idx:end_of_window]):
+            # get all occurrences of the current col in binary_matrix.col
+            spike_indices_in_window = np.arange(unique_col_idx[idx+rel_idx],
+                                                unique_col_idx[idx+rel_idx+1])
+            # get the binary_matrix.row entries matching the current col
+            # prepare the row of rel_matrix matching the current window
+            # spikes are indexed as (neuron_id * winlen + bin_id)
+            windows_col.extend(
+                binary_matrix.row[spike_indices_in_window] * winlen
+                + (col - window_idx))
+            windows_row.extend([window_idx] * len(spike_indices_in_window))
     # Shape of the rel_matrix:
-    # (num of window positions,
-    # num of bins in one window * number of neurons)
+    # (total number of bins,
+    #  number of bins in one window * number of neurons)
     rel_matrix = sparse.coo_matrix(
         (np.ones((len(windows_col)), dtype=bool),
          (windows_row, windows_col)),
@@ -613,7 +621,7 @@ def _build_context(binary_matrix, winlen):
          for t in range(winlen)])
     # Building context and rel_matrix
     # Looping all the window positions w
-    for w in window_indices:
+    for w in unique_cols:
         # spikes in the current window
         times = rel_matrix[w]
         current_transactions = attributes[times]
@@ -731,19 +739,27 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     if report == '3d#':
         spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
     spectrum = []
-    # Mining the data with fpgrowth algorithm
-    if np.unique(transactions, return_counts=True)[1][0] == len(
-            transactions):
-        fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
+    # check whether all transactions are identical
+    # in that case FIM would not find anything, 
+    # so we need to create the output manually
+    # for optimal performance,
+    # we do the check sequentially and immediately break
+    # once we find a second unique transaction
+    first_transaction = transactions[0]
+    for transaction in transactions[1:]:
+        if transaction != first_transaction:
+            # Mining the data with fpgrowth algorithm
+            fpgrowth_output = fim.fpgrowth(
+                tracts=transactions,
+                target=target,
+                supp=-min_c,
+                zmin=min_z,
+                zmax=max_z,
+                report='a',
+                algo='s')
+            break
     else:
-        fpgrowth_output = fim.fpgrowth(
-            tracts=transactions,
-            target=target,
-            supp=-min_c,
-            zmin=min_z,
-            zmax=max_z,
-            report='a',
-            algo='s')
+        fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
     # Applying min/max conditions and computing extent (window positions)
     fpgrowth_output = list(filter(
         lambda c: _fpgrowth_filter(
@@ -1212,7 +1228,7 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
     min_spikes: int
     max_spikes: int
     winlen: int
-    spectrum: {'#', '3d#'}
+    spectrum: {‘#’, ‘3d#’}
 
     Returns
     -------
