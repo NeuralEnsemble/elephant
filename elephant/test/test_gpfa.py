@@ -162,7 +162,6 @@ class GPFATestCase(unittest.TestCase):
         t_stop = self.data2[0][0].t_start
         n_bins = int(((t_start - t_stop) / self.bin_size).magnitude)
         assert_array_equal(gpfa.T, [n_bins,] * n_trials)
-        assert_array_equal(gpfa.trialId, np.arange(n_trials))
         for key, data in seqs_train.items():
             self.assertEqual(len(data), n_trials, msg="Failed ndarray field {0}".format(key))
 
@@ -180,8 +179,7 @@ class GPFATestCase(unittest.TestCase):
         seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
         seqs_not_sqrt = gpfa_util.get_seq(data, bin_size=self.bin_size,
                                           use_sqrt=False)
-        for common_key in ('trialId', 'T'):
-            self.assertEqual(seqs[common_key], seqs_not_sqrt[common_key])
+        self.assertEqual(seqs['T'], seqs_not_sqrt['T'])
         self.assertEqual(seqs['y'].shape, seqs_not_sqrt['y'].shape)
 
     def test_cut_trials_inf(self):

@@ -401,7 +401,6 @@ class GPFA(sklearn.base.BaseEstimator):
         seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est, get_ll=True)
         self.fit_info['log_likelihood'] = ll
         self.T = seqs['T']
-        self.trialId = seqs['trialId']
         self.params_est, seqs = postprocess(self.params_est, seqs)
         if len(returned_data) == 1:
             return seqs[returned_data[0]]

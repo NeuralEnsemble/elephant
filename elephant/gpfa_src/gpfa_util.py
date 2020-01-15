@@ -58,7 +58,7 @@ def get_seq(data, bin_size, use_sqrt=True):
         raise ValueError("'bin_size' must be of type pq.Quantity")
 
     seq = []
-    for i, dat in enumerate(data):
+    for dat in data:
         sts = dat
         binned_sts = BinnedSpikeTrain(sts, binsize=bin_size)
         if use_sqrt:
@@ -66,9 +66,9 @@ def get_seq(data, bin_size, use_sqrt=True):
         else:
             binned = binned_sts.to_array()
         seq.append(
-            (i, binned_sts.num_bins, binned))
+            (binned_sts.num_bins, binned))
     seq = np.array(seq,
-                   dtype=[('trialId', np.int), ('T', np.int),
+                   dtype=[('T', np.int),
                           ('y', 'O')])
 
     # Remove trials that are shorter than one bin width
@@ -125,7 +125,7 @@ def cut_trials(seq_in, seg_length=20):
         seqOut = seq_in
         return seqOut
 
-    dtype_seqOut = [('trialId', np.int), ('segId', np.int), ('T', np.int),
+    dtype_seqOut = [('segId', np.int), ('T', np.int),
                     ('y', np.object)]
     seqOut_buff = []
     for n, seqIn_n in enumerate(seq_in):
@@ -133,8 +133,8 @@ def cut_trials(seq_in, seg_length=20):
 
         # Skip trials that are shorter than segLength
         if T < seg_length:
-            warnings.warn('trialId {0:4d} shorter than one segLength...'
-                          'skipping'.format(seqIn_n['trialId']))
+            warnings.warn('trial corresponding to index {} shorter than one segLength...'
+                          'skipping'.format(n))
             continue
 
         numSeg = np.int(np.ceil(float(T) / seg_length))
@@ -149,7 +149,6 @@ def cut_trials(seq_in, seg_length=20):
             cumOL = np.hstack([0, np.cumsum(randOL)])
 
         seg = np.empty(numSeg, dtype_seqOut)
-        seg['trialId'] = seqIn_n['trialId']
         seg['T'] = seg_length
 
         for s, seg_s in enumerate(seg):
