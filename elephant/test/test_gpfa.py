@@ -154,7 +154,7 @@ class GPFATestCase(unittest.TestCase):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
         gpfa.fit(self.data2)
         returned_data = ['y', 'xsm', 'Vsm', 'VsmGP', 'xorth']
-        seqs_train = gpfa.transform(self.data2, returned_data=returned_data)
+        seqs = gpfa.transform(self.data2, returned_data=returned_data)
         self.assertEqual(gpfa.fit_info['bin_size'], self.bin_size,
                          "Input and output bin_size don't match")
         n_trials = len(self.data2)
@@ -162,7 +162,7 @@ class GPFATestCase(unittest.TestCase):
         t_stop = self.data2[0][0].t_start
         n_bins = int(((t_start - t_stop) / self.bin_size).magnitude)
         assert_array_equal(gpfa.T, [n_bins,] * n_trials)
-        for key, data in seqs_train.items():
+        for key, data in seqs.items():
             self.assertEqual(len(data), n_trials, msg="Failed ndarray field {0}".format(key))
 
     def test_fit_transform(self):

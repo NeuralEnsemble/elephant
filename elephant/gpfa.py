@@ -68,7 +68,7 @@ import sklearn
 from elephant.gpfa_src import gpfa_core, gpfa_util
 
 
-def postprocess(params_est, seqs_train):
+def postprocess(params_est, seqs):
     """
     Orthonormalization and other cleanup.
 
@@ -94,7 +94,7 @@ def postprocess(params_est, seqs_train):
             R: ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
-    seqs_train: np.recarray
+    seqs: np.recarray
         Contains the embedding of the training data into the latent variable
         space.
         Data structure, whose n-th entry (corresponding to the n-th
@@ -110,11 +110,6 @@ def postprocess(params_est, seqs_train):
                 timepoint
             * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
                 posterior covariance over time for each latent variable
-
-    seqs_test: np.recarray, optional
-        Contains the embedding of the test data into the latent variable space.
-        Same data structure as for `seqs_train`.
-        Default is None.
 
     Returns
     -------
@@ -138,13 +133,13 @@ def postprocess(params_est, seqs_train):
 
     """
     C = params_est['C']
-    X = np.hstack(seqs_train['xsm'])
+    X = np.hstack(seqs['xsm'])
     Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
-    seqs_train = gpfa_util.segment_by_trial(seqs_train, Xorth, 'xorth')
+    seqs = gpfa_util.segment_by_trial(seqs, Xorth, 'xorth')
 
     params_est['Corth'] = Corth
 
-    return params_est, seqs_train
+    return params_est, seqs
 
 
 class GPFA(sklearn.base.BaseEstimator):
@@ -359,7 +354,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Returns
         -------
-        seqs_train: numpy.recarray
+        seqs: numpy.recarray
             Contains the embedding of the data into the latent variable space.
             Data structure, whose n-th entry (corresponding to the n-th
             experimental trial) has fields
