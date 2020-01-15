@@ -95,9 +95,9 @@ except ImportError:  # pragma: no cover
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes', psr_param=None,
-          output_format='patterns'):
-    """
+          alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
+          psr_param=None, output_format='patterns'):
+    r"""
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
     in a sliding window of winlen*binsize milliseconds.
@@ -309,7 +309,7 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
      Detection and Evaluation of Spatio-Temporal Spike Patterns in Massively
      Parallel Spike Train Data with SPADE.
      Frontiers in Computational Neuroscience, 11.
-    [3] Stella, A., Quaglio, P., Torre, E., & Grün, S. (2019).
+    [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019).
     3d-SPADE: Significance evaluation of spatio-temporal patterns of various
     temporal extents. Biosystems, 185, 104022.
     """
@@ -321,9 +321,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
 
     if output_format not in ['concepts', 'patterns']:
         raise AttributeError("The output_format value has to be"
-                         "'patterns' or 'concepts'")
+                             "'patterns' or 'concepts'")
     if surr_method not in surr.SURR_METHODS:
-        raise AttributeError('specified surr_method (=%s) not valid' % surr_method)
+        raise AttributeError(
+            'specified surr_method (=%s) not valid' % surr_method)
 
     time_mining = time.time()
     if rank == 0 or n_subsets > 0:
@@ -602,7 +603,8 @@ def _build_context(binary_matrix, winlen):
     binary_matrix.col = binary_matrix.col[indices]
     # out of all window positions
     # get all non-empty first bins
-    unique_cols, unique_col_idx = np.unique(binary_matrix.col, return_index=True)
+    unique_cols, unique_col_idx = np.unique(
+        binary_matrix.col, return_index=True)
     unique_col_idx = np.concatenate((unique_col_idx, [len(binary_matrix.col)]))
     windows_row = []
     windows_col = []
@@ -756,7 +758,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
     spectrum = []
     # check whether all transactions are identical
-    # in that case FIM would not find anything, 
+    # in that case FIM would not find anything,
     # so we need to create the output manually
     # for optimal performance,
     # we do the check sequentially and immediately break
@@ -1145,7 +1147,8 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     if n_surr <= 0:
         raise ValueError('n_surr has to be >0')
     if surr_method not in surr.SURR_METHODS:
-        raise AttributeError('specified surr_method (=%s) not valid' % surr_method)
+        raise AttributeError(
+            'specified surr_method (=%s) not valid' % surr_method)
 
     len_partition = n_surr // size  # length of each MPI task
     len_remainder = n_surr % size
