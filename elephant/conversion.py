@@ -29,18 +29,18 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
     """
     Return an array indicating if spikes occurred at individual time points.
 
-    The array contains boolean values identifying whether one or more spikes
-    happened in the corresponding time bin.  Time bins start at `t_start`
+    The array contains boolean values identifying whether at least one spike
+    occurred in the corresponding time bin. Time bins start at `t_start`
     and end at `t_stop`, spaced in `1/sampling_rate` intervals.
 
-    Accepts either a Neo SpikeTrain, a Quantity array, or a plain NumPy array.
-    Returns a boolean array with each element being the presence or absence of
-    a spike in that time bin.  The number of spikes in a time bin is not
-    considered.
+    Accepts either a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
+    `np.ndarray`.
+    Returns a boolean array with each element indicating the presence or
+    absence of a spike in that time bin.
 
     Optionally also returns an array of time points corresponding to the
     elements of the boolean array.  The units of this array will be the same as
-    the units of the SpikeTrain, if any.
+    the units of the neo.SpikeTrain, if any.
 
     Parameters
     ----------
@@ -97,7 +97,6 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
     TypeError
         If `spiketrain` is an `np.ndarray` and `t_start`, `t_stop`, or
         `sampling_rate` is a `pq.Quantity`.
-
     ValueError
         If `sampling_rate` is not explicitly defined and not present as an
         attribute of `spiketrain`.
@@ -177,7 +176,7 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 
 def _calc_tstart(num_bins, binsize, t_stop):
     """
-    Calculates the start point from given parameter.
+    Calculates the start point from given parameters.
 
     Calculates the start point `t_start` from the three parameters
     `num_bins`, `binsize`, `t_stop`.
@@ -202,7 +201,7 @@ def _calc_tstart(num_bins, binsize, t_stop):
 
 def _calc_tstop(num_bins, binsize, t_start):
     """
-    Calculates the stop point from given parameter.
+    Calculates the stop point from given parameters.
 
     Calculates the stop point `t_stop` from the three parameters
     `num_bins`, `binsize`, `t_start`.
@@ -227,7 +226,7 @@ def _calc_tstop(num_bins, binsize, t_start):
 
 def _calc_num_bins(binsize, t_start, t_stop):
     """
-    Calculates the number of bins from given parameter.
+    Calculates the number of bins from given parameters.
 
     Calculates the number of bins `num_bins` from the three parameters
     `binsize`, `t_start`, `t_stop`.
@@ -262,7 +261,7 @@ def _calc_num_bins(binsize, t_start, t_stop):
 
 def _calc_binsize(num_bins, t_start, t_stop):
     """
-    Calculates the stop point from given parameter.
+    Calculates the stop point from given parameters.
 
     Calculates the size of bins `binsize` from the three parameters
     `num_bins`, `t_start` and `t_stop`.
@@ -283,8 +282,8 @@ def _calc_binsize(num_bins, t_start, t_stop):
 
     Raises
     ------
-    ValueError :
-        Raised when `t_stop` is smaller than `t_start`".
+    ValueError
+        When `t_stop` is smaller than `t_start`.
     """
 
     if num_bins is not None and t_start is not None and t_stop is not None:
@@ -314,6 +313,12 @@ def _get_start_stop_from_input(spiketrains):
         Start point extracted from input `spiketrains`
     stop : pq.Quantity
         Stop point extracted from input `spiketrains`
+
+    Raises
+    ------
+    AttributeError
+        If spiketrains (or any element of it) do not have `t_start` or `t_stop`
+        attribute.
     """
     if isinstance(spiketrains, neo.SpikeTrain):
         return spiketrains.t_start, spiketrains.t_stop
@@ -339,17 +344,13 @@ class BinnedSpikeTrain(object):
     parameter such as size of bins, number of bins, start and stop points.
 
     A boolean matrix represents the binned spike train in a binary (True/False)
-    manner.
-    Its rows represent the number of spike trains
-    and the columns represent the binned index position of a spike in a
-    spike train.
-    The calculated matrix columns contains **Trues**, which indicate
-    a spike.
+    manner. Its rows represent the number of spike trains and the columns
+    represent the binned index position of a spike in a spike train.
+    The calculated matrix entry containing `True` indicates a spike.
 
     A matrix with counted time points is calculated the same way, but its
-    columns contain the number of spikes that occurred in the spike train(s).
-    It counts the occurrence of the timing of a spike in its respective
-    spike train.
+    entries contain the number of spikes that occurred in the given bin of the
+    given spike train.
 
     Parameters
     ----------
@@ -367,6 +368,25 @@ class BinnedSpikeTrain(object):
     t_stop : pq.Quantity, optional
         Time of the right edge of the last bin (right extreme; excluded).
         Default: None
+
+    Raises
+    ------
+    AttributeError
+        If less than 3 optional parameters are `None`.
+    TypeError
+        If `spiketrains` is an np.ndarray with dimensionality different than
+        NxM or
+        if type of `num_bins` is not an `Int` or `num_bins` < 0.
+    ValueError
+        When number of bins calculated from `t_start`, `t_stop` and `binsize`
+        differs from provided `num_bins` or
+        if `t_stop` of any spike train is smaller than any `t_start` or
+        if any spike train does not cover the full [`t_start`, t_stop`] range.
+
+    Warns
+    -----
+    UserWarning
+        If some spikes fall outside of [`t_start`, `t_stop`] range
 
     See also
     --------
@@ -477,10 +497,10 @@ class BinnedSpikeTrain(object):
 
         Raises
         ------
-        ValueError
-            If all parameters are `None`.
         TypeError
             If type of `num_bins` is not an `Int`.
+        ValueError
+            When `t_stop` is smaller than `t_start`.
 
         """
         # Check if num_bins is an integer (special case)
@@ -519,14 +539,14 @@ class BinnedSpikeTrain(object):
 
     def _count_params(self):
         """
-        Checks the number of explicitly provided parameters and returns **True** if the
-        count is greater or equal `3`.
+        Checks the number of explicitly provided parameters and returns `True`
+        if the count is greater or equal `3`.
 
         The calculation of the binned matrix is only possible if there are at
         least three parameters (fourth parameter will be calculated out of
         them).
         This method checks if the necessary parameters are not `None` and
-        returns **True** if the count is greater or equal to `3`.
+        returns `True` if the count is greater or equal to `3`.
 
         Returns
         -------
@@ -546,11 +566,13 @@ class BinnedSpikeTrain(object):
 
         Raises
         ------
-        ValueError :
+        AttributeError
+            If there is an insufficient number of parameters.
+        TypeError
+            If `num_bins` is not an `Int` or is <0.
+        ValueError
             If an inconsistency regarding the parameters appears, e.g.
             `t_start` > `t_stop`.
-        AttributeError :
-            If there is an insufficient number of parameters.
 
         """
         if self._count_params() is False:
@@ -594,7 +616,7 @@ class BinnedSpikeTrain(object):
     @property
     def bin_edges(self):
         """
-        Returns all time edges with :attr:`num_bins` bins as a quantity array.
+        Returns all time edges as a quantity array with :attr:`num_bins` bins.
 
         The borders of all time steps between :attr:`t_start` and
         :attr:`t_stop` with a step :attr:`binsize`. It is crucial for many
@@ -619,17 +641,15 @@ class BinnedSpikeTrain(object):
     @property
     def bin_centers(self):
         """
-        Returns each center time point of all bins between start and stop
-        points.
+        Returns each center time point of all bins between :attr:`t_start` and
+        :attr:`t_stop` points.
 
-        The center of each bin of all time steps between start and stop
-        (start, stop).
+        The center of each bin of all time steps between start and stop.
 
         Returns
         -------
-        bin_edges : quantities.Quantity array
-            All center edges in interval (start, stop) are returned as
-            a quantity array.
+        bin_edges : pq.Quantity
+            All center edges in interval (:attr:`start`, :attr:`stop`).
 
         """
         return self.bin_edges[:-1] + self.binsize / 2
@@ -640,8 +660,8 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        matrix: scipy.sparse.csr_matrix
-            Sparse matrix, counted version.
+        scipy.sparse.csr_matrix
+            Sparse matrix, version with spike counts.
 
         See also
         --------
@@ -653,12 +673,12 @@ class BinnedSpikeTrain(object):
 
     def to_sparse_bool_array(self):
         """
-        Getter for **boolean** version of the sparse matrix, calculated from
+        Getter for boolean version of the sparse matrix, calculated from
         sparse matrix with counted time points.
 
         Returns
         -------
-        matrix: scipy.sparse.csr_matrix
+        scipy.sparse.csr_matrix
             Sparse matrix, binary, boolean version.
 
         See also
@@ -686,7 +706,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        int or np.ndarray
+        n_spikes_per_row : int or np.ndarray
             The number of binned spikes.
 
         """
@@ -711,8 +731,10 @@ class BinnedSpikeTrain(object):
         >>> import elephant.conversion as conv
         >>> import neo as n
         >>> import quantities as pq
-        >>> st = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        >>> x = conv.BinnedSpikeTrain(st, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
+        >>> st = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
+        ...                   t_stop=10.0 * pq.s)
+        >>> x = conv.BinnedSpikeTrain(st, num_bins=10, binsize=1 * pq.s,
+        ...                           t_start=0 * pq.s)
         >>> print(x.spike_indices)
         [[0, 0, 1, 3, 4, 5, 6]]
         >>> print(x.to_sparse_array().nonzero()[1])
@@ -732,72 +754,78 @@ class BinnedSpikeTrain(object):
     @property
     def is_binary(self):
         """
-        Checks and returns **True** if given input is a binary input.
+        Checks and returns `True` if given input is a binary input.
         Beware, that the function does not know if the input is binary
         because e.g `to_bool_array()` was used before or if the input is just
         sparse (i.e. only one spike per bin at maximum).
+
+        Returns
+        -------
+        bool
+            True for binary input, False otherwise.
         """
 
         return is_binary(self.lst_input)
 
     def to_bool_array(self):
         """
-        Returns a dense matrix (`scipy.sparse.csr_matrix`), which rows
-        represent the number of spike trains and the columns represent the
-        binned index position of a spike in a spike train.
-        The matrix columns contain **True**, which indicate a spike and
-        **False** for non spike.
+        Returns a matrix, in which the rows correspond to the spike trains and
+        the columns correspond to the bins in the `BinnedSpikeTrain`.
+        `True` indicates a spike in given bin of given spike train and
+        `False` indicates lack of spikes.
 
         Returns
         -------
-        bool matrix : numpy.ndarray
+        numpy.ndarray
             Returns a dense matrix representation of the sparse matrix,
-            with **True** indicating a spike and **False*** for
-            non spike.
-            The **Trues** in the columns represent the index
-            position of the spike in the spike train and rows represent the
-            number of spike trains.
+            with `True` indicating a spike and `False` indicating a no-spike.
+            The columns represent the index position of the bins and rows
+            represent the number of spike trains.
+
+        See also
+        --------
+        scipy.sparse.csr_matrix
+        scipy.sparse.csr_matrix.toarray
 
         Examples
         --------
         >>> import elephant.conversion as conv
         >>> import neo as n
         >>> import quantities as pq
-        >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
+        >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
+        ...                  t_stop=10.0 * pq.s)
+        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s,
+        ...                           t_start=0 * pq.s)
         >>> print(x.to_bool_array())
         [[ True  True False  True  True  True  True False False False]]
 
-        See also
-        --------
-        scipy.sparse.csr_matrix
-        scipy.sparse.csr_matrix.toarray
         """
         return self.to_array().astype(bool)
 
     def to_array(self, store_array=False):
         """
-        Returns a dense matrix, calculated from the sparse matrix with counted
-        time points, which rows represents the number of spike trains and the
-        columns represents the binned index position of a spike in a
-        spike train.
-        The  matrix columns contain the number of spikes that
-        occurred in the spike train(s).
-        If the **boolean** :attr:`store_array` is set to **True** the matrix
+        Returns a dense matrix, calculated from the sparse matrix, with counted
+        time points of spikes. The rows correspond to spike trains and the
+        columns correspond to bins in a `BinnedSpikeTrain`.
+        Entries contain the count of spikes that occurred in the given bin of
+        the given spike train.
+        If the boolean :attr:`store_array` is set to `True`, the matrix
         will be stored in memory.
 
         Returns
         -------
-        matrix : numpy.ndarray
-            Matrix with spike times. Columns represent the index position of
-            the binned spike and rows represent the number of spike trains.
+        matrix : np.ndarray
+            Matrix with spike counts. Columns represent the index positions of
+            the binned spikes and rows represent the spike trains.
 
         Examples
         --------
         >>> import elephant.conversion as conv
         >>> import neo as n
-        >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s, t_start=0 * pq.s)
+        >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
+        ...                  t_stop=10.0 * pq.s)
+        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s,
+        ...                           t_start=0 * pq.s)
         >>> print(x.to_array())
         [[2 1 0 1 1 1 1 0 0 0]]
 
@@ -832,19 +860,21 @@ class BinnedSpikeTrain(object):
 
     def binarize(self, copy=True):
         """
-        Clip the internal array (no. of spikes in a bin) to have `0` or `1`
-        values only.
+        Clip the internal array (no. of spikes in a bin) to `0` (no spikes) or
+        `1` (at least one spike) values only.
 
         Parameters
         ----------
         copy : bool
-            Make the clipping in-place (False) or with a copy (True).
-            Default is True.
+            Perform the clipping in-place (False) or on a copy (True).
+            Default: True.
 
         Returns
         -------
         bst : BinnedSpikeTrain
-            Binarized `BinnedSpikeTrain`.
+            BinnedSpikeTrain` with both sparse and dense (if present) array
+            representation clipped to `0` (no spike) or `1` (st least one
+            spike) entries.
 
         """
         if copy:
@@ -862,22 +892,22 @@ class BinnedSpikeTrain(object):
         Returns
         -------
         float
-            Matrix sparsity, defined as matrix size, divided by no. of
-            nonzero elements.
+            Matrix sparsity defined as no. of nonzero elements divided by
+            the matrix size
         """
         num_nonzero = self._sparse_mat_u.data.shape[0]
         return num_nonzero / np.prod(self._sparse_mat_u.shape)
 
     def _convert_to_binned(self, spiketrains):
         """
-        Converts neo.core.SpikeTrain objects to a sparse matrix
-        (`scipy.sparse.csr_matrix`), which contains the binned times.
+        Converts `neo.SpikeTrain` objects to a sparse matrix
+        (`scipy.sparse.csr_matrix`), which contains the binned spike times, and
+        stores it in :attr:`_sparse_mat_u`.
 
         Parameters
         ----------
-        spiketrains : neo.SpikeTrain object or list of SpikeTrain objects
-           The binned time array :attr:`spike_indices` is calculated from a
-           SpikeTrain object or from a list of SpikeTrain objects.
+        spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
+            Spike trains to bin.
 
         """
         if not self.is_spiketrain:
@@ -908,9 +938,21 @@ class BinnedSpikeTrain(object):
 
 def _check_neo_spiketrain(matrix):
     """
-    Checks if given input contains neo spiketrain objects
+    Checks if given input contains neo.SpikeTrain objects
+
+    Parameters
+    ----------
+    matrix
+        Object to test for `neo.SpikeTrain`s
+
+    Returns
+    -------
+    bool
+        True if `matrix` is a neo.SpikeTrain or a list or tuple thereof,
+        otherwise False.
+
     """
-    # Check for single spiketrain
+    # Check for single spike train
     if isinstance(matrix, neo.SpikeTrain):
         return True
     # Check for list or tuple
@@ -922,6 +964,23 @@ def _check_neo_spiketrain(matrix):
 def _check_binned_array(matrix):
     """
     Checks if given input is a binned array
+
+    Parameters
+    ----------
+    matrix
+        Object to test
+
+    Returns
+    -------
+    bool
+        True if `matrix` is an 2D array-like object,
+        otherwise False.
+
+    Raises
+    ------
+    TypeError
+        If `matrix` is not 2-dimensional.
+
     """
     matrix = np.asarray(matrix)
     # Check for proper dimension MxN
@@ -933,4 +992,4 @@ def _check_binned_array(matrix):
                         'the input has the shape: {}'.format(matrix.shape))
     else:
         # Otherwise not supported
-        return TypeError('Input not supported. Please check again')
+        raise TypeError('Input not supported. Please check again')
