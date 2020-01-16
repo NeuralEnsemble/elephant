@@ -27,7 +27,7 @@ def inherit_docstring(fromfunc, sep=""):
         Function that will have the docstring copied from
     sep: str, optional
         Separator used to concatenate docstrings.
-        Default is ''.
+        Default: "".
 
     References
     ----------
@@ -77,7 +77,7 @@ class Kernel(object):
     invert: bool, optional
         If True, asymmetric kernels (e.g., exponential or alpha kernels) are
         inverted along the time axis.
-        Default is False.
+        Default: False.
 
     Raises
     ------
