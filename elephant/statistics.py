@@ -24,12 +24,13 @@ def cv(*args, **kwargs):
     """
     Wrapper for `scipy.stats.variation` function.
 
-    Examples
-    --------
-
     Notes
     -----
     The wrapper was added for the convenience of former NeuroTools users.
+
+    Examples
+    --------
+    TODO: insert example here
 
     """
     return scipy.stats.variation(*args, **kwargs)
@@ -87,35 +88,37 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         The spike times.
     t_start : float or pq.Quantity, optional
         The start time to use for the interval.
-        Default is None. If not specified, retrieved from the `t_start`
-        attribute of `spiketrain`. If that is not present, default to 0. Any
-        value from `spiketrain` below this value is ignored.
+        If None, retrieved from the `t_start` attribute of `spiketrain`. If
+        that is not present, default to 0. Any value from `spiketrain` below
+        this value is ignored.
+        Default is None.
     t_stop : float or pq.Quantity, optional
         The stop time to use for the time points.
-        Default is None. If not specified, retrieved from the `t_stop`
-        attribute of `spiketrain`. If that is not present, default to the
-        maximum value of `spiketrain`. Any value from `spiketrain` above this
-        value is ignored.
+        If not specified, retrieved from the `t_stop` attribute of
+        `spiketrain`. If that is not present, default to the maximum value of
+        `spiketrain`. Any value from `spiketrain` above this value is ignored.
+        Default is None.
     axis : int, optional
         The axis over which to do the calculation.
-        Default is None, do the calculation over the flattened array.
+        If None, do the calculation over the flattened array.
+        Default is None.
 
     Returns
     -------
     float or pq.Quantity or np.ndarray
         The firing rate of the `spiketrain`
 
-    Notes
-    -----
-    If `spiketrain` is a `pq.Quantity` or `neo.SpikeTrain`, and `t_start` or
-    `t_stop` are not `pq.Quantity`, `t_start` and `t_stop` are assumed to have
-    the same units as `spiketrain`.
-
     Raises
     ------
     TypeError
         If `spiketrain` is a `np.ndarray` and `t_start` or `t_stop` is
         `pq.Quantity`.
+
+    Notes
+    -----
+    If `spiketrain` is a `pq.Quantity` or `neo.SpikeTrain`, and `t_start` or
+    `t_stop` are not `pq.Quantity`, `t_start` and `t_stop` are assumed to have
+    the same units as `spiketrain`.
 
     """
     if t_start is None:
@@ -222,7 +225,6 @@ def lv(v, with_nan=False):
     ----------
     v : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
-        
     with_nan : bool, optional
         If True, `lv` of a spike train with less than two spikes results in a
         np.NaN value and a warning is raised.
@@ -303,7 +305,6 @@ def cv2(v, with_nan=False):
     ----------
     v : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
-
     with_nan : bool, optional
         If True, `cv2` of a spike train with less than two spikes results in a
         np.NaN value and a warning is raised.
@@ -370,7 +371,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     Parameters
     -----------
     spiketrain : neo.SpikeTrain or list of neo.SpikeTrain
-        Neo object that contains spike times, the unit of the time stamps
+        Neo object(s) that contains spike times, the unit of the time stamps,
         and `t_start` and `t_stop` of the spike train.
     sampling_period : pq.Quantity
         Time stamp resolution of the spike times. The same resolution will
@@ -379,13 +380,14 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         The string 'auto' or callable object of class `kernels.Kernel`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
-        rate estimation.
-        Currently implemented kernel forms are rectangular, triangular,
-        epanechnikovlike, gaussian, laplacian, exponential, and alpha function.
-        Default is 'auto'. In this case, the optimized kernel width for the
-        rate estimation is calculated according to [1] and with this width
-        a gaussian kernel is constructed. Automatized calculation of the
-        kernel width is not available for other than gaussian kernel shapes.
+        rate estimation. Currently implemented kernel forms are rectangular,
+        triangular, epanechnikovlike, gaussian, laplacian, exponential, and
+        alpha function.
+        If 'auto', the optimized kernel width for the rate estimation is
+        calculated according to [1]_ and with this width a gaussian kernel is
+        constructed. Automatized calculation of the kernel width is not
+        available for other than gaussian kernel shapes.
+        Default is 'auto'.
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
         the kernel, i.e., the considered width of the kernel in terms of
@@ -393,12 +395,14 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         Default is 5.0.
     t_start : pq.Quantity, optional
         Start time of the interval used to compute the firing rate.
-        Default is None. In this case, `t_start` is assumed equal to
-        `t_start` attribute of `spiketrain`.
+        If None, `t_start` is assumed equal to `t_start` attribute of
+        `spiketrain`.
+        Default is None.
     t_stop : pq.Quantity, optional
         End time of the interval used to compute the firing rate (included).
-        Default is None. In this case, `t_stop` is assumed equal to `t_stop`
-        attribute of `spiketrain`.
+        If None, `t_stop` is assumed equal to `t_stop` attribute of
+        `spiketrain`.
+        Default is None.
     trim : bool, optional
         If False, the output of the Fast Fourier Transformation being a longer
         vector than the input vector by the size of the kernel is reduced back
@@ -597,14 +601,16 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     t_start : pq.Quantity, optional
         Start time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
-        histogram. If None, the maximum `t_start` of all `neo.SpikeTrain`s is
-        used as `t_start`.
+        histogram.
+        If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
+        `t_start`.
         Default is None.
     t_stop : pq.Quantity, optional
         Stop time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
-        histogram. If None, the minimum `t_stop` of all `neo.SpikeTrain`s is
-        used as `t_stop`.
+        histogram.
+        If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
+        `t_stop`.
         Default is None.
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
@@ -707,7 +713,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
 def complexity_pdf(spiketrains, binsize):
     """
-    Complexity Distribution [1] of a list of `neo.SpikeTrain` objects.
+    Complexity Distribution [1]_ of a list of `neo.SpikeTrain` objects.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
@@ -778,15 +784,6 @@ This was translated into Python by Subhasis Ray, NCBS. Tue Jun 10
 def nextpow2(x):
     """
     Return the smallest integral power of 2 that is equal or larger than `x`.
-
-    Parameters
-    ----------
-        x: float
-            Value to get the smallest power of 2 that is equal or larger
-
-    Returns
-    -------
-        n: int
     """
     n = 2
     while n < x:
@@ -801,7 +798,7 @@ def fftkernel(x, w):
     Parameters
     ----------
     x: np.ndarray
-        Sample signal vector.
+        Vector with sample signal.
     w: float
         Kernel bandwidth (the standard deviation) in unit of the sampling
         resolution of `x`.
@@ -869,37 +866,52 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     Calculates optimal fixed kernel bandwidth, given as the standard deviation
     sigma.
 
-    spiketimes: sequence of spike times (sorted to be ascending).
-
-    tin: (optional) time points at which the kernel bandwidth is to be
-    estimated.
-
-    w: (optional) vector of kernel bandwidths (standard deviation sigma). If
-    specified, optimal bandwidth is selected from this.
-
-    bootstrap (optional): whether to calculate the 95% confidence
-    interval. (default False)
+    Parameters
+    ----------
+    spiketimes: np.ndarray
+        Sequence of spike times (sorted to be ascending).
+    tin: np.ndarray, optional
+        Time points at which the kernel bandwidth is to be estimated.
+        If None, `spiketimes` is used.
+        Default is None.
+    w: np.ndarray, optional
+        Vector of kernel bandwidths (standard deviation sigma).
+        If specified, optimal bandwidth is selected from this.
+        If None, `w` is obtained through a golden-section search on a log-exp
+        scale.
+        Default is None.
+    bootstrap: bool, optional
+        If True, calculates the 95% confidence interval using Bootstrap.
+        Default is False.
 
     Returns
+    -------
+    dict
+        y : np.ndarray
+            Estimated density.
+        t : np.ndarray
+            Points at which estimation was computed.
+        optw : float
+            Optimal kernel bandwidth given as standard deviation sigma
+        w : np.ndarray
+            Kernel bandwidths examined (standard deviation sigma).
+        C : np.ndarray
+            Cost functions of `w`.
+        confb95 : tuple of np.ndarray
+            Bootstrap 95% confidence interval: (lower level, upper level).
+            If `bootstrap` is False, `confb95` is None.
+        yb : np.ndarray
+            Bootstrap samples.
+            If `bootstrap` is False, `confb95` is None.
 
-    A dictionary containing the following key value pairs:
+        If no optimal kernel could be found, all entries of the dictionary are
+        set to None.
 
-    'y': estimated density,
-    't': points at which estimation was computed,
-    'optw': optimal kernel bandwidth given as standard deviation sigma
-    'w': kernel bandwidths examined (standard deviation sigma),
-    'C': cost functions of w,
-    'confb95': (lower bootstrap confidence level, upper bootstrap confidence level),
-    'yb': bootstrap samples.
-
-    If no optimal kernel could be found, all entries of the dictionary are set
-    to None.
-
-
-    Ref: Shimazaki, Hideaki, and Shigeru Shinomoto. 2010. Kernel
-    Bandwidth Optimization in Spike Rate Estimation. Journal of
-    Computational Neuroscience 29 (1-2):
-    171-82. doi:10.1007/s10827-009-0180-4.
+    References
+    ----------
+    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
+           spike rate estimation," Journal of Computational Neuroscience,
+           vol. 29, no. 1-2, pp. 171-82, 2010. doi:10.1007/s10827-009-0180-4.
 
     """
 
