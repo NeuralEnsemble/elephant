@@ -1,5 +1,1 @@
-# These are requirements only needed for the jupyter notebook tutorials
-pip install -r requirements-tutorials.txt
-
-# Install elephant
-python setup.py install
+pip install .[tutorials]
