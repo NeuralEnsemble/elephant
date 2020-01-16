@@ -34,9 +34,10 @@ Internally, the analysis consists of the following steps:
 
 There are two principle scenarios of using the GPFA analysis. In the first
 scenario, only one single dataset is available. The parameters that describe
-the transformation are first extracted from the data, and the orthonormal basis
-is constructed. Then the same data is projected into this basis. This analysis
-is performed using the `gpfa()` function.
+the transformation are first extracted from the data using the method fit(),
+and the orthonormal basis is constructed. Then the same data is projected into
+ this basis using the method transform(). This analysis
+is performed in an instance of the class GPFA().
 
 In the second scenario, both a training and a test data set is available. Here,
 the parameters are estimated from the training data. In a second step the test
