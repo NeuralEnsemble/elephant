@@ -772,9 +772,8 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     else:
         fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
     # Applying min/max conditions and computing extent (window positions)
-    fpgrowth_output = list(filter(
-        lambda c: _fpgrowth_filter(
-            c, winlen, max_c, min_neu), fpgrowth_output))
+    fpgrowth_output = [concept for concept in fpgrowth_output
+                       if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
     # filter out subsets of patterns that are found as a side-effect
     # of using the moving window strategy
     fpgrowth_output = _filter_for_moving_window_subsets(
@@ -785,8 +784,11 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 # Computing the extent of the concept (patterns
                 # occurrences), checking in rel_matrix in which windows
                 # the intent occurred
-                extent = tuple(np.where(
-                    np.all(rel_matrix[:, intent], axis=1) == 1)[0])
+                extent = tuple(
+                             np.nonzero(
+                                 np.all(rel_matrix[:, intent], axis=1)
+                              )[0]
+                         )
             concepts.append((intent, extent))
         # Computing 2d spectrum
         elif report == '#':
@@ -822,11 +824,12 @@ def _fpgrowth_filter(concept, winlen, max_c, min_neu):
     neurons and a maximum number of occurrences and first spike in the first
     bin position
     """
-    keep_concepts = len(
-        np.unique(np.array(
-            concept[0]) // winlen)) >= min_neu and concept[1] <= max_c and min(
-        np.array(concept[0]) % winlen) == 0
-    return keep_concepts
+    intent = np.array(concept[0])
+    keep_concept = (min(intent % winlen) == 0
+                    and concept[1] <= max_c
+                    and np.unique(intent // winlen).shape[0] >= min_neu
+                    )
+    return keep_concept
 
 
 def _rereference_to_last_spike(transactions, winlen):
@@ -2037,6 +2040,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
             if len(entry) == 3:
                 pvalue_dict[(entry[0], entry[1])] = entry[-1]
     # Initializing list containing all the patterns
+    t_start = t_start.rescale(binsize.units)
     output = []
     for conc in concepts:
         # Vocabulary for each of the patterns, containing:
@@ -2055,8 +2059,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
         # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
         # Times (in binsize units) in which the pattern occurs
-        output_dict['times'] = sorted(conc[1]) * binsize + bin_ids[0] * \
-            binsize + t_start
+        output_dict['times'] = sorted(conc[1]) * binsize + t_start
         # If None is given in input to the pval spectrum the pvalue
         # is set to -1 (pvalue spectrum not available)
         # pattern dictionary appended to the output
@@ -2087,3 +2090,4 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
                 output_dict['pvalue'] = 0.0
         output.append(output_dict)
     return output
+
