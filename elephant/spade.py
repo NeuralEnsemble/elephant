@@ -398,20 +398,22 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         # Storing non-significant entries of the pvalue spectrum
         output['non_sgnf_sgnt'] = ns_sgnt
     # Filter concepts with pvalue spectrum (psf)
+    # TODO: allow psr usage in absence of surrogates / ns_sgnt
     if len(ns_sgnt) > 0:
         concepts = list(filter(
             lambda c: _pattern_spectrum_filter(
                 c, ns_sgnt, spectrum, winlen), concepts))
         # Decide whether to filter concepts using psr
-        if psr_param is not None:
-            # Filter using conditional tests (psr)
-            concepts = pattern_set_reduction(concepts, ns_sgnt,
-                                             winlen=winlen,
-                                             h_subset_filtering=psr_param[0],
-                                             k_superset_filtering=psr_param[1],
-                                             l_covered_spikes=psr_param[2],
-                                             min_spikes=min_spikes,
-                                             min_occ=min_occ)  # nopep8
+    if psr_param is not None:
+        # Filter using conditional tests (psr)
+        concepts = pattern_set_reduction(concepts, ns_sgnt,
+                                         winlen=winlen,
+                                         spectrum=spectrum,
+                                         h_subset_filtering=psr_param[0],
+                                         k_superset_filtering=psr_param[1],
+                                         l_covered_spikes=psr_param[2],
+                                         min_spikes=min_spikes,
+                                         min_occ=min_occ)
     # Storing patterns for output format concepts
     if output_format == 'concepts':
         output['patterns'] = concepts
@@ -1480,17 +1482,17 @@ def test_signature_significance(pv_spec, concepts, alpha,
             if not test]
 
 
-def _pattern_spectrum_filter(concept, ns_signature, spectrum, winlen):
+def _pattern_spectrum_filter(concept, ns_sgnt, spectrum, winlen):
     """
-    Filter to select concept which signature is significant
+    Filter for significant concepts
     """
     if spectrum == '#':
-        keep_concept = (len(concept[0]), len(concept[1])) not in ns_signature
+        keep_concept = (len(concept[0]), len(concept[1])) not in ns_sgnt
     if spectrum == '3d#':
         # duration is fixed as the maximum lag
         duration = max(np.array(concept[0]) % winlen)
         keep_concept = (len(concept[0]), len(concept[1]),
-                        duration) not in ns_signature
+                        duration) not in ns_sgnt
     return keep_concept
 
 
@@ -1727,7 +1729,7 @@ def _give_random_idx(r_unique, n):
     return _give_random_idx(r_unique, n)
 
 
-def pattern_set_reduction(concepts, excluded, winlen, h_subset_filtering=0,
+def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum, h_subset_filtering=0,
                           k_superset_filtering=0, l_covered_spikes=0,
                           min_spikes=2, min_occ=2):
     r"""
@@ -1737,11 +1739,12 @@ def pattern_set_reduction(concepts, excluded, winlen, h_subset_filtering=0,
     given any other pattern, on the basis of the pattern size and
     occurrence count ("support"). Only significant patterns are retained.
     The significance of a pattern A is evaluated through its signature
-    (|A|,c_A), where |A| is the size and c_A the support of A, by either of:
-    * subset filtering: any pattern B is discarded if *cfis* contains a
-      superset A of B such that (z_B, c_B-c_A+*h*) \in *excluded*
-    * superset filtering: any pattern A is discarded if *cfis* contains a
-      subset B of A such that (z_A-z_B+*k*, c_A) \in  *excluded*
+    (z_a, c_A), where z_A = |A| is the size and c_A the support of A,
+    by either of:
+    * subset filtering: any pattern B is discarded if *concepts* contains a
+      superset A of B such that (z_B, c_B-c_A+*h*) \in *ns_sgnt*
+    * superset filtering: any pattern A is discarded if *concepts* contains a
+      subset B of A such that (z_A-z_B+*k*, c_A) \in  *ns_sgnt*
     * covered-spikes criterion: for any two patterns A, B with A \subset B, B
       is discarded if (z_B-l)*c_B <= c_A*(z_A-*l*), A is discarded otherwise.
     * combined filtering: combines the three procedures above
@@ -1750,234 +1753,276 @@ def pattern_set_reduction(concepts, excluded, winlen, h_subset_filtering=0,
     z is the pattern size and c the pattern support.
 
     For any two patterns A and B in concepts_psf such that B \subset A, check:
-    1) (z_B, c_B-c_A+*h*) \in *excluded*, and
-    2) (z_A-z_B+*k*, c_A) \in *excluded*.
+    1) (z_B, c_B - c_A + *h*) \in *ns_sgnt*, and
+    2) (z_A - z_B + *k*, c_A) \in *ns_sgnt*.
     Then:
     * if 1) and not 2): discard B
     * if 2) and not 1): discard A
-    * if 1) and 2): discard B if c_B*(z_B-*l*) <= c_A*(z_A-*l*), A otherwise;
-    * if neither 1) nor 2): keep both patterns.
+    * if 1) and 2): discard B if c_B * (z_B - *l*) <= c_A * (z_A - *l*),
+                    otherwise discard A
+    * if neither 1) nor 2): keep both patterns
+
+    Assumptions/Approximations:
+        * a pair of concepts cannot cause one another to be rejected
+        * if two concepts overlap more than min_occ times, one of them can
+          account for all occurrences of the other one if it passes the filtering
 
     Parameters:
     -----------
-    concept: list
+    concepts: list
         List of concepts, each consisting in its intent and extent
-    excluded: list
-        A list of non-significant pattern signatures (z, c) (see above).
+    ns_sgnt: list
+        A list of non-significant pattern signatures (z, c)
+    winlen: int (positive)
+        The size (number of bins) of the sliding window used for the analysis.
+        The maximal length of a pattern (delay between first and last spike) is
+        then given by winlen*binsize
+    spectrum: str
+        Define the signature of the patterns, it can assume values:
+        '#': pattern spectrum using the as signature the pair:
+            (number of spikes, number of occurrences)
+        '3d#': pattern spectrum using the as signature the triplets:
+            (number of spikes, number of occurrence, difference between last
+            and first spike of the pattern)
     h_subset_filtering: int
-        Correction parameter for subset filtering (see above).
-        Defaults: 0
+        Correction parameter for subset filtering
+        Default: 0
     k_superset_filtering: int
-        Correction parameter for superset filtering (see above).
+        Correction parameter for superset filtering
         Default: 0
     l_covered_spikes: int
-        Correction parameter for covered-spikes criterion (see above).
+        Correction parameter for covered-spikes criterion
         Default: 0
-    min_size: int
-        Minimum pattern size.
+    min_spikes: int
+        Minimum pattern size
         Default: 2
-    min_supp: int
-        Minimum pattern support.
+    min_occ: int
+        Minimum number of pattern occurrences
         Default: 2
 
     Returns:
     -------
-      returns a tuple containing the elements of the input argument
-      that are significant according to combined filtering.
+        tuple containing the elements of the input argument
+        that are significant according to combined filtering
     """
-    conc = []
+    additional_measures = []
     # Extracting from the extent and intent the spike and window times
     for concept in concepts:
         intent = concept[0]
         extent = concept[1]
-        spike_times = np.array([st % winlen for st in intent])
-        conc.append((intent, spike_times, extent, len(extent)))
+        additional_measures.append((len(extent), len(intent)))
 
     # by default, select all elements in conc to be returned in the output
-    selected = [True for _ in conc]
+    selected = [True] * len(concepts)
     # scan all conc and their subsets
-    for id1, (conc1, s_times1, winds1, count1) in enumerate(conc):
-        for id2, (conc2, s_times2, winds2, count2) in enumerate(conc):
-            if not selected[id1]:
-                break
-            if id1 == id2:
+    for id1, id2 in combinations(range(len(concepts)), r=2):
+        # immediately continue if both concepts have already been rejected
+        if not selected[id1] and not selected[id2]:
+            continue
+
+        intent1, extent1, *_ = concepts[id1]
+        intent2, extent2, *_ = concepts[id2]
+        occ1, size1 = additional_measures[id1]
+        occ2, size2 = additional_measures[id2]
+        dur2 = max(np.array(intent2) % winlen)
+
+        # Collecting all the possible distances between the windows
+        # of the two concepts
+        time_diff_all = np.array(
+            [w2 - w1 for w2 in extent2 for w1 in extent1])
+        # sort time differences by ascending absolute value
+        time_diff_sorting = np.argsort(np.abs(time_diff_all))
+        sorted_time_diff, sorted_time_diff_occ = np.unique(
+            time_diff_all[time_diff_sorting],
+            return_counts=True)
+        # only consider time differences that are smaller than winlen
+        # and that correspond to intersections that occur at least min_occ times
+        time_diff_mask = np.logical_and(
+                            np.abs(sorted_time_diff) < winlen,
+                            sorted_time_diff_occ >= min_occ)
+        # Rescaling the spike times to realign to real time
+        for time_diff in sorted_time_diff[time_diff_mask]:
+            intent1_new = [t_old - time_diff for t_old in intent1]
+            # if intent1 and intent2 are disjoint, skip this step
+            if not (set(intent1_new) & set(intent2)):
                 continue
-            # Collecting all the possible distances between the windows
-            # of the two concepts
-            time_diff_all = np.array(
-                [w2 - w1 for w2 in winds2 for w1 in winds1])
-            sorted_time_diff = np.unique(
-                time_diff_all[np.argsort(np.abs(time_diff_all))])
-            # Rescaling the spike times to realign to real time
-            for time_diff in sorted_time_diff[
-                    np.abs(sorted_time_diff) < winlen]:
-                conc1_new = [
-                    t_old - time_diff for t_old in conc1]
-                # if conc1 is  of conc2 are disjoint or they have both been
-                # already de-selected, skip the step
-                if set(conc1_new) == set(
-                        conc2) and selected[id1] and selected[id2]:
-                    selected[id2] = False
-                    break
-                if not set(conc1_new) & set(conc2):
-                    continue
-                if not selected[id1]:
-                    continue
-                if not selected[id2]:
-                    continue
-                if set(conc1_new).issuperset(conc2) and count2 \
-                        - count1 + h_subset_filtering < min_occ:
-                    selected[id2] = False
-                    break
-                if set(conc2).issuperset(conc1_new) and count1 \
-                        - count2 + h_subset_filtering < min_occ:
-                    selected[id1] = False
-                    break
-                if len(excluded) == 0:
-                    break
-                # Test the case conc1 is a superset of conc2
-                if set(conc1_new).issuperset(conc2):
-                    supp_diff = count2 - count1 + h_subset_filtering
-                    size1, size2 = len(conc1_new), len(conc2)
-                    size_diff = size1 - size2 + k_superset_filtering
-                    # 2d spectrum case
-                    if len(excluded[0]) == 2:
-                        # Determine whether the subset (conc2)
-                        # should be rejected
-                        # according to the test for excess occurrences
-                        reject_sub = (size2, supp_diff) in excluded \
-                            or supp_diff < min_occ
-                        # Determine whether the superset (conc1_new) should be
-                        # rejected according to the test for excess items
-                        reject_sup = (size_diff, count1) in excluded \
-                            or size_diff < min_spikes
-                    # 3d spectrum case
-                    if len(excluded[0]) == 3:
-                        # Determine whether the subset (conc2)
-                        # should be rejected
-                        # according to the test for excess occurrences
-                        len_sub = max(
-                            np.abs(np.diff(np.array(conc2) % winlen)))
-                        reject_sub = (size2, supp_diff, len_sub) in excluded \
-                            or supp_diff < min_occ
-                        # Determine whether the superset (conc1_new) should be
-                        # rejected according to the test for excess items
-                        len_sup = max(
-                            np.abs(np.diff(np.array(conc1_new) % winlen)))
-                        reject_sup = (size_diff, count1, len_sup) in excluded \
-                            or size_diff < min_spikes
-                    # Reject the superset and/or the subset accordingly:
-                    if reject_sub and not reject_sup:
-                        selected[id2] = False
-                        break
-                    if reject_sup and not reject_sub:
-                        selected[id1] = False
-                        break
-                    if reject_sub and reject_sup:
-                        if (size1 - l_covered_spikes) * \
-                                count1 >= (size2 - l_covered_spikes) * count2:
-                            selected[id2] = False
-                            break
-                        selected[id1] = False
-                        break
-                    # if both sets are significant given the other, keep both
-                    continue
-                elif set(conc2).issuperset(conc1_new):
-                    supp_diff = count1 - count2 + h_subset_filtering
-                    size1, size2 = len(conc1_new), len(conc2)
-                    size_diff = size2 - size1 + k_superset_filtering
-                    # 2d spectrum case
-                    if len(excluded[0]) == 2:
-                        # Determine whether the subset (conc2) should be
-                        # rejected according to the test for excess occurrences
-                        reject_sub = (size2, supp_diff) in excluded \
-                            or supp_diff < min_occ
-                        # Determine whether the superset (conc1_new) should be
-                        # rejected according to the test for excess items
-                        reject_sup = (size_diff, count1) in excluded \
-                            or size_diff < min_spikes
-                    # 3d spectrum case
-                    elif len(excluded[0]) == 3:
-                        # Determine whether the subset (conc2) should be
-                        # rejected according to the test for excess occurrences
-                        len_sub = max(
-                            np.abs(np.diff(np.array(conc1) % winlen)))
-                        reject_sub = (size2, supp_diff, len_sub) in excluded \
-                            or supp_diff < min_occ
-                        # Determine whether the superset (conc1_new) should be
-                        # rejected according to the test for excess items
-                        len_sup = max(
-                            np.abs(np.diff(np.array(conc2) % winlen)))
+            size1 = len(intent1_new)
+            dur1 = max(np.array(intent1_new) % winlen)
+            # TODO: pre-check, otherwise the difference cannot
+            #       possibly be in ns_sgnt
+            #       DUPLICATION
+            #       this does not depend on the existence of surrogates
+            #       and could always be performed
+            #       add the superset filtering in the same manner
+            if set(intent2).issuperset(intent1_new) and occ1 \
+                    - occ2 + h_subset_filtering < min_occ:
+                selected[id1] = False
+                break
+            # Test the case intent1 is a superset of intent2
+            if set(intent1_new).issuperset(intent2):
+                reject1, reject2 = _perform_combined_filtering(
+                    occ_superset=occ1,
+                    size_superset=size1,
+                    dur_superset=dur1,
+                    occ_subset=occ2,
+                    size_subset=size2,
+                    dur_subset=dur2,
+                    spectrum=spectrum,
+                    ns_sgnt=ns_sgnt,
+                    h_subset_filtering=h_subset_filtering,
+                    k_superset_filtering=k_superset_filtering,
+                    l_covered_spikes=l_covered_spikes,
+                    min_spikes=min_spikes,
+                    min_occ=min_occ)
 
-                        reject_sup = (size_diff, count1, len_sup) in excluded \
-                            or size_diff < min_spikes
-                    # Reject the superset and/or the subset accordingly:
-                    if reject_sub and not reject_sup:
-                        selected[id1] = False
-                        break
-                    if reject_sup and not reject_sub:
-                        selected[id2] = False
-                        break
-                    if reject_sub and reject_sup:
-                        if (size1 - l_covered_spikes) * \
-                                count1 >= (size2 - l_covered_spikes) * count2:
-                            selected[id2] = False
-                            break
-                        selected[id1] = False
-                        break
-                    # if both sets are significant given the other, keep both
-                    continue
-                else:
-                    size1, size2 = len(conc1_new), len(conc2)
-                    inter_size = len(set(conc1_new) & set(conc2))
-                    # 2d spectrum case
-                    if len(excluded[0]) == 2:
-                        reject_1 = (size1 - inter_size + k_superset_filtering,
-                                    count1) in excluded
-                        reject_1 = reject_1 or \
-                            (size1 - inter_size + k_superset_filtering)\
-                            < min_spikes
-                        reject_2 = (size2 - inter_size + k_superset_filtering,
-                                    count2) in excluded
-                        reject_2 = reject_2 or \
-                            (size1 - inter_size + k_superset_filtering) \
-                            < min_spikes
-                    # 3d spectrum case
-                    if len(excluded[0]) == 3:
-                        len_1 = max(
-                            np.abs(np.diff(np.array(conc1_new) % winlen)))
-                        len_2 = max(
-                            np.abs(np.diff(np.array(conc2) % winlen)))
-                        reject_1 = (size1 - inter_size + k_superset_filtering,
-                                    count1, len_1) in excluded
-                        reject_1 = reject_1 or \
-                            (size1 - inter_size + k_superset_filtering) \
-                            < min_spikes
-                        reject_2 = (size2 - inter_size + k_superset_filtering,
-                                    count2, len_2) in excluded
-                        reject_2 = reject_2 or \
-                            (size1 - inter_size + k_superset_filtering) \
-                            < min_spikes
+                selected[id1] &= not reject1
+                selected[id2] &= not reject2
 
-                    # Reject accordingly:
-                    if reject_2 and not reject_1:
-                        selected[id2] = False
-                        break
-                    if reject_1 and not reject_2:
-                        selected[id1] = False
-                        break
-                    if reject_1 and reject_2:
-                        if (size1 - l_covered_spikes) * \
-                                count1 >= (size2 - l_covered_spikes) * count2:
-                            selected[id2] = False
-                            break
-                        selected[id1] = False
-                        break
-                    # if both sets are significant given the other, keep both
-                    continue
+            elif set(intent2).issuperset(intent1_new):
+                reject2, reject1 = _perform_combined_filtering(
+                    occ_superset=occ2,
+                    size_superset=size2,
+                    dur_superset=dur2,
+                    occ_subset=occ1,
+                    size_subset=size1,
+                    dur_subset=dur1,
+                    spectrum=spectrum,
+                    ns_sgnt=ns_sgnt,
+                    h_subset_filtering=h_subset_filtering,
+                    k_superset_filtering=k_superset_filtering,
+                    l_covered_spikes=l_covered_spikes,
+                    min_spikes=min_spikes,
+                    min_occ=min_occ)
+
+                selected[id1] &= not reject1
+                selected[id2] &= not reject2
+            else:
+                reject_1 = _superset_filter(
+                               occ_superset=occ1,
+                               size_superset=size1,
+                               dur_superset=dur1,
+                               size_subset=size2,
+                               spectrum=spectrum,
+                               ns_sgnt=ns_sgnt,
+                               k_superset_filtering=k_superset_filtering,
+                               min_spikes=min_spikes)
+                reject_2 = _superset_filter(
+                               occ_superset=occ2,
+                               size_superset=size2,
+                               dur_superset=dur2,
+                               size_subset=size1,
+                               spectrum=spectrum,
+                               ns_sgnt=ns_sgnt,
+                               k_superset_filtering=k_superset_filtering,
+                               min_spikes=min_spikes)
+                # Reject accordingly:
+                if reject_1 and reject_2:
+                    reject_1, reject_2 = _covered_spikes_criterion(
+                                             occ_superset=occ1,
+                                             size_superset=size1,
+                                             occ_subset=occ2,
+                                             size_subset=size2,
+                                             l_covered_spikes=l_covered_spikes)
+
+                selected[id1] &= not reject1
+                selected[id2] &= not reject2
 
     # Return the selected concepts
     return [p for i, p in enumerate(concepts) if selected[i]]
+
+
+def _perform_combined_filtering(occ_superset,
+                                size_superset,
+                                dur_superset,
+                                occ_subset,
+                                size_subset,
+                                dur_subset,
+                                spectrum,
+                                ns_sgnt,
+                                h_subset_filtering,
+                                k_superset_filtering,
+                                l_covered_spikes,
+                                min_spikes,
+                                min_occ):
+    """
+    perform combined filtering
+    (see pattern_set_reduction)
+    """
+    reject_subset = _subset_filter(occ_superset=occ_superset,
+                                   occ_subset=occ_subset,
+                                   size_subset=size_subset,
+                                   dur_subset=dur_subset,
+                                   spectrum=spectrum,
+                                   ns_sgnt=ns_sgnt,
+                                   h_subset_filtering=h_subset_filtering,
+                                   min_occ=min_occ)
+    reject_superset = _superset_filter(occ_superset=occ_superset,
+                                       size_superset=size_superset,
+                                       dur_superset=dur_superset,
+                                       size_subset=size_subset,
+                                       spectrum=spectrum,
+                                       ns_sgnt=ns_sgnt,
+                                       k_superset_filtering=k_superset_filtering,
+                                       min_spikes=min_spikes)
+    # Reject the superset and/or the subset accordingly:
+    if reject_superset and reject_subset:
+        reject_superset, reject_subset = _covered_spikes_criterion(
+                                             occ_superset=occ_superset,
+                                             size_superset=size_superset,
+                                             occ_subset=occ_subset,
+                                             size_subset=size_subset,
+                                             l_covered_spikes=l_covered_spikes)
+    return reject_superset, reject_subset
+
+
+def _subset_filter(occ_superset, occ_subset, size_subset, dur_subset, spectrum,
+                   ns_sgnt=[], h_subset_filtering=0, min_occ=2):
+    """
+    perform subset filtering
+    (see pattern_set_reduction)
+    """
+    occ_diff = occ_subset - occ_superset + h_subset_filtering
+    if spectrum == '#':
+        signature_to_test = (size_subset, occ_diff)
+    elif spectrum == '3d#':
+        signature_to_test = (size_subset, occ_diff, dur_subset)
+    reject_subset = occ_diff < min_occ or signature_to_test in ns_sgnt
+    return reject_subset
+
+
+def _superset_filter(occ_superset, size_superset, dur_superset, size_subset,
+                     spectrum, ns_sgnt=[], k_superset_filtering=0, min_spikes=2):
+    """
+    perform superset filtering
+    (see pattern_set_reduction)
+    """
+    size_diff = size_superset - size_subset + k_superset_filtering
+    if spectrum == '#':
+        signature_to_test = (size_diff, occ_superset)
+    elif spectrum == '3d#':
+        signature_to_test = (size_diff, occ_superset, dur_superset)
+    reject_superset = size_diff < min_spikes or signature_to_test in ns_sgnt
+    return reject_superset
+
+
+def _covered_spikes_criterion(occ_superset,
+                              size_superset,
+                              occ_subset,
+                              size_subset,
+                              l_covered_spikes):
+    """
+    evaluate covered spikes criterion
+    (see pattern_set_reduction)
+    """
+    reject_superset = True
+    reject_subset = True
+    score_superset = (size_superset - l_covered_spikes) * occ_superset
+    score_subset = (size_subset - l_covered_spikes) * occ_subset
+    if score_superset >= score_subset:
+        reject_subset = False
+    else:
+        reject_superset = False
+    return reject_superset, reject_subset
 
 
 def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
@@ -2055,24 +2100,24 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
     # Initializing list containing all the patterns
     t_start = t_start.rescale(binsize.units)
     output = []
-    for conc in concepts:
+    for concept in concepts:
         # Vocabulary for each of the patterns, containing:
         # - The pattern expressed in form of Itemset, each spike in the pattern
         # is represented as spiketrain_id * winlen + bin_id
         # - The ids of the windows in which the pattern occurred in discretized
         # time (binning)
-        output_dict = {'itemset': conc[0], 'windows_ids': conc[1]}
+        output_dict = {'itemset': concept[0], 'windows_ids': concept[1]}
         # Bins relative to the sliding window in which the spikes of patt fall
-        bin_ids_unsort = np.array(conc[0]) % winlen
+        bin_ids_unsort = np.array(concept[0]) % winlen
         order_bin_ids = np.argsort(bin_ids_unsort)
         bin_ids = bin_ids_unsort[order_bin_ids]
         # id of the neurons forming the pattern
         output_dict['neurons'] = list(np.array(
-            conc[0])[order_bin_ids] // winlen)
+            concept[0])[order_bin_ids] // winlen)
         # Lags (in binsizes units) of the pattern
         output_dict['lags'] = (bin_ids - bin_ids[0])[1:] * binsize
         # Times (in binsize units) in which the pattern occurs
-        output_dict['times'] = sorted(conc[1]) * binsize + t_start
+        output_dict['times'] = sorted(concept[1]) * binsize + t_start
         # If None is given in input to the pval spectrum the pvalue
         # is set to -1 (pvalue spectrum not available)
         # pattern dictionary appended to the output
@@ -2086,7 +2131,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
             # to be in the first bin (see concepts_mining, _build_context and
             # _fpgrowth), it is the the position of the latest spike.
             duration = bin_ids[-1]
-            sgnt = (len(conc[0]), len(conc[1]), duration)
+            sgnt = (len(concept[0]), len(concept[1]), duration)
             output_dict['signature'] = sgnt
             # p-value assigned to the pattern from the pvalue spectrum
             try:
@@ -2094,7 +2139,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
             except KeyError:
                 output_dict['pvalue'] = 0.0
         elif spectrum == '#':
-            sgnt = (len(conc[0]), len(conc[1]))
+            sgnt = (len(concept[0]), len(concept[1]))
             output_dict['signature'] = sgnt
             # p-value assigned to the pattern from the pvalue spectrum
             try:
