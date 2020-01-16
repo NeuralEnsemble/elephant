@@ -35,7 +35,8 @@ extensions = [
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
     'matplotlib.sphinxext.plot_directive',
-    'numpydoc']
+    'numpydoc',
+    'nbsphinx']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -79,7 +80,7 @@ version = '.'.join(release.split('.')[:-1])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -100,6 +101,10 @@ pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
+
+# Only execute Jupyter notebooks that have no evaluated cells
+nbsphinx_execute = 'auto'
+nbsphinx_kernel_name = 'python3'
 
 # Required to automatically create a summary page for each function listed in
 # the autosummary fields of each module.

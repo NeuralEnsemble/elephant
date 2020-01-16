@@ -24,8 +24,14 @@ Explain
     import matplotlib.pyplot as plt
     plt.plot([1,2,3],[4,5,6])
 
-    
-Tutorials
----------
 
-Link to a tutorial
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/statistics>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc?filepath=doc/tutorials/statistics.ipynb
+
