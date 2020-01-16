@@ -739,6 +739,20 @@ def jointJ_window_analysis(
               shape: different pattern hash --> 0-axis
                   different window --> 1-axis
 
+    Raises
+    ------
+    ValueError
+        If `data` is not in the format, specified above.
+    NotImplementedError
+        If `binary` is not True. The method works only with binary matrices at
+        the moment.
+
+    Warns
+    -----
+    UserWarning
+        The ratio between `winsize` and `binsize` is not an integer.
+        The ratio between `winstep` and `binsize` is not an integer.
+
     """
     if not isinstance(data[0][0], neo.SpikeTrain):
         raise ValueError(
@@ -759,15 +773,13 @@ def jointJ_window_analysis(
 
     if winsize_bintime * binsize != winsize:
         warnings.warn(
-            "ratio between winsize and binsize is not integer -- "
-            "the actual number for window size is " + str(
-                winsize_bintime * binsize))
+            "The ratio between winsize ({winsize}) and binsize ({binsize}) is "
+            "not an integer".format(winsize=winsize, binsize=binsize))
 
     if winstep_bintime * binsize != winstep:
         warnings.warn(
-            "ratio between winstep and binsize is not integer -- "
-            "the actual number for window size is " + str(
-                winstep_bintime * binsize))
+            "The ratio between winstep ({winstep}) and binsize ({binsize}) is "
+            "not an integer".format(winstep=winstep, binsize=binsize))
 
     num_tr, N = np.shape(data)[:2]
 
@@ -781,8 +793,8 @@ def jointJ_window_analysis(
         if binary is True:
             mat = bs.to_bool_array()
         else:
-            raise ValueError(
-                "The method only works on the zero_one matrix at the moment")
+            raise NotImplementedError(
+                "The method works only with binary matrices at the moment")
         mat_tr_unit_spt[tr] = mat
 
     num_win = len(t_winpos)
