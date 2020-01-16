@@ -38,8 +38,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     amp : list of pq.Quantity
         Corresponding spike-triggered amplitudes.
     times : list of pq.Quantity
-        A list of times corresponding to the signal. Times correspond to the
-        spike times.
+        A list of times corresponding to the signal. They correspond to the
+        times of the `neo.SpikeTrain` referred by the list item.
 
     Raises
     ------
@@ -56,6 +56,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     >>> import neo
     >>> import elephant
     >>> import quantities as pq
+    >>> import numpy as np
     ...
     >>> f_osc = 20. * pq.Hz
     >>> f_sampling = 1 * pq.ms
@@ -66,10 +67,10 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     ...     f_sampling.rescale(pq.s).magnitude) * pq.s
     >>> analogsignal = neo.AnalogSignal(
     ...     np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
-    ...     units=pq.mV, t_start=0 * pq.ms, sampling_period=f_sampling)
-    >>> spiketrain = elephant.spike_train_generation.
+    ...     units=pq.mV, t_start=0*pq.ms, sampling_period=f_sampling)
+    >>> spiketrain = (elephant.spike_train_generation.
     ...     homogeneous_poisson_process(
-    ...     50 * pq.Hz, t_start=0.0 * pq.ms, t_stop=tlen.rescale(pq.ms))
+    ...     50 * pq.Hz, t_start=0.0*pq.ms, t_stop=tlen.rescale(pq.ms)))
     ...
     >>> phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
     ...     elephant.signal_processing.hilbert(analogsignal),
