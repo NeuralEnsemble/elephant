@@ -367,7 +367,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     The Epanechnikov kernel under full consideration of its axioms has a half
     width of :math:`\\sqrt{5}`. Ignoring one axiom also the respective kernel
-    with half width = 1 can be called Epanechnikov kernel ([1]_).
+    with half width = 1 can be called Epanechnikov kernel [1]_.
     However, arbitrary width of this type of kernel is here preferred to be
     called 'Epanechnikov-like' kernel.
 
@@ -378,6 +378,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     References
     ----------
     .. [1] https://de.wikipedia.org/wiki/Epanechnikov-Kern
+
     """
     @property
     def min_cutoff(self):
@@ -393,6 +394,8 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         """
+        Notes
+        -----
         For Epanechnikov-like kernels, integration of its density within
         the boundaries 0 and :math:`b`, and then solving for :math:`b` leads
         to the problem of finding the roots of a polynomial of third order.
