@@ -31,8 +31,8 @@ def inherit_docstring(fromfunc, sep=""):
 
     References
     ----------
-    .. [1] http://stackoverflow.com/questions/13741998/
-           is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
+    .. [1] http://stackoverflow.com/questions/13741998/is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
+
     """
     def _decorator(func):
         parent_doc = fromfunc.__doc__
@@ -184,9 +184,9 @@ class Kernel(object):
         Raises
         ------
         ValueError
-            If fraction was chosen too close to one, such that in combination
-            with integral approximation errors the calculation of a boundary
-            was not possible.
+            If `fraction` was chosen too close to one, such that in
+            combination with integral approximation errors the calculation of
+            a boundary was not possible.
 
         """
         self._check_fraction(fraction)
@@ -211,7 +211,8 @@ class Kernel(object):
     def _check_fraction(self, fraction):
         """
         Checks the input variable of the method
-        `.boundary_enclosing_area_fraction` for validity of type and value.
+        :attr:`boundary_enclosing_area_fraction` for validity of type and
+        value.
 
         Parameters
         ----------
@@ -263,11 +264,14 @@ class Kernel(object):
         In the case of symmetric kernels, this method is overwritten in the
         class `SymmetricKernel`, where it returns True, hence leaving the
         here returned value False for the asymmetric kernels.
-        TODO: write the behavior for each case in the subclasses
+
         Returns
         -------
         bool
-            False
+            True in classes `SymmetricKernel`, `RectangularKernel`,
+            `TriangularKernel`, `EpanechnikovLikeKernel`, `GaussianKernel`,
+            and `LaplacianKernel`.
+            False in classes `Kernel`, `ExponentialKernel`, and `AlphaKernel`.
         """
         return False
 
@@ -275,15 +279,14 @@ class Kernel(object):
 class SymmetricKernel(Kernel):
     """
     Base class for symmetric kernels.
-
-    Derived from:
     """
-    __doc__ += Kernel.__doc__
 
     def is_symmetric(self):
         return True
 
 
+# TODO: Danylo will take a look on docstrings of new class attributes/
+# properties (e.g., min_cutoff)
 class RectangularKernel(SymmetricKernel):
     """
     Class for rectangular kernels.
@@ -299,14 +302,7 @@ class RectangularKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
-    TODO: Danylo will take a look on docstrings of new class attributes/
-    properties
-
-    Derived from:
     """
-    # TODO: remove all __doc_ + and derived from
-    __doc__ += SymmetricKernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = np.sqrt(3.0)
@@ -325,7 +321,7 @@ class RectangularKernel(SymmetricKernel):
 
 class TriangularKernel(SymmetricKernel):
     """
-    Class for triangular kernels
+    Class for triangular kernels.
 
     .. math::
         K(t) = \\left\\{ \\begin{array}{ll} \\frac{1}{\\tau} (1
@@ -339,10 +335,7 @@ class TriangularKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
-    Derived from:
     """
-    __doc__ += SymmetricKernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = np.sqrt(6.0)
@@ -363,7 +356,7 @@ class TriangularKernel(SymmetricKernel):
 
 class EpanechnikovLikeKernel(SymmetricKernel):
     """
-    Class for epanechnikov-like kernels
+    Class for epanechnikov-like kernels.
 
     .. math::
         K(t) = \\left\\{\\begin{array}{ll} (3 /(4 d)) (1 - (t / d)^2),
@@ -374,8 +367,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     The Epanechnikov kernel under full consideration of its axioms has a half
     width of :math:`\\sqrt{5}`. Ignoring one axiom also the respective kernel
-    with half width = 1 can be called Epanechnikov kernel.
-    ( https://de.wikipedia.org/wiki/Epanechnikov-Kern )
+    with half width = 1 can be called Epanechnikov kernel ([1]_).
     However, arbitrary width of this type of kernel is here preferred to be
     called 'Epanechnikov-like' kernel.
 
@@ -383,10 +375,10 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
-    Derived from:
+    References
+    ----------
+    .. [1] https://de.wikipedia.org/wiki/Epanechnikov-Kern
     """
-    __doc__ += SymmetricKernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = np.sqrt(5.0)
@@ -405,8 +397,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         the boundaries 0 and :math:`b`, and then solving for :math:`b` leads
         to the problem of finding the roots of a polynomial of third order.
         The implemented formulas are based on the solution of this problem
-        given in https://en.wikipedia.org/wiki/Cubic_function,
-        where the following 3 solutions are given:
+        given in [1]_, where the following 3 solutions are given:
             - :math:`u_1 = 1`: Solution on negative side
             - :math:`u_2 = \\frac{-1 + i\\sqrt{3}}{2}`: Solution for larger
               values than zero crossing of the density
@@ -414,6 +405,11 @@ class EpanechnikovLikeKernel(SymmetricKernel):
               values than zero crossing of the density
         The solution :math:`u_3` is the relevant one for the problem at hand,
         since it involves only positive area contributions.
+
+        References
+        ----------
+        .. [1] https://en.wikipedia.org/wiki/Cubic_function
+
         """
         self._check_fraction(fraction)
         # Python's complex-operator cannot handle quantities, hence the
@@ -432,7 +428,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
 class GaussianKernel(SymmetricKernel):
     """
-    Class for gaussian kernels
+    Class for gaussian kernels.
 
     .. math::
         K(t) = (\\frac{1}{\\sigma \\sqrt{2 \\pi}})
@@ -444,10 +440,7 @@ class GaussianKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
-    Derived from:
     """
-    __doc__ += SymmetricKernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
@@ -466,7 +459,7 @@ class GaussianKernel(SymmetricKernel):
 
 class LaplacianKernel(SymmetricKernel):
     """
-    Class for laplacian kernels
+    Class for laplacian kernels.
 
     .. math::
         K(t) = \\frac{1}{2 \\tau} \\exp(-|\\frac{t}{\\tau}|)
@@ -477,10 +470,7 @@ class LaplacianKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
-    Derived from:
     """
-    __doc__ += SymmetricKernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
@@ -503,7 +493,7 @@ class LaplacianKernel(SymmetricKernel):
 
 class ExponentialKernel(Kernel):
     """
-    Class for exponential kernels
+    Class for exponential kernels.
 
     .. math::
         K(t) = \\left\\{\\begin{array}{ll} (1 / \\tau) \\exp{(-t / \\tau)},
@@ -512,10 +502,7 @@ class ExponentialKernel(Kernel):
 
     with :math:`\\tau = \\sigma`.
 
-    Derived from:
     """
-    __doc__ += Kernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
@@ -539,7 +526,7 @@ class ExponentialKernel(Kernel):
 
 class AlphaKernel(Kernel):
     """
-    Class for alpha kernels
+    Class for alpha kernels.
 
     .. math::
         K(t) = \\left\\{\\begin{array}{ll} (1 / \\tau^2)
@@ -552,12 +539,9 @@ class AlphaKernel(Kernel):
     integral as a function of the area under the alpha kernel function
     cannot be given. Hence in this case the value of the boundary is
     determined by kernel-approximating numerical integration, inherited
-    from the Kernel class.
+    from the `Kernel` class.
 
-    Derived from:
     """
-    __doc__ += Kernel.__doc__
-
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
