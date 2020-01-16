@@ -520,15 +520,16 @@ def cross_correlation_histogram(
         The central bin of the histogram represents correlation at zero
         delay (instantaneous correlation).
         Offset bins correspond to correlations at a delay equivalent
-        to the difference between the spike times of `binned_st1` and those of
-        `binned_st2`: an entry at positive lags corresponds to a spike in
-        `binned_st2` following a spike in `binned_st1` bins to the right, and
-        an entry at negative lags corresponds to a spike in `binned_st1`
-        following a spike in `binned_st2`.
+        to the difference between the spike times of `binned_st1` 
+        ("reference neuron") and those of`binned_st2` ("target neruon"): an 
+        entry at positive lags corresponds to a spike in `binned_st2` following
+        a spike in `binned_st1` bins to the right, and an entry at negative 
+        lags corresponds to a spike in `binned_st1` following a spike in
+        `binned_st2`.
 
         To illustrate this definition, consider the two spike trains:
-        `binned_st1`: 0 0 0 0 1 0 0 0 0 0 0
-        `binned_st2`: 0 0 0 0 0 0 0 1 0 0 0
+        `binned_st1` ('reference neuron') : 0 0 0 0 1 0 0 0 0 0 0
+        `binned_st2` ('target neuron')    : 0 0 0 0 0 0 0 1 0 0 0
         Here, the CCH will have an entry of 1 at lag h=+3.
 
         Consistent with the definition of AnalogSignals, the time axis
@@ -636,33 +637,29 @@ def cross_correlation_histogram(
         cch_mode = window
         # cch compute only for the entries that completely overlap
     elif window == 'valid':
-        
-        if (binned_st1.t_start <  binned_st2.t_start) and (binned_st1.t_stop <  binned_st2.t_stop):
-            raise ValueError("One spiketrain must be located within the other for valid mode")
-        if (binned_st2.t_start <  binned_st1.t_start) and (binned_st2.t_stop <  binned_st1.t_stop):
-            raise ValueError("One spiketrain must be located within the other for valid mode")            
         # cch computed only for valid entries
         # Assign left and right edges of the cch
-    
-        if binned_st1.t_start >= binned_st2.t_start:    
+        # case st1 is smaller than st2:
+        if (binned_st1.num_bins < binned_st2.num_bins): 
+            
             left_edge = (binned_st2.t_start.simplified.magnitude - 
                          binned_st1.t_start.simplified.magnitude)/\
                          binned_st1.binsize.simplified.magnitude
-        
-        else:
-            left_edge = (binned_st2.t_stop.simplified.magnitude - 
-                         binned_st1.t_stop.simplified.magnitude)/\
-                         binned_st1.binsize.simplified.magnitude
-            
-        if binned_st1.t_stop >= binned_st2.t_stop:    
-            right_edge = (binned_st2.t_start.simplified.magnitude - 
-                          binned_st1.t_start.simplified.magnitude)/\
-                          binned_st1.binsize.simplified.magnitude
-        
-        else:
+
             right_edge = (binned_st2.t_stop.simplified.magnitude - 
                           binned_st1.t_stop.simplified.magnitude)/\
                           binned_st1.binsize.simplified.magnitude
+                          
+        # case st2 is smaller than st1
+        elif binned_st1.num_bins >= binned_st2.num_bins:
+            
+            left_edge = (binned_st2.t_stop.simplified.magnitude - 
+                         binned_st1.t_stop.simplified.magnitude)/\
+                         binned_st1.binsize.simplified.magnitude
+                         
+            right_edge = (binned_st2.t_start.simplified.magnitude - 
+                          binned_st1.t_start.simplified.magnitude)/\
+                          binned_st1.binsize.simplified.magnitude 
         
         right_edge = int(right_edge)
         left_edge = int(left_edge)
