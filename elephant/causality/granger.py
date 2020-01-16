@@ -1,4 +1,31 @@
-# TODO: Write module documentation for Granger causality module
+# -*- coding: utf-8 -*-
+"""
+This module provides function to estimate causal influences of signals on each
+other.
+
+.. include:: causality-overview.rst
+
+.. current_module elephant.causality
+
+Overview of Functions
+---------------------
+
+Time-series Granger causality
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: statistics/
+
+    pairwise_granger
+    trivariate_granger
+    point_process_granger
+
+
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+
+
 """
 Granger causality is a method to determine causal influence of one signal on another based on autoregressive modelling. It
 was developed by Nobel prize laureate Clive Granger and has been adopted in various numerical fields ever since [1]. In its
@@ -25,4 +52,9 @@ neural population activity. J Neurophysiol 102:614-635.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+
 # TODO: Pairwise Granger implementation
+def pairwise_granger(lfp_signals, order_method='BIC',
+                     statistical_method='F-ratio'):
+    pass
+
