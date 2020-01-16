@@ -11,7 +11,9 @@ sphinx:
 python:
     version: 3.7
     install:
-        - requirements: requirements.txt
-        - requirements: requirements-docs.txt
-        - requirements: requirements-tutorials.txt
+        - method: pip
+          path: .
+          extra_requirements:
+            - docs
+            - tutorials
         
