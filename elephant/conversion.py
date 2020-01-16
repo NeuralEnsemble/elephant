@@ -376,7 +376,7 @@ class BinnedSpikeTrain(object):
     TypeError
         If `spiketrains` is an np.ndarray with dimensionality different than
         NxM or
-        if type of `num_bins` is not an `Int` or `num_bins` < 0.
+        if type of `num_bins` is not an `int` or `num_bins` < 0.
     ValueError
         When number of bins calculated from `t_start`, `t_stop` and `binsize`
         differs from provided `num_bins` or
@@ -498,7 +498,7 @@ class BinnedSpikeTrain(object):
         Raises
         ------
         TypeError
-            If type of `num_bins` is not an `Int`.
+            If type of `num_bins` is not an `int`.
         ValueError
             When `t_stop` is smaller than `t_start`.
 
@@ -569,7 +569,7 @@ class BinnedSpikeTrain(object):
         AttributeError
             If there is an insufficient number of parameters.
         TypeError
-            If `num_bins` is not an `Int` or is <0.
+            If `num_bins` is not an `int` or is <0.
         ValueError
             If an inconsistency regarding the parameters appears, e.g.
             `t_start` > `t_stop`.
