@@ -20,6 +20,7 @@ import elephant.kernels as kernels
 import warnings
 
 
+# TODO: insert example here
 def cv(*args, **kwargs):
     """
     Wrapper for `scipy.stats.variation` function.
@@ -30,7 +31,6 @@ def cv(*args, **kwargs):
 
     Examples
     --------
-    TODO: insert example here
 
     """
     return scipy.stats.variation(*args, **kwargs)
@@ -165,14 +165,15 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
 
 def fanofactor(spiketrains):
-    """
+    r"""
     Evaluates the empirical Fano factor F of the spike counts of
     a list of `neo.SpikeTrain` objects.
 
     Given the vector v containing the observed spike counts (one per
     spike train) in the time window [t0, t1], F is defined as:
 
-                        F := var(v)/mean(v).
+    .. math::
+        F := \frac{var(v)}{mean(v)}
 
     The Fano factor is typically computed for spike trains representing the
     activity of the same neuron over different trials. The higher F, the
@@ -205,16 +206,16 @@ def fanofactor(spiketrains):
 
 
 def lv(v, with_nan=False):
-    """
+    r"""
     Calculate the measure of local variation LV for a sequence of time
     intervals between events.
 
     Given a vector v containing a sequence of intervals, the LV is defined as:
 
-    .math $$ LV := \\frac{1}{N}\\sum_{i=1}^{N-1}
-
-                   \\frac{3(isi_i-isi_{i+1})^2}
-                          {(isi_i+isi_{i+1})^2} $$
+    .. math::
+        LV := \frac{1}{N} \sum_{i=1}^{N-1}
+                          \frac{3(isi_i-isi_{i+1})^2}
+                          {(isi_i+isi_{i+1})^2}
 
     The LV is typically computed as a substitute for the classical coefficient
     of variation for sequences of events which include some (relatively slow)
@@ -284,17 +285,17 @@ def lv(v, with_nan=False):
 
 
 def cv2(v, with_nan=False):
-    """
+    r"""
     Calculate the measure of CV2 for a sequence of time intervals between 
     events.
 
     Given a vector v containing a sequence of intervals, the CV2 is defined
     as:
 
-    .math $$ CV2 := \\frac{1}{N}\\sum_{i=1}^{N-1}
-
-                   \\frac{2|isi_{i+1}-isi_i|}
-                          {|isi_{i+1}+isi_i|} $$
+    .. math::
+        CV2 := \frac{1}{N} \sum{i=1}^{N-1}
+                           \frac{2|isi_{i+1}-isi_i|}
+                          {|isi_{i+1}+isi_i|}
 
     The CV2 is typically computed as a substitute for the classical
     coefficient of variation (CV) for sequences of events which include some
@@ -797,15 +798,15 @@ def fftkernel(x, w):
 
     Parameters
     ----------
-    x: np.ndarray
+    x : np.ndarray
         Vector with sample signal.
-    w: float
+    w : float
         Kernel bandwidth (the standard deviation) in unit of the sampling
         resolution of `x`.
 
     Returns
     -------
-    y: np.ndarray
+    y : np.ndarray
         The smoothed signal.
 
     Notes
@@ -868,19 +869,19 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
 
     Parameters
     ----------
-    spiketimes: np.ndarray
+    spiketimes : np.ndarray
         Sequence of spike times (sorted to be ascending).
-    tin: np.ndarray, optional
+    tin : np.ndarray, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
         Default is None.
-    w: np.ndarray, optional
+    w : np.ndarray, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
         If None, `w` is obtained through a golden-section search on a log-exp
         scale.
         Default is None.
-    bootstrap: bool, optional
+    bootstrap : bool, optional
         If True, calculates the 95% confidence interval using Bootstrap.
         Default is False.
 
