@@ -641,6 +641,25 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         
         assert_array_equal(bins, [1,2])    
     
+    def test_cross_correlation_histogram_valid_no_overlap(self):
+        sp1 = neo.SpikeTrain([2.5, 3.5, 4.5, 6.5]*pq.s, t_start = 1*pq.s,
+                             t_stop = 7*pq.s)
+        sp2 = neo.SpikeTrain([3.5,5.5,6.5,7.5,8.5]*pq.s + 6*pq.s, 
+                             t_start = 8*pq.s, t_stop = 15*pq.s)
+        
+        sp1_binned = conv.BinnedSpikeTrain(sp1, binsize = 1*pq.s)
+        sp2_binned = conv.BinnedSpikeTrain(sp2, binsize = 1*pq.s)
+        
+        cch, bins = sc.cross_correlation_histogram(
+                sp1_binned, sp2_binned, window = "valid")
+        
+        cch_np = np.correlate(sp1_binned.to_array()[0],
+                              sp2_binned.to_array()[0], "valid")
+
+        assert_array_almost_equal(np.ravel(cch.magnitude), cch_np[::-1])
+        
+        assert_array_equal(bins, [7,8])    
+        
 class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
 
     def setUp(self):
