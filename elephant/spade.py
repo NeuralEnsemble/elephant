@@ -95,9 +95,9 @@ except ImportError:  # pragma: no cover
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
           max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
           stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes', psr_param=None,
-          output_format='patterns'):
-    """
+          alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
+          psr_param=None, output_format='patterns'):
+    r"""
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
     input. The data are discretized with a temporal resolution equal binsize
     in a sliding window of winlen*binsize milliseconds.
@@ -224,10 +224,28 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
 
     Returns
     -------
-    The output depends on the value of the parameter output_format.
+    output: dict
+        Dictionary containing the following keys:
+        - 'patterns':
+            if output_format is 'patterns':
+            output['patterns']: list
+            List of dictionaries. Each dictionary corresponds to a patterns
+            and has the following keys:
+                neurons: array containing the indices of the neurons of the
+                    pattern.
+                lags: array containing the lags (integers corresponding to
+                    the number of bins) between the spikes of the patterns.
+                    The first lag is always assumed to be 0 and corresponds
+                    to the first spike ['times'] array containing the
+                    times.
+                signature: tuple containing two integers:
+                    (number of spikes of the patterns,
+                    number of occurrences of the pattern)
+                pvalue: the p-value corresponding to the pattern.
+                    If n_surr==0 the p-values are set to 0.0.
 
-    If output_format is 'concepts':
-        output: dict
+            if output_format is 'concepts':
+            output['patterns']: dict
             Dictionary containing the following keys:
             patterns: tuple
                 Each element of the tuple corresponds to a pattern and is
@@ -235,56 +253,40 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
                     (spikes in the pattern, occurrences of the patterns)
                 For details see function concepts_mining().
 
-                If n_subsets>0:
-                    (spikes in the pattern, occurrences of the patterns,
-                    (intensional stability, extensional stability))
-                    corresponding pvalue
+        - 'pvalue_spectrum' (only if n_surr > 0 and n_subsets == 0):
+            output['pvalue_spectrum']: list
+            contains a list of signatures in tuples format
+            (size, number of occurrences, duration (only if spectrum=='3d#')),
+            corresponding p-value)
 
-            The patterns are filtered depending on the parameters in input:
-            If stability_thresh==None and alpha==1:
-                output['patterns'] contains all the candidates patterns
-                (all concepts mined with the fca algorithm)
-            If stability_thresh!=None and alpha==1:
-                output contains only patterns candidates with:
-                    intensional stability>stability_thresh[0] or
-                    extensional stability>stability_thresh[1]
-            If stability_thresh==None and alpha!=1:
-                output contains only pattern candidates with a signature
-                significant in respect the significance level alpha corrected
-            If stability_thresh!=None and alpha!=1:
-                output['patterns'] contains only pattern candidates with a
-                signature significant in respect the significance level alpha
-                corrected and such that:
-                    intensional stability>stability_thresh[0] or
-                    extensional stability>stability_thresh[1]
-                In addition, output['non_sgnf_sgnt'] contains the list of
-                non-significant signature for the significance level alpha.
-            If n_surr>0:
-                output['pvalue_spectrum'] contains a tuple of signatures and
-                the corresponding p-value.
+        - 'non_sgnf_sgnt': list
+            Non significant signatures of pvalue_spectrum
 
-    # TODO: rewrite output documentation
-    If output_format is 'patterns':
-        output: list
-            List of dictionaries. Each dictionary corresponds to a patterns and
-            has the following keys:
-                neurons: array containing the indices of the neurons of the
-                    pattern.
-                lags: array containing the lags (integers corresponding to the
-                    number of bins) between the spikes of the patterns. The
-                    first lag is always assumed to be 0 and corresponds to the
-                    first spike ['times'] array containing the times.
-            (integers corresponding to the bin idx) of the occurrences of the
-            patterns
-                signature: tuple containing two integers:
-                    (number of spikes of the patterns,
-                    number of occurrences of the pattern)
-            pvalue: the p-value corresponding to the pattern. If n_surr==0 the
-                p-values are set to 0.0.
+        if n_subsets > 0:
+        (spikes in the pattern, occurrences of the patterns,
+                (intensional stability, extensional stability))
+                corresponding pvalue
+        The patterns are filtered depending on the parameters in input:
+        If stability_thresh==None and alpha==1:
+            output['patterns'] contains all the candidates patterns
+            (all concepts mined with the fca algorithm)
+        If stability_thresh!=None and alpha==1:
+            output contains only patterns candidates with:
+                intensional stability>stability_thresh[0] or
+                extensional stability>stability_thresh[1]
+        If stability_thresh==None and alpha!=1:
+            output contains only pattern candidates with a signature
+            significant in respect the significance level alpha corrected
+        If stability_thresh!=None and alpha!=1:
+            output['patterns'] contains only pattern candidates with a
+            signature significant in respect the significance level alpha
+            corrected and such that:
+                intensional stability>stability_thresh[0] or
+                extensional stability>stability_thresh[1]
 
     Notes
     -----
-    If detected, this function will utilize MPI to parallelize the analysis.
+    If detected, this function will use MPI to parallelize the analysis.
 
     Example
     -------
@@ -306,7 +308,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     [2] Quaglio, P., Yegenoglu, A., Torre, E., Endres, D. M., & Gruen, S.(2017)
      Detection and Evaluation of Spatio-Temporal Spike Patterns in Massively
      Parallel Spike Train Data with SPADE.
-    Frontiers in Computational Neuroscience, 11.
+     Frontiers in Computational Neuroscience, 11.
+    [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019).
+    3d-SPADE: Significance evaluation of spatio-temporal patterns of various
+    temporal extents. Biosystems, 185, 104022.
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -316,9 +321,10 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
 
     if output_format not in ['concepts', 'patterns']:
         raise AttributeError("The output_format value has to be"
-                         "'patterns' or 'concepts'")
+                             "'patterns' or 'concepts'")
     if surr_method not in surr.SURR_METHODS:
-        raise AttributeError('specified surr_method (=%s) not valid' % surr_method)
+        raise AttributeError(
+            'specified surr_method (=%s) not valid' % surr_method)
 
     time_mining = time.time()
     if rank == 0 or n_subsets > 0:
@@ -470,21 +476,21 @@ def concepts_mining(data, binsize, winlen, min_spikes=2, min_occ=2,
 
     Returns
     -------
-    mining_results: list
+    mining_results: numpy array
         If report == 'a':
-            All the pattern candidates (concepts) found in the data. Each
-            pattern is represented as a tuple containing
+            numpy array of all the pattern candidates (concepts) found in the
+            data. Each pattern is represented as a tuple containing
             (spike IDs, discrete times (window position)
             of the  occurrences of the pattern). The spike IDs are defined as:
             spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
             bin_id in [0, winlen].
         If report == '#':
-             The pattern spectrum is represented as a list of triplets each
-             formed by:
+             The pattern spectrum is represented as a  numpy array of triplets
+             each formed by:
                 (pattern size, number of occurrences, number of patterns)
         If report == '3d#':
-             The pattern spectrum is represented as a list of quadruplets each
-             formed by:
+             The pattern spectrum is represented as a numpy array of
+             quadruplets each formed by:
                 (pattern size, number of occurrences, difference between last
                 and first spike of the pattern, number of patterns)
     rel_matrix : sparse.coo_matrix
@@ -597,7 +603,8 @@ def _build_context(binary_matrix, winlen):
     binary_matrix.col = binary_matrix.col[indices]
     # out of all window positions
     # get all non-empty first bins
-    unique_cols, unique_col_idx = np.unique(binary_matrix.col, return_index=True)
+    unique_cols, unique_col_idx = np.unique(
+        binary_matrix.col, return_index=True)
     unique_col_idx = np.concatenate((unique_col_idx, [len(binary_matrix.col)]))
     windows_row = []
     windows_col = []
@@ -717,19 +724,19 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     Returns
     --------
     If report == 'a':
-        All the pattern candidates (concepts) found in the data. Each
-        pattern is represented as a tuple containing
+        numpy array of all the pattern candidates (concepts) found in the data.
+        Each pattern is represented as a tuple containing
         (spike IDs, discrete times (window position)
         of the  occurrences of the pattern). The spike IDs are defined as:
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(data)] and
         bin_id in [0, winlen].
     If report == '#':
-         The pattern spectrum is represented as a list of triplets each
+         The pattern spectrum is represented as a numpy array of triplets each
          formed by:
             (pattern size, number of occurrences, number of patterns)
     If report == '3d#':
-         The pattern spectrum is represented as a list of quadruplets each
-         formed by:
+         The pattern spectrum is represented as a numpy array of quadruplets
+         each formed by:
             (pattern size, number of occurrences, difference between last
             and first spike of the pattern, number of patterns)
 
@@ -751,7 +758,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         spec_matrix = np.zeros((max_z + 1, max_c + 1, winlen))
     spectrum = []
     # check whether all transactions are identical
-    # in that case FIM would not find anything, 
+    # in that case FIM would not find anything,
     # so we need to create the output manually
     # for optimal performance,
     # we do the check sequentially and immediately break
@@ -1143,7 +1150,8 @@ def pvalue_spectrum(data, binsize, winlen, dither, n_surr, min_spikes=2,
     if n_surr <= 0:
         raise ValueError('n_surr has to be >0')
     if surr_method not in surr.SURR_METHODS:
-        raise AttributeError('specified surr_method (=%s) not valid' % surr_method)
+        raise AttributeError(
+            'specified surr_method (=%s) not valid' % surr_method)
 
     len_partition = n_surr // size  # length of each MPI task
     len_remainder = n_surr % size
@@ -1311,7 +1319,12 @@ def _stability_filter(c, stab_thr):
 
 def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     """
-    #TODO: write documentation
+    The function filters the pvalue spectrum based on the number of
+    the statistical tests to be done. Only the entries of the pvalue spectrum
+    that coincide with concepts found in the original data are kept.
+    Moreover, entries of the pvalue spectrum with a value of 1 (all surrogates
+    datasets containing at least one mined pattern with that signature)
+    are discarded as well and considered trivial.
     Parameters
     ----------
     pv_spec: List[List]
@@ -1321,7 +1334,7 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
 
     Returns
     -------
-    np.array
+    mask: np.array
         An array of boolean values, indicating if a signature of p-value
         spectrum is also in the mined concepts of the original data.
     """
@@ -1354,7 +1367,6 @@ def test_signature_significance(pv_spec, concepts, alpha,
 
     Parameters
     ----------
-    # TODO: add documentation for concepts and winlen
     pv_spec: list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
@@ -1363,6 +1375,7 @@ def test_signature_significance(pv_spec, concepts, alpha,
     alpha: float
         Significance level of the statistical test
     winlen: int
+        Size (number of bins) of the sliding window used for the analysis
     corr: str
         Method used for testing and adjustment of pvalues.
         Can be either the full name or initial letters.
