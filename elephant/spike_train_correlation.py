@@ -45,22 +45,34 @@ class CrossCorrHist(object):
         self.binned_st2 = binned_st2
         self.window = window
 
-    def correlate_memory(self):
+    def correlate_memory(self, cch_mode):
         """
         Slow, but memory safe mode.
 
-        Returns
+        Return
         -------
         cross_corr : np.ndarray
             Cross-correlation of `self.binned_st` and `self.binned_st2`.
         """
+        binned_st1 = self.binned_st1
+        binned_st2 = self.binned_st2
+        
         st1_spmat = self.binned_st1._sparse_mat_u
         st2_spmat = self.binned_st2._sparse_mat_u
         left_edge, right_edge = self.window
-
+                    
         # extract the nonzero column indices of 1-d matrices
-        st1_bin_idx_unique = st1_spmat.nonzero()[1]
+        st1_bin_idx_unique = st1_spmat.nonzero()[1] 
         st2_bin_idx_unique = st2_spmat.nonzero()[1]
+        
+        # needs to correct the bins for the valid mode, because the spiketrains
+        # have unequal t_start
+        if cch_mode == "valid":
+            if binned_st1.num_bins > binned_st2.num_bins:
+                st2_bin_idx_unique = st2_bin_idx_unique + right_edge           
+            
+            if binned_st1.num_bins <= binned_st2.num_bins:
+                st2_bin_idx_unique = st2_bin_idx_unique + left_edge           
 
         st1_spmat = st1_spmat.data
         st2_spmat = st2_spmat.data
@@ -68,9 +80,11 @@ class CrossCorrHist(object):
         # Initialize the counts to an array of zeroes,
         # and the bin IDs to integers
         # spanning the time axis
-        cross_corr = np.zeros(np.abs(left_edge) + np.abs(right_edge) + 1)
+        nr_lags = right_edge - left_edge + 1
+        cross_corr = np.zeros(nr_lags)   
+        
         # Compute the CCH at lags in left_edge,...,right_edge only
-        for idx, i in enumerate(st1_bin_idx_unique):
+        for idx, i in enumerate(st1_bin_idx_unique): # 
             il = np.searchsorted(st2_bin_idx_unique, left_edge + i)
             ir = np.searchsorted(st2_bin_idx_unique,
                                  right_edge + i, side='right')
@@ -78,7 +92,7 @@ class CrossCorrHist(object):
             assert ((timediff >= left_edge) & (
                 timediff <= right_edge)).all(), 'Not all the '
             'entries of cch lie in the window'
-            cross_corr[timediff + np.abs(left_edge)] += (
+            cross_corr[timediff - left_edge] += (
                 st1_spmat[idx] * st2_spmat[il:ir])
             st2_bin_idx_unique = st2_bin_idx_unique[il:]
             st2_spmat = st2_spmat[il:]
@@ -458,7 +472,8 @@ def cross_correlation_histogram(
     ----------
     binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
         Binned spike trains to cross-correlate. The two spike trains must have
-        same `t_start` and `t_stop`.
+        same `t_start` and `t_stop` for the window parameter "full" and
+        list.
     window : {'valid', 'full', list}, optional
         String or list of integers.
         ‘full’: This returns the cross-correlation at each point of overlap,
@@ -675,7 +690,7 @@ def cross_correlation_histogram(
     cch_builder = CrossCorrHist(binned_st1, binned_st2,
                                 window=(left_edge, right_edge))
     if method == 'memory':
-        cross_corr = cch_builder.correlate_memory()
+        cross_corr = cch_builder.correlate_memory(cch_mode=cch_mode)
     else:
         cross_corr = cch_builder.correlate_speed(cch_mode=cch_mode)
         
