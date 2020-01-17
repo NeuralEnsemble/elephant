@@ -230,11 +230,7 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         if verbose:
             print()
         tic = time.time()
-
-        if (np.fmod(iter_id, freq_ll) == 0) or (iter_id <= 2):
-            get_ll = True
-        else:
-            get_ll = False
+        get_ll = (np.fmod(iter_id, freq_ll) == 0) or (iter_id <= 2)
 
         # ==== E STEP =====
         if not np.isnan(ll):

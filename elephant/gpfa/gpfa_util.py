@@ -391,18 +391,18 @@ def make_precomp(seqs, xDim):
         precomp[i]['difSq'] = Tdif ** 2
         precomp[i]['Tall'] = Tall
     # find unique numbers of trial lengths
-    Tu = np.unique(Tall)
+    trial_lengths_num_unique = np.unique(Tall)
     # Loop once for each state dimension (each GP)
     for i in range(xDim):
-        precomp_Tu = np.empty(len(Tu), dtype=[(
+        precomp_Tu = np.empty(len(trial_lengths_num_unique), dtype=[(
             'nList', np.object), ('T', np.int), ('numTrials', np.int),
             ('PautoSUM', np.object)])
-        for j in range(len(Tu)):
-            T = Tu[j]
-            precomp_Tu[j]['nList'] = np.where(Tall == T)[0]
-            precomp_Tu[j]['T'] = T
+        for j, trial_len_num in enumerate(trial_lengths_num_unique):
+            precomp_Tu[j]['nList'] = np.where(Tall == trial_len_num)[0]
+            precomp_Tu[j]['T'] = trial_len_num
             precomp_Tu[j]['numTrials'] = len(precomp_Tu[j]['nList'])
-            precomp_Tu[j]['PautoSUM'] = np.zeros((T, T))
+            precomp_Tu[j]['PautoSUM'] = np.zeros((trial_len_num,
+                                                  trial_len_num))
             precomp[i]['Tu'] = precomp_Tu
 
     # at this point the basic precomp is built.  The previous steps
@@ -417,7 +417,7 @@ def make_precomp(seqs, xDim):
     # Loop once for each state dimension (each GP)
     for i in range(xDim):
         # Loop once for each trial length (each of Tu)
-        for j in range(len(Tu)):
+        for j in range(len(trial_lengths_num_unique)):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
                 precomp[i]['Tu'][j]['PautoSUM'] += seqs[n]['VsmGP'][:, :, i] \
@@ -557,7 +557,7 @@ def segment_by_trial(seqs, x, fn):
 
     """
     if np.sum(seqs['T']) != x.shape[1]:
-        raise (ValueError, 'size of X incorrect.')
+        raise ValueError('size of X incorrect.')
 
     dtype_new = [(i, seqs[i].dtype) for i in seqs.dtype.names]
     dtype_new.append((fn, np.object))
