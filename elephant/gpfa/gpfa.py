@@ -1,55 +1,62 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
- [1] for neural trajectory visualization of parallel spike trains.
+ [1] for neural trajectory visualization of parallel spike trains. GPFA applies
+ factor analysis (FA) time-binned spike count data to reduce the dimensionality
+ and at the same time smoothes the resulting low-dimensional trajectories by
+ fitting a Gaussian process (GP) model to them.
 
 The input consists of a set of trials (Y), each containing a list of spike
 trains (N neurons). The output is the projection (X) of the data in space
 of pre-chosen dimension x_dim < N.
 
-Under the assumption of a linear relation between the latent
-variable X and the actual data Y in addition to a noise term (i.e.,
-Y = C * X + d + Gauss(0,R)), the projection corresponds to the conditional
-probability E[X|Y].
+Under the assumption of a linear relation between the latent variable X and the
+actual data Y in addition to a noise term (i.e.,
+:math:`Y = C * X + d + Gauss(0,R)`), the projection corresponds to the
+conditional probability E[X|Y].
 
 A Gaussian process (X) of dimension x_dim < N is adopted to extract smooth
 neural trajectories. The parameters (C, d, R) are estimated from the data using
-factor analysis technique. GPFA is simply a set of Factor Analyzers (FA),
-linked together in the low dimensional space by a Gaussian Process (GP).
+factor analysis technique.
 
 Internally, the analysis consists of the following steps:
 
-0) bin the data to get a sequence of N dimensional vectors for each time
-   bin (cf., `gpfa_util.get_seq`), and choose the reduced dimension x_dim
+0) bin the data to get a sequence of N dimensional vectors of spike counts for
+   each time bin, and choose the reduced dimension x_dim
 
 1) expectation maximization for the parameters C, d, R and the time-scale of
-   the gaussian process, using all the trials provided as input (cf.,
-   `gpfa_core.em`)
+   the Gaussian process, using all the trials provided as input (cf.,
+   `gpfa_core.em()`)
 
-2) projection of single trial in the low dimensional space (cf.,
-   `gpfa_core.exact_inference_with_ll`)
+2) projection of single trials in the low dimensional space (cf.,
+   `gpfa_core.exact_inference_with_ll()`)
 
 3) orthonormalization of the matrix C and the corresponding subspace:
-   (cf., `gpfa_util.orthogonalize`)
+   (cf., `gpfa_core.orthonormalize()`)
 
 
-There are two principle scenarios of using the GPFA analysis. In the first
-scenario, only one single dataset is available. The parameters that describe
-the transformation are first extracted from the data using the method fit(),
-and the orthonormal basis is constructed. Then the same data is projected into
- this basis using the method transform(). This analysis
-is performed in an instance of the class GPFA().
+There are two principle scenarios of using the GPFA analysis, both of which can
+be performed in an instance of the GPFA() class.
 
-In the second scenario, both a training and a test data set is available. Here,
-the parameters are estimated from the training data. In a second step the test
-data is projected into the non-orthonormal space obtained from the training
-data, and then orthonormalized. From this scenario, it is possible to perform a
-cross-validation between training and test data sets. This analysis is
-performed by exectuing first `extract_trajectory()` on the training data,
-followed by `postprocess()` on the training and test datasets.
+In the first scenario, only one single dataset is used to fit the model and to
+extract the neural trajectories. The parameters that describe the
+transformation are first extracted from the data using the fit() method of the
+GPFA class. Then the same data is projected into the orthonormal basis using
+the method transform(). The fit_transform() method can be used to perform these
+two steps at once.
 
+In the second scenario, a single dataset is split into training and test
+datasets. Here, the parameters are estimated from the training data. Then the
+test data is projected into the low-dimensional space previously obtained from
+the training data. This analysis is performed by executing first the fit()
+method on the training data, followed by the transform() method on the test
+dataset.
 
-References:
+The GPFA class is compatible to the cross-validation functions of
+`sklearn.model_selection`, such that users can perform cross-validation to
+search for a set of parameters yielding best performance using these functions.
 
+References
+----------
 The code was ported from the MATLAB code based on Byron Yu's implementation.
 The original MATLAB code is available at Byron Yu's website:
 https://users.ece.cmu.edu/~byronyu/software.shtml
@@ -69,80 +76,6 @@ import quantities as pq
 import sklearn
 
 from elephant.gpfa import gpfa_core, gpfa_util
-
-
-def postprocess(params_est, seqs):
-    """
-    Orthonormalization and other cleanup.
-
-    Parameters
-    ----------
-
-    params_est : dict
-        First return value of extract_trajectory() on the training data set.
-        Estimated model parameters.
-        When the GPFA method is used, following parameters are contained
-            covType: {'rbf', 'tri', 'logexp'}
-                type of GP covariance
-                Currently, only 'rbf' is supported.
-            gamma: ndarray of shape (1, #latent_vars)
-                related to GP timescales by 'bin_width / sqrt(gamma)'
-            eps: ndarray of shape (1, #latent_vars)
-                GP noise variances
-            d: ndarray of shape (#units, 1)
-                observation mean
-            C: ndarray of shape (#units, #latent_vars)
-                mapping between the neuronal data space and the latent variable
-                space
-            R: ndarray of shape (#units, #latent_vars)
-                observation noise covariance
-
-    seqs: np.recarray
-        Contains the embedding of the training data into the latent variable
-        space.
-        Data structure, whose n-th entry (corresponding to the n-th
-        experimental trial) has fields
-            * T: int
-                number of timesteps
-            * y: ndarray of shape (#units, #bins)
-                neural data
-            * xsm: ndarray of shape (#latent_vars, #bins)
-                posterior mean of latent variables at each time bin
-            * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                posterior covariance between latent variables at each
-                timepoint
-            * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
-                posterior covariance over time for each latent variable
-
-    Returns
-    -------
-
-    params_est : dict
-        Estimated model parameters, including `Corth`, obtained by
-        orthonormalizing the columns of C.
-    seqs_train : np.recarray
-        Training data structure that contains the new field `xorth`,
-        the orthonormalized neural trajectories.
-    seqs_test : np.recarray
-        Test data structure that contains orthonormalized neural
-        trajectories in `xorth`, obtained using `params_est`.
-        When no test dataset is given, None is returned.
-
-
-    Raises
-    ------
-    ValueError
-        If `fit_info['kernSDList'] != kern_sd`.
-
-    """
-    C = params_est['C']
-    X = np.hstack(seqs['xsm'])
-    Xorth, Corth, _ = gpfa_util.orthogonalize(X, C)
-    seqs = gpfa_util.segment_by_trial(seqs, Xorth, 'xorth')
-
-    params_est['Corth'] = Corth
-
-    return params_est, seqs
 
 
 class GPFA(sklearn.base.BaseEstimator):
@@ -203,18 +136,18 @@ class GPFA(sklearn.base.BaseEstimator):
             R: ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
-    fit_info: dict
+    fit_info : dict
         Information of the fitting process and the parameters used there:
-            * iteration_time: A list containing the runtime for each iteration
-                step in the EM algorithm.
-            * log_likelihood: float, maximized likelihood obtained in the
-                E-step of the EM algorithm.
-            * bin_size: int, Width of the bins.
-            * cvf: int, number for cross-validation folding
-                Default is 0 (no cross-validation).
-            * has_spikes_bool: Indicates if a neuron has any spikes across
-                trials.
-            * method: str, Method name.
+        iteration_time : list
+            containing the runtime for each iteration step in the EM algorithm.
+        log_likelihood : float
+            maximized likelihood obtained in the E-step of the EM algorithm.
+        bin_size: int
+            Width of the bins.
+        has_spikes_bool : ndarray
+            Indicates if a neuron has any spikes across trials.
+        method: str
+            Method name.
 
     Examples
     --------
@@ -265,12 +198,13 @@ class GPFA(sklearn.base.BaseEstimator):
         Parameters
         ----------
         data : list of list of Spiketrain objects
+            Spike train data to be transformed to latent variables.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that data[l][n] is the
             Spiketrain of neuron n in trial l. Note that the number and order
             of Spiketrains objects per trial must be fixed such that data[l][n]
-            and data[k][n] refer to the same spike generator for any choice of
-            l,k and n.
+            and data[k][n] refer to spike trains of the same neuron for any
+            choice of l,k and n.
         verbose : bool, optional
             specifies whether to display status messages (default: False)
 
@@ -298,7 +232,7 @@ class GPFA(sklearn.base.BaseEstimator):
                              "and 2-axis spike times")
 
     def _format_training_data(self, data):
-        seqs = gpfa_util.get_seq(data, self.bin_size)
+        seqs = gpfa_util.get_seqs(data, self.bin_size)
         # Remove inactive units based on training set
         self.has_spikes_bool = (np.hstack(seqs['y']).mean(1) != 0)
         for seq in seqs:
@@ -323,7 +257,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         # The following does the heavy lifting.
         self.params_est, self.fit_info = gpfa_core.fit(
-            seq_train=seqs_train,
+            seqs_train=seqs_train,
             x_dim=self.x_dim,
             bin_width=self.bin_size.rescale('ms').magnitude,
             min_var_frac=self.min_var_frac,
@@ -342,38 +276,49 @@ class GPFA(sklearn.base.BaseEstimator):
 
     def transform(self, data, returned_data=['xorth']):
         """
-        Apply dimensionality reduction to the given data with the estimated
-        parameters
+        Obtain trajectories of neural activity in a low-dimensional latent
+        variable space by inferring the posterior mean of the obtained GPFA
+        model and applying an orthonormalization of the latent variable space
 
         Parameters
         ----------
         data : list of list of Spiketrain objects
+            Spike train data to be transformed to latent variables.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that data[l][n] is the
             Spiketrain of neuron n in trial l. Note that the number and order
             of Spiketrains objects per trial must be fixed such that data[l][n]
-            and data[k][n] refer to the same spike generator for any choice of
-            l,k and n.
+            and data[k][n] refer to spike trains of the same neuron for any
+            choice of l,k and n.
+        returned_data : a list of str
+            The dimensionality reduction transform generates the following
+            resultant data:
+               'xorth': orthonormalized posterior mean of latent variable
+               'xsm': posterior mean of latent variable before
+               orthonormalization
+               'Vsm': posterior covariance between latent variables
+               'VsmGP': posterior covariance over time for each latent variable
+               'y': neural data used to estimate the GPFA model parameters
+            `returned_data` specifies which data are to be returned.
+            Default is ['xorth'].
 
         Returns
         -------
-        seqs: numpy.recarray
-            Contains the embedding of the data into the latent variable space.
-            Data structure, whose n-th entry (corresponding to the n-th
-            experimental trial) has fields
-                * T: int
-                    number of timesteps
-                * y: ndarray of shape (#units, #bins)
-                    neural data
-                * xsm: ndarray of shape (#latent_vars, #bins)
-                    posterior mean of latent variables at each time bin
-                * Vsm: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                    posterior covariance between latent variables at each
-                    timepoint
-                * VsmGP: ndarray of shape (#bins, #bins, #latent_vars)
-                    posterior covariance over time for each latent variable
-                * xorth: ndarray of shape (#latent_vars, #bins)
-                    trajectory in the orthonormalized space
+        output : numpy.ndarray or dict
+            When the length of `returned_data` is one, a single ndarray
+            containing the requested data is returned. Otherwise, a dict of
+            multiple ndarrays with the keys identical to the data names in
+            `returned_data` is returned.
+            N-th entry of each ndarray is a ndarray of the following shape,
+            specific to each data type, containing the corresponding data for
+            the n-th trial:
+                `xorth`: ndarray of shape (#latent_vars, #bins)
+                `xsm`: ndarray of shape (#latent_vars, #bins)
+                `y`: ndarray of shape (#units, #bins)
+                `Vsm`: ndarray of shape (#latent_vars, #latent_vars, #bins)
+                `VsmGP`: ndarray of shape (#bins, #bins, #latent_vars)
+            Note that #bins can vary across trials reflecting the trial
+            durations in the provided data.
 
         Raises
         ------
@@ -386,7 +331,7 @@ class GPFA(sklearn.base.BaseEstimator):
         for data_name in returned_data:
             if data_name not in self.valid_data_names:
                 raise ValueError("`returned_data` can only have the following entries: {}".format(self.valid_data_names))
-        seqs = gpfa_util.get_seq(data, self.bin_size)
+        seqs = gpfa_util.get_seqs(data, self.bin_size)
         for seq in seqs:
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return self._transform(seqs, returned_data)
@@ -395,7 +340,7 @@ class GPFA(sklearn.base.BaseEstimator):
         seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est, get_ll=True)
         self.fit_info['log_likelihood'] = ll
         self.T = seqs['T']
-        self.params_est, seqs = postprocess(self.params_est, seqs)
+        self.params_est, seqs = gpfa_core.orthonormalize(self.params_est, seqs)
         if len(returned_data) == 1:
             return seqs[returned_data[0]]
         else:

@@ -189,9 +189,9 @@ class GPFATestCase(unittest.TestCase):
 
     def test_get_seq_sqrt(self):
         data = [self.data2[0]]
-        seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
-        seqs_not_sqrt = gpfa_util.get_seq(data, bin_size=self.bin_size,
-                                          use_sqrt=False)
+        seqs = gpfa_util.get_seqs(data, bin_size=self.bin_size)
+        seqs_not_sqrt = gpfa_util.get_seqs(data, bin_size=self.bin_size,
+                                           use_sqrt=False)
         self.assertEqual(seqs['T'], seqs_not_sqrt['T'])
         self.assertEqual(seqs['y'].shape, seqs_not_sqrt['y'].shape)
 
@@ -200,13 +200,13 @@ class GPFATestCase(unittest.TestCase):
         assert same_data is self.data2
 
     def test_cut_trials_zero_length(self):
-        seqs = gpfa_util.get_seq(self.data2, bin_size=self.bin_size)
+        seqs = gpfa_util.get_seqs(self.data2, bin_size=self.bin_size)
         with self.assertRaises(ValueError):
             gpfa_util.cut_trials(seqs, seg_length=0)
 
     def test_cut_trials_same_length(self):
         data = [self.data2[0]]
-        seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
+        seqs = gpfa_util.get_seqs(data, bin_size=self.bin_size)
         seg_length = seqs[0]['T']
         seqs_cut = gpfa_util.cut_trials(seqs, seg_length=seg_length)
         assert_array_almost_equal(seqs[0]['y'], seqs_cut[0]['y'])
@@ -214,7 +214,7 @@ class GPFATestCase(unittest.TestCase):
     @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_cut_trials_larger_length(self):
         data = [self.data2[0]]
-        seqs = gpfa_util.get_seq(data, bin_size=self.bin_size)
+        seqs = gpfa_util.get_seqs(data, bin_size=self.bin_size)
         seg_length = seqs[0]['T'] + 1
         with self.assertWarns(UserWarning):
             gpfa_util.cut_trials(seqs, seg_length=seg_length)

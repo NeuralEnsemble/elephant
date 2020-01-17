@@ -16,13 +16,12 @@ import scipy as sp
 from elephant.conversion import BinnedSpikeTrain
 
 
-def get_seq(data, bin_size, use_sqrt=True):
+def get_seqs(data, bin_size, use_sqrt=True):
     """
     Converts the data into a rec array using internally BinnedSpikeTrain.
 
     Parameters
     ----------
-
     data : list of list of Spiketrain objects
         The outer list corresponds to trials and the inner list corresponds to
         the neurons recorded in that trial, such that data[l][n] is the
@@ -36,27 +35,27 @@ def get_seq(data, bin_size, use_sqrt=True):
     use_sqrt: bool
         Boolean specifying whether or not to use square-root transform on
         spike counts (see original paper for motivation).
-        Default is  True
+        Default: True
 
     Returns
     -------
-
-    seq
+    seq : np.recarray
         data structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
-            * T: (1 x 1) number of timesteps
-            * y: (yDim x T) neural data
+        T : int
+            number of timesteps in the trial
+        y : (yDim, T) ndarray
+            neural data
 
     Raises
     ------
     ValueError
         if `bin_size` is not a pq.Quantity.
-
     """
     if not isinstance(bin_size, pq.Quantity):
         raise ValueError("'bin_size' must be of type pq.Quantity")
 
-    seq = []
+    seqs = []
     for dat in data:
         sts = dat
         binned_sts = BinnedSpikeTrain(sts, binsize=bin_size)
@@ -64,18 +63,16 @@ def get_seq(data, bin_size, use_sqrt=True):
             binned = np.sqrt(binned_sts.to_array())
         else:
             binned = binned_sts.to_array()
-        seq.append(
+        seqs.append(
             (binned_sts.num_bins, binned))
-    seq = np.array(seq,
-                   dtype=[('T', np.int),
-                          ('y', 'O')])
+    seqs = np.array(seqs, dtype=[('T', np.int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width
-    if len(seq) > 0:
-        trials_to_keep = seq['T'] > 0
-        seq = seq[trials_to_keep]
+    if len(seqs) > 0:
+        trials_to_keep = seqs['T'] > 0
+        seqs = seqs[trials_to_keep]
 
-    return seq
+    return seqs
 
 
 def cut_trials(seq_in, seg_length=20):
@@ -87,28 +84,28 @@ def cut_trials(seq_in, seg_length=20):
 
     Parameters
     ----------
-
-    seq_in
-        data structure, whose nth entry (corresponding to
-        the nth experimental trial) has fields
-            * T: (1 x 1) number of timesteps in trial
-            * y: (yDim x T) neural data
+    seq_in : np.recarray
+        data structure, whose nth entry (corresponding to the nth experimental
+        trial) has fields
+        T : int
+            number of timesteps in trial
+        y : (yDim, T) ndarray
+            neural data
 
     seg_length : int
         length of segments to extract, in number of timesteps. If infinite,
         entire trials are extracted, i.e., no segmenting.
-        Default is 20
-
+        Default: 20
 
     Returns
     -------
-
-    seqOut
-        data structure, whose nth entry (corresponding to
-        the nth experimental trial) has fields
-            * segId: segment identifier within trial
-            * T: (1 x 1) number of timesteps in segment
-            * y: (yDim x T) neural data
+    seqOut : np.recarray
+        data structure, whose nth entry (corresponding to the nth experimental
+        trial) has fields
+        T : int
+            number of timesteps in segment
+        y : (yDim, T) ndarray
+            neural data
 
     Raises
     ------
@@ -150,8 +147,6 @@ def cut_trials(seq_in, seg_length=20):
 
         for s, seg_s in enumerate(seg):
             tStart = seg_length * s - cumOL[s]
-
-            seg_s['segId'] = s
             seg_s['y'] = seqIn_n['y'][:, tStart:tStart + seg_length]
 
         seqOut_buff.append(seg)
@@ -191,23 +186,21 @@ def make_k_big(params, n_timesteps):
 
     Parameters
     ----------
-
-    params
+    params : dict
         GPFA model parameters
     n_timesteps : int
         number of timesteps
 
     Returns
     -------
-
-    K_big
+    K_big : ndarray
         GP covariance matrix with dimensions (xDim * T) x (xDim * T).
-                   The (t1, t2) block is diagonal, has dimensions xDim x xDim,
-                   and represents the covariance between the state vectors at
-                   timesteps t1 and t2.  K_big is sparse and striped.
-    K_big_inv
+        The (t1, t2) block is diagonal, has dimensions xDim x xDim, and
+        represents the covariance between the state vectors at timesteps t1 and
+        t2. K_big is sparse and striped.
+    K_big_inv : ndarray
         Inverse of K_big
-    logdet_K_big
+    logdet_K_big : float
         Log determinant of K_big
 
     Raises
@@ -260,19 +253,17 @@ def inv_persymm(M, blk_size):
 
     Parameters
     ----------
-
-    M: numpy.ndarray
-        The block persymmetric matrix to be inverted
-        ((blkSize*T) x (blkSize*T)).
+    M : (blkSize*T, blkSize*T) ndarray
+        The block persymmetric matrix to be inverted.
         Each block is blkSize x blkSize, arranged in a T x T grid.
-    blk_size: int
+    blk_size : int
         Edge length of one block
 
     Returns
     -------
-    invM
-        Inverse of M ((blkSize*T) x (blkSize*T))
-    logdet_M
+    invM : (blkSize*T, blkSize*T) ndarray
+        Inverse of M
+    logdet_M : float
         Log determinant of M
     """
     T = int(M.shape[0] / blk_size)
@@ -312,10 +303,8 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
 
      Parameters
      ----------
-
-     p_in
-        Top half of block persymmetric matrix (xDim*Thalf) x (xDim*T),
-        where Thalf = ceil(T/2)
+     p_in :  (xDim*Thalf, xDim*T) ndarray
+        Top half of block persymmetric matrix, where Thalf = ceil(T/2)
      blk_size : int
         Edge length of one block
      n_blocks : int
@@ -326,9 +315,8 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
 
      Returns
      -------
-
-     Pout
-        Full block persymmetric matrix (xDim*T) x (xDim*T)
+     Pout : (xDim*T, xDim*T) ndarray
+        Full block persymmetric matrix
     """
     if blk_size_vert is None:
         blk_size_vert = blk_size
@@ -351,7 +339,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     return Pout
 
 
-def make_precomp(seq, xDim):
+def make_precomp(seqs, xDim):
     """
     Make the precomputation matrices specified by the GPFA algorithm.
 
@@ -359,16 +347,14 @@ def make_precomp(seq, xDim):
 
     Parameters
     ----------
-
-    seq
+    seqs : np.recarray
         The sequence struct of inferred latents, etc.
     xDim : int
        The dimension of the latent space.
 
     Returns
     -------
-
-    precomp
+    precomp : np.recarray
         The precomp struct will be updated with the posterior covaraince and
         the other requirements.
 
@@ -387,7 +373,7 @@ def make_precomp(seq, xDim):
     Finally, see the notes in the GPFA README.
     """
 
-    Tall = seq['T']
+    Tall = seqs['T']
     Tmax = (Tall).max()
     Tdif = np.tile(np.arange(0, Tmax), (Tmax, 1)).T \
         - np.tile(np.arange(0, Tmax), (Tmax, 1))
@@ -432,9 +418,9 @@ def make_precomp(seq, xDim):
         for j in range(len(Tu)):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
-                precomp[i]['Tu'][j]['PautoSUM'] += seq[n]['VsmGP'][:, :, i] \
-                    + np.outer(
-                    seq[n]['xsm'][i, :], seq[n]['xsm'][i, :])
+                precomp[i]['Tu'][j]['PautoSUM'] += seqs[n]['VsmGP'][:, :, i] \
+                                                   + np.outer(
+                    seqs[n]['xsm'][i, :], seqs[n]['xsm'][i, :])
     return precomp
 
 
@@ -445,20 +431,20 @@ def grad_betgam(p, pre_comp, const):
 
     Parameters
     ----------
-
-    p
+    p : float
         variable with respect to which optimization is performed,
-        where p = log(1 / timescale ^2)
-    pre_comp
+        where :math:`p = log(1 / timescale^2)`
+    pre_comp : np.recarray
         structure containing precomputations
-    const
+    const : dict
         contains hyperparameters
 
     Returns
     -------
-
-    f           - value of objective function E[log P({x},{y})] at p
-    df          - gradient at p
+    f : float
+        value of objective function E[log P({x},{y})] at p
+    df : float
+        gradient at p
     """
     Tall = pre_comp['Tall']
     Tmax = Tall.max()
@@ -506,32 +492,28 @@ def grad_betgam(p, pre_comp, const):
     return f, df
 
 
-def orthogonalize(x, l):
+def orthonormalize(x, l):
     """
-
-    Orthonormalize the columns of the loading matrix and
-    apply the corresponding linear transform to the latent variables.
-
-     yDim: data dimensionality
-     xDim: latent dimensionality
+    Orthonormalize the columns of the loading matrix and apply the
+    corresponding linear transform to the latent variables.
+    In the following description, yDim and xDim refer to data dimensionality
+    and latent dimensionality, respectively.
 
     Parameters
     ----------
-
-    x : np.ndarray
-        Latent variables (xDim x T)
-    l : np.ndarray
-        Loading matrix (yDim x xDim)
+    x :  (xDim, T) ndarray
+        Latent variables
+    l :  (yDim, xDim) ndarray
+        Loading matrix
 
     Returns
     -------
-
-    Xorth
-        Orthonormalized latent variables (xDim x T)
-    Lorth
-        Orthonormalized loading matrix (yDim x xDim)
-    TT
-       Linear transform applied to latent variables (xDim x xDim)
+    Xorth : (xDim, T) ndarray
+        Orthonormalized latent variables
+    Lorth : (yDim, xDim) ndarray
+        Orthonormalized loading matrix
+    TT :  (xDim, xDim) ndarray
+       Linear transform applied to latent variables
     """
     xDim = l.shape[1]
     if xDim == 1:
@@ -548,44 +530,42 @@ def orthogonalize(x, l):
     return Xorth, Lorth, TT
 
 
-def segment_by_trial(seq, x, fn):
+def segment_by_trial(seqs, x, fn):
     """
     Segment and store data by trial.
 
     Parameters
     ----------
-
-    seq
+    seqs : np.recarray
         Data structure that has field T, the number of timesteps
     x : np.ndarray
         Data to be segmented (any dimensionality x total number of timesteps)
-    fn
+    fn : str
         New field name of seq where segments of X are stored
 
     Returns
     -------
-
-    seq_new
+    seqs_new : np.recarray
         Data structure with new field `fn`
 
     Raises
     ------
     ValueError
-        If `seq['T']) != x.shape[1]`.
+        If `seqs['T']) != x.shape[1]`.
 
     """
-    if np.sum(seq['T']) != x.shape[1]:
+    if np.sum(seqs['T']) != x.shape[1]:
         raise (ValueError, 'size of X incorrect.')
 
-    dtype_new = [(i, seq[i].dtype) for i in seq.dtype.names]
+    dtype_new = [(i, seqs[i].dtype) for i in seqs.dtype.names]
     dtype_new.append((fn, np.object))
-    seq_new = np.empty(len(seq), dtype=dtype_new)
-    for dtype_name in seq.dtype.names:
-        seq_new[dtype_name] = seq[dtype_name]
+    seqs_new = np.empty(len(seqs), dtype=dtype_new)
+    for dtype_name in seqs.dtype.names:
+        seqs_new[dtype_name] = seqs[dtype_name]
 
     ctr = 0
-    for n, T in enumerate(seq['T']):
-        seq_new[n][fn] = x[:, ctr:ctr + T]
+    for n, T in enumerate(seqs['T']):
+        seqs_new[n][fn] = x[:, ctr:ctr + T]
         ctr += T
 
-    return seq_new
+    return seqs_new
