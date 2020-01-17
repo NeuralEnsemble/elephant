@@ -162,8 +162,8 @@ def pairwise_granger(signals, order):
     print(var_y)
     coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
 
-    direct_caus_x_y = np.log(var_x[0]/cov_xy[0,0])
-    direct_causy_y_x = np.log(var_y[0]/cov_xy[1,1])
+    directional_causality_x_y = np.log(var_x[0]/cov_xy[0,0])
+    directional_causality_y_x = np.log(var_y[0]/cov_xy[1,1])
 
     cov_determinant = np.linalg.det(cov_xy)
 
@@ -175,4 +175,4 @@ def pairwise_granger(signals, order):
     print(coeffs_xy)
     print(cov_xy)
 
-    return direct_caus_x_y, direct_causy_y_x, inst_caus, tot_interdep
+    return directional_causality_x_y, directional_causality_y_x, inst_caus, tot_interdep
