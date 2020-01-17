@@ -27,7 +27,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     interpolate : bool
         If True, the phases and amplitudes of `hilbert_transform` for spikes
         falling between two samples of signal is interpolated.
-        Otherwise, the closest sample of `hilbert_transform` is used.
+        If False, the closest sample of `hilbert_transform` is used.
 
     Returns
     -------
@@ -38,8 +38,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     amp : list of pq.Quantity
         Corresponding spike-triggered amplitudes.
     times : list of pq.Quantity
-        A list of times corresponding to the signal
-        Corresponding times (corresponds to the spike times).
+        A list of times corresponding to the signal. They correspond to the
+        times of the `neo.SpikeTrain` referred by the list item.
 
     Raises
     ------
@@ -50,23 +50,28 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     Examples
     --------
     Create a 20 Hz oscillatory signal sampled at 1 kHz and a random Poisson
-    spike train:
+    spike train, then calculate spike-triggered phases and amplitudes of the
+    oscillation:
 
+    >>> import neo
+    >>> import elephant
+    >>> import quantities as pq
+    >>> import numpy as np
+    ...
     >>> f_osc = 20. * pq.Hz
     >>> f_sampling = 1 * pq.ms
     >>> tlen = 100 * pq.s
+    ...
     >>> time_axis = np.arange(
     ...     0, tlen.magnitude,
     ...     f_sampling.rescale(pq.s).magnitude) * pq.s
-    >>> analogsignal = AnalogSignal(
+    >>> analogsignal = neo.AnalogSignal(
     ...     np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
-    ...     units=pq.mV, t_start=0 * pq.ms, sampling_period=f_sampling)
-    >>> spiketrain = elephant.spike_train_generation.
+    ...     units=pq.mV, t_start=0*pq.ms, sampling_period=f_sampling)
+    >>> spiketrain = (elephant.spike_train_generation.
     ...     homogeneous_poisson_process(
-    ...     50 * pq.Hz, t_start=0.0 * ms, t_stop=tlen.rescale(pq.ms))
-
-    Calculate spike-triggered phases and amplitudes of the oscillation:
-
+    ...     50 * pq.Hz, t_start=0.0*pq.ms, t_stop=tlen.rescale(pq.ms)))
+    ...
     >>> phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
     ...     elephant.signal_processing.hilbert(analogsignal),
     ...     spiketrain,

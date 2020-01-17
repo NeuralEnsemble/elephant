@@ -51,7 +51,7 @@ def isi(spiketrain, axis=-1):
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
-        Default is the last axis.
+        Default: the last axis.
 
     Returns
     -------
@@ -91,17 +91,17 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         If None, retrieved from the `t_start` attribute of `spiketrain`. If
         that is not present, default to 0. Any value from `spiketrain` below
         this value is ignored.
-        Default is None.
+        Default: None.
     t_stop : float or pq.Quantity, optional
         The stop time to use for the time points.
         If not specified, retrieved from the `t_stop` attribute of
         `spiketrain`. If that is not present, default to the maximum value of
         `spiketrain`. Any value from `spiketrain` above this value is ignored.
-        Default is None.
+        Default: None.
     axis : int, optional
         The axis over which to do the calculation.
         If None, do the calculation over the flattened array.
-        Default is None.
+        Default: None.
 
     Returns
     -------
@@ -231,7 +231,7 @@ def lv(v, with_nan=False):
         np.NaN value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default is True.
+        Default: True.
 
     Returns
     -------
@@ -311,7 +311,7 @@ def cv2(v, with_nan=False):
         np.NaN value and a warning is raised.
         If False, `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default is True.
+        Default: True.
 
     Returns
     -------
@@ -388,22 +388,22 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         calculated according to [1]_ and with this width a gaussian kernel is
         constructed. Automatized calculation of the kernel width is not
         available for other than gaussian kernel shapes.
-        Default is 'auto'.
+        Default: 'auto'.
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
         the kernel, i.e., the considered width of the kernel in terms of
         multiples of the standard deviation sigma.
-        Default is 5.0.
+        Default: 5.0.
     t_start : pq.Quantity, optional
         Start time of the interval used to compute the firing rate.
         If None, `t_start` is assumed equal to `t_start` attribute of
         `spiketrain`.
-        Default is None.
+        Default: None.
     t_stop : pq.Quantity, optional
         End time of the interval used to compute the firing rate (included).
         If None, `t_stop` is assumed equal to `t_stop` attribute of
         `spiketrain`.
-        Default is None.
+        Default: None.
     trim : bool, optional
         If False, the output of the Fast Fourier Transformation being a longer
         vector than the input vector by the size of the kernel is reduced back
@@ -414,7 +414,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         achieved by reducing the length of the output of the Fast Fourier
         Transformation by a total of two times the size of the kernel, and
         `t_start` and `t_stop` are adjusted.
-        Default is False.
+        Default: False.
 
     Returns
     -------
@@ -605,21 +605,21 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         histogram.
         If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
         `t_start`.
-        Default is None.
+        Default: None.
     t_stop : pq.Quantity, optional
         Stop time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
         histogram.
         If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
         `t_stop`.
-        Default is None.
+        Default: None.
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
         * 'counts': spike counts at each bin (as integer numbers)
         * 'mean': mean spike counts per spike train
         * 'rate': mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
-        Default is 'counts'.
+        Default: 'counts'.
     binary : bool, optional
         If True, indicates whether all `neo.SpikeTrain` objects should first
         be binned to a binary representation (using the
@@ -627,7 +627,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         histogram is based on this representation.
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
-        Default is False.
+        Default: False.
 
     Returns
     -------
@@ -874,16 +874,16 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     tin : np.ndarray, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
-        Default is None.
+        Default: None.
     w : np.ndarray, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
         If None, `w` is obtained through a golden-section search on a log-exp
         scale.
-        Default is None.
+        Default: None.
     bootstrap : bool, optional
         If True, calculates the 95% confidence interval using Bootstrap.
-        Default is False.
+        Default: False.
 
     Returns
     -------
