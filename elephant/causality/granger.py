@@ -25,6 +25,7 @@ import numpy as np
 
 # TODO: include AnalogSignal implementation
 # TODO: refactor arguments/variables/function names to the new standard
+# TODO: Unittest for granger
 
 
 def _lag_covariances(time_series, dimension, max_lag):
@@ -49,7 +50,7 @@ def _lag_covariances(time_series, dimension, max_lag):
 
     assert (length >= max_lag), 'maximum lag larger than size of data'
 
-    lag_covs = []
+    lag_covariances = []
     series_mean = time_series.mean(1)
 
     for i in range(max_lag+1):
@@ -57,9 +58,9 @@ def _lag_covariances(time_series, dimension, max_lag):
         for time in range(i, length):
             temp_corr+= np.outer(time_series[ : ,time - i] - series_mean,
             time_series[ : ,time] - series_mean)
-        lag_covs.append(temp_corr/(length-i))
+        lag_covariances.append(temp_corr/(length-i))
 
-    return np.asarray(lag_covs)
+    return np.asarray(lag_covariances)
 
 
 def _Yule_Walker_matrix(data, dimension, order):
@@ -79,7 +80,7 @@ def _Yule_Walker_matrix(data, dimension, order):
         matrix in Yule-Walker equation
     """
 
-    lag_covs = _lag_covariances(data, dimension, order)
+    lag_covariances = _lag_covariances(data, dimension, order)
 
     Yule_Walker_matrix = np.zeros((dimension*order, dimension*order))
 
@@ -87,12 +88,12 @@ def _Yule_Walker_matrix(data, dimension, order):
         for block_column in range(block_row, order):
             Yule_Walker_matrix[block_row*dimension : (block_row+1)*dimension,
                                block_column*dimension :
-                               (block_column+1)*dimension] = lag_covs[block_column-block_row]
+                               (block_column+1)*dimension] = lag_covariances[block_column-block_row]
 
             Yule_Walker_matrix[block_column*dimension : (block_column+1)*dimension,
                                block_row*dimension :
-                               (block_row+1)*dimension] = lag_covs[block_column-block_row].T
-    return Yule_Walker_matrix, lag_covs
+                               (block_row+1)*dimension] = lag_covariances[block_column-block_row].T
+    return Yule_Walker_matrix, lag_covariances
 
 
 def _vector_arm(time_series, dimension, order):
@@ -113,9 +114,9 @@ def _vector_arm(time_series, dimension, order):
         covariance matrix of
     """
 
-    Yule_Walker_matrix, lag_covs = _Yule_Walker_matrix(time_series,  dimension, order)
+    Yule_Walker_matrix, lag_covariances = _Yule_Walker_matrix(time_series,  dimension, order)
 
-    solution_vector = np.reshape(lag_covs[1:], (dimension*order, dimension))
+    solution_vector = np.reshape(lag_covariances[1:], (dimension*order, dimension))
 
     coeffs_pre = np.linalg.lstsq(Yule_Walker_matrix, solution_vector)[0]
 
@@ -127,9 +128,9 @@ def _vector_arm(time_series, dimension, order):
 
     cov_mat = np.zeros((dimension, dimension))
 
-    #cov_mat = lag_covs[0]
+    #cov_mat = lag_covariances[0]
     for i in range(order):
-        cov_mat += np.matmul(coeffs[i],lag_covs[i+1])
+        cov_mat += np.matmul(coeffs[i],lag_covariances[i+1])
 
     return coeffs, cov_mat
 
