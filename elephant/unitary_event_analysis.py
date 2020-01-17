@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Unitary Event (UE) analysis is a statistical method that
- enables to analyze in a time resolved manner excess spike correlation
- between simultaneously recorded neurons by comparing the empirical
- spike coincidences (precision of a few ms) to the expected number
- based on the firing rates of the neurons.
+Unitary Event (UE) analysis is a statistical method to analyze in a time
+resolved manner excess spike correlation between simultaneously recorded
+neurons by comparing the empirical spike coincidences (precision of a few ms)
+to the expected number based on the firing rates of the neurons.
 
-References:
-  - Gruen, Diesmann, Grammont, Riehle, Aertsen (1999) J Neurosci Methods,
-    94(1): 67-79.
-  - Gruen, Diesmann, Aertsen (2002a,b) Neural Comput, 14(1): 43-80; 81-19.
-  - Gruen S, Riehle A, and Diesmann M (2003) Effect of cross-trial
-    nonstationarity on joint-spike events Biological Cybernetics 88(5):335-351.
-  - Gruen S (2009) Data-driven significance estimation of precise spike
-    correlation. J Neurophysiology 101:1126-1140 (invited review)
+.. include:: unitary_event_analysis-overview.rst
 
-:copyright: Copyright 2015-2019 by the Elephant team, see `doc/authors.rst`.
+.. current_module elephant.unitary_event_analysis
+
+Overview of Functions
+---------------------
+
+.. autosummary::
+    :toctree: unitary_event_analysis/
+
+    jointJ_window_analysis
+
+:copyright: Copyright 2015-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -674,7 +676,7 @@ def jointJ_window_analysis(
         method='analytic_TrialByTrial', t_start=None,
         t_stop=None, binary=True, n_surr=100):
     """
-    Calculates the joint surprise in a sliding window fashion.
+    Calculates the joint surprise in a sliding window fashion (see :cite:`unitary_event_analysis-Gruen99_67`).
 
     Parameters
     ----------

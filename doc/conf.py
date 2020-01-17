@@ -28,12 +28,17 @@ sys.path.insert(0, '..')
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
-    'numpydoc']
+    'sphinx.ext.mathjax',
+    'sphinxcontrib.bibtex',
+    'matplotlib.sphinxext.plot_directive',
+    'numpydoc',
+    'nbsphinx']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -77,7 +82,7 @@ version = '.'.join(release.split('.')[:-1])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -99,6 +104,16 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
+# Only execute Jupyter notebooks that have no evaluated cells
+nbsphinx_execute = 'auto'
+# Kernel to use for execution
+nbsphinx_kernel_name = 'python3'
+# Cancel compile on errors in notebooks
+nbsphinx_allow_errors = False
+
+# Required to automatically create a summary page for each function listed in
+# the autosummary fields of each module.
+autosummary_generate = True
 
 # -- Options for HTML output ---------------------------------------------
 

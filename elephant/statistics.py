@@ -2,8 +2,50 @@
 """
 Statistical measures of spike trains (e.g., Fano factor) and functions to
 estimate firing rates.
+This module provides function to extract various statistical measures of spike
+trains, including functions to estimate firing rates.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+.. include:: statistics-overview.rst
+
+.. current_module elephant.statistics
+
+Overview of Functions
+---------------------
+
+Rate estimation
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: statistics/
+
+    mean_firing_rate
+    instantaneous_rate
+    time_histogram
+    sskernel
+
+
+Spike interval statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: statistics/
+
+    isi
+    cv
+    lv
+    cv2
+
+
+Statistics across spike trains
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: statistics/
+
+    fanofactor
+    complexity_pdf
+
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
