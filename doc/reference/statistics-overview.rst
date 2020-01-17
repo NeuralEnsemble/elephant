@@ -1,6 +1,12 @@
 Overview
 --------
 
+.. toctree::
+    :hidden:
+    
+    tutorials/statistical.ipynb
+    
+    
 Rate estimation
 ~~~~~~~~~~~~~~~
 
@@ -17,9 +23,6 @@ Often, neuroscientists will use multiple trials to make an estimate of the time-
    spike_trains = [elephant.spike_train_generation.homogenous_poisson_process(rate=5 * pq.s) for _ in range(100) ]
    histogram = elephant.statistics.time_histogram(spike_trains)
    plt.plot(histogram.time,histogram)
-
-
-
 
 
 Spike interval statistics

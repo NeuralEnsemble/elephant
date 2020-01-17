@@ -3,3 +3,4 @@ numpydoc>=0.5
 sphinx>=1.2.2
 jupyter>=1.0.0
 nbsphinx>=0.5.0
+sphinxcontrib-bibtex>=1.0.0
