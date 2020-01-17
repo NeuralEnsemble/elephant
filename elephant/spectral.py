@@ -20,11 +20,9 @@ import neo
 
 
 def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
-          nfft=None, detrend='constant', scaling='density', axis=-1):
+           nfft=None, detrend='constant', scaling='density', axis=-1):
     """
     A helper function to estimate cross spectral density using Welch's method.
-    This function is a slightly modified version of `scipy.signal.welch()` with
-    modifications based on `matplotlib.mlab._spectral_helper()`.
 
     Welch's method [1]_ computes an estimate of the cross spectral density
     by dividing the data into overlapping segments, computing a modified
@@ -32,61 +30,86 @@ def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
 
     Parameters
     ----------
-    x, y : array_like
-        Time series of measurement values
+    x : list or tuple or np.ndarray
+        Time series of measurement values for the first signal.
+        It will be converted to `np.ndarray`.
+    y : list or tuple or np.ndarray
+        Time series of measurement values for the second signal.
+        It will be converted to `np.ndarray`.
     fs : float, optional
         Sampling frequency of the `x` and `y` time series in units of Hz.
-        Defaults to 1.0.
-    window : str or tuple or array_like, optional
-        Desired window to use. See `get_window` for a list of windows and
-        required parameters. If `window` is array_like it will be used
-        directly as the window and its length will be used for nperseg.
-        Defaults to 'hanning'.
+        Default: 1.0.
+    window : str or tuple or np.ndarray, optional
+        Desired window to use.
+        If `window` is a string, see `scipy.signal.get_window` for a list of
+        windows and required parameters.
+        If `window` is tuple or `np.ndarray`, it will be used directly as the
+        window, and its length will be used for `nperseg`.
+        Default: 'hanning'.
     nperseg : int, optional
-        Length of each segment.  Defaults to 256.
+        Length of each segment.
+        Default: 256.
     noverlap: int, optional
-        Number of points to overlap between segments. If None,
-        ``noverlap = nperseg / 2``.  Defaults to None.
+        Number of points to overlap between segments.
+        If None, `noverlap` will be set to `nperseg`/2.
+        Default: None.
     nfft : int, optional
-        Length of the FFT used, if a zero padded FFT is desired.  If None,
-        the FFT length is `nperseg`. Defaults to None.
+        Length of the FFT used, if a zero-padded FFT is desired.
+        If None, the FFT length is `nperseg`.
+        Default: None.
     detrend : str or function, optional
-        Specifies how to detrend each segment. If `detrend` is a string,
-        it is passed as the ``type`` argument to `detrend`. If it is a
-        function, it takes a segment and returns a detrended segment.
-        Defaults to 'constant'.
-    scaling : { 'density', 'spectrum' }, optional
-        Selects between computing the power spectral density ('density')
-        where Pxx has units of V**2/Hz if x is measured in V and computing
-        the power spectrum ('spectrum') where Pxx has units of V**2 if x is
-        measured in V. Defaults to 'density'.
+        Specifies how to detrend each segment.
+        If `detrend` is a string, it is passed as the `type` argument to
+        `scipy.signal.detrend`.
+        If it is a function, it takes a segment as input and returns a
+        detrended segment.
+        Default: 'constant'.
+    scaling : {'density', 'spectrum'}, optional
+        If 'density', computes the power spectral density where Pxx has units
+        of V**2/Hz if `x` is measured in V.
+        If 'spectrum', computes the power spectrum where Pxx has units of V**2
+        if `x` is measured in V.
+        Default: 'density'.
     axis : int, optional
-        Axis along which the periodogram is computed; the default is over
-        the last axis (i.e. ``axis=-1``).
+        Axis along which the periodogram is computed.
+        Default: last axis (-1).
 
     Returns
     -------
-    f : ndarray
+    f : np.ndarray
         Array of sample frequencies.
-    Pxy : ndarray
-        Cross spectral density or cross spectrum of x and y.
+    Pxy : np.ndarray
+        Cross spectral density or cross spectrum of `x` and `y`.
+
+    Raises
+    ------
+    ValueError
+        If `x` and `y` do not have the same shape.
+
+    Warns
+    -----
+    UserWarning
+        If `nperseg` is greater than the shape of the axis used (`axis`),
+        `nperseg` will be changed to the shape of `axis`.
 
     Notes
     -----
-    An appropriate amount of overlap will depend on the choice of window
-    and on your requirements.  For the default 'hanning' window an
-    overlap of 50% is a reasonable trade off between accurately estimating
-    the signal power, while not over counting any of the data.  Narrower
-    windows may require a larger overlap.
-
-    If `noverlap` is 0, this method is equivalent to Bartlett's method [2]_.
+    1. This function is a slightly modified version of `scipy.signal.welch`
+       function, with modifications based on
+       `matplotlib.mlab._spectral_helper`.
+    2. An appropriate amount of overlap will depend on the choice of window
+       and on your requirements. For the default 'hanning' window, an overlap
+       of 50% is a reasonable trade off between accurately estimating
+       the signal power, while not over counting any of the data. Narrower
+       windows may require a larger overlap.
+    3. If `noverlap` is 0, this method is equivalent to Bartlett's method [2]_.
 
     References
     ----------
     .. [1] P. Welch, "The use of the fast Fourier transform for the
            estimation of power spectra: A method based on time averaging
            over short, modified periodograms", IEEE Trans. Audio
-           Electroacoust. vol. 15, pp. 70-73, 1967.
+           Electroacoust., vol. 15, pp. 70-73, 1967.
     .. [2] M.S. Bartlett, "Periodogram Analysis and Continuous Spectra",
            Biometrika, vol. 37, pp. 1-16, 1950.
     """
@@ -322,8 +345,8 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
 
 def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
-           fs=1.0, window='hanning', nfft=None, detrend='constant',
-           scaling='density', axis=-1):
+                 fs=1.0, window='hanning', nfft=None, detrend='constant',
+                 scaling='density', axis=-1):
     """
     Estimates coherence between a given pair of analog signals. The estimation
     is performed with Welch's method: the given pair of data are cut into short

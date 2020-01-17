@@ -25,10 +25,10 @@ def zscore(signal, inplace=True):
     .. math::
          Z(x(t))= \\frac{x(t)-\\mu}{\\sigma}
 
-    If a list of `neo.AnalogSignal` is provided, the z-transform is always
-    calculated for each signal individually.
+    If a `neo.AnalogSignal` object containing multiple signals is provided,
+    the z-transform is always calculated for each signal individually.
 
-    If a list of AnalogSignal objects is supplied, the mean and standard
+    If a list of `neo.AnalogSignal` objects is supplied, the mean and standard
     deviation are calculated across all objects of the list. Thus, all list
     elements are z-transformed by the same values of :math:`\\mu` and
     :math:`\\sigma`. For AnalogSignals, each signal of the array is
@@ -41,8 +41,8 @@ def zscore(signal, inplace=True):
         Signals for which to calculate the z-score.
     inplace : bool
         If True, the contents of the input signal(s) is replaced by the
-        z-transformed signal. Otherwise, a copy of the original
-        AnalogSignal(s) is returned. Default: True
+        z-transformed signal.
+        If False, a copy of the original AnalogSignal(s) is returned. Default: True
 
     Returns
     -------
@@ -51,30 +51,26 @@ def zscore(signal, inplace=True):
         AnalogSignal object a corresponding object is returned containing
         the z-transformed signal with the unit dimensionless.
 
-    Use Case
-    --------
-    You may supply a list of AnalogSignal objects, where each object in
+    Notes
+    -----
+    You may supply a list of `neo.AnalogSignal` objects, where each object in
     the list contains the data of one trial of the experiment, and each signal
-    of the AnalogSignal corresponds to the recordings from one specific
+    of the `neo.AnalogSignal` corresponds to the recordings from one specific
     electrode in a particular trial. In this scenario, you will z-transform the
     signal of each electrode separately, but transform all trials of a given
     electrode in the same way.
 
     Examples
     --------
-    Calculates
+    Z-transform a single `neo.AnalogSignal`, containing only a single signal.
+
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    ...
     >>> a = neo.AnalogSignal(
-    ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1)*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
-    >>> b = neo.AnalogSignal(
-    ...       np.transpose([[1, 2, 3, 4, 5, 6], [11, 12, 13, 14, 15, 16]])*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
-    >>> c = neo.AnalogSignal(
-    ...       np.transpose([[21, 22, 23, 24, 25, 26], [31, 32, 33, 34, 35, 36]])*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
+    ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1) * pq.mV,
+    ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
     >>> print zscore(a)
     [[-1.46385011]
      [-0.87831007]
@@ -83,6 +79,12 @@ def zscore(signal, inplace=True):
      [ 0.87831007]
      [ 1.46385011]] dimensionless
 
+    Z-transform a single `neo.AnalogSignal` containing multiple signals.
+
+    >>> b = neo.AnalogSignal(
+    ...       np.transpose([[1, 2, 3, 4, 5, 6],
+    ...                     [11, 12, 13, 14, 15, 16]]) * pq.mV,
+    ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
     >>> print zscore(b)
     [[-1.46385011 -1.46385011]
      [-0.87831007 -0.87831007]
@@ -91,6 +93,12 @@ def zscore(signal, inplace=True):
      [ 0.87831007  0.87831007]
      [ 1.46385011  1.46385011]] dimensionless
 
+    Z-transform a list of `neo.AnalogSignal`, each one containing more than
+    one signal:
+
+    >>> c = neo.AnalogSignal(
+    ...       np.transpose([[21, 22, 23, 24, 25, 26], [31, 32, 33, 34, 35, 36]])*mV,
+    ...       t_start=0*s, sampling_rate=1000*Hz)
     >>> print zscore([b,c])
     [<AnalogSignal(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
