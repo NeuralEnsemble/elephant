@@ -6,7 +6,7 @@ between spikes in a pattern), and at multiple time scales,
 e.g. from synchronous patterns to firing rate co-modulations.
 
 CAD consists of a statistical parametric testing done on the level of pairs
-of neurons, followed by an agglomerative recursive algorithm, in order to 
+of neurons, followed by an agglomerative recursive algorithm, in order to
 detect and test statistically precise repetitions of spikes in the data.
 In particular, pairs of neurons are tested for significance under the null
 hypothesis of independence, and then the significant pairs are agglomerated
@@ -67,6 +67,8 @@ Cell assemblies at multiple time scales with arbitrary lag constellations.
 Elife, 6.
 
 """
+
+from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import copy
@@ -618,7 +620,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     # For large binsizes, the binned spike counts may potentially fluctuate
     # around a high mean level and never fall below some minimum count
     # considerably larger than zero for the whole time series.
-    # Entries up to this minimum count would contribute 
+    # Entries up to this minimum count would contribute
     # to the coincidence count although they are completely
     # uninformative, so we subtract the minima.
 
@@ -1145,7 +1147,7 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
         if the significance level is not in [0,1]
         if the minimal number of occurrences for an assembly is less than 1
         if the length of the chunks for the variance computation is 1 or less
-        if the maximal assembly order is not between 2 
+        if the maximal assembly order is not between 2
         and the number of neurons
         if the time series is too short (less than 100 bins)
 
