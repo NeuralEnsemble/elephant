@@ -2,8 +2,6 @@
 """
 Statistical measures of spike trains (e.g., Fano factor) and functions to
 estimate firing rates.
-This module provides function to extract various statistical measures of spike
-trains, including functions to estimate firing rates.
 
 .. include:: statistics-overview.rst
 

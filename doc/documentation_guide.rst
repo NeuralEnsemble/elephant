@@ -2,13 +2,13 @@
 Elephant Documentation Guide
 ============================
 
-This guide describes the guidelines for writing Elephant documentation, and the technical background of how the `sphinx` documentation package is configured.
+This guide describes the guidelines for writing Elephant documentation, and the technical background of how the Sphinx_ documentation package is configured.
 
 
 Structure of the Elephant documentation
 ---------------------------------------
 
-Documentation in Elephant is written exclusively using the `sphinx` package, and resides in the `doc` folder, in addition to the docstrings contained of the `elephant` modules. In the following, we outline the main components of the Elephant documenation 
+Documentation in Elephant is written exclusively using the `sphinx` package, and resides in the `doc` folder, in addition to the docstrings contained of the `elephant` modules. In the following, we outline the main components of the Elephant documenation.
 
 
 Top-level documentation
@@ -30,8 +30,50 @@ All modules in Elephant are semi-automatically documented. To this end, for each
 
     .. automodule:: elephant.x
 
-This instructs sphinx to add the module documentation in the module docstring into the file.
+This instructs Sphinx to add the module documentation in the module docstring into the file.
+
+The module docstring of `elephant/x.py` is also standardized in its structure:
+
+.. code:: rst 
+
+    .. include:: x-overview.rst
+    
+    .. current_module elephant.x
+    
+    Overview of Functions
+    ---------------------
+    
+    <<Heading 1 to group functions (optional)>>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    .. autosummary::
+        :toctree: x/
+    
+        function1
+        function2
+
+    <<Heading 2 to group functions (optional)>>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    .. autosummary::
+        :toctree: x/
+    
+        function3
+        function4
+
+    :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+    :license: Modified BSD, see LICENSE.txt for details.
+
+Each module documentation starts with a short, understandable introduction to the functionality of the module, the "Overview". This text is written in a separate file residing in `doc/reference/x-overview.rst`, and is included on the first line. This keeps the docstring in the code short.
+
+Next, we specify the current module as `x`, in order to avoid confusion if a module uses submodules.
+
+In the following, all functions of the module are listed in an order that is intuitive for users. Where it makes sense, these functions can be thematically grouped using third-level headings. For small modules, no such headings are needed.
+
+Finally, a copyright statement and the license statements are inserted.
 
 
 Writing documentation for Elephant
 ----------------------------------
+
+:: _`Sphinx`: https://www.sphinx-doc.org
