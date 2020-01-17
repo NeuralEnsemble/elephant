@@ -41,6 +41,8 @@ References:
 [1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted)
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import scipy.spatial
 import scipy.stats
@@ -67,7 +69,7 @@ def _signals_same_tstart(signals):
     signals : list
         a list of signals (e.g. AnalogSignals or SpikeTrains) having
         attribute `t_start`
-        
+
     Returns
     -------
     t_start : Quantity
@@ -899,15 +901,15 @@ def probability_matrix_analytical(
 
         * Bin each spike train at the specified binsize: this yields a binary
           array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
-        * If required, estimate the rate profile of each spike train by 
-          convolving the binned array with a boxcar kernel of user-defined 
+        * If required, estimate the rate profile of each spike train by
+          convolving the binned array with a boxcar kernel of user-defined
           length
         * For each neuron k and each pair of bins i and j, compute the
           probability p_ijk that neuron k fired in both bins i and j.
         * Approximate the probability distribution of the intersection value
           at (i, j) by a Poisson distribution with mean parameter
           l = \sum_k (p_ijk),
-          justified by Le Cam's approximation of a sum of independent 
+          justified by Le Cam's approximation of a sum of independent
           Bernouilli random variables with a Poisson distribution.
 
     Parameters

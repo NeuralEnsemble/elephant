@@ -10,7 +10,7 @@ written by Eilif Muller, or from the NeuroTools signals.analogs module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 import math
 import random

@@ -6,7 +6,7 @@ Tools to manipulate Neo objects.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function
+from __future__ import division, print_function, unicode_literals
 
 from itertools import chain
 

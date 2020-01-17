@@ -2,6 +2,13 @@
 Developers' guide
 =================
 
+.. toctree::
+    :maxdepth: 1
+
+    style_guide
+    documentation_guide
+    
+
 These instructions are for developing on a Unix-like platform, e.g. Linux or
 Mac OS X, with the bash shell. If you develop on Windows, please get in touch.
 

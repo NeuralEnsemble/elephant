@@ -49,7 +49,7 @@ Statistics across spike trains
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function
+from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import quantities as pq
@@ -328,7 +328,7 @@ def lv(v, with_nan=False):
 
 def cv2(v, with_nan=False):
     r"""
-    Calculate the measure of CV2 for a sequence of time intervals between 
+    Calculate the measure of CV2 for a sequence of time intervals between
     events.
 
     Given a vector v containing a sequence of intervals, the CV2 is defined
