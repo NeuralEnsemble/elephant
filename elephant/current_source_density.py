@@ -35,7 +35,7 @@ CC implemented the kCSD methods, kCSD1D(MC and CC)
 CC and EH developed the interface to elephant.
 """
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 import neo
 import quantities as pq

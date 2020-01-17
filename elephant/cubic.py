@@ -18,7 +18,9 @@ steps:
 :license: BSD, see LICENSE.txt for details.
 '''
 # -*- coding: utf-8 -*-
-from __future__ import division
+
+from __future__ import division, print_function, unicode_literals
+
 import scipy.stats
 import scipy.special
 import math

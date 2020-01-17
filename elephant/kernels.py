@@ -7,10 +7,12 @@ firing rate estimation.
 Examples of usage:
     >>> kernel1 = kernels.GaussianKernel(sigma=100*ms)
     >>> kernel2 = kernels.ExponentialKernel(sigma=8*mm, invert=True)
-    
+
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
+
+from __future__ import division, print_function, unicode_literals
 
 import quantities as pq
 import numpy as np
@@ -328,7 +330,7 @@ class TriangularKernel(SymmetricKernel):
         - \\frac{|t|}{\\tau}), & |t| < \\tau \\\\
          0, & |t| \\geq \\tau \\end{array} \\right.
 
-    with :math:`\\tau = \\sqrt{6} \\sigma` corresponding to the half width of 
+    with :math:`\\tau = \\sqrt{6} \\sigma` corresponding to the half width of
     the kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the

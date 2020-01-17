@@ -6,6 +6,8 @@ Methods for performing phase analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import quantities as pq
 
