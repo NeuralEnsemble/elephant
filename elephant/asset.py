@@ -302,6 +302,7 @@ def intersection_matrix(
         edges of the bins used for the vertical axis of imat. If imat is
         a matrix of shape (n, n), y_edges has length n+1
     """
+    # TODO: update the docs
     # TODO: Don't do anything twice for x and y if they are the same
 
     if spiketrains_y is None:
@@ -333,6 +334,7 @@ def intersection_matrix(
                   'span: t_stop (%s) < %s' % (st.t_stop, t_stop_y)
             raise ValueError(msg)
 
+    # TODO: is this necessary?
     # For both x and y axis, cut all SpikeTrains between t_start and t_stop
     sts_x = [st.time_slice(t_start=t_start_x, t_stop=t_stop_x)
              for st in spiketrains]
@@ -415,14 +417,6 @@ def intersection_matrix(
                     elif norm == 3:
                         imat[ii, jj] /= float(len(set(
                             ids_per_bin_x[ii]).union(set(ids_per_bin_y[jj]))))
-
-    # Compute the time edges corresponding to the binning employed
-    # t_start_x_dl = t_start_x.rescale(binsize.units).magnitude
-    # t_start_y_dl = t_start_y.rescale(binsize.units).magnitude
-    # t_stop_x_dl = t_stop_x.rescale(binsize.units).magnitude
-    # t_stop_y_dl = t_stop_y.rescale(binsize.units).magnitude
-    # xx = np.linspace(t_start_x_dl, t_stop_x_dl, N_bins_x + 1) * binsize.units
-    # yy = np.linspace(t_start_y_dl, t_stop_y_dl, N_bins_y + 1) * binsize.units
 
     # Return the intersection matrix and the edges of the bins used for the
     # x and y axes, respectively.
@@ -864,6 +858,8 @@ def probability_matrix_analytical(
     if spiketrains_y is None:
         spiketrains_y = spiketrains
 
+    # TODO: think about maybe passing the binned spiketrains to intersection_matrix
+    #       instead of spiketrains and include a type check to skip the second binning
     # Bin the spike trains
     bsts_x = conv.BinnedSpikeTrain(
         spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x)
@@ -882,6 +878,8 @@ def probability_matrix_analytical(
 
     # If rates are to be estimated, create the rate profiles as Quantity
     # objects obtained by boxcar-kernel convolution
+    # TODO: this is duplicated for x and y
+    # TODO: use statistics.instantaneous_rate instead (?!)
     if fir_rates_x == 'estimate':
         if verbose is True:
             print('compute rates by boxcar-kernel convolution...')
