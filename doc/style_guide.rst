@@ -8,10 +8,14 @@ https://github.com/numpy/numpy/blob/master/doc/example.py.
 Rules are based on numpydoc, PEP8 and results of discussions during the
 Elephant Hackathon 2020.
 
+In the Python code blocks below, some remarks are included using JavaScript
+style notation <!-- comment -->. They provide additional information regarding
+the code that is being presented as example.
+
 Module docstring
 ----------------
 
-The module should start with its own docstring.
+The module should start with its own docstring in the first line.
 The example below illustrates show it should be implemented.
 
 .. code-block:: python
@@ -44,14 +48,15 @@ Each class should have a detailed docstring, according to the example below:
         Long description of class, may span several lines. Possible sections are
         the same as for a function doc, with additional "Attributes" and "Methods"
         after "Parameters" (cf. numpydoc guide). Do not put a blank line after
-        section header, do put a blank line at the end of a long docstring.
+        section headers, do put a blank line at the end of a long docstring.
 
         When explaining the algorithm, you can use mathematical notation, e.g.:
 
         .. math::
+
             E = m c^2
 
-        to insert an equation: use `.. math::` and surround the whole expression in
+        To insert an equation use `.. math::` and surround the whole expression in
         blank lines. To use math notation in-line, write :math:`E` corresponds to
         energy and :math:`m` to mass. Embed expressions after `:math:` in
         backticks, e.g. :math:`x^2 + y^2 = z^2`.
@@ -60,22 +65,24 @@ Each class should have a detailed docstring, according to the example below:
         'see [1]_' - it will become an interactive link on the readthedocs website.
         The underscore after the closing bracket is mandatory for the link to
         work.
-        To refer to a note, simply type 'see Notes [1]'
+
+        To refer to a note in the "Notes" section, simply write 'see Notes [1]'
 
         Variable, module, function, and class names should be written
         between single back-ticks (`kernels.AlphaKernel`), NOT *bold*.
 
         For common modules such as Numpy and Quantities, use the notation
-        according to the import statement. For example: this function
-        uses `np.diff`, not `numpy.diff`. Prefixes for common packages in
-        Elephant are the following:
+        according to the import statement. For example:
+        "this function uses `np.diff`", not "`numpy.diff`".
+
+        Prefixes for common packages in Elephant are the following:
 
         1. Neo objects = neo (e.g. `neo.SpikeTrain`)
         2. Numpy = np (e.g. `np.ndarray`)
         3. Quantities = pq (e.g. `pq.Quantity`)
 
         For other objects, list the full path to the object (e.g., for the
-            BinnedSpikeTrain, this would be `elephant.conversion.BinnedSpikeTrain`)
+        BinnedSpikeTrain, this would be `elephant.conversion.BinnedSpikeTrain`)
 
         For None and NaNs, do not use backticks. NaN is referred as np.NaN (i.e.,
         with the Numpy prefix "np").
@@ -84,11 +91,11 @@ Each class should have a detailed docstring, according to the example below:
         `y`), and :attr:`attribute_name` when referring to attributes of a class
         object in docstrings of this class.
 
-        To refer to attributes of other objects, type
+        To refer to attributes of other objects, write
         `other_object.relevant_attribute` (e.g. `neo.SpikeTrain.t_stop`).
 
         When mentioning a function from other module, type `other_module.function`
-        (without parenthesis; e.g., `scipy.signal.butter`).
+        (without parentheses after the function name; e.g., `scipy.signal.butter`).
 
         If you refer values to True/False/None, do not use backticks, unless an
         emphasis is needed. In this case, write `True` and not bold, like **True**.
@@ -106,15 +113,19 @@ Each class should have a detailed docstring, according to the example below:
             The X coordinate.
         y : float
             The Y coordinate.
-            Default: 1.  <!-- not "Default is 1." (it is just a convention) -->
+            Default: 1.0.  <!-- not "Default is 1.0." (it is just a convention) -->
         z : float or int or pq.Quantity
-            This is Z coordinate. If it can take multiple types, separate them by
-            "or", do not use commas (numpy style).
-            If different things will happen depending on the type of `z`, explain
-            it briefly here, not in the main text of the function docstring.
+            This is Z coordinate.
+            If it can take multiple types, separate them by "or", do not use commas
+            (numpy style).
+            If different actions will happen depending on the type of `z`, explain
+            it briefly here, not in the main text of the function/class docstring.
         s : {'valid', 'full', 'other'}
             This is the way to describe a list of possible argument values, if the
             list is discrete and predefined (typically concerns strings).
+            If 'valid', the function performs some action.
+            If 'full', the function performs another action.
+            If 'other', the function will ignore the value defined in `z`.
             Default: 'valid'.
         spiketrains : neo.SpikeTrain or list of neo.SpikeTrain or np.ndarray
             When the parameter can be a container (such as list or tuple), you can
@@ -140,8 +151,8 @@ Each class should have a detailed docstring, according to the example below:
         Attributes
         ----------
         <!-- Here list the attributes of class object which are not simply copies
-        of the constructor parameters.
-        Property decorators (@property) are also considered attributes -->
+        of the constructor parameters. Property decorators (@property) are also
+        considered attributes -->
         a : list
             This is calculated based on `x` and `y`.
         b : int
@@ -154,15 +165,15 @@ Each class should have a detailed docstring, according to the example below:
 
         Returns
         -------
-        <!-- This section is rarely used in class docs, but often in function
-        docs.
-        If there is more than one returned value, use variable names in the
-        returns, like 'error_matrix' example below. -->
+        <!-- This section is rarely used in class docstrings, but often in
+        function docs. Follow the general recommendation of numpydoc.
+        If there is more than one returned value, use variable names for the
+        returned value, like 'error_matrix' below. -->
         error_matrix : np.ndarray
             A matrix is stored in a variable called `error_matrix`, containing
             errors estimated from some calculations. The function "return"
             statement then returns the variable (e.g. "return error_matrix").
-            Format is the same as for a paramter in section "Parameters".
+            Format is the same as for any parameter in section "Parameters".
             Use meaningful names, not general names such as `output` or `result`.
         list
             The returned object is created on the fly and is never assigned to
@@ -249,8 +260,8 @@ Each class should have a detailed docstring, according to the example below:
 
            .. math::
 
-           x(n) * y(n) \Leftrightarrow X(e^{j\omega } )Y(e^{j\omega } )\\
-           another equation here
+           x(n) * y(n) \Leftrightarrow X(e^{j\omega } )Y(e^{j\omega } )
+
         8. Python may complain about backslashes in math notation in docstrings.
            To prevent the complains, precede the whole docstring with "r" (raw
            string).
@@ -455,11 +466,9 @@ throughout Elephant.
         extensively in another language or package, mention this in the "Notes"
         section, like the comment below:
         <!--
-
         Notes
         -----
         This function is similar to `welch_cohere` function in MATLAB.
-
         -->
 
         The rationale for the naming of each parameter in this example will be
@@ -615,13 +624,13 @@ throughout Elephant.
         1. Frequency is defined as:
 
         .. math::
+
             f = /frac{1}{T}
 
            `period` corresponds to :math:`T`
 
         2. `order` is passed as the `N` parameter when calling
            `scipy.signal.butter`.
-
         3. According to [1]_, BIC should be used instead of AIC for this
            computation. The brief rationale is .......
 
