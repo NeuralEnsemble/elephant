@@ -153,6 +153,7 @@ def pairwise_granger(signals, order):
     instantaneous_causality : float
     total_interdependence : float
     """
+    #TODO: update docstring that returns namedtuple
 
     signal_x = np.asarray([signals[0,:]])
     signal_y = np.asarray([signals[1,:]])
