@@ -1276,7 +1276,7 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
     min_spikes: int
     max_spikes: int
     winlen: int
-    spectrum: {‘#’, ‘3d#’}
+    spectrum: {'#', '3d#'}
 
     Returns
     -------
@@ -1820,11 +1820,13 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum, h_subset_filterin
         if not selected[id1] and not selected[id2]:
             continue
 
-        intent1, extent1, *_ = concepts[id1]
-        intent2, extent2, *_ = concepts[id2]
+        intent1, extent1 = concepts[id1][:2]
+        intent2, extent2 = concepts[id2][:2]
         occ1, size1 = additional_measures[id1]
         occ2, size2 = additional_measures[id2]
+        dur1 = max(np.array(intent1) % winlen)
         dur2 = max(np.array(intent2) % winlen)
+        intent2 = set(intent2)
 
         # Collecting all the possible distances between the windows
         # of the two concepts
@@ -1844,13 +1846,11 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum, h_subset_filterin
         # Rescaling the spike times to realign to real time
         for time_diff in sorted_time_diff[time_diff_mask]:
             intent1_new = [t_old - time_diff for t_old in intent1]
+            # from here on we will only need the intents as sets
             intent1_new = set(intent1_new)
-            intent2 = set(intent2)
             # if intent1 and intent2 are disjoint, skip this step
             if not (intent1_new & intent2):
                 continue
-            size1 = len(intent1_new)
-            dur1 = max(np.array(intent1_new) % winlen)
             # Test the case intent1 is a superset of intent2
             if intent1_new.issuperset(intent2):
                 reject1, reject2 = _perform_combined_filtering(
@@ -1868,9 +1868,6 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum, h_subset_filterin
                     min_spikes=min_spikes,
                     min_occ=min_occ)
 
-                selected[id1] &= not reject1
-                selected[id2] &= not reject2
-
             elif intent2.issuperset(intent1_new):
                 reject2, reject1 = _perform_combined_filtering(
                     occ_superset=occ2,
@@ -1887,9 +1884,11 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum, h_subset_filterin
                     min_spikes=min_spikes,
                     min_occ=min_occ)
 
-                selected[id1] &= not reject1
-                selected[id2] &= not reject2
             else:
+                # none of the intents is a superset of the other one
+                # we compare both concepts to the intersection
+                # if one of them is not significant given the
+                # intersection, it is rejected
                 inter_size = len(intent1_new & intent2)
                 reject1 = _superset_filter(
                                occ_superset=occ1,
@@ -1912,13 +1911,18 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum, h_subset_filterin
                 # Reject accordingly:
                 if reject1 and reject2:
                     reject1, reject2 = _covered_spikes_criterion(
-                                             occ_superset=occ1,
-                                             size_superset=size1,
-                                             occ_subset=occ2,
-                                             size_subset=size2,
-                                             l_covered_spikes=l_covered_spikes)
-                selected[id1] &= not reject1
-                selected[id2] &= not reject2
+                                           occ_superset=occ1,
+                                           size_superset=size1,
+                                           occ_subset=occ2,
+                                           size_subset=size2,
+                                           l_covered_spikes=l_covered_spikes)
+
+            selected[id1] &= not reject1
+            selected[id2] &= not reject2
+
+            # skip remaining time-shifts if both concepts have been rejected
+            if (not selected[id1]) and (not selected[id2]):
+                break
 
     # Return the selected concepts
     return [p for i, p in enumerate(concepts) if selected[i]]
@@ -2012,9 +2016,9 @@ def _covered_spikes_criterion(occ_superset,
     score_superset = (size_superset - l_covered_spikes) * occ_superset
     score_subset = (size_subset - l_covered_spikes) * occ_subset
     if score_superset >= score_subset:
-        reject_subset = False
-    else:
         reject_superset = False
+    else:
+        reject_subset = False
     return reject_superset, reject_subset
 
 
