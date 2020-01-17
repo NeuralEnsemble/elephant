@@ -34,6 +34,16 @@ The example below illustrates show it should be implemented.
     :py:mod:`unitary_event_analysis.py<elephant.unitary_event_analysis>`
     """
 
+Mandatory imports
+-----------------
+
+Each source file must always have the following import immediately after
+the module docstring:
+
+.. code-block:: python
+
+    from __future__ import division, print_function, unicode_literals
+
 Class docstrings
 ----------------
 
@@ -289,7 +299,10 @@ Each class should have a detailed docstring, according to the example below:
         is really needed, use simple matplotlib plots, that take only few lines.
         More complex examples, that require lots of plotting routines (e.g.,
         similar to Jupyter notebooks), should be placed as tutorials, with links
-        in the docstring -->
+        in the docstring. Examples should not load any data, but only use easy
+        generated data.
+        Finally, avoid using abbreviations in examples, such as
+        "import elephant.conversion as conv" -->
 
         >>> import neo
         >>> import numpy as np
@@ -404,9 +417,9 @@ Each class should have a detailed docstring, according to the example below:
             ----------
             kwargs : dict
                 kwarg1 : type
-                    Same as "Parameters"
+                    Same style as docstring of class `MyClass`.
                 kwarg2 : type
-                    Same as "Parameters"
+                    Same style as docstring of class `MyClass`.
 
             """
             pass
@@ -447,7 +460,7 @@ throughout Elephant.
 .. code-block:: python
 
     def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
-                         target_spiketrain, max_iterations,
+                         target_spiketrain, signal, signals, max_iterations,
                          min_threshold, n_bins, n_surrogates, bin_size, max_size,
                          time_limits, time_range, t_start, t_stop, period, order,
                          error, capacity, source_matrix, cov_matrix,
@@ -500,6 +513,12 @@ throughout Elephant.
             Second parameter that is a single spike train. Note that the difference
             from `reference_spiketrain` is indicated by a meaningful name at the
             beginning.
+        signal : neo.AnalogSignal
+            If a single `neo.AnalogSignal` object is passed to the function, even if
+            it contains several signals (arrays).
+        signals : list of neo.AnalogSignal
+            If the parameter is a container that has at least one `neo.AnalogSignal`
+            object. The name of the parameter is `signals` (plural).
         max_iterations : int
             Parameters that represent a maximum value should start with "max_"
             prefix, followed by the description as a full word. Therefore, do not
@@ -561,11 +580,11 @@ throughout Elephant.
             how they are described in the paper or implemented in another function.
         order : int
             Order of the Butterworth filter.
-            This is an example of how the `N` parameter of `scipy.butter`
+            This is an example of how the `N` parameter of `scipy.signal.butter`
             function could be provided by the user of the Elephant function.
             The docstring would present a text similar to
-            "`order` is passed as the `N` argument for `scipy.butter` function".
-            Also, in the code implementation, use key-word arguments to make this
+            "`order` is passed as the `N` argument for `scipy.signal.butter` function".
+            Also, in the code implementation, use keyword arguments to make this
             explicit (see the implementation of the function below)
         error : float
             In the case the function has an input parameter that corresponds to a
