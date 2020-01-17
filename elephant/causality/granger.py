@@ -15,7 +15,7 @@ Time-series Granger causality
 ~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: statistics/
+    :toctree: causality/
 
     pairwise_granger
     trivariate_granger
