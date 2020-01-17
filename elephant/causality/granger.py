@@ -126,13 +126,13 @@ def _vector_arm(signals, dimension, order):
 
     coeffs = np.stack(coeffs)
 
-    cov_mat = np.zeros((dimension, dimension))
+    cov_matrix = np.zeros((dimension, dimension))
 
-    #cov_mat = lag_covariances[0]
+    #cov_matrix = lag_covariances[0]
     for i in range(order):
-        cov_mat += np.matmul(coeffs[i],lag_covariances[i+1])
+        cov_matrix += np.matmul(coeffs[i],lag_covariances[i+1])
 
-    return coeffs, cov_mat
+    return coeffs, cov_matrix
 
 
 def pairwise_granger(signals, order):
