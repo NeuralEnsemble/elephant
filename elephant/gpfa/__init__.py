@@ -1,1 +1,5 @@
-from .gpfa import GPFA
+try:
+    from .gpfa import GPFA
+except ImportError:
+    # please run command `pip install -r requirements-extras.txt`
+    pass
