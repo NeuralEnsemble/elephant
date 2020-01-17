@@ -26,6 +26,7 @@ import numpy as np
 # TODO: include AnalogSignal implementation
 # TODO: refactor arguments/variables/function names to the new standard
 
+
 def _lag_covariances(time_series, dimension, max_lag):
     """
     Determine covariances of time series and time shift of itself up to a
