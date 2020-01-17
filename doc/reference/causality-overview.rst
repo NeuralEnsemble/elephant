@@ -1,5 +1,6 @@
 Overview
 --------
+This module provides function to estimate causal influences of signals on each other.
 
 Granger causality
 ~~~~~~~~~~~~~~~
@@ -16,9 +17,7 @@ References
 
 [2] Seth A (2007) Granger causality. Scholarpedia, 2(7):1667., revision #127333
 
-[3] Krumin M, Shoham S (2010) Multivariate autoregressive modeling and Granger causality analysis of multiple spike trains. Computational intelligence and neuroscience 2010:1-9.
-
-[4] Ding M, Chen Y, Bressler SL (2006) Granger causality: Basic theory and application to neuroscience. In Schelter S, Winterhalder N, Timmer J. Handbook of Time Series Analysis. Wiley, Wienheim.
+[3] Ding M, Chen Y, Bressler SL (2006) Granger causality: Basic theory and application to neuroscience. In Schelter S, Winterhalder N, Timmer J. Handbook of Time Series Analysis. Wiley, Wienheim.
 
 
 
