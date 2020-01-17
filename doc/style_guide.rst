@@ -625,7 +625,7 @@ throughout Elephant.
 
         .. math::
 
-            f = /frac{1}{T}
+            f = \frac{1}{T}
 
            `period` corresponds to :math:`T`
 
