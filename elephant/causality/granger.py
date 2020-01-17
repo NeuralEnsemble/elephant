@@ -116,9 +116,9 @@ def _vector_arm(signals, dimension, order):
 
     yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals,  dimension, order)
 
-    solution_vector = np.reshape(lag_covariances[1:], (dimension*order, dimension))
+    positive_lag_covariances = np.reshape(lag_covariances[1:], (dimension*order, dimension))
 
-    coeffs_pre = np.linalg.lstsq(yule_walker_matrix, solution_vector)[0]
+    coeffs_pre = np.linalg.lstsq(yule_walker_matrix, positive_lag_covariances)[0]
 
     coeffs = []
     for index in range(order):
