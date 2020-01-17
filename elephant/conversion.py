@@ -10,7 +10,7 @@ An example is the representation of a spike train as a sequence of 0-1 values
 :license: BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function
+from __future__ import division, print_function, unicode_literals
 
 import warnings
 from copy import deepcopy
