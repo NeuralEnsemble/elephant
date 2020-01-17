@@ -69,8 +69,9 @@ class kernel_TestCase(unittest.TestCase):
                        kernel_type in self.kernel_types]
         for kernel in kernel_list:
             b = kernel.boundary_enclosing_area_fraction(self.fraction).magnitude
-            restric_defdomain = \
-                np.linspace(-b, b, 2*b/kernel_resolution.magnitude) * sigma.units
+            n_points = int(2 * b / kernel_resolution.magnitude)
+            restric_defdomain = np.linspace(
+                -b, b, num=n_points) * sigma.units
             kern = kernel(restric_defdomain)
             norm = spint.cumtrapz(y=kern.magnitude,
                                   x=restric_defdomain.magnitude)[-1]
@@ -88,9 +89,9 @@ class kernel_TestCase(unittest.TestCase):
                            kernel_type in self.kernel_types]
             for kernel in kernel_list:
                 b = kernel.boundary_enclosing_area_fraction(self.fraction).magnitude
-                restric_defdomain = \
-                    np.linspace(-b, b, 2*b/kernel_resolution.magnitude) * \
-                    sigma.units
+                n_points = int(2 * b / kernel_resolution.magnitude)
+                restric_defdomain = np.linspace(
+                    -b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
                 av_integr = kern * restric_defdomain
                 average = spint.cumtrapz(y=av_integr.magnitude,
@@ -117,13 +118,14 @@ class kernel_TestCase(unittest.TestCase):
         for fraction in np.arange(0.15, 1.0, 0.4):
             for kernel in kernel_list:
                 b = kernel.boundary_enclosing_area_fraction(fraction).magnitude
-                restric_defdomain = \
-                    np.linspace(-b, b, 2*b/kernel_resolution.magnitude) * \
-                    sigma.units
+                n_points = int(2 * b / kernel_resolution.magnitude)
+                restric_defdomain = np.linspace(
+                    -b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
                 frac = spint.cumtrapz(y=kern.magnitude,
                                       x=restric_defdomain.magnitude)[-1]
                 self.assertAlmostEqual(frac, fraction, delta=0.002)
+
 
 if __name__ == '__main__':
     unittest.main()
