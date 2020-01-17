@@ -299,7 +299,10 @@ Each class should have a detailed docstring, according to the example below:
         is really needed, use simple matplotlib plots, that take only few lines.
         More complex examples, that require lots of plotting routines (e.g.,
         similar to Jupyter notebooks), should be placed as tutorials, with links
-        in the docstring -->
+        in the docstring. Examples should not load any data, but only use easy
+        generated data.
+        Finally, avoid using abbreviations in examples, such as
+        "import elephant.conversion as conv" -->
 
         >>> import neo
         >>> import numpy as np
@@ -457,7 +460,7 @@ throughout Elephant.
 .. code-block:: python
 
     def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
-                         target_spiketrain, max_iterations,
+                         target_spiketrain, signal, signals, max_iterations,
                          min_threshold, n_bins, n_surrogates, bin_size, max_size,
                          time_limits, time_range, t_start, t_stop, period, order,
                          error, capacity, source_matrix, cov_matrix,
@@ -510,6 +513,14 @@ throughout Elephant.
             Second parameter that is a single spike train. Note that the difference
             from `reference_spiketrain` is indicated by a meaningful name at the
             beginning.
+        signal : neo.AnalogSignal
+            If a single `neo.AnalogSignal` object is passed to the function, even if
+            it contains several signals (arrays).
+        signals : list of neo.AnalogSignal
+            If the parameter is a container that has at least one `neo.AnalogSignal`
+            object. The name of the parameter is `signals` (plural).
+        to refer to a single object (which may contain several actual signals) and 'signals' if a list of neo.AnalogSignal can be used
+
         max_iterations : int
             Parameters that represent a maximum value should start with "max_"
             prefix, followed by the description as a full word. Therefore, do not
