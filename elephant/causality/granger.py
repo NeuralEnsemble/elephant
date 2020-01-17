@@ -28,13 +28,13 @@ import numpy as np
 # TODO: Unittest for granger
 
 
-def _lag_covariances(time_series, dimension, max_lag):
+def _lag_covariances(signals, dimension, max_lag):
     """
     Determine covariances of time series and time shift of itself up to a
     maximal lag
     Parameters
     ----------
-    time_series: np.ndarray
+    signals: np.ndarray
         time series data
     dimension : int
         number of time series
@@ -46,18 +46,18 @@ def _lag_covariances(time_series, dimension, max_lag):
         correlations matrices of lagged signals
     """
 
-    length = np.size(time_series[0])
+    length = np.size(signals[0])
 
     assert (length >= max_lag), 'maximum lag larger than size of data'
 
     lag_covariances = []
-    series_mean = time_series.mean(1)
+    series_mean = signals.mean(1)
 
     for i in range(max_lag+1):
         temp_corr = np.zeros((dimension, dimension))
         for time in range(i, length):
-            temp_corr+= np.outer(time_series[ : ,time - i] - series_mean,
-            time_series[ : ,time] - series_mean)
+            temp_corr+= np.outer(signals[ : ,time - i] - series_mean,
+            signals[ : ,time] - series_mean)
         lag_covariances.append(temp_corr/(length-i))
 
     return np.asarray(lag_covariances)
@@ -96,12 +96,12 @@ def _Yule_Walker_matrix(data, dimension, order):
     return Yule_Walker_matrix, lag_covariances
 
 
-def _vector_arm(time_series, dimension, order):
+def _vector_arm(signals, dimension, order):
     """
     Determine coefficients of autoregressive model from time series data
     Parameters
     ----------
-    time_series : np.ndarray
+    signals : np.ndarray
         time series data
     order : int
         order of the autoregressive model
@@ -114,7 +114,7 @@ def _vector_arm(time_series, dimension, order):
         covariance matrix of
     """
 
-    Yule_Walker_matrix, lag_covariances = _Yule_Walker_matrix(time_series,  dimension, order)
+    Yule_Walker_matrix, lag_covariances = _Yule_Walker_matrix(signals,  dimension, order)
 
     solution_vector = np.reshape(lag_covariances[1:], (dimension*order, dimension))
 
@@ -135,13 +135,13 @@ def _vector_arm(time_series, dimension, order):
     return coeffs, cov_mat
 
 
-def pairwise_granger(time_series, order):
+def pairwise_granger(signals, order):
     """
     Determine Granger Causality of two time series
     Note: order paramter should be remove
     Parameters
     ----------
-    time_series : np.ndarray
+    signals : np.ndarray
         time series data
     order : int
         order of autoregressive model (should be removed)
@@ -153,14 +153,14 @@ def pairwise_granger(time_series, order):
     total_interdependence : float
     """
 
-    time_series_x_comp = np.asarray([time_series[0,:]])
-    time_series_y_comp = np.asarray([time_series[1,:]])
+    time_series_x_comp = np.asarray([signals[0,:]])
+    time_series_y_comp = np.asarray([signals[1,:]])
 
     coeffs_x, var_x = _vector_arm(time_series_x_comp, 1, order)
     coeffs_y, var_y = _vector_arm(time_series_y_comp, 1, order)
     print(var_x)
     print(var_y)
-    coeffs_xy, cov_xy = _vector_arm(time_series, 2, order)
+    coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
 
     direct_caus_x_y = np.log(var_x[0]/cov_xy[0,0])
     direct_causy_y_x = np.log(var_y[0]/cov_xy[1,1])
