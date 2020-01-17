@@ -180,7 +180,7 @@ class AssetTestCase(unittest.TestCase):
         # Check that the routine works for correct input...
         # ...same t_start, t_stop on both time axes
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, dt=5*pq.ms)
+            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms)
         trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
                                  [0.,  2.,  1.,  1.,  2.],
                                  [0.,  1.,  1.,  0.,  1.],
@@ -191,7 +191,8 @@ class AssetTestCase(unittest.TestCase):
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
         # ...different t_start, t_stop on the two time axes
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_start_y=1*pq.ms, dt=5*pq.ms)
+            [st1, st2], binsize, t_start_y=1*pq.ms,
+            t_stop_x=5*pq.ms, t_stop_y=6*pq.ms)
         trueimat_1_2 = np.array([[0.,  0.,  0.,  0., 0.],
                                  [2.,  1.,  1.,  2., 0.],
                                  [1.,  1.,  0.,  1., 0.],
@@ -201,16 +202,16 @@ class AssetTestCase(unittest.TestCase):
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
 
         # Check that errors are raised correctly...
-        # ...for dt too large compared to length of spike trains
+        # ...for t_stop too large compared to length of spike trains
         self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st2], binsize=binsize, dt=8*pq.ms)
+                          spiketrains=[st1, st2], binsize=binsize, t_stop_x=8*pq.ms)
         # ...for different SpikeTrain's t_starts
         self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st3], binsize=binsize, dt=8*pq.ms)
+                          spiketrains=[st1, st3], binsize=binsize)
         # ...when the analysis is specified for a time span where the
         # spike trains are not defined (e.g. t_start_x < SpikeTrain.t_start)
         self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st2], binsize=binsize, dt=8*pq.ms,
+                          spiketrains=[st1, st2], binsize=binsize,
                           t_start_x=-2*pq.ms, t_start_y=-2*pq.ms)
 
 
