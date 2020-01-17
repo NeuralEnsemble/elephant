@@ -548,19 +548,23 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     D = scipy.spatial.distance_matrix(points, points)
 
     # Compute the angular coefficients of the line between each pair of points
-    x_array = 1. * np.vstack([x for i in x])
-    y_array = 1. * np.vstack([y for i in y])
+    x_array = np.tile(x, reps=(len(x), 1))
+    y_array = np.tile(y, reps=(len(y), 1))
     dX = x_array.T - x_array  # dX[i,j]: x difference between points i and j
     dY = y_array.T - y_array  # dY[i,j]: y difference between points i and j
-    AngCoeff = dY / dX
 
     # Compute the matrix Theta of angles between each pair of points
-    Theta = np.arctan(AngCoeff)
-    n = Theta.shape[0]
-    Theta[range(n), range(n)] = 0  # set angle to 0 if points identical
+    theta = np.arctan2(dY, dX)
+
+    # Transform [-pi, pi] back to [-pi/2, pi/2]
+    theta[theta < -np.pi / 2] += np.pi
+    theta[theta > np.pi / 2] -= np.pi
+    assert np.allclose(np.diagonal(theta), 0), \
+        "Diagonal elements should be zero due to `np.arctan2(0, 0) == 0` " \
+        "convention."
 
     # Compute the matrix of stretching factors for each pair of points
-    stretch_mat = (1 + ((stretch - 1.) * np.abs(np.sin(alpha - Theta))))
+    stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
 
     # Return the stretched distance matrix
     return D * stretch_mat
@@ -720,7 +724,7 @@ def probability_matrix_montecarlo(
 
     Returns
     -------
-    pmat : ndarray
+    pmat : np.ndarray
         the cumulative probability matrix. pmat[i, j] represents the
         estimated probability of having an overlap between bins i and j
         STRICTLY LOWER than the observed overlap, under the null hypothesis
@@ -728,7 +732,7 @@ def probability_matrix_montecarlo(
 
     See also
     --------
-    probability_matrix_analytical() for analytical derivation of the matrix
+    probability_matrix_analytical : for analytical derivation of the matrix
     """
 
     # Compute the intersection matrix of the original data
@@ -760,6 +764,7 @@ def probability_matrix_montecarlo(
     # equal to that of the original data
     pmat = np.array(np.zeros(imat.shape), dtype=int)
     if verbose:
+        # TODO: move to tqdm
         print('pmat_bootstrap(): begin of bootstrap...')
     for i in range(n_surr):  # For each surrogate id i
         if verbose:
@@ -775,6 +780,7 @@ def probability_matrix_montecarlo(
     if verbose:
         print('pmat_bootstrap(): done')
 
+    # TODO: just always return imat
     if return_imat:
         return imat, pmat, x_edges, y_edges
     return pmat, x_edges, y_edges
@@ -1018,12 +1024,13 @@ def probability_matrix_analytical(
         for elem in elems:
             pmat[elem[0], elem[1]] = 0.5
 
+    # TODO: always return imat
     if return_imat:
         return imat, pmat, xx, yy
     return pmat, xx, yy
 
 
-def wrong_order(a):
+def _wrong_order(a):
     for i in range(len(a) - 1):
         if a[i] < a[i + 1]:
             return True
@@ -1124,7 +1131,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
         iter_id += 1
 
         # 2. Test for valid pyramid and exit loop early
-        if wrong_order(matrix_entries):
+        if _wrong_order(matrix_entries):
             continue
 
         di = -np.diff(np.hstack([n, list(matrix_entries), 0]))
