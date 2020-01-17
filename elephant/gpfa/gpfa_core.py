@@ -6,6 +6,8 @@ GPFA core functionality.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import time
 import warnings
 
