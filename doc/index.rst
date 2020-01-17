@@ -24,7 +24,6 @@ Table of Contents
     tutorial
     modules
     developers_guide
-    style_guide
     authors
     release_notes
     acknowledgements
