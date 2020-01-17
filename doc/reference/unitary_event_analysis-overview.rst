@@ -4,7 +4,8 @@ Synopsis
 Unitary Event (UE) analysis is a statistical method that
 analyzes excess spike correlation between simultaneously recorded neurons in a
 time resolved manner by comparing the empirical spike coincidences to the
-expected number based on the firing rates of the neurons (see :cite:`unitary-event-analysis-Gruen99_67`).
+expected number based on the firing rates of the neurons (see :cite:`unitary_event_analysis-Gruen99_67`).
+
 
 Background
 ~~~~~~~~~~
@@ -19,15 +20,15 @@ neurons. Key elements of the method are the proper formulation of the null
 hypothesis and the derivation of the corresponding count distribution of
 synchronous spike events used in the significance test. The analysis is
 performed in a sliding window manner and yields a time-resolved measure of
-significant spike synchrony. For further reading, see :cite:`unitary-event-analysis-Riehle97_1950,unitary-event-analysis-Gruen02_43,unitary-event-analysis-Gruen02_81,unitary-event-analysis-Gruen03,unitary-event-analysis-Gruen09_1126`
+significant spike synchrony. For further reading, see :cite:`unitary_event_analysis-Riehle97_1950,unitary_event_analysis-Gruen02_43,unitary_event_analysis-Gruen02_81,unitary_event_analysis-Gruen03,unitary_event_analysis-Gruen09_1126,unitary_event_analysis-Gruen99_67`
 
 
 References
 ~~~~~~~~~~
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: UEA
-   :keyprefix: unitary-event-analysis
+   :labelprefix: uea-
+   :keyprefix: unitary_event_analysis-
    :style: unsrt
 
 

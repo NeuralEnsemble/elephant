@@ -669,7 +669,7 @@ def jointJ_window_analysis(
         method='analytic_TrialByTrial', t_start=None,
         t_stop=None, binary=True, n_surr=100):
     """
-    Calculates the joint surprise in a sliding window fashion
+    Calculates the joint surprise in a sliding window fashion (see :cite:`unitary_event_analysis-Gruen99_67`).
 
     Parameters
     ----------
@@ -736,7 +736,6 @@ def jointJ_window_analysis(
               average firing rate of each neuron
               shape: different pattern hash --> 0-axis
                   different window --> 1-axis
-
     """
     if not isinstance(data[0][0], neo.SpikeTrain):
         raise ValueError(
