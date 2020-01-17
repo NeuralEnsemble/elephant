@@ -33,7 +33,7 @@ def fit(seqs_train, x_dim=3, bin_width=20.0, min_var_frac=0.01, em_tol=1.0E-8,
         the n-th experimental trial) has fields
         T : int
             number of bins
-        y : (#units, T) ndarray
+        y : (#units, T) np.ndarray
             neural data
     x_dim : int, optional
         state dimensionality
@@ -74,16 +74,16 @@ def fit(seqs_train, x_dim=3, bin_width=20.0, min_var_frac=0.01, em_tol=1.0E-8,
         When the GPFA method is used, following parameters are contained
             covType: {'rbf', 'tri', 'logexp'}
                 type of GP covariance
-            gamma: ndarray of shape (1, #latent_vars)
+            gamma: np.ndarray of shape (1, #latent_vars)
                 related to GP timescales by 'bin_width / sqrt(gamma)'
-            eps: ndarray of shape (1, #latent_vars)
+            eps: np.ndarray of shape (1, #latent_vars)
                 GP noise variances
-            d: ndarray of shape (#units, 1)
+            d: np.ndarray of shape (#units, 1)
                 observation mean
-            C: ndarray of shape (#units, #latent_vars)
+            C: np.ndarray of shape (#units, #latent_vars)
                 mapping between the neuronal data space and the latent variable
                 space
-            R: ndarray of shape (#units, #latent_vars)
+            R: np.ndarray of shape (#units, #latent_vars)
                 observation noise covariance
 
     fit_info : dict
@@ -154,24 +154,24 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         GPFA model parameters at which EM algorithm is initialized
         covType : {'rbf', 'tri', 'logexp'}
             type of GP covariance
-        gamma : ndarray of shape (1, #latent_vars)
+        gamma : np.ndarray of shape (1, #latent_vars)
             related to GP timescales by
             'bin_width / sqrt(gamma)'
-        eps : ndarray of shape (1, #latent_vars)
+        eps : np.ndarray of shape (1, #latent_vars)
             GP noise variances
-        d : ndarray of shape (#units, 1)
+        d : np.ndarray of shape (#units, 1)
             observation mean
-        C : ndarray of shape (#units, #latent_vars)
+        C : np.ndarray of shape (#units, #latent_vars)
             mapping between the neuronal data space and the
             latent variable space
-        R : ndarray of shape (#units, #latent_vars)
+        R : np.ndarray of shape (#units, #latent_vars)
             observation noise covariance
     seqs_train : np.recarray
         training data structure, whose n-th entry (corresponding to the n-th
         experimental trial) has fields
         T : int
             number of bins
-        y : ndarray (yDim x T)
+        y : np.ndarray (yDim x T)
             neural data
     max_iters : int, optional
         number of EM iterations to run
@@ -202,12 +202,12 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     seqs_latent : np.recarray
         a copy of the training data structure, augmented with the new
         fields:
-        xsm : ndarray of shape (#latent_vars x #bins)
+        xsm : np.ndarray of shape (#latent_vars x #bins)
             posterior mean of latent variables at each time bin
-        Vsm : ndarray of shape (#latent_vars, #latent_vars, #bins)
+        Vsm : np.ndarray of shape (#latent_vars, #latent_vars, #bins)
             posterior covariance between latent variables at each
             timepoint
-        VsmGP : ndarray of shape (#bins, #bins, #latent_vars)
+        VsmGP : np.ndarray of shape (#bins, #bins, #latent_vars)
             posterior covariance over time for each latent
             variable
     ll : list
@@ -321,21 +321,21 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
     seqs : np.recarray
         Input data structure, whose n-th element (corresponding to the n-th
         experimental trial) has fields:
-        y : ndarray of shape (#units, #bins)
+        y : np.ndarray of shape (#units, #bins)
             neural data
         T : int
             number of bins
     params : dict
         GPFA model parameters whe the following fields:
-        C : ndarray
+        C : np.ndarray
             FA factor loadings matrix
-        d : ndarray
+        d : np.ndarray
             FA mean vector
-        R : ndarray
+        R : np.ndarray
             FA noise covariance matrix
-        gamma : ndarray
+        gamma : np.ndarray
             GP timescale
-        eps : ndarray
+        eps : np.ndarray
             GP noise variance
     get_ll : bool, optional
           specifies whether to compute data log likelihood (default: True)
@@ -345,12 +345,12 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
     seqs_latent : np.recarray
         a copy of the input data structure, augmented with the new
         fields:
-        xsm : ndarray of shape (#latent_vars x #bins)
+        xsm :  (#latent_vars, #bins) np.ndarray
               posterior mean of latent variables at each time bin
-        Vsm : ndarray of shape (#latent_vars, #latent_vars, #bins)
+        Vsm :  (#latent_vars, #latent_vars, #bins) np.ndarray
               posterior covariance between latent variables at each
               timepoint
-        VsmGP : ndarray of shape (#bins, #bins, #latent_vars)
+        VsmGP :  (#bins, #bins, #latent_vars) np.ndarray
                 posterior covariance over time for each latent
                 variable
     ll : float
@@ -515,16 +515,16 @@ def orthonormalize(params_est, seqs):
         covType : {'rbf', 'tri', 'logexp'}
             type of GP covariance
             Currently, only 'rbf' is supported.
-        gamma : ndarray of shape (1, #latent_vars)
+        gamma : np.ndarray of shape (1, #latent_vars)
             related to GP timescales by 'bin_width / sqrt(gamma)'
-        eps : ndarray of shape (1, #latent_vars)
+        eps : np.ndarray of shape (1, #latent_vars)
             GP noise variances
-        d : ndarray of shape (#units, 1)
+        d : np.ndarray of shape (#units, 1)
             observation mean
-        C : ndarray of shape (#units, #latent_vars)
+        C : np.ndarray of shape (#units, #latent_vars)
             mapping between the neuronal data space and the latent variable
             space
-        R : ndarray of shape (#units, #latent_vars)
+        R : np.ndarray of shape (#units, #latent_vars)
             observation noise covariance
 
     seqs : np.recarray
@@ -534,14 +534,14 @@ def orthonormalize(params_est, seqs):
         experimental trial) has fields
         T : int
           number of timesteps
-        y : ndarray of shape (#units, #bins)
+        y : np.ndarray of shape (#units, #bins)
           neural data
-        xsm : ndarray of shape (#latent_vars, #bins)
+        xsm : np.ndarray of shape (#latent_vars, #bins)
           posterior mean of latent variables at each time bin
-        Vsm : ndarray of shape (#latent_vars, #latent_vars, #bins)
+        Vsm : np.ndarray of shape (#latent_vars, #latent_vars, #bins)
           posterior covariance between latent variables at each
           timepoint
-        VsmGP : ndarray of shape (#bins, #bins, #latent_vars)
+        VsmGP : np.ndarray of shape (#bins, #bins, #latent_vars)
           posterior covariance over time for each latent variable
 
     Returns

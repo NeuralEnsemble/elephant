@@ -22,13 +22,13 @@ def get_seqs(data, bin_size, use_sqrt=True):
 
     Parameters
     ----------
-    data : list of list of Spiketrain objects
+    data : list of list of neo.SpikeTrain
         The outer list corresponds to trials and the inner list corresponds to
         the neurons recorded in that trial, such that data[l][n] is the
-        Spiketrain of neuron n in trial l. Note that the number and order of
-        Spiketrains objects per trial must be fixed such that data[l][n] and
-        data[k][n] refer to the same spike generator for any choice of l,k and
-        n.
+        spike train of neuron n in trial l. Note that the number and order of
+        neo.SpikeTrains objects per trial must be fixed such that data[l][n]
+        and data[k][n] refer to the same spike generator for any choice of l,k
+        and n.
     bin_size: quantity.Quantity
         Spike bin width
 
@@ -44,7 +44,7 @@ def get_seqs(data, bin_size, use_sqrt=True):
         trial) has fields
         T : int
             number of timesteps in the trial
-        y : (yDim, T) ndarray
+        y : (yDim, T) np.ndarray
             neural data
 
     Raises
@@ -89,7 +89,7 @@ def cut_trials(seq_in, seg_length=20):
         trial) has fields
         T : int
             number of timesteps in trial
-        y : (yDim, T) ndarray
+        y : (yDim, T) np.ndarray
             neural data
 
     seg_length : int
@@ -104,7 +104,7 @@ def cut_trials(seq_in, seg_length=20):
         trial) has fields
         T : int
             number of timesteps in segment
-        y : (yDim, T) ndarray
+        y : (yDim, T) np.ndarray
             neural data
 
     Raises
@@ -193,12 +193,12 @@ def make_k_big(params, n_timesteps):
 
     Returns
     -------
-    K_big : ndarray
+    K_big : np.ndarray
         GP covariance matrix with dimensions (xDim * T) x (xDim * T).
         The (t1, t2) block is diagonal, has dimensions xDim x xDim, and
         represents the covariance between the state vectors at timesteps t1 and
         t2. K_big is sparse and striped.
-    K_big_inv : ndarray
+    K_big_inv : np.ndarray
         Inverse of K_big
     logdet_K_big : float
         Log determinant of K_big
@@ -253,7 +253,7 @@ def inv_persymm(M, blk_size):
 
     Parameters
     ----------
-    M : (blkSize*T, blkSize*T) ndarray
+    M : (blkSize*T, blkSize*T) np.ndarray
         The block persymmetric matrix to be inverted.
         Each block is blkSize x blkSize, arranged in a T x T grid.
     blk_size : int
@@ -261,7 +261,7 @@ def inv_persymm(M, blk_size):
 
     Returns
     -------
-    invM : (blkSize*T, blkSize*T) ndarray
+    invM : (blkSize*T, blkSize*T) np.ndarray
         Inverse of M
     logdet_M : float
         Log determinant of M
@@ -303,7 +303,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
 
      Parameters
      ----------
-     p_in :  (xDim*Thalf, xDim*T) ndarray
+     p_in :  (xDim*Thalf, xDim*T) np.ndarray
         Top half of block persymmetric matrix, where Thalf = ceil(T/2)
      blk_size : int
         Edge length of one block
@@ -315,7 +315,7 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
 
      Returns
      -------
-     Pout : (xDim*T, xDim*T) ndarray
+     Pout : (xDim*T, xDim*T) np.ndarray
         Full block persymmetric matrix
     """
     if blk_size_vert is None:
@@ -501,18 +501,18 @@ def orthonormalize(x, l):
 
     Parameters
     ----------
-    x :  (xDim, T) ndarray
+    x :  (xDim, T) np.ndarray
         Latent variables
-    l :  (yDim, xDim) ndarray
+    l :  (yDim, xDim) np.ndarray
         Loading matrix
 
     Returns
     -------
-    Xorth : (xDim, T) ndarray
+    Xorth : (xDim, T) np.ndarray
         Orthonormalized latent variables
-    Lorth : (yDim, xDim) ndarray
+    Lorth : (yDim, xDim) np.ndarray
         Orthonormalized loading matrix
-    TT :  (xDim, xDim) ndarray
+    TT :  (xDim, xDim) np.ndarray
        Linear transform applied to latent variables
     """
     xDim = l.shape[1]

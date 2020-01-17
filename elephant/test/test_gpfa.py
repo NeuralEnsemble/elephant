@@ -93,9 +93,6 @@ class GPFATestCase(unittest.TestCase):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa.fit(self.data1)
         xorth = gpfa.transform(self.data1)
-        self.assertEqual(gpfa.fit_info['bin_size'], 20*pq.ms)
-        self.assertEqual(gpfa.fit_info['min_var_frac'], 0.01)
-        self.assertTrue(np.all(gpfa.fit_info['has_spikes_bool']))
         self.assertAlmostEqual(gpfa.fit_info['log_likelihood'], -8172.004695554373)
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
@@ -115,6 +112,7 @@ class GPFATestCase(unittest.TestCase):
         gpfa1 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa1.fit(self.data0)
         xorth1 = gpfa1.transform(self.data0)
+        print(gpfa1.__dict__)
 
         gpfa2 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa2.fit(self.data0[:-2])
@@ -152,8 +150,6 @@ class GPFATestCase(unittest.TestCase):
     def test_data2(self):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
         gpfa.fit(self.data2)
-        self.assertEqual(gpfa.fit_info['bin_size'], self.bin_size,
-                         "Input and output bin_size don't match")
         n_trials = len(self.data2)
         returned_data = gpfa.valid_data_names
         seqs = gpfa.transform(self.data2, returned_data=returned_data)

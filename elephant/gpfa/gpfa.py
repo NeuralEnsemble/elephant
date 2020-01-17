@@ -34,26 +34,7 @@ Internally, the analysis consists of the following steps:
    (cf., `gpfa_core.orthonormalize()`)
 
 
-There are two principle scenarios of using the GPFA analysis, both of which can
-be performed in an instance of the GPFA() class.
 
-In the first scenario, only one single dataset is used to fit the model and to
-extract the neural trajectories. The parameters that describe the
-transformation are first extracted from the data using the fit() method of the
-GPFA class. Then the same data is projected into the orthonormal basis using
-the method transform(). The fit_transform() method can be used to perform these
-two steps at once.
-
-In the second scenario, a single dataset is split into training and test
-datasets. Here, the parameters are estimated from the training data. Then the
-test data is projected into the low-dimensional space previously obtained from
-the training data. This analysis is performed by executing first the fit()
-method on the training data, followed by the transform() method on the test
-dataset.
-
-The GPFA class is compatible to the cross-validation functions of
-`sklearn.model_selection`, such that users can perform cross-validation to
-search for a set of parameters yielding best performance using these functions.
 
 References
 ----------
@@ -80,102 +61,151 @@ from elephant.gpfa import gpfa_core, gpfa_util
 
 class GPFA(sklearn.base.BaseEstimator):
     """
-    Prepares data and calls functions for extracting neural trajectories in the
-    orthonormal space.
+    Apply Gaussian process factor analysis (GPFA) to spike train data
+
+    There are two principle scenarios of using the GPFA analysis, both of which
+    can be performed in an instance of the GPFA() class.
+
+    In the first scenario, only one single dataset is used to fit the model and
+    to extract the neural trajectories. The parameters that describe the
+    transformation are first extracted from the data using the fit() method of
+    the GPFA class. Then the same data is projected into the orthonormal basis
+    using the method transform(). The fit_transform() method can be used to
+    perform these two steps at once.
+
+    In the second scenario, a single dataset is split into training and test
+    datasets. Here, the parameters are estimated from the training data. Then
+    the test data is projected into the low-dimensional space previously
+    obtained from the training data. This analysis is performed by executing
+    first the fit() method on the training data, followed by the transform()
+    method on the test dataset.
+
+    The GPFA class is compatible to the cross-validation functions of
+    `sklearn.model_selection`, such that users can perform cross-validation to
+    search for a set of parameters yielding best performance using these
+    functions.
 
     Parameters
     ----------
-    bin_size : quantities.Quantity, optional
-        Width of each time bin.
-        Default is 20 ms.
     x_dim : int, optional
-        State dimensionality.
-        Default is 3.
+        state dimensionality
+        Default: 3
+    bin_size : float, optional
+        spike bin width in msec
+        Default: 20.0
     min_var_frac : float, optional
         fraction of overall data variance for each observed dimension to set as
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
-        (default: 0.01) (See Martin & McDonald, Psychometrika, Dec 1975.)
-    tau_init : quantities.Quantity, optional
-        GP timescale initialization in msec (default: 100 ms)
-    eps_init : float, optional
-        GP noise variance initialization (default: 1e-3)
-    tol : float, optional
-          stopping criterion for EM (default: 1e-8)
+        Default: 0.01
+        (See Martin & McDonald, Psychometrika, Dec 1975.)
+    em_tol : float, optional
+        stopping criterion for EM
+        Default: 1e-8
     em_max_iters : int, optional
-        Number of EM iterations to run (default: 500).
-
-    Raises
-    ------
-    ValueError
-        If `data` is an empty list.
-        If `bin_size` if not a `pq.Quantity`.
-        If `tau_init` if not a `pq.Quantity`.
-        If `data[0][1][0]` is not a `neo.SpikeTrain`.
+        number of EM iterations to run
+        Default: 500
+    tau_init : float, optional
+        GP timescale initialization in msec
+        Default: 100
+    eps_init : float, optional
+        GP noise variance initialization
+        Default: 1e-3
+    freq_ll : int, optional
+        data likelihood is computed at every freq_ll EM iterations. freq_ll = 1
+        means that data likelihood is computed at every iteration.
+        Default: 5
+    verbose : bool, optional
+        specifies whether to display status messages
+        Default: False
 
     Attributes
     ----------
-    params_est: dict
+    valid_data_names : tuple of str
+        Names of the data contained in the resultant data structure, used to
+        check the validity of users' request
+    has_spikes_bool : np.ndarray of bool
+        Indicates if a neuron has any spikes across trials.
+    params_est : dict
         Estimated model parameters.
-        When the GPFA method is used, following parameters are contained
-            covType: {'rbf', 'tri', 'logexp'}
-                type of GP covariance
-                Currently, only 'rbf' is supported.
-            gamma: ndarray of shape (1, #latent_vars)
-                related to GP timescales by 'bin_width / sqrt(gamma)'
-            eps: ndarray of shape (1, #latent_vars)
-                GP noise variances
-            d: ndarray of shape (#units, 1)
-                observation mean
-            C: ndarray of shape (#units, #latent_vars)
-                mapping between the neuronal data space and the latent variable
-                space
-            Corth: ndarray of shape (#units, #latent_vars)
-                mapping between the neuronal data space and the orthonormal
-                latent variable space
-            R: ndarray of shape (#units, #latent_vars)
-                observation noise covariance
-
+        After the fit() and transform() methods are used, following parameters
+        are contained
+        covType : str
+            type of GP covariance, either 'rbf', 'tri', or 'logexp'.
+            Currently, only 'rbf' is supported.
+        gamma : (1, #latent_vars) np.ndarray
+            related to GP timescales of latent variables before
+            orthonormalization by :math:`bin_size / sqrt(gamma)`
+        eps : (1, #latent_vars) np.ndarray
+            GP noise variances
+        d : (#units, 1) np.ndarray
+            observation mean
+        C : (#units, #latent_vars) np.ndarray
+            loading matrix, representing the mapping between the neuronal data
+            space and the latent variable space
+        Corth : (#units, #latent_vars) np.ndarray
+            mapping between the neuronal data space and the orthonormal
+            latent variable space
+        R : (#units, #latent_vars) np.ndarray
+            observation noise covariance
     fit_info : dict
-        Information of the fitting process and the parameters used there:
+        Information of the fitting process
         iteration_time : list
             containing the runtime for each iteration step in the EM algorithm.
         log_likelihood : float
             maximized likelihood obtained in the E-step of the EM algorithm.
-        bin_size: int
-            Width of the bins.
-        has_spikes_bool : ndarray
-            Indicates if a neuron has any spikes across trials.
-        method: str
+        method : str
             Method name.
+
+    Methods
+    -------
+    fit
+    transform
+    fit_transform
+    score
+
+    Raises
+    ------
+    ValueError
+        If `bin_size` if not a `pq.Quantity`.
+        If `tau_init` if not a `pq.Quantity`.
 
     Examples
     --------
     In the following example, we calculate the neural trajectories of 20
-    Poisson spike train generators recorded in 50 trials with randomized
+    independent Poisson spike trains recorded in 50 trials with randomized
     rates up to 100 Hz.
+
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.gpfa import GPFA
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    ...
     >>> data = []
     >>> for trial in range(50):
     >>>     n_channels = 20
     >>>     firing_rates = np.random.randint(low=1, high=100,
-    >>>         size=n_channels) * pq.Hz
+    ...                                      size=n_channels) * pq.Hz
     >>>     spike_times = [homogeneous_poisson_process(rate=rate)
-    >>>         for rate in firing_rates]
+    ...                    for rate in firing_rates]
     >>>     data.append((trial, spike_times))
+    ...
     >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
     >>> gpfa.fit(data)
-    >>> seqs = gpfa.transform(data)
+    >>> results = gpfa.transform(data, returned_data=['xorth', 'xsm'])
+    >>> xorth = results['xorth']; xsm = results['xsm']
     or simply
-    >>> seqs = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data)
+    >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,
+    ...                returned_data=['xorth', 'xsm'])
     """
 
     def __init__(self, bin_size=20*pq.ms, x_dim=3, min_var_frac=0.01,
                  tau_init=100.0*pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
-                 em_max_iters=500, freq_ll=5, valid_data_names=('xorth', 'xsm', 'Vsm', 'VsmGP', 'y')):
+                 em_max_iters=500, freq_ll=5):
+        """
+        Constructor
+        (actual documentation is in class documentation, see above!)
+        """
         self.bin_size = bin_size
         self.x_dim = x_dim
         self.min_var_frac = min_var_frac
@@ -184,7 +214,7 @@ class GPFA(sklearn.base.BaseEstimator):
         self.em_tol = em_tol
         self.em_max_iters = em_max_iters
         self.freq_ll = freq_ll
-        self.valid_data_names = valid_data_names
+        self.valid_data_names = ('xorth', 'xsm', 'Vsm', 'VsmGP', 'y')
 
         if not isinstance(self.bin_size, pq.Quantity):
             raise ValueError("'bin_size' must be of type pq.Quantity")
@@ -197,16 +227,17 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        data : list of list of Spiketrain objects
+        data : list of list of neo.SpikeTrain
             Spike train data to be transformed to latent variables.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that data[l][n] is the
-            Spiketrain of neuron n in trial l. Note that the number and order
-            of Spiketrains objects per trial must be fixed such that data[l][n]
-            and data[k][n] refer to spike trains of the same neuron for any
-            choice of l,k and n.
-        verbose : bool, optional
-            specifies whether to display status messages (default: False)
+            Spike train of neuron n in trial l. Note that the number and order
+            of neo.SpikeTrain objects per trial must be fixed such that
+            data[l][n] and data[k][n] refer to spike trains of the same neuron
+            for any choice of l,k and n.
+        verbose : bool
+            specifies whether to display status messages
+            Default: False
 
         Returns
         -------
@@ -217,7 +248,8 @@ class GPFA(sklearn.base.BaseEstimator):
         ------
         ValueError
             If `data` is an empty list.
-            If `data[0][1][0]` is not a `neo.SpikeTrain`.
+            If `data[0][0]` is not a `neo.SpikeTrain`.
+            If covariance matrix of input spike data is rank deficient.
         """
         self._check_training_data(data)
         seqs_train = self._format_training_data(data)
@@ -268,10 +300,6 @@ class GPFA(sklearn.base.BaseEstimator):
             freq_ll = self.freq_ll,
             verbose=verbose)
 
-        self.fit_info['has_spikes_bool'] = self.has_spikes_bool
-        self.fit_info['min_var_frac'] = self.min_var_frac
-        self.fit_info['bin_size'] = self.bin_size
-
         return self
 
     def transform(self, data, returned_data=['xorth']):
@@ -282,15 +310,15 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        data : list of list of Spiketrain objects
+        data : list of list of neo.SpikeTrain
             Spike train data to be transformed to latent variables.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that data[l][n] is the
-            Spiketrain of neuron n in trial l. Note that the number and order
-            of Spiketrains objects per trial must be fixed such that data[l][n]
+            spike train of neuron n in trial l. Note that the number and order
+            of neo.SpikeTrains objects per trial must be fixed such that data[l][n]
             and data[k][n] refer to spike trains of the same neuron for any
             choice of l,k and n.
-        returned_data : a list of str
+        returned_data : list of str
             The dimensionality reduction transform generates the following
             resultant data:
                'xorth': orthonormalized posterior mean of latent variable
@@ -304,19 +332,19 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Returns
         -------
-        output : numpy.ndarray or dict
-            When the length of `returned_data` is one, a single ndarray
+        np.ndarray or dict
+            When the length of `returned_data` is one, a single np.ndarray
             containing the requested data is returned. Otherwise, a dict of
-            multiple ndarrays with the keys identical to the data names in
+            multiple np.ndarrays with the keys identical to the data names in
             `returned_data` is returned.
-            N-th entry of each ndarray is a ndarray of the following shape,
-            specific to each data type, containing the corresponding data for
-            the n-th trial:
-                `xorth`: ndarray of shape (#latent_vars, #bins)
-                `xsm`: ndarray of shape (#latent_vars, #bins)
-                `y`: ndarray of shape (#units, #bins)
-                `Vsm`: ndarray of shape (#latent_vars, #latent_vars, #bins)
-                `VsmGP`: ndarray of shape (#bins, #bins, #latent_vars)
+            N-th entry of each np.ndarray is a np.ndarray of the following
+            shape, specific to each data type, containing the corresponding
+            data for the n-th trial:
+                `xorth`: (#latent_vars, #bins) np.ndarray
+                `xsm`:  (#latent_vars, #bins) np.ndarray
+                `y`:  (#units, #bins) np.ndarray
+                `Vsm`:  (#latent_vars, #latent_vars, #bins) np.ndarray
+                `VsmGP`:  (#bins, #bins, #latent_vars) np.ndarray
             Note that #bins can vary across trials reflecting the trial
             durations in the provided data.
 
@@ -325,6 +353,8 @@ class GPFA(sklearn.base.BaseEstimator):
         ValueError
             If the number of neurons in `data` is different from that in the
             training data.
+            If `returned_data` contains str different from the ones in
+            `self.valid_data_names`
         """
         if len(data[0]) != len(self.has_spikes_bool):
             raise ValueError("`data` must contain the same number of neurons as the training data")
@@ -359,5 +389,24 @@ class GPFA(sklearn.base.BaseEstimator):
         return self._transform(seqs_train, returned_data)
 
     def score(self, data):
-       self.transform(data)
-       return self.fit_info['log_likelihood']
+        """
+        Returns the log-likelihood of the given data under the fitted model
+
+        Parameters
+        ----------
+        data : list of list of neo.SpikeTrain
+            Spike train data to be scored.
+            The outer list corresponds to trials and the inner list corresponds
+            to the neurons recorded in that trial, such that data[l][n] is the
+            spike train of neuron n in trial l. Note that the number and order
+            of neo.SpikeTrain objects per trial must be fixed such that
+            data[l][n] and data[k][n] refer to spike trains of the same neuron
+            for any choice of l,k and n.
+
+        Returns
+        -------
+        log_likelihood : float
+            log-likelihood of the given data under the fitted model
+        """
+        self.transform(data)
+        return self.fit_info['log_likelihood']
