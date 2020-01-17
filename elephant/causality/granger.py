@@ -167,12 +167,12 @@ def pairwise_granger(signals, order):
 
     cov_determinant = np.linalg.det(cov_xy)
 
-    inst_caus = np.log((cov_xy[0,0]*cov_xy[1,1])/cov_determinant)
+    instantaneous_causality = np.log((cov_xy[0,0]*cov_xy[1,1])/cov_determinant)
 
-    tot_interdep = np.log(var_x[0]*var_y[0]/cov_determinant)
+    total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
 
 
     print(coeffs_xy)
     print(cov_xy)
 
-    return directional_causality_x_y, directional_causality_y_x, inst_caus, tot_interdep
+    return directional_causality_x_y, directional_causality_y_x, instantaneous_causality, total_interdependence
