@@ -62,18 +62,18 @@ Each class should have a detailed docstring, according to the example below:
         backticks, e.g. :math:`x^2 + y^2 = z^2`.
 
         To refer to a paper in which formula is described, use the expression
-        'see [1]_' - it will become an interactive link on the readthedocs website.
+        "see [1]_" - it will become an interactive link on the readthedocs website.
         The underscore after the closing bracket is mandatory for the link to
         work.
 
-        To refer to a note in the "Notes" section, simply write 'see Notes [1]'
+        To refer to a note in the "Notes" section, simply write "see Notes [1]".
 
         Variable, module, function, and class names should be written
         between single back-ticks (`kernels.AlphaKernel`), NOT *bold*.
 
         For common modules such as Numpy and Quantities, use the notation
         according to the import statement. For example:
-        "this function uses `np.diff`", not "`numpy.diff`".
+        "this function uses `np.diff`", not "uses `numpy.diff`".
 
         Prefixes for common packages in Elephant are the following:
 
@@ -130,7 +130,7 @@ Each class should have a detailed docstring, according to the example below:
         spiketrains : neo.SpikeTrain or list of neo.SpikeTrain or np.ndarray
             When the parameter can be a container (such as list or tuple), you can
             specify the type of elements using "of". But use the Python type name
-            (do not add 's' to make it plural; e.g., do not write
+            (do not add "s" to make it plural; e.g., do not write
             "list of neo.SpikeTrains" or "list of neo.SpikeTrain objects").
         counts_matrix : (N, M) np.ndarray
             This is the way to indicate dimensionality of the required array
@@ -168,7 +168,7 @@ Each class should have a detailed docstring, according to the example below:
         <!-- This section is rarely used in class docstrings, but often in
         function docs. Follow the general recommendation of numpydoc.
         If there is more than one returned value, use variable names for the
-        returned value, like 'error_matrix' below. -->
+        returned value, like `error_matrix` below. -->
         error_matrix : np.ndarray
             A matrix is stored in a variable called `error_matrix`, containing
             errors estimated from some calculations. The function "return"
@@ -274,7 +274,7 @@ Each class should have a detailed docstring, according to the example below:
 
         References
         ----------
-        .. [1] Smith J. (2020). Very catchy title. Elephant, 1.0.0. The '..' in
+        .. [1] Smith J., "Very catchy title," Elephant 1.0.0, 2020. The ".." in
                front makes the ref referencable in other parts of the docstring.
                The indentation should match the level of the first word AFTER the
                number (in this case "Smith").
@@ -298,7 +298,7 @@ Each class should have a detailed docstring, according to the example below:
         ... # This is a way to make a blank line within the example code.
         >>> st = neo.SpikeTrain([0, 1, 2, 3] * pq.ms, t_start=0 * pq.ms,
         ...                     t_stop=10 * pq.ms, sampling_rate=1 * pq.Hz)
-        ... # Use '...' also as a continuation line.
+        ... # Use "..." also as a continuation line.
         >>> print(st)
         SpikeTrain
 
