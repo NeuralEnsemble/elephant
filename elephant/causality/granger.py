@@ -22,6 +22,7 @@ Time-series Granger causality
 """
 
 import numpy as np
+from collections import namedtuple
 
 # TODO: include AnalogSignal implementation
 # TODO: refactor arguments/variables/function names to the new standard
@@ -175,4 +176,8 @@ def pairwise_granger(signals, order):
     print(coeffs_xy)
     print(cov_xy)
 
-    return directional_causality_x_y, directional_causality_y_x, instantaneous_causality, total_interdependence
+    causality = namedtuple('causality', 'directional_causality_x_y directional_causality_y_x instantaneous_causality total_interdependence')
+    return causality(directional_causality_x_y=directional_causality_x_y,
+                     directional_causality_y_x=directional_causality_y_x,
+                     instantaneous_causality=instantaneous_causality,
+                     total_interdependence=total_interdependence)
