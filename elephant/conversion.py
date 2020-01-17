@@ -25,7 +25,7 @@ from elephant.utils import is_binary
 
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
-             return_times=None):
+             return_times=False):
     """
     Return an array indicating if spikes occurred at individual time points.
 
@@ -64,9 +64,9 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
         `spiketrain`. Any element of `spiketrain` higher than `t_stop` is
         ignored.
         Default: None.
-    return_times : bool
+    return_times : bool, optional
         If True, also return the corresponding time points.
-        Default: None.
+        Default: False.
 
     Returns
     -------
