@@ -63,7 +63,7 @@ def _lag_covariances(signals, dimension, max_lag):
     return np.asarray(lag_covariances)
 
 
-def _Yule_Walker_matrix(data, dimension, order):
+def _yule_walker_matrix(data, dimension, order):
     """
     Generate matrix for Yule-Walker equation
     Parameters
@@ -76,24 +76,24 @@ def _Yule_Walker_matrix(data, dimension, order):
         order of the autoregressive model
     Returns
     -------
-    Yule_Walker_matrix : np.ndarray
+    yule_walker_matrix : np.ndarray
         matrix in Yule-Walker equation
     """
 
     lag_covariances = _lag_covariances(data, dimension, order)
 
-    Yule_Walker_matrix = np.zeros((dimension*order, dimension*order))
+    yule_walker_matrix = np.zeros((dimension*order, dimension*order))
 
     for block_row in range(order):
         for block_column in range(block_row, order):
-            Yule_Walker_matrix[block_row*dimension : (block_row+1)*dimension,
+            yule_walker_matrix[block_row*dimension : (block_row+1)*dimension,
                                block_column*dimension :
                                (block_column+1)*dimension] = lag_covariances[block_column-block_row]
 
-            Yule_Walker_matrix[block_column*dimension : (block_column+1)*dimension,
+            yule_walker_matrix[block_column*dimension : (block_column+1)*dimension,
                                block_row*dimension :
                                (block_row+1)*dimension] = lag_covariances[block_column-block_row].T
-    return Yule_Walker_matrix, lag_covariances
+    return yule_walker_matrix, lag_covariances
 
 
 def _vector_arm(signals, dimension, order):
@@ -114,11 +114,11 @@ def _vector_arm(signals, dimension, order):
         covariance matrix of
     """
 
-    Yule_Walker_matrix, lag_covariances = _Yule_Walker_matrix(signals,  dimension, order)
+    yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals,  dimension, order)
 
     solution_vector = np.reshape(lag_covariances[1:], (dimension*order, dimension))
 
-    coeffs_pre = np.linalg.lstsq(Yule_Walker_matrix, solution_vector)[0]
+    coeffs_pre = np.linalg.lstsq(yule_walker_matrix, solution_vector)[0]
 
     coeffs = []
     for index in range(order):
