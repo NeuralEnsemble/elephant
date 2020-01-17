@@ -21,12 +21,13 @@ Time-series Granger causality
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-# TODO: Pairwise Granger implementation
 import numpy as np
 
+# TODO: include AnalogSignal implementation
+# TODO: refactor arguments/variables/function names to the new standard
 
 def _lag_covariances(time_series, dimension, max_lag):
-    '''
+    """
     Determine covariances of time series and time shift of itself up to a
     maximal lag
     Parameters
@@ -41,7 +42,7 @@ def _lag_covariances(time_series, dimension, max_lag):
     -------
     lag_corr : np.ndarray
         correlations matrices of lagged signals
-    '''
+    """
 
     length = np.size(time_series[0])
 
@@ -61,7 +62,7 @@ def _lag_covariances(time_series, dimension, max_lag):
 
 
 def _Yule_Walker_matrix(data, dimension, order):
-    '''
+    """
     Generate matrix for Yule-Walker equation
     Parameters
     ----------
@@ -75,12 +76,11 @@ def _Yule_Walker_matrix(data, dimension, order):
     -------
     Yule_Walker_matrix : np.ndarray
         matrix in Yule-Walker equation
-    '''
+    """
 
     lag_covs = _lag_covariances(data, dimension, order)
 
     Yule_Walker_matrix = np.zeros((dimension*order, dimension*order))
-
 
     for block_row in range(order):
         for block_column in range(block_row, order):
@@ -95,7 +95,7 @@ def _Yule_Walker_matrix(data, dimension, order):
 
 
 def _vector_arm(time_series, dimension, order):
-    '''
+    """
     Determine coefficients of autoregressive model from time series data
     Parameters
     ----------
@@ -110,7 +110,7 @@ def _vector_arm(time_series, dimension, order):
         ry
     covar_mat : np.ndarray
         covariance matrix of
-    '''
+    """
 
     Yule_Walker_matrix, lag_covs = _Yule_Walker_matrix(time_series,  dimension, order)
 
@@ -134,7 +134,7 @@ def _vector_arm(time_series, dimension, order):
 
 
 def pairwise_granger(time_series, order):
-    '''
+    """
     Determine Granger Causality of two time series
     Note: order paramter should be remove
     Parameters
@@ -149,7 +149,7 @@ def pairwise_granger(time_series, order):
     directional_causality_y_x : float
     instantaneous_causality : float
     total_interdependence : float
-    '''
+    """
 
     time_series_x_comp = np.asarray([time_series[0,:]])
     time_series_y_comp = np.asarray([time_series[1,:]])
