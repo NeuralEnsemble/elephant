@@ -15,8 +15,6 @@ Time-series Granger causality
     :toctree: causality/
 
     pairwise_granger
-    trivariate_granger
-    point_process_granger
 
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
