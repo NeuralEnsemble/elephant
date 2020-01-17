@@ -18,13 +18,12 @@ from elephant.spike_train_generation import homogeneous_poisson_process
 
 try:
     import sklearn
-except ImportError:
-    HAVE_SKLEARN = False
-else:
-    HAVE_SKLEARN = True
     from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
+    HAVE_SKLEARN = True
+except ImportError:
+    HAVE_SKLEARN = False
 
 python_version_major = sys.version_info.major
 
@@ -105,27 +104,12 @@ class GPFATestCase(unittest.TestCase):
             self.assertAlmostEqual(xorth[0][i].var(), 0, places=2)
 
     def test_transform_testing_data(self):
+        # check if the num. of neurons in the test data matches the
+        # num. of neurons in the training data
         gpfa1 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa1.fit(self.data1)
         with self.assertRaises(ValueError):
             gpfa1.transform(self.data2)
-
-        gpfa1 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
-        gpfa1.fit(self.data0)
-        xorth1 = gpfa1.transform(self.data0)
-        print(gpfa1.__dict__)
-
-        gpfa2 = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
-        gpfa2.fit(self.data0[:-2])
-        xorth2 = gpfa2.transform(self.data0[-2:])
-
-        # we expect better consistency for the first 2 dimensions then for
-        # the rest, as the data is inherently 2 dimensional
-        # TODO: is this a good test?
-        assert_array_almost_equal(xorth1[-1][0], xorth2[-1][0], decimal=2)
-        assert_array_almost_equal(xorth1[-1][1], xorth2[-1][1], decimal=2)
-        assert_array_almost_equal(xorth1[-1][2], xorth2[-1][2], decimal=1)
-        assert_array_almost_equal(xorth1[-1][3], xorth2[-1][3], decimal=1)
 
     def test_cross_validation(self):
         lls = []
