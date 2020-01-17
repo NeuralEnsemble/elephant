@@ -341,33 +341,29 @@ def intersection_matrix(
     sts_y = [st.time_slice(t_start=t_start_y, t_stop=t_stop_y)
              for st in spiketrains_y]
 
+    # Compute the binned spike train matrices, along both time axes
+    bsts_x = conv.BinnedSpikeTrain(
+        sts_x, binsize=binsize,
+        t_start=t_start_x, t_stop=t_stop_x)
+    bsts_y = conv.BinnedSpikeTrain(
+        sts_y, binsize=binsize,
+        t_start=t_start_y, t_stop=t_stop_y)
+    xx = bsts_x.bin_edges.rescale(binsize.units)
+    yy = bsts_y.bin_edges.rescale(binsize.units)
+
     # Compute imat either by matrix multiplication (~20x faster) or by
     # nested for loops (more memory efficient)
     try:  # try the fast version
-        # Compute the binned spike train matrices, along both time axes
-        bsts_x = conv.BinnedSpikeTrain(
-            sts_x, binsize=binsize,
-            t_start=t_start_x, t_stop=t_stop_x)
-        bsts_y = conv.BinnedSpikeTrain(
-            sts_y, binsize=binsize,
-            t_start=t_start_y, t_stop=t_stop_y)
-        xx = bsts_x.bin_edges.rescale(binsize.units)
-        yy = bsts_y.bin_edges.rescale(binsize.units)
-        bsts_x = bsts_x.to_bool_array()
-        bsts_y = bsts_y.to_bool_array()
+        bsts_x = bsts_x.to_bool_array().astype(np.float32)
+        bsts_y = bsts_y.to_bool_array().astype(np.float32)
 
         # Compute the number of spikes in each bin, for both time axes
         spikes_per_bin_x = bsts_x.sum(axis=0)
         spikes_per_bin_y = bsts_y.sum(axis=0)
 
         # Compute the intersection matrix imat
-        N_bins_x = len(spikes_per_bin_x)
-        N_bins_y = len(spikes_per_bin_y)
-        imat = np.zeros((N_bins_x, N_bins_y)) * 1.
-        for ii in range(N_bins_x):
-            # Compute the ii-th row of imat
-            bin_ii = bsts_x[:, ii].reshape(-1, 1)
-            imat[ii, :] = (bin_ii * bsts_y).sum(axis=0)
+        imat = bsts_x.T.dot(bsts_y)
+        for ii, bin_ii in enumerate(np.expand_dims(bsts_x.T, axis=2)):
             # Normalize the row according to the specified normalization
             if norm == 0 or norm is None or bin_ii.sum() == 0:
                 norm_coef = 1.
@@ -378,7 +374,7 @@ def intersection_matrix(
                 norm_coef = np.sqrt(
                     spikes_per_bin_x[ii] * spikes_per_bin_y)
             elif norm == 3:
-                norm_coef = ((bin_ii + bsts_y) > 0).sum(axis=0)
+                norm_coef = np.count_nonzero(bin_ii + bsts_y, axis=0)
             imat[ii, :] = imat[ii, :] / norm_coef
 
         # If normalization required, for each j such that bsts_y[j] is
@@ -388,8 +384,7 @@ def intersection_matrix(
             ybins_equal_0 = np.where(spikes_per_bin_y == 0)[0]
             for y_id in ybins_equal_0:
                 imat[:, y_id] = 0
-
-            imat[range(N_bins_x), range(N_bins_y)] = 1.
+            np.fill_diagonal(imat, val=1)
 
     except MemoryError:  # use the memory-efficient version
         # Compute the list spiking neurons per bin, along both axes
