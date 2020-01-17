@@ -519,8 +519,6 @@ throughout Elephant.
         signals : list of neo.AnalogSignal
             If the parameter is a container that has at least one `neo.AnalogSignal`
             object. The name of the parameter is `signals` (plural).
-        to refer to a single object (which may contain several actual signals) and 'signals' if a list of neo.AnalogSignal can be used
-
         max_iterations : int
             Parameters that represent a maximum value should start with "max_"
             prefix, followed by the description as a full word. Therefore, do not
