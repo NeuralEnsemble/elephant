@@ -25,7 +25,6 @@ import numpy as np
 from collections import namedtuple
 
 # TODO: include AnalogSignal implementation
-# TODO: refactor arguments/variables/function names to the new standard
 # TODO: Unittest for granger
 
 
