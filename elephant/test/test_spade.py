@@ -114,8 +114,9 @@ class SpadeTestCase(unittest.TestCase):
     @unittest.skipUnless(HAVE_FIM, "Time consuming with pythonic FIM")
     def test_spade_cpp(self):
         output_cpp = spade.spade(self.cpp, self.binsize, 1,
-                                 n_subsets=self.n_subset,
-                                 stability_thresh=self.stability_thresh,
+                                 approx_stab_pars=dict(
+                                     n_subsets=self.n_subset,
+                                     stability_thresh=self.stability_thresh),
                                  n_surr=self.n_surr, alpha=self.alpha,
                                  psr_param=self.psr_param,
                                  output_format='patterns')['patterns']
@@ -146,8 +147,9 @@ class SpadeTestCase(unittest.TestCase):
     # Testing with multiple patterns input
     def test_spade_msip(self):
         output_msip = spade.spade(self.msip, self.binsize, self.winlen,
-                                  n_subsets=self.n_subset,
-                                  stability_thresh=self.stability_thresh,
+                                  approx_stab_pars=dict(
+                                      n_subsets=self.n_subset,
+                                      stability_thresh=self.stability_thresh),
                                   n_surr=self.n_surr, alpha=self.alpha,
                                   psr_param=self.psr_param,
                                   output_format='patterns')['patterns']
@@ -182,7 +184,7 @@ class SpadeTestCase(unittest.TestCase):
                 self.binsize,
                 self.winlen,
                 min_spikes=self.min_spikes,
-                n_subsets=self.n_subset,
+                approx_stab_pars=dict(n_subsets=self.n_subset),
                 n_surr=0,
                 alpha=self.alpha,
                 psr_param=self.psr_param,
@@ -212,7 +214,8 @@ class SpadeTestCase(unittest.TestCase):
         # test min_occ parameter
         output_msip_min_occ = spade.spade(self.msip, self.binsize, self.winlen,
                                           min_occ=self.min_occ,
-                                          n_subsets=self.n_subset,
+                                          approx_stab_pars=dict(
+                                              n_subsets=self.n_subset),
                                           n_surr=self.n_surr, alpha=self.alpha,
                                           psr_param=self.psr_param,
                                           output_format='patterns')['patterns']
@@ -231,7 +234,8 @@ class SpadeTestCase(unittest.TestCase):
             self.binsize,
             self.winlen,
             max_spikes=self.max_spikes,
-            n_subsets=self.n_subset,
+            approx_stab_pars=dict(
+                n_subsets=self.n_subset),
             n_surr=self.n_surr,
             alpha=self.alpha,
             psr_param=self.psr_param,
@@ -255,7 +259,8 @@ class SpadeTestCase(unittest.TestCase):
         # test max_occ parameter
         output_msip_max_occ = spade.spade(self.msip, self.binsize, self.winlen,
                                           max_occ=self.max_occ,
-                                          n_subsets=self.n_subset,
+                                          approx_stab_pars=dict(
+                                              n_subsets=self.n_subset),
                                           n_surr=self.n_surr, alpha=self.alpha,
                                           psr_param=self.psr_param,
                                           output_format='patterns')['patterns']
@@ -294,8 +299,9 @@ class SpadeTestCase(unittest.TestCase):
     # Testing with multiple patterns input
     def test_spade_msip_3d(self):
         output_msip = spade.spade(self.msip, self.binsize, self.winlen,
-                                  n_subsets=self.n_subset,
-                                  stability_thresh=self.stability_thresh,
+                                  approx_stab_pars=dict(
+                                      n_subsets=self.n_subset,
+                                      stability_thresh=self.stability_thresh),
                                   n_surr=self.n_surr, spectrum='3d#',
                                   alpha=self.alpha, psr_param=self.psr_param,
                                   output_format='patterns')['patterns']
@@ -325,7 +331,8 @@ class SpadeTestCase(unittest.TestCase):
             self.binsize,
             self.winlen,
             min_spikes=self.min_spikes,
-            n_subsets=self.n_subset,
+            approx_stab_pars=dict(
+                n_subsets=self.n_subset),
             n_surr=self.n_surr,
             spectrum='3d#',
             alpha=self.alpha,
@@ -353,8 +360,10 @@ class SpadeTestCase(unittest.TestCase):
         # test min_occ parameter
         output_msip_min_occ = spade.spade(self.msip, self.binsize, self.winlen,
                                           min_occ=self.min_occ,
-                                          n_subsets=self.n_subset,
-                                          n_surr=self.n_surr, spectrum='3d#',
+                                          approx_stab_pars=dict(
+                                              n_subsets=self.n_subset),
+                                          n_surr=self.n_surr,
+                                          spectrum='3d#',
                                           alpha=self.alpha,
                                           psr_param=self.psr_param,
                                           output_format='patterns')['patterns']
@@ -421,8 +430,9 @@ class SpadeTestCase(unittest.TestCase):
         surr_methods = surr.SURR_METHODS
         for surr_method in surr_methods:
             output_msip = spade.spade(self.patt_psr, self.binsize, self.winlen,
-                                      n_subsets=self.n_subset,
-                                      stability_thresh=self.stability_thresh,
+                                      approx_stab_pars=dict(
+                                          n_subsets=self.n_subset,
+                                          stability_thresh=self.stability_thresh),
                                       n_surr=self.n_surr, spectrum='3d#',
                                       alpha=self.alpha,
                                       psr_param=self.psr_param,

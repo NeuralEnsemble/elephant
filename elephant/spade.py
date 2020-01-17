@@ -93,8 +93,8 @@ except ImportError:  # pragma: no cover
 
 
 def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
-          max_occ=None, min_neu=1, n_subsets=0, delta=0, epsilon=0,
-          stability_thresh=None, n_surr=0, dither=15 * pq.ms, spectrum='#',
+          max_occ=None, min_neu=1, approx_stab_pars=None,
+          n_surr=0, dither=15 * pq.ms, spectrum='#',
           alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns'):
     r"""
@@ -138,30 +138,33 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     min_neu: int (positive)
         Minimum number of neurons in a sequence to considered a pattern.
         Default: 1
-    n_subsets: int
-        Number of subsets of a concept used to approximate its stability. If
-        n_subset is set to 0 the stability is not computed. If, however,
-        for parameters delta and epsilon (see below) delta + epsilon == 0,
-        then an optimal n_subsets is calculated according to the formula given
-        in Babin, Kuznetsov (2012), proposition 6:
+    approx_stab_pars: dict or None
+        Parameter values for approximate stability computation.
+        Pass a dictionary containing at least 'n_subsets' to prompt the computation:
 
-         ..math::
-                n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
+        n_subsets: int
+            Number of subsets of a concept used to approximate its stability. If
+            n_subset is set to 0 the stability is not computed. If, however,
+            for parameters delta and epsilon (see below) delta + epsilon == 0,
+            then an optimal n_subsets is calculated according to the formula given
+            in Babin, Kuznetsov (2012), proposition 6:
 
-        Default:0
-    delta: float
-        delta: probability with at least ..math:$1-\delta$
-        Default: 0
-    epsilon: float
-        epsilon: absolute error
-        Default: 0
-    stability_thresh: None or list of float
-        List containing the stability thresholds used to filter the concepts.
-        If stab_thr is None, then the concepts are not filtered. Otherwise,
-        only concepts with intensional stability > stab_thr[0] or extensional
-        stability > stab_thr[1] are returned and used for further analysis
-        within SPADE.
-        Default: None
+             ..math::
+                    n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
+
+        delta: float
+            delta: probability with at least ..math:$1-\delta$
+            Default: 0
+        epsilon: float
+            epsilon: absolute error
+            Default: 0
+        stability_thresh: None or list of float
+            List containing the stability thresholds used to filter the concepts.
+            If stab_thr is None, then the concepts are not filtered. Otherwise,
+            only concepts with intensional stability > stab_thr[0] or extensional
+            stability > stab_thr[1] are returned and used for further analysis
+            within SPADE.
+            Default: None
     n_surr: int
         Number of surrogates to generate to compute the p-value spectrum.
         This number should be large (n_surr>=1000 is recommended for 100
@@ -325,9 +328,17 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
     if surr_method not in surr.SURR_METHODS:
         raise AttributeError(
             'specified surr_method (=%s) not valid' % surr_method)
+    compute_stability = False
+    if isinstance(approx_stab_pars, dict):
+        try:
+            compute_stability = approx_stab_pars['n_subsets'] > 0
+        except KeyError:
+            raise AttributeError(
+                      'for approximate stability computation you need to '
+                      'pass n_subsets')
 
     time_mining = time.time()
-    if rank == 0 or n_subsets > 0:
+    if rank == 0 or compute_stability:
         # Mine the data for extraction of concepts
         concepts, rel_matrix = concepts_mining(data, binsize, winlen,
                                                min_spikes=min_spikes,
@@ -340,20 +351,20 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         print("Time for data mining: {}".format(time_mining))
 
     # Decide if compute the approximated stability
-    if n_subsets > 0:
+    if compute_stability:
+        if 'stability_thresh' in approx_stab_pars.keys():
+            stability_thresh = approx_stab_pars.pop('stability_thresh')
+        else:
+            stability_thresh = None
         # Computing the approximated stability of all the concepts
         time_stability = time.time()
-        concepts = approximate_stability(concepts, rel_matrix, n_subsets,
-                                         delta=delta, epsilon=epsilon)
+        concepts = approximate_stability(concepts, rel_matrix, **approx_stab_pars)
         time_stability = time.time() - time_stability
         print("Time for stability computation: {}".format(time_stability))
         # Filtering the concepts using stability thresholds
         if stability_thresh is not None:
             concepts = list(filter(
                 lambda c: _stability_filter(c, stability_thresh), concepts))
-    elif stability_thresh is not None:
-        warnings.warn('Stability_thresh not None but stability has not been '
-                      'computed (n_subsets==0)')
 
     output = {}
     pv_spec = None  # initialize pv_spec to None
@@ -398,7 +409,6 @@ def spade(data, binsize, winlen, min_spikes=2, min_occ=2, max_spikes=None,
         # Storing non-significant entries of the pvalue spectrum
         output['non_sgnf_sgnt'] = ns_sgnt
     # Filter concepts with pvalue spectrum (psf)
-    # TODO: allow psr usage in absence of surrogates / ns_sgnt
     if len(ns_sgnt) > 0:
         concepts = list(filter(
             lambda c: _pattern_spectrum_filter(
