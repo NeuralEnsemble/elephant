@@ -34,6 +34,16 @@ The example below illustrates show it should be implemented.
     :py:mod:`unitary_event_analysis.py<elephant.unitary_event_analysis>`
     """
 
+Mandatory imports
+-----------------
+
+Each source file must always have the following import immediately after
+the module docstring:
+
+.. code-block:: python
+
+    from __future__ import division, print_function, unicode_literals
+
 Class docstrings
 ----------------
 
