@@ -414,9 +414,9 @@ Each class should have a detailed docstring, according to the example below:
             ----------
             kwargs : dict
                 kwarg1 : type
-                    Same as "Parameters"
+                    Same style as docstring of class `MyClass`.
                 kwarg2 : type
-                    Same as "Parameters"
+                    Same style as docstring of class `MyClass`.
 
             """
             pass
@@ -571,11 +571,11 @@ throughout Elephant.
             how they are described in the paper or implemented in another function.
         order : int
             Order of the Butterworth filter.
-            This is an example of how the `N` parameter of `scipy.butter`
+            This is an example of how the `N` parameter of `scipy.signal.butter`
             function could be provided by the user of the Elephant function.
             The docstring would present a text similar to
-            "`order` is passed as the `N` argument for `scipy.butter` function".
-            Also, in the code implementation, use key-word arguments to make this
+            "`order` is passed as the `N` argument for `scipy.signal.butter` function".
+            Also, in the code implementation, use keyword arguments to make this
             explicit (see the implementation of the function below)
         error : float
             In the case the function has an input parameter that corresponds to a
