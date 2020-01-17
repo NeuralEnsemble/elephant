@@ -6,7 +6,6 @@ GPFA core functionality.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-
 import time
 import warnings
 
@@ -238,7 +237,8 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         # ==== E STEP =====
         if not np.isnan(ll):
             ll_old = ll
-        seqs_latent, ll = exact_inference_with_ll(seqs_train, params, get_ll=get_ll)
+        seqs_latent, ll = exact_inference_with_ll(seqs_train, params,
+                                                  get_ll=get_ll)
         lls.append(ll)
 
         # ==== M STEP ====
@@ -429,7 +429,8 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
         xsm_mat = gpfa_util.fill_persymm(blk_prod, x_dim, t).dot(term1_mat)
 
         for i, n in enumerate(n_list):
-            seqs_latent[n]['xsm'] = xsm_mat[:, i].reshape((x_dim, t), order='F')
+            seqs_latent[n]['xsm'] = xsm_mat[:, i].reshape((x_dim, t),
+                                                          order='F')
             seqs_latent[n]['Vsm'] = vsm
             seqs_latent[n]['VsmGP'] = vsm_gp
 
@@ -561,5 +562,3 @@ def orthonormalize(params_est, seqs):
     params_est['Corth'] = Corth
 
     return params_est, seqs
-
-

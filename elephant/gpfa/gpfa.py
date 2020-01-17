@@ -50,9 +50,8 @@ neural population activity. J Neurophysiol 102:614-635.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-
-import numpy as np
 import neo
+import numpy as np
 import quantities as pq
 import sklearn
 
@@ -199,8 +198,8 @@ class GPFA(sklearn.base.BaseEstimator):
     ...                returned_data=['xorth', 'xsm'])
     """
 
-    def __init__(self, bin_size=20*pq.ms, x_dim=3, min_var_frac=0.01,
-                 tau_init=100.0*pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
+    def __init__(self, bin_size=20 * pq.ms, x_dim=3, min_var_frac=0.01,
+                 tau_init=100.0 * pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
                  em_max_iters=500, freq_ll=5):
         """
         Constructor
@@ -285,7 +284,8 @@ class GPFA(sklearn.base.BaseEstimator):
         if verbose:
             print('Number of training trials: {}'.format(len(seqs_train)))
             print('Latent space dimensionality: {}'.format(self.x_dim))
-            print('Observation dimensionality: {}'.format(self.has_spikes_bool.sum()))
+            print('Observation dimensionality: {}'.format(
+                self.has_spikes_bool.sum()))
 
         # The following does the heavy lifting.
         self.params_est, self.fit_info = gpfa_core.fit(
@@ -295,9 +295,9 @@ class GPFA(sklearn.base.BaseEstimator):
             min_var_frac=self.min_var_frac,
             em_max_iters=self.em_max_iters,
             em_tol=self.em_tol,
-            tau_init = self.tau_init.rescale('ms').magnitude,
-            eps_init = self.eps_init,
-            freq_ll = self.freq_ll,
+            tau_init=self.tau_init.rescale('ms').magnitude,
+            eps_init=self.eps_init,
+            freq_ll=self.freq_ll,
             verbose=verbose)
 
         return self
@@ -315,9 +315,9 @@ class GPFA(sklearn.base.BaseEstimator):
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that data[l][n] is the
             spike train of neuron n in trial l. Note that the number and order
-            of neo.SpikeTrains objects per trial must be fixed such that data[l][n]
-            and data[k][n] refer to spike trains of the same neuron for any
-            choice of l,k and n.
+            of neo.SpikeTrains objects per trial must be fixed such that
+            data[l][n] and data[k][n] refer to spike trains of the same neuron
+            for any choice of l,k and n.
         returned_data : list of str
             The dimensionality reduction transform generates the following
             resultant data:
@@ -357,17 +357,21 @@ class GPFA(sklearn.base.BaseEstimator):
             `self.valid_data_names`
         """
         if len(data[0]) != len(self.has_spikes_bool):
-            raise ValueError("`data` must contain the same number of neurons as the training data")
+            raise ValueError(
+                "`data` must contain the same number of neurons as the training data")
         for data_name in returned_data:
             if data_name not in self.valid_data_names:
-                raise ValueError("`returned_data` can only have the following entries: {}".format(self.valid_data_names))
+                raise ValueError(
+                    "`returned_data` can only have the following entries: {}".format(
+                        self.valid_data_names))
         seqs = gpfa_util.get_seqs(data, self.bin_size)
         for seq in seqs:
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return self._transform(seqs, returned_data)
 
     def _transform(self, seqs, returned_data):
-        seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est, get_ll=True)
+        seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_est,
+                                                     get_ll=True)
         self.fit_info['log_likelihood'] = ll
         self.T = seqs['T']
         self.params_est, seqs = gpfa_core.orthonormalize(self.params_est, seqs)
