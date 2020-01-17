@@ -31,8 +31,12 @@ the original data:
     probability distribution, that results from a fixed sum of ISI_before
     and the ISI_afterwards. For further details see [1].
 
-[1] Louis et al (2010) Surrogate Spike Train Generation Through Dithering in
+References
+----------
+[1] Louis et al (2010). Surrogate Spike Train Generation Through Dithering in
     Operational Time. Front Comput Neurosci. 2010; 4: 127.
+[2] Gerstein, G. L. (2004). Searching for significance in spatio-temporal
+    firing patterns. Acta Neurobiologiae Experimentalis, 64(2), 203-208.
 
 Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
@@ -463,61 +467,67 @@ class JointISI(object):
     The class :class:`JointISI` is implemented for Joint-ISI dithering
     as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).
 
-    When creating an class instance all necessary preprocessing steps are done,
+    When creating a class instance, all necessary preprocessing steps are done
     to use the method dithering().
 
-    Attributes
+    Parameters
     ----------
     spiketrain: neo.SpikeTrain
-        For this spiketrain the surrogates will be created
-
-    dither: pq.Quantity
+        Input spiketrain to create surrogates from.
+    dither: pq.Quantity, optional
         This quantity describes the maximum displacement of a spike, when
         method is 'window'. It is also used for the uniform dithering for
         the spikes, which are outside the regime in the Joint-ISI
         histogram, where Joint-ISI dithering is applicable.
-        Default: 15.*pq.ms
-    truncation_limit: pq.Quantity
-        The Joint-ISI distribution is as such defined on a range for ISI_i and
-        ISI_(i+1) from 0 to inf. Since this is computationally not feasible,
-        the Joint-ISI distribution is truncated for high ISI. The Joint-ISI
-        histogram is calculated for ISI_i, ISI_(i+1) from 0 to
-        truncation_limit.
-        Default: 100*pq.ms
-    num_bins: int
-        The size of the joint-ISI-distribution will be num_bins*num_bins/2.
+        Default: 15. * pq.ms
+    truncation_limit: pq.Quantity, optional
+        The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
+        within the range `[0, inf]`. Since this is computationally not
+        feasible, the Joint-ISI distribution is truncated for high ISI.
+        The Joint-ISI histogram is calculated for
+        :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
+        Default: 100 * pq.ms
+    num_bins: int, optional
+        The size of the joint-ISI-distribution will be
+        `num_bins*num_bins/2`.
         Default: 100
-    sigma: pq.Quantity
+    sigma: pq.Quantity, optional
         The standard deviation of the Gaussian kernel, with which
-        the data is convoluted.
-        Default: 2.*pq.ms
-    alternate: boolean
-        If alternate == True: then first all even and then all odd spikes are
-        dithered. Else: in ascending order from the first to the last spike,
-        all spikes are moved.
+        the data is convolved.
+        Default: 2. * pq.ms
+    alternate: boolean, optional
+        If True, then all even spikes are dithered followed
+        by all odd spikes. Otherwise, the spikes are dithered in ascending
+        order from the first to the last spike.
         Default: True.
-    use_sqrt: boolean
-        if use_sqrt == True a sqrt is applied to the joint-ISI histogram,
-        following Gerstein et al. 2004
+    use_sqrt: boolean, optional
+        If True, the joint-ISI histogram is preprocessed by
+        applying a square root (following Gerstein et al. 2004).
         Default: False
-    method: string
-        if 'window': the spike movement is limited to the parameter dither.
-        if 'fast': the spike can move in all the range between the previous
-            spike and the subsequent spike. This is computationally much faster
-            and thus is called 'fast'.
+    method: {'fast', window'}, optional
+        * 'fast': the spike can move in the whole range between the
+            previous and subsequent spikes (computationally efficient).
+        * 'window': the spike movement is limited to the parameter `dither`
         Default: 'fast'
-    cutoff: boolean
-        if True then the Filtering of the Joint-ISI histogram is
-        limited to the lower side by the minimal ISI.
+    cutoff: boolean, optional
+        If True, then the filtering of the Joint-ISI histogram is
+        limited on the lower side by the minimal ISI.
         This can be necessary, if in the data there is a certain refractory
-        period, which would be destroyed by the convolution with the
+        period, which will be destroyed by the convolution with the
         2d-Gaussian function.
         Default: True
-    refr_period:
-        Since this dither-method should conserve the refractory period,
-        It is internally calculated as the minimum of the value given here
-        and the smallest ISI in the spiketrain.
-        Default: 4.*pq.ms
+    refr_period: pq.Quantity, optional
+        Defines the refractory period of the dithered `spiketrain` unless
+        the smallest ISI of the `spiketrain` is lower than this value.
+        Default: 4. * pq.ms
+
+    Attributes
+    ----------
+    max_change_index : np.ndarray or int:
+        For each ISI the corresponding index in the Joint-ISI distribution.
+    max_change_isi : np.ndarray or float:
+        The corresponding ISI for each index in :attr:`max_change_index`.
+
     Methods
     ----------
     dithering()
@@ -541,56 +551,7 @@ class JointISI(object):
                  refr_period=4. * pq.ms
                  ):
         """
-        Parameters
-        ----------
-        spiketrain: neo.SpikeTrain
-            Input spiketrain to create surrogates from.
-        dither: pq.Quantity, optional
-            This quantity describes the maximum displacement of a spike, when
-            method is 'window'. It is also used for the uniform dithering for
-            the spikes, which are outside the regime in the Joint-ISI
-            histogram, where Joint-ISI dithering is applicable.
-            Default: 15.*pq.ms
-        truncation_limit: pq.Quantity, optional
-            The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
-            within the range `[0, inf]`. Since this is computationally not
-            feasible, the Joint-ISI distribution is truncated for high ISI.
-            The Joint-ISI histogram is calculated for
-            :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
-            Default: 100*pq.ms
-        num_bins: int, optional
-            The size of the joint-ISI-distribution will be
-            `num_bins*num_bins/2`.
-            Default: 100
-        sigma: pq.Quantity, optional
-            The standard deviation of the Gaussian kernel, with which
-            the data is convolved.
-            Default: 2.*pq.ms
-        alternate: boolean, optional
-            If `alternate` is True, then all even spikes are dithered followed
-            by all odd spikes. Otherwise, the spikes are dithered in ascending
-            order.
-            Default: True.
-        use_sqrt: boolean, optional
-            If `use_sqrt` is True, the joint-ISI histogram is preprocessed with
-            a square root (following Gerstein et al. 2004).
-            Default: False
-        method: string, optional
-            * 'window': the spike movement is limited to the parameter `dither`
-            * 'fast': the spike can move in the whole range between the
-                previous and subsequent spikes (computationally efficient).
-            Default: 'fast'
-        cutoff: boolean, optional
-            If set to True, then the Filtering of the Joint-ISI histogram is
-            limited to the lower side by the minimal ISI.
-            This can be necessary, if in the data there is a certain refractory
-            period, which will be destroyed by the convolution with the
-            2d-Gaussian function.
-            Default: True
-        refr_period: pq.Quantity, optional
-            Defines the refractory period of the dithered `spiketrain` unless
-            the smallest ISI of the `spiketrain` is lower than this value.
-            Default: 4.*pq.ms
+
         """
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
@@ -629,7 +590,7 @@ class JointISI(object):
         -------
         float
             The magnitude of `x`, rescaled to the units of the input
-            `spiketrain`.
+            :attr:`spiketrain`.
         """
         if isinstance(x, pq.Quantity):
             return x.rescale(self.unit).magnitude
