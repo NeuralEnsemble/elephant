@@ -153,11 +153,11 @@ def pairwise_granger(signals, order):
     total_interdependence : float
     """
 
-    time_series_x_comp = np.asarray([signals[0,:]])
-    time_series_y_comp = np.asarray([signals[1,:]])
+    signal_x = np.asarray([signals[0,:]])
+    signal_y = np.asarray([signals[1,:]])
 
-    coeffs_x, var_x = _vector_arm(time_series_x_comp, 1, order)
-    coeffs_y, var_y = _vector_arm(time_series_y_comp, 1, order)
+    coeffs_x, var_x = _vector_arm(signal_x, 1, order)
+    coeffs_y, var_y = _vector_arm(signal_y, 1, order)
     print(var_x)
     print(var_y)
     coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
