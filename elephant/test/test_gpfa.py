@@ -94,7 +94,7 @@ class GPFATestCase(unittest.TestCase):
         gpfa.fit(self.data1)
         xorth = gpfa.transform(self.data1)
         self.assertAlmostEqual(gpfa.fit_info['log_likelihood'],
-                               -8172.004695554373)
+                               -8172.004695554373, places=5)
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
         for i in [0, 1]:
