@@ -1,9 +1,9 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
- [1] for neural trajectory visualization of parallel spike trains. GPFA applies
- factor analysis (FA) time-binned spike count data to reduce the dimensionality
- and at the same time smoothes the resulting low-dimensional trajectories by
- fitting a Gaussian process (GP) model to them.
+[1] for neural trajectory visualization of parallel spike trains. GPFA applies
+factor analysis (FA) time-binned spike count data to reduce the dimensionality
+and at the same time smoothes the resulting low-dimensional trajectories by
+fitting a Gaussian process (GP) model to them.
 
 The input consists of a set of trials (Y), each containing a list of spike
 trains (N neurons). The output is the projection (X) of the data in space
@@ -35,7 +35,6 @@ Internally, the analysis consists of the following steps:
 
 
 
-
 References
 ----------
 The code was ported from the MATLAB code based on Byron Yu's implementation.
@@ -49,6 +48,8 @@ neural population activity. J Neurophysiol 102:614-635.
 :copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
+
+from __future__ import division, print_function, unicode_literals
 
 import neo
 import numpy as np
@@ -166,8 +167,7 @@ class GPFA(sklearn.base.BaseEstimator):
     Raises
     ------
     ValueError
-        If `bin_size` if not a `pq.Quantity`.
-        If `tau_init` if not a `pq.Quantity`.
+        If `bin_size` or `tau_init` is not a `pq.Quantity`.
 
     Examples
     --------
@@ -179,7 +179,6 @@ class GPFA(sklearn.base.BaseEstimator):
     >>> import quantities as pq
     >>> from elephant.gpfa import GPFA
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    ...
     >>> data = []
     >>> for trial in range(50):
     >>>     n_channels = 20
@@ -193,7 +192,9 @@ class GPFA(sklearn.base.BaseEstimator):
     >>> gpfa.fit(data)
     >>> results = gpfa.transform(data, returned_data=['xorth', 'xsm'])
     >>> xorth = results['xorth']; xsm = results['xsm']
+
     or simply
+
     >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,
     ...                returned_data=['xorth', 'xsm'])
     """

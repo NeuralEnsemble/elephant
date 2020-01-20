@@ -28,10 +28,10 @@ from . import (statistics,
                gpfa)
 
 try:
-    from . import pandas_bridge
-    from . import asset
+    from . import pandas_bridge, asset
 except ImportError:
     # requirements-extras are missing
+    # please run command `pip install -r requirements-extras.txt`
     pass
 
 
