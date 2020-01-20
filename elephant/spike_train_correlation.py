@@ -56,23 +56,22 @@ class CrossCorrHist(object):
         """
         binned_st1 = self.binned_st1
         binned_st2 = self.binned_st2
-        
+
         st1_spmat = self.binned_st1._sparse_mat_u
         st2_spmat = self.binned_st2._sparse_mat_u
         left_edge, right_edge = self.window
-                    
+
         # extract the nonzero column indices of 1-d matrices
-        st1_bin_idx_unique = st1_spmat.nonzero()[1] 
+        st1_bin_idx_unique = st1_spmat.nonzero()[1]
         st2_bin_idx_unique = st2_spmat.nonzero()[1]
-        
+
         # needs to correct the bins for the valid mode, because the spiketrains
         # have unequal t_start
         if cch_mode == "valid":
             if binned_st1.num_bins > binned_st2.num_bins:
-                st2_bin_idx_unique = st2_bin_idx_unique + right_edge           
-            
-            if binned_st1.num_bins <= binned_st2.num_bins:
-                st2_bin_idx_unique = st2_bin_idx_unique + left_edge           
+                st2_bin_idx_unique += right_edge
+            else:
+                st2_bin_idx_unique += left_edge
 
         st1_spmat = st1_spmat.data
         st2_spmat = st2_spmat.data
@@ -81,10 +80,10 @@ class CrossCorrHist(object):
         # and the bin IDs to integers
         # spanning the time axis
         nr_lags = right_edge - left_edge + 1
-        cross_corr = np.zeros(nr_lags)   
-        
+        cross_corr = np.zeros(nr_lags)
+
         # Compute the CCH at lags in left_edge,...,right_edge only
-        for idx, i in enumerate(st1_bin_idx_unique): # 
+        for idx, i in enumerate(st1_bin_idx_unique):
             il = np.searchsorted(st2_bin_idx_unique, left_edge + i)
             ir = np.searchsorted(st2_bin_idx_unique,
                                  right_edge + i, side='right')
@@ -528,17 +527,17 @@ def cross_correlation_histogram(
 
     Returns
     -------
-    cch : neo.AnalogSignal
+    cch_result : neo.AnalogSignal
         Containing the cross-correlation histogram between `binned_st1` and
         `binned_st2`.
 
         The central bin of the histogram represents correlation at zero
         delay (instantaneous correlation).
         Offset bins correspond to correlations at a delay equivalent
-        to the difference between the spike times of `binned_st1` 
-        ("reference neuron") and those of`binned_st2` ("target neruon"): an 
+        to the difference between the spike times of `binned_st1`
+        ("reference neuron") and those of`binned_st2` ("target neruon"): an
         entry at positive lags corresponds to a spike in `binned_st2` following
-        a spike in `binned_st1` bins to the right, and an entry at negative 
+        a spike in `binned_st1` bins to the right, and an entry at negative
         lags corresponds to a spike in `binned_st1` following a spike in
         `binned_st2`.
 
@@ -575,23 +574,23 @@ def cross_correlation_histogram(
         >>> import quantities as pq
 
         >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
-        >>>        elephant.spike_train_generation.homogeneous_poisson_process(
-        >>>            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-        >>>        binsize=5. * pq.ms)
+        ...        elephant.spike_train_generation.homogeneous_poisson_process(
+        ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+        ...        binsize=5. * pq.ms)
         >>> binned_st2 = elephant.conversion.BinnedSpikeTrain(
-        >>>        elephant.spike_train_generation.homogeneous_poisson_process(
-        >>>            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-        >>>        binsize=5. * pq.ms)
+        ...        elephant.spike_train_generation.homogeneous_poisson_process(
+        ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+        ...        binsize=5. * pq.ms)
 
         >>> cc_hist = \
-        >>>    elephant.spike_train_correlation.cross_correlation_histogram(
-        >>>        binned_st1, binned_st2, window=[-30,30],
-        >>>        border_correction=False,
-        >>>        binary=False, kernel=None, method='memory')
+        ...    elephant.spike_train_correlation.cross_correlation_histogram(
+        ...        binned_st1, binned_st2, window=[-30,30],
+        ...        border_correction=False,
+        ...        binary=False, kernel=None, method='memory')
 
         >>> plt.bar(left=cc_hist[0].times.magnitude,
-        >>>         height=cc_hist[0][:, 0].magnitude,
-        >>>         width=cc_hist[0].sampling_period.magnitude)
+        ...         height=cc_hist[0][:, 0].magnitude,
+        ...         width=cc_hist[0].sampling_period.magnitude)
         >>> plt.xlabel('time (' + str(cc_hist[0].times.units) + ')')
         >>> plt.ylabel('cross-correlation histogram')
         >>> plt.axis('tight')
@@ -604,7 +603,6 @@ def cross_correlation_histogram(
 
     # Check that the spike trains are binned with the same temporal
     # resolution
-    
     if not binned_st1.matrix_rows == 1:
         raise ValueError("Spike train must be one dimensional")
     if not binned_st2.matrix_rows == 1:
@@ -612,77 +610,51 @@ def cross_correlation_histogram(
     if not np.isclose(binned_st1.binsize.simplified.magnitude,
                       binned_st2.binsize.simplified.magnitude):
         raise ValueError("Bin sizes must be equal")
+    if window != 'valid':
+        # Check t_start and t_stop identical (to drop once that the
+        # pad functionality wil be available in the BinnedSpikeTrain class)
+        if not binned_st1.t_start == binned_st2.t_start:
+            raise ValueError("Spike train must have same t start")
+        if not binned_st1.t_stop == binned_st2.t_stop:
+            raise ValueError("Spike train must have same t stop")
 
-    
-    # The maximum number of of bins
     max_num_bins = max(binned_st1.num_bins, binned_st2.num_bins)
 
     # Set the time window in which is computed the cch
     # Window parameter given in number of bins (integer)
     if isinstance(window[0], int) and isinstance(window[1], int):
-        # Check t_start and t_stop identical (to drop once that the
-        # pad functionality wil be available in the BinnedSpikeTrain class)
-        if not binned_st1.t_start == binned_st2.t_start:
-            raise ValueError("Spike train must have same t start")
-        if not binned_st1.t_stop == binned_st2.t_stop:
-            raise ValueError("Spike train must have same t stop")
-        
-        # Check the window parameter values
         if window[0] >= window[1] or window[0] <= -max_num_bins \
                 or window[1] >= max_num_bins:
             raise ValueError(
                 "The window exceeds the length of the spike trains")
-        # Assign left and right edges of the cch
         left_edge, right_edge = window[0], window[1]
         # The mode in which to compute the cch for the speed implementation
         cch_mode = 'pad'
-    # Case without explicit window parameter
     elif window == 'full':
-        # Check t_start and t_stop identical (to drop once that the
-        # pad functionality wil be available in the BinnedSpikeTrain class)
-        if not binned_st1.t_start == binned_st2.t_start:
-            raise ValueError("Spike train must have same t start")
-        if not binned_st1.t_stop == binned_st2.t_stop:
-            raise ValueError("Spike train must have same t stop")
-            
         # cch computed for all the possible entries
-        # Assign left and right edges of the cch
         right_edge = binned_st2.num_bins - 1
         left_edge = - binned_st1.num_bins + 1
         cch_mode = window
-        # cch compute only for the entries that completely overlap
     elif window == 'valid':
-        # cch computed only for valid entries
-        # Assign left and right edges of the cch
-        # case st1 is smaller than st2:
-        if (binned_st1.num_bins < binned_st2.num_bins): 
-            
-            left_edge = (binned_st2.t_start.simplified.magnitude - 
-                         binned_st1.t_start.simplified.magnitude)/\
-                         binned_st1.binsize.simplified.magnitude
+        if binned_st1.num_bins < binned_st2.num_bins:
+            # case st1 is smaller than st2:
+            left_edge = (binned_st2.t_start -
+                         binned_st1.t_start) / binned_st1.binsize
+            right_edge = (binned_st2.t_stop -
+                          binned_st1.t_stop) / binned_st1.binsize
+        else:
+            # case st2 is smaller than st1
+            left_edge = (binned_st2.t_stop -
+                         binned_st1.t_stop) / binned_st1.binsize
+            right_edge = (binned_st2.t_start -
+                          binned_st1.t_start) / binned_st1.binsize
+        right_edge = int(right_edge.simplified.magnitude)
+        left_edge = int(left_edge.simplified.magnitude)
 
-            right_edge = (binned_st2.t_stop.simplified.magnitude - 
-                          binned_st1.t_stop.simplified.magnitude)/\
-                          binned_st1.binsize.simplified.magnitude
-                          
-        # case st2 is smaller than st1
-        elif binned_st1.num_bins >= binned_st2.num_bins:
-            
-            left_edge = (binned_st2.t_stop.simplified.magnitude - 
-                         binned_st1.t_stop.simplified.magnitude)/\
-                         binned_st1.binsize.simplified.magnitude
-                         
-            right_edge = (binned_st2.t_start.simplified.magnitude - 
-                          binned_st1.t_start.simplified.magnitude)/\
-                          binned_st1.binsize.simplified.magnitude 
-        
-        right_edge = int(right_edge)
-        left_edge = int(left_edge)
-        
         cch_mode = window
-    # Check the mode parameter
     else:
         raise ValueError("Invalid window parameter")
+
     if binary:
         binned_st1 = binned_st1.binarize(copy=True)
         binned_st2 = binned_st2.binarize(copy=True)
@@ -693,7 +665,7 @@ def cross_correlation_histogram(
         cross_corr = cch_builder.correlate_memory(cch_mode=cch_mode)
     else:
         cross_corr = cch_builder.correlate_speed(cch_mode=cch_mode)
-        
+
     bin_ids = np.arange(left_edge, right_edge + 1)
     if border_correction:
         cross_corr = cch_builder.border_correction(cross_corr)
