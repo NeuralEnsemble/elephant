@@ -638,7 +638,8 @@ def cross_correlation_histogram(
             raise ValueError(
                 "The window exceeds the length of the spike trains")
         left_edge, right_edge = window[0], window[1]
-        lags = np.arange(left_edge, right_edge + 1) + t_start_shift
+        lags = np.arange(left_edge + t_start_shift,
+                         right_edge + 1 + t_start_shift, dtype=np.int32)
         cch_mode = 'pad'
     elif window == 'full':
         # cch computed for all the possible entries
@@ -647,7 +648,8 @@ def cross_correlation_histogram(
         # ex. 3) lags range: [-2, 4] ms
         left_edge = window_min
         right_edge = window_max
-        lags = np.arange(left_edge, right_edge + 1) + t_start_shift
+        lags = np.arange(left_edge + t_start_shift,
+                         right_edge + 1 + t_start_shift, dtype=np.int32)
         cch_mode = window
     elif window == 'valid':
         if binned_st1.num_bins < binned_st2.num_bins:
@@ -665,7 +667,7 @@ def cross_correlation_histogram(
                           binned_st1.t_start) / binsize
         right_edge = int(right_edge.simplified.magnitude)
         left_edge = int(left_edge.simplified.magnitude)
-        lags = np.arange(left_edge, right_edge + 1)
+        lags = np.arange(left_edge, right_edge + 1, dtype=np.int32)
         cch_mode = window
     else:
         raise ValueError("Invalid window parameter")
