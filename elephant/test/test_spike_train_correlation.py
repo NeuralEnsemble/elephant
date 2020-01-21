@@ -269,7 +269,7 @@ class CorrCoefTestCase(unittest.TestCase):
                                   sc.corrcoef(binned_st, fast=True))
 
 
-class cross_correlation_histogram_TestCase(unittest.TestCase):
+class CrossCorrelationHistogramTest(unittest.TestCase):
 
     def setUp(self):
         # These two arrays must be such that they do not have coincidences

@@ -23,7 +23,7 @@ import elephant.conversion
 _SPARSITY_MEMORY_EFFICIENT_THR = 0.1
 
 
-class CrossCorrHist(object):
+class _CrossCorrHist(object):
     """
     Cross-correlation histogram for `BinnedSpikeTrain`s.
     This class is used inside the `cross_correlation_histogram()` function
@@ -549,7 +549,7 @@ def cross_correlation_histogram(
         represents the left bin borders of each histogram bin. For example,
         the time axis might be:
         `np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms`
-    bin_ids : np.ndarray
+    lags : np.ndarray
         Contains the IDs of the individual histogram bins, where the central
         bin has ID 0, bins the left have negative IDs and bins to the right
         have positive IDs, e.g.,:
@@ -638,7 +638,7 @@ def cross_correlation_histogram(
             raise ValueError(
                 "The window exceeds the length of the spike trains")
         left_edge, right_edge = window[0], window[1]
-        bin_ids = np.arange(left_edge, right_edge + 1) + t_start_shift
+        lags = np.arange(left_edge, right_edge + 1) + t_start_shift
         cch_mode = 'pad'
     elif window == 'full':
         # cch computed for all the possible entries
@@ -647,7 +647,7 @@ def cross_correlation_histogram(
         # ex. 3) lags range: [-2, 4] ms
         left_edge = window_min
         right_edge = window_max
-        bin_ids = np.arange(left_edge, right_edge + 1) + t_start_shift
+        lags = np.arange(left_edge, right_edge + 1) + t_start_shift
         cch_mode = window
     elif window == 'valid':
         if binned_st1.num_bins < binned_st2.num_bins:
@@ -665,7 +665,7 @@ def cross_correlation_histogram(
                           binned_st1.t_start) / binsize
         right_edge = int(right_edge.simplified.magnitude)
         left_edge = int(left_edge.simplified.magnitude)
-        bin_ids = np.arange(left_edge, right_edge + 1)
+        lags = np.arange(left_edge, right_edge + 1)
         cch_mode = window
     else:
         raise ValueError("Invalid window parameter")
@@ -674,8 +674,8 @@ def cross_correlation_histogram(
         binned_st1 = binned_st1.binarize(copy=True)
         binned_st2 = binned_st2.binarize(copy=True)
 
-    cch_builder = CrossCorrHist(binned_st1, binned_st2,
-                                window=(left_edge, right_edge))
+    cch_builder = _CrossCorrHist(binned_st1, binned_st2,
+                                 window=(left_edge, right_edge))
     if method == 'memory':
         cross_corr = cch_builder.correlate_memory(cch_mode=cch_mode)
     else:
@@ -692,11 +692,11 @@ def cross_correlation_histogram(
     cch_result = neo.AnalogSignal(
         signal=cross_corr.reshape(cross_corr.size, 1),
         units=pq.dimensionless,
-        t_start=(bin_ids[0] - 0.5) * binned_st1.binsize,
+        t_start=(lags[0] - 0.5) * binned_st1.binsize,
         sampling_period=binned_st1.binsize)
     # Return only the hist_bins bins and counts before and after the
     # central one
-    return cch_result, bin_ids
+    return cch_result, lags
 
 
 # Alias for common abbreviation
