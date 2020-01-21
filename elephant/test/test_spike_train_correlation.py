@@ -483,13 +483,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             ValueError,
             sc.cross_correlation_histogram, self.binned_st1,
             self.st_check_binsize)
-        # Check different t_start and t_stop
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram,
-            self.st_check_t_start, self.binned_st2)
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram,
-            self.st_check_t_stop, self.binned_st2)
         # Check input are one dimensional
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram,
