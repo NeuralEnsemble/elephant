@@ -30,6 +30,7 @@ the original data:
     calculate the Joint-ISI distribution and moves spike according to the
     probability distribution, that results from a fixed sum of ISI_before
     and the ISI_afterwards. For further details see [1].
+* bin_shuffling:
 
 [1] Louis et al (2010) Surrogate Spike Train Generation Through Dithering in
     Operational Time. Front Comput Neurosci. 2010; 4: 127.
@@ -47,7 +48,7 @@ import random
 
 try:
     import elephant.statistics as es
-
+    import elephant.conversion as conv
     isi = es.isi
 except ImportError:
     from .statistics import isi  # Convenience when in elephant working dir.
@@ -461,6 +462,79 @@ def jitter_spikes(spiketrain, binsize, n=1):
             for s in surr]
 
 
+def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=True):
+    """
+    Bin shuffling surrogate generation, both with and without moving window
+    Given a spiketrain, the function bins it and shuffles the binned spike
+    train entries into windows of the desired length, either in a moving
+    window fashion or with exclusive windows
+
+    Parameters
+    ----------
+    spiketrain : neo.SpikeTrain
+        as elephant.spiketrain
+    window_length : int
+        length of slided/not slided window
+    binsize : quantities.Quantity
+        Size of the time bins within which to randomise the spike times.
+        Note: the last bin arrives until `spiketrain.t_stop` and might have
+        width different from `binsize`.
+    n: int (optional)
+        Number of surrogates to be generated.
+        Default: 1
+    sliding : bool
+        flag for moving or not moving the window
+
+    Returns
+    -------
+    list of neo.SpikeTrain
+      A list of `neo.SpikeTrain`, each obtained from :attr:`spiketrain` by
+      randomly dithering its spikes. The range of the surrogate spike trains
+      is the same as :attr:`spiketrain`
+    """
+    # Define standard time unit; all time Quantities are converted to
+    # scalars after being rescaled to this unit, to use the power of numpy
+    surr = []
+    for n_surr in range(n):
+        binned_st = conv.BinnedSpikeTrain(
+            spiketrain, binsize=binsize).to_array()[0]
+        st_length = len(binned_st)
+        if sliding:
+            for window_position in range(0, st_length - dt):
+                # shuffling the binned spike train within the window
+                chunk_to_shuffle = binned_st[window_position:window_position + dt]
+                np.random.shuffle(chunk_to_shuffle)
+                # clipping data
+                binned_st[window_position:window_position +
+                          dt] = \
+                    (np.array(chunk_to_shuffle) > 0).astype(int)
+        else:
+            windows = st_length // dt
+            windows_remainder = st_length % dt
+            for window_position in range(windows):
+                # shuffling the binned spike train within the window
+                chunk_to_shuffle = binned_st[window_position *
+                                             dt:window_position * dt + dt]
+                np.random.shuffle(chunk_to_shuffle)
+                # clipping data
+                binned_st[window_position * dt:window_position *
+                          dt + dt] = \
+                    (np.array(chunk_to_shuffle) > 0).astype(int)
+            if windows_remainder != 0:
+                chunk_to_shuffle = binned_st[window_position * dt:]
+                np.random.shuffle(chunk_to_shuffle)
+                # clipping data
+                binned_st[window_position * dt:] = \
+                    (np.array(chunk_to_shuffle) > 0).astype(int)
+    # go back to continuous time and place spike in the middle
+    # of the bin
+    surr.append(np.where(binned_st)[0] * binsize + binsize/2)
+    return [neo.SpikeTrain(s,
+                           t_start=spiketrain.t_start,
+                           t_stop=spiketrain.t_stop).rescale(spiketrain.units)
+            for s in surr]
+
+
 class JointISI(object):
     """
     The class :class:`JointISI` is implemented for Joint-ISI dithering
@@ -473,7 +547,6 @@ class JointISI(object):
     ----------
     spiketrain: neo.SpikeTrain
         For this spiketrain the surrogates will be created
-
     dither: pq.Quantity
         This quantity describes the maximum displacement of a spike, when
         method is 'window'. It is also used for the uniform dithering for
@@ -905,7 +978,7 @@ class JointISI(object):
 
 def surrogates(
         spiketrain, n=1, surr_method='dither_spike_train', dt=None,
-        decimals=None, edges=True):
+        binsize=None, decimals=None, edges=True):
     """
     Generates surrogates of a :attr:`spiketrain` by a desired generation
     method.
@@ -964,6 +1037,7 @@ def surrogates(
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
+        'bin_shuffling': bin_shuffling,
         'joint_isi_dithering': None}
 
     if surr_method not in surrogate_types.keys():
@@ -977,3 +1051,5 @@ def surrogates(
             spiketrain, n=n, decimals=decimals)
     elif surr_method == 'joint_isi_dithering':
         return JointISI(spiketrain).dithering(n)
+    elif surr_method == 'bin_shuffling':
+        return bin_shuffling(spiketrain, dt, binsize=binsize, n=n)
