@@ -1227,6 +1227,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     assert diag == 0 or diag == 1, \
         'diag must be 0 (45 degree filtering) or 1 (135 degree filtering)'
     assert w < l, 'w must be lower than l'
+    # TODO: maybe warn the user if l is an even number?
 
     # Construct the kernel
     filt = np.ones((l, l), dtype=np.float32)
@@ -1248,6 +1249,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     bin_range_y = range(N_bin_y - l + 1)
     bin_range_x = range(N_bin_x - l + 1)
 
+    # TODO: nicify and/or comment
     # Compute fmat
     try:  # try by stacking the different patches of each row of mat
         print('pmat neighbours fast version')
