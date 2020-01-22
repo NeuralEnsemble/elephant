@@ -128,9 +128,9 @@ class GPFATestCase(unittest.TestCase):
             _ = GPFA(tau_init=invalid_tau_init)
         gpfa = GPFA()
         with self.assertRaises(ValueError):
-            gpfa.fit(data=invalid_data)
+            gpfa.fit(spiketrains=invalid_data)
         with self.assertRaises(ValueError):
-            gpfa.fit(data=[])
+            gpfa.fit(spiketrains=[])
 
     def test_data2(self):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
