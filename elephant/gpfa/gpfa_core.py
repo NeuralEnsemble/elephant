@@ -243,7 +243,7 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         sum_p_auto = np.zeros((x_dim, x_dim))
         for seq_latent in seqs_latent:
             sum_p_auto += seq_latent['Vsm'].sum(axis=2) \
-                          + seq_latent['xsm'].dot(seq_latent['xsm'].T)
+                + seq_latent['xsm'].dot(seq_latent['xsm'].T)
         y = np.hstack(seqs_train['y'])
         xsm = np.hstack(seqs_latent['xsm'])
         sum_yxtrans = y.dot(xsm.T)
@@ -437,7 +437,7 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
             val = -t * logdet_r - logdet_k_big - logdet_m \
                   - y_dim * t * np.log(2 * np.pi)
             ll = ll + len(n_list) * val - (rinv.dot(dif) * dif).sum() \
-                 + (term1_mat.T.dot(minv) * term1_mat.T).sum()
+                + (term1_mat.T.dot(minv) * term1_mat.T).sum()
 
     if get_ll:
         ll /= 2

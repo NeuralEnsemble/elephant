@@ -219,7 +219,7 @@ def make_k_big(params, n_timesteps):
     K_big = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     K_big_inv = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     Tdif = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1)).T \
-           - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
+        - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
     logdet_K_big = 0
 
     for i in range(xDim):
@@ -333,10 +333,10 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     for i in range(Thalf):
         for j in range(n_blocks):
             Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
-            Nh - (j + 1) * blk_size:Nh - j * blk_size] \
+                 Nh - (j + 1) * blk_size:Nh - j * blk_size] \
                 = p_in[i * blk_size_vert:(i + 1) *
-                                         blk_size_vert,
-                  j * blk_size:(j + 1) * blk_size]
+                       blk_size_vert,
+                       j * blk_size:(j + 1) * blk_size]
 
     return Pout
 
@@ -378,7 +378,7 @@ def make_precomp(seqs, xDim):
     Tall = seqs['T']
     Tmax = (Tall).max()
     Tdif = np.tile(np.arange(0, Tmax), (Tmax, 1)).T \
-           - np.tile(np.arange(0, Tmax), (Tmax, 1))
+        - np.tile(np.arange(0, Tmax), (Tmax, 1))
 
     # assign some helpful precomp items
     # this is computationally cheap, so we keep a few loops in MATLAB
@@ -421,7 +421,7 @@ def make_precomp(seqs, xDim):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
                 precomp[i]['Tu'][j]['PautoSUM'] += seqs[n]['VsmGP'][:, :, i] \
-                                                   + np.outer(
+                    + np.outer(
                     seqs[n]['xsm'][i, :], seqs[n]['xsm'][i, :])
     return precomp
 
@@ -480,8 +480,8 @@ def grad_betgam(p, pre_comp, const):
         pauto_kinv_dot_rest = PautoSUM.ravel('F')[-1:mkr - 1:- 1].dot(
             KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
         dEdgamma = dEdgamma - 0.5 * numTrials * tr_KinvM \
-                   + 0.5 * pauto_kinv_dot \
-                   + 0.5 * pauto_kinv_dot_rest
+            + 0.5 * pauto_kinv_dot \
+            + 0.5 * pauto_kinv_dot_rest
 
         f = f - 0.5 * numTrials * logdet_K \
             - 0.5 * (PautoSUM * Kinv).sum()
