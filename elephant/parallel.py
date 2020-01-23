@@ -1,6 +1,9 @@
 """
 This package contains an implementation of embarassingly parallel processing
 of Elephant functionalities, e.g., to perform analysis in sliding windows.
+
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:license: Modified BSD, see LICENSE.txt for details.
 """
 
 import sys
@@ -32,10 +35,13 @@ class ParallelContext():
         run in parallel, you can create multiple communicators to separate the
         individual processes.
         Default: None
-    worker_ranks: list or None
+    worker_ranks: list of int or None
         List of ranks to be used as workers within the communicator. If None,
         all ranks 1..N-1 of the communicator `comm`, hosting N ranks, will be
-        used, and rank 0 is considered the master node.
+        used, and rank 0 is considered the master node. If a specific list of
+        ranks is given, only one of the remaining ranks may continue to act
+        as the master and use the ParallelContext; all other ranks must be 
+        used in a different manner.
         Default: None
     """
 
@@ -60,15 +66,17 @@ class ParallelContext():
                 raise ValueError(
                     "Elements of worker_ranks must be >0 and <N, "
                     "where N is the communicator size.")
-            self.worker_ranks = list(worker_ranks).sort()
-        
+            self.worker_ranks = list(worker_ranks)
+            self.worker_ranks.sort()
+
         # Save number of workers
         self.num_workers = len(self.worker_ranks)
-        
+
         # Save status and name of the rank
         self.status = MPI.Status()
         self.rank_name = MPI.Get_processor_name()
         self.rank = self.comm.Get_rank()
+        # TODO: Remove this if not required
         # self.attributes = self.comm.Get_attr()
 
         # If this is the master node or any node not in the current
@@ -78,21 +86,11 @@ class ParallelContext():
 
     def terminate(self):
         """
-        This function initializes the MPI subsystem.
+        This function terminates the MPI subsystem.
 
-        Parameters:
-        comm:
-            MPI communicator to use. If None is given, MPI_COMM_WORLD is used,
-            i.e., all available MPI resources and the global communicator is
-            used. When combining Elephant with other libraries or applications
-            that also run in parallel, you can create multiple communicators to
-            separate the individual processes.
-            Default: None
-        worker_ranks:
-            List of ranks to be used as slaves within the communicator. If
-            None, all N-1 ranks of the current communicator, hosting N ranks,
-            will be used.
-            Default: None
+        This function will send a terminate signal to all workers. It will
+        return once all workers acknowledge the signal, so that the master can
+        safely exit, knowing that all workers are done computing their thing.
         """
         # Shut down workers
         for worker in self.worker_ranks:
@@ -101,8 +99,18 @@ class ParallelContext():
             req.wait()
 
     def __run_worker(self):
+        """
+        The main worker loop that distributes jobs among the nodes.
+
+        This is the function run on each worker upon initialization. It will
+        continue until it receives an MPI_TERM_WORKER message. While running,
+        the function waits for the master to instruct the worker to perform a
+        function with a specific arguments. After execution, it reports back to
+        the master that the worker is done and ready to execute another
+        function.
+        """
         keep_working = True
-        
+
         while keep_working:
             if self.comm.iprobe(source=0, tag=MPI_SEND_HANDLER):
                 # Await a handler function
@@ -114,15 +122,21 @@ class ParallelContext():
                 data = req.wait()
 
                 # Execute handler
-                handler.worker(data)
+                result = handler.worker(data)
 
                 # Report back that we are done
                 req = self.comm.isend(
                     True, 0, tag=MPI_WORKER_DONE)
                 req.wait()
+
+                # Send return value
+                req = self.comm.isend(
+                    result, 0, tag=MPI_SEND_OUTPUT)
+                req.wait()
             elif self.comm.iprobe(source=0, tag=MPI_TERM_WORKER):
                 keep_working = False
 
+        # The worker will exit, since it has no further defined function
         sys.exit(0)
 
 
@@ -138,14 +152,23 @@ class JobQueue:
         # Save status of each worker
         worker_busy = [False for _ in range(self.parallel_context.num_workers)]
 
+        # Save job ID currently executed by each worker
+        worker_job_id = [-1 for _ in range(self.parallel_context.num_workers)]
+
+        # Job ID counter
+        job_id = 0
+
+        # Save results for each job
+        results = {}
+
         # Send all spike trains
-        while len(self.spiketrain_list) > 0 or True not in worker_busy:
-            if False in worker_busy:
+        while job_id<len(self.spiketrain_list) or True in worker_busy:
+            if False in worker_busy and job_id<len(self.spiketrain_list):
                 idle_worker_index = worker_busy.index(False)
                 idle_worker = self.parallel_context.worker_ranks[
                     idle_worker_index]
 
-                next = self.spiketrain_list.pop()
+                next = self.spiketrain_list[job_id]
 
                 # Send handler
                 req = self.parallel_context.comm.isend(
@@ -158,8 +181,8 @@ class JobQueue:
                 req.wait()
 
                 worker_busy[idle_worker_index] = True
-                # TODO: Remove
-                # print("%i started" % (idle_worker))
+                worker_job_id[idle_worker_index] = job_id
+                job_id += 1
 
             # Any completing worker?
             for worker_index, worker in enumerate(
@@ -169,15 +192,24 @@ class JobQueue:
                     req = self.parallel_context.comm.irecv(
                         source=worker, tag=MPI_WORKER_DONE)
                     _ = req.wait()
+
+                    # Get output
+                    req = self.parallel_context.comm.irecv(
+                        source=worker, tag=MPI_SEND_OUTPUT)
+                    result = req.wait()
+
+                    # Save results and idle worker
+                    results[worker_job_id[worker_index]] = result
                     worker_busy[worker_index] = False
-                    # TODO: Remove
-                    # print("%i completed" % (worker))
+
+        # Return results dictionary
+        return results
 
 class JobQueueHandlers():
     def __init__(self):
         pass
 
-    def handler(self):
+    def worker(self):
         pass
 
 
@@ -186,15 +218,19 @@ class JobQueueSpikeTrainListHandler(JobQueueHandlers):
         # Do something complicated
         for _ in range(1000):
             result = elephant.statistics.lv(spiketrain)
-        # print(result)
-        # return result
+        return result
 
 
 def main():
     # Initialize context
-    pc = ParallelContext()
-    # pc = ParallelContext(worker_ranks=[3,4])
-    print("%s, %i" % (pc.rank_name, pc.comm_size))
+    #pc = ParallelContext()
+    
+    pc = ParallelContext(worker_ranks=[3, 4])
+    if pc.rank!=0:
+        sys.exit(0)
+    
+    print("Rank name: %s; Communicator size: %i" % (
+        pc.rank_name, pc.comm_size))
 
     # Create a list of spike trains
     spiketrain_list = [
@@ -210,20 +246,21 @@ def main():
         # Do something complicated
         for _ in range(1000):
             result = elephant.statistics.lv(s)
-        # print(result)
     ta = time.time()-ta
 
     tb = time.time()
     new_q = JobQueue(pc)
     new_q.add_spiketrain_list_job(spiketrain_list, handler)
-    new_q.execute()
+    results = new_q.execute()
     tb = time.time()-tb
 
     # Send one spike train to each worker
     pc.terminate()
 
-    print("Standard: %f s, Parallel: %f s" % (ta, tb))
+    print("Execution times:\nStandard: %f s, Parallel: %f s" % (ta, tb))
 
+    print("Standard result: %f" % result)
+    print("Parallel result: %f" % results[99])
 
 if __name__ == "__main__":
     main()
