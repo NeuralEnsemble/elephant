@@ -374,7 +374,7 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(len(surrog), 0)
 
     def test_joint_isi_dithering_output(self):
-        st = stg.hppr(
+        st = stg.homogeneous_poisson_process(
             rate=100. * pq.Hz,
             refractory_period=3 * pq.ms,
             t_stop=0.1 * pq.s)

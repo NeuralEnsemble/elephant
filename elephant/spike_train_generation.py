@@ -308,7 +308,7 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
 
 
 def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
-                                as_array=False):
+                                as_array=False, refractory_period=None):
     """
     Returns a spike train whose spikes are a realization of a Poisson process
     with the given rate, starting at time `t_start` and stopping time `t_stop`.
@@ -320,35 +320,89 @@ def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
 
     rate : Quantity scalar with dimension 1/time
            The rate of the discharge.
-    t_start : Quantity scalar with dimension time
+    t_start : Quantity scalar with dimension time, optional
               The beginning of the spike train.
-    t_stop : Quantity scalar with dimension time
+              Default: 0 ms
+    t_stop : Quantity scalar with dimension time, optional
              The end of the spike train.
-    as_array : bool
+             Default: 1000 ms
+    as_array : bool, optional
                If True, a NumPy array of sorted spikes is returned,
                rather than a SpikeTrain object.
+               Default: False
+    refractory_period : None or Quantity, optional
+                        Quantity scalar with dimension time
+                        The time period the after one spike no other spike is
+                        emitted.
+                        Default: 2 ms
 
     Raises
     ------
     ValueError : If `t_start` and `t_stop` are not of type `pq.Quantity`.
+    ValueError : If `rate` is not of type `pq.Quantity`.
+    ValueError : If `refractory_period` is not None or
+                 not of type `pq.Quantity`.
+    ValueError :
+        If one of `rate`, `t_start` and `t_stop` is not
+            of type `pq.Quantity`.
+        If `refractory_period` is not None or
+            not of type `pq.Quantity`.
+        If `refractory_period` is not None and the period between two
+            successive spikes (`1 / rate`) is smaller than the
+            `refractory_period`.
+
 
     Examples
     --------
         >>> from quantities import Hz, ms
-        >>> spikes = homogeneous_poisson_process(50*Hz, 0*ms, 1000*ms)
+        >>> spikes = homogeneous_poisson_process(50*Hz, t_start=0*ms,
+                t_stop=1000*ms)
         >>> spikes = homogeneous_poisson_process(
-            20*Hz, 5000*ms, 10000*ms, as_array=True)
+                20*Hz, t_start=5000*ms, t_stop=10000*msas_array=True)
+        >>> spikes = homogeneous_poisson_process(50*Hz, t_start=0*ms,
+                t_stop=1000*ms, refractory_period = 3*ms)
 
     """
     if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
         raise ValueError("t_start and t_stop must be of type pq.Quantity")
     if not isinstance(rate, Quantity):
         raise ValueError("rate must be of type pq.Quantity")
+    if not isinstance(refractory_period, Quantity) and\
+            refractory_period is not None:
+        raise ValueError("refr_period must be of type pq.Quantity or None")
+
     rate = rate.rescale(1 / t_start.units)
-    mean_interval = 1 / rate.magnitude
-    return _homogeneous_process(
-        np.random.exponential, (mean_interval,), rate, t_start, t_stop,
-        as_array)
+    rate_magnitude = rate.magnitude
+
+    # Case without a refractory period
+    if refractory_period is None:
+        mean_interval = 1 / rate_magnitude
+        return _homogeneous_process(
+            np.random.exponential, (mean_interval,), rate, t_start, t_stop,
+            as_array)
+
+    # Case with a refractory period
+    refractory_period = refractory_period.rescale(t_start.units)
+    refractory_period_magnitude = refractory_period.magnitude
+
+    if rate_magnitude * refractory_period_magnitude >= 1.:
+        raise ValueError("Period between two successive spikes must be larger"
+                         "than the refractory period. Decrease either the"
+                         "firing rate or the refractory period.")
+
+    effective_rate_magnitude = \
+        rate_magnitude / (1. - rate_magnitude*refractory_period_magnitude)
+
+    def isi_generator(size):
+        return refractory_period_magnitude +\
+               np.random.exponential(1./effective_rate_magnitude, size)
+
+    spiketrain = _homogeneous_process(isi_generator, (), rate,
+                                      t_start-refractory_period, t_stop,
+                                      as_array)
+    if not as_array:
+        spiketrain.t_start = t_start
+    return spiketrain
 
 
 def inhomogeneous_poisson_process(rate, as_array=False):
@@ -1076,99 +1130,13 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
     else:
         cpp = _cpp_het_stat(A=A, t_stop=t_stop, rate=rate, t_start=t_start)
 
-    if shift is None:
-        return cpp
-    # Dither the output spiketrains
-    return [dither_spike_train(cp, shift=shift, edges=True)[0] for cp in cpp]
+    if shift is not None:
+        # Dither the output spiketrains
+        cpp = [dither_spike_train(cp, shift=shift, edges=True)[0] for cp in
+                cpp]
+
+    return cpp
 
 
 # Alias for the compound poisson process
 cpp = compound_poisson_process
-
-
-def homogeneous_poisson_process_with_refractory_period(
-        rate, refractory_period=2. * ms, t_start=0.0 * ms, t_stop=1000.0 * ms,
-        as_array=False):
-    """
-    Returns a spike train whose spikes are a realization of a Poisson process
-    with the given rate and refractory period starting at time `t_start` and
-    stopping time `t_stop`.
-
-    All numerical values should be given as Quantities, e.g. 100*Hz.
-
-    Parameters
-    ----------
-    rate : Quantity
-           Quantity scalar with dimension 1/time
-           The rate of the discharge.
-    refractory_period : Quantity
-                        Quantity scalar with dimension time
-                        The time period the after one spike no other spike is
-                        emitted.
-                        Default: 2 ms
-    t_start : Quantity
-              Quantity scalar with dimension time
-              The beginning of the spike train.
-              Default: 0 ms
-    t_stop : Quantity
-             Quantity scalar with dimension time
-             The end of the spike train.
-             Default: 1000 ms
-    as_array : bool
-               If True, a NumPy array of sorted spikes is returned,
-               rather than a SpikeTrain object.
-               Default: False
-
-    Returns
-    -------
-    st : SpikeTrain or np.ndarray
-        Array of spike times.
-        If `as_array` is False, the output is wrapped in `neo.SpikeTrain`.
-
-    Raises
-    ------
-    ValueError
-        If one of `rate`, `refr_period`, `t_start` and `t_stop` is not
-        of type `pq.Quantity`.
-        If `t_stop <= t_start`.
-        If the period between two successive spikes (`1 / rate`) is
-        smaller than the `refr_period`.
-
-    Examples
-    --------
-        >>> from quantities import Hz, ms
-        >>> spikes = homogeneous_poisson_process_with_refractory_period(
-            50*Hz, 3*ms, 0*ms, 1000*ms)
-        >>> spikes = homogeneous_poisson_process_with_refractory_period(
-            20*Hz, 5*ms, 5000*ms, 10000*ms, as_array=True)
-
-    """
-    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
-        raise ValueError("t_start and t_stop must be of type pq.Quantity")
-    if not isinstance(refractory_period, Quantity):
-        raise ValueError("refr_period must be of type pq.Quantity")
-    if not isinstance(rate, Quantity):
-        raise ValueError("rate must be of type pq.Quantity")
-
-    rate = rate.rescale(1 / t_start.units)
-    rate_magnitude = rate.magnitude
-
-    refractory_period = refractory_period.rescale(t_start.units)
-    refractory_period_magnitude = refractory_period.magnitude
-    effective_rate_magnitude = \
-        rate_magnitude / (1. - rate_magnitude*refractory_period_magnitude)
-
-    def isi_generator(size):
-        return refractory_period_magnitude +\
-               np.random.exponential(1./effective_rate_magnitude, size)
-
-    spiketrain = _homogeneous_process(isi_generator, (), rate,
-                                      t_start-refractory_period, t_stop,
-                                      as_array)
-    if not as_array:
-        spiketrain.t_start = t_start
-    return spiketrain
-
-
-# Alias for the homogeneous poisson process with refractory period
-hppr = homogeneous_poisson_process_with_refractory_period
