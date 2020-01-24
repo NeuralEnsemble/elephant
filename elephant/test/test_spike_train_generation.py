@@ -700,7 +700,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         # during normal operation. Thus, we set the random seed to a value that
         # creates a realization passing the test.
         np.random.seed(seed=12345)
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hppr = stgen.hppr
 
         for rate in [123.0*Hz, 0.123*kHz]:
             for t_stop in [2345*ms, 2.345*second]:
@@ -726,7 +726,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
                                 spiketrain[-1], 7*expected_mean_isi)
 
     def test_low_rates(self):
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hppr = stgen.hppr
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             # Catch RuntimeWarning: divide by zero encountered in true_divide
@@ -737,7 +737,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         spiketrain = hppr(1*Hz, t_stop=1000*ms)
 
     def test_buffer_overrun(self):
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hppr = stgen.hppr
         np.random.seed(6085)  # this seed should produce a buffer overrun
         t_stop = 1000*ms
         rate = 10*Hz
@@ -748,21 +748,21 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
                         spiketrain[-1], 4*expected_mean_isi)
 
     def test_as_array(self):
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hppr = stgen.hppr
         spiketrain = hppr(rate=10 * Hz, as_array=True)
         self.assertTrue(isinstance(spiketrain, np.ndarray))
 
     def test_invalid(self):
         rate = 10 * Hz
         # t_stop < t_start
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hppr = stgen.hppr
         self.assertRaises(ValueError, hppr, rate=rate, t_start=5 * ms,
                           t_stop=1 * ms)
 
         # no units provided
         self.assertRaises(ValueError, hppr, rate=10)
         self.assertRaises(ValueError, hppr, rate=rate, t_stop=5)
-        self.assertRaises(ValueError, hppr, rate=rate, refr_period=2)
+        self.assertRaises(ValueError, hppr, rate=rate, refractory_period=2)
 
 
 if __name__ == '__main__':
