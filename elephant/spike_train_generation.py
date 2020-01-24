@@ -1153,8 +1153,8 @@ def homogeneous_poisson_process_with_refractory_period(
     rate = rate.rescale(1 / t_start.units)
     rate_magnitude = rate.magnitude
 
-    refractory_period_magnitude = \
-        refractory_period.rescale(t_start.units).magnitude
+    refractory_period = refractory_period.rescale(t_start.units)
+    refractory_period_magnitude = refractory_period.magnitude
     effective_rate_magnitude = \
         rate_magnitude / (1. - rate_magnitude*refractory_period_magnitude)
 
@@ -1162,8 +1162,12 @@ def homogeneous_poisson_process_with_refractory_period(
         return refractory_period_magnitude +\
                np.random.exponential(1./effective_rate_magnitude, size)
 
-    return _homogeneous_process(isi_generator, (), rate,
-                                t_start, t_stop, as_array)
+    spiketrain = _homogeneous_process(isi_generator, (), rate,
+                                      t_start-refractory_period, t_stop,
+                                      as_array)
+    if not as_array:
+        spiketrain.t_start = t_start
+    return spiketrain
 
 
 # Alias for the homogeneous poisson process with refractory period
