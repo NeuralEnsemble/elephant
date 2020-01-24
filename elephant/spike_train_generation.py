@@ -690,7 +690,7 @@ def single_interaction_process(
 
     >>> import quantities as pq
     >>> import elephant.spike_train_generation as stg
-    >>> sip, coinc = stg.single_interaction_process(rate=20*qt.Hz,  rate_c=4,
+    >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  rate_c=4,
                                                     t_stop=1*pq.s,
                                                     n=10, return_coinc = True)
 
