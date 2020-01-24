@@ -40,7 +40,7 @@ class ParallelContext():
         all ranks 1..N-1 of the communicator `comm`, hosting N ranks, will be
         used, and rank 0 is considered the master node. If a specific list of
         ranks is given, only one of the remaining ranks may continue to act
-        as the master and use the ParallelContext; all other ranks must be 
+        as the master and use the ParallelContext; all other ranks must be
         used in a different manner.
         Default: None
     """
@@ -162,13 +162,14 @@ class JobQueue:
         results = {}
 
         # Send all spike trains
-        while job_id<len(self.spiketrain_list) or True in worker_busy:
-            if False in worker_busy and job_id<len(self.spiketrain_list):
+        while job_id < len(self.spiketrain_list) or True in worker_busy:
+            # Is there a free worker and work left to do?
+            if job_id < len(self.spiketrain_list) and False in worker_busy:
                 idle_worker_index = worker_busy.index(False)
                 idle_worker = self.parallel_context.worker_ranks[
                     idle_worker_index]
 
-                next = self.spiketrain_list[job_id]
+                next_spiketrain = self.spiketrain_list[job_id]
 
                 # Send handler
                 req = self.parallel_context.comm.isend(
@@ -177,7 +178,7 @@ class JobQueue:
 
                 # Send data
                 req = self.parallel_context.comm.isend(
-                    next, idle_worker, tag=MPI_SEND_INPUT)
+                    next_spiketrain, idle_worker, tag=MPI_SEND_INPUT)
                 req.wait()
 
                 worker_busy[idle_worker_index] = True
@@ -198,12 +199,13 @@ class JobQueue:
                         source=worker, tag=MPI_SEND_OUTPUT)
                     result = req.wait()
 
-                    # Save results and idle worker
+                    # Save results and mark the worker as idle
                     results[worker_job_id[worker_index]] = result
                     worker_busy[worker_index] = False
 
         # Return results dictionary
         return results
+
 
 class JobQueueHandlers():
     def __init__(self):
@@ -222,15 +224,16 @@ class JobQueueSpikeTrainListHandler(JobQueueHandlers):
 
 
 def main():
-    # Initialize context
-    #pc = ParallelContext()
-    
+    # Initialize context (take everything, default)
+    # pc = ParallelContext()
+
+    # Initialize context (use only ranks 3 and 4 as slave, 0 as master)
     pc = ParallelContext(worker_ranks=[3, 4])
-    if pc.rank!=0:
+    if pc.rank != 0:
         sys.exit(0)
-    
-    print("Rank name: %s; Communicator size: %i" % (
-        pc.rank_name, pc.comm_size))
+
+    print("Master: %s, rank %i; Communicator size: %i" % (
+        pc.rank_name, pc.rank, pc.comm_size))
 
     # Create a list of spike trains
     spiketrain_list = [
@@ -259,8 +262,11 @@ def main():
 
     print("Execution times:\nStandard: %f s, Parallel: %f s" % (ta, tb))
 
+    # These results should match
     print("Standard result: %f" % result)
     print("Parallel result: %f" % results[99])
+    assert(result == results[99])
+
 
 if __name__ == "__main__":
     main()
