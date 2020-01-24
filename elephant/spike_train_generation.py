@@ -10,7 +10,7 @@ written by Eilif Muller, or from the NeuroTools signals.analogs module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 import random
 import warnings
@@ -289,12 +289,13 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
         extra_spikes = []
         t_last = spikes[-1] + rescale(interval_generator(*args, size=1))[0]
         while t_last < t_stop:
-            extra_spikes.append(t_last)
+            extra_spikes.append(t_last.magnitude)
             t_last = t_last + rescale(interval_generator(*args, size=1))[0]
+
         # np.concatenate does not conserve units
         spikes = Quantity(
-            np.concatenate(
-                (spikes, extra_spikes)).magnitude, units=spikes.units)
+            np.concatenate((spikes.magnitude, extra_spikes)),
+            units=spikes.units)
     else:
         spikes = spikes[:i]
 
@@ -762,9 +763,10 @@ def single_interaction_process(
         coinc_times = coinc_times.view(Quantity)
         # Set the coincidence times to T-jitter if larger. This ensures that
         # the last jittered spike time is <T
-        for i in range(len(coinc_times)):
-            if coinc_times[i] > t_stop - jitter:
-                coinc_times[i] = t_stop - jitter
+        effective_t_stop = t_stop - jitter
+        for i, coinc_time in enumerate(coinc_times):
+            if coinc_time > effective_t_stop:
+                coinc_times[i] = effective_t_stop
 
     # Replicate coinc_times n times, and jitter each event in each array by
     # +/- jitter (within (t_start, t_stop))
@@ -906,7 +908,7 @@ def _sample_int_from_pdf(a, n):
 
     A = np.cumsum(a)  # cumulative distribution of a
     u = np.random.uniform(0, 1, size=n)
-    U = np.array([u for i in a]).T  # copy u (as column vector) len(a) times
+    U = np.array([u for _ in a]).T  # copy u (as column vector) len(a) times
     return (A < U).sum(axis=1)
 
 
@@ -985,13 +987,13 @@ def _cpp_hom_stat(A, t_stop, rate, t_start=0 * ms):
             for train_id in train_ids:
                 spike_matrix[train_id, spike_id] = True  # and spike to True
 
-        times = [[] for i in range(N)]
+        times = [[]]*N
         for train_id, row in enumerate(spike_matrix):
             times[train_id] = mother[row].view(Quantity)
 
     except MemoryError:  # Slower (~2x) but less memory-consuming approach
         print('memory case')
-        times = [[] for i in range(N)]
+        times = [[]]*N
         for t, l in zip(mother, labels):
             train_ids = random.sample(range(N), l)
             for train_id in train_ids:
@@ -1042,7 +1044,7 @@ def _cpp_het_stat(A, t_stop, rate, t_start=0. * ms):
     if A[1] < (r1 / r_mother).rescale(dimensionless).magnitude:
         raise ValueError('A[1] too small / A[i], i>1 too high')
 
-    # Compute the amplitude distrib of the correlated CPP, and generate it
+    # Compute the amplitude distribution of the correlated CPP, and generate it
     a = [(r_mother * i) / float(r2) for i in A]
     a[1] = a[1] - r1 / float(r2)
     CPP = _cpp_hom_stat(a, t_stop, r_min, t_start)
@@ -1121,7 +1123,7 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
     if A[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
         return [
             SpikeTrain([] * t_stop.units, t_stop=t_stop,
-                       t_start=t_start) for i in range(len(A) - 1)]
+                       t_start=t_start) for _ in range(len(A) - 1)]
 
     # Homogeneous rates
     if rate.ndim == 0:
@@ -1132,8 +1134,8 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
 
     if shift is not None:
         # Dither the output spiketrains
-        cpp = [dither_spike_train(cp, shift=shift, edges=True)[0] for cp in
-                cpp]
+        cpp = [dither_spike_train(cp, shift=shift, edges=True)[0]
+               for cp in cpp]
 
     return cpp
 
