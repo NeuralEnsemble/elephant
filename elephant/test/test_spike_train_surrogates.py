@@ -374,18 +374,14 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(len(surrog), 0)
 
     def test_joint_isi_dithering_output(self):
-        st = stg.homogeneous_poisson_process_with_refr_period(
+        st = stg.hppr(
             rate=100. * pq.Hz,
-            refr_period=3 * pq.ms,
+            refractory_period=3 * pq.ms,
             t_stop=0.1 * pq.s)
         surrog_st = surr.JointISI(st).dithering()[0]
-        ground_truth = [27.99123087, 33.92680035, 39.94386642, 46.60932914,
-                        51.77647236, 58.00172645,
-                        68.15027025, 75.79592778, 84.09942906, 97.34738152]
+        ground_truth = [0.005571, 0.018363, 0.026825, 0.036336, 0.045193,
+                        0.05146, 0.058489, 0.078053]
         assert_array_almost_equal(surrog_st.magnitude, ground_truth)
-
-
-
 
 
 def suite():
