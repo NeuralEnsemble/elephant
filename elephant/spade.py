@@ -431,13 +431,12 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     # Storing patterns for output format concepts
     if output_format == 'concepts':
         output['patterns'] = concepts
-
-    else:  # output_format == 'concepts':
+    else:  # output_format == 'patterns':
         # Transforming concepts to dictionary containing pattern's infos
-        output['patterns'] = concept_output_to_patterns(concepts,
-                                                        winlen, binsize,
-                                                        pv_spec, spectrum,
-                                                        spiketrains[0].t_start)
+        output['patterns'] = concept_output_to_patterns(
+            concepts, winlen, binsize, pv_spec, spectrum,
+            spiketrains[0].t_start)
+
     return output
 
 
