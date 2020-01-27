@@ -429,15 +429,16 @@ class SpadeTestCase(unittest.TestCase):
     def test_pattern_set_reduction(self):
         surr_methods = surr.SURR_METHODS
         for surr_method in surr_methods:
-            output_msip = spade.spade(self.patt_psr, self.binsize, self.winlen,
-                                      approx_stab_pars=dict(
-                                          n_subsets=self.n_subset,
-                                          stability_thresh=self.stability_thresh),
-                                      n_surr=self.n_surr, spectrum='3d#',
-                                      alpha=self.alpha,
-                                      psr_param=self.psr_param,
-                                      output_format='patterns',
-                                      surr_method=surr_method)['patterns']
+            output_msip = spade.spade(
+                self.patt_psr, self.binsize, self.winlen,
+                approx_stab_pars=dict(
+                     n_subsets=self.n_subset,
+                     stability_thresh=self.stability_thresh),
+                n_surr=self.n_surr, spectrum='3d#',
+                alpha=self.alpha,
+                psr_param=self.psr_param,
+                output_format='patterns',
+                surr_method=surr_method)['patterns']
             elements_msip = []
             occ_msip = []
             lags_msip = []

@@ -86,7 +86,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    from elephant.spade_src import fim
+    import fim
 
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
@@ -432,7 +432,7 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     if output_format == 'concepts':
         output['patterns'] = concepts
 
-    else:
+    else:  # output_format == 'concepts':
         # Transforming concepts to dictionary containing pattern's infos
         output['patterns'] = concept_output_to_patterns(concepts,
                                                         winlen, binsize,
@@ -828,12 +828,16 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         return concepts
 
     if report == '#':
-        for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-            spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
-    elif report == '3d#':
-        for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
+        for (size, occurrences) in np.transpose(np.where(spec_matrix != 0)):
             spectrum.append(
-                (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
+                (size + 1, occurrences + 1,
+                 int(spec_matrix[size, occurrences])))
+    elif report == '3d#':
+        for (size, occurrences, duration) in\
+                np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append(
+                (size + 1, occurrences + 1, duration,
+                 int(spec_matrix[size, occurrences, duration])))
     del spec_matrix
     if len(spectrum) > 0:
         spectrum = np.array(spectrum)
@@ -903,20 +907,20 @@ def _filter_for_moving_window_subsets(concepts, winlen):
         support = np.array([len(c.extent) for c in concepts])
 
         # convert transactions relative to last pattern spike
-        converted_transactions = [_rereference_to_last_spike(c.intent,
+        converted_transactions = [_rereference_to_last_spike(concept.intent,
                                                              winlen=winlen)
-                                  for c in concepts]
+                                  for concept in concepts]
     else:
         # fim.fpgrowth format
         # sort the concepts by (decreasing) support
-        concepts.sort(key=lambda c: -c[1])
+        concepts.sort(key=lambda concept: -concept[1])
 
-        support = np.array([c[1] for c in concepts])
+        support = np.array([concept[1] for concept in concepts])
 
         # convert transactions relative to last pattern spike
-        converted_transactions = [_rereference_to_last_spike(c[0],
+        converted_transactions = [_rereference_to_last_spike(concept[0],
                                                              winlen=winlen)
-                                  for c in concepts]
+                                  for concept in concepts]
 
     output = []
 
@@ -1043,13 +1047,16 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     del concepts
     # returning spectrum
     if report == '#':
-        for (z, c) in np.transpose(np.where(spec_matrix != 0)):
-            spectrum.append((z + 1, c + 1, int(spec_matrix[z, c])))
+        for (size, occurrence) in np.transpose(np.where(spec_matrix != 0)):
+            spectrum.append(
+                (size + 1, occurrence + 1, int(spec_matrix[size, occurrence])))
 
     if report == '3d#':
-        for (z, c, l) in np.transpose(np.where(spec_matrix != 0)):
+        for (size, occurrence, duration) in\
+                np.transpose(np.where(spec_matrix != 0)):
             spectrum.append(
-                (z + 1, c + 1, l, int(spec_matrix[z, c, l])))
+                (size + 1, occurrence + 1, duration,
+                 int(spec_matrix[size, occurrence, duration])))
     del spec_matrix
     if len(spectrum) > 0:
         spectrum = np.array(spectrum)
@@ -1187,7 +1194,7 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
         max_occs = np.empty(shape=(len_partition + add_remainder,
                                    max_spikes - min_spikes + 1),
                             dtype=np.uint16)
-    else:
+    else:  # spectrum == '3d#':
         max_occs = np.empty(shape=(len_partition + add_remainder,
                                    max_spikes - min_spikes + 1, winlen),
                             dtype=np.uint16)
@@ -1278,7 +1285,7 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
             for occ_id, occ in enumerate(occs):
                 if spectrum == '#':
                     pv_spec.append([pt_size, occ, pvalues[occ_id]])
-                else:
+                else:  # spectrum == '3d#':
                     pv_spec.append([pt_size, occ, dur, pvalues[occ_id]])
     return pv_spec
 
@@ -1317,7 +1324,7 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
         for dur in range(winlen):
             if spectrum == '#':
                 occs = concepts_for_size[:, 0]
-            else:
+            else:  # spectrum == '3d#':
                 occs = concepts_for_size[concepts_for_size[:, 1] == dur][:, 0]
             max_occ[size_id, dur] = np.max(occs, initial=0)
 
@@ -1361,8 +1368,7 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     if spectrum == '#':
         signatures = {(len(concept[0]), len(concept[1]))
                       for concept in concepts}
-    # spectrum == '3d#':
-    else:
+    else:  # spectrum == '3d#':
         # third entry of signatures is the duration, fixed as the maximum lag
         signatures = {(len(concept[0]), len(concept[1]),
                        max(np.array(concept[0]) % winlen))
@@ -1373,8 +1379,7 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     return mask
 
 
-def test_signature_significance(pv_spec, concepts, alpha,
-                                winlen, corr='',
+def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
                                 report='spectrum', spectrum='#'):
     """
     Compute the significance spectrum of a pattern spectrum.
@@ -1478,27 +1483,30 @@ def test_signature_significance(pv_spec, concepts, alpha,
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
-            return [(size, supp, test)
-                    for (size, supp, pv), test in zip(pv_spec, tests)]
-        if report == 'significant':
-            return [(size, supp) for ((size, supp, pv), test)
-                    in zip(pv_spec, tests) if test]
-        # report == 'non_significant'
-        return [(size, supp)
-                for ((size, supp, pv), test) in zip(pv_spec, tests)
-                if not test]
+            sig_spectrum = [(size, supp, test)
+                            for (size, supp, pv), test in zip(pv_spec, tests)]
+        elif report == 'significant':
+            sig_spectrum = [(size, supp) for ((size, supp, pv), test)
+                            in zip(pv_spec, tests) if test]
+        else:  # report == 'non_significant'
+            sig_spectrum = [(size, supp)
+                            for ((size, supp, pv), test) in zip(pv_spec, tests)
+                            if not test]
 
-    # spectrum == '3d#'
-    if report == 'spectrum':
-        return [(size, supp, l, test)
-                for (size, supp, l, pv), test in zip(pv_spec, tests)]
-    if report == 'significant':
-        return [(size, supp, l) for ((size, supp, l, pv), test)
-                in zip(pv_spec, tests) if test]
-    # report == 'non_significant'
-    return [(size, supp, l)
-            for ((size, supp, l, pv), test) in zip(pv_spec, tests)
-            if not test]
+    else:  # spectrum == '3d#'
+        if report == 'spectrum':
+            sig_spectrum =\
+                [(size, supp, l, test)
+                 for (size, supp, l, pv), test in zip(pv_spec, tests)]
+        elif report == 'significant':
+            sig_spectrum = [(size, supp, l) for ((size, supp, l, pv), test)
+                            in zip(pv_spec, tests) if test]
+        else:  # report == 'non_significant'
+            sig_spectrum =\
+                [(size, supp, l)
+                 for ((size, supp, l, pv), test) in zip(pv_spec, tests)
+                 if not test]
+    return sig_spectrum
 
 
 def _pattern_spectrum_filter(concept, ns_sgnt, spectrum, winlen):
@@ -1507,8 +1515,7 @@ def _pattern_spectrum_filter(concept, ns_sgnt, spectrum, winlen):
     """
     if spectrum == '#':
         keep_concept = (len(concept[0]), len(concept[1])) not in ns_sgnt
-    # spectrum == '3d#':
-    else:
+    else:   # spectrum == '3d#':
         # duration is fixed as the maximum lag
         duration = max(np.array(concept[0]) % winlen)
         keep_concept = (len(concept[0]), len(concept[1]),
@@ -1610,52 +1617,12 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
 
     output = []
     for concept in concepts_on_partition:
-        stab_ext = 0.0
-        stab_int = 0.0
         intent = np.array(concept[0])
         extent = np.array(concept[1])
-        r_unique_ext = set()
-        r_unique_int = set()
-        excluded_subset = []
-        # Calculate all subsets if n is larger than the power set of
-        # the extent
-        if n_subsets > 2 ** len(extent):
-            subsets_ext = chain.from_iterable(
-                combinations(extent, r) for r in range(
-                    len(extent) + 1))
-        else:
-            subsets_ext = [extent[_give_random_idx(r_unique_ext, len(extent))]
-                           for _ in range(n_subsets)]
-
-        for subset_ext in subsets_ext:
-            if any([set(subset_ext).issubset(se) for se in excluded_subset]):
-                continue
-            if _closure_probability_extensional(
-                    intent, subset_ext, rel_matrix):
-                stab_ext += 1
-            else:
-                excluded_subset.append(subset_ext)
-        stab_ext /= min(n_subsets, 2 ** len(extent))
-        excluded_subset = []
-        # Calculate all subsets if n is larger than the power set of
-        # the intent
-        if n_subsets > 2 ** len(intent):
-            subsets_int = chain.from_iterable(
-                combinations(intent, r) for r in range(
-                    len(intent) + 1))
-        else:
-            subsets_int = [intent[_give_random_idx(r_unique_int, len(intent))]
-                           for _ in range(n_subsets)]
-
-        for subset_int in subsets_int:
-            if any([set(subset_int).issubset(se) for se in excluded_subset]):
-                continue
-            if _closure_probability_extensional(
-                    intent, subset_int, rel_matrix):
-                stab_int += 1
-            else:
-                excluded_subset.append(subset_int)
-        stab_int /= min(n_subsets, 2 ** len(intent))
+        stab_int = _calculate_single_stability_parameter(
+            intent, extent, n_subsets, rel_matrix, look_at='intent')
+        stab_ext = _calculate_single_stability_parameter(
+            intent, extent, n_subsets, rel_matrix, look_at='extent')
         output.append((intent, extent, stab_int, stab_ext))
 
     if size != 1:
@@ -1667,68 +1634,83 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     return output
 
 
-def _closure_probability_extensional(intent, subset, rel_matrix):
+def _calculate_single_stability_parameter(intent, extent,
+                                          n_subsets, rel_matrix,
+                                          look_at='intent'):
     """
-    Return True if the closure of the subset of the extent given in input is
-    equal to the intent given in input
+    Calculates the stability parameter for extent or intent.
+
+    For detailed describtion see approximate_stabilty
 
     Parameters
     ----------
-    intent : array
-    Set of the attributes of the concept
-    subset : list
-    List of objects that form the subset of the extent to be evaluated
-    rel_matrix: coo.matrix
-    Binary matrix that specify the relation that defines the context
+    extent: np.array
+        2nd element of concept
+    intent: np.array
+        1st element of concept
+    n_subsets: int
+        See approximate_stabilty
+    rel_matrix: sparse.coo_matrix
+        See approximate_stabilty
+    look_at: {'extent', 'intent'}
+        whether to determine stability for extent or intent.
+        Default: 'intent'
 
     Returns
     -------
-    1 if (subset)' == intent
-    0 else
+    stability: float
+        Stability parameter for given extent, intent depending on which to look
     """
-    # computation of the ' operator for the subset
-    subset_prime = np.where(np.all(rel_matrix[subset, :], axis=0) == 1)[0]
-    if set(subset_prime) == set(intent):
-        return 1
-    return 0
+    if look_at == 'intent':
+        element_1, element_2 = intent, extent
+    else:  # look_at == 'extent':
+        element_1, element_2 = extent, intent
+
+    stability = 0.
+    r_unique = set()
+    excluded_subsets = []
+
+    if n_subsets > 2 ** len(element_1):
+        subsets = chain.from_iterable(
+            combinations(element_1, subset_index)
+            for subset_index in range(len(element_1) + 1))
+    else:
+        subsets = [element_1[_give_random_idx(r_unique, len(element_1))]
+                   for _ in range(n_subsets)]
+
+    for subset in subsets:
+        if any([set(subset).issubset(excluded_subset)
+                for excluded_subset in excluded_subsets]):
+            continue
+
+        # computation of the ' operator for the subset
+        if look_at == 'intent':
+            subset_prime = \
+                np.where(np.all(rel_matrix[:, subset], axis=1) == 1)[0]
+        else:  # look_at == 'extent':
+            subset_prime = \
+                np.where(np.all(rel_matrix[subset, :], axis=0) == 1)[0]
+
+        # Condition holds if the closure of the subset of element_1 given in
+        # element_2 is equal to element_2 given in input
+        if set(subset_prime) == set(element_2):
+            stability += 1
+        else:
+            excluded_subsets.append(subset)
+    stability /= min(n_subsets, 2 ** len(element_1))
+    return stability
 
 
-def _closure_probability_intensional(extent, subset, rel_matrix):
-    """
-    Return True if the closure of the subset of the intent given in input is
-    equal to the extent given in input
-
-    Parameters
-    ----------
-    extent : list
-    Set of the objects of the concept
-    subset : list
-    List of attributes that form the subset of the intent to be evaluated
-    rel_matrix: ndarray
-    Binary matrix that specify the relation that defines the context
-
-    Returns
-    -------
-    1 if (subset)' == extent
-    0 else
-    """
-    # computation of the ' operator for the subset
-    subset_prime = np.where(np.all(rel_matrix[:, subset], axis=1) == 1)[0]
-    if set(subset_prime) == set(extent):
-        return 1
-    return 0
-
-
-def _give_random_idx(r_unique, n):
+def _give_random_idx(r_unique, num_integers):
     """ asd """
 
-    r = np.random.randint(n,
-                          size=np.random.randint(low=1, high=n))
-    r_tuple = tuple(r)
+    random_integers = np.random.randint(
+        num_integers, size=np.random.randint(low=1, high=num_integers))
+    r_tuple = tuple(random_integers)
     if r_tuple not in r_unique:
         r_unique.add(r_tuple)
-        return np.unique(r)
-    return _give_random_idx(r_unique, n)
+        return np.unique(random_integers)
+    return _give_random_idx(r_unique, num_integers)
 
 
 def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
@@ -1988,7 +1970,7 @@ def _subset_filter(occ_superset, occ_subset, size_subset, dur_subset, spectrum,
     occ_diff = occ_subset - occ_superset + h_subset_filtering
     if spectrum == '#':
         signature_to_test = (size_subset, occ_diff)
-    elif spectrum == '3d#':
+    else:  # spectrum == '3d#':
         signature_to_test = (size_subset, occ_diff, dur_subset)
     reject_subset = occ_diff < min_occ or signature_to_test in ns_sgnt
     return reject_subset
@@ -2119,9 +2101,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
         if spectrum == '#':
             # Signature (size, n occ) of the pattern
             sgnt = (len(itemset), len(window_ids))
-
-        # spectrum == '3d#':
-        else:
+        else:  # spectrum == '3d#':
             # Signature (size, n occ, duration) of the pattern
             # duration is position of the last bin
             sgnt = (len(itemset), len(window_ids), bin_ids[-1])
