@@ -13,7 +13,7 @@ import warnings
 
 
 def waveform_width(waveform):
-    '''
+    """
     Calculate the width (through-to-peak TTP) of a waveform.
 
     Searches for an index of a minimum within first 3/4 of the waveform vector,
@@ -29,7 +29,13 @@ def waveform_width(waveform):
     -------
     width : float
         Width of a waveform expressed as a number of data points
-    '''
+
+    Raises
+    ------
+    ValueError
+        If `waveform` is not a one-dimensional vector of at least two numbers.
+
+    """
     waveform = np.squeeze(waveform)
     if np.ndim(waveform) != 1:
         raise ValueError('Expected 1-dimensional waveform.')
