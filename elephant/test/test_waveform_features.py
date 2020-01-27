@@ -51,6 +51,17 @@ class WaveformWidthTestCase(unittest.TestCase):
     def test_empty_list(self):
         self.assertRaises(ValueError, waveform_features.waveform_width, [])
 
+    def test_cutoff(self):
+        size = 10
+        waveform = np.arange(size, dtype=float)
+        for cutoff in (-1, 1):
+            # outside of [0, 1) range
+            self.assertRaises(ValueError, waveform_features.waveform_width,
+                              waveform, cutoff=cutoff)
+        for cutoff in np.linspace(0., 1., num=size, endpoint=False):
+            width = waveform_features.waveform_width(waveform, cutoff=cutoff)
+            self.assertEqual(width, 9)
+
 
 class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
     def setUp(self):
