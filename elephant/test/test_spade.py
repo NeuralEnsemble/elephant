@@ -446,9 +446,8 @@ class SpadeTestCase(unittest.TestCase):
                 elements_msip.append(sorted(out['neurons']))
                 occ_msip.append(list(out['times'].magnitude))
                 lags_msip.append(list(out['lags'].magnitude))
-            elements_msip = sorted(elements_msip, key=lambda d: len(d))
-            occ_msip = sorted(occ_msip, key=lambda d: len(d))
-            lags_msip = sorted(lags_msip, key=lambda d: len(d))
+            elements_msip = sorted(elements_msip, key=len)
+            occ_msip = sorted(occ_msip, key=len)
             # check neurons in the patterns
             assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
             # check the occurrences time of the patters
