@@ -88,7 +88,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     The function performs the CAD analysis for the binned (discretized) spike
     trains given in input. The method looks for candidate
     significant patterns with lags (number of bins between successive spikes
-    in the pattern) going from `-maxlag` and `maxlag` (second parameter of the
+    in the pattern) going from `-maxlag` to `maxlag` (second parameter of the
     function). Thus, between two successive spikes in the pattern there can
     be at most `maxlag`*`binsize` units of time.
 
@@ -97,7 +97,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     and stops when the detected assemblies reach their maximal dimension
     (parameter `max_spikes`).
 
-    At every agglomeration size step (ex. from triplets to quadruplets), the
+    At every agglomeration size step (e.g. from triplets to quadruplets), the
     method filters patterns having the same neurons involved, and keeps only
     the most significant one. This pruning is optional and the choice is
     identified by the parameter 'significance_pruning'.
@@ -107,52 +107,52 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
 
     Parameters
     ----------
-    data : BinnedSpikeTrain object
-        binned spike trains containing data to be analysed
-    maxlag: int
-        maximal lag to be tested. For a binning dimension of binsize the
+    data : elephant.conversion.BinnedSpikeTrain
+        Binned spike trains containing data to be analyzed.
+    maxlag : int
+        Maximal lag to be tested. For a binning dimension of binsize the
         method will test all pairs configurations with a time
-        shift between '-maxlag' and 'maxlag'
+        shift between '-maxlag' and 'maxlag'.
     reference_lag : int
-        reference lag (in bins) for the non-stationarity correction in the
-        statistical test
-        Default value : 2
+        Reference lag (in bins) for the non-stationarity correction in the
+        statistical test.
+        Default: 2
     alpha : float
-        significance level for the statistical test
-        Default : 0.05
+        Significance level for the statistical test.
+        Default: 0.05
     min_occ : int
-        minimal number of occurrences required for an assembly
+        Minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
-        Default : 0.
+        Default: 0.
     size_chunks : int
-        size (in bins) of chunks in which the spike trains is divided
+        Size (in bins) of chunks in which the spike trains are divided
         to compute the variance (to reduce non stationarity effects
-        on variance estimation)
-        Default : 100.
+        on variance estimation).
+        Default: 100.
     max_spikes : int
-        maximal assembly order (the algorithm will return assemblies of
-        composed by maximum max_spikes elements).
-        Default : numpy.inf
+        Maximal assembly order (the algorithm will return assemblies
+        composed of maximum `max_spikes` elements).
+        Default: numpy.inf
     significance_pruning : bool
-        if True the method performs significance pruning among
-        the detected assemblies
+        If True, the method performs significance pruning among
+        the detected assemblies.
         Default: True
     subgroup_pruning : bool
-        if True the method performs subgroup pruning among
-        the detected assemblies
+        If True, the method performs subgroup pruning among
+        the detected assemblies.
         Default: True
     same_config_cut: bool
-        if True performs pruning (not present in the original code and more
+        If True, performs pruning (not present in the original code and more
         efficient), not testing assemblies already formed
-        if they appear in the very same configuration
+        if they appear in the very same configuration.
         Default: False
     bool_times_format: bool
-        if True the activation time series is a list of 0/1 elements, where
-        1 indicates the first spike of the pattern
+        If True, the activation time series is a list of 0/1 elements, where
+        1 indicates the first spike of the pattern.
         Otherwise, the activation times of the assemblies are indicated by the
         indices of the bins in which the first spike of the pattern
-        is happening
+        is happening.
         Default: False
     verbose: bool
         Regulates the number of prints given by the method. If true all prints
