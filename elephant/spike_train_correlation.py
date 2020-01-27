@@ -470,9 +470,8 @@ def cross_correlation_histogram(
     Parameters
     ----------
     binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
-        Binned spike trains to cross-correlate. The two spike trains must have
-        same `t_start` and `t_stop` for the window parameter "full" and
-        list.
+        Binned spike trains to cross-correlate. The input spike trains can have
+        any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
         ‘full’: This returns the cross-correlation at each point of overlap,
                 with an output shape of (N+M-1,). At the end-points of the
@@ -495,7 +494,7 @@ def cross_correlation_histogram(
         which linearly corrects for loss of bins at the edges.
         Default: False
     binary : bool, optional
-        whether to binary spikes from the same spike train falling in the
+        whether to binarize spikes from the same spike train falling in the
         same bin. If True, such spikes are considered as a single spike;
         otherwise they are considered as different spikes.
         Default: False.
@@ -530,20 +529,19 @@ def cross_correlation_histogram(
         Containing the cross-correlation histogram between `binned_st1` and
         `binned_st2`.
 
-        The central bin of the histogram represents correlation at zero
-        delay (instantaneous correlation).
         Offset bins correspond to correlations at a delay equivalent
         to the difference between the spike times of `binned_st1`
-        ("reference neuron") and those of`binned_st2` ("target neruon"): an
+        ("reference neuron") and those of `binned_st2` ("target neruon"): an
         entry at positive lags corresponds to a spike in `binned_st2` following
         a spike in `binned_st1` bins to the right, and an entry at negative
         lags corresponds to a spike in `binned_st1` following a spike in
         `binned_st2`.
 
-        To illustrate this definition, consider the two spike trains:
+        To illustrate this definition, consider two spike trains with the same
+        `t_start` and `t_stop`:
         `binned_st1` ('reference neuron') : 0 0 0 0 1 0 0 0 0 0 0
         `binned_st2` ('target neuron')    : 0 0 0 0 0 0 0 1 0 0 0
-        Here, the CCH will have an entry of 1 at lag h=+3.
+        Here, the CCH will have an entry of `1` at `lag=+3`.
 
         Consistent with the definition of AnalogSignals, the time axis
         represents the left bin borders of each histogram bin. For example,
