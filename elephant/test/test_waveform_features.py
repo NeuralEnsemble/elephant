@@ -60,7 +60,7 @@ class WaveformWidthTestCase(unittest.TestCase):
                               waveform, cutoff=cutoff)
         for cutoff in np.linspace(0., 1., num=size, endpoint=False):
             width = waveform_features.waveform_width(waveform, cutoff=cutoff)
-            self.assertEqual(width, 9)
+            self.assertEqual(width, size - 1)
 
 
 class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
