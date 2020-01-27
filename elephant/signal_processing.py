@@ -49,8 +49,7 @@ def zscore(signal, inplace=True):
 
     Returns
     -------
-    neo.AnalogSignal or list
-        Or list of AnalogSignals.
+    neo.AnalogSignal or list of neo.AnalogSignal
         The output format matches the input format: for each supplied
         AnalogSignal object a corresponding object is returned containing
         the z-transformed signal with the unit dimensionless.
