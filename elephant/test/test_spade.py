@@ -393,11 +393,11 @@ class SpadeTestCase(unittest.TestCase):
         self.assertRaises(TypeError, spade.spade, [
             [1, 2, 3], [3, 4, 5]], 1 * pq.ms, 4)
         # Test neo.Spiketrain with different t_stop
-        self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
+        self.assertRaises(ValueError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=6 * pq.s)], 1 * pq.ms, 4)
         # Test wrong spectrum parameter
-        self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
+        self.assertRaises(ValueError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=6 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=6 * pq.s)], 1 * pq.ms, 4, n_surr=1,
                           spectrum='try')
@@ -406,7 +406,7 @@ class SpadeTestCase(unittest.TestCase):
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, min_neu=-3)
         # Test wrong dither method
-        self.assertRaises(AttributeError, spade.spade, [neo.SpikeTrain(
+        self.assertRaises(ValueError, spade.spade, [neo.SpikeTrain(
             [1, 2, 3] * pq.s, t_stop=5 * pq.s), neo.SpikeTrain(
             [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4,
                           surr_method='try')
@@ -416,7 +416,7 @@ class SpadeTestCase(unittest.TestCase):
                 [3, 4, 5] * pq.s, t_stop=5 * pq.s)], 1 * pq.ms, 4, 3 * pq.ms,
                           n_surr=-3)
         # Test wrong correction parameter
-        self.assertRaises(AttributeError, spade.test_signature_significance,
+        self.assertRaises(ValueError, spade.test_signature_significance,
                           pv_spec=((2, 3, 0.2), (2, 4, 0.1)),
                           concepts=([(2, 3), (1, 2, 3)]),
                           alpha=0.01,
