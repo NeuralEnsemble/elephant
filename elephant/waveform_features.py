@@ -2,38 +2,44 @@
 """
 Features of waveforms (e.g waveform_snr).
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function
+from __future__ import division, print_function, unicode_literals
 
-import numpy as np
 import warnings
 
+import numpy as np
 
-def waveform_width(waveform):
+
+def waveform_width(waveform, cutoff=0.75):
     """
     Calculate the width (through-to-peak TTP) of a waveform.
 
-    Searches for an index of a minimum within first 3/4 of the waveform vector,
-    next for a maximum after the identified minimum, and returns the difference
-    between them.
+    Searches for an index of a minimum within first `cutoff` of the waveform
+    vector, next for a maximum after the identified minimum, and returns the
+    difference between them.
 
     Parameters
     ----------
     waveform : np.ndarray or list or pq.Quantity
         Time course of a single waveform
+    cutoff : float, optional
+        Defines the range `[0, cutoff]` of the input sequence for computing
+        the minimum.
+        Default: 0.75
 
     Returns
     -------
-    width : float
+    width : int
         Width of a waveform expressed as a number of data points
 
     Raises
     ------
     ValueError
-        If `waveform` is not a one-dimensional vector of at least two numbers.
+        If `waveform` is not a one-dimensional vector with at least two
+        numbers.
 
     """
     waveform = np.squeeze(waveform)
@@ -41,11 +47,13 @@ def waveform_width(waveform):
         raise ValueError('Expected 1-dimensional waveform.')
     if len(waveform) < 2:
         raise ValueError('Too short waveform.')
+    if not (0 <= cutoff < 1):
+        raise ValueError('Cuttoff should be in range [0, 1).')
 
-    min_border = int(len(waveform) * 3 / 4)
-    idxMin = np.argmin(waveform[:min_border])
-    idxMax = np.argmax(waveform[idxMin:]) + idxMin
-    width = idxMax - idxMin
+    min_border = max(1, int(len(waveform) * cutoff))
+    idx_min = np.argmin(waveform[:min_border])
+    idx_max = np.argmax(waveform[idx_min:]) + idx_min
+    width = idx_max - idx_min
 
     return width
 
