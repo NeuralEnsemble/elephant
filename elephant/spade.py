@@ -86,7 +86,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    import fim
+    from elephant.spade_src import fim
 
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
@@ -343,13 +343,10 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     time_mining = time.time()
     if rank == 0 or compute_stability:
         # Mine the spiketrains for extraction of concepts
-        concepts, rel_matrix = concepts_mining(spiketrains, binsize, winlen,
-                                               min_spikes=min_spikes,
-                                               min_occ=min_occ,
-                                               max_spikes=max_spikes,
-                                               max_occ=max_occ,
-                                               min_neu=min_neu,
-                                               report='a')
+        concepts, rel_matrix = concepts_mining(
+            spiketrains, binsize, winlen, min_spikes=min_spikes,
+            min_occ=min_occ, max_spikes=max_spikes, max_occ=max_occ,
+            min_neu=min_neu, report='a')
         time_mining = time.time() - time_mining
         print("Time for data mining: {}".format(time_mining))
 
@@ -376,12 +373,11 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     if n_surr > 0:
         # Compute pvalue spectrum
         time_pvalue_spectrum = time.time()
-        pv_spec = pvalue_spectrum(spiketrains, binsize, winlen, dither=dither,
-                                  n_surr=n_surr, min_spikes=min_spikes,
-                                  min_occ=min_occ, max_spikes=max_spikes,
-                                  max_occ=max_occ, min_neu=min_neu,
-                                  spectrum=spectrum,
-                                  surr_method=surr_method)
+        pv_spec = pvalue_spectrum(
+            spiketrains, binsize, winlen, dither=dither, n_surr=n_surr,
+            min_spikes=min_spikes, min_occ=min_occ, max_spikes=max_spikes,
+            max_occ=max_occ, min_neu=min_neu, spectrum=spectrum,
+            surr_method=surr_method)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
         print("Time for pvalue spectrum computation: {}".format(
             time_pvalue_spectrum))
@@ -397,37 +393,30 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
         return None
 
     # Initialize non-significant signatures as empty list:
-    ns_sgnt = []
+    ns_signatures = []
     # Decide whether filter concepts with psf
     if n_surr > 0:
         if len(pv_spec) > 0:
             # Computing non-significant entries of the spectrum applying
             # the statistical correction
-            ns_sgnt = test_signature_significance(pv_spec,
-                                                  concepts,
-                                                  alpha,
-                                                  winlen,
-                                                  corr=stat_corr,
-                                                  report='non_significant',
-                                                  spectrum=spectrum)
+            ns_signatures = test_signature_significance(
+                pv_spec, concepts, alpha, winlen, corr=stat_corr,
+                report='non_significant', spectrum=spectrum)
         # Storing non-significant entries of the pvalue spectrum
-        output['non_sgnf_sgnt'] = ns_sgnt
+        output['non_sgnf_sgnt'] = ns_signatures
     # Filter concepts with pvalue spectrum (psf)
-    if len(ns_sgnt) > 0:
+    if len(ns_signatures) > 0:
         concepts = [concept for concept in concepts
-                    if _pattern_spectrum_filter(concept, ns_sgnt,
+                    if _pattern_spectrum_filter(concept, ns_signatures,
                                                 spectrum, winlen)]
         # Decide whether to filter concepts using psr
     if psr_param is not None:
         # Filter using conditional tests (psr)
-        concepts = pattern_set_reduction(concepts, ns_sgnt,
-                                         winlen=winlen,
-                                         spectrum=spectrum,
-                                         h_subset_filtering=psr_param[0],
-                                         k_superset_filtering=psr_param[1],
-                                         l_covered_spikes=psr_param[2],
-                                         min_spikes=min_spikes,
-                                         min_occ=min_occ)
+        concepts = pattern_set_reduction(
+            concepts, ns_signatures, winlen=winlen, spectrum=spectrum,
+            h_subset_filtering=psr_param[0], k_superset_filtering=psr_param[1],
+            l_covered_spikes=psr_param[2], min_spikes=min_spikes,
+            min_occ=min_occ)
     # Storing patterns for output format concepts
     if output_format == 'concepts':
         output['patterns'] = concepts
@@ -1508,17 +1497,17 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
     return sig_spectrum
 
 
-def _pattern_spectrum_filter(concept, ns_sgnt, spectrum, winlen):
+def _pattern_spectrum_filter(concept, ns_signatures, spectrum, winlen):
     """
     Filter for significant concepts
     """
     if spectrum == '#':
-        keep_concept = (len(concept[0]), len(concept[1])) not in ns_sgnt
+        keep_concept = (len(concept[0]), len(concept[1])) not in ns_signatures
     else:   # spectrum == '3d#':
         # duration is fixed as the maximum lag
         duration = max(np.array(concept[0]) % winlen)
         keep_concept = (len(concept[0]), len(concept[1]),
-                        duration) not in ns_sgnt
+                        duration) not in ns_signatures
     return keep_concept
 
 
@@ -1712,7 +1701,7 @@ def _give_random_idx(r_unique, num_integers):
     return _give_random_idx(r_unique, num_integers)
 
 
-def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
+def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
                           h_subset_filtering=0, k_superset_filtering=0,
                           l_covered_spikes=0, min_spikes=2, min_occ=2):
     r"""
@@ -1725,9 +1714,9 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
     (z_a, c_A), where z_A = |A| is the size and c_A the support of A,
     by either of:
     * subset filtering: any pattern B is discarded if *concepts* contains a
-      superset A of B such that (z_B, c_B-c_A+*h*) \in *ns_sgnt*
+      superset A of B such that (z_B, c_B-c_A+*h*) \in *ns_signatures*
     * superset filtering: any pattern A is discarded if *concepts* contains a
-      subset B of A such that (z_A-z_B+*k*, c_A) \in  *ns_sgnt*
+      subset B of A such that (z_A-z_B+*k*, c_A) \in  *ns_signatures*
     * covered-spikes criterion: for any two patterns A, B with A \subset B, B
       is discarded if (z_B-l)*c_B <= c_A*(z_A-*l*), A is discarded otherwise.
     * combined filtering: combines the three procedures above
@@ -1736,8 +1725,8 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
     z is the pattern size and c the pattern support.
 
     For any two patterns A and B in concepts_psf such that B \subset A, check:
-    1) (z_B, c_B - c_A + *h*) \in *ns_sgnt*, and
-    2) (z_A - z_B + *k*, c_A) \in *ns_sgnt*.
+    1) (z_B, c_B - c_A + *h*) \in *ns_signatures*, and
+    2) (z_A - z_B + *k*, c_A) \in *ns_signatures*.
     Then:
     * if 1) and not 2): discard B
     * if 2) and not 1): discard A
@@ -1755,7 +1744,7 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
     -----------
     concepts: list
         List of concepts, each consisting in its intent and extent
-    ns_sgnt: list
+    ns_signatures: list
         A list of non-significant pattern signatures (z, c)
     winlen: int (positive)
         The size (number of bins) of the sliding window used for the analysis.
@@ -1845,7 +1834,7 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
                     size_subset=size2,
                     dur_subset=dur2,
                     spectrum=spectrum,
-                    ns_sgnt=ns_sgnt,
+                    ns_signatures=ns_signatures,
                     h_subset_filtering=h_subset_filtering,
                     k_superset_filtering=k_superset_filtering,
                     l_covered_spikes=l_covered_spikes,
@@ -1861,7 +1850,7 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
                     size_subset=size1,
                     dur_subset=dur1,
                     spectrum=spectrum,
-                    ns_sgnt=ns_sgnt,
+                    ns_signatures=ns_signatures,
                     h_subset_filtering=h_subset_filtering,
                     k_superset_filtering=k_superset_filtering,
                     l_covered_spikes=l_covered_spikes,
@@ -1880,7 +1869,7 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
                     dur_superset=dur1,
                     size_subset=inter_size,
                     spectrum=spectrum,
-                    ns_sgnt=ns_sgnt,
+                    ns_signatures=ns_signatures,
                     k_superset_filtering=k_superset_filtering,
                     min_spikes=min_spikes)
                 reject2 = _superset_filter(
@@ -1889,7 +1878,7 @@ def pattern_set_reduction(concepts, ns_sgnt, winlen, spectrum,
                     dur_superset=dur2,
                     size_subset=inter_size,
                     spectrum=spectrum,
-                    ns_sgnt=ns_sgnt,
+                    ns_signatures=ns_signatures,
                     k_superset_filtering=k_superset_filtering,
                     min_spikes=min_spikes)
                 # Reject accordingly:
@@ -1919,7 +1908,7 @@ def _perform_combined_filtering(occ_superset,
                                 size_subset,
                                 dur_subset,
                                 spectrum,
-                                ns_sgnt,
+                                ns_signatures,
                                 h_subset_filtering,
                                 k_superset_filtering,
                                 l_covered_spikes,
@@ -1935,7 +1924,7 @@ def _perform_combined_filtering(occ_superset,
         size_subset=size_subset,
         dur_subset=dur_subset,
         spectrum=spectrum,
-        ns_sgnt=ns_sgnt,
+        ns_signatures=ns_signatures,
         h_subset_filtering=h_subset_filtering,
         min_occ=min_occ)
     reject_superset = _superset_filter(
@@ -1944,7 +1933,7 @@ def _perform_combined_filtering(occ_superset,
         dur_superset=dur_superset,
         size_subset=size_subset,
         spectrum=spectrum,
-        ns_sgnt=ns_sgnt,
+        ns_signatures=ns_signatures,
         k_superset_filtering=k_superset_filtering,
         min_spikes=min_spikes)
     # Reject the superset and/or the subset accordingly:
@@ -1959,37 +1948,38 @@ def _perform_combined_filtering(occ_superset,
 
 
 def _subset_filter(occ_superset, occ_subset, size_subset, dur_subset, spectrum,
-                   ns_sgnt=None, h_subset_filtering=0, min_occ=2):
+                   ns_signatures=None, h_subset_filtering=0, min_occ=2):
     """
     perform subset filtering
     (see pattern_set_reduction)
     """
-    if ns_sgnt is None:
-        ns_sgnt = []
+    if ns_signatures is None:
+        ns_signatures = []
     occ_diff = occ_subset - occ_superset + h_subset_filtering
     if spectrum == '#':
         signature_to_test = (size_subset, occ_diff)
     else:  # spectrum == '3d#':
         signature_to_test = (size_subset, occ_diff, dur_subset)
-    reject_subset = occ_diff < min_occ or signature_to_test in ns_sgnt
+    reject_subset = occ_diff < min_occ or signature_to_test in ns_signatures
     return reject_subset
 
 
 def _superset_filter(occ_superset, size_superset, dur_superset, size_subset,
-                     spectrum, ns_sgnt=None, k_superset_filtering=0,
+                     spectrum, ns_signatures=None, k_superset_filtering=0,
                      min_spikes=2):
     """
     perform superset filtering
     (see pattern_set_reduction)
     """
-    if ns_sgnt is None:
-        ns_sgnt = []
+    if ns_signatures is None:
+        ns_signatures = []
     size_diff = size_superset - size_subset + k_superset_filtering
     if spectrum == '#':
         signature_to_test = (size_diff, occ_superset)
-    elif spectrum == '3d#':
+    else:  # spectrum == '3d#':
         signature_to_test = (size_diff, occ_superset, dur_superset)
-    reject_superset = size_diff < min_spikes or signature_to_test in ns_sgnt
+    reject_superset = \
+        size_diff < min_spikes or signature_to_test in ns_signatures
     return reject_superset
 
 
@@ -2099,20 +2089,20 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
         # pattern dictionary appended to the output
         if spectrum == '#':
             # Signature (size, n occ) of the pattern
-            sgnt = (len(itemset), len(window_ids))
+            signature = (len(itemset), len(window_ids))
         else:  # spectrum == '3d#':
             # Signature (size, n occ, duration) of the pattern
             # duration is position of the last bin
-            sgnt = (len(itemset), len(window_ids), bin_ids[-1])
+            signature = (len(itemset), len(window_ids), bin_ids[-1])
 
-        output_dict['signature'] = sgnt
+        output_dict['signature'] = signature
         # If None is given in input to the pval spectrum the pvalue
         # is set to -1 (pvalue spectrum not available)
         if pv_spec is None:
             output_dict['pvalue'] = -1
         else:
             # p-value assigned to the pattern from the pvalue spectrum
-            output_dict['pvalue'] = pvalue_dict[sgnt]
+            output_dict['pvalue'] = pvalue_dict[signature]
 
         output.append(output_dict)
     return output
