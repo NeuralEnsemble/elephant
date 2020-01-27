@@ -45,7 +45,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
                                           t_start=0. * pq.ms,
                                           sampling_rate=self.sampling_rate,
                                           dtype=float)
-            rho = elephant.signal_processing.pairwise_cross_correlation(
+            rho = elephant.signal_processing.cross_correlation_function(
                 signal_neo, [[0, 1], [0, 2]])
             # Cross-correlation of sine and cosine should be sine
             assert_array_almost_equal(
@@ -65,7 +65,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        rho = elephant.signal_processing.pairwise_cross_correlation(
+        rho = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1], nlags=nlags)
         # Test if vector of lags tau has correct length
         assert len(rho.times) == 2*int(nlags)+1
@@ -82,7 +82,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        rho = elephant.signal_processing.pairwise_cross_correlation(
+        rho = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1])
         # Cross-correlation of sine and cosine should be sine + phi
         assert_array_almost_equal(
@@ -102,7 +102,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        envelope = elephant.signal_processing.pairwise_cross_correlation(
+        envelope = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1], nlags=nlags, env=True)
         # Envelope should be one for sinusoidal function
         assert_array_almost_equal(envelope, np.ones_like(envelope), decimal=2)
@@ -112,10 +112,10 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
                        np.cos(2. * np.pi * self.freq * self.times)] * pq.mV
         signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
                                   sampling_rate=self.sampling_rate)
-        raw = elephant.signal_processing.pairwise_cross_correlation(
+        raw = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1], scaleopt='none'
         )
-        biased = elephant.signal_processing.pairwise_cross_correlation(
+        biased = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1], scaleopt='biased'
         )
         assert_array_almost_equal(biased, raw / biased.shape[0])
@@ -125,7 +125,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
                        np.cos(2. * np.pi * self.freq * self.times)] * pq.mV
         signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
                                   sampling_rate=self.sampling_rate)
-        normalized = elephant.signal_processing.pairwise_cross_correlation(
+        normalized = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1], scaleopt='coeff'
         )
         sig1, sig2 = signal.magnitude.T
@@ -142,7 +142,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         signal = signal[:, np.newaxis] * pq.mV
         signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
                                   sampling_rate=self.sampling_rate)
-        normalized = elephant.signal_processing.pairwise_cross_correlation(
+        normalized = elephant.signal_processing.cross_correlation_function(
             signal, [0, 0], scaleopt='coeff'
         )
         # auto-correlation at zero lag should equal 1

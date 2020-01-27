@@ -143,7 +143,7 @@ def zscore(signal, inplace=True):
         return result
 
 
-def pairwise_cross_correlation(signal, ch_pairs, env=False, nlags=None,
+def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
                                scaleopt='unbiased'):
     r"""
     Calculates the pairwise cross-correlation estimate of `signal[ch_pairs]`
@@ -309,16 +309,6 @@ def pairwise_cross_correlation(signal, ch_pairs, env=False, nlags=None,
                                   sampling_rate=signal.sampling_rate,
                                   dtype=float)
     return cross_corr
-
-
-def cross_correlation_function(*args, **kwargs):
-    # The name 'cross_correlation_function' is ambiguous and clashes with
-    # 'cross_correlation_histogram()' and 'corrcoef()' functions in
-    # spike_train_correlation.py
-    warnings.warn("'cross_correlation_function()' is deprecated. "
-                  "Use 'pairwise_cross_correlation()' instead.",
-                  DeprecationWarning)
-    return pairwise_cross_correlation(*args, **kwargs)
 
 
 def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
