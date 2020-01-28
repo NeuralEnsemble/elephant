@@ -9,9 +9,9 @@ steps:
 
        >>> binsize = 5 * pq.ms
        >>> dt = 1 * pq.s
-       >>> imat, xedges, yedges = intersection_matrix(sts, binsize, dt, norm=2)
-       >>> pmat, xedges, yedges = probability_matrix_analytical(
-               sts, binsize, dt)
+       >>> imat, x_edges, y_edges = intersection_matrix(sts, binsize, dt, norm=2)
+       >>> pmat, x_edges, y_edges = probability_matrix_analytical(
+       ...        sts, binsize, dt)
 
 2) Compute the joint probability matrix jmat, using a suitable filter:
 
@@ -30,7 +30,7 @@ steps:
        >>> epsilon = 10
        >>> minsize = 2
        >>> stretch = 5
-       >>> cmat = asset.cluster_matrix_entries(mask, epsilon, minsize, stretch)
+       >>> cmat = cluster_matrix_entries(mask, epsilon, minsize, stretch)
 
 5) Extract sequences of synchronous events associated to each worm
 
@@ -40,16 +40,20 @@ References:
 
 [1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted)
 """
+from __future__ import division, print_function, unicode_literals
 
+import itertools
+
+import neo
 import numpy as np
+import quantities as pq
 import scipy.spatial
 import scipy.stats
-import quantities as pq
-import neo
-import itertools
+from sklearn.cluster import dbscan as dbscan
+from tqdm import trange, tqdm
+
 import elephant.conversion as conv
 import elephant.spike_train_surrogates as spike_train_surrogates
-from sklearn.cluster import dbscan as dbscan
 
 try:
     from mpi4py import MPI
@@ -763,22 +767,15 @@ def probability_matrix_montecarlo(
     # surrogate data whose intersection value at (i, j) is lower than or
     # equal to that of the original data
     pmat = np.array(np.zeros(imat.shape), dtype=int)
-    if verbose:
-        # TODO: move to tqdm
-        print('pmat_bootstrap(): begin of bootstrap...')
-    for i in range(n_surr):  # For each surrogate id i
-        if verbose:
-            print('    surr %d' % i)
-        surrs_i = [st[i] for st in surrs]  # Take each i-th surrogate
-        surrs_y_i = [st[i] for st in surrs_y]  # Take each i-th surrogate
+    for surr_id in trange(n_surr, desc="pmat_bootstrap", disable=not verbose):
+        surrs_i = [st[surr_id] for st in surrs]  # Take each i-th surrogate
+        surrs_y_i = [st[surr_id] for st in surrs_y]  # Take each i-th surrogate
         imat_surr, xx, yy = intersection_matrix(  # compute the related imat
             surrs_i, binsize=binsize, spiketrains_y=surrs_y_i,
             t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x,
             t_stop_y=t_stop_y)
         pmat += (imat_surr <= imat - 1)
     pmat = pmat * 1. / n_surr
-    if verbose:
-        print('pmat_bootstrap(): done')
 
     # TODO: just always return imat
     if return_imat:
@@ -1115,18 +1112,14 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     Ptot = np.zeros((A, B),
                     dtype=np.float32)  # initialize all A x B probabilities to 0
     iter_id = 0
-    progress = -1
-    for matrix_entries in itertools.product(*lists):
+    for matrix_entries in tqdm(itertools.product(*lists),
+                               total=it_todo,
+                               desc="Joint survival function",
+                               disable=not verbose):
         # if we are running with MPI
         if mpi_accelerated and iter_id % size != rank:
             iter_id += 1
             continue
-
-        if mpi_accelerated and verbose:
-            current_progress = (iter_id * 100) // it_todo
-            if current_progress != progress:
-                print('on rank ', rank, ': ', current_progress, '% done')
-                progress = current_progress
 
         iter_id += 1
 
