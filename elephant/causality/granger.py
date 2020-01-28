@@ -29,6 +29,8 @@ Causality = namedtuple('causality',
                        'directional_causality_x_y directional_causality_y_x instantaneous_causality total_interdependence')
 
 
+# TODO: The result of pairwise granger outputs three arrays and one float.
+
 def _lag_covariances(signals, dimension, max_lag):
     """
     Determine covariances of time series and time shift of itself up to a
@@ -154,7 +156,7 @@ def pairwise_granger(signals, order):
     causality.instantaneous_causality : float
     causality.total_interdependence : float
     """
-    #TODO: remove order parameter
+    # TODO: remove order parameter
     if order <= 0:
         raise ValueError(f"The order parameter should be positive. Not {order}")
 
