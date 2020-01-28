@@ -20,7 +20,6 @@ from . import (statistics,
                change_point_detection,
                phase_analysis,
                sta,
-               spade,
                conversion,
                neo_tools,
                cell_assembly_detection,
@@ -29,6 +28,7 @@ from . import (statistics,
 try:
     from . import pandas_bridge
     from . import asset
+    from . import spade
 except ImportError:
     # requirements-extras are missing
     pass

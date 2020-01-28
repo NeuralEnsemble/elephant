@@ -13,67 +13,65 @@ and should be available in the spade_src folder (elephant/spade_src/).
 If the fim.so module is not present in the correct location or cannot be
 imported (only available for linux OS) SPADE will make use of a python
 implementation of the fast fca algorithm contained in
-elephant/spade_src/fast_fca.py, which is about 10 times slower.
+`elephant/spade_src/fast_fca.py`, which is about 10 times slower.
 
+Examples
+--------
+>>> from elephant.spade import spade
+>>> import elephant.spike_train_generation
+>>> import quantities as pq
 
-import elephant.spade
-import elephant.spike_train_generation
-import quantities as pq
+Generate correlated spiketrains.
 
-# Generate correlated spiketrains
-spiketrains = elephant.spike_train_generation.cpp(
-    rate=5*pq.Hz, A=[0]+[0.99]+[0]*9+[0.01], t_stop=10*pq.s)
+>>> spiketrains = elephant.spike_train_generation.cpp(
+...    rate=5*pq.Hz, A=[0]+[0.99]+[0]*9+[0.01], t_stop=10*pq.s)
 
-# Mining patterns with SPADE using a binsize of 1 ms and a window length of 1
-# bin (i.e., detecting only synchronous patterns).
-patterns = spade.spade(
-        spiketrains=spiketrains, binsize=1*pq.ms, winlen=1, dither=5*pq.ms,
-        min_spikes=10, n_surr=10, psr_param=[0,0,3],
-        output_format='patterns')['patterns'][0]
+Mining patterns with SPADE using a `binsize` of 1 ms and a window length of 1
+bin (i.e., detecting only synchronous patterns).
 
-# Plotting
-plt.figure()
-for neu in patterns['neurons']:
-    if neu == 0:
-        plt.plot(
-            patterns['times'], [neu]*len(patterns['times']), 'ro',
-            label='pattern')
-    else:
-        plt.plot(
-            patterns['times'], [neu] * len(patterns['times']), 'ro')
-# Raster plot of the spiketrains
-for st_idx, spiketrain in enumerate(spiketrains):
-    if st_idx == 0:
-        plt.plot(spiketrain.rescale(pq.ms), [st_idx] * len(spiketrain), 'k.',
-                 label='spikes')
-    else:
-        plt.plot(spiketrain.rescale(pq.ms), [st_idx] * len(spiketrain), 'k.')
-plt.ylim([-1, len(spiketrains)])
-plt.xlabel('time (ms)')
-plt.ylabel('neurons ids')
-plt.legend()
-plt.show()
+>>> patterns = spade(
+...        spiketrains=spiketrains, binsize=1*pq.ms, winlen=1, dither=5*pq.ms,
+...        min_spikes=10, n_surr=10, psr_param=[0,0,3],
+...        output_format='patterns')['patterns'][0]
+
+>>> import matplotlib.pyplot as plt
+>>> for neu in patterns['neurons']:
+...     label = 'pattern' if neu == 0 else None
+...     plt.plot(patterns['times'], [neu]*len(patterns['times']), 'ro',
+...              label=label)
+
+Raster plot of the spiketrains.
+
+>>> for st_idx, spiketrain in enumerate(spiketrains):
+...     label = 'pattern' if st_idx == 0 else None
+...     plt.plot(spiketrain.rescale(pq.ms), [st_idx] * len(spiketrain),
+...              'k.', label=label)
+>>> plt.ylim([-1, len(spiketrains)])
+>>> plt.xlabel('time (ms)')
+>>> plt.ylabel('neurons ids')
+>>> plt.legend()
+>>> plt.show()
 
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
 
+import operator
 import time
 import warnings
-import operator
-from itertools import chain, combinations
-from functools import reduce
 from collections import defaultdict
+from functools import reduce
+from itertools import chain, combinations
 
-import numpy as np
 import neo
+import numpy as np
 import quantities as pq
-from scipy import sparse
 import statsmodels.stats.multitest as sm
+from scipy import sparse
 
-import elephant.spike_train_surrogates as surr
 import elephant.conversion as conv
+import elephant.spike_train_surrogates as surr
 from elephant.spade_src import fast_fca
 
 warnings.simplefilter('once', UserWarning)
@@ -113,33 +111,33 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrains
+    spiketrains: list of neo.SpikeTrain
         List containing the parallel spike trains to analyze
-    binsize: Quantity
+    binsize: pq.Quantity
         The time precision used to discretize the spiketrains (binning).
-    winlen: int (positive)
+    winlen: int
         The size (number of bins) of the sliding window used for the analysis.
         The maximal length of a pattern (delay between first and last spike) is
         then given by winlen*binsize
-    min_spikes: int (positive)
+    min_spikes: int, optional
         Minimum number of spikes of a sequence to be considered a pattern.
         Default: 2
-    min_occ: int (positive)
+    min_occ: int, optional
         Minimum number of occurrences of a sequence to be considered as a
         pattern.
         Default: 2
-    max_spikes: int (positive)
+    max_spikes: int, optional
         Maximum number of spikes of a sequence to be considered a pattern. If
         None no maximal number of spikes is considered.
         Default: None
-    max_occ: int (positive)
+    max_occ: int, optional
         Maximum number of occurrences of a sequence to be considered as a
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
-    min_neu: int (positive)
+    min_neu: int, optional
         Minimum number of neurons in a sequence to considered a pattern.
         Default: 1
-    approx_stab_pars: dict or None
+    approx_stab_pars: dict or None, optional
         Parameter values for approximate stability computation.
         Pass a dictionary containing at least 'n_subsets' to prompt
         the computation:
@@ -151,14 +149,14 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             then an optimal n_subsets is calculated according to the formula
             given in Babin, Kuznetsov (2012), proposition 6:
 
-             ..math::
+             .. math::
                     n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
 
         delta: float
-            delta: probability with at least ..math:$1-\delta$
+            Probability with at least :math:`1-\delta`
             Default: 0
         epsilon: float
-            epsilon: absolute error
+            Absolute error
             Default: 0
         stability_thresh: None or list of float
             List containing the stability thresholds used to filter the
@@ -168,20 +166,21 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             extensional stability > stab_thr[1] are returned and used for
             further analysis within SPADE.
             Default: None
-    n_surr: int
+    n_surr: int, optional
         Number of surrogates to generate to compute the p-value spectrum.
         This number should be large (n_surr>=1000 is recommended for 100
         spike trains in *sts*). If n_surr is 0, then the p-value spectrum is
         not computed.
         Default: 0
-    dither: Quantity
+    dither: pq.Quantity, optional
         Amount of spike time dithering for creating the surrogates for
-        filtering the pattern spectrum. A spike at time t is placed randomly
-        within ]t-dither, t+dither[ (see also
-        elephant.spike_train_surrogates.dither_spikes).
+        filtering the pattern spectrum. A spike at time `t` is placed randomly
+        within `[t-dither, t+dither]` (see also
+        :func:`elephant.spike_train_surrogates.dither_spikes`).
         Default: 15*pq.ms
-    spectrum: str
-        Define the signature of the patterns, it can assume values:
+    spectrum: {'#', '3d#'}, optional
+        Define the signature of the patterns.
+
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrences)
         '3d#': pattern spectrum using the as signature the triplets:
@@ -189,84 +188,87 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             and first spike of the pattern)
         Default: '#'
     alpha: float
-        The significance level of the hypothesis tests performed. If alpha=1
-        all the concepts are returned. If 0<alpha<1 the concepts
-        are filtered according to their signature in the p-value spectrum.
+        The significance level of the hypothesis tests performed. If
+        `alpha == 1`, all the concepts are returned. If `0<alpha<1`, the
+        concepts are filtered according to their signature in the p-value
+        spectrum.
         Default: 1
     stat_corr: str
         Method used for testing and adjustment of pvalues.
         Can be either the full name or initial letters.
         Available methods are:
-            bonferroni : one-step correction
-            sidak : one-step correction
-            holm-sidak : step down method using Sidak adjustments
-            holm : step-down method using Bonferroni adjustments
-            simes-hochberg : step-up method (independent)
-            hommel : closed method based on Simes tests (non-negative)
-            fdr_bh : Benjamini/Hochberg (non-negative)
-            fdr_by : Benjamini/Yekutieli (negative)
-            fdr_tsbh : two stage fdr correction (non-negative)
-            fdr_tsbky : two stage fdr correction (non-negative)
-        Also possible as input:
-            '', 'no': no statistical correction
+            'bonferroni' : one-step correction
+
+            'sidak' : one-step correction
+
+            'holm-sidak' : step down method using Sidak adjustments
+
+            'holm' : step-down method using Bonferroni adjustments
+
+            'simes-hochberg' : step-up method (independent)
+
+            'hommel' : closed method based on Simes tests (non-negative)
+
+            'fdr_bh' : Benjamini/Hochberg (non-negative)
+
+            'fdr_by' : Benjamini/Yekutieli (negative)
+
+            'fdr_tsbh' : two stage fdr correction (non-negative)
+
+            'fdr_tsbky' : two stage fdr correction (non-negative)
+
+            '' or 'no': no statistical correction
         Default: 'fdr_bh'
     surr_method: str
-        Method that is used to generate the surrogates.
-            You can use every method defined in spike_train_surrogates module.
-            For documentation look there.
+        Method to generate surrogates. You can use every method defined in
+        :func:`elephant.spike_train_surrogates.surrogates`.
         Default: 'dither_spikes'
     psr_param: None or list of int
         This list contains parameters used in the pattern spectrum filtering:
-            psr_param[0]: correction parameter for subset filtering
-                (see h_subset_filtering in pattern_set_reduction()).
-            psr_param[1]: correction parameter for superset filtering
-                (see k_superset_filtering in pattern_set_reduction()).
-            psr_param[2]: correction parameter for covered-spikes criterion
-                (see l_covered_spikes in pattern_set_reduction()).
-    output_format: str
-        distinguish the format of the output (see Returns). Can assume values
-        'concepts' and 'patterns'.
+            `psr_param[0]`: correction parameter for subset filtering
+                (see `h_subset_filtering` in :func:`pattern_set_reduction`).
+            `psr_param[1]`: correction parameter for superset filtering
+                (see `k_superset_filtering` in :func:`pattern_set_reduction`).
+            `psr_param[2]`: correction parameter for covered-spikes criterion
+                (see `l_covered_spikes` in :func:`pattern_set_reduction`).
+    output_format: {'concepts', 'patterns'}
+        Distinguish the format of the output (see Returns).
         Default: 'patterns'
 
     Returns
     -------
-    output: dict
+    output : dict
         Dictionary containing the following keys:
-        - 'patterns':
-            if output_format is 'patterns':
-            output['patterns']: list
-            List of dictionaries. Each dictionary corresponds to a patterns
+
+        'patterns':
+            If `output_format` is 'patterns', then `output['patterns']` is a
+            list of dictionaries. Each dictionary corresponds to a pattern
             and has the following keys:
-                neurons: array containing the indices of the neurons of the
+                'neurons': array containing the indices of the neurons of the
                     pattern.
-                lags: array containing the lags (integers corresponding to
+                'lags': array containing the lags (integers corresponding to
                     the number of bins) between the spikes of the patterns.
                     The first lag is always assumed to be 0 and corresponds
                     to the first spike ['times'] array containing the
                     times.
-                signature: tuple containing two integers:
+                'signature': tuple containing two integers:
                     (number of spikes of the patterns,
                     number of occurrences of the pattern)
-                pvalue: the p-value corresponding to the pattern.
+                'pvalue': the p-value corresponding to the pattern.
                     If n_surr==0 the p-values are set to 0.0.
 
-            if output_format is 'concepts':
-            output['patterns']: dict
-            Dictionary containing the following keys:
-            patterns: tuple
-                Each element of the tuple corresponds to a pattern and is
-                itself a tuple consisting of:
-                    (spikes in the pattern, occurrences of the patterns)
-                For details see function concepts_mining().
+            If `output_format` is 'concepts', then `output['patterns']` is a
+            tuple of patterns which in turn are tuples of (spikes in the
+            pattern, occurrences of the pattern). For details see
+            :func:`concepts_mining`.
 
-        - 'pvalue_spectrum' (only if n_surr > 0 and n_subsets == 0):
-            output['pvalue_spectrum']: list
-            contains a list of signatures in tuples format
-            (size, number of occurrences, duration (only if spectrum=='3d#')),
-            corresponding p-value)
+        'pvalue_spectrum' (only if `n_surr > 0` and `n_subsets == 0`):
+            A list of signatures in tuples format
+            (size, number of occurrences, duration (only if spectrum=='3d#'),
+            corresponding p-value).
 
-        - 'non_sgnf_sgnt': list
-            Non significant signatures of pvalue_spectrum
+        'non_sgnf_sgnt': list
+            Non significant signatures of 'pvalue_spectrum'.
 
         if n_subsets > 0:
         (spikes in the pattern, occurrences of the patterns,
@@ -300,11 +302,11 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     calls do not include the statistical testing (for details see the
     documentation of spade.spade())
 
-    >>> from elephant import spade
+    >>> from elephant.spade import spade
     >>> import quantities as pq
     >>> binsize = 3 * pq.ms # time resolution to discretize the spiketrains
     >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
-    >>> result_spade = spade.spade(spiketrains, binsize, winlen)
+    >>> result_spade = spade(spiketrains, binsize, winlen)
 
     References
     ----------
@@ -432,80 +434,85 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
 def concepts_mining(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
                     max_spikes=None, max_occ=None, min_neu=1, report='a'):
     """
-    Find pattern candidates extracting all the concepts of the context formed
-    by the objects defined as all windows of length winlen*binsize slided
-    along the spiketrains and the attributes as the spikes occurring in each of
-    the window discretized at a time resolution equal to binsize. Hence, the
-    output are all the repeated sequences of spikes with maximal length winlen,
-    which are not trivially explained by the same number of occurrences of a
-    superset of spikes.
+    Find pattern candidates extracting all the concepts of the context, formed
+    by the objects defined as all windows of length `winlen*binsize` slided
+    along the `spiketrains` and the attributes as the spikes occurring in each
+    of the window discretized at a time resolution equal to `binsize`. Hence,
+    the output are all the repeated sequences of spikes with maximal length
+    `winlen`, which are not trivially explained by the same number of
+    occurrences of a superset of spikes.
 
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrains
+    spiketrains: list of neo.SpikeTrain
         List containing the parallel spike trains to analyze
-    binsize: Quantity
-        The time precision used to discretize the spiketrains (clipping).
-    winlen: int (positive)
+    binsize: pq.Quantity
+        The time precision used to discretize the `spiketrains` (clipping).
+    winlen: int
         The size (number of bins) of the sliding window used for the analysis.
         The maximal length of a pattern (delay between first and last spike) is
-        then given by winlen*binsize
-    min_spikes: int (positive)
+        then given by `winlen*binsize`
+    min_spikes: int, optional
         Minimum number of spikes of a sequence to be considered a pattern.
         Default: 2
-    min_occ: int (positive)
+    min_occ: int, optional
         Minimum number of occurrences of a sequence to be considered as a
         pattern.
-       Default: 2
-    max_spikes: int (positive)
+        Default: 2
+    max_spikes: int, optional
         Maximum number of spikes of a sequence to be considered a pattern. If
         None no maximal number of spikes is considered.
         Default: None
-    max_occ: int (positive)
+    max_occ: int, optional
         Maximum number of occurrences of a sequence to be considered as a
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
-    min_neu: int (positive)
+    min_neu: int, optional
         Minimum number of neurons in a sequence to considered a pattern.
         Default: 1
-    report: str
+    report: {'a', '#', '3d#'}, optional
         Indicates the output of the function.
-        'a': all the mined patterns
-        '#': pattern spectrum using as signature the pair:
+
+        'a':
+            All the mined patterns
+
+        '#':
+            Pattern spectrum using as signature the pair:
             (number of spikes, number of occurrence)
-        '3d#': pattern spectrum using as signature the triplets:
+
+        '3d#':
+            Pattern spectrum using as signature the triplets:
             (number of spikes, number of occurrence, difference between the
             times of the last and the first spike of the pattern)
+
         Default: 'a'
 
     Returns
     -------
-    mining_results: numpy array
+    mining_results : np.ndarray
         If report == 'a':
-            numpy array of all the pattern candidates (concepts) found in the
-            spiketrains. Each pattern is represented as a tuple containing
-            (spike IDs, discrete times (window position)
-            of the  occurrences of the pattern). The spike IDs are defined as:
-            spike_id=neuron_id*bin_id; with neuron_id in [0, len(spiketrains)]
-            and bin_id in [0, winlen].
+            Numpy array of all the pattern candidates (concepts) found in the
+            `spiketrains`. Each pattern is represented as a tuple containing
+            (spike IDs, discrete times (window position) of the  occurrences
+            of the pattern). The spike IDs are defined as:
+            `spike_id=neuron_id*bin_id` with `neuron_id` in
+            `[0, len(spiketrains)]` and `bin_id` in `[0, winlen]`.
         If report == '#':
-             The pattern spectrum is represented as a  numpy array of triplets
-             each formed by:
-                (pattern size, number of occurrences, number of patterns)
+             The pattern spectrum is represented as a numpy array of triplets
+             (pattern size, number of occurrences, number of patterns).
         If report == '3d#':
              The pattern spectrum is represented as a numpy array of
-             quadruplets each formed by:
-                (pattern size, number of occurrences, difference between last
-                and first spike of the pattern, number of patterns)
+             quadruplets (pattern size, number of occurrences, difference
+             between last and first spike of the pattern, number of patterns)
     rel_matrix : sparse.coo_matrix
-        A binary matrix with shape (number of windows,
-        winlen*len(spiketrains)). Each row corresponds to a window (order
+        A binary matrix of shape (number of windows, winlen*len(spiketrains)).
+        Each row corresponds to a window (order
         according to their position in time). Each column corresponds to one
         bin and one neuron and it is 0 if no spikes or 1 if one or more spikes
         occurred in that bin for that particular neuron. For example, the entry
         [0,0] of this matrix corresponds to the first bin of the first window
-        position for the first neuron, the entry [0,winlen] to the first bin of
-        the first window position for the second neuron.
+        position for the first neuron, the entry `[0,winlen]` to the first
+        bin of the first window position for the second neuron.
     """
     # Check that spiketrains is a list of SpikeTrains
     if not all([isinstance(elem, neo.SpikeTrain) for elem in spiketrains]):
@@ -574,6 +581,7 @@ def _build_context(binary_matrix, winlen):
     """
     Building the context given a matrix (number of trains x number of bins) of
     binned spike trains
+
     Parameters
     ----------
     binary_matrix : sparse.coo_matrix
@@ -582,8 +590,8 @@ def _build_context(binary_matrix, winlen):
         Length of the binsize used to bin the spiketrains
 
     Returns
-    --------
-    context : list
+    -------
+    context : list of tuple
         List of tuples containing one object (window position idx) and one of
         the correspondent spikes idx (bin idx * neuron idx)
     transactions : list
@@ -718,18 +726,18 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         not which the index of their occurrences (extent)
         Default: None
     The following parameters are specific to Massive parallel SpikeTrains
-    winlen: int (positive)
+    winlen: int
         The size (number of bins) of the sliding window used for the
         analysis. The maximal length of a pattern (delay between first and
         last spike) is then given by winlen*binsize
         Default: 1
-    min_neu: int (positive)
+    min_neu: int
          Minimum number of neurons in a sequence to considered a
          potential pattern.
          Default: 1
 
     Returns
-    --------
+    -------
     If report == 'a':
         numpy array of all the pattern candidates (concepts) found in the
         spiketrains.
@@ -965,18 +973,18 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
             times of the last and the first spike of the pattern)
         Default: 'a'
     The following parameters are specific to Massive parallel SpikeTrains
-    winlen: int (positive)
+    winlen: int
         The size (number of bins) of the sliding window used for the
         analysis. The maximal length of a pattern (delay between first and
         last spike) is then given by winlen*binsize
         Default: 1
-    min_neu: int (positive)
+    min_neu: int
          Minimum number of neurons in a sequence to considered a
          potential pattern.
          Default: 1
 
     Returns
-    --------
+    -------
     If report == 'a':
         All the pattern candidates (concepts) found in the spiketrains. Each
         pattern is represented as a tuple containing
@@ -1084,49 +1092,49 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
       are computed, and their  occurrence probability estimated by their
       occurrence frequency (p-value spectrum)
 
-
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrains
+    spiketrains: list of neo.SpikeTrain
         List containing the parallel spike trains to analyze
-    binsize: Quantity
-        The time precision used to discretize the spiketrains (binning).
-    winlen: int (positive)
+    binsize: pq.Quantity
+        The time precision used to discretize the `spiketrains` (binning).
+    winlen: int
         The size (number of bins) of the sliding window used for the analysis.
         The maximal length of a pattern (delay between first and last spike) is
-        then given by winlen*binsize
-    dither: Quantity
+        then given by `winlen*binsize`
+    dither: pq.Quantity
         Amount of spike time dithering for creating the surrogates for
         filtering the pattern spectrum. A spike at time t is placed randomly
-        within ]t-dither, t+dither[ (see also
-        elephant.spike_train_surrogates.dither_spikes).
+        within `[t-dither, t+dither]` (see also
+        :func:`elephant.spike_train_surrogates.dither_spikes`).
         Default: 15*pq.s
     n_surr: int
         Number of surrogates to generate to compute the p-value spectrum.
-        This number should be large (n_surr>=1000 is recommended for 100
-        spike trains in *sts*). If n_surr is 0, then the p-value spectrum is
-        not computed.
+        This number should be large (`n_surr>=1000` is recommended for 100
+        spike trains in spiketrains). If `n_surr` is 0, then the p-value
+        spectrum is not computed.
         Default: 0
-    min_spikes: int (positive)
+    min_spikes: int, optional
         Minimum number of spikes of a sequence to be considered a pattern.
         Default: 2
-    min_occ: int (positive)
-       Minimum number of occurrences of a sequence to be considered as a
-       pattern.
-       Default: 2
-    max_spikes: int (positive)
+    min_occ: int, optional
+        Minimum number of occurrences of a sequence to be considered as a
+        pattern.
+        Default: 2
+    max_spikes: int, optional
         Maximum number of spikes of a sequence to be considered a pattern. If
         None no maximal number of spikes is considered.
         Default: None
-    max_occ: int (positive)
+    max_occ: int, optional
         Maximum number of occurrences of a sequence to be considered as a
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
-    min_neu: int (positive)
+    min_neu: int, optional
         Minimum number of neurons in a sequence to considered a pattern.
         Default: 1
-    spectrum: str
-        Defines the signature of the patterns, it can assume values:
+    spectrum: {'#', '3d#'}, optional
+        Defines the signature of the patterns.
+
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrence)
         '3d#': pattern spectrum using the as signature the triplets:
@@ -1134,14 +1142,14 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
             and first spike of the pattern)
         Default: '#'
     surr_method: str
-        Method that is used to generate the surrogates.
-            You can use every method defined in spike_train_surrogates module.
-            For documentation look there.
+        Method that is used to generate the surrogates. You can use every
+        method defined in
+        :func:`elephant.spike_train_surrogates.dither_spikes`.
         Default: 'dither_spikes'
 
     Returns
-    ------
-    pv_spec: list
+    -------
+    pv_spec : list
         if spectrum == '#':
             A list of triplets (z,c,p), where (z,c) is a pattern signature
             and p is the corresponding p-value (fraction of surrogates
@@ -1349,7 +1357,7 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
 
     Returns
     -------
-    mask: np.array
+    mask : np.array
         An array of boolean values, indicating if a signature of p-value
         spectrum is also in the mined concepts of the original data.
     """
@@ -1372,10 +1380,10 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
     """
     Compute the significance spectrum of a pattern spectrum.
 
-    Given pvalue_spectrum as a list of triplets (z,c,p), where z is pattern
-    size, c is pattern support and p is the p-value of the signature (z,c),
-    this routine assesses the significance of (z,c) using the confidence level
-    alpha.
+    Given pvalue_spectrum `pv_spec` as a list of triplets (z,c,p), where z is
+    pattern size, c is pattern support and p is the p-value of the signature
+    (z,c), this routine assesses the significance of (z,c) using the
+    confidence level alpha.
 
     Bonferroni or FDR statistical corrections can be applied.
 
@@ -1384,40 +1392,53 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
     pv_spec: list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
-    concepts: List[Tuple]
+    concepts: list of tuple
         Output of the concepts mining for the original data.
     alpha: float
         Significance level of the statistical test
     winlen: int
         Size (number of bins) of the sliding window used for the analysis
-    corr: str
+    corr: str, optional
         Method used for testing and adjustment of pvalues.
         Can be either the full name or initial letters.
         Available methods are:
-            bonferroni : one-step correction
-            sidak : one-step correction
-            holm-sidak : step down method using Sidak adjustments
-            holm : step-down method using Bonferroni adjustments
-            simes-hochberg : step-up method (independent)
-            hommel : closed method based on Simes tests (non-negative)
-            fdr_bh : Benjamini/Hochberg (non-negative)
-            fdr_by : Benjamini/Yekutieli (negative)
-            fdr_tsbh : two stage fdr correction (non-negative)
-            fdr_tsbky : two stage fdr correction (non-negative)
-        Also possible as input:
-            '', 'no': no statistical correction
+            'bonferroni' : one-step correction
+
+            'sidak' : one-step correction
+
+            'holm-sidak' : step down method using Sidak adjustments
+
+            'holm' : step-down method using Bonferroni adjustments
+
+            'simes-hochberg' : step-up method (independent)
+
+            'hommel' : closed method based on Simes tests (non-negative)
+
+            'fdr_bh' : Benjamini/Hochberg (non-negative)
+
+            'fdr_by' : Benjamini/Yekutieli (negative)
+
+            'fdr_tsbh' : two stage fdr correction (non-negative)
+
+            'fdr_tsbky' : two stage fdr correction (non-negative)
+
+            '' or 'no': no statistical correction
         Default: 'fdr_bh'
 
-    report: str
+    report: {'spectrum', 'significant', 'non_significant'}, optional
         Format to be returned for the significance spectrum:
+
         'spectrum': list of triplets (z,c,b), where b is a boolean specifying
-             whether signature (z,c) is significant (True) or not (False)
+                    whether signature (z,c) is significant (True) or not
+                    (False)
+
         'significant': list containing only the significant signatures (z,c) of
-            pvalue_spectrum
+                       pvalue_spectrum
+
         'non_significant': list containing only the non-significant signatures
-        Default: '#'
-    spectrum: str
-        Defines the signature of the patterns, it can assume values:
+    spectrum: {'#', '3d#'}, optional
+        Defines the signature of the patterns.
+
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrence)
         '3d#': pattern spectrum using the as signature the triplets:
@@ -1426,10 +1447,10 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
         Default: '#'
 
     Returns
-    ------
-    sig_spectrum: list
+    -------
+    sig_spectrum : list
         Significant signatures of pvalue_spectrum, in the format specified
-        by report
+        by `report`
     """
     # If alpha == 1 all signatures are significant
     if alpha == 1:
@@ -1523,8 +1544,8 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         pattern is represented as a tuple containing (spike IDs,
         discrete times (window position)
         of the  occurrences of the pattern). The spike IDs are defined as:
-        spike_id=neuron_id*bin_id; with neuron_id in [0, len(spiketrains)] and
-        bin_id in [0, winlen].
+        `spike_id=neuron_id*bin_id` with `neuron_id` in `[0, len(spiketrains)]`
+        and `bin_id` in `[0, winlen]`.
     rel_matrix: sparse.coo_matrix
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
@@ -1533,7 +1554,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
-        neuron, the entry [0,winlen] to the first bin of the first window
+        neuron, the entry `[0,winlen]` to the first bin of the first window
         position for the second neuron.
     n_subsets: int
         Number of subsets of a concept used to approximate its stability. If
@@ -1542,38 +1563,36 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         then an optimal n_subsets is calculated according to the formula given
         in Babin, Kuznetsov (2012), proposition 6:
 
-         ..math::
-                n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
+        .. math::
+               n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
 
-        Default:0
-    delta: float
-        delta: probability with at least ..math:$1-\delta$
+    delta: float, optrional
+        delta: probability with at least :math:`1-\delta`
         Default: 0
-    epsilon: float
+    epsilon: float, optional
         epsilon: absolute error
         Default: 0
 
     Returns
     -------
-    output: list
+    output : list
         List of all the pattern candidates (concepts) given in input, each with
         the correspondent intensional and extensional stability. Each
-        pattern is represented as a tuple containing:
-         (spike IDs,
+        pattern is represented as a tuple (spike IDs,
         discrete times of the  occurrences of the pattern, intensional
         stability of the pattern, extensional stability of the pattern).
         The spike IDs are defined as:
-        spike_id=neuron_id*bin_id; with neuron_id in [0, len(spiketrains)] and
-        bin_id in [0, winlen].
+        `spike_id=neuron_id*bin_id` with `neuron_id` in `[0, len(spiketrains)]`
+        and `bin_id` in `[0, winlen]`.
 
     Notes
     -----
-        If n_subset is larger than the extent all subsets are directly
-        calculated, otherwise for small extent size an infinite
-        loop can be created while doing the recursion,
-        since the random generation will always contain the same
-        numbers and the algorithm will be stuck searching for
-        other (random) numbers
+    If n_subset is larger than the extent all subsets are directly
+    calculated, otherwise for small extent size an infinite
+    loop can be created while doing the recursion,
+    since the random generation will always contain the same
+    numbers and the algorithm will be stuck searching for
+    other (random) numbers.
 
     """
     if HAVE_MPI:  # pragma: no cover
@@ -1698,7 +1717,7 @@ def _select_random_subsets(element_1, n_subsets):
 
     Returns
     -------
-    subsets: list
+    subsets : list
         each element a subset of element_1
     """
     subsets_indices = [set()] * (len(element_1)+1)
@@ -1728,30 +1747,37 @@ def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
     given any other pattern, on the basis of the pattern size and
     occurrence count ("support"). Only significant patterns are retained.
     The significance of a pattern A is evaluated through its signature
-    (z_a, c_A), where z_A = |A| is the size and c_A the support of A,
-    by either of:
-    * subset filtering: any pattern B is discarded if *concepts* contains a
-      superset A of B such that (z_B, c_B-c_A+*h*) \in *ns_signatures*
-    * superset filtering: any pattern A is discarded if *concepts* contains a
-      subset B of A such that (z_A-z_B+*k*, c_A) \in  *ns_signatures*
-    * covered-spikes criterion: for any two patterns A, B with A \subset B, B
-      is discarded if (z_B-l)*c_B <= c_A*(z_A-*l*), A is discarded otherwise.
-    * combined filtering: combines the three procedures above
-    takes a list concepts (see output psf function) and performs
-    combined filtering based on the signature (z, c) of each pattern, where
-    z is the pattern size and c the pattern support.
+    :math:`(z_a, c_A)`, where :math:`z_A = |A|` is the size and :math:`c_A` -
+    the support of A, by either of:
 
-    For any two patterns A and B in concepts_psf such that B \subset A, check:
-    1) (z_B, c_B - c_A + *h*) \in *ns_signatures*, and
-    2) (z_A - z_B + *k*, c_A) \in *ns_signatures*.
+    * subset filtering: any pattern B is discarded if *concepts* contains a
+      superset A of B such that :math:`(z_B, c_B - c_A + h) \in ns\_signatures`
+    * superset filtering: any pattern A is discarded if *concepts* contains a
+      subset B of A such that :math:`(z_A - z_B + k, c_A) \in ns\_signatures`
+    * covered-spikes criterion: for any two patterns A, B with
+      :math:`A \subset B`, B is discarded if
+      :math:`(z_B-l) \cdot c_B \le c_A \cdot (z_A - l)`, A is discarded
+      otherwise;
+    * combined filtering: combines the three procedures above:
+      takes a list concepts (see output psf function) and performs
+      combined filtering based on the signature (z, c) of each pattern, where
+      z is the pattern size and c the pattern support.
+
+    For any two patterns A and B in concepts_psf such that :math:`B \subset A`,
+    check:
+    1) :math:`(z_B, c_B - c_A + h) \in ns\_signatures`, and
+    2) :math:`(z_A - z_B + k, c_A) \in ns\_signatures`.
     Then:
+
     * if 1) and not 2): discard B
     * if 2) and not 1): discard A
-    * if 1) and 2): discard B if c_B * (z_B - *l*) <= c_A * (z_A - *l*),
+    * if 1) and 2): discard B if
+                    :math:`c_B \cdot (z_B - l) \le c_A \cdot (z_A - l)`,
                     otherwise discard A
     * if neither 1) nor 2): keep both patterns
 
     Assumptions/Approximations:
+
         * a pair of concepts cannot cause one another to be rejected
         * if two concepts overlap more than min_occ times, one of them can
           account for all occurrences of the other one if it passes the
@@ -1763,37 +1789,39 @@ def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
         List of concepts, each consisting in its intent and extent
     ns_signatures: list
         A list of non-significant pattern signatures (z, c)
-    winlen: int (positive)
+    winlen: int
         The size (number of bins) of the sliding window used for the analysis.
         The maximal length of a pattern (delay between first and last spike) is
-        then given by winlen*binsize
-    spectrum: str
-        Define the signature of the patterns, it can assume values:
+        then given by `winlen*binsize`.
+    spectrum: {'#', '3d#'}
+        Define the signature of the patterns.
+
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrences)
         '3d#': pattern spectrum using the as signature the triplets:
             (number of spikes, number of occurrence, difference between last
             and first spike of the pattern)
-    h_subset_filtering: int
+    h_subset_filtering: int, optional
         Correction parameter for subset filtering
         Default: 0
-    k_superset_filtering: int
+    k_superset_filtering: int, optional
         Correction parameter for superset filtering
         Default: 0
-    l_covered_spikes: int
+    l_covered_spikes: int, optional
         Correction parameter for covered-spikes criterion
         Default: 0
-    min_spikes: int
+    min_spikes: int, optional
         Minimum pattern size
         Default: 2
-    min_occ: int
+    min_occ: int, optional
         Minimum number of pattern occurrences
         Default: 2
 
-    Returns:
+    Returns
     -------
-        tuple containing the elements of the input argument
-        that are significant according to combined filtering
+    tuple
+        A tuple containing the elements of the input argument
+        that are significant according to combined filtering.
     """
     additional_measures = []
     # Extracting from the extent and intent the spike and window times
@@ -2029,16 +2057,15 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
     Parameters
     ----------
     concepts: tuple
-        Each element of the tuple corresponds to a pattern and it is itself a
-        tuple consisting of:
-            ((spikes in the pattern), (occurrences of the patterns))
+        Each element of the tuple corresponds to a pattern which it turn is a
+        tuple of (spikes in the pattern, occurrences of the patterns)
     winlen: int
-        Length (in bins) of the sliding window used for the analysis
-    binsize: Quantity
-        The time precision used to discretize the spiketrains (binning).
+        Length (in bins) of the sliding window used for the analysis.
+    binsize: pq.Quantity
+        The time precision used to discretize the `spiketrains` (binning).
     pv_spec: None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
-        to None all pvalues are set to -1
+        to None all p-values are set to -1.
     spectrum: {'#', '3d#'}
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrences)
@@ -2046,31 +2073,37 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
             (number of spikes, number of occurrence, difference between last
             and first spike of the pattern)
         Default: '#'
-    t_start: Quantity
+    t_start: pq.Quantity
         t_start of the analyzed spike trains
 
     Returns
     --------
-    output: list
+    output : list
         List of dictionaries. Each dictionary corresponds to a pattern and
         has the following entries:
-            ['itemset'] list of the spikes in the pattern
-                expressed in the form of itemset, each spike is encoded by:
-                spiketrain_id * winlen + bin_id
-            [windows_ids'] the ids of the windows in which the pattern occurred
-                in discretized time (given byt the binning)
-            ['neurons'] array containing the idx of the neurons of the pattern
-            ['lags'] array containing the lags (integers corresponding to the
+            'itemset':
+                A list of the spikes in the pattern, expressed in theform of
+                itemset, each spike is encoded by
+                `spiketrain_id * winlen + bin_id`.
+            'windows_ids':
+                The ids of the windows in which the pattern occurred
+                in discretized time (given byt the binning).
+            'neurons':
+                An array containing the idx of the neurons of the pattern.
+            'lags':
+                An array containing the lags (integers corresponding to the
                 number of bins) between the spikes of the patterns. The first
                 lag is always assumed to be 0 and corresponds to the first
                 spike.
-            ['times'] array containing the times (integers corresponding to the
+            'times':
+                An array containing the times (integers corresponding to the
                 bin idx) of the occurrences of the patterns.
-            ['signature'] tuple containing two integers
-                (number of spikes of the patterns,
-                number of occurrences of the pattern)
-            ['pvalue'] the pvalue corresponding to the pattern. If n_surr==0
-             then all pvalues are set to -1.
+            'signature':
+                A tuple containing two integers (number of spikes of the
+                patterns, number of occurrences of the pattern).
+            'pvalue':
+                The p-value corresponding to the pattern. If `n_surr==0`,
+                all p-values are set to -1.
     """
     if pv_spec is not None:
         pvalue_dict = defaultdict(float)
