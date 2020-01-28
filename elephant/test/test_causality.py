@@ -62,7 +62,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/tests/test_stattools.py
         pass
 
-    def basic_test_pairwise_granger(self):
+    def test_basic_pairwise_granger(self):
         causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
         hc_x_y = -0.13913054
         hc_y_x = -1.3364389
@@ -74,6 +74,9 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                          hc_instantaneous_causality)
         self.assertEqual(causality.total_interdependence,
                          hc_total_interdependence)
+
+    def test_total_interdependence_relates_to_coherence(self):
+        pass
 
     def same_signal_pairwise_granger(self):
         # Pass two instances of the same signal, should yield 0
