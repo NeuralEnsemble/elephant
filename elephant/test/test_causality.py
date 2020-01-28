@@ -16,6 +16,7 @@ import numpy as np
 import scipy.signal as spsig
 import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
+from neo.core import AnalogSignal
 import quantities as pq
 from numpy.ma.testutils import assert_array_equal, assert_allclose
 
@@ -43,10 +44,22 @@ class PairwiseGrangerTestCase(unittest.TestCase):
             self.signal[1, i] += rnd_var[1]
 
     def test_analog_signal_input(self):
-        pass
-
-    def test_numpy_array(self):
-        pass
+        """
+        Check if analog signal input result matches an otherwise identical 2D
+        numpy array input result.
+        """
+        analog_signal = AnalogSignal(self.signal.T, units='V',
+                                     sampling_rate=1*pq.Hz)
+        analog_signal_causality = elephant.causality.granger.pairwise_granger(analog_signal, 2)
+        causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+        self.assertEqual(analog_signal_causality.directional_causality_x_y,
+                         causality.directional_causality_x_y)
+        self.assertEqual(analog_signal_causality.directional_causality_y_x,
+                         causality.directional_causality_y_x)
+        self.assertEqual(analog_signal_causality.instantaneous_causality,
+                         causality.instantaneous_causality)
+        self.assertEqual(analog_signal_causality.total_interdependence,
+                         causality.total_interdependence)
 
     def test_lag_covariances(self):
         # Not essential
