@@ -1605,8 +1605,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
 
     output = []
     for concept in concepts_on_partition:
-        intent = np.array(concept[0])
-        extent = np.array(concept[1])
+        intent, extent = np.array(concept[0]), np.array(concept[1])
         stab_int = _calculate_single_stability_parameter(
             intent, extent, n_subsets, rel_matrix, look_at='intent')
         stab_ext = _calculate_single_stability_parameter(
@@ -1654,18 +1653,15 @@ def _calculate_single_stability_parameter(intent, extent,
     else:  # look_at == 'extent':
         element_1, element_2 = extent, intent
 
-    stability = 0.
-    r_unique = set()
-    excluded_subsets = []
-
     if n_subsets > 2 ** len(element_1):
         subsets = chain.from_iterable(
             combinations(element_1, subset_index)
             for subset_index in range(len(element_1) + 1))
     else:
-        subsets = [element_1[_give_random_idx(r_unique, len(element_1))]
-                   for _ in range(n_subsets)]
+        subsets = _select_random_subsets(element_1, n_subsets)
 
+    stability = 0
+    excluded_subsets = []
     for subset in subsets:
         if any([set(subset).issubset(excluded_subset)
                 for excluded_subset in excluded_subsets]):
@@ -1689,16 +1685,37 @@ def _calculate_single_stability_parameter(intent, extent,
     return stability
 
 
-def _give_random_idx(r_unique, num_integers):
-    """ asd """
+def _select_random_subsets(element_1, n_subsets):
+    """
+    Creates a list of random_subsets of element_1.
 
-    random_integers = np.random.randint(
-        num_integers, size=np.random.randint(low=1, high=num_integers))
-    r_tuple = tuple(random_integers)
-    if r_tuple not in r_unique:
-        r_unique.add(r_tuple)
-        return np.unique(random_integers)
-    return _give_random_idx(r_unique, num_integers)
+    Parameters
+    ----------
+    element_1: np.array
+        intent or extent
+    n_subsets: int
+        see approximate_stability
+
+    Returns
+    -------
+    subsets: list
+        each element a subset of element_1
+    """
+    subsets_indices = [set()] * (len(element_1)+1)
+    subsets = []
+
+    while len(subsets) < n_subsets:
+        num_indices = np.random.binomial(n=len(element_1), p=1/2)
+        random_indices = np.random.choice(
+            len(element_1), size=num_indices, replace=False)
+        random_indices.sort()
+
+        random_tuple = tuple(random_indices)
+        if random_tuple not in subsets_indices[num_indices]:
+            subsets_indices[num_indices].add(random_tuple)
+            subsets.append(element_1[random_indices])
+
+    return subsets
 
 
 def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
