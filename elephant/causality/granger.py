@@ -205,7 +205,7 @@ if __name__ == '__main__':
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    causality  = pairwise_granger(signal, 2)
+    causality = pairwise_granger(signal, 2)
 
     print('Directional causality: First onto second component', causality.directional_causality_x_y)
     print('Directional causality: Second onto first component', causality.directional_causality_y_x)
