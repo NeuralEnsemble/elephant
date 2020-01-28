@@ -188,9 +188,9 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
         If True, return the Hilbert envelope of cross-correlation function.
         Default: False.
     nlags : int, optional
-        Defines the number of lags for cross-correlation function. Floats will
-        be rounded to the nearest integer. Number of samples of output is
-        `2*nlags+1`.
+        Defines the number of lags for cross-correlation function. If a `float`
+        is passed, it will be rounded to the nearest integer. Number of
+        samples of output is `2*nlags+1`.
         If None, the number of samples of the output is equal to the number of
         samples of the input signal (namely `nt`).
         Default: None.
@@ -206,8 +206,8 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None):
     Raises
     ------
     KeyError
-        If `env` is not bool.
-        If `nlags` is neither int nor float.
+        If `env` is not `bool`.
+        If `nlags` is neither `int` nor `float`.
         If `nlags` is not larger than 0.
     ValueError
         If the input `signal` is not a `neo.AnalogSignal`.
@@ -323,11 +323,11 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         If `pq.Quantity` or `np.ndarray`, the sampling frequency should be
         given through the keyword argument `fs`.
     highpass_freq : pq.Quantity of float, optional
-        High-pass cut-off frequency. If float, the given value is taken as
+        High-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
         Default: None.
     lowpass_freq : pq.Quantity or float, optional
-        Low-pass cut-off frequency. If float, the given value is taken as
+        Low-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
         Filter type is determined depending on the values of `lowpass_freq`
         and `highpass_freq`:
@@ -359,9 +359,9 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         (see [1]_).
         Default: 'filtfilt'.
     fs : pq.Quantity or float, optional
-        The sampling frequency of the input time series. When given as float,
-        its value is taken as frequency in Hz. When `signal` is given as
-        `neo.AnalogSignal`, its attribute is used to specify the sampling
+        The sampling frequency of the input time series. When given as
+        `float`, its value is taken as frequency in Hz. When `signal` is given
+        as `neo.AnalogSignal`, its attribute is used to specify the sampling
         frequency and this parameter is ignored.
         Default: 1.0.
     axis : int, optional
