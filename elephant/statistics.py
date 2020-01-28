@@ -190,7 +190,7 @@ def fanofactor(spiketrains):
         fano = spike_counts.var() / spike_counts.mean()
     return fano
 
-
+@parallel.embarassing_list_expand()
 def lv(v, with_nan=False):
     """
     Calculate the measure of local variation LV for

@@ -272,6 +272,15 @@ class JobQueueSpikeTrainListHandler(JobQueueHandlers):
         return result
 
 
+def parallel_context_embarassing_list():
+    def embarassing_list_expand(input_list):
+        pc.add_spiketrain_list_job(spiketrain_list, handler)
+        results_mpi = pc.execute()
+    
+    handler = JobQueueSpikeTrainListHandler()
+
+        
+
 def main():
     # Initialize serial context (take everything, default)
     pc_serial = ParallelContext()
