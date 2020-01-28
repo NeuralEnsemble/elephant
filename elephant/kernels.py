@@ -86,7 +86,7 @@ class Kernel(object):
     TypeError
         If `sigma` is not `pq.Quantity`.
         If `sigma` is negative.
-        If `invert` is not bool.
+        If `invert` is not `bool`.
 
     """
 
