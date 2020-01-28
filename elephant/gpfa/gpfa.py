@@ -392,7 +392,8 @@ class GPFA(sklearn.base.BaseEstimator):
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         for seq in seqs:
             seq['y'] = seq['y'][self.has_spikes_bool, :]
-        seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_estimated,
+        seqs, ll = gpfa_core.exact_inference_with_ll(seqs,
+                                                     self.params_estimated,
                                                      get_ll=True)
         self.transform_info['log_likelihood'] = ll
         self.transform_info['num_bins'] = seqs['T']
