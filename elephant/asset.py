@@ -462,48 +462,53 @@ def _reference_diagonal(x_edges, y_edges):
     if diag_id is None:
         return diag_id, np.array([])
     elif diag_id >= 0:
-        elements = np.array([range(m - diag_id), range(diag_id, m)]).T
+        elements = np.column_stack([np.arange(m - diag_id),
+                                    np.arange(diag_id, m)])
     else:
-        elements = np.array([range(diag_id, m), range(m - diag_id)]).T
-
+        elements = np.column_stack([np.arange(diag_id, m),
+                                    np.arange(m - diag_id)])
     return diag_id, elements
 
 
 def mask_matrices(matrices, thresholds):
     """
     Given a list of matrices and a list of thresholds, return a boolean matrix
-    B ("mask") such that B[i,j] is True if each input matrix in the list
+    B ("mask") such that `B[i,j]` is `True` if each input matrix in the list
     strictly exceeds the corresponding threshold at that position.
 
     Parameters
     ----------
-    matrices : list of numpy.ndarrays
-        the matrices which are compared to the respective thresholds to
+    matrices : list of np.ndarray
+        The matrices which are compared to the respective thresholds to
         build the mask. All matrices must have the same shape.
-    thresholds : list of floats
-        list of thresholds
+    thresholds : list of float
+        A list of thresholds.
 
     Returns
     -------
-    mask : numpy.ndarray of bools
-        mask matrix with same shape of the input matrices.
-    """
+    mask : np.ndarray
+        Boolean mask matrix with the shape of the input matrices.
 
-    # Check that input lists have same length
-    L = len(matrices)
-    if L != len(thresholds):
+    Raises
+    ------
+    ValueError
+        If `matrices` or `thresholds` is an empty list.
+
+        If `matrices` and `thresholds` have different lengths.
+    """
+    if len(matrices) == 0:
+        raise ValueError("Empty list of matrices")
+    if len(matrices) != len(thresholds):
         raise ValueError('`matrices` and `thresholds` must have same length')
 
-    # Compute mask matrix
-    mask = matrices[0] > thresholds[0]
-    if L > 1:
-        for (mat, thresh) in zip(matrices, thresholds):
-            mask = mask * (mat > thresh)
+    mask = np.ones_like(matrices[0], dtype=bool)
+    for (mat, thresh) in zip(matrices, thresholds):
+        mask &= mat > thresh
 
     # Replace nans, coming from False * np.inf, with zeros
     mask[np.isnan(mask)] = False
 
-    return np.array(mask, dtype=bool)
+    return mask
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle):
