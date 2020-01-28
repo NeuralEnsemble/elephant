@@ -57,8 +57,8 @@ def _lag_covariances(signals, dimension, max_lag):
     for i in range(max_lag+1):
         temp_corr = np.zeros((dimension, dimension))
         for time in range(i, length):
-            temp_corr+= np.outer(signals[ : ,time - i] - series_mean,
-            signals[ : ,time] - series_mean)
+            temp_corr += np.outer(signals[:, time - i] - series_mean,
+            signals[:, time] - series_mean)
         lag_covariances.append(temp_corr/(length-i))
 
     return np.asarray(lag_covariances)
@@ -87,12 +87,12 @@ def _yule_walker_matrix(data, dimension, order):
 
     for block_row in range(order):
         for block_column in range(block_row, order):
-            yule_walker_matrix[block_row*dimension : (block_row+1)*dimension,
-                               block_column*dimension :
+            yule_walker_matrix[block_row*dimension: (block_row+1)*dimension,
+                               block_column*dimension:
                                (block_column+1)*dimension] = lag_covariances[block_column-block_row]
 
-            yule_walker_matrix[block_column*dimension : (block_column+1)*dimension,
-                               block_row*dimension :
+            yule_walker_matrix[block_column*dimension: (block_column+1)*dimension,
+                               block_row*dimension:
                                (block_row+1)*dimension] = lag_covariances[block_column-block_row].T
     return yule_walker_matrix, lag_covariances
 
@@ -115,7 +115,7 @@ def _vector_arm(signals, dimension, order):
         covariance matrix of
     """
 
-    yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals,  dimension, order)
+    yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals, dimension, order)
 
     positive_lag_covariances = np.reshape(lag_covariances[1:], (dimension*order, dimension))
 
@@ -131,7 +131,7 @@ def _vector_arm(signals, dimension, order):
 
     #cov_matrix = lag_covariances[0]
     for i in range(order):
-        cov_matrix += np.matmul(coeffs[i],lag_covariances[i+1])
+        cov_matrix += np.matmul(coeffs[i], lag_covariances[i+1])
 
     return coeffs, cov_matrix
 
@@ -156,8 +156,8 @@ def pairwise_granger(signals, order):
     """
     #TODO: remove order parameter
 
-    signal_x = np.asarray([signals[0,:]])
-    signal_y = np.asarray([signals[1,:]])
+    signal_x = np.asarray([signals[0, :]])
+    signal_y = np.asarray([signals[1, :]])
 
     coeffs_x, var_x = _vector_arm(signal_x, 1, order)
     coeffs_y, var_y = _vector_arm(signal_y, 1, order)
@@ -165,15 +165,14 @@ def pairwise_granger(signals, order):
     print(var_y)
     coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
 
-    directional_causality_x_y = np.log(var_x[0]/cov_xy[0,0])
-    directional_causality_y_x = np.log(var_y[0]/cov_xy[1,1])
+    directional_causality_x_y = np.log(var_x[0]/cov_xy[0, 0])
+    directional_causality_y_x = np.log(var_y[0]/cov_xy[1, 1])
 
     cov_determinant = np.linalg.det(cov_xy)
 
-    instantaneous_causality = np.log((cov_xy[0,0]*cov_xy[1,1])/cov_determinant)
+    instantaneous_causality = np.log((cov_xy[0, 0]*cov_xy[1, 1])/cov_determinant)
 
     total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
-
 
     print(coeffs_xy)
     print(cov_xy)
@@ -189,11 +188,11 @@ if __name__ == '__main__':
 
     np.random.seed(1)
     length_2d = 10000
-    signal = np.zeros((2,length_2d))
+    signal = np.zeros((2, length_2d))
 
     order = 2
-    weights_1 = np.array([[0.9, 0],[0.9, -0.8]])
-    weights_2 = np.array([[-0.5, 0],[-0.2, -0.5]])
+    weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
 
     weights = np.stack((weights_1, weights_2))
 
@@ -201,10 +200,10 @@ if __name__ == '__main__':
 
     for i in range(length_2d):
         for lag in range(order):
-            signal[:,i]+= np.dot(weights[lag], signal[:,i-lag-1])
-        rnd_var = np.random.multivariate_normal([0,0], noise_cov)
-        signal[0,i] += rnd_var[0]
-        signal[1,i] += rnd_var[1]
+            signal[:, i] += np.dot(weights[lag], signal[:, i-lag-1])
+        rnd_var = np.random.multivariate_normal([0, 0], noise_cov)
+        signal[0, i] += rnd_var[0]
+        signal[1, i] += rnd_var[1]
 
     causality  = pairwise_granger(signal, 2)
 
