@@ -659,8 +659,8 @@ def _build_context(binary_matrix, winlen):
         current_transactions = attributes[times]
         # adding to the context the window positions and the correspondent
         # attributes (spike idx) (fast_fca input)
-        context += [(window, transaction)
-                    for transaction in current_transactions]
+        context.extend(
+            (window, transaction) for transaction in current_transactions)
         # appending to the transactions spike idx (fast_fca input) of the
         # current window (fpgrowth input)
         transactions.append(list(current_transactions))
@@ -761,7 +761,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         raise ValueError('min_neu must be an integer >=1')
     # By default, set the maximum pattern size to the number of spiketrains
     if max_z is None:
-        max_z = np.max((np.max([len(tr) for tr in transactions]), min_z + 1))
+        max_z = max(max(map(len, transactions)), min_z + 1)
     # By default set maximum number of data to number of bins
     if max_c is None:
         max_c = len(transactions)
