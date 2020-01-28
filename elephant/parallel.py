@@ -23,7 +23,54 @@ MPI_TERM_WORKER = 5
 
 # TODO: Rename as stampede?
 
-class ParallelContext_MPI():
+class ParallelContext():
+    """
+    This function provides a fall-back parallel context that executes jobs
+    sequentially.
+    """
+
+    def __init__(self):
+        pass
+
+    def terminate(self):
+        """
+        This function terminates the serial parallel context.
+        """
+        pass
+
+    def add_spiketrain_list_job(self, spiketrain_list, handler):
+        self.spiketrain_list = spiketrain_list
+        self.handler = handler
+
+    def execute(self):
+        """
+        Executes the current queue of jobs sequentially, as if jobs were called
+        in a for-loop, and returns all results when done.
+
+        Returns:
+        --------
+        results : dict
+            A dictionary containing results of all submitted jobs. The keys are
+            set to the job ID, and integer number counting the submitted jobs,
+            starting at 0.
+        """
+        # Job ID counter
+        job_id = 0
+
+        # Save results for each job
+        results = {}
+
+        # Send all spike trains
+        while job_id < len(self.spiketrain_list):
+            next_spiketrain = self.spiketrain_list[job_id]
+            results[job_id] = self.handler.worker(next_spiketrain)
+            job_id += 1
+
+        # Return results dictionary
+        return results
+
+
+class ParallelContext_MPI(ParallelContext):
     """
     This function initializes the MPI subsystem.
 
@@ -139,11 +186,18 @@ class ParallelContext_MPI():
         # The worker will exit, since it has no further defined function
         sys.exit(0)
 
-    def add_spiketrain_list_job(self, spiketrain_list, handler):
-        self.spiketrain_list = spiketrain_list
-        self.handler = handler
-
     def execute(self):
+        """
+        Executes the current queue of jobs on the MPI workers, and returns all
+        results when done.
+
+        Returns:
+        --------
+        results : dict
+            A dictionary containing results of all submitted jobs. The keys are
+            set to the job ID, and integer number counting the submitted jobs,
+            starting at 0.
+        """
         # Save status of each worker
         worker_busy = [False for _ in range(self.num_workers)]
 
@@ -219,16 +273,19 @@ class JobQueueSpikeTrainListHandler(JobQueueHandlers):
 
 
 def main():
-    # Initialize context (take everything, default)
-    # pc = ParallelContext_MPI()
+    # Initialize serial context (take everything, default)
+    pc_serial = ParallelContext()
 
-    # Initialize context (use only ranks 3 and 4 as slave, 0 as master)
-    pc = ParallelContext_MPI(worker_ranks=[3, 4])
-    if pc.rank != 0:
-        sys.exit(0)
+    # Initialize MPI context (take everything, default)
+    pc_mpi = ParallelContext_MPI()
 
-    print("Master: %s, rank %i; Communicator size: %i" % (
-        pc.rank_name, pc.rank, pc.comm_size))
+    # Initialize MPI context (use only ranks 3 and 4 as slave, 0 as master)
+    # pc_mpi = ParallelContext_MPI(worker_ranks=[3, 4])
+    # if pc_mpi.rank != 0:
+    #    sys.exit(0)
+
+    print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i" % (
+        pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
 
     # Create a list of spike trains
     spiketrain_list = [
@@ -239,27 +296,40 @@ def main():
     # Create a new queue operating on the current context
     handler = JobQueueSpikeTrainListHandler()
 
+    # Test 1: Standard
+    results_standard = {}
     ta = time.time()
     for s in spiketrain_list:
         # Do something complicated
-        for _ in range(1000):
-            result = elephant.statistics.lv(s)
+        for i in range(1000):
+            results_standard[i] = elephant.statistics.lv(s)
     ta = time.time()-ta
 
+    # Test 2: Serial Handler
     tb = time.time()
-    pc.add_spiketrain_list_job(spiketrain_list, handler)
-    results = pc.execute()
+    pc_serial.add_spiketrain_list_job(spiketrain_list, handler)
+    results_serial = pc_serial.execute()
     tb = time.time()-tb
 
-    # Send one spike train to each worker
-    pc.terminate()
+    # Test 3: MPI Handler
+    tc = time.time()
+    pc_mpi.add_spiketrain_list_job(spiketrain_list, handler)
+    results_mpi = pc_mpi.execute()
+    tc = time.time()-tc
 
-    print("Execution times:\nStandard: %f s, Parallel: %f s" % (ta, tb))
+    # Send one spike train to each worker
+    pc_mpi.terminate()
+
+    print(
+        "Execution times:" +
+        "\nStandard: %f s, Serial: %f s, Parallel: %f s" % (ta, tb, tc))
 
     # These results should match
-    print("Standard result: %f" % result)
-    print("Parallel result: %f" % results[99])
-    assert(result == results[99])
+    print("Standard result: %f" % results_standard[99])
+    print("Serial result: %f" % results_serial[99])
+    print("Parallel result: %f" % results_mpi[99])
+    assert(results_standard[99] == results_serial[99])
+    assert(results_standard[99] == results_mpi[99])
 
 
 if __name__ == "__main__":
