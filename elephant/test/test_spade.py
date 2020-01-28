@@ -25,7 +25,7 @@ python_version_major = sys.version_info.major
 try:
     import statsmodels
     HAVE_STATSMODELS = True
-except ModuleNotFoundError:
+except ImportError:
     HAVE_STATSMODELS = False
 
 
