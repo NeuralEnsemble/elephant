@@ -67,6 +67,10 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         pass
 
     def test_basic_pairwise_granger(self):
+        """
+        Test the results of pairwise granger against hardcoded values produced
+        by the Granger proof-of-concept script.
+        """
         causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
         hc_x_y = -0.13913054
         hc_y_x = -1.3364389
@@ -79,14 +83,11 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         self.assertEqual(causality.total_interdependence,
                          hc_total_interdependence)
 
-    def test_total_interdependence_relates_to_coherence(self):
-        pass
-
     def same_signal_pairwise_granger(self):
         """
         Pass two identical signals to pairwise granger. This should yield zero
         causality for the directional causality metrics.
-        Here the equality is asserted to 15 decimal places.
+        Here the (almost) equality is asserted to 15 decimal places.
         """
         same_signal = np.vstack([self.signal[0], self.signal[0]])
         causality = elephant.causality.granger.pairwise_granger(same_signal, 2)
@@ -117,9 +118,32 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         # Check that the output matches the class
         self.assertIsInstance(causality, Causality)
 
-    def test_total_channel_interdependence(self):
-        # Total interdependence should be equal to the sum of the other three values
-        pass
+    def test_result_directional_causalities_not_negative(self):
+        """
+        The directional causalities should never be negative.
+        """
+        causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+        self.assertFalse(causality.directional_causality_x_y < 0)
+        self.assertFalse(causality.directional_causality_y_x < 0)
+
+    def test_result_instantaneous_causality_not_negative(self):
+        """
+        The time-series granger instantaneous causality should never assume
+        negative values.
+        """
+        causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+        self.assertFalse(causality.instantaneous_causality < 0)
+
+    def test_total_channel_interdependence_equals_sum_of_other_three(self):
+        """
+        Test if total interdependence is equal to the sum of the other three
+        measures. It should be equal.
+        """
+        causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+        causality_sum = causality.directional_causality_x_y \
+                        + causality.directional_causality_y_x \
+                        + causality.instantaneous_causality
+        self.assertEqual(causality.total_interdependence, causality_sum)
 
     def tearDown(self) -> None:
         pass
