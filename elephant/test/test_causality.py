@@ -10,6 +10,7 @@ from __future__ import division, print_function
 import unittest
 import elephant.causality.granger
 
+import sys
 import neo
 import numpy as np
 import scipy.signal as spsig
@@ -48,15 +49,18 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         pass
 
     def test_lag_covariances(self):
+        # Not essential
         # Passing a signal with variance of 0, should equal 0
         pass
 
     def test_vector_arm(self):
+        # Not essential
         # Test a static signal that could not possibly predict itself
         # Test white noise?
         pass
 
     def test_yule_walker(self):
+        # Not essential
         # Some unit tests from statsmodels for inspiration
         # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/tests/test_tsa_tools.py
         # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/tests/test_stattools.py
@@ -79,15 +83,39 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         pass
 
     def same_signal_pairwise_granger(self):
-        # Pass two instances of the same signal, should yield 0
-        pass
+        """
+        Pass two identical signals to pairwise granger. This should yield zero
+        causality for the directional causality metrics.
+        Here the equality is asserted to 15 decimal places.
+        """
+        same_signal = np.vstack([self.signal[0], self.signal[0]])
+        causality = elephant.causality.granger.pairwise_granger(same_signal, 2)
+        self.assertAlmostEqual(causality.directional_causality_y_x, 0, places=15)
+        self.assertAlmostEqual(causality.directional_causality_x_y, 0, places=15)
 
+    @unittest.skipUnless(sys.version_info >= (3, 1))  # Python 3.1 or above
     def test_negative_order_parameter(self):
-        # Orders or lags should always be positive
-        pass
+        """
+        Use assertRaises as a context manager to catch the ValueError.
+        Order parameter should always be a positive integer.
 
-    def test_namedTuple_result_output(self):
-        pass
+        """
+        with self.assertRaises(ValueError):
+            causality = elephant.causality.granger.pairwise_granger(self.signal, -1)
+
+    @unittest.skipUnless(sys.version_info >= (3, 1))  # Python 3.1 or above
+    def test_result_namedtuple(self):
+        """
+        Check if the result of pairwise_granger is in the form of namedtuple.
+        """
+        # Import the namedtuple class for the result formatting
+        from elephant.causality.granger import Causality
+
+        # Calculate the pairwise_granger result
+        causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+
+        # Check that the output matches the class
+        self.assertIsInstance(causality, Causality)
 
     def test_total_channel_interdependence(self):
         # Total interdependence should be equal to the sum of the other three values

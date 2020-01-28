@@ -28,6 +28,9 @@ from collections import namedtuple
 # TODO: Unittest for granger
 # TODO: Clean the code in accordance with PEP8
 
+Causality = namedtuple('causality',
+                       'directional_causality_x_y directional_causality_y_x instantaneous_causality total_interdependence')
+
 
 def _lag_covariances(signals, dimension, max_lag):
     """
@@ -155,6 +158,8 @@ def pairwise_granger(signals, order):
     causality.total_interdependence : float
     """
     #TODO: remove order parameter
+    if order <= 0:
+        raise ValueError(f"The order parameter should be positive. Not {order}")
 
     signal_x = np.asarray([signals[0, :]])
     signal_y = np.asarray([signals[1, :]])
@@ -177,8 +182,7 @@ def pairwise_granger(signals, order):
     print(coeffs_xy)
     print(cov_xy)
 
-    causality = namedtuple('causality', 'directional_causality_x_y directional_causality_y_x instantaneous_causality total_interdependence')
-    return causality(directional_causality_x_y=directional_causality_x_y,
+    return Causality(directional_causality_x_y=directional_causality_x_y,
                      directional_causality_y_x=directional_causality_y_x,
                      instantaneous_causality=instantaneous_causality,
                      total_interdependence=total_interdependence)
