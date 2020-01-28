@@ -495,6 +495,8 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=True):
     # Define standard time unit; all time Quantities are converted to
     # scalars after being rescaled to this unit, to use the power of numpy
     surr = []
+    t_start = spiketrain.t_start
+    t_stop = spiketrain.t_stop
     for n_surr in range(n):
         binned_st = conv.BinnedSpikeTrain(
             spiketrain, binsize=binsize).to_array()[0]
@@ -529,9 +531,9 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=True):
     # go back to continuous time and place spike in the middle
     # of the bin
     surr.append(np.where(binned_st)[0] * binsize + binsize/2)
-    return [neo.SpikeTrain(s,
-                           t_start=spiketrain.t_start,
-                           t_stop=spiketrain.t_stop).rescale(spiketrain.units)
+    return [neo.SpikeTrain(s + t_start,
+                           t_start=t_start,
+                           t_stop=t_stop).rescale(spiketrain.units)
             for s in surr]
 
 
@@ -1005,6 +1007,7 @@ def surrogates(
         * 'randomise_spikes': see surrogates.randomise_spikes()
         * 'shuffle_isis': see surrogates.shuffle_isis()
         * 'joint_isi_dithering': see surrogates.joint_isi_dithering()
+        * 'bin_shuffling': see surrogates.bin_shuffling()
         Default: 'dither_spike_train'
     dt : quantities.Quantity, optional
         For methods shifting spike times randomly around their original time
