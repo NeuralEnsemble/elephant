@@ -23,7 +23,7 @@ MPI_TERM_WORKER = 5
 
 # TODO: Rename as stampede?
 
-class ParallelContext():
+class ParallelContext_MPI():
     """
     This function initializes the MPI subsystem.
 
@@ -40,7 +40,7 @@ class ParallelContext():
         all ranks 1..N-1 of the communicator `comm`, hosting N ranks, will be
         used, and rank 0 is considered the master node. If a specific list of
         ranks is given, only one of the remaining ranks may continue to act
-        as the master and use the ParallelContext; all other ranks must be
+        as the master and use the ParallelContext_MPI; all other ranks must be
         used in a different manner.
         Default: None
     """
@@ -139,21 +139,16 @@ class ParallelContext():
         # The worker will exit, since it has no further defined function
         sys.exit(0)
 
-
-class JobQueue:
-    def __init__(self, parallel_context):
-        self.parallel_context = parallel_context
-
     def add_spiketrain_list_job(self, spiketrain_list, handler):
         self.spiketrain_list = spiketrain_list
         self.handler = handler
 
     def execute(self):
         # Save status of each worker
-        worker_busy = [False for _ in range(self.parallel_context.num_workers)]
+        worker_busy = [False for _ in range(self.num_workers)]
 
         # Save job ID currently executed by each worker
-        worker_job_id = [-1 for _ in range(self.parallel_context.num_workers)]
+        worker_job_id = [-1 for _ in range(self.num_workers)]
 
         # Job ID counter
         job_id = 0
@@ -166,18 +161,18 @@ class JobQueue:
             # Is there a free worker and work left to do?
             if job_id < len(self.spiketrain_list) and False in worker_busy:
                 idle_worker_index = worker_busy.index(False)
-                idle_worker = self.parallel_context.worker_ranks[
+                idle_worker = self.worker_ranks[
                     idle_worker_index]
 
                 next_spiketrain = self.spiketrain_list[job_id]
 
                 # Send handler
-                req = self.parallel_context.comm.isend(
+                req = self.comm.isend(
                     self.handler, idle_worker, tag=MPI_SEND_HANDLER)
                 req.wait()
 
                 # Send data
-                req = self.parallel_context.comm.isend(
+                req = self.comm.isend(
                     next_spiketrain, idle_worker, tag=MPI_SEND_INPUT)
                 req.wait()
 
@@ -187,15 +182,15 @@ class JobQueue:
 
             # Any completing worker?
             for worker_index, worker in enumerate(
-                    self.parallel_context.worker_ranks):
-                if self.parallel_context.comm.iprobe(
+                    self.worker_ranks):
+                if self.comm.iprobe(
                         source=worker, tag=MPI_WORKER_DONE):
-                    req = self.parallel_context.comm.irecv(
+                    req = self.comm.irecv(
                         source=worker, tag=MPI_WORKER_DONE)
                     _ = req.wait()
 
                     # Get output
-                    req = self.parallel_context.comm.irecv(
+                    req = self.comm.irecv(
                         source=worker, tag=MPI_SEND_OUTPUT)
                     result = req.wait()
 
@@ -225,10 +220,10 @@ class JobQueueSpikeTrainListHandler(JobQueueHandlers):
 
 def main():
     # Initialize context (take everything, default)
-    # pc = ParallelContext()
+    # pc = ParallelContext_MPI()
 
     # Initialize context (use only ranks 3 and 4 as slave, 0 as master)
-    pc = ParallelContext(worker_ranks=[3, 4])
+    pc = ParallelContext_MPI(worker_ranks=[3, 4])
     if pc.rank != 0:
         sys.exit(0)
 
@@ -252,9 +247,8 @@ def main():
     ta = time.time()-ta
 
     tb = time.time()
-    new_q = JobQueue(pc)
-    new_q.add_spiketrain_list_job(spiketrain_list, handler)
-    results = new_q.execute()
+    pc.add_spiketrain_list_job(spiketrain_list, handler)
+    results = pc.execute()
     tb = time.time()-tb
 
     # Send one spike train to each worker
