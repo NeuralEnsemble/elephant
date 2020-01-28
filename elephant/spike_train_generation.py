@@ -14,6 +14,7 @@ from __future__ import division, print_function, unicode_literals
 
 import random
 import warnings
+from functools import partial
 
 import numpy as np
 from neo import SpikeTrain
@@ -265,7 +266,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
     return result_st
 
 
-def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
+def _homogeneous_process(interval_generator, mean_rate, t_start, t_stop,
                          as_array):
     """
     Returns a spike train whose spikes are a realization of a random process
@@ -281,7 +282,7 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
     if number < 100:
         number = min(5 + np.ceil(2 * n), 100)
     assert number > 4  # if positive, number cannot be less than 5
-    isi = rescale(interval_generator(*args, size=int(number)))
+    isi = rescale(interval_generator(size=int(number)))
     spikes = np.cumsum(isi)
     spikes += t_start
 
@@ -289,10 +290,10 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
     if i == len(spikes):
         # ISI buffer overrun
         extra_spikes = []
-        t_last = spikes[-1] + rescale(interval_generator(*args, size=1))[0]
+        t_last = spikes[-1] + rescale(interval_generator(size=1))[0]
         while t_last < t_stop:
             extra_spikes.append(t_last.magnitude)
-            t_last = t_last + rescale(interval_generator(*args, size=1))[0]
+            t_last = t_last + rescale(interval_generator(size=1))[0]
 
         # np.concatenate does not conserve units
         spikes = pq.Quantity(
@@ -382,9 +383,9 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
 
     # Case without a refractory period
     if refractory_period is None:
-        mean_interval = 1 / rate_magnitude
+        interval_generator = partial(np.random.exponential, 1 / rate_magnitude)
         return _homogeneous_process(
-            np.random.exponential, (mean_interval,), rate, t_start, t_stop,
+            interval_generator, rate, t_start, t_stop,
             as_array)
 
     # Case with a refractory period
@@ -399,11 +400,11 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     effective_rate_magnitude = \
         rate_magnitude / (1. - rate_magnitude*refractory_period_magnitude)
 
-    def isi_generator(size):
+    def interval_generator(size):
         return refractory_period_magnitude +\
                np.random.exponential(1./effective_rate_magnitude, size)
 
-    spiketrain = _homogeneous_process(isi_generator, (), rate,
+    spiketrain = _homogeneous_process(interval_generator, rate,
                                       t_start-refractory_period, t_stop,
                                       as_array)
     if not as_array:
@@ -551,7 +552,8 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
     b = b.rescale(1 / t_start.units).simplified
     rate = b / a
     k, theta = a, (1 / b.magnitude)
-    return _homogeneous_process(np.random.gamma, (k, theta), rate, t_start,
+    interval_generator = partial(np.random.gamma, k, theta)
+    return _homogeneous_process(interval_generator, rate, t_start,
                                 t_stop, as_array)
 
 
