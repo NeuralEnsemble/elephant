@@ -67,7 +67,6 @@ from itertools import chain, combinations
 import neo
 import numpy as np
 import quantities as pq
-import statsmodels.stats.multitest as sm
 from scipy import sparse
 
 import elephant.conversion as conv
@@ -1375,8 +1374,9 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     return mask
 
 
-def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
-                                report='spectrum', spectrum='#'):
+def test_signature_significance(pv_spec, concepts, alpha, winlen,
+                                corr='fdr_bh', report='spectrum',
+                                spectrum='#'):
     """
     Compute the significance spectrum of a pattern spectrum.
 
@@ -1482,6 +1482,13 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen, corr='',
         if corr in ['', 'no']:  # ...without statistical correction
             tests_selected = pvalues_totest <= alpha
         else:
+            try:
+                import statsmodels.stats.multitest as sm
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError(
+                    "Please run 'pip install statsmodels' if you "
+                    "want to use multiple testing correction")
+
             tests_selected = sm.multipletests(pvalues_totest, alpha=alpha,
                                               method=corr)[0]
 
