@@ -16,6 +16,7 @@ import neo
 from neo.core import SpikeTrain
 import elephant.conversion as conv
 import elephant.kernels as kernels
+import elephant.parallel
 import warnings
 # warnings.simplefilter('always', DeprecationWarning)
 
@@ -190,7 +191,8 @@ def fanofactor(spiketrains):
         fano = spike_counts.var() / spike_counts.mean()
     return fano
 
-@parallel.embarassing_list_expand()
+
+@elephant.parallel.parallel_context_embarassing_list
 def lv(v, with_nan=False):
     """
     Calculate the measure of local variation LV for

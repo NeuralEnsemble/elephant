@@ -24,7 +24,8 @@ from . import (statistics,
                neo_tools,
                spade,
                cell_assembly_detection,
-               waveform_features)
+               waveform_features,
+               parallel)
 
 try:
     from . import pandas_bridge
