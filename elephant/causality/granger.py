@@ -26,6 +26,7 @@ from collections import namedtuple
 
 # TODO: include AnalogSignal implementation
 # TODO: Unittest for granger
+# TODO: Clean the code in accordance with PEP8
 
 
 def _lag_covariances(signals, dimension, max_lag):
@@ -138,7 +139,7 @@ def _vector_arm(signals, dimension, order):
 def pairwise_granger(signals, order):
     """
     Determine Granger Causality of two time series
-    Note: order paramter should be remove
+    Note: order parameter should be removed
     Parameters
     ----------
     signals : np.ndarray
@@ -147,12 +148,13 @@ def pairwise_granger(signals, order):
         order of autoregressive model (should be removed)
     Returns
     -------
-    directional_causality_x_y : float
-    directional_causality_y_x : float
-    instantaneous_causality : float
-    total_interdependence : float
+    causality : namedTuple, where:
+    causality.directional_causality_x_y : float
+    causality.directional_causality_y_x : float
+    causality.instantaneous_causality : float
+    causality.total_interdependence : float
     """
-    #TODO: update docstring that returns namedtuple
+    #TODO: remove order parameter
 
     signal_x = np.asarray([signals[0,:]])
     signal_y = np.asarray([signals[1,:]])
