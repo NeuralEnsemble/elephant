@@ -125,11 +125,10 @@ class GPFA(sklearn.base.BaseEstimator):
         Names of the data contained in the resultant data structure, used to
         check the validity of users' request
     has_spikes_bool : np.ndarray of bool
-        Indicates if a neuron has any spikes across trials.
+        Indicates if a neuron has any spikes across trials of the training
+        data.
     params_estimated : dict
-        Estimated model parameters.
-        After the `fit()` and `transform()` methods are used, the following
-        parameters are preserved:
+        Estimated model parameters. Updated at each run of the fit() method.
 
         covType : str
             type of GP covariance, either 'rbf', 'tri', or 'logexp'.
@@ -144,21 +143,27 @@ class GPFA(sklearn.base.BaseEstimator):
         C : (#units, #latent_vars) np.ndarray
             loading matrix, representing the mapping between the neuronal data
             space and the latent variable space
-        Corth : (#units, #latent_vars) np.ndarray
-            mapping between the neuronal data space and the orthonormal
-            latent variable space
         R : (#units, #latent_vars) np.ndarray
             observation noise covariance
     fit_info : dict
-        Information of the fitting process.
+        Information of the fitting process. Updated at each run of the fit()
+        method.
 
         iteration_time : list
             containing the runtime for each iteration step in the EM algorithm.
-        log_likelihood : float
-            maximized likelihood obtained in the E-step of the EM algorithm.
-        method : str
-            Method name.
+        log_likelihoods : list
+            log likelihoods after each EM iteration.
+    transform_info : dict
+        Information of the transforming process. Updated at each run of the
+        transform() method.
 
+        log_likelihood : float
+            maximized likelihood of the transformed data
+        num_bins : nd.array
+            number of bins in each trial
+        Corth : (#units, #latent_vars) np.ndarray
+            mapping between the neuronal data space and the orthonormal
+            latent variable space
     Methods
     -------
     fit
@@ -221,9 +226,9 @@ class GPFA(sklearn.base.BaseEstimator):
             raise ValueError("'tau_init' must be of type pq.Quantity")
 
         # will be updated later
-        self.T = None
         self.params_estimated = dict()
         self.fit_info = dict()
+        self.transform_info = dict()
 
     def fit(self, spiketrains):
         """
@@ -389,12 +394,10 @@ class GPFA(sklearn.base.BaseEstimator):
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         seqs, ll = gpfa_core.exact_inference_with_ll(seqs, self.params_estimated,
                                                      get_ll=True)
-        self.fit_info['log_likelihood'] = ll
-        # TODO: rename T w.r.t. our naming convention
-        self.T = seqs['T']
-        # TODO: params_estimated should not be changed during the inference
-        self.params_estimated, seqs = gpfa_core.orthonormalize(
-            self.params_estimated, seqs)
+        self.transform_info['log_likelihood'] = ll
+        self.transform_info['num_bins'] = seqs['T']
+        Corth, seqs = gpfa_core.orthonormalize(self.params_estimated, seqs)
+        self.transform_info['Corth'] = Corth
         if len(returned_data) == 1:
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
@@ -453,4 +456,4 @@ class GPFA(sklearn.base.BaseEstimator):
             Log-likelihood of the given spiketrains under the fitted model.
         """
         self.transform(spiketrains)
-        return self.fit_info['log_likelihood']
+        return self.transform_info['log_likelihood']

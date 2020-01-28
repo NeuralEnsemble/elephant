@@ -92,7 +92,7 @@ class GPFATestCase(unittest.TestCase):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa.fit(self.data1)
         xorth = gpfa.transform(self.data1)
-        self.assertAlmostEqual(gpfa.fit_info['log_likelihood'],
+        self.assertAlmostEqual(gpfa.transform_info['log_likelihood'],
                                -8172.004695554373, places=5)
         # Since data1 is inherently 2 dimensional, only the first two
         # dimensions of xorth should have finite power.
@@ -144,7 +144,8 @@ class GPFATestCase(unittest.TestCase):
         t_start = self.data2[0][0].t_stop
         t_stop = self.data2[0][0].t_start
         n_bins = int(((t_start - t_stop) / self.bin_size).magnitude)
-        assert_array_equal(gpfa.T, [n_bins, ] * n_trials)
+        assert_array_equal(gpfa.transform_info['num_bins'],
+                           [n_bins, ] * n_trials)
 
     def test_returned_data(self):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)

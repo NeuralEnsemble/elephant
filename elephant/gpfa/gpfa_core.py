@@ -139,7 +139,7 @@ def fit(seqs_train, x_dim=3, bin_width=20.0, min_var_frac=0.01, em_tol=1.0E-8,
         params_init, seqs_train_cut, min_var_frac=min_var_frac,
         max_iters=em_max_iters, tol=em_tol, freq_ll=freq_ll, verbose=verbose)
 
-    fit_info = {'iteration_time': iter_time}
+    fit_info = {'iteration_time': iter_time, 'log_likelihoods': ll_cut}
 
     return params_est, fit_info
 
@@ -559,4 +559,4 @@ def orthonormalize(params_est, seqs):
 
     params_est['Corth'] = Corth
 
-    return params_est, seqs
+    return Corth, seqs
