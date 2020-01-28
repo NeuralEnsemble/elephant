@@ -23,10 +23,7 @@ Time-series Granger causality
 
 import numpy as np
 from collections import namedtuple
-
-# TODO: include AnalogSignal implementation
-# TODO: Unittest for granger
-# TODO: Clean the code in accordance with PEP8
+from neo.core import AnalogSignal
 
 Causality = namedtuple('causality',
                        'directional_causality_x_y directional_causality_y_x instantaneous_causality total_interdependence')
@@ -145,7 +142,7 @@ def pairwise_granger(signals, order):
     Note: order parameter should be removed
     Parameters
     ----------
-    signals : np.ndarray
+    signals : np.ndarray or neo.AnalogSignal
         time series data
     order : int
         order of autoregressive model (should be removed)
@@ -160,6 +157,12 @@ def pairwise_granger(signals, order):
     #TODO: remove order parameter
     if order <= 0:
         raise ValueError(f"The order parameter should be positive. Not {order}")
+
+    if isinstance(signals, AnalogSignal):
+        signals = np.asarray(signals)
+        signals = np.rollaxis(signals, 0, signals.shape)
+    else:
+        signals = np.asarray(signals)
 
     signal_x = np.asarray([signals[0, :]])
     signal_y = np.asarray([signals[1, :]])
