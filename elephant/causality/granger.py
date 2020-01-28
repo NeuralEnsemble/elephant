@@ -162,7 +162,7 @@ def pairwise_granger(signals, order):
 
     if isinstance(signals, AnalogSignal):
         signals = np.asarray(signals)
-        signals = np.rollaxis(signals, 0, signals.shape)
+        signals = np.rollaxis(signals, 0, len(signals.shape))
     else:
         signals = np.asarray(signals)
 
