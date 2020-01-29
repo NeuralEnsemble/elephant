@@ -22,7 +22,7 @@ MPI_WORKER_DONE = 4
 MPI_TERM_WORKER = 5
 
 
-class ParallelContext():
+class ParallelContext(object):
     """
     This function provides a fall-back parallel context that executes jobs
     sequentially.
@@ -258,7 +258,7 @@ class ParallelContext_MPI(ParallelContext):
         return results
 
 
-class GlobalParallelContext():
+class GlobalParallelContext(object):
     def __init__(self):
         self.global_parallel_context = ParallelContext()
 
@@ -270,7 +270,7 @@ global_pc = GlobalParallelContext()
 global_pc.global_parallel_context = ParallelContext_MPI()
 
 
-class JobQueueHandlers():
+class JobQueueHandlers(object):
     def __init__(self):
         pass
 
@@ -299,7 +299,7 @@ class JobQueueExpandHandler(JobQueueHandlers):
         return self.func(single_input, *self.args, **self.kwargs)
 
 
-class ParallelContextEmbarassingList():
+class ParallelContextEmbarassingList(object):
     '''
     This is a decorator that transforms the first argument from a list into
     a series of function calls for each element
