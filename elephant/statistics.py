@@ -192,7 +192,7 @@ def fanofactor(spiketrains):
     return fano
 
 
-@elephant.parallel.parallel_context_embarassing_list
+@elephant.parallel.ParallelContextEmbarassingList()
 def lv(v, with_nan=False):
     """
     Calculate the measure of local variation LV for
