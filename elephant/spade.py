@@ -310,7 +310,14 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     else:
         rank = 0
 
-    compute_stability = _check_input()
+    compute_stability = _check_input(
+        spiketrains=spiketrains, binsize=binsize, winlen=winlen,
+        min_spikes=min_spikes, min_occ=min_occ,
+        max_spikes=max_spikes, max_occ=max_occ, min_neu=min_neu,
+        approx_stab_pars=approx_stab_pars,
+        n_surr=n_surr, dither=dither, spectrum=spectrum,
+        alpha=alpha, stat_corr=stat_corr, surr_method=surr_method,
+        psr_param=psr_param, output_format=output_format)
 
     time_mining = time.time()
     if rank == 0 or compute_stability:
@@ -355,9 +362,6 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             time_pvalue_spectrum))
         # Storing pvalue spectrum
         output['pvalue_spectrum'] = pv_spec
-    elif 0 < alpha < 1:
-        warnings.warn('0<alpha<1 but p-value spectrum has not been '
-                      'computed (n_surr==0)')
 
     # rank!=0 returning None
     if rank != 0:
@@ -407,6 +411,17 @@ def _check_input(
         n_surr=0, dither=15 * pq.ms, spectrum='#',
         alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
         psr_param=None, output_format='patterns'):
+    """
+    Checks all input given to SPADE
+    Parameters
+    ----------
+    see :`func`:`spade`
+
+    Returns
+    -------
+    compute_stability: bool
+        if the stability calculation is used
+    """
 
     # Check spiketrains
     if not all([isinstance(elem, neo.SpikeTrain) for elem in spiketrains]):
@@ -476,14 +491,29 @@ def _check_input(
     if not isinstance(alpha, (int, float)):
         raise ValueError('alpha must be an integer or a float')
 
+    # Check redundant use of alpha
     if 0 < alpha < 1 and n_surr == 0:
         warnings.warn('0<alpha<1 but p-value spectrum has not been '
                       'computed (n_surr==0)')
+
+    # Check stat_corr:
+    if stat_corr not in \
+            ['bonferroni', 'sidak', 'holm-sidak', 'holm',
+             'simes-hochberg', 'hommel', 'fdr_bh', 'fdr_by',
+             'fdr_tsbh', 'fdr_tsbky', '', 'no']:
+        raise ValueError("Parameter stat_corr not recognized")
 
     # Check surr_method
     if surr_method not in surr.SURR_METHODS:
         raise ValueError(
             'specified surr_method (=%s) not valid' % surr_method)
+
+    # Check psr_param
+    if psr_param is not None:
+        if not isinstance(psr_param, list):
+            raise ValueError('psr_param must be None or a list of integer')
+        if not all(isinstance(param, int) for param in psr_param):
+            raise ValueError('elements of psr_param must be integers')
 
     # Check output_format
     if output_format not in ('concepts', 'patterns'):
