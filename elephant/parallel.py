@@ -18,10 +18,11 @@ from mpi4py import MPI
 # MPI message tags
 MPI_SEND_HANDLER = 1
 MPI_SEND_INPUT = 2
-MPI_SEND_OUTPUT = 3
-MPI_SEND_OUTPUT_TYPE = 4
-MPI_WORKER_DONE = 5
-MPI_TERM_WORKER = 6
+MPI_SEND_INPUT_TYPE = 3
+MPI_SEND_OUTPUT = 4
+MPI_SEND_OUTPUT_TYPE = 5
+MPI_WORKER_DONE = 6
+MPI_TERM_WORKER = 7
 
 
 class ParallelContext(object):
@@ -168,9 +169,23 @@ class ParallelContext_MPI(ParallelContext):
                 req = self.comm.irecv(source=0, tag=MPI_SEND_HANDLER)
                 handler = req.wait()
 
-                # Await data
-                req = self.comm.irecv(source=0, tag=MPI_SEND_INPUT)
-                data = req.wait()
+                # Get input type: list or single item
+                req = self.comm.irecv(
+                    source=0, tag=MPI_SEND_INPUT_TYPE)
+                result_type = req.wait()
+
+                if result_type == 0:
+                    # Get input
+                    req = self.comm.irecv(
+                        source=0, tag=MPI_SEND_INPUT)
+                    data = req.wait()
+                else:
+                    # Get input as a list
+                    data = []
+                    for _ in range(result_type):
+                        req = self.comm.irecv(
+                            source=0, tag=MPI_SEND_INPUT)
+                        data.append(req.wait())
 
                 # Execute handler
                 result = handler.worker(data)
@@ -246,6 +261,28 @@ class ParallelContext_MPI(ParallelContext):
                     self.handler, idle_worker, tag=MPI_SEND_HANDLER)
                 req.wait()
 
+                # Report on input type: list or single item
+                if type(next_arg) is list:
+                    arg_type = len(next_arg)
+                    if arg_type == 0:
+                        next_arg = None
+                else:
+                    arg_type = 0
+                req = self.comm.isend(
+                    arg_type, idle_worker, tag=MPI_SEND_INPUT_TYPE)
+                req.wait()
+
+                # Send return value
+                if arg_type == 0:
+                    req = self.comm.isend(
+                        next_arg, idle_worker, tag=MPI_SEND_INPUT)
+                    req.wait()
+                else:
+                    for list_item in next_arg:
+                        req = self.comm.isend(
+                            list_item, idle_worker, tag=MPI_SEND_INPUT)
+                        req.wait()
+
                 # Send data
                 req = self.comm.isend(
                     next_arg, idle_worker, tag=MPI_SEND_INPUT)
@@ -267,16 +304,16 @@ class ParallelContext_MPI(ParallelContext):
                     # Get output type: list or single item
                     req = self.comm.irecv(
                         source=worker, tag=MPI_SEND_OUTPUT_TYPE)
-                    result_type = req.wait()
+                    arg_type = req.wait()
 
-                    if result_type == 0:
+                    if arg_type == 0:
                         # Get output
                         req = self.comm.irecv(
                             source=worker, tag=MPI_SEND_OUTPUT)
                         result = req.wait()
                     else:
                         result = []
-                        for _ in range(result_type):
+                        for _ in range(arg_type):
                             req = self.comm.irecv(
                                 source=worker, tag=MPI_SEND_OUTPUT)
                             result.append(req.wait())
@@ -313,7 +350,7 @@ def spike_train_generation(rate, n, t_start, t_stop):
     `rate_list`.
     '''
     return [elephant.spike_train_generation.homogeneous_poisson_process(
-            rate, t_start=0*pq.s, t_stop=20*pq.s) for _ in range(n)][0]
+            rate, t_start=0*pq.s, t_stop=20*pq.s) for _ in range(n)]
 
 
 def main():
@@ -360,10 +397,6 @@ def main():
     spiketrain_list_mpi = pc_mpi.execute()
     tc = time.time()-tc
     print("Parallel generation done.\n")
-    print(len(spiketrain_list_serial))
-    print(len(spiketrain_list_mpi))
-    print(len(spiketrain_list_serial[0]))
-    print(len(spiketrain_list_mpi[0]))
 
     print(
         "Generation execution times:" +
@@ -378,7 +411,7 @@ def main():
     ta = time.time()
     for i, s in enumerate(spiketrain_list_standard):
         results_standard[i] = elephant.statistics.time_histogram(
-            s, 50 * pq.ms, output='rate')
+            s, binsize=50 * pq.ms, output='rate')
     ta = time.time()-ta
     print("Standard calculation done.\n")
 
