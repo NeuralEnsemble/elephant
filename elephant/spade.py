@@ -257,9 +257,15 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
                     If n_surr==0 the p-values are set to 0.0.
 
             If `output_format` is 'concepts', then `output['patterns']` is a
-            tuple of patterns which in turn are tuples of (spikes in the
-            pattern, occurrences of the pattern). For details see
-            :func:`concepts_mining`.
+            tuple of patterns which in turn are tuples of
+             1. element spikes in the pattern, occurrences of the pattern).
+             2. element: occurrences of the pattern
+             For details see :func:`concepts_mining`.
+             if stability is calculated
+             3. element: intensional stability
+             4. element: extensional stability
+             For details see :func:`approximate_stability`.
+
 
         'pvalue_spectrum' (only if `n_surr > 0` and `n_subsets == 0`):
             A list of signatures in tuples format
@@ -268,28 +274,6 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
 
         'non_sgnf_sgnt': list
             Non significant signatures of 'pvalue_spectrum'.
-
-        if n_subsets > 0:
-        (spikes in the pattern, occurrences of the patterns,
-                (intensional stability, extensional stability))
-                corresponding pvalue
-        The patterns are filtered depending on the parameters in input:
-        If stability_thresh==None and alpha==1:
-            output['patterns'] contains all the candidates patterns
-            (all concepts mined with the fca algorithm)
-        If stability_thresh!=None and alpha==1:
-            output contains only patterns candidates with:
-                intensional stability>stability_thresh[0] or
-                extensional stability>stability_thresh[1]
-        If stability_thresh==None and alpha!=1:
-            output contains only pattern candidates with a signature
-            significant in respect the significance level alpha corrected
-        If stability_thresh!=None and alpha!=1:
-            output['patterns'] contains only pattern candidates with a
-            signature significant in respect the significance level alpha
-            corrected and such that:
-                intensional stability>stability_thresh[0] or
-                extensional stability>stability_thresh[1]
 
     Notes
     -----
@@ -326,20 +310,7 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     else:
         rank = 0
 
-    if output_format not in ['concepts', 'patterns']:
-        raise ValueError("The output_format value has to be"
-                         "'patterns' or 'concepts'")
-    if surr_method not in surr.SURR_METHODS:
-        raise ValueError(
-            'specified surr_method (=%s) not valid' % surr_method)
-    compute_stability = False
-    if isinstance(approx_stab_pars, dict):
-        try:
-            compute_stability = approx_stab_pars['n_subsets'] > 0
-        except KeyError:
-            raise ValueError(
-                'for approximate stability computation you need to '
-                'pass n_subsets')
+    compute_stability = _check_input()
 
     time_mining = time.time()
     if rank == 0 or compute_stability:
@@ -428,6 +399,98 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             spiketrains[0].t_start)
 
     return output
+
+
+def _check_input(
+        spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
+        max_spikes=None, max_occ=None, min_neu=1, approx_stab_pars=None,
+        n_surr=0, dither=15 * pq.ms, spectrum='#',
+        alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
+        psr_param=None, output_format='patterns'):
+
+    # Check spiketrains
+    if not all([isinstance(elem, neo.SpikeTrain) for elem in spiketrains]):
+        raise TypeError(
+            'spiketrains must be a list of SpikeTrains')
+    # Check that all spiketrains have same t_start and same t_stop
+    if not all([spiketrain.t_start == spiketrains[0].t_start
+                for spiketrain in spiketrains]) or \
+            not all([spiketrain.t_stop == spiketrains[0].t_stop
+                     for spiketrain in spiketrains]):
+        raise ValueError(
+            'All spiketrains must have the same t_start and t_stop')
+
+    # Check binsize
+    if not isinstance(binsize, pq.Quantity):
+        raise ValueError('binsize must be a pq.Quantity')
+
+    # Check winlen
+    if not isinstance(winlen, int):
+        raise ValueError('winlen must be an integer')
+
+    # Check min_spikes
+    if not isinstance(min_spikes, int):
+        raise ValueError('min_spikes must be an integer')
+
+    # Check min_occ
+    if not isinstance(min_occ, int):
+        raise ValueError('min_occ must be an integer')
+
+    # Check max_spikes
+    if not (isinstance(max_spikes, int) or max_spikes is None):
+        raise ValueError('max_spikes must be an integer or None')
+
+    # Check max_occ
+    if not (isinstance(max_occ, int) or max_occ is None):
+        raise ValueError('max_occ must be an integer or None')
+
+    # Check min_neu
+    if not isinstance(min_neu, int):
+        raise ValueError('min_neu must be an integer')
+
+    # Check approx_stab_pars
+    compute_stability = False
+    if isinstance(approx_stab_pars, dict):
+        if 'n_subsets' in approx_stab_pars.keys() or\
+            ('epsilon' in approx_stab_pars.keys() and
+             'delta' in approx_stab_pars.keys()):
+            compute_stability = True
+        else:
+            raise ValueError(
+                'for approximate stability computation you need to '
+                'pass n_subsets or epsilon and delta.')
+
+    # Check n_surr
+    if not isinstance(n_surr, int):
+        raise ValueError('n_surr must be an integer')
+
+    # Check dither
+    if not isinstance(dither, pq.Quantity):
+        raise ValueError('dither must be a pq.Quantity')
+
+    # Check spectrum
+    if spectrum not in ('#', '3d#'):
+        raise ValueError("spectrum must be '#' or '3d#'")
+
+    # Check alpha
+    if not isinstance(alpha, (int, float)):
+        raise ValueError('alpha must be an integer or a float')
+
+    if 0 < alpha < 1 and n_surr == 0:
+        warnings.warn('0<alpha<1 but p-value spectrum has not been '
+                      'computed (n_surr==0)')
+
+    # Check surr_method
+    if surr_method not in surr.SURR_METHODS:
+        raise ValueError(
+            'specified surr_method (=%s) not valid' % surr_method)
+
+    # Check output_format
+    if output_format not in ('concepts', 'patterns'):
+        raise ValueError("The output_format value has to be"
+                         "'patterns' or 'concepts'")
+
+    return compute_stability
 
 
 def concepts_mining(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
@@ -1332,10 +1395,12 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
     return max_occ
 
 
-def _stability_filter(concept, stab_thr):
+def _stability_filter(concept, stability_thresh):
     """Criteria by which to filter concepts from the lattice"""
-    # stabilities larger then min_st
-    keep_concept = concept[2] > stab_thr[0] or concept[3] > stab_thr[1]
+    # stabilities larger then stability_thresh
+    keep_concept = \
+        concept[2] > stability_thresh[0]\
+        or concept[3] > stability_thresh[1]
     return keep_concept
 
 
@@ -1539,7 +1604,8 @@ def _pattern_spectrum_filter(concept, ns_signatures, spectrum, winlen):
     return keep_concept
 
 
-def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
+def approximate_stability(concepts, rel_matrix, n_subsets=0,
+                          delta=0., epsilon=0.):
     r"""
     Approximate the stability of concepts. Uses the algorithm described
     in Babin, Kuznetsov (2012): Approximating Concept Stability
@@ -1561,7 +1627,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
-        neuron, the entry `[0,winlen]` to the first bin of the first window
+        neuron, the entry `[0, winlen]` to the first bin of the first window
         position for the second neuron.
     n_subsets: int
         Number of subsets of a concept used to approximate its stability. If
@@ -1572,13 +1638,13 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
 
         .. math::
                n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
-
-    delta: float, optrional
-        delta: probability with at least :math:`1-\delta`
         Default: 0
+    delta: float, optional
+        delta: probability with at least :math:`1-\delta`
+        Default: 0.
     epsilon: float, optional
         epsilon: absolute error
-        Default: 0
+        Default: 0.
 
     Returns
     -------
@@ -1609,8 +1675,13 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
     else:
         rank = 0
         size = 1
-    if n_subsets <= 0 and delta + epsilon <= 0:
-        raise ValueError('n_subsets has to be >=0 or delta + epsilon > 0')
+    if not (isinstance(n_subsets, int) and n_subsets >= 0):
+        raise ValueError('n_subsets must be an integer >=0')
+    if n_subsets == 0 and not (isinstance(delta, float) and delta > 0. and
+                               isinstance(epsilon, float) and epsilon > 0.):
+        raise ValueError('delta and epsilon must be floats > 0., '
+                         'given that n_subsets = 0')
+
     if len(concepts) == 0:
         return []
     if len(concepts) <= size:
@@ -1620,8 +1691,8 @@ def approximate_stability(concepts, rel_matrix, n_subsets, delta=0, epsilon=0):
             range(0, len(concepts) - len(concepts) % size + 1,
                   len(concepts) // size)) + [len(concepts)]
     # Calculate optimal n
-    if delta + epsilon > 0 and n_subsets == 0:
-        n_subsets = np.log(2. / delta) / (2 * epsilon ** 2) + 1
+    if n_subsets == 0:
+        n_subsets = int(round(np.log(2. / delta) / (2 * epsilon ** 2) + 1))
 
     if rank == 0:
         concepts_on_partition = concepts[rank_idx[rank]:rank_idx[rank + 1]] + \
