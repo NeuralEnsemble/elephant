@@ -226,7 +226,8 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     seqs_latent = None
 
     # Loop once for each iteration of EM algorithm
-    for iter_id in trange(1, max_iters + 1, desc='EM iteration'):
+    for iter_id in trange(1, max_iters + 1, desc='EM iteration',
+                          disable=not verbose):
         if verbose:
             print()
         tic = time.time()
