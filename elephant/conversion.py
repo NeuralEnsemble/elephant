@@ -77,6 +77,15 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
         The time points.  This will have the same units as `spiketrain`.
         If `spiketrain` has no units, this will be an `np.ndarray` array.
 
+    Raises
+    ------
+    TypeError
+        If `spiketrain` is an `np.ndarray` and `t_start`, `t_stop`, or
+        `sampling_rate` is a `pq.Quantity`.
+    ValueError
+        If `sampling_rate` is not explicitly defined and not present as an
+        attribute of `spiketrain`.
+
     Notes
     -----
     Spike times are placed in the bin of the closest time point, going to the
@@ -90,16 +99,7 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 
     If `spiketrain` is a `pq.Quantity` or `neo.SpikeTrain` and `t_start`,
     `t_stop` or `sampling_rate` is not, then the arguments that are not
-    `pq.Quantity' will be assumed to have the same units as `spiketrain`.
-
-    Raises
-    ------
-    TypeError
-        If `spiketrain` is an `np.ndarray` and `t_start`, `t_stop`, or
-        `sampling_rate` is a `pq.Quantity`.
-    ValueError
-        If `sampling_rate` is not explicitly defined and not present as an
-        attribute of `spiketrain`.
+    `pq.Quantity` will be assumed to have the same units as `spiketrain`.
 
     """
     # get the values from spiketrain if they are not specified.
@@ -872,8 +872,8 @@ class BinnedSpikeTrain(object):
         Returns
         -------
         bst : BinnedSpikeTrain
-            BinnedSpikeTrain` with both sparse and dense (if present) array
-            representation clipped to `0` (no spike) or `1` (st least one
+            `BinnedSpikeTrain` with both sparse and dense (if present) array
+            representation clipped to `0` (no spike) or `1` (at least one
             spike) entries.
 
         """
