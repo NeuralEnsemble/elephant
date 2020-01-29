@@ -49,6 +49,7 @@ import numpy as np
 import quantities as pq
 import scipy.spatial
 import scipy.stats
+from scipy import special
 from sklearn.cluster import dbscan as dbscan
 from tqdm import trange, tqdm
 
@@ -1075,47 +1076,53 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     -------
     S : numpy.ndarray of shape (A, B)
         matrix of joint survival probabilities. s_ij is the joint survival
-        probability of the values {u_ijk, k=0,...,d-1}.
+        probability of the values {u_ijk, k=0, ..., d-1}.
         Note: the joint probability matrix computed for the ASSET analysis
         is 1-S.
     """
     d, A, B = u.shape
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
-    # used to compute the integral as a sum over several possibilities
+    # used to compute the integral as a sum over all possibilities
     lists = [range(j, n + 1) for j in range(d, 0, -1)]
     it_todo = np.prod([n + 1 - j for j in range(d, 0, -1)])
 
     # Compute the log of the integral's coefficient
     logK = np.sum(np.log(np.arange(1, n + 1))) - n * np.log(1 - alpha)
 
-    # Add to the 3D matrix u a bottom layer identically equal to alpha and a
-    # top layer identically equal to 1. Then compute the difference dU along
+    # Add to the 3D matrix u a bottom layer equal to alpha and a
+    # top layer equal to 1. Then compute the difference du along
     # the first dimension.
-    u_extended = np.ones((d + 2, A, B), dtype=np.float32)
-    u_extended[0] = u_extended[0] * alpha
-    for layer_idx, uu in enumerate(u):
-        u_extended[layer_idx + 1] = u[layer_idx]
-    dU = np.diff(u_extended, axis=0)  # shape (d+1, A, B)
-    del u_extended
+    du = np.diff(u, prepend=alpha, append=1, axis=0)
 
-    # Log calculation outside of the inner loop
-    dU_log = np.log(dU)
-    dU_scratch = np.empty_like(dU_log)
-    log_point1 = np.log(1.)
+    # in order to avoid doing the same calculation multiple times:
+    # find all unique sets of values in du and store the corresponding indices
+    # flatten the second and third dimension in order to use np.unique
+    du = du.reshape(d+1, A*B).T
+    du, du_indices = np.unique(du, axis=0, return_inverse=True)
 
-    # faster way to fill array
-    dI = np.empty((d + 1, A, B), dtype=np.int)
+    # precompute logarithms
+    log_du = np.log(du)
+    log_1 = np.log(1.)
+
+    # prepare arrays for usage inside the loop
+    di_scratch = np.empty_like(du, dtype=np.int)
+    log_du_scratch = np.empty_like(log_du)
+
+    # precompute log(factorial)s
+    # pad with a zero to get 0! = 1
+    log_factorial = np.hstack((0, np.cumsum(np.log(range(1, n + 1)))))
 
     if mpi_accelerated:
         comm = MPI.COMM_WORLD
         size = comm.Get_size()
         rank = comm.Get_rank()
 
-    # Compute the probabilities at each (a, b), a=0,...,A-1, b=0,...,B-1
-    # by matrix algebra, working along the third dimension (axis 0)
-    Ptot = np.zeros((A, B),
-                    dtype=np.float32)  # initialize all A x B probabilities to 0
+    # compute the probabilities for each unique row of du
+    # only loop over the indices and do all du entries at once
+    # using matrix algebra
+    # initialise probabilities to 0
+    P_total = np.zeros((du.shape[0]), dtype=np.float32)
     iter_id = 0
     for matrix_entries in tqdm(itertools.product(*lists),
                                total=it_todo,
@@ -1128,53 +1135,53 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
 
         iter_id += 1
 
-        # 2. Test for valid pyramid and exit loop early
+        # test for valid pyramid and exit loop early
         if _wrong_order(matrix_entries):
             continue
 
-        di = -np.diff(np.hstack([n, list(matrix_entries), 0]))
+        # we only need the differences of the indices:
+        di = -np.diff(np.hstack([n, matrix_entries, 0]))
 
-        # 3. faster way to reshape the matrix for usage
+        # reshape the matrix to be compatible with du
         for idx in range(len(di)):
-            dI[idx, :, :].fill(di[idx])
+            di_scratch[:, idx].fill(di[idx])
 
-        # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace dU_abk with 1
-        # whenever dI_abk = 0, so that dU_abk ** dI_abk = 1 (this avoids
-        # nans when both dU_abk and dI_abk are 0, and is mathematically
-        # correct). dU2 still contains 0s, so that when below exp(log(U2))
-        # is computed, warnings are arosen; they are no problem though.
+        # use precomputed factorials
+        sum_log_di_factorial = log_factorial[di].sum()
 
-        # Compute for each i=0,...,A-1 and j=0,...,B-1: log(I_ij !)
-        # Creates a matrix log_dIfactorial of shape (A, B)
-        log_di_factorial = np.sum([np.log(np.arange(1, di_k + 1)).sum()
-                                   for di_k in di if di_k >= 1])
-        # Compute for each i,j the contribution to the total
-        # probability given by this step, and add it to the total prob.
+        # Compute for each i,j the contribution to the probability
+        # given by this step, and add it to the total probability
 
         # Use precomputed log
-        np.copyto(dU_scratch, dU_log)
-        dU_scratch[dI == 0] = log_point1
+        np.copyto(log_du_scratch, log_du)
 
-        log_DU2 = dU_scratch
-        prod_DU2 = dI * log_DU2
-        sum_DU2 = prod_DU2.sum(axis=0)
-        logP = sum_DU2 - log_di_factorial
+        # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace du with 1
+        # whenever di_scratch = 0, so that du ** di_scratch = 1 (this avoids
+        # nans when both du and di_scratch are 0, and is mathematically
+        # correct)
+        log_du_scratch[di_scratch == 0] = log_1
 
-        Ptot += np.exp(logP + logK)
+        prod_DU2 = di_scratch * log_du_scratch
+        sum_DU2 = prod_DU2.sum(axis=1)
+        logP = sum_DU2 - sum_log_di_factorial
+
+        P_total += np.exp(logP + logK)
 
     if mpi_accelerated:
-        totals = np.zeros((A, B)).astype(np.float32)
+        totals = np.zeros((du.shape[0]), dtype=np.float32)
 
         # exchange all the results
         comm.Allreduce(
-            [Ptot, MPI.FLOAT],
+            [P_total, MPI.FLOAT],
             [totals, MPI.FLOAT],
             op=MPI.SUM)
 
-        # We need to return the collected totals instead of the local Ptot
-        return totals
+        # We need to return the collected totals instead of the local P_total
+        # restore the original shape using the stored indices
+        return totals[du_indices].reshape((A, B))
 
-    return Ptot
+    # restore the original shape using the stored indices
+    return P_total[du_indices].reshape((A, B))
 
 
 def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
@@ -1220,8 +1227,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     d = l if nr_largest is None else nr_largest
 
     # Check consistent arguments
-    # TODO: generalise this for non-square matrices
-    # assert mat.shape[0] == mat.shape[1], 'mat must be a square matrix'
+    # TODO: what to do close to the diagonal if the matrix is symmetric?
     assert diag == 0 or diag == 1, \
         'diag must be 0 (45 degree filtering) or 1 (135 degree filtering)'
     assert w < l, 'w must be lower than l'
@@ -1281,7 +1287,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
 
 def joint_probability_matrix(
         pmat, filter_shape, nr_largest=None, alpha=0, pvmin=1e-5,
-        verbose=False):
+        verbose=False, old_calculation=False):
     """
     Map a probability matrix pmat to a joint probability matrix jmat, where
     jmat[i, j] is the joint p-value of the largest neighbors of pmat[i, j].
