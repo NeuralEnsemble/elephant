@@ -9,6 +9,7 @@ of Elephant functionalities, e.g., to perform analysis in sliding windows.
 import sys
 import time
 from functools import wraps
+import numpy as np
 import quantities as pq
 import elephant
 from mpi4py import MPI
@@ -18,8 +19,9 @@ from mpi4py import MPI
 MPI_SEND_HANDLER = 1
 MPI_SEND_INPUT = 2
 MPI_SEND_OUTPUT = 3
-MPI_WORKER_DONE = 4
-MPI_TERM_WORKER = 5
+MPI_SEND_OUTPUT_TYPE = 4
+MPI_WORKER_DONE = 5
+MPI_TERM_WORKER = 6
 
 
 class ParallelContext(object):
@@ -178,10 +180,27 @@ class ParallelContext_MPI(ParallelContext):
                     True, 0, tag=MPI_WORKER_DONE)
                 req.wait()
 
-                # Send return value
+                # Report back output type: list or single item
+                if type(result) is list:
+                    result_type = len(result)
+                    if result_type == 0:
+                        result = None
+                else:
+                    result_type = 0
                 req = self.comm.isend(
-                    result, 0, tag=MPI_SEND_OUTPUT)
+                    result_type, 0, tag=MPI_SEND_OUTPUT_TYPE)
                 req.wait()
+
+                # Send return value
+                if result_type == 0:
+                    req = self.comm.isend(
+                        result, 0, tag=MPI_SEND_OUTPUT)
+                    req.wait()
+                else:
+                    for list_item in result:
+                        req = self.comm.isend(
+                            list_item, 0, tag=MPI_SEND_OUTPUT)
+                        req.wait()
             elif self.comm.iprobe(source=0, tag=MPI_TERM_WORKER):
                 keep_working = False
 
@@ -245,10 +264,22 @@ class ParallelContext_MPI(ParallelContext):
                         source=worker, tag=MPI_WORKER_DONE)
                     _ = req.wait()
 
-                    # Get output
+                    # Get output type: list or single item
                     req = self.comm.irecv(
-                        source=worker, tag=MPI_SEND_OUTPUT)
-                    result = req.wait()
+                        source=worker, tag=MPI_SEND_OUTPUT_TYPE)
+                    result_type = req.wait()
+
+                    if result_type == 0:
+                        # Get output
+                        req = self.comm.irecv(
+                            source=worker, tag=MPI_SEND_OUTPUT)
+                        result = req.wait()
+                    else:
+                        result = []
+                        for _ in range(result_type):
+                            req = self.comm.irecv(
+                                source=worker, tag=MPI_SEND_OUTPUT)
+                            result.append(req.wait())
 
                     # Save results and mark the worker as idle
                     results[worker_job_id[worker_index]] = result
@@ -256,18 +287,6 @@ class ParallelContext_MPI(ParallelContext):
 
         # Return results dictionary
         return results
-
-
-class GlobalParallelContext(object):
-    def __init__(self):
-        self.global_parallel_context = ParallelContext()
-
-    def get_current_context(self):
-        return self.global_parallel_context
-
-
-global_pc = GlobalParallelContext()
-global_pc.global_parallel_context = ParallelContext_MPI()
 
 
 class JobQueueHandlers(object):
@@ -278,168 +297,115 @@ class JobQueueHandlers(object):
         pass
 
 
-class JobQueueSpikeTrainListHandler(JobQueueHandlers):
-    def worker(self, spiketrain):
-        # Do something complicated
-        for _ in range(1000):
-            result = elephant.statistics.lv(spiketrain)
-        return result
-
-
-class JobQueueExpandHandler(JobQueueHandlers):
+class JobQueueListExpandHandler(JobQueueHandlers):
     def __init__(self, func, *args, **kwargs):
         self.func = func
-        if len(args) > 1:
-            self.args = args[1:]
-        else:
-            self.args = []
+        self.args = args
         self.kwargs = kwargs
 
     def worker(self, single_input):
         return self.func(single_input, *self.args, **self.kwargs)
 
 
-class ParallelContextEmbarassingList(object):
+def spike_train_generation(rate, n, t_start, t_stop):
     '''
-    This is a decorator that transforms the first argument from a list into
-    a series of function calls for each element
+    Returns a list of `n` spiketrains corresponding to the rates given in
+    `rate_list`.
     '''
-    def __init__(self):
-        pass
-
-    def __call__(self, func):
-        @wraps(func)
-        def embarassing_list_expand(*args, **kwargs):
-            # If the first input argument is a list, then feed it into the
-            # parallel context
-            global global_pc
-            if type(args[0]) is list:
-                handler = JobQueueExpandHandler(func, *args, **kwargs)
-                # TODO: Remove this print
-                print(global_pc.get_current_context().name)
-                global_pc.get_current_context().add_list_job(args[0], handler)
-                results_parallel = global_pc.get_current_context().execute()
-                return results_parallel
-            else:
-                return func(*args, **kwargs)
-        return embarassing_list_expand
-
-
-# def parallel_context_embarassing_list(func):
-#     '''
-#     This is a decorator that transforms the first argument from a list into
-#     a series of function calls for each element
-#     '''
-#     @wraps(func)
-#     def embarassing_list_expand(*args, **kwargs):
-#         # If the first input argument is a list, then feed it into the parallel
-#         # context
-#         global global_pc
-#         if type(args[0]) is list:
-#             handler = JobQueueExpandHandler(*args, **kwargs)
-#             # TODO: Remove this print
-#             print(global_pc.get_current_context().name)
-#             global_pc.get_current_context().add_list_job(args[0], handler)
-#             results_parallel = global_pc.get_current_context().execute()
-#             return results_parallel
-#         else:
-#             return func(*args, **kwargs)
-#     return embarassing_list_expand
+    return [elephant.spike_train_generation.homogeneous_poisson_process(
+            rate, t_start=0*pq.s, t_stop=20*pq.s) for _ in range(n)][0]
 
 
 def main():
-    global global_pc
-
     # Initialize serial context (take everything, default)
     pc_serial = ParallelContext()
 
     # Initialize MPI context (take everything, default)
-    #pc_mpi = ParallelContext_MPI()
-    pc_mpi = global_pc.get_current_context() 
+    pc_mpi = ParallelContext_MPI()
+
     # Initialize MPI context (use only ranks 3 and 4 as slave, 0 as master)
     # pc_mpi = ParallelContext_MPI(worker_ranks=[3, 4])
     # if pc_mpi.rank != 0:
     #    sys.exit(0)
 
-    print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i" % (
+    print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n" % (
         pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
-
-    # =========================================================================
-    # Decorator test
-    # =========================================================================
-
-    # Create a list of spike trains
-    spiketrain_list = [
-        elephant.spike_train_generation.homogeneous_poisson_process(
-            10*pq.Hz, t_start=0*pq.s, t_stop=20*pq.s)
-        for _ in range(10000)]
-
-    global_pc.global_parallel_context = pc_serial
-    td = time.time()
-    results_decorate_serial = elephant.statistics.lv(spiketrain_list)
-    td = time.time()-td
-
-    global_pc.global_parallel_context = pc_mpi
-    te = time.time()
-    results_decorate_mpi = elephant.statistics.lv(spiketrain_list)
-    te = time.time()-te
-
-    print(
-        "Decorator execution times:" +
-        "\nSerial: %f s, Parallel: %f s" % (td, te))
-    print("Serial result: %f" % results_decorate_serial[105])
-    print("Parallel result: %f" % results_decorate_mpi[105])
-    assert(
-        results_decorate_serial[105] == elephant.statistics.lv(
-            spiketrain_list[105]))
-    assert(
-        results_decorate_mpi[105] == elephant.statistics.lv(
-            spiketrain_list[105]))
 
     # =========================================================================
     # User defined worker
     # =========================================================================
 
-    # Create a list of spike trains
-    spiketrain_list = [
-        elephant.spike_train_generation.homogeneous_poisson_process(
-            10*pq.Hz, t_start=0*pq.s, t_stop=20*pq.s)
-        for _ in range(100)]
+    # Create a list of lists of spiketrains
+    rate_list = list(np.linspace(10, 20, 20)*pq.Hz)
+
+    ta = time.time()
+    spiketrain_list_standard = [spike_train_generation(
+            rate, n=1000, t_start=0*pq.s, t_stop=20*pq.s) for rate in rate_list]
+    ta = time.time()-ta
+    print("Standard generation done.\n")
 
     # Create a new queue operating on the current context
-    handler = JobQueueSpikeTrainListHandler()
+    handler_generate = JobQueueListExpandHandler(
+        spike_train_generation,
+        n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+
+    tb = time.time()
+    pc_serial.add_list_job(rate_list, handler_generate)
+    spiketrain_list_serial = pc_serial.execute()
+    tb = time.time()-tb
+    print("Serial generation done.\n")
+
+    tc = time.time()
+    pc_mpi.add_list_job(rate_list, handler_generate)
+    spiketrain_list_mpi = pc_mpi.execute()
+    tc = time.time()-tc
+    print("Parallel generation done.\n")
+    print(len(spiketrain_list_serial))
+    print(len(spiketrain_list_mpi))
+    print(len(spiketrain_list_serial[0]))
+    print(len(spiketrain_list_mpi[0]))
+
+    print(
+        "Generation execution times:" +
+        "\nStandard: %f s, Serial: %f s, Parallel: %f s" % (ta, tb, tc))
+
+    # Create a new queue operating on the current context
+    handler = JobQueueListExpandHandler(
+        elephant.statistics.time_histogram, binsize=50 * pq.ms, output='rate')
 
     # Test 1: Standard
     results_standard = {}
     ta = time.time()
-    for s in spiketrain_list:
-        # Do something complicated
-        for i in range(1000):
-            results_standard[i] = elephant.statistics.lv(s)
+    for i, s in enumerate(spiketrain_list_standard):
+        results_standard[i] = elephant.statistics.time_histogram(
+            s, 50 * pq.ms, output='rate')
     ta = time.time()-ta
+    print("Standard calculation done.\n")
 
     # Test 2: Serial Handler
     tb = time.time()
-    pc_serial.add_list_job(spiketrain_list, handler)
+    pc_serial.add_list_job(spiketrain_list_standard, handler)
     results_serial = pc_serial.execute()
     tb = time.time()-tb
+    print("Serial calculation done.\n")
 
     # Test 3: MPI Handler
     tc = time.time()
-    pc_mpi.add_list_job(spiketrain_list, handler)
+    pc_mpi.add_list_job(spiketrain_list_standard, handler)
     results_mpi = pc_mpi.execute()
     tc = time.time()-tc
+    print("Parallel calculation done.\n")
 
     print(
-        "Execution times:" +
+        "Calculation execution times:" +
         "\nStandard: %f s, Serial: %f s, Parallel: %f s" % (ta, tb, tc))
 
     # These results should match
     print("Standard result: %f" % results_standard[99])
     print("Serial result: %f" % results_serial[99])
     print("Parallel result: %f" % results_mpi[99])
-    assert(results_standard[99] == results_serial[99])
-    assert(results_standard[99] == results_mpi[99])
+    assert(results_standard[99][5] == results_serial[99][5])
+    assert(results_standard[99][5] == results_mpi[99][5])
 
     # Terminate MPI
     pc_mpi.terminate()
