@@ -823,19 +823,18 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
 
     if baseline is None:
         pass
-    elif baseline is 'mean':
+    elif baseline == 'mean':
         # subtract mean from each channel
         signal = signal - signal.mean(axis=0)
-    elif baseline is 'median':
+    elif baseline == 'median':
         # subtract median from each channel
         signal = signal - np.median(signal.as_quantity(), axis=0)
     elif isinstance(baseline, pq.Quantity):
         # subtract arbitrary baseline
         signal = signal - baseline
     else:
-        raise TypeError(
-            'baseline must be None, \'mean\', \'median\', '
-            'or a Quantity: {}'.format(baseline))
+        raise ValueError("baseline must be either None, 'mean', 'median', or "
+                         "a Quantity. Got {}".format(baseline))
 
     # slice the signal after subtracting baseline
     signal = signal.time_slice(t_start, t_stop)
@@ -849,8 +848,8 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
                     signal.sampling_period.rescale('s')))
             n_bins = int(np.ceil(signal.shape[0] / samples_per_bin))
         else:
-            raise TypeError(
-                'bin_duration must be a Quantity: {}'.format(bin_duration))
+            raise ValueError("bin_duration must be a Quantity. Got {}".format(
+                bin_duration))
     else:
         # all samples in one bin
         samples_per_bin = signal.shape[0]

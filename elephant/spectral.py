@@ -412,7 +412,7 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     # attach proper units to return values
     if isinstance(signal, pq.quantity.Quantity):
-        if 'scaling' in params and params['scaling'] is 'spectrum':
+        if 'scaling' in params and params['scaling'] == 'spectrum':
             psd = psd * signal.units * signal.units
         else:
             psd = psd * signal.units * signal.units / pq.Hz

@@ -159,8 +159,8 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
 
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
-    # sign == 'below'
     else:
+        # sign == 'below'
         cutout = np.where(signal < threshold)[0]
 
     if len(cutout) == 0:
@@ -213,7 +213,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
         the signal.
     """
     if not isinstance(threshold, pq.Quantity):
-        raise ValueError('threshold must be a pq.Quantity')
+        raise ValueError("threshold must be a pq.Quantity")
 
     if sign not in ('above', 'below'):
         raise ValueError("sign should be 'above' or 'below'")
@@ -224,7 +224,8 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
-    else:  # sign == 'below'
+    else:
+        # sign == 'below'
         cutout = np.where(signal < threshold)[0]
         peak_func = np.argmin
 
@@ -267,8 +268,8 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
         result_st = neo.SpikeTrain(events_base, units=signal.times.units,
                                    t_start=signal.t_start,
                                    t_stop=signal.t_stop)
-    # format == 'raw'
     else:
+        # format == 'raw'
         result_st = events_base
 
     return result_st
