@@ -118,10 +118,10 @@ def zscore(signal, inplace=True):
        [ 1.11974608,  1.08576948],
        [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
        sampling rate: 1000.0 Hz)>]
-    
+
     """
     # Transform input to a list
-    if type(signal) is not list:
+    if not isinstance(signal, list):
         signal = [signal]
 
     # Calculate mean and standard deviation
@@ -155,7 +155,6 @@ def zscore(signal, inplace=True):
 
 def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
                                scaleopt='unbiased'):
-
     r"""
     Computes unbiased estimator of the cross-correlation function.
 
@@ -331,8 +330,8 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     # Return neo.AnalogSignal
     cross_corr = neo.AnalogSignal(xcorr,
                                   units='',
-                                  t_start=tau[0]*signal.sampling_period,
-                                  t_stop=tau[-1]*signal.sampling_period,
+                                  t_start=tau[0] * signal.sampling_period,
+                                  t_stop=tau[-1] * signal.sampling_period,
                                   sampling_rate=signal.sampling_rate,
                                   dtype=float)
     return cross_corr
@@ -420,8 +419,8 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
     if filter_function not in available_filters:
         raise ValueError("Invalid `filter_function`: {filter_function}. "
                          "Available filters: {available_filters}".format(
-                          filter_function=filter_function,
-                          available_filters=available_filters))
+                             filter_function=filter_function,
+                             available_filters=available_filters))
     # design filter
     if hasattr(signal, 'sampling_rate'):
         fs = signal.sampling_rate.rescale(pq.Hz).magnitude
@@ -592,7 +591,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     if isinstance(freq, (list, tuple, np.ndarray)):
         freqs = np.asarray(freq)
     else:
-        freqs = np.array([freq,])
+        freqs = np.array([freq, ])
     if isinstance(freqs[0], pq.quantity.Quantity):
         freqs = [f.rescale('Hz').magnitude for f in freqs]
 
@@ -620,7 +619,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # perform wavelet transform by convoluting the signal with the wavelets
     if data.ndim == 1:
         data = np.expand_dims(data, 0)
-    data = np.expand_dims(data, data.ndim-1)
+    data = np.expand_dims(data, data.ndim - 1)
     data = np.fft.ifft(np.fft.fft(data, n) * wavelet_fts)
     signal_wt = data[..., 0:n_orig]
 
@@ -720,7 +719,7 @@ def hilbert(signal, N='nextpow'):
     n_org = signal.shape[0]
 
     # Right-pad signal to desired length using the signal itself
-    if type(N) == int:
+    if isinstance(N, int):
         # User defined padding
         n = N
     elif N == 'nextpow':
@@ -846,9 +845,11 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     if bin_duration is not None:
         # from bin duration, determine samples per bin and number of bins
         if isinstance(bin_duration, pq.Quantity):
-            samples_per_bin = int(np.round(
-                bin_duration.rescale('s')/signal.sampling_period.rescale('s')))
-            n_bins = int(np.ceil(signal.shape[0]/samples_per_bin))
+            samples_per_bin = int(
+                np.round(
+                    bin_duration.rescale('s') /
+                    signal.sampling_period.rescale('s')))
+            n_bins = int(np.ceil(signal.shape[0] / samples_per_bin))
         else:
             raise TypeError(
                 'bin_duration must be a Quantity: {}'.format(bin_duration))
@@ -875,10 +876,9 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
 
     else:
         # return an AnalogSignal with times corresponding to center of each bin
-        rauc_sig = neo.AnalogSignal(
-            rauc,
-            t_start=signal.t_start.rescale(bin_duration.units)+bin_duration/2,
-            sampling_period=bin_duration)
+        t_start = signal.t_start.rescale(bin_duration.units) + bin_duration / 2
+        rauc_sig = neo.AnalogSignal(rauc, t_start=t_start,
+                                    sampling_period=bin_duration)
         return rauc_sig
 
 
@@ -913,7 +913,7 @@ def derivative(signal):
 
     derivative_sig = neo.AnalogSignal(
         np.diff(signal.as_quantity(), axis=0) / signal.sampling_period,
-        t_start=signal.t_start+signal.sampling_period/2,
+        t_start=signal.t_start + signal.sampling_period / 2,
         sampling_period=signal.sampling_period)
 
     return derivative_sig

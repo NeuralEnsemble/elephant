@@ -131,7 +131,7 @@ html_theme_options = {
     'navbar_fixed_top': 'false',
     'source_link_position': 'none',
     'bootswatch_theme': 'spacelab',
-    }
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -214,13 +214,13 @@ numpydoc_show_class_members = False
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -357,4 +357,4 @@ def setup(app):
                 process_docstring_remove_copyright)
 
     # Add custom CSS to Sphinx Bootstrap theme
-    app.add_stylesheet("my-styles.css") # also can be a full URL
+    app.add_stylesheet("my-styles.css")  # also can be a full URL

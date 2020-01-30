@@ -1072,11 +1072,11 @@ def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None,
                 "    Found: %s, value %s" % (
                     type(spiketrain), str(spiketrain)))
         if t_start is None and not spiketrain.t_start == spiketrainlist[
-            0].t_start:
+                0].t_start:
             raise ValueError(
                 "the spike trains must have the same t_start!")
         if t_stop is None and not spiketrain.t_stop == spiketrainlist[
-            0].t_stop:
+                0].t_stop:
             raise ValueError(
                 "the spike trains must have the same t_stop!")
         if not spiketrain.units == spiketrainlist[0].units:

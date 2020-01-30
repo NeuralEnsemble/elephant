@@ -159,8 +159,9 @@ class Kernel(object):
             Vector with the result of the kernel evaluation.
 
         """
-        raise NotImplementedError("The Kernel class should not be used directly, "
-                                  "instead the subclasses for the single kernels.")
+        raise NotImplementedError(
+            "The Kernel class should not be used directly, "
+            "instead the subclasses for the single kernels.")
 
     def boundary_enclosing_area_fraction(self, fraction):
         """
@@ -420,10 +421,10 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         # Python's complex-operator cannot handle quantities, hence the
         # following construction on quantities is necessary:
         Delta_0 = complex(1.0 / (5.0 * self.sigma.magnitude**2), 0) / \
-                  self.sigma.units**2
+            self.sigma.units**2
         Delta_1 = complex(2.0 * np.sqrt(5.0) * fraction /
                           (25.0 * self.sigma.magnitude**3), 0) / \
-                  self.sigma.units**3
+            self.sigma.units**3
         C = ((Delta_1 + (Delta_1**2.0 - 4.0 * Delta_0**3.0)**(1.0 / 2.0)) /
              2.0)**(1.0 / 3.0)
         u_3 = complex(-1.0 / 2.0, -np.sqrt(3.0) / 2.0)

@@ -56,8 +56,9 @@ import numpy as np
 import quantities as pq
 
 
-def multiple_filter_test(window_sizes, spiketrain, t_final, alpha, n_surrogates,
-                         test_quantile=None, test_param=None, dt=None):
+def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
+                         n_surrogates, test_quantile=None, test_param=None,
+                         dt=None):
     """
     Detects change points.
 
@@ -189,8 +190,8 @@ def _brownian_motion(t_in, t_fin, x_in, dt):
     except ValueError:
         raise ValueError("dt must be a time quantity")
 
-    x = np.random.normal(0, np.sqrt(dt_sec), size=int((t_fin_sec - t_in_sec)
-                                                                     / dt_sec))
+    x = np.random.normal(0, np.sqrt(dt_sec),
+                         size=int((t_fin_sec - t_in_sec) / dt_sec))
     s = np.cumsum(x)
     return s + x_in
 
@@ -233,11 +234,11 @@ def _limit_processes(window_sizes, t_final, dt):
 
     for h in window_sizes_sec:
         # BM on [h,T-h], shifted in time t-->t+h
-        brownian_right = w[int(2 * h/dt_sec):]
+        brownian_right = w[int(2 * h / dt_sec):]
         # BM on [h,T-h], shifted in time t-->t-h
-        brownian_left = w[:int(-2 * h/dt_sec)]
+        brownian_left = w[:int(-2 * h / dt_sec)]
         # BM on [h,T-h]
-        brownian_center = w[int(h/dt_sec):int(-h/dt_sec)]
+        brownian_center = w[int(h / dt_sec):int(-h / dt_sec)]
 
         modul = np.abs(brownian_right + brownian_left - 2 * brownian_center)
         limit_process_h = modul / (np.sqrt(2 * h))
@@ -246,7 +247,7 @@ def _limit_processes(window_sizes, t_final, dt):
     return limit_processes
 
 
-def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
+def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt=None):
     """
     This function generates the threshold and the null parameters.
     The`_filter_process_h` has been proved to converge (for t_fin, h-->infinity)
@@ -333,7 +334,8 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt = None):
         #     # max over time of the limit process generated with window h
         #     m_h = np.max(simu[i])
         #     mh_star.append(m_h)
-        mh_star = [np.max(x) for x in simu]  # max over time of the limit process generated with window h
+        # max over time of the limit process generated with window h
+        mh_star = [np.max(x) for x in simu]
         maxima_matrix.append(mh_star)
 
     maxima_matrix = np.asanyarray(maxima_matrix)
@@ -486,7 +488,7 @@ def _filter_process(dt, h, spk, t_final, test_param):
     emp_var_h = test_param[2][test_param[0] == h]
 
     for t in time_domain:
-        filter_trajectrory.append(_filter(t*u, h, spk))
+        filter_trajectrory.append(_filter(t * u, h, spk))
 
     filter_trajectrory = np.asanyarray(filter_trajectrory)
     # ordered normalization to give each process the same impact on the max

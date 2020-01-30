@@ -49,7 +49,7 @@ def decorate_deprecated_N(func):
             warnings.warn("'N' is deprecated in '{func_name}' and will be "
                           "removed in the next Elephant release. Now 'N' is "
                           "extracted from the data shape.".format(
-                            func_name=func.__name__), DeprecationWarning)
+                              func_name=func.__name__), DeprecationWarning)
         return func(*args, **kwargs)
 
     return decorated_func
