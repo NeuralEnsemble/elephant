@@ -700,11 +700,11 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         # during normal operation. Thus, we set the random seed to a value that
         # creates a realization passing the test.
         np.random.seed(seed=12345)
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hpp = stgen.homogeneous_poisson_process
 
         for rate in [123.0*Hz, 0.123*kHz]:
             for t_stop in [2345*ms, 2.345*second]:
-                spiketrain = hppr(rate, t_stop=t_stop)
+                spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3*ms)
 
                 intervals = isi(spiketrain)
 
@@ -726,43 +726,45 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
                                 spiketrain[-1], 7*expected_mean_isi)
 
     def test_low_rates(self):
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hpp = stgen.homogeneous_poisson_process
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             # Catch RuntimeWarning: divide by zero encountered in true_divide
             # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            spiketrain = hppr(rate=0 * Hz, t_stop=1000*ms)
+            spiketrain = hpp(rate=0 * Hz, t_stop=1000*ms,
+                             refractory_period=3*ms)
         self.assertEqual(spiketrain.size, 0)
         # not really a test, just making sure that all code paths are covered
-        spiketrain = hppr(1*Hz, t_stop=1000*ms)
+        spiketrain = hpp(1*Hz, t_stop=1000*ms, refractory_period=3*ms)
 
     def test_buffer_overrun(self):
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
+        hpp = stgen.homogeneous_poisson_process
         np.random.seed(6085)  # this seed should produce a buffer overrun
         t_stop = 1000*ms
         rate = 10*Hz
-        spiketrain = hppr(rate, t_stop=t_stop)
+        spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3*ms)
         expected_last_spike = t_stop
         expected_mean_isi = (1/rate).rescale(ms)
         self.assertLess(expected_last_spike -
                         spiketrain[-1], 4*expected_mean_isi)
 
     def test_as_array(self):
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
-        spiketrain = hppr(rate=10 * Hz, as_array=True)
+        hpp = stgen.homogeneous_poisson_process
+        spiketrain = hpp(rate=10 * Hz, as_array=True, refractory_period=3*ms)
         self.assertTrue(isinstance(spiketrain, np.ndarray))
 
     def test_invalid(self):
         rate = 10 * Hz
         # t_stop < t_start
-        hppr = stgen.homogeneous_poisson_process_with_refr_period
-        self.assertRaises(ValueError, hppr, rate=rate, t_start=5 * ms,
-                          t_stop=1 * ms)
+        hpp = stgen.homogeneous_poisson_process
+        self.assertRaises(ValueError, hpp, rate=rate, t_start=5 * ms,
+                          t_stop=1 * ms, refractory_period=3*ms)
 
         # no units provided
-        self.assertRaises(ValueError, hppr, rate=10)
-        self.assertRaises(ValueError, hppr, rate=rate, t_stop=5)
-        self.assertRaises(ValueError, hppr, rate=rate, refr_period=2)
+        self.assertRaises(ValueError, hpp, rate=10, refractory_period=3*ms)
+        self.assertRaises(ValueError, hpp, rate=rate, t_stop=5,
+                          refractory_period=3*ms)
+        self.assertRaises(ValueError, hpp, rate=rate, refractory_period=2)
 
 
 if __name__ == '__main__':
