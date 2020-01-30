@@ -558,7 +558,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     # main function:
     units = pq.CompoundUnit(
-        "%s*s" % str(sampling_period.rescale('s').magnitude))
+        "{}*s".format(sampling_period.rescale('s').magnitude))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
         t_start = spiketrain.t_start
