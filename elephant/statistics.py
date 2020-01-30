@@ -59,21 +59,7 @@ import elephant.conversion as conv
 import elephant.kernels as kernels
 import warnings
 
-
-# TODO: insert example here
-def cv(*args, **kwargs):
-    """
-    Wrapper for `scipy.stats.variation` function.
-
-    Notes
-    -----
-    The wrapper was added for the convenience of former NeuroTools users.
-
-    Examples
-    --------
-
-    """
-    return scipy.stats.variation(*args, **kwargs)
+cv = scipy.stats.variation
 
 
 def isi(spiketrain, axis=-1):
