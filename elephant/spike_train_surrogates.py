@@ -703,7 +703,7 @@ class JointISI(object):
             return (array - array[0]) / (array[-1] - array[0])
         return np.zeros_like(array)
 
-    def dithering(self, n_surr=1):
+    def dithering(self, n_surrogates=1):
         """
         Implementation of Joint-ISI-dithering for spiketrains that pass the
         threshold of the dense rate, if not a uniform dithered spiketrain is
@@ -712,7 +712,7 @@ class JointISI(object):
 
         Parameters
         ----------
-        n_surr: int
+        n_surrogates: int
             The number of dithered spiketrains to be returned.
             Default: 1
 
@@ -723,7 +723,7 @@ class JointISI(object):
             `spiketrain`
         """
         if self.too_less_spikes:
-            return [self.spiketrain] * n_surr
+            return [self.spiketrain] * n_surrogates
 
         # Checks, whether the preprocessing is already done.
         if self._jisih_cumulatives is None:
@@ -731,7 +731,7 @@ class JointISI(object):
 
         dithered_sts = []
         isi_to_dither = self.isi
-        for _ in range(n_surr):
+        for _ in range(n_surrogates):
             dithered_isi = self._get_dithered_isi(isi_to_dither)
 
             dithered_st = self.spiketrain[0].magnitude + \

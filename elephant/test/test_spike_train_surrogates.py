@@ -324,7 +324,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         # Test fast version
         joint_isi_instance = surr.JointISI(st, dither=dither)
-        surrs = joint_isi_instance.dithering(n_surr=n_surr)
+        surrs = joint_isi_instance.dithering(n_surrogates=n_surr)
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
