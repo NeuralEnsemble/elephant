@@ -407,7 +407,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
 
     def interval_generator(size):
         return refractory_period_magnitude + \
-               np.random.exponential(1. / effective_rate_magnitude, size)
+            np.random.exponential(1. / effective_rate_magnitude, size)
 
     spiketrain = _homogeneous_process(interval_generator, rate,
                                       t_start - refractory_period, t_stop,
@@ -459,7 +459,7 @@ def inhomogeneous_poisson_process(rate, as_array=False):
     # Compute the rate profile at each spike time by interpolation
     rate_interpolated = _analog_signal_linear_interp(
         signal=rate, times=homogeneous_poiss.magnitude *
-                           homogeneous_poiss.units)
+        homogeneous_poiss.units)
     # Accept each spike at time t with probability rate(t)/max_rate
     u = np.random.uniform(size=len(homogeneous_poiss)) * max_rate
     spikes = homogeneous_poiss[u < rate_interpolated.flatten()]
@@ -779,8 +779,8 @@ def single_interaction_process(
             ((t_stop - t_start) * rate_c).rescale(pq.dimensionless))
         while True:
             coinc_times = t_start + \
-                          np.sort(np.random.random(n_coincidences)) * (
-                                      t_stop - t_start)
+                np.sort(np.random.random(n_coincidences)) * (
+                    t_stop - t_start)
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
     # coincidences == 'stochastic'
@@ -804,12 +804,12 @@ def single_interaction_process(
     # Replicate coinc_times n times, and jitter each event in each array by
     # +/- jitter (within (t_start, t_stop))
     embedded_coinc = coinc_times + \
-                     np.random.random(
-                         (
-                         len(rates_b), len(coinc_times))) * 2 * jitter - jitter
+        np.random.random(
+            (
+                len(rates_b), len(coinc_times))) * 2 * jitter - jitter
     embedded_coinc = embedded_coinc + \
-                     (t_start - embedded_coinc) * (embedded_coinc < t_start) - \
-                     (t_stop - embedded_coinc) * (embedded_coinc > t_stop)
+        (t_start - embedded_coinc) * (embedded_coinc < t_start) - \
+        (t_stop - embedded_coinc) * (embedded_coinc > t_stop)
 
     # Inject coincident events into the n SIP processes generated above, and
     # merge with the n independent processes
