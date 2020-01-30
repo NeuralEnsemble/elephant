@@ -1012,9 +1012,9 @@ def _significance_pruning_step(pre_pruning_assembly):
     Between two assemblies with the same unit set arranged into different
     configurations the most significant one is chosen.
 
-    Parameters:
+    Parameters
     ----------
-    assembly : list
+    pre_pruning_assembly : list
         contains the whole set of significant assemblies (unfiltered)
 
     Returns
