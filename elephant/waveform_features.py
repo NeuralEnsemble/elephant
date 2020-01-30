@@ -15,7 +15,7 @@ import numpy as np
 
 def waveform_width(waveform, cutoff=0.75):
     """
-    Calculate the width (through-to-peak TTP) of a waveform.
+    Calculate the width (trough-to-peak TTP) of a waveform.
 
     Searches for an index of a minimum within first `cutoff` of the waveform
     vector, next for a maximum after the identified minimum, and returns the
