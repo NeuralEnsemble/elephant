@@ -52,6 +52,10 @@ try:
 except ImportError:
     from .statistics import isi  # Convenience when in elephant working dir.
 
+# List of all available surrogate methods
+SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
+                'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering']
+
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
     """
@@ -394,7 +398,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
         Size of the time bins within which to randomise the spike times.
         Note: the last bin arrives until `spiketrain.t_stop` and might have
         width different from `binsize`.
-    n : int (optional)
+    n : int, optional
         Number of surrogates to be generated.
         Default: 1
 
@@ -967,13 +971,17 @@ def surrogates(
         'joint_isi_dithering': None}
 
     if surr_method not in surrogate_types.keys():
-        raise ValueError('specified surr_method (=%s) not valid' % surr_method)
+        raise AttributeError(
+            'specified surr_method (=%s) not valid' % surr_method)
 
-    if surr_method in ['dither_spike_train', 'dither_spikes', 'jitter_spikes']:
+    if surr_method in ['dither_spike_train', 'dither_spikes']:
         return surrogate_types[surr_method](
             spiketrain, dt, n=n, decimals=decimals, edges=edges)
     elif surr_method in ['randomise_spikes', 'shuffle_isis']:
         return surrogate_types[surr_method](
             spiketrain, n=n, decimals=decimals)
+    elif surr_method == 'jitter_spikes':
+        return surrogate_types[surr_method](
+            spiketrain, dt, n=n)
     elif surr_method == 'joint_isi_dithering':
         return JointISI(spiketrain).dithering(n)
