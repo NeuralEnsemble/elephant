@@ -4,9 +4,11 @@ Definition of a hierarchy of classes for kernel functions to be used
 in convolution, e.g., for data smoothing (low pass filtering) or
 firing rate estimation.
 
-Examples of usage:
-    >>> kernel1 = kernels.GaussianKernel(sigma=100*ms)
-    >>> kernel2 = kernels.ExponentialKernel(sigma=8*mm, invert=True)
+Examples
+--------
+>>> import quantities as pq
+>>> kernel1 = GaussianKernel(sigma=100*pq.ms)
+>>> kernel2 = ExponentialKernel(sigma=8*pq.mm, invert=True)
 
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -14,46 +16,19 @@ Examples of usage:
 
 from __future__ import division, print_function, unicode_literals
 
-import quantities as pq
 import numpy as np
+import quantities as pq
 import scipy.special
 
 
-def inherit_docstring(fromfunc, sep=""):
-    """
-    Decorator: Copy the docstring of `fromfunc`.
-
-    Parameters
-    ----------
-    fromfunc: callable
-        Function that will have the docstring copied from
-    sep: str, optional
-        Separator used to concatenate docstrings.
-        Default: "".
-
-    References
-    ----------
-    .. [1] http://stackoverflow.com/questions/13741998/is-there-a-way-to-let-classes-inherit-the-documentation-of-their-superclass-with
-
-    """
-    def _decorator(func):
-        parent_doc = fromfunc.__doc__
-        if func.__doc__ is None:
-            func.__doc__ = parent_doc
-        else:
-            func.__doc__ = sep.join([parent_doc, func.__doc__])
-        return func
-    return _decorator
-
-
 class Kernel(object):
-    """
+    r"""
     This is the base class for commonly used kernels.
 
     General definition of kernel:
     A function :math:`K(x, y)` is called a kernel function if
-    :math:`\\int K(x, y) g(x) g(y)\\ \\textrm{d}x\\ \\textrm{d}y
-    \\ \\geq 0\\ \\ \\ \\forall\\ g \\in L_2`
+    :math:`\int{K(x, y) g(x) g(y) \textrm{d}x \textrm{d}y} \ \geq 0 \quad
+    \forall g \in L_2`
 
     Currently implemented kernels are:
         - rectangular
@@ -79,13 +54,15 @@ class Kernel(object):
     invert: bool, optional
         If True, asymmetric kernels (e.g., exponential or alpha kernels) are
         inverted along the time axis.
-        Default: False.
+        Default: False
 
     Raises
     ------
     TypeError
         If `sigma` is not `pq.Quantity`.
+
         If `sigma` is negative.
+
         If `invert` is not `bool`.
 
     """
@@ -288,22 +265,24 @@ class SymmetricKernel(Kernel):
         return True
 
 
-# TODO: Danylo will take a look on docstrings of new class attributes/
-# properties (e.g., min_cutoff)
 class RectangularKernel(SymmetricKernel):
-    """
+    r"""
     Class for rectangular kernels.
 
     .. math::
-        K(t) = \\left\\{\\begin{array}{ll} \\frac{1}{2 \\tau}, & |t| < \\tau \\\\
-        0, & |t| \\geq \\tau \\end{array} \\right.
+        K(t) = \left\{\begin{array}{ll} \frac{1}{2 \tau}, & |t| < \tau \\\
+        0, & |t| \geq \tau \end{array} \right.
 
-    with :math:`\\tau = \\sqrt{3} \\sigma` corresponding to the half width
+    with :math:`\tau = \sqrt{3} \sigma` corresponding to the half width
     of the kernel.
 
     Besides the standard deviation `sigma`, for consistency of interfaces the
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
+
+    Attributes
+    ----------
+    min_cutoff : float
 
     """
     @property
@@ -311,12 +290,10 @@ class RectangularKernel(SymmetricKernel):
         min_cutoff = np.sqrt(3.0)
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (0.5 / (np.sqrt(3.0) * self._sigma_scaled)) * \
                (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
 
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return np.sqrt(3.0) * self.sigma * fraction
@@ -338,20 +315,22 @@ class TriangularKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
+    Attributes
+    ----------
+    min_cutoff : float
+
     """
     @property
     def min_cutoff(self):
         min_cutoff = np.sqrt(6.0)
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (1.0 / (np.sqrt(6.0) * self._sigma_scaled)) * np.maximum(
             0.0,
             (1.0 - (np.absolute(t) /
                     (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
 
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return np.sqrt(6.0) * self.sigma * (1 - np.sqrt(1 - fraction))
@@ -378,6 +357,10 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
+    Attributes
+    ----------
+    min_cutoff : float
+
     References
     ----------
     .. [1] https://de.wikipedia.org/wiki/Epanechnikov-Kern
@@ -388,15 +371,16 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         min_cutoff = np.sqrt(5.0)
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (3.0 / (4.0 * np.sqrt(5.0) * self._sigma_scaled)) * np.maximum(
             0.0,
             1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
 
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         """
+        Refer to :func:`Kernel.boundary_enclosing_area_fraction` for the
+        documentation.
+
         Notes
         -----
         For Epanechnikov-like kernels, integration of its density within
@@ -446,18 +430,20 @@ class GaussianKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
+    Attributes
+    ----------
+    min_cutoff : float
+
     """
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (1.0 / (np.sqrt(2.0 * np.pi) * self._sigma_scaled)) * np.exp(
             -0.5 * (t / self._sigma_scaled).magnitude ** 2)
 
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return self.sigma * np.sqrt(2.0) * scipy.special.erfinv(fraction)
@@ -476,18 +462,20 @@ class LaplacianKernel(SymmetricKernel):
     parameter `invert` needed for asymmetric kernels also exists without
     having any effect in the case of symmetric kernels.
 
+    Attributes
+    ----------
+    min_cutoff : float
+
     """
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         return (1 / (np.sqrt(2.0) * self._sigma_scaled)) * np.exp(
             -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
 
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return -self.sigma * np.log(1.0 - fraction) / np.sqrt(2.0)
@@ -508,13 +496,16 @@ class ExponentialKernel(Kernel):
 
     with :math:`\\tau = \\sigma`.
 
+    Attributes
+    ----------
+    min_cutoff : float
+
     """
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         if not self.invert:
             kernel = (t >= 0) * (1. / self._sigma_scaled.magnitude) *\
@@ -524,7 +515,6 @@ class ExponentialKernel(Kernel):
                 np.exp((t / self._sigma_scaled).magnitude) / t.units
         return kernel
 
-    @inherit_docstring(Kernel.boundary_enclosing_area_fraction)
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return -self.sigma * np.log(1.0 - fraction)
@@ -547,13 +537,16 @@ class AlphaKernel(Kernel):
     determined by kernel-approximating numerical integration, inherited
     from the `Kernel` class.
 
+    Attributes
+    ----------
+    min_cutoff : float
+
     """
     @property
     def min_cutoff(self):
         min_cutoff = 3.0
         return min_cutoff
 
-    @inherit_docstring(Kernel._evaluate)
     def _evaluate(self, t):
         if not self.invert:
             kernel = (t >= 0) * 2. * (t / self._sigma_scaled**2).magnitude *\
