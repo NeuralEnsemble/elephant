@@ -1068,4 +1068,3 @@ def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None,
         if not spiketrain.units == spiketrainlist[0].units:
             raise ValueError(
                 "the spike trains must have the same units!")
-    return None

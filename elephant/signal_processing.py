@@ -13,7 +13,6 @@ import neo
 import numpy as np
 import quantities as pq
 import scipy.signal
-import scipy.signal
 
 
 def zscore(signal, inplace=True):
@@ -148,9 +147,8 @@ def zscore(signal, inplace=True):
 
     # Return single object, or list of objects
     if len(signal_ztransofrmed) == 1:
-        return signal_ztransofrmed[0]
-    else:
-        return signal_ztransofrmed
+        signal_ztransofrmed = signal_ztransofrmed[0]
+    return signal_ztransofrmed
 
 
 def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
