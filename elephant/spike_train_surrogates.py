@@ -45,11 +45,12 @@ Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 
 from __future__ import division, print_function, unicode_literals
 
+import random
+
+import neo
 import numpy as np
 import quantities as pq
-import neo
 from scipy.ndimage import gaussian_filter
-import random
 
 try:
     import elephant.statistics as es
@@ -271,7 +272,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
         # Create list of surrogate spike trains by random ISI permutation
         sts = []
-        for i in range(n):
+        for surrogate_id in range(n):
             surr_times = np.cumsum(np.random.permutation(ISIs)) * \
                 spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
@@ -474,7 +475,7 @@ class JointISI(object):
     as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).
 
     When creating a class instance, all necessary preprocessing steps are done
-    to use the method dithering().
+    to use :func:`JointISI.dithering` method.
 
     Parameters
     ----------
@@ -534,10 +535,6 @@ class JointISI(object):
     max_change_isi : np.ndarray or float:
         The corresponding ISI for each index in :attr:`max_change_index`.
 
-    Methods
-    ----------
-    dithering()
-        Returns a list of dithered spiketrains.
     """
 
     # The min number of spikes, required for dithering.
@@ -556,9 +553,6 @@ class JointISI(object):
                  cutoff=True,
                  refr_period=4. * pq.ms
                  ):
-        """
-
-        """
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
         self.num_bins = num_bins
@@ -586,21 +580,21 @@ class JointISI(object):
         self.max_change_index = self.isi_to_index(self.dither)
         self.max_change_isi = self.index_to_isi(self.max_change_index)
 
-    def get_magnitude(self, x):
+    def get_magnitude(self, quantity):
         """
         Parameters
         ----------
-        x : pq.Quantity or float
+        quantity: pq.Quantity or float
 
         Returns
         -------
         float
-            The magnitude of `x`, rescaled to the units of the input
+            The magnitude of `quantity`, rescaled to the units of the input
             :attr:`spiketrain`.
         """
-        if isinstance(x, pq.Quantity):
-            return x.rescale(self.unit).magnitude
-        return x
+        if isinstance(quantity, pq.Quantity):
+            return quantity.rescale(self.unit).magnitude
+        return quantity
 
     @property
     def too_less_spikes(self):
@@ -687,8 +681,8 @@ class JointISI(object):
                 start_index = self.isi_to_index(self.refr_period)
                 joint_isi_histogram[
                     start_index:, start_index:] = gaussian_filter(
-                    joint_isi_histogram[start_index:, start_index:],
-                    sigma=self.sigma / self.bin_width)
+                        joint_isi_histogram[start_index:, start_index:],
+                        sigma=self.sigma / self.bin_width)
                 joint_isi_histogram[:start_index, :] = 0
                 joint_isi_histogram[:, :start_index] = 0
             else:
@@ -717,7 +711,7 @@ class JointISI(object):
             return (array - array[0]) / (array[-1] - array[0])
         return np.zeros_like(array)
 
-    def dithering(self, n_surr=1):
+    def dithering(self, n_surrogates=1):
         """
         Implementation of Joint-ISI-dithering for spike trains that pass the
         threshold of the dense rate. If not, a uniform dithered spike train is
@@ -726,8 +720,8 @@ class JointISI(object):
 
         Parameters
         ----------
-        n_surr: int
-            The number of dithered spike trains to be returned.
+        n_surrogates: int
+            The number of dithered spiketrains to be returned.
             Default: 1
 
         Returns
@@ -737,7 +731,7 @@ class JointISI(object):
             :attr:`spiketrain`
         """
         if self.too_less_spikes:
-            return [self.spiketrain] * n_surr
+            return [self.spiketrain] * n_surrogates
 
         # Checks, whether the preprocessing is already done.
         if self._jisih_cumulatives is None:
@@ -745,7 +739,7 @@ class JointISI(object):
 
         dithered_sts = []
         isi_to_dither = self.isi
-        for surr_number in range(n_surr):
+        for _ in range(n_surrogates):
             dithered_isi = self._get_dithered_isi(isi_to_dither)
 
             dithered_st = self.spiketrain[0].magnitude + \
@@ -945,11 +939,11 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
     if surr_method in ['dither_spike_train', 'dither_spikes']:
         return surrogate_types[surr_method](
             spiketrain, dt, n=n, decimals=decimals, edges=edges)
-    elif surr_method in ['randomise_spikes', 'shuffle_isis']:
+    if surr_method in ['randomise_spikes', 'shuffle_isis']:
         return surrogate_types[surr_method](
             spiketrain, n=n, decimals=decimals)
     elif surr_method == 'jitter_spikes':
         return surrogate_types[surr_method](
             spiketrain, dt, n=n)
-    elif surr_method == 'joint_isi_dithering':
-        return JointISI(spiketrain).dithering(n)
+    # surr_method == 'joint_isi_dithering':
+    return JointISI(spiketrain).dithering(n)
