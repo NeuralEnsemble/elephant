@@ -96,17 +96,16 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
           alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns'):
     r"""
-    Perform the SPADE [1,2] analysis for the parallel spike trains given in the
-    input. The spiketrains are discretized with a temporal resolution equal
-    binsize in a sliding window of winlen*binsize milliseconds.
+    Perform the SPADE [1-3] analysis for the parallel input `spiketrains`.
+    They are discretized with a temporal resolution equal to
+    `binsize` in a sliding window of `winlen*binsize`.
 
-    First, spike patterns are mined from the spiketrains using a technique
-    termed frequent itemset mining (FIM) or formal concept analysis (FCA). In
-    this framework, a particular spatio-temporal spike pattern is termed a
-    "concept". It is then possible to compute the stability and the signature
-    significance of all pattern candidates. In a final step, it is possible to
-    select a stability threshold and the significance level to select only
-    stable/significant concepts.
+    First, spike patterns are mined from the `spiketrains` using a technique
+    called frequent itemset mining (FIM) or formal concept analysis (FCA). In
+    this framework, a particular spatio-temporal spike pattern is called a
+    "concept". It is then possible to compute the stability and the p-value
+    of all pattern candidates. In a final step, concepts are filtered
+    according to a stability threshold and a significance level `alpha`.
 
     Parameters
     ----------
@@ -138,38 +137,36 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
         Default: 1
     approx_stab_pars: dict or None, optional
         Parameter values for approximate stability computation.
-        Pass a dictionary containing at least 'n_subsets' to prompt
-        the computation:
 
-        n_subsets: int
+        'n_subsets': int
             Number of subsets of a concept used to approximate its stability.
-            If n_subset is set to 0 the stability is not computed. If, however,
-            for parameters delta and epsilon (see below) delta + epsilon == 0,
-            then an optimal n_subsets is calculated according to the formula
+            If `n_subsets` is 0, it is calculated according to to the formula
             given in Babin, Kuznetsov (2012), proposition 6:
 
-             .. math::
-                    n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
+            .. math::
+                   n_{\text{subset}} = \frac{1}{2 \cdot \epsilon^2}
+                    \ln{\left( \frac{2}{\delta} \right)} +1
 
-        delta: float
-            Probability with at least :math:`1-\delta`
-            Default: 0
-        epsilon: float
-            Absolute error
-            Default: 0
-        stability_thresh: None or list of float
+        'delta': float, optional
+            delta: probability with at least :math:`1-\delta`
+        'epsilon': float, optional
+            epsilon: absolute error
+        'stability_thresh': None or list of float
             List containing the stability thresholds used to filter the
             concepts.
-            If stab_thr is None, then the concepts are not filtered. Otherwise,
-            only concepts with intensional stability > stab_thr[0] or
-            extensional stability > stab_thr[1] are returned and used for
-            further analysis within SPADE.
-            Default: None
+            If `stability_thresh` is None, then the concepts are not filtered.
+            Otherwise, only concepts with
+
+            intensional stability is greater than `stability_thresh[0]` or
+
+            extensional stability is greater than `stability_thresh[1]`
+
+            are further analyzed.
     n_surr: int, optional
         Number of surrogates to generate to compute the p-value spectrum.
-        This number should be large (n_surr>=1000 is recommended for 100
-        spike trains in *sts*). If n_surr is 0, then the p-value spectrum is
-        not computed.
+        This number should be large (`n_surr >= 1000` is recommended for 100
+        spike trains in `spiketrains`). If `n_surr == 0`, then the p-value
+        spectrum is not computed.
         Default: 0
     dither: pq.Quantity, optional
         Amount of spike time dithering for creating the surrogates for
@@ -193,30 +190,8 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
         signature in the p-value spectrum.
         Default: None
     stat_corr: str
-        Method used for testing and adjustment of pvalues.
-        Can be either the full name or initial letters.
-        Available methods are:
-            'bonferroni' : one-step correction
-
-            'sidak' : one-step correction
-
-            'holm-sidak' : step down method using Sidak adjustments
-
-            'holm' : step-down method using Bonferroni adjustments
-
-            'simes-hochberg' : step-up method (independent)
-
-            'hommel' : closed method based on Simes tests (non-negative)
-
-            'fdr_bh' : Benjamini/Hochberg (non-negative)
-
-            'fdr_by' : Benjamini/Yekutieli (negative)
-
-            'fdr_tsbh' : two stage fdr correction (non-negative)
-
-            'fdr_tsbky' : two stage fdr correction (non-negative)
-
-            '' or 'no': no statistical correction
+        Method used for multiple testing.
+        See: :func:`test_signature_significance`
         Default: 'fdr_bh'
     surr_method: str
         Method to generate surrogates. You can use every method defined in
@@ -237,40 +212,35 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     Returns
     -------
     output : dict
-        Dictionary containing the following keys:
-
         'patterns':
-            If `output_format` is 'patterns', then `output['patterns']` is a
-            list of dictionaries. Each dictionary corresponds to a pattern
-            and has the following keys:
-                'neurons': array containing the indices of the neurons of the
-                    pattern.
-                'lags': array containing the lags (integers corresponding to
-                    the number of bins) between the spikes of the patterns.
-                    The first lag is always assumed to be 0 and corresponds
-                    to the first spike ['times'] array containing the
-                    times.
-                'signature': tuple containing two integers:
-                    (number of spikes of the patterns,
-                    number of occurrences of the pattern)
-                'pvalue': the p-value corresponding to the pattern.
-                    If n_surr==0 the p-values are set to 0.0.
+            If `output_format` is 'patterns', see the return of
+            :func:`concept_output_to_patterns`
 
             If `output_format` is 'concepts', then `output['patterns']` is a
             tuple of patterns which in turn are tuples of
-             1. element spikes in the pattern, occurrences of the pattern).
-             2. element: occurrences of the pattern
+             1. spikes in the pattern
+
+             2. occurrences of the pattern
+
              For details see :func:`concepts_mining`.
-             if stability is calculated
-             3. element: intensional stability
-             4. element: extensional stability
+
+             if stability is calculated, there are also:
+
+             3. intensional stability
+
+             4. extensional stability
+
              For details see :func:`approximate_stability`.
 
+        'pvalue_spectrum' (only if `n_surr > 0`):
+            A list of signatures in tuples format:
+             * size
 
-        'pvalue_spectrum' (only if `n_surr > 0` and `n_subsets == 0`):
-            A list of signatures in tuples format
-            (size, number of occurrences, duration (only if spectrum=='3d#'),
-            corresponding p-value).
+             * number of occurrences
+
+             * duration (only if `spectrum=='3d#'`)
+
+             * p-value
 
         'non_sgnf_sgnt': list
             Non significant signatures of 'pvalue_spectrum'.
@@ -278,18 +248,6 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     Notes
     -----
     If detected, this function will use MPI to parallelize the analysis.
-
-    Example
-    -------
-    The following applies SPADE to spiketrains (list of neo.SpikeTrain). These
-    calls do not include the statistical testing (for details see the
-    documentation of spade.spade())
-
-    >>> from elephant.spade import spade
-    >>> import quantities as pq
-    >>> binsize = 3 * pq.ms # time resolution to discretize the spiketrains
-    >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
-    >>> result_spade = spade(spiketrains, binsize, winlen)
 
     References
     ----------
@@ -301,8 +259,20 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
      Parallel Spike Train Data with SPADE.
      Frontiers in Computational Neuroscience, 11.
     [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019).
-    3d-SPADE: Significance evaluation of spatio-temporal patterns of various
-    temporal extents. Biosystems, 185, 104022.
+     3d-SPADE: Significance evaluation of spatio-temporal patterns of various
+     temporal extents. Biosystems, 185, 104022.
+
+    Examples
+    --------
+    The following example applies SPADE to `spiketrains` (list of
+    `neo.SpikeTrain`).
+
+    >>> from elephant.spade import spade
+    >>> import quantities as pq
+    >>> binsize = 3 * pq.ms # time resolution to discretize the spiketrains
+    >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
+    >>> result_spade = spade(spiketrains, binsize, winlen)
+
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -1518,6 +1488,8 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
             'fdr_tsbky' : two stage fdr correction (non-negative)
 
             '' or 'no': no statistical correction
+        For further description see:
+        https://www.statsmodels.org/stable/generated/statsmodels.stats.multitest.multipletests.html
         Default: 'fdr_bh'
 
     report: {'spectrum', 'significant', 'non_significant'}, optional
@@ -1660,14 +1632,13 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         neuron, the entry `[0, winlen]` to the first bin of the first window
         position for the second neuron.
     n_subsets: int
-        Number of subsets of a concept used to approximate its stability. If
-        n_subset is set to 0 the stability is not computed. If, however,
-        for parameters delta and epsilon (see below) delta + epsilon > 0,
-        then an optimal n_subsets is calculated according to the formula given
-        in Babin, Kuznetsov (2012), proposition 6:
+        Number of subsets of a concept used to approximate its stability.
+        If `n_subsets` is 0, it is calculated according to to the formula
+        given in Babin, Kuznetsov (2012), proposition 6:
 
         .. math::
-               n_subset = frac{1}{2\eps^2} \ln(frac{2}{\delta}) +1
+               n_{\text{subset}} = \frac{1}{2 \cdot \epsilon^2}
+                \ln{\left( \frac{2}{\delta} \right)} +1
         Default: 0
     delta: float, optional
         delta: probability with at least :math:`1-\delta`
@@ -1859,9 +1830,11 @@ def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
     the support of A, by either of:
 
     * subset filtering: any pattern B is discarded if *concepts* contains a
-      superset A of B such that :math:`(z_B, c_B - c_A + h) \in ns\_signatures`
+      superset A of B such that
+      :math:`(z_B, c_B - c_A + h) \in \text{ns}_{\text{signatures}}`
     * superset filtering: any pattern A is discarded if *concepts* contains a
-      subset B of A such that :math:`(z_A - z_B + k, c_A) \in ns\_signatures`
+      subset B of A such that
+      :math:`(z_A - z_B + k, c_A) \in \text{ns}_{\text{signatures}}`
     * covered-spikes criterion: for any two patterns A, B with
       :math:`A \subset B`, B is discarded if
       :math:`(z_B-l) \cdot c_B \le c_A \cdot (z_A - l)`, A is discarded
@@ -1873,8 +1846,11 @@ def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
 
     For any two patterns A and B in concepts_psf such that :math:`B \subset A`,
     check:
-    1) :math:`(z_B, c_B - c_A + h) \in ns\_signatures`, and
-    2) :math:`(z_A - z_B + k, c_A) \in ns\_signatures`.
+
+    1) :math:`(z_B, c_B - c_A + h) \in \text{ns}_{\text{signatures}}`, and
+
+    2) :math:`(z_A - z_B + k, c_A) \in \text{ns}_{\text{signatures}}`.
+
     Then:
 
     * if 1) and not 2): discard B
@@ -1891,8 +1867,8 @@ def pattern_set_reduction(concepts, ns_signatures, winlen, spectrum,
           account for all occurrences of the other one if it passes the
           filtering
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     concepts: list
         List of concepts, each consisting in its intent and extent
     ns_signatures: list
@@ -2185,7 +2161,7 @@ def concept_output_to_patterns(concepts, winlen, binsize, pv_spec=None,
         t_start of the analyzed spike trains
 
     Returns
-    --------
+    -------
     output : list
         List of dictionaries. Each dictionary corresponds to a pattern and
         has the following entries:
