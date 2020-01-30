@@ -24,7 +24,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         If `hilbert_transform` is only one signal, all spike trains are
         compared to this signal. Otherwise, length of `hilbert_transform` must
         match the length of `spiketrains`.
-    spiketrains : `neo.SpikeTrain` or list of `neo.SpikeTrain`
+    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
         Spike trains on which to trigger `hilbert_transform` extraction.
     interpolate : bool
         If True, the phases and amplitudes of `hilbert_transform` for spikes
