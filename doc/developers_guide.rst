@@ -19,22 +19,22 @@ Mailing lists
 General discussion of Elephant development takes place in the `NeuralEnsemble Google
 group`_.
 
-Discussion of issues specific to a particular ticket in the issue tracker should
-take place on the tracker.
+Discussion of issues should take place on the :ref:`issue_tracker`.
 
+
+.. _issue_tracker:
 
 Using the issue tracker
 -----------------------
 
-If you find a bug in Elephant, please create a new ticket on the `issue tracker`_,
-setting the type to "defect".
+If you find a bug in Elephant, please create a new ticket on the `Github issue tracker <https://github.com/NeuralEnsemble/elephant/issues>`_.
 Choose a name that is as specific as possible to the problem you've found, and
 in the description give as much information as you think is necessary to
 recreate the problem. The best way to do this is to create the shortest possible
 Python script that demonstrates the problem, and attach the file to the ticket.
 
 If you have an idea for an improvement to Elephant, create a ticket with type
-"enhancement". If you already have an implementation of the idea, open a pull request.
+"enhancement". If you already have an implementation of the idea, open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
 
 
 Requirements
@@ -60,20 +60,11 @@ Now you need to make sure that the ``elephant`` package is on your PYTHONPATH.
 You can do this by installing Elephant::
 
     $ cd elephant
-    $ python setup.py install
-    $ python3 setup.py install
-
-but if you do this, you will have to re-run ``setup.py install`` any time you make
-changes to the code. A better solution is to install Elephant with the *develop* option,
-this avoids reinstalling when there are changes in the code::
-
-    $ python setup.py develop
-
-or::
-
     $ pip install -e .
 
-To update to the latest version from the repository::
+The ``pip install -e .`` command allows you to follow the development branch as it changes by creating links in the right places and installing the command line scripts to the appropriate locations.
+
+Then, if you want to update Elephant at any time, in the same directory do::
 
     $ git pull
 
@@ -122,7 +113,7 @@ documentation system. To build the documentation::
     $ cd elephant/doc
     $ make html
     
-Then open `some/directory/elephant/doc/_build/html/index.html` in your browser.
+Then open ``_build/html/index.html`` in your browser.
 Docstrings should conform to the `NumPy docstring standard`_.
 
 To check that all example code in the documentation is correct, run::
@@ -169,8 +160,8 @@ If in doubt, `Porting to Python 3`_ by Lennart Regebro is an excellent resource.
 The most important thing to remember is to run tests with at least one version
 of Python 2 and at least one version of Python 3. There is generally no problem
 in having multiple versions of Python installed on your computer at once: e.g.,
-on Ubuntu Python 2 is available as `python` and Python 3 as `python3`, while
-on Arch Linux Python 2 is `python2` and Python 3 `python`. See `PEP394`_ for
+on Ubuntu Python 2 is available as ``python`` and Python 3 as ``python3``, while
+on Arch Linux Python 2 is ``python2`` and Python 3 ``python``. See `PEP394`_ for
 more on this.
 
 
@@ -178,41 +169,35 @@ Coding standards and style
 --------------------------
 
 All code should conform as much as possible to `PEP 8`_, and should run with
-Python 2.7 and 3.2-3.5.
+Python 2.7 and 3.x
 
 
 Making a release (maintainers only)
 -----------------------------------
 
-.. TODO: discuss branching/tagging policy.
+1. Increment the Elephant package version in :file:`elephant/VERSION`.
 
-.. Add a section in /doc/release_notes.rst for the release.
+2. Add a section in :file:`doc/release_notes.rst`, describing in short the changes made from the previous release.
 
-1. Increment the Elephant package version in :file:`elephant/VERSION`, if necessary.
+3. Check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
 
-2. Check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
+4. If there is a new module do not forget to add the modulename to the :file:`doc/modules.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`.
 
-3. If there is a new module do not forget to add the modulename to the :file:`doc/modules.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`.
+To build a source package (see `Packaging Python Projects <https://packaging.python.org/tutorials/packaging-projects/#generating-distribution-archives>`_)::
 
-To build a source package::
-
+    $ pip install --user --upgrade twine
     $ python setup.py sdist
 
 To upload the package to `PyPI`_ (if you have the necessary permissions)::
 
-    $ python setup.py sdist upload
-
-.. should we also distribute via software.incf.org
+    $ python -m twine upload dist/elephant-x.x.x.tar.gz
 
 Finally, tag the release in the Git repository and push it::
 
     $ git tag <version>
     $ git push --tags upstream
 
-Here, version should be of the form `vX.Y.Z`.
-
-.. make a release branch
-
+Here, version should be of the form ``vX.Y.Z``.
 
 
 .. _Python: http://www.python.org
@@ -220,7 +205,6 @@ Here, version should be of the form `vX.Y.Z`.
 .. _neo: http://neuralensemble.org/neo
 .. _coverage: http://nedbatchelder.com/code/coverage/
 .. _`PEP 8`: http://www.python.org/dev/peps/pep-0008/
-.. _`issue tracker`: https://github.com/NeuralEnsemble/elephant/issues
 .. _`Porting to Python 3`: http://python3porting.com/
 .. _`NeuralEnsemble Google group`: http://groups.google.com/group/neuralensemble
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
