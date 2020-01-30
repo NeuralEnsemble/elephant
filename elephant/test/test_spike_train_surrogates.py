@@ -342,7 +342,7 @@ class SurrogatesTestCase(unittest.TestCase):
                                            method='window',
                                            dither=2*dither,
                                            num_bins=50)
-        surrs = joint_isi_instance.dithering(n_surr=n_surr)
+        surrs = joint_isi_instance.dithering(n_surrogates=n_surr)
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
