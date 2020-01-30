@@ -93,7 +93,7 @@ except ImportError:  # pragma: no cover
 def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
           max_spikes=None, max_occ=None, min_neu=1, approx_stab_pars=None,
           n_surr=0, dither=15 * pq.ms, spectrum='#',
-          alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
+          alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns'):
     r"""
     Perform the SPADE [1,2] analysis for the parallel spike trains given in the
@@ -186,12 +186,12 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             (number of spikes, number of occurrence, difference between last
             and first spike of the pattern)
         Default: '#'
-    alpha: float
-        The significance level of the hypothesis tests performed. If
-        `alpha == 1`, all the concepts are returned. If `0<alpha<1`, the
-        concepts are filtered according to their signature in the p-value
-        spectrum.
-        Default: 1
+    alpha: float, optional
+        The significance level of the hypothesis tests performed.
+        If `alpha is None`, all the concepts are returned.
+        If `0.<alpha<1.`, the concepts are filtered according to their
+        signature in the p-value spectrum.
+        Default: None
     stat_corr: str
         Method used for testing and adjustment of pvalues.
         Can be either the full name or initial letters.
@@ -372,7 +372,7 @@ def spade(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
     ns_signatures = []
     # Decide whether filter concepts with psf
     if n_surr > 0:
-        if len(pv_spec) > 0:
+        if len(pv_spec) > 0 and alpha is not None:
             # Computing non-significant entries of the spectrum applying
             # the statistical correction
             ns_signatures = test_signature_significance(
@@ -409,7 +409,7 @@ def _check_input(
         spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
         max_spikes=None, max_occ=None, min_neu=1, approx_stab_pars=None,
         n_surr=0, dither=15 * pq.ms, spectrum='#',
-        alpha=1, stat_corr='fdr_bh', surr_method='dither_spikes',
+        alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
         psr_param=None, output_format='patterns'):
     """
     Checks all input given to SPADE
@@ -488,13 +488,13 @@ def _check_input(
         raise ValueError("spectrum must be '#' or '3d#'")
 
     # Check alpha
-    if not isinstance(alpha, (int, float)):
-        raise ValueError('alpha must be an integer or a float')
-
-    # Check redundant use of alpha
-    if 0 < alpha < 1 and n_surr == 0:
-        warnings.warn('0<alpha<1 but p-value spectrum has not been '
-                      'computed (n_surr==0)')
+    if isinstance(alpha, (int, float)):
+        # Check redundant use of alpha
+        if 0. < alpha < 1. and n_surr == 0:
+            warnings.warn('0.<alpha<1. but p-value spectrum has not been '
+                          'computed (n_surr==0)')
+    elif alpha is not None:
+        raise ValueError('alpha must be an integer, a float or None')
 
     # Check stat_corr:
     if stat_corr not in \
