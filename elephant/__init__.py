@@ -22,13 +22,13 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               spade,
                cell_assembly_detection,
                waveform_features)
 
 try:
     from . import pandas_bridge
     from . import asset
+    from . import spade
 except ImportError:
     # requirements-extras are missing
     pass

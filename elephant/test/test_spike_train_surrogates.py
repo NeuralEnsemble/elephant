@@ -289,7 +289,7 @@ class SurrogatesTestCase(unittest.TestCase):
         surrs = surr.surrogates(st, dt=3 * pq.ms, n=nr_surr,
                                 surr_method='shuffle_isis', edges=False)
 
-        self.assertRaises(ValueError, surr.surrogates, st, n=1,
+        self.assertRaises(AttributeError, surr.surrogates, st, n=1,
                           surr_method='spike_shifting',
                           dt=None, decimals=None, edges=True)
         self.assertTrue(len(surrs) == nr_surr)
