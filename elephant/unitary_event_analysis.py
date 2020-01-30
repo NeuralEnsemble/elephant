@@ -678,7 +678,8 @@ def jointJ_window_analysis(
         method='analytic_TrialByTrial', t_start=None,
         t_stop=None, binary=True, n_surr=100):
     """
-    Calculates the joint surprise in a sliding window fashion (see :cite:`unitary_event_analysis-Gruen99_67`).
+    Calculates the joint surprise in a sliding window fashion (see
+    :cite:`unitary_event_analysis-Gruen99_67`).
 
     Parameters
     ----------

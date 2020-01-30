@@ -12,8 +12,8 @@ between a spike lying in the right and left window. If at any time `t` this
 difference is large 'enough' is assumed the presence of a rate Change Point in
 a neighborhood of `t`. A threshold `test_quantile` for the maximum of
 the filter_process (max difference of spike count between the left and right
-window) is derived based on asymptotic considerations. The procedure is repeated
-for an arbitrary set of windows, with different size `h`.
+window) is derived based on asymptotic considerations. The procedure is
+repeated for an arbitrary set of windows, with different size `h`.
 
 
 Examples
@@ -89,17 +89,16 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         test_param : np.array of shape (3, num of window),
             first row: list of `h`, second and third rows: empirical means and
             variances of the limit process correspodning to `h`. This will be
-            used to normalize the `filter_process` in order to give to the every
-            maximum the same impact on the global statistic.
+            used to normalize the `filter_process` in order to give to the
+            every maximum the same impact on the global statistic.
 
-
-    Returns:
-    --------
-        cps : list of lists
-           one list for each window size `h`, containing the points detected with
-           the corresponding `filter_process`. N.B.: only cps whose h-neighborhood
-           does not include previously detected cps (with smaller window h) are
-           added to the list.
+    Returns
+    -------
+    cps : list of list
+       one list for each window size `h`, containing the points detected with
+       the corresponding `filter_process`. N.B.: only cps whose h-neighborhood
+       does not include previously detected cps (with smaller window h) are
+       added to the list.
     """
 
     if (test_quantile is None) and (test_param is None):
