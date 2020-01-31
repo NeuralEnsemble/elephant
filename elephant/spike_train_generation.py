@@ -501,6 +501,22 @@ def inhomogeneous_poisson_process(rate, as_array=False,
 
 
 def _thinning_for_refractory_period(spiketrain, refractory_period):
+    """
+    Function to thin out a spiketrain, that every ISI is greater than the
+    refractory period.
+
+    Parameters
+    ----------
+    spiketrain : np.ndarray
+        Magnitude of a spiketrain.
+    refractory_period : float
+        Magnitude of a refractory period.
+
+    Returns
+    -------
+    thinned_spiketrain : np.ndarray
+        thinned out spiketrain
+    """
     thinned_spiketrain = []
     previous_spike = -refractory_period
     for spike in spiketrain:
