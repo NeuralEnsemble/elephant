@@ -807,9 +807,11 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
 
     Raises
     ------
-    TypeError
+    ValueError
         If `signal` is not `neo.AnalogSignal`.
+
         If `bin_duration` is not None or `pq.Quantity`.
+
         If `baseline` is not None, 'mean', 'median', or `pq.Quantity`.
 
     See Also
@@ -819,7 +821,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     """
 
     if not isinstance(signal, neo.AnalogSignal):
-        raise TypeError('Input signal is not a neo.AnalogSignal!')
+        raise ValueError('Input signal is not a neo.AnalogSignal!')
 
     if baseline is None:
         pass
