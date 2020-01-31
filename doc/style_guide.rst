@@ -1,5 +1,5 @@
 ***************************
-Elephant Coding Style guide
+Elephant Coding Style Guide
 ***************************
 
 This guide follows mostly:

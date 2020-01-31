@@ -1,5 +1,5 @@
 =================
-Developers' guide
+Developers' Guide
 =================
 
 .. toctree::
@@ -7,7 +7,7 @@ Developers' guide
 
     style_guide
     documentation_guide
-    
+
 
 These instructions are for developing on a Unix-like platform, e.g. Linux or
 Mac OS X, with the bash shell. If you develop on Windows, please get in touch.
@@ -55,7 +55,7 @@ To get a local copy of the repository::
 
     $ cd /some/directory
     $ git clone git@github.com:<username>/elephant.git
-    
+
 Now you need to make sure that the ``elephant`` package is on your PYTHONPATH.
 You can do this by installing Elephant::
 
@@ -112,7 +112,7 @@ documentation system. To build the documentation::
 
     $ cd elephant/doc
     $ make html
-    
+
 Then open ``_build/html/index.html`` in your browser.
 Docstrings should conform to the `NumPy docstring standard`_.
 
@@ -133,14 +133,14 @@ that you have not introduced any new bugs**. Then you can commit them to your
 local repository::
 
     $ git commit -m 'informative commit message'
-    
+
 If this is your first commit to the project, please add your name and
 affiliation/employer to :file:`doc/source/authors.rst`
 
 You can then push your changes to your online repository on GitHub::
 
     $ git push
-    
+
 Once you think your changes are ready to be included in the main Elephant repository,
 open a pull request on GitHub (see https://help.github.com/articles/using-pull-requests).
 
