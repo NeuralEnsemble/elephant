@@ -536,7 +536,7 @@ class cppTestCase(unittest.TestCase):
                 cpp_hom_empty_r))
 
         # testing output with same spike trains in output
-        A = [0, 0, 1]
+        A = [0., 0., 1.]
         t_stop = 10 * 1000 * ms
         t_start = 5 * 1000 * ms
         rate = 3 * Hz
@@ -549,16 +549,16 @@ class cppTestCase(unittest.TestCase):
         # testing raises of ValueError (wrong inputs)
         # testing empty amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[], t_stop=10 * 1000 * ms,
             rate=3 * Hz)
 
         # testing sum of amplitude>1
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[1, 1, 1], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[1, 1, 1], t_stop=10 * 1000 * ms,
             rate=3 * Hz)
         # testing negative value in the amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[-1, 1, 1],
+            ValueError, stgen.cpp, A=[-1, 1, 1],
             t_stop=10 * 1000 * ms,
             rate=3 * Hz)
         # test negative rate
@@ -569,27 +569,27 @@ class cppTestCase(unittest.TestCase):
             number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
             """
             self.assertRaises(
-                AssertionError, stgen.cpp, amplitudes=[0, 1, 0],
+                AssertionError, stgen.cpp, A=[0, 1, 0],
                 t_stop=10 * 1000 * ms,
                 rate=-3 * Hz)
         # test wrong unit for rate
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10 * 1000 * ms,
             rate=3 * 1000 * ms)
 
         # testing raises of AttributeError (missing input units)
         # Testing missing unit to t_stop
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10,
             rate=3 * Hz)
         # Testing missing unit to t_start
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10 * 1000 * ms,
             rate=3 * Hz,
             t_start=3)
         # testing rate missing unit
         self.assertRaises(
-            AttributeError, stgen.cpp, amplitudes=[0, 1, 0],
+            AttributeError, stgen.cpp, A=[0, 1, 0],
             t_stop=10 * 1000 * ms,
             rate=3)
 
@@ -667,54 +667,54 @@ class cppTestCase(unittest.TestCase):
         # testing raises of ValueError (wrong inputs)
         # testing empty amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[], t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz)
         # testing sum amplitude>1
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[1, 1, 1], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[1, 1, 1], t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz)
         # testing amplitude negative value
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[-1, 1, 1],
+            ValueError, stgen.cpp, A=[-1, 1, 1],
             t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz)
         # testing negative rate
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10 * 1000 * ms,
             rate=[-3, 4] * Hz)
         # testing empty rate
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10 * 1000 * ms,
             rate=[] * Hz)
         # testing empty amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[], t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz)
         # testing different len(A)-1 and len(rate)
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1], t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz)
         # testing rate with different unit from Hz
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1], t_stop=10 * 1000 * ms,
             rate=[3, 4] * 1000 * ms)
         # Testing analytical constrain between amplitude and rate
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 0, 1], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 0, 1], t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz, t_start=3)
 
         # testing raises of AttributeError (missing input units)
         # Testing missing unit to t_stop
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10,
             rate=[3, 4] * Hz)
         # Testing missing unit to t_start
         self.assertRaises(
-            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10 * 1000 * ms,
             rate=[3, 4] * Hz, t_start=3)
         # Testing missing unit to rate
         self.assertRaises(
-            AttributeError, stgen.cpp, amplitudes=[0, 1, 0],
+            AttributeError, stgen.cpp, A=[0, 1, 0],
             t_stop=10 * 1000 * ms,
             rate=[3, 4])
 

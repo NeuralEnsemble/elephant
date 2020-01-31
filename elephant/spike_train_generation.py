@@ -677,7 +677,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
         raise ValueError('rate must be a pq.Quantity')
     try:
         rate.rescale(pq.Hz)
-    except TypeError:
+    except ValueError:
         raise ValueError('rate argument must have rate unit (1/time)')
 
     # Check t_start < t_stop and create their strip dimensions
@@ -1001,7 +1001,7 @@ def _sample_int_from_pdf(probability_density, n_samples):
     return (cumulative_distribution < random_uniforms).sum(axis=1)
 
 
-def _mother_proc_cpp_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
+def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate the hidden ("mother") Poisson process for a Compound Poisson
     Process (CPP).
@@ -1009,7 +1009,7 @@ def _mother_proc_cpp_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
 
     Parameters
     ----------
-    amplitudes : np.ndarray
+    A : np.ndarray
         Amplitude distribution. A[j] represents the probability of a
         synchronous event of size j.
         The sum over all entries of a must be equal to one.
@@ -1026,23 +1026,23 @@ def _mother_proc_cpp_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
     -------
     Poisson spike train representing the mother process generating the CPP
     """
-    n_spiketrains = len(amplitudes) - 1
+    n_spiketrains = len(A) - 1
     # expected amplitude
-    exp_amplitude = np.dot(amplitudes, range(n_spiketrains + 1))
+    exp_amplitude = np.dot(A, range(n_spiketrains + 1))
     # expected rate of the mother process
     exp_mother_rate = (n_spiketrains * rate) / exp_amplitude
     return homogeneous_poisson_process(
         rate=exp_mother_rate, t_stop=t_stop, t_start=t_start)
 
 
-def _cpp_hom_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
+def _cpp_hom_stat(A, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
 
     Parameters
     ----------
-    amplitudes : np.ndarray
+    A : np.ndarray
         Amplitude distribution. A[j] represents the probability of a
         synchronous event of size j.
         The sum over all entries of A must be equal to one.
@@ -1063,10 +1063,9 @@ def _cpp_hom_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
 
     # Generate mother process and associated spike labels
     mother = _mother_proc_cpp_stat(
-        amplitudes=amplitudes, t_stop=t_stop, rate=rate, t_start=t_start)
-    labels = _sample_int_from_pdf(amplitudes, len(mother))
-
-    n_spiketrains = len(amplitudes) - 1  # Number of trains in output
+        A=A, t_stop=t_stop, rate=rate, t_start=t_start)
+    labels = _sample_int_from_pdf(A, len(mother))
+    n_spiketrains = len(A) - 1  # Number of trains in output
 
     spiketrains = [[]] * n_spiketrains
     try:  # Faster but more memory-consuming approach
@@ -1075,7 +1074,8 @@ def _cpp_hom_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
         # for each spike, take its label
         for spike_id, label in enumerate(labels):
             # choose label random trains
-            train_ids = random.sample(range(n_spiketrains), label)
+            train_ids = np.random.choice(n_spiketrains, label, replace=False)
+            #train_ids = random.sample(range(n_spiketrains), label)
             # and set the spike matrix for that train
             for train_id in train_ids:
                 spike_matrix[train_id, spike_id] = True  # and spike to True
@@ -1086,7 +1086,7 @@ def _cpp_hom_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
     except MemoryError:  # Slower (~2x) but less memory-consuming approach
         print('memory case')
         for mother_spiketrain, label in zip(mother, labels):
-            train_ids = random.sample(range(n_spiketrains), label)
+            train_ids = np.random.choice(n_spiketrains, label)
             for train_id in train_ids:
                 spiketrains[train_id].append(mother_spiketrain)
 
@@ -1094,14 +1094,14 @@ def _cpp_hom_stat(amplitudes, t_stop, rate, t_start=0 * pq.ms):
             for spiketrain in spiketrains]
 
 
-def _cpp_het_stat(amplitudes, t_stop, rates, t_start=0. * pq.ms):
+def _cpp_het_stat(A, t_stop, rates, t_start=0. * pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
 
     Parameters
     ----------
-    amplitudes : np.ndarray
+    A : np.ndarray
         CPP's amplitude distribution. A[j] represents the probability of
         a synchronous event of size j among the generated spike trains.
         The sum over all entries of A must be equal to one.
@@ -1124,7 +1124,7 @@ def _cpp_het_stat(amplitudes, t_stop, rates, t_start=0. * pq.ms):
     # (uncorrelated with heterog. rates + correlated with homog. rates)
     n_spiketrains = len(rates)  # number of output spike trains
     # amplitude expectation
-    expected_amplitude = np.dot(amplitudes, range(n_spiketrains + 1))
+    expected_amplitude = np.dot(A, np.arange(n_spiketrains + 1))
     r_sum = np.sum(rates)  # sum of all output firing rates
     r_min = np.min(rates)  # minimum of the firing rates
 
@@ -1136,15 +1136,15 @@ def _cpp_het_stat(amplitudes, t_stop, rates, t_start=0. * pq.ms):
     r_mother = r_uncorrelated + r_correlated
 
     # Check the analytical constraint for the amplitude distribution
-    if amplitudes[1] < (r_uncorrelated / r_mother).rescale(
+    if A[1] < (r_uncorrelated / r_mother).rescale(
             pq.dimensionless).magnitude:
         raise ValueError('A[1] too small / A[i], i>1 too high')
 
     # Compute the amplitude distribution of the correlated CPP, and generate it
-    amplitudes = r_mother * amplitudes / r_correlated
-    amplitudes[1] = amplitudes[1] - r_uncorrelated / r_correlated
+    A = A * (r_mother / r_correlated).magnitude
+    A[1] = A[1] - r_uncorrelated / r_correlated
     compound_poisson_spiketrains = _cpp_hom_stat(
-        amplitudes, t_stop, r_min, t_start)
+        A, t_stop, r_min, t_start)
 
     # Generate the independent heterogeneous Poisson processes
     poisson_spiketrains = \
@@ -1159,7 +1159,7 @@ def _cpp_het_stat(amplitudes, t_stop, rates, t_start=0. * pq.ms):
 
 
 def compound_poisson_process(
-        rate, amplitudes, t_stop, shift=None, t_start=0 * pq.ms):
+        rate, A, t_stop, shift=None, t_start=0 * pq.ms):
     """
     Generate a Compound Poisson Process (CPP; see _[1]) with a given amplitude
     distribution A and stationary marginal rates r.
@@ -1185,7 +1185,7 @@ def compound_poisson_process(
           - a single value, all spike trains will have same rate rate
           - an array of values (of length len(A)-1), each indicating the
             firing rate of one process in output
-    amplitudes : np.ndarray
+    A : np.ndarray
         CPP's amplitude distribution. `A[j]` represents the probability of
         a synchronous event of size j among the generated spike trains.
         The sum over all entries of A must be equal to one.
@@ -1210,32 +1210,32 @@ def compound_poisson_process(
     ----------
     .. [1] Staude, Rotter, Gruen (2010) J Comput Neurosci 29:327-350.
     """
-    if not isinstance(amplitudes, np.ndarray):
-        amplitudes = np.array(amplitudes)
+    if not isinstance(A, np.ndarray):
+        A = np.array(A)
     # Check A is a probability distribution (it sums to 1 and is positive)
-    if abs(sum(amplitudes) - 1) > np.finfo('float').eps:
+    if abs(sum(A) - 1) > np.finfo('float').eps:
         raise ValueError(
             'A must be a probability vector,'
-            ' sum(A)= %f !=1' % (sum(amplitudes)))
-    if np.any(amplitudes < 0):
+            ' sum(A)= %f !=1' % (sum(A)))
+    if np.any(A < 0):
         raise ValueError(
             'A must be a probability vector, each element must be >0')
     # Check that the rate is not an empty pq.Quantity
-    if rate.ndim == 1 and len(rate.magnitude) == 0:
+    if rate.ndim == 1 and len(rate) == 0:
         raise ValueError('Rate is an empty pq.Quantity array')
     # Return empty spike trains for specific parameters
-    if amplitudes[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
+    if A[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
         return [neo.SpikeTrain([] * t_stop.units, t_stop=t_stop,
-                               t_start=t_start)] * (len(amplitudes) - 1)
+                               t_start=t_start)] * (len(A) - 1)
 
     # Homogeneous rates
     if rate.ndim == 0:
         compound_poisson_spiketrains = _cpp_hom_stat(
-            amplitudes=amplitudes, t_stop=t_stop, rate=rate, t_start=t_start)
+            A=A, t_stop=t_stop, rate=rate, t_start=t_start)
     # Heterogeneous rates
     else:
         compound_poisson_spiketrains = _cpp_het_stat(
-            amplitudes=amplitudes, t_stop=t_stop, rates=rate, t_start=t_start)
+            A=A, t_stop=t_stop, rates=rate, t_start=t_start)
 
     if shift is not None:
         # Dither the output spiketrains
@@ -1246,9 +1246,9 @@ def compound_poisson_process(
     return compound_poisson_spiketrains
 
 
-def cpp(rate, amplitudes, t_stop, shift=None, t_start=0 * pq.ms):
+def cpp(rate, A, t_stop, shift=None, t_start=0 * pq.ms):
     """
     Alias for :func:`compound_poisson_process`
     """
     return compound_poisson_process(
-        rate, amplitudes, t_stop, shift=shift, t_start=t_start)
+        rate, A, t_stop, shift=shift, t_start=t_start)
