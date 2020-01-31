@@ -395,8 +395,8 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     refractory_period_magnitude = refractory_period.magnitude
 
     if rate_magnitude * refractory_period_magnitude >= 1.:
-        raise ValueError("Period between two successive spikes must be larger"
-                         "than the refractory period. Decrease either the"
+        raise ValueError("Period between two successive spikes must be larger "
+                         "than the refractory period. Decrease either the "
                          "firing rate or the refractory period.")
 
     effective_rate_magnitude = \
@@ -465,8 +465,8 @@ def inhomogeneous_poisson_process(rate, as_array=False,
         if (np.max(rate) * refractory_period).rescale(
                 pq.dimensionless).magnitude >= 1.:
             raise ValueError(
-                "Period between two successive spikes must be larger"
-                "than the refractory period. Decrease either the"
+                "Period between two successive spikes must be larger "
+                "than the refractory period. Decrease either the "
                 "firing rate or the refractory period.")
         # effective rate parameter for the refractory period case
         rate = rate / (1 - rate*refractory_period).rescale(
@@ -488,6 +488,7 @@ def inhomogeneous_poisson_process(rate, as_array=False,
     if refractory_period is not None:
         refractory_period = refractory_period.rescale(
             rate.t_stop.units).magnitude
+        # thinning in average cancels the effect of the effective firing rate
         spikes = _thinning_for_refractory_period(spikes.magnitude,
                                                  refractory_period)
         if not as_array:
@@ -1075,7 +1076,6 @@ def _cpp_hom_stat(A, t_stop, rate, t_start=0 * pq.ms):
         for spike_id, label in enumerate(labels):
             # choose label random trains
             train_ids = np.random.choice(n_spiketrains, label, replace=False)
-            #train_ids = random.sample(range(n_spiketrains), label)
             # and set the spike matrix for that train
             for train_id in train_ids:
                 spike_matrix[train_id, spike_id] = True  # and spike to True
