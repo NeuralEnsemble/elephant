@@ -31,7 +31,7 @@ def pdiff(a, b):
 
     i.e. abs((a - b)/a)
     """
-    return abs((a - b)/a)
+    return abs((a - b) / a)
 
 
 class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
@@ -46,9 +46,9 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in (f.readlines()):
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
-        self.true_time_stamps = [0.0123,  0.0354,  0.0712,  0.1191,  0.1694,
-                                 0.2200,  0.2711] * second
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1 * ms)
+        self.true_time_stamps = [0.0123, 0.0354, 0.0712, 0.1191, 0.1694,
+                                 0.2200, 0.2711] * second
 
     def test_threshold_detection(self):
         # Test whether spikes are extracted at the correct times from
@@ -57,14 +57,17 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         spike_train = stgen.threshold_detection(self.vm)
         try:
             len(spike_train)
-        except TypeError:  # Handles an error in Neo related to some zero length
-                          # spike trains being treated as unsized objects.
-            warnings.warn(("The spike train may be an unsized object. This may be related "
-                           "to an issue in Neo with some zero-length SpikeTrain objects. "
-                           "Bypassing this by creating an empty SpikeTrain object."))
-            spike_train = neo.core.SpikeTrain([], t_start=spike_train.t_start,
-                                              t_stop=spike_train.t_stop,
-                                              units=spike_train.units)
+        # Handles an error in Neo related to some zero length
+        # spike trains being treated as unsized objects.
+        except TypeError:
+            warnings.warn(
+                ("The spike train may be an unsized object. This may be"
+                 " related to an issue in Neo with some zero-length SpikeTrain"
+                 " objects. Bypassing this by creating an empty SpikeTrain"
+                 " object."))
+            spike_train = neo.SpikeTrain([], t_start=spike_train.t_start,
+                                         t_stop=spike_train.t_stop,
+                                         units=spike_train.units)
 
         # Does threshold_detection gives the correct number of spikes?
         self.assertEqual(len(spike_train), len(self.true_time_stamps))
@@ -90,9 +93,9 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in (f.readlines()):
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
-        self.true_time_stamps = [0.0124,  0.0354,  0.0713,  0.1192,  0.1695,
-                                 0.2201,  0.2711] * second
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1 * ms)
+        self.true_time_stamps = [0.0124, 0.0354, 0.0713, 0.1192, 0.1695,
+                                 0.2201, 0.2711] * second
 
     def test_peak_detection_time_stamps(self):
         # Test with default arguments
@@ -121,7 +124,7 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in (f.readlines()):
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1*ms)
+        self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1 * ms)
         self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
                                      -0.03392689, -0.03061474, -0.02650277,
                                      -0.0212756, -0.01443531, -0.00515365,
@@ -135,10 +138,11 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
 
     def test_spike_extraction_waveform(self):
         spike_train = stgen.spike_extraction(self.vm.reshape(-1),
-                                             extr_interval=(-1*ms, 2*ms))
+                                             extr_interval=(-1 * ms, 2 * ms))
         try:
-            assert_array_almost_equal(spike_train.waveforms[0][0].magnitude.reshape(-1),
-                                      self.first_spike)
+            assert_array_almost_equal(
+                spike_train.waveforms[0][0].magnitude.reshape(-1),
+                self.first_spike)
         except AttributeError:
             self.assertTrue(
                 np.array_equal(spike_train.waveforms[0][0].magnitude,
@@ -156,8 +160,8 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         # creates a realization passing the test.
         np.random.seed(seed=12345)
 
-        for rate in [123.0*Hz, 0.123*kHz]:
-            for t_stop in [2345*ms, 2.345*second]:
+        for rate in [123.0 * Hz, 0.123 * kHz]:
+            for t_stop in [2345 * ms, 2.345 * second]:
                 spiketrain = stgen.homogeneous_poisson_process(
                     rate, t_stop=t_stop)
                 intervals = isi(spiketrain)
@@ -167,24 +171,27 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 self.assertLess(
                     pdiff(expected_spike_count, spiketrain.size), 0.2)
 
-                expected_mean_isi = (1/rate)
+                expected_mean_isi = (1 / rate)
                 self.assertLess(
                     pdiff(expected_mean_isi, intervals.mean()), 0.2)
 
-                expected_first_spike = 0*ms
+                expected_first_spike = 0 * ms
                 self.assertLess(
-                    spiketrain[0] - expected_first_spike, 7*expected_mean_isi)
+                    spiketrain[0] - expected_first_spike,
+                    7 * expected_mean_isi)
 
                 expected_last_spike = t_stop
                 self.assertLess(expected_last_spike -
-                                spiketrain[-1], 7*expected_mean_isi)
+                                spiketrain[-1], 7 * expected_mean_isi)
 
                 # Kolmogorov-Smirnov test
                 D, p = kstest(intervals.rescale(t_stop.units),
                               "expon",
                               # args are (loc, scale)
-                              args=(0, expected_mean_isi.rescale(t_stop.units)),
-                              alternative='two-sided')
+                              args=(
+                    0, expected_mean_isi.rescale(
+                        t_stop.units)),
+                    alternative='two-sided')
                 self.assertGreater(p, 0.001)
                 self.assertLess(D, 0.12)
 
@@ -195,32 +202,33 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
             Catch RuntimeWarning: divide by zero encountered in true_divide
             mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
             """
-            spiketrain = stgen.homogeneous_poisson_process(0*Hz,
-                                                           t_stop=1000*ms)
+            spiketrain = stgen.homogeneous_poisson_process(0 * Hz,
+                                                           t_stop=1000 * ms)
         self.assertEqual(spiketrain.size, 0)
         # not really a test, just making sure that all code paths are covered
-        spiketrain = stgen.homogeneous_poisson_process(1*Hz, t_stop=1000*ms)
+        spiketrain = stgen.homogeneous_poisson_process(
+            1 * Hz, t_stop=1000 * ms)
 
     def test_buffer_overrun(self):
         np.random.seed(6085)  # this seed should produce a buffer overrun
-        t_stop = 1000*ms
-        rate = 10*Hz
+        t_stop = 1000 * ms
+        rate = 10 * Hz
         spiketrain = stgen.homogeneous_poisson_process(rate, t_stop=t_stop)
         expected_last_spike = t_stop
-        expected_mean_isi = (1/rate).rescale(ms)
+        expected_mean_isi = (1 / rate).rescale(ms)
         self.assertLess(expected_last_spike -
-                        spiketrain[-1], 4*expected_mean_isi)
+                        spiketrain[-1], 4 * expected_mean_isi)
 
 
 class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
     def setUp(self):
-        rate_list = [[20] for i in range(1000)] + [[200] for i in range(1000)]
+        rate_list = [[20]] * 1000 + [[200]] * 1000
         self.rate_profile = neo.AnalogSignal(
-            rate_list * Hz, sampling_period=0.001*s)
-        rate_0 = [[0] for i in range(1000)]
+            rate_list * Hz, sampling_period=0.001 * s)
+        rate_0 = [[0]] * 1000
         self.rate_profile_0 = neo.AnalogSignal(
-            rate_0 * Hz, sampling_period=0.001*s)
-        rate_negative = [[-1] for i in range(1000)]
+            rate_0 * Hz, sampling_period=0.001 * s)
+        rate_negative = [[-1]] * 1000
         self.rate_profile_negative = neo.AnalogSignal(
             rate_negative * Hz, sampling_period=0.001 * s)
         pass
@@ -232,26 +240,32 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         np.random.seed(seed=12345)
 
         for rate in [self.rate_profile, self.rate_profile.rescale(kHz)]:
-            spiketrain = stgen.inhomogeneous_poisson_process(rate)
-            intervals = isi(spiketrain)
+            for refractory_period in [3*ms, None]:
+                spiketrain = stgen.inhomogeneous_poisson_process(
+                    rate, refractory_period=refractory_period)
+                intervals = isi(spiketrain)
 
-            # Computing expected statistics and percentiles
-            expected_spike_count = (np.sum(
-                rate) * rate.sampling_period).simplified
-            percentile_count = poisson.ppf(.999, expected_spike_count)
-            expected_min_isi = (1 / np.min(rate))
-            expected_max_isi = (1 / np.max(rate))
-            percentile_min_isi = expon.ppf(.999, expected_min_isi)
-            percentile_max_isi = expon.ppf(.999, expected_max_isi)
+                # Computing expected statistics and percentiles
+                expected_spike_count = (np.sum(
+                    rate) * rate.sampling_period).simplified
+                percentile_count = poisson.ppf(.999, expected_spike_count)
+                expected_min_isi = (1 / np.min(rate))
+                expected_max_isi = (1 / np.max(rate))
+                percentile_min_isi = expon.ppf(.999, expected_min_isi)
+                percentile_max_isi = expon.ppf(.999, expected_max_isi)
 
-            # Testing (each should fail 1 every 1000 times)
-            self.assertLess(spiketrain.size, percentile_count)
-            self.assertLess(np.min(intervals), percentile_min_isi)
-            self.assertLess(np.max(intervals), percentile_max_isi)
+                # Check that minimal ISI is greater than the refractory_period
+                if refractory_period is not None:
+                    self.assertGreater(np.min(intervals), refractory_period)
 
-            # Testing t_start t_stop
-            self.assertEqual(rate.t_stop, spiketrain.t_stop)
-            self.assertEqual(rate.t_start, spiketrain.t_start)
+                # Testing (each should fail 1 every 1000 times)
+                self.assertLess(spiketrain.size, percentile_count)
+                self.assertLess(np.min(intervals), percentile_min_isi)
+                self.assertLess(np.max(intervals), percentile_max_isi)
+
+                # Testing t_start t_stop
+                self.assertEqual(rate.t_stop, spiketrain.t_stop)
+                self.assertEqual(rate.t_start, spiketrain.t_start)
 
         # Testing type
         spiketrain_as_array = stgen.inhomogeneous_poisson_process(
@@ -259,21 +273,39 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
-    def test_low_rates(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            """
-            Catch RuntimeWarning: divide by zero encountered in true_divide
-            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            """
-            spiketrain = stgen.inhomogeneous_poisson_process(
-                self.rate_profile_0)
-        self.assertEqual(spiketrain.size, 0)
+        # Testing type for refractory period
+        refractory_period = 3 * ms
+        spiketrain = stgen.inhomogeneous_poisson_process(
+            rate, refractory_period=refractory_period)
+        spiketrain_as_array = stgen.inhomogeneous_poisson_process(
+            rate, as_array=True, refractory_period=refractory_period)
+        self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
+        self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
-    def test_negative_rates(self):
+        # Check that to high refractory period raises error
         self.assertRaises(
             ValueError, stgen.inhomogeneous_poisson_process,
-            self.rate_profile_negative)
+            self.rate_profile,
+            refractory_period=1000*ms)
+
+    def test_low_rates(self):
+        for refractory_period in [3 * ms, None]:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                """
+                Catch RuntimeWarning: divide by zero encountered in true_divide
+                mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
+                """
+                spiketrain = stgen.inhomogeneous_poisson_process(
+                    self.rate_profile_0, refractory_period=refractory_period)
+            self.assertEqual(spiketrain.size, 0)
+
+    def test_negative_rates(self):
+        for refractory_period in [3 * ms, None]:
+            self.assertRaises(
+                ValueError, stgen.inhomogeneous_poisson_process,
+                self.rate_profile_negative,
+                refractory_period=refractory_period)
 
 
 class HomogeneousGammaProcessTestCase(unittest.TestCase):
@@ -288,34 +320,35 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         np.random.seed(seed=12345)
 
         a = 3.0
-        for b in (67.0*Hz, 0.067*kHz):
-            for t_stop in (2345*ms, 2.345*second):
+        for b in (67.0 * Hz, 0.067 * kHz):
+            for t_stop in (2345 * ms, 2.345 * second):
                 spiketrain = stgen.homogeneous_gamma_process(
                     a, b, t_stop=t_stop)
                 intervals = isi(spiketrain)
 
-                expected_spike_count = int((b/a * t_stop).simplified)
+                expected_spike_count = int((b / a * t_stop).simplified)
                 # should fail about 1 time in 1000
                 self.assertLess(
                     pdiff(expected_spike_count, spiketrain.size), 0.25)
 
-                expected_mean_isi = (a/b).rescale(ms)
+                expected_mean_isi = (a / b).rescale(ms)
                 self.assertLess(
                     pdiff(expected_mean_isi, intervals.mean()), 0.3)
 
-                expected_first_spike = 0*ms
+                expected_first_spike = 0 * ms
                 self.assertLess(
-                    spiketrain[0] - expected_first_spike, 4*expected_mean_isi)
+                    spiketrain[0] - expected_first_spike,
+                    4 * expected_mean_isi)
 
                 expected_last_spike = t_stop
                 self.assertLess(expected_last_spike -
-                                spiketrain[-1], 4*expected_mean_isi)
+                                spiketrain[-1], 4 * expected_mean_isi)
 
                 # Kolmogorov-Smirnov test
                 D, p = kstest(intervals.rescale(t_stop.units),
                               "gamma",
                               # args are (a, loc, scale)
-                              args=(a, 0, (1/b).rescale(t_stop.units)),
+                              args=(a, 0, (1 / b).rescale(t_stop.units)),
                               alternative='two-sided')
                 self.assertGreater(p, 0.001)
                 self.assertLess(D, 0.25)
@@ -325,9 +358,9 @@ class _n_poisson_TestCase(unittest.TestCase):
 
     def setUp(self):
         self.n = 4
-        self.rate = 10*Hz
-        self.rates = range(1, self.n + 1)*Hz
-        self.t_stop = 10000*ms
+        self.rate = 10 * Hz
+        self.rates = range(1, self.n + 1) * Hz
+        self.t_stop = 10000 * ms
 
     def test_poisson(self):
 
@@ -335,14 +368,14 @@ class _n_poisson_TestCase(unittest.TestCase):
         pp = stgen._n_poisson(rate=self.rate, t_stop=self.t_stop, n=self.n)
         self.assertIsInstance(pp, list)
         self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(pp[0].simplified.units, 1000*ms)
+        self.assertEqual(pp[0].simplified.units, 1000 * ms)
         self.assertEqual(len(pp), self.n)
 
         # Check the output types for input list of rates
         pp = stgen._n_poisson(rate=self.rates, t_stop=self.t_stop)
         self.assertIsInstance(pp, list)
         self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(pp[0].simplified.units, 1000*ms)
+        self.assertEqual(pp[0].simplified.units, 1000 * ms)
         self.assertEqual(len(pp), self.n)
 
     def test_poisson_error(self):
@@ -352,27 +385,28 @@ class _n_poisson_TestCase(unittest.TestCase):
             ValueError, stgen._n_poisson, rate=5, t_stop=self.t_stop)
         # Negative rate
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=-5*Hz, t_stop=self.t_stop)
+            ValueError, stgen._n_poisson, rate=-5 * Hz, t_stop=self.t_stop)
         # Negative value when rate is a list
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=[-5, 3]*Hz, t_stop=self.t_stop)
+            ValueError, stgen._n_poisson, rate=[-5, 3] * Hz,
+            t_stop=self.t_stop)
         # Negative n
         self.assertRaises(
             ValueError, stgen._n_poisson, rate=self.rate, t_stop=self.t_stop,
             n=-1)
         # t_start>t_stop
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=self.rate, t_start=4*ms,
-            t_stop=3*ms, n=3)
+            ValueError, stgen._n_poisson, rate=self.rate, t_start=4 * ms,
+            t_stop=3 * ms, n=3)
 
 
 class singleinteractionprocess_TestCase(unittest.TestCase):
     def setUp(self):
         self.n = 4
-        self.rate = 10*Hz
-        self.rates = range(1, self.n + 1)*Hz
-        self.t_stop = 10000*ms
-        self.rate_c = 1*Hz
+        self.rate = 10 * Hz
+        self.rates = range(1, self.n + 1) * Hz
+        self.t_stop = 10000 * ms
+        self.rate_c = 1 * Hz
 
     def test_sip(self):
 
@@ -385,13 +419,13 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         self.assertEqual(type(sip), list)
         self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
         self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(sip[0].simplified.units,  1000*ms)
-        self.assertEqual(coinc[0].simplified.units,  1000*ms)
+        self.assertEqual(sip[0].simplified.units, 1000 * ms)
+        self.assertEqual(coinc[0].simplified.units, 1000 * ms)
 
         # Check the output length
         self.assertEqual(len(sip), self.n)
         self.assertEqual(
-            len(coinc[0]), (self.rate_c*self.t_stop).rescale(dimensionless))
+            len(coinc[0]), (self.rate_c * self.t_stop).rescale(dimensionless))
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -404,13 +438,13 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         self.assertEqual(type(sip), list)
         self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
         self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(sip[0].simplified.units,  1000*ms)
-        self.assertEqual(coinc[0].simplified.units,  1000*ms)
+        self.assertEqual(sip[0].simplified.units, 1000 * ms)
+        self.assertEqual(coinc[0].simplified.units, 1000 * ms)
 
         # Check the output length
         self.assertEqual(len(sip), self.n)
         self.assertEqual(
-            len(coinc[0]), (self.rate_c*self.t_stop).rescale(dimensionless))
+            len(coinc[0]), (self.rate_c * self.t_stop).rescale(dimensionless))
 
         # Generate an example SIP mode stochastic number of coincidences
         sip = stgen.single_interaction_process(
@@ -420,21 +454,22 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         # Check the output types
         self.assertEqual(type(sip), list)
         self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(sip[0].simplified.units,  1000*ms)
+        self.assertEqual(sip[0].simplified.units, 1000 * ms)
 
     def test_sip_error(self):
         # Negative rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n=self.n, rate=-5*Hz,
+            ValueError, stgen.single_interaction_process, n=self.n,
+            rate=-5 * Hz,
             rate_c=self.rate_c, t_stop=self.t_stop)
         # Negative coincidence rate
         self.assertRaises(
             ValueError, stgen.single_interaction_process, n=self.n,
-            rate=self.rate, rate_c=-3*Hz, t_stop=self.t_stop)
+            rate=self.rate, rate_c=-3 * Hz, t_stop=self.t_stop)
         # Negative value when rate is a list
         self.assertRaises(
             ValueError, stgen.single_interaction_process, n=self.n,
-            rate=[-5, 3, 4, 2]*Hz, rate_c=self.rate_c, t_stop=self.t_stop)
+            rate=[-5, 3, 4, 2] * Hz, rate_c=self.rate_c, t_stop=self.t_stop)
         # Negative n
         self.assertRaises(
             ValueError, stgen.single_interaction_process, n=-1,
@@ -442,7 +477,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         # Rate_c < rate
         self.assertRaises(
             ValueError, stgen.single_interaction_process, n=self.n,
-            rate=self.rate, rate_c=self.rate + 1*Hz, t_stop=self.t_stop)
+            rate=self.rate, rate_c=self.rate + 1 * Hz, t_stop=self.t_stop)
 
 
 class cppTestCase(unittest.TestCase):
@@ -455,12 +490,13 @@ class cppTestCase(unittest.TestCase):
         cpp_hom = stgen.cpp(rate, A, t_stop, t_start=t_start)
         # testing the ouput formats
         self.assertEqual(
-            [type(train) for train in cpp_hom], [neo.SpikeTrain]*len(cpp_hom))
+            [type(train) for train in cpp_hom],
+            [neo.SpikeTrain] * len(cpp_hom))
         self.assertEqual(cpp_hom[0].simplified.units, 1000 * ms)
         self.assertEqual(type(cpp_hom), list)
         # testing quantities format of the output
         self.assertEqual(
-            [train.simplified.units for train in cpp_hom], [1000 * ms]*len(
+            [train.simplified.units for train in cpp_hom], [1000 * ms] * len(
                 cpp_hom))
         # testing output t_start t_stop
         for st in cpp_hom:
@@ -470,7 +506,7 @@ class cppTestCase(unittest.TestCase):
 
         # testing the units
         A = [0, 0.9, 0.1]
-        t_stop = 10000*ms
+        t_stop = 10000 * ms
         t_start = 5 * 1000 * ms
         rate = 3 * Hz
         cpp_unit = stgen.cpp(rate, A, t_stop, t_start=t_start)
@@ -487,7 +523,7 @@ class cppTestCase(unittest.TestCase):
         cpp_hom_empty = stgen.cpp(rate, A, t_stop, t_start=t_start)
 
         self.assertEqual(
-            [len(train) for train in cpp_hom_empty], [0]*len(cpp_hom_empty))
+            [len(train) for train in cpp_hom_empty], [0] * len(cpp_hom_empty))
 
         # testing output with rate equal to 0
         A = [0, .9, .1]
@@ -496,7 +532,7 @@ class cppTestCase(unittest.TestCase):
         rate = 0 * Hz
         cpp_hom_empty_r = stgen.cpp(rate, A, t_stop, t_start=t_start)
         self.assertEqual(
-            [len(train) for train in cpp_hom_empty_r], [0]*len(
+            [len(train) for train in cpp_hom_empty_r], [0] * len(
                 cpp_hom_empty_r))
 
         # testing output with same spike trains in output
@@ -513,15 +549,18 @@ class cppTestCase(unittest.TestCase):
         # testing raises of ValueError (wrong inputs)
         # testing empty amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, A=[], t_stop=10*1000 * ms, rate=3*Hz)
+            ValueError, stgen.cpp, amplitudes=[], t_stop=10 * 1000 * ms,
+            rate=3 * Hz)
 
         # testing sum of amplitude>1
         self.assertRaises(
-            ValueError, stgen.cpp, A=[1, 1, 1], t_stop=10*1000 * ms, rate=3*Hz)
+            ValueError, stgen.cpp, amplitudes=[1, 1, 1], t_stop=10 * 1000 * ms,
+            rate=3 * Hz)
         # testing negative value in the amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, A=[-1, 1, 1], t_stop=10*1000 * ms,
-            rate=3*Hz)
+            ValueError, stgen.cpp, amplitudes=[-1, 1, 1],
+            t_stop=10 * 1000 * ms,
+            rate=3 * Hz)
         # test negative rate
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -530,24 +569,28 @@ class cppTestCase(unittest.TestCase):
             number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
             """
             self.assertRaises(
-                AssertionError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
-                rate=-3*Hz)
+                AssertionError, stgen.cpp, amplitudes=[0, 1, 0],
+                t_stop=10 * 1000 * ms,
+                rate=-3 * Hz)
         # test wrong unit for rate
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
-            rate=3*1000 * ms)
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            rate=3 * 1000 * ms)
 
         # testing raises of AttributeError (missing input units)
         # Testing missing unit to t_stop
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10, rate=3*Hz)
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10,
+            rate=3 * Hz)
         # Testing missing unit to t_start
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms, rate=3*Hz,
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            rate=3 * Hz,
             t_start=3)
         # testing rate missing unit
         self.assertRaises(
-            AttributeError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
+            AttributeError, stgen.cpp, amplitudes=[0, 1, 0],
+            t_stop=10 * 1000 * ms,
             rate=3)
 
     def test_cpp_het(self):
@@ -583,7 +626,7 @@ class cppTestCase(unittest.TestCase):
 
             # testing the units
             A = [0, 0.9, 0.1]
-            t_stop = 10000*ms
+            t_stop = 10000 * ms
             t_start = 5 * 1000 * ms
             rate = [3, 4] * Hz
             cpp_unit = stgen.cpp(rate, A, t_stop, t_start=t_start)
@@ -624,48 +667,55 @@ class cppTestCase(unittest.TestCase):
         # testing raises of ValueError (wrong inputs)
         # testing empty amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, A=[], t_stop=10*1000 * ms, rate=[3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz)
         # testing sum amplitude>1
         self.assertRaises(
-            ValueError, stgen.cpp, A=[1, 1, 1], t_stop=10*1000 * ms,
-            rate=[3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[1, 1, 1], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz)
         # testing amplitude negative value
         self.assertRaises(
-            ValueError, stgen.cpp, A=[-1, 1, 1], t_stop=10*1000 * ms,
-            rate=[3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[-1, 1, 1],
+            t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz)
         # testing negative rate
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
-            rate=[-3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            rate=[-3, 4] * Hz)
         # testing empty rate
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms, rate=[]*Hz)
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            rate=[] * Hz)
         # testing empty amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, A=[], t_stop=10*1000 * ms, rate=[3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz)
         # testing different len(A)-1 and len(rate)
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1], t_stop=10*1000 * ms, rate=[3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[0, 1], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz)
         # testing rate with different unit from Hz
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1], t_stop=10*1000 * ms,
-            rate=[3, 4]*1000 * ms)
+            ValueError, stgen.cpp, amplitudes=[0, 1], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * 1000 * ms)
         # Testing analytical constrain between amplitude and rate
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 0, 1], t_stop=10*1000 * ms,
-            rate=[3, 4]*Hz, t_start=3)
+            ValueError, stgen.cpp, amplitudes=[0, 0, 1], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz, t_start=3)
 
         # testing raises of AttributeError (missing input units)
         # Testing missing unit to t_stop
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10, rate=[3, 4]*Hz)
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10,
+            rate=[3, 4] * Hz)
         # Testing missing unit to t_start
         self.assertRaises(
-            ValueError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
-            rate=[3, 4]*Hz, t_start=3)
+            ValueError, stgen.cpp, amplitudes=[0, 1, 0], t_stop=10 * 1000 * ms,
+            rate=[3, 4] * Hz, t_start=3)
         # Testing missing unit to rate
         self.assertRaises(
-            AttributeError, stgen.cpp, A=[0, 1, 0], t_stop=10*1000 * ms,
+            AttributeError, stgen.cpp, amplitudes=[0, 1, 0],
+            t_stop=10 * 1000 * ms,
             rate=[3, 4])
 
     def test_cpp_jttered(self):
@@ -675,17 +725,17 @@ class cppTestCase(unittest.TestCase):
         t_start = 5 * 1000 * ms
         rate = 3 * Hz
         cpp_shift = stgen.cpp(
-            rate, A, t_stop, t_start=t_start, shift=3*ms)
+            rate, A, t_stop, t_start=t_start, shift=3 * ms)
         # testing the ouput formats
         self.assertEqual(
-            [type(train) for train in cpp_shift], [neo.SpikeTrain]*len(
+            [type(train) for train in cpp_shift], [neo.SpikeTrain] * len(
                 cpp_shift))
         self.assertEqual(cpp_shift[0].simplified.units, 1000 * ms)
         self.assertEqual(type(cpp_shift), list)
         # testing quantities format of the output
         self.assertEqual(
             [train.simplified.units for train in cpp_shift],
-            [1000 * ms]*len(cpp_shift))
+            [1000 * ms] * len(cpp_shift))
         # testing output t_start t_stop
         for st in cpp_shift:
             self.assertEqual(st.t_stop, t_stop)
@@ -702,9 +752,9 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         np.random.seed(seed=12345)
         hpp = stgen.homogeneous_poisson_process
 
-        for rate in [123.0*Hz, 0.123*kHz]:
-            for t_stop in [2345*ms, 2.345*second]:
-                spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3*ms)
+        for rate in [123.0 * Hz, 0.123 * kHz]:
+            for t_stop in [2345 * ms, 2.345 * second]:
+                spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3 * ms)
 
                 intervals = isi(spiketrain)
 
@@ -713,17 +763,18 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
                 self.assertLess(
                     pdiff(expected_spike_count, spiketrain.size), 0.2)
 
-                expected_mean_isi = (1/rate)
+                expected_mean_isi = (1 / rate)
                 self.assertLess(
                     pdiff(expected_mean_isi, intervals.mean()), 0.2)
 
-                expected_first_spike = 0*ms
+                expected_first_spike = 0 * ms
                 self.assertLess(
-                    spiketrain[0] - expected_first_spike, 7*expected_mean_isi)
+                    spiketrain[0] - expected_first_spike,
+                    7 * expected_mean_isi)
 
                 expected_last_spike = t_stop
                 self.assertLess(expected_last_spike -
-                                spiketrain[-1], 7*expected_mean_isi)
+                                spiketrain[-1], 7 * expected_mean_isi)
 
     def test_low_rates(self):
         hpp = stgen.homogeneous_poisson_process
@@ -731,26 +782,26 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
             warnings.simplefilter("ignore")
             # Catch RuntimeWarning: divide by zero encountered in true_divide
             # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            spiketrain = hpp(rate=0 * Hz, t_stop=1000*ms,
-                             refractory_period=3*ms)
+            spiketrain = hpp(rate=0 * Hz, t_stop=1000 * ms,
+                             refractory_period=3 * ms)
         self.assertEqual(spiketrain.size, 0)
         # not really a test, just making sure that all code paths are covered
-        spiketrain = hpp(1*Hz, t_stop=1000*ms, refractory_period=3*ms)
+        spiketrain = hpp(1 * Hz, t_stop=1000 * ms, refractory_period=3 * ms)
 
     def test_buffer_overrun(self):
         hpp = stgen.homogeneous_poisson_process
         np.random.seed(6085)  # this seed should produce a buffer overrun
-        t_stop = 1000*ms
-        rate = 10*Hz
-        spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3*ms)
+        t_stop = 1000 * ms
+        rate = 10 * Hz
+        spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3 * ms)
         expected_last_spike = t_stop
-        expected_mean_isi = (1/rate).rescale(ms)
+        expected_mean_isi = (1 / rate).rescale(ms)
         self.assertLess(expected_last_spike -
-                        spiketrain[-1], 4*expected_mean_isi)
+                        spiketrain[-1], 4 * expected_mean_isi)
 
     def test_as_array(self):
         hpp = stgen.homogeneous_poisson_process
-        spiketrain = hpp(rate=10 * Hz, as_array=True, refractory_period=3*ms)
+        spiketrain = hpp(rate=10 * Hz, as_array=True, refractory_period=3 * ms)
         self.assertTrue(isinstance(spiketrain, np.ndarray))
 
     def test_invalid(self):
@@ -758,12 +809,12 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
         # t_stop < t_start
         hpp = stgen.homogeneous_poisson_process
         self.assertRaises(ValueError, hpp, rate=rate, t_start=5 * ms,
-                          t_stop=1 * ms, refractory_period=3*ms)
+                          t_stop=1 * ms, refractory_period=3 * ms)
 
         # no units provided
-        self.assertRaises(ValueError, hpp, rate=10, refractory_period=3*ms)
+        self.assertRaises(ValueError, hpp, rate=10, refractory_period=3 * ms)
         self.assertRaises(ValueError, hpp, rate=rate, t_stop=5,
-                          refractory_period=3*ms)
+                          refractory_period=3 * ms)
         self.assertRaises(ValueError, hpp, rate=rate, refractory_period=2)
 
 
