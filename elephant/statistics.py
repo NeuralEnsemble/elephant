@@ -47,7 +47,9 @@ Statistics across spike trains
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import division, print_function
+# do not import unicode_literals
+# (quantities rescale does not work with unicodes)
 
 import numpy as np
 import quantities as pq
@@ -558,7 +560,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     # main function:
     units = pq.CompoundUnit(
-        "{}*s".format(sampling_period.rescale('s').magnitude))
+        "{}*s".format(sampling_period.rescale('s').item()))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
         t_start = spiketrain.t_start
