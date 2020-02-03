@@ -444,33 +444,105 @@ class SpadeTestCase(unittest.TestCase):
                           np.array([]), n_subsets=-3)
 
     def test_pattern_set_reduction(self):
-        surr_methods = surr.SURR_METHODS
-        for surr_method in surr_methods:
-            output_msip = spade.spade(
-                self.patt_psr, self.binsize, self.winlen,
-                approx_stab_pars=dict(
-                    n_subsets=self.n_subset,
-                    stability_thresh=self.stability_thresh),
-                n_surr=self.n_surr, spectrum='3d#',
-                alpha=self.alpha,
-                psr_param=self.psr_param,
-                output_format='patterns',
-                stat_corr='no',
-                surr_method=surr_method)['patterns']
-            elements_msip = []
-            occ_msip = []
-            lags_msip = []
-            # collecting spade output
-            for out in output_msip:
-                elements_msip.append(sorted(out['neurons']))
-                occ_msip.append(list(out['times'].magnitude))
-                lags_msip.append(list(out['lags'].magnitude))
-            elements_msip = sorted(elements_msip, key=len)
-            occ_msip = sorted(occ_msip, key=len)
-            # check neurons in the patterns
-            assert_array_equal(elements_msip, [range(len(self.lags3) + 1)])
-            # check the occurrences time of the patters
-            assert_array_equal(len(occ_msip[0]), self.n_occ3)
+        winlen = 6
+        # intent(concept1) is a superset of intent(concept2)
+        # extent(concept1) is a subset of extent(concept2)
+        # intent(concept2) is a subset of intent(concept3)
+        #     when taking into account the shift due to the window positions
+        # intent(concept1) has a non-empty intersection with intent(concept3)
+        #     when taking into account the shift due to the window positions
+        # intent(concept4) is disjoint from all others
+        concept1 = ((12, 19, 26), (2, 10, 18))
+        concept2 = ((12, 19), (2, 10, 18, 26))
+        concept3 = ((0, 7, 14, 21), (0, 8))
+        concept4 = ((1, 6), (0, 8))
+
+        # reject concept2 using min_occ
+        # make sure to keep concept1 by setting k_superset_filtering = 1
+        concepts = spade.pattern_set_reduction([concept1, concept2], ns_signatures=[],
+                                               winlen=winlen, spectrum='#',
+                                               h_subset_filtering=0, min_occ=2,
+                                               k_superset_filtering=1)
+        self.assertEqual(concepts, [concept1])
+
+        # keep concept2 by increasing h_subset_filtering
+        concepts = spade.pattern_set_reduction([concept1, concept2], ns_signatures=[],
+                                               winlen=winlen, spectrum='#',
+                                               h_subset_filtering=2, min_occ=2,
+                                               k_superset_filtering=1)
+        self.assertEqual(concepts, [concept1, concept2])
+
+        # reject concept1 using min_spikes
+        concepts = spade.pattern_set_reduction([concept1, concept2], ns_signatures=[],
+                                               winlen=winlen, spectrum='#',
+                                               h_subset_filtering=2, min_spikes=2,
+                                               k_superset_filtering=0)
+        self.assertEqual(concepts, [concept2])
+
+        # reject concept2 using ns_signatures
+        concepts = spade.pattern_set_reduction([concept1, concept2],
+                                               ns_signatures=[(2, 2)],
+                                               winlen=winlen, spectrum='#',
+                                               h_subset_filtering=1, min_occ=2,
+                                               k_superset_filtering=1)
+        self.assertEqual(concepts, [concept1])
+
+        # reject concept1 using ns_signatures
+        # make sure to keep concept2 by increasing h_subset_filtering
+        concepts = spade.pattern_set_reduction([concept1, concept2],
+                                               ns_signatures=[(2, 3)],
+                                               winlen=winlen, spectrum='#',
+                                               h_subset_filtering=3, min_spikes=2,
+                                               min_occ=2,
+                                               k_superset_filtering=1)
+        self.assertEqual(concepts, [concept2])
+
+        # reject concept2 using the covered spikes criterion
+        concepts = spade.pattern_set_reduction([concept1, concept2],
+                                               ns_signatures=[(2, 2)],
+                                               winlen=winlen, spectrum='#',
+                                               h_subset_filtering=0, min_occ=2,
+                                               k_superset_filtering=0,
+                                               l_covered_spikes=0)
+        self.assertEqual(concepts, [concept1])
+
+        # reject concept1 using superset filtering
+        # (case with non-empty intersection but no superset)
+        concepts = spade.pattern_set_reduction([concept1, concept3],
+                                               ns_signatures=[], min_spikes=2,
+                                               winlen=winlen, spectrum='#',
+                                               k_superset_filtering=0)
+        self.assertEqual(concepts, [concept3])
+
+        # keep concept1 by increasing k_superset_filtering
+        concepts = spade.pattern_set_reduction([concept1, concept3],
+                                               ns_signatures=[], min_spikes=2,
+                                               winlen=winlen, spectrum='#',
+                                               k_superset_filtering=1)
+        self.assertEqual(concepts, [concept1, concept3])
+
+        # reject concept3 using ns_signatures
+        concepts = spade.pattern_set_reduction([concept1, concept3],
+                                               ns_signatures=[(3, 2)], min_spikes=2,
+                                               winlen=winlen, spectrum='#',
+                                               k_superset_filtering=1)
+        self.assertEqual(concepts, [concept1])
+
+        # reject concept3 using the covered spikes criterion
+        concepts = spade.pattern_set_reduction([concept1, concept3],
+                                               ns_signatures=[(3, 2), (2, 3)],
+                                               min_spikes=2,
+                                               winlen=winlen, spectrum='#',
+                                               k_superset_filtering=1,
+                                               l_covered_spikes=0)
+        self.assertEqual(concepts, [concept1])
+
+        # check that two concepts with disjoint intents are both kept
+        concepts = spade.pattern_set_reduction([concept3, concept4],
+                                               ns_signatures=[],
+                                               winlen=winlen, spectrum='#')
+        self.assertEqual(concepts, [concept3, concept4])
+
 
     @unittest.skipUnless(HAVE_STATSMODELS,
                          "'fdr_bh' stat corr requires statsmodels")
