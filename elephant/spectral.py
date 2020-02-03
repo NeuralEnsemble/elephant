@@ -540,11 +540,10 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     Notes
     -----
     1. The parameters `window`, `nfft`, `detrend`, `scaling`, and `axis` are
-       directly passed to the `scipy.signal.welch` function. See the
-       respective descriptions in the docstring of `scipy.signal.welch` for
-       usage.
-    2. When only `num_seg` is given, parameter `nperseg` of
-       `scipy.signal.welch` function is determined according to the expression
+       directly passed to the helper function `_welch`. See the
+       respective descriptions in the docstring of `_welch` for usage.
+    2. When only `num_seg` is given, parameter `nperseg` for `_welch` function
+       is determined according to the expression
 
        `x.shape[axis]` / (`num_seg` - `overlap` * (`num_seg` - 1))
 
@@ -552,7 +551,7 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     See Also
     --------
-    scipy.signal.welch
+    spectral._welch
 
     """
 
