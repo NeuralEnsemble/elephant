@@ -73,10 +73,11 @@ def waveform_snr(spiketrain):
     ----------
     spiketrain : neo.SpikeTrain
         The spike times with attached waveforms.
+
     Returns
     -------
     snr : float
-        signal-to-noise ratio according to Hatsopoulos 2007
+        signal-to-noise ratio according to [1]_
 
     Raises
     ------
