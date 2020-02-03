@@ -459,23 +459,27 @@ class SpadeTestCase(unittest.TestCase):
 
         # reject concept2 using min_occ
         # make sure to keep concept1 by setting k_superset_filtering = 1
-        concepts = spade.pattern_set_reduction([concept1, concept2], ns_signatures=[],
+        concepts = spade.pattern_set_reduction([concept1, concept2],
+                                               ns_signatures=[],
                                                winlen=winlen, spectrum='#',
                                                h_subset_filtering=0, min_occ=2,
                                                k_superset_filtering=1)
         self.assertEqual(concepts, [concept1])
 
         # keep concept2 by increasing h_subset_filtering
-        concepts = spade.pattern_set_reduction([concept1, concept2], ns_signatures=[],
+        concepts = spade.pattern_set_reduction([concept1, concept2],
+                                               ns_signatures=[],
                                                winlen=winlen, spectrum='#',
                                                h_subset_filtering=2, min_occ=2,
                                                k_superset_filtering=1)
         self.assertEqual(concepts, [concept1, concept2])
 
         # reject concept1 using min_spikes
-        concepts = spade.pattern_set_reduction([concept1, concept2], ns_signatures=[],
+        concepts = spade.pattern_set_reduction([concept1, concept2],
+                                               ns_signatures=[],
                                                winlen=winlen, spectrum='#',
-                                               h_subset_filtering=2, min_spikes=2,
+                                               h_subset_filtering=2,
+                                               min_spikes=2,
                                                k_superset_filtering=0)
         self.assertEqual(concepts, [concept2])
 
@@ -492,7 +496,8 @@ class SpadeTestCase(unittest.TestCase):
         concepts = spade.pattern_set_reduction([concept1, concept2],
                                                ns_signatures=[(2, 3)],
                                                winlen=winlen, spectrum='#',
-                                               h_subset_filtering=3, min_spikes=2,
+                                               h_subset_filtering=3,
+                                               min_spikes=2,
                                                min_occ=2,
                                                k_superset_filtering=1)
         self.assertEqual(concepts, [concept2])
@@ -501,7 +506,8 @@ class SpadeTestCase(unittest.TestCase):
         concepts = spade.pattern_set_reduction([concept1, concept2],
                                                ns_signatures=[(2, 2)],
                                                winlen=winlen, spectrum='#',
-                                               h_subset_filtering=0, min_occ=2,
+                                               h_subset_filtering=0,
+                                               min_occ=2,
                                                k_superset_filtering=0,
                                                l_covered_spikes=0)
         self.assertEqual(concepts, [concept1])
@@ -523,7 +529,8 @@ class SpadeTestCase(unittest.TestCase):
 
         # reject concept3 using ns_signatures
         concepts = spade.pattern_set_reduction([concept1, concept3],
-                                               ns_signatures=[(3, 2)], min_spikes=2,
+                                               ns_signatures=[(3, 2)],
+                                               min_spikes=2,
                                                winlen=winlen, spectrum='#',
                                                k_superset_filtering=1)
         self.assertEqual(concepts, [concept1])
