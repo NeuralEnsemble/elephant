@@ -23,9 +23,9 @@ Elephant is a standard python package and is structured into a number of submodu
     :width: 400 px
     :align: center
     :figwidth: 80 %
-    
+
     Modules of the Elephant library. Modules containing analysis functions are colored in blue shades, core functionality in green shades.
-   
+
 
 Conceptually, modules of the Elephant library can be divided into those related to a specific category of analysis methods, and supporting modules that provide a layer of various core utility functions. All available modules are available directly on the the top level of the Elephant package in the ``elephant`` subdirectory to avoid unnecessary hierarchical clutter. Unit tests for all functions are located in the ``elephant/test`` subdirectory and are named according the module name. This documentation is located in the top level ``doc`` subdirectory.
 
@@ -51,7 +51,7 @@ Identification of spectral properties in analog signals (e.g., the power spectru
 ^^^^^^^^^^^^^^
 A class that provides representations for commonly used kernel functions.
 
-``spike_train_dissimilarity_measures``
+``spike_train_dissimilarity``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Spike train metrics (e.g., the Victor-Purpura measure) to measure the (dis-)similarity between spike trains.
 
@@ -85,11 +85,11 @@ Supporting modules
 
 ``conversion``
 ^^^^^^^^^^^^^^
-This module allows to convert standard data representations (e.g., a spike train stored as Neo ``SpikeTrain`` object) into other representations useful to perform calculations on the data. An example is the representation of a spike train as a sequence of 0-1 values (*binned spike train*). 
+This module allows to convert standard data representations (e.g., a spike train stored as Neo ``SpikeTrain`` object) into other representations useful to perform calculations on the data. An example is the representation of a spike train as a sequence of 0-1 values (*binned spike train*).
 
 ``spike_train_generation``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-This module provides functions to generate spike trains according to prescribed stochastic models (e.g., a Poisson spike train). 
+This module provides functions to generate spike trains according to prescribed stochastic models (e.g., a Poisson spike train).
 
 ``spike_train_surrogates``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
