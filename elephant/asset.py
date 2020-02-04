@@ -204,6 +204,7 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
     if t_stop is None:
         t_stop = _signals_same_tstop(trains)
 
+    # TODO: try to only bin once?
     # Bin the spike trains and take for each of them the ids of filled bins
     binned = conv.BinnedSpikeTrain(
         trains, binsize=binsize, t_start=t_start, t_stop=t_stop)
@@ -309,6 +310,7 @@ def intersection_matrix(
     """
     # TODO: update the docs
     # TODO: Don't do anything twice for x and y if they are the same
+    # TODO: only allow full or no overlap of x and y
 
     if spiketrains_y is None:
         spiketrains_y = spiketrains
@@ -569,9 +571,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     # Transform [-pi, pi] back to [-pi/2, pi/2]
     theta[theta < -np.pi / 2] += np.pi
     theta[theta > np.pi / 2] -= np.pi
-    assert np.allclose(np.diagonal(theta), 0), \
-        "Diagonal elements should be zero due to `np.arctan2(0, 0) == 0` " \
-        "convention."
 
     # Compute the matrix of stretching factors for each pair of points
     stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
@@ -580,7 +579,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     return D * stretch_mat
 
 
-def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
+def cluster_matrix_entries(mat, eps=10, min_neighbors=2, stretch=5):
     """
     Given a matrix mat, replaces its positive elements with integers
     representing different cluster ids. Each cluster comprises close-by
@@ -593,7 +592,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
     A cluster is built by pooling elements according to their distance,
     via the DBSCAN algorithm (see sklearn.cluster.dbscan()). Elements form
     a neighbourhood if at least one of them has a distance not larger than
-    eps from the others, and if they are at least min. Overlapping
+    eps from the others, and if they are at least min_neighbors. Overlapping
     neighborhoods form a cluster.
 
         * Clusters are assigned integers from 1 to the total number k of
@@ -624,7 +623,7 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
         the maximum distance for two elements in mat to be part of the same
         neighbourhood in the DBSCAN algorithm
         Default: 10
-    min : int, optional
+    min_neighbors : int, optional
         the minimum number of elements to form a neighbourhood.
         Default: 2
     stretch : float > 1, optional
@@ -657,13 +656,13 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
 
     # Cluster positions of significant pixels via dbscan
     core_samples, config = dbscan(
-        D, eps=eps, min_samples=min, metric='precomputed')
+        D, eps=eps, min_samples=min_neighbors, metric='precomputed')
 
     # Construct the clustered matrix, where each element has value
     # * i = 1 to k if it belongs to a cluster i,
     # * 0 if it is not significant,
     # * -1 if it is significant but does not belong to any cluster
-    cluster_mat = np.array(np.zeros(mat.shape), dtype=int)
+    cluster_mat = np.zeros_like(mat, dtype=int)
     cluster_mat[xpos_sgnf, ypos_sgnf] = \
         config * (config == -1) + (config + 1) * (config >= 0)
 
@@ -1359,94 +1358,8 @@ def joint_probability_matrix(
     return 1. - jpvmat
 
 
-def extract_sse(spiketrains, x_edges, y_edges, cmat, spiketrains_y=None,
+def extract_sse(spiketrains, binsize, cmat, spiketrains_y=None,
                 ids=None):
-    """
-    Given a list of spike trains, two arrays of bin edges and a clustered
-    intersection matrix obtained from those spike trains via worms analysis
-    using the specified edges, extracts the sequences of synchronous events
-    (SSEs) corresponding to clustered elements in the cluster matrix.
-
-    Parameters
-    ----------
-    spiketrains : list of neo.SpikeTrain
-        the spike trains analyzed for repeated sequences of synchronous
-        events.
-    x_edges : quantities.Quantity
-        the first array of time bins used to compute cmat
-    y_edges : quantities.Quantity
-        the second array of time bins used to compute cmat. Musr have the
-        same length as x_array
-    cmat: numpy.ndarray
-        matrix of shape (n, n), where n is the length of x_edges and
-        y_edges, representing the cluster matrix in worms analysis
-        (see: cluster_matrix_entries())
-    ids : list or None, optional
-        a list of spike train IDs. If provided, ids[i] is the identity
-        of spiketrains[i]. If None, the IDs 0,1,...,n-1 are used
-        Default: None
-
-    Returns
-    -------
-    sse : dict
-        a dictionary D of SSEs, where each SSE is a sub-dictionary Dk,
-        k=1,...,K, where K is the max positive integer in cmat (the
-        total number of clusters in cmat):
-
-        .. centered:: D = {1: D1, 2: D2, ..., K: DK}
-
-        Each sub-dictionary Dk represents the k-th diagonal structure
-        (i.e. the k-th cluster) in cmat, and is of the form
-
-        .. centered:: Dk = {(i1, j1): S1, (i2, j2): S2, ..., (iL, jL): SL}.
-
-        The keys (i, j) represent the positions (time bin ids) of all
-        elements in cmat that compose the SSE, i.e. that take value l (and
-        therefore belong to the same cluster), and the values Sk are sets of
-        neuron ids representing a repeated synchronous event (i.e. spiking
-        at time bins i and j).
-    """
-
-    if spiketrains_y is None:
-        spiketrains_y = spiketrains
-
-    nr_worms = cmat.max()  # number of different clusters ("worms") in cmat
-    if nr_worms <= 0:
-        return {}
-
-    # Compute the transactions associated to the two binnings
-    binsize_x = (x_edges[-1] - x_edges[0]) / (len(x_edges) - 1)
-    t_start_x, t_stop_x = x_edges[0], x_edges[-1]
-    tracts_x = _transactions(
-        spiketrains, binsize=binsize_x, t_start=t_start_x, t_stop=t_stop_x,
-        ids=ids)
-    binsize_y = (y_edges[-1] - y_edges[0]) / (len(y_edges) - 1)
-    t_start_y, t_stop_y = y_edges[0], y_edges[-1]
-    tracts_y = _transactions(
-        spiketrains_y, binsize=binsize_y, t_start=t_start_y, t_stop=t_stop_y,
-        ids=ids)
-
-    # Find the reference diagonal, whose elements correspond to same time bins
-    diag_id, _ = _reference_diagonal(x_edges, y_edges)
-
-    # Reconstruct each worm, link by link
-    sse_dict = {}
-    for k in range(1, nr_worms + 1):  # for each worm
-        worm_k = {}  # worm k is a list of links (each link will be 1 sublist)
-        pos_worm_k = np.array(np.where(cmat == k)).T  # position of all links
-        # if no link lies on the reference diagonal
-        if all([y - x != diag_id for (x, y) in pos_worm_k]):
-            for l, (bin_x, bin_y) in enumerate(pos_worm_k):  # for each link
-                link_l = set(tracts_x[bin_x]).intersection(
-                    tracts_y[bin_y])  # reconstruct the link
-                worm_k[(bin_x, bin_y)] = link_l  # and assign it to its pixel
-            sse_dict[k] = worm_k
-
-    return sse_dict
-
-
-def extract_sse_fix_bins(spiketrains, binsize, cmat, spiketrains_y=None,
-                         ids=None):
     """
     Given a list of spike trains, two arrays of bin edges and a clustered
     intersection matrix obtained from those spike trains via worms analysis
@@ -1493,8 +1406,6 @@ def extract_sse_fix_bins(spiketrains, binsize, cmat, spiketrains_y=None,
     nr_worms = cmat.max()  # number of different clusters ("worms") in cmat
     if nr_worms <= 0:
         return {}
-
-    # TODO: this diag_id calculation is hacky and breaks down for partial x-y-overlap
 
     if spiketrains_y is None:
         spiketrains_y = spiketrains
@@ -1846,10 +1757,9 @@ def sse_overlap(sse1, sse2):
     """
     Given two sequences of synchronous events (SSEs) sse1 and sse2, each
     consisting of a pool of pixel positions and associated synchronous events
-    (see below), determines whether sse1 strictly contains sse2.
-    sse1 strictly contains sse2 if it contains all pixels of sse2, if all
-    associated events in sse1 contain those in sse2, and if sse1 additionally
-    contains other pixels / events not contained in sse2.
+    (see below), determines whether the two SSEs overlap.
+    The SSEs overlap if they are not equal and none of them is a superset of
+    the other one but they are also not disjoint.
 
     Both sse1 and sse2 must be provided as dictionaries of the type
             {(i1, j1): S1, (i2, j2): S2, ..., (iK, jK): SK},
@@ -1866,8 +1776,8 @@ def sse_overlap(sse1, sse2):
 
     Returns
     -------
-    is_super : bool
-        returns True if sse1 strictly contains sse2.
+    overlap : bool
+        returns True if sse1 and sse2 overlap
 
     """
     return not (sse_issub(sse1, sse2) or sse_issuper(sse1, sse2) or
