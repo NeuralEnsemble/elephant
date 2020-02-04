@@ -47,8 +47,8 @@ class SurrogatesTestCase(unittest.TestCase):
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
         dither = 10 * pq.ms
-        surrog = surr.dither_spikes(st, dither=dither, n=1)[0]
-        self.assertEqual(len(surrog), 0)
+        surrogate_train = surr.dither_spikes(st, dither=dither, n=1)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_dither_spikes_output_decimals(self):
 
@@ -65,9 +65,10 @@ class SurrogatesTestCase(unittest.TestCase):
         expected_non_dithered = np.sum(dither_values == 0)
 
         observed_non_dithered = 0
-        for surrog in surrogate_trains:
-            for i in range(len(surrog)):
-                if surrog[i] - int(surrog[i]) * pq.ms == surrog[i] - surrog[i]:
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                if surrogate_train[i] - int(surrogate_train[i]) * \
+                        pq.ms == surrogate_train[i] - surrogate_train[i]:
                     observed_non_dithered += 1
 
         self.assertEqual(observed_non_dithered, expected_non_dithered)
@@ -81,9 +82,9 @@ class SurrogatesTestCase(unittest.TestCase):
         surrogate_trains = surr.dither_spikes(
             st, dither=dither, n=n_surrogates, edges=False)
 
-        for surrog in surrogate_trains:
-            for i in range(len(surrog)):
-                self.assertLessEqual(surrog[i], st.t_stop)
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                self.assertLessEqual(surrogate_train[i], st.t_stop)
 
     def test_dither_spikes_with_refractory_period_output_format(self):
 
@@ -108,7 +109,7 @@ class SurrogatesTestCase(unittest.TestCase):
                                  np.min(np.diff(surrogate_train)))
             sigma_displacement = np.std(surrogate_train - spiketrain)
             # Check that spikes are moved
-            self.assertLessEqual(dither/10, sigma_displacement)
+            self.assertLessEqual(dither / 10, sigma_displacement)
             # Spikes are not moved more than dither
             self.assertLessEqual(sigma_displacement, dither)
 
