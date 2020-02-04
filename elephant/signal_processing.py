@@ -197,26 +197,30 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     scaleopt : {'none', 'biased', 'unbiased', 'normalized', 'coeff'}, optional
         Normalization option, equivalent to matlab `xcorr(..., scaleopt)`.
         Specified as one of the following.
-          * 'none': raw, unscaled cross-correlation :math:`R_{xy}(\tau)`.
 
-          * 'biased': biased estimate of the cross-correlation:
+        * 'none': raw, unscaled cross-correlation
 
-          .. math::
-              R_{xy,biased}(\tau) = \frac{1}{N} R_{xy}(\tau)
+        .. math::
+            R_{xy}(\tau)
 
-          * 'unbiased': unbiased estimate of the cross-correlation:
+        * 'biased': biased estimate of the cross-correlation:
 
-          .. math::
-              R_{xy,unbiased}(\tau) = \frac{1}{N-\tau} R_{xy}(\tau)
+        .. math::
+            R_{xy,biased}(\tau) = \frac{1}{N} R_{xy}(\tau)
 
-          * 'normalized' or 'coeff': normalizes the sequence so that the
-             autocorrelations at zero lag equal 1:
+        * 'unbiased': unbiased estimate of the cross-correlation:
 
-          .. math::
-              R_{xy,coeff}(\tau) = \frac{1}{\sqrt{R_{xx}(0) R_{yy}(0)}}
+        .. math::
+            R_{xy,unbiased}(\tau) = \frac{1}{N-\tau} R_{xy}(\tau)
+
+        * 'normalized' or 'coeff': normalizes the sequence so that the
+          autocorrelations at zero lag equal 1:
+
+        .. math::
+            R_{xy,coeff}(\tau) = \frac{1}{\sqrt{R_{xx}(0) R_{yy}(0)}}
                                  R_{xy}(\tau)
 
-        Default: 'unbiased'
+        Default: 'unbiased'.
 
     Returns
     -------
