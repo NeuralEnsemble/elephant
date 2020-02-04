@@ -32,9 +32,9 @@ import warnings
 
 
 def cubic(data, ximax=100, alpha=0.05):
-    '''
-    Performs the CuBIC analysis [1] on a population histogram, calculated from
-    a population of spiking neurons.
+    """
+    Performs the CuBIC analysis [1]_ on a population histogram, calculated
+    from a population of spiking neurons.
 
     The null hypothesis :math:`H_0: k_3(data)<=k^*_{3,\\xi}` is iteratively
     tested with increasing correlation order :math:`\\xi` (correspondent to
@@ -44,7 +44,7 @@ def cubic(data, ximax=100, alpha=0.05):
     :math:`k_3(data)`.
 
     :math:`k^*_{3,\\xi}` is the maximized third cumulant, supposing a Compund
-    Poisson Process (CPP) model for correlated spike trains (see [1])
+    Poisson Process (CPP) model for correlated spike trains (see [1]_)
     with maximum order of correlation equal to :math:`\\xi`.
 
     Parameters
@@ -52,14 +52,14 @@ def cubic(data, ximax=100, alpha=0.05):
     data : neo.AnalogSignal
         The population histogram (count of spikes per time bin) of the entire
         population of neurons.
-    ximax : int
+    ximax : int, optional
          The maximum number of iteration of the hypothesis test:
-         if it is not possible to compute the :math:`\\hat{\\xi}` before ximax
-         iteration the CuBIC procedure is aborted.
-         Default: 100
-    alpha : float
+         if it is not possible to compute the :math:`\\hat{\\xi}` before
+         `ximax` iteration, the CuBIC procedure is aborted.
+         Default: 100.
+    alpha : float, optional
          The significance level of the hypothesis tests perfomed.
-         Default: 0.05
+         Default: 0.05.
 
     Returns
     -------
@@ -67,19 +67,20 @@ def cubic(data, ximax=100, alpha=0.05):
         The minimum correlation order estimated by CuBIC, necessary to
         explain the value of the third cumulant calculated from the population.
     p : list
-        The ordred list of all the p-values of the hypothesis tests that have
-        been performed. If the maximum number of iteration ximax is reached the
-        last p-value is set to -4
+        The ordered list of all the p-values of the hypothesis tests that have
+        been performed. If the maximum number of iteration `ximax` is reached,
+        the last p-value is set to -4.
     kappa : list
         The list of the first three cumulants of the data.
     test_aborted : bool
         Wheter the test was aborted because reached the maximum number of
-        iteration ximax
+        iteration `ximax`.
 
     References
     ----------
-    [1]Staude, Rotter, Gruen, (2009) J. Comp. Neurosci
-    '''
+    .. [1] Staude, Rotter, Gruen, (2009) J. Comp. Neurosci
+
+    """
     # alpha in in the interval [0,1]
     if alpha < 0 or alpha > 1:
         raise ValueError(

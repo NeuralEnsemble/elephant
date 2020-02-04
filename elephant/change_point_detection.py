@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-This algorithm determines if a spike train `spk` can be considered as stationary
-process (constant firing rate) or not as stationary process (i.e. presence of
-one or more points at which the rate increases or decreases). In case of
-non-stationarity, the output is a list of detected Change Points (CPs).
+This algorithm determines if a spike train `spk` can be considered as
+stationary process (constant firing rate) or not as stationary process (i.e.
+presence of one or more points at which the rate increases or decreases). In
+case of non-stationarity, the output is a list of detected Change Points (CPs).
 Essentially, a det of  two-sided window of width `h` (`_filter(t, h, spk)`)
 slides over the spike train within the time `[h, t_final-h]`. This generates a
 `_filter_process(dt, h, spk)` that assigns at each time `t` the difference
@@ -15,7 +15,6 @@ the filter_process (max difference of spike count between the left and right
 window) is derived based on asymptotic considerations. The procedure is
 repeated for an arbitrary set of windows, with different size `h`.
 
-
 Examples
 --------
 The following applies multiple_filter_test to a spike trains.
@@ -23,8 +22,7 @@ The following applies multiple_filter_test to a spike trains.
     >>> import quantities as pq
     >>> import neo
     >>> from elephant.change_point_detection import multiple_filter_test
-
-
+    ...
     >>> test_array = [1.1,1.2,1.4,   1.6,1.7,1.75,1.8,1.85,1.9,1.95]
     >>> st = neo.SpikeTrain(test_array, units='s', t_stop = 2.1)
     >>> window_size = [0.5]*pq.s
@@ -32,16 +30,13 @@ The following applies multiple_filter_test to a spike trains.
     >>> alpha = 5.0
     >>> num_surrogates = 10000
     >>> change_points = multiple_filter_test(window_size, st, t_fin, alpha,
-                        num_surrogates, dt = 0.5*pq.s)
-
-
+    ...                 num_surrogates, dt = 0.5*pq.s)
 
 References
 ----------
 Messer, M., Kirchner, M., Schiemann, J., Roeper, J., Neininger, R., & Schneider,
 G. (2014). A multiple filter test for the detection of rate changes in renewal
 processes with varying variance. The Annals of Applied Statistics, 8(4),2027-2067.
-
 
 Original code
 -------------
