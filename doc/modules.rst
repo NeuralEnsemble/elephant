@@ -7,6 +7,7 @@ Function Reference by Module
 
    reference/asset
    reference/cell_assembly_detection
+   reference/change_point_detection
    reference/conversion
    reference/cubic
    reference/current_source_density
