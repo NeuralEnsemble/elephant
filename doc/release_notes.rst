@@ -18,7 +18,7 @@ New modules
 * GPFA - Gaussian-process factor analysis - dimensionality reduction method for neural trajectory visualization (https://github.com/NeuralEnsemble/elephant/pull/233). _Note: the API could change in the future._
 
 
-Buf fixes
+Bug fixes
 ---------
 * [signal processing] Keep `array_annotations` in the output of signal processing functions (https://github.com/NeuralEnsemble/elephant/pull/258).
 * [SPADE] Fixed the calculation of the duration of a pattern in the output (https://github.com/NeuralEnsemble/elephant/pull/254).
@@ -46,7 +46,7 @@ New functions
     * Waveform signal-to-noise ratio (https://github.com/NeuralEnsemble/elephant/pull/219).
 * Added support for Butterworth `sosfiltfilt` - numerically stable (in particular, higher order) filtering (https://github.com/NeuralEnsemble/elephant/pull/234).
 
-Buf fixes
+Bug fixes
 ---------
 * Fixed neo version typo in requirements file (https://github.com/NeuralEnsemble/elephant/pull/218)
 * Fixed broken docs (https://github.com/NeuralEnsemble/elephant/pull/230, https://github.com/NeuralEnsemble/elephant/pull/232)
@@ -105,7 +105,7 @@ Other changes
 -------------
 * Switched to multiple `requirements.txt` files which are directly read into the `setup.py`
 * `instantaneous_rate()` accepts now list of spiketrains
-* Minor bug fixes  
+* Minor bug fixes
 
 
 Elephant 0.5.0 release notes
@@ -122,12 +122,12 @@ New functions
     * New function to extract spike-triggered phases of an AnalogSignal
 * `unitary_event_analysis` module:
     * Added new unit test to the UE function to verify the method based on data of a recent [Re]Science publication
-  
+
 Other changes
 -------------
 * Minor bug fixes
-  
-  
+
+
 Elephant 0.4.3 release notes
 ============================
 March 2nd 2018
@@ -137,7 +137,7 @@ Other changes
 * Bug fixes in `spade` module:
     * Fixed an incompatibility with the latest version of an external library
 
-  
+
 Elephant 0.4.2 release notes
 ============================
 March 1st 2018
@@ -162,8 +162,8 @@ Other changes
 * Fixed bug in ISI function `isi()`, `statistics.py` module
 * Fixed bug in `dither_spikes()`, `spike_train_surrogates.py`
 * Minor bug fixes
- 
- 
+
+
 Elephant 0.4.1 release notes
 ============================
 March 23rd 2017
