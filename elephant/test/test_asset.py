@@ -63,7 +63,7 @@ class AssetTestCase(unittest.TestCase):
     def test_cluster_correct(self):
         mat = np.zeros((6, 6))
         mat[[2, 4, 5], [0, 0, 1]] = 1
-        mat_clustered = cluster(mat, eps=4, min=2, stretch=6)
+        mat_clustered = cluster(mat, eps=4, min_neighbors=2, stretch=6)
 
         mat_correct = np.zeros((6, 6))
         mat_correct[[4, 5], [0, 1]] = 1
@@ -77,7 +77,7 @@ class AssetTestCase(unittest.TestCase):
         mat[x, y] = 1
         mat = mat + mat.T
         # compute stretched distance matrix
-        mat_clustered = cluster(mat, eps=4, min=2, stretch=6)
+        mat_clustered = cluster(mat, eps=4, min_neighbors=2, stretch=6)
         mat_equals_m1 = (mat_clustered == -1)
         mat_equals_0 = (mat_clustered == 0)
         mat_larger_0 = (mat_clustered > 0)
@@ -151,9 +151,9 @@ class AssetTestCase(unittest.TestCase):
                         [True, False, False, True],
                         [False, False, True, False]])
         clustered1 = asset.cluster_matrix_entries(
-            mat, eps=1.5, min=2, stretch=1)
+            mat, eps=1.5, min_neighbors=2, stretch=1)
         clustered2 = asset.cluster_matrix_entries(
-            mat, eps=1.5, min=3, stretch=1)
+            mat, eps=1.5, min_neighbors=3, stretch=1)
         clustered1_correctA = np.array([[0, 0, 1, 0],
                                        [0, 1, 0, 0],
                                        [1, 0, 0, 2],
