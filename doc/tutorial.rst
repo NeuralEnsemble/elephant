@@ -2,10 +2,28 @@
 Tutorials
 *********
 
+Choose between tutorials specific for particular modules or go through the **Getting started** below to get a general overview of how to use Elephant.
+
+Module-specific tutorials
+-------------------------
+* statistics
+  :doc:`view <../tutorials/statistics>`
+  or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc?filepath=doc/tutorials/statistics.ipynb
+
+* unitary event analysis
+  :doc:`view <../tutorials/unitary_event_analysis>`
+  or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc?filepath=doc/tutorials/unitary_event_analysis.ipynb
+
 Getting Started
 ---------------
 
-In this first tutorial, we will go through a very simple example of how to use Elephant. We will numerically verify that the coefficient of variation (CV), a measure of the variability of inter-spike intervals, of a spike train that is modeled as a random (stochastic) Poisson process is 1.
+In this first tutorial, we will go through a very simple example of how to use Elephant. We will numerically verify that the coefficient of variation (CV), a measure of the variability of inter-spike intervals, of a spike train that is modeled as a random (stochastic) Poisson process, is 1.
 
 As a first step, install Elephant and its dependencies as outlined in :ref:`install`. Next, start up your Python shell. Under Windows, you can likely launch a Python shell from the Start menu. Under Linux or Mac, you may start Python by typing::
 
@@ -55,7 +73,7 @@ Notice how the spike times of each spike train are extracted from each of the sp
     :width: 600 px
     :align: center
     :figwidth: 80 %
-    
+
     Spike raster plot of the 100 Poisson spike trains showing the first second of data.
 
 From the plot you can see the random nature of each Poisson spike train. Let us now calculate the distribution of the 100 CVs obtained from inter-spike intervals (ISIs) of these spike trains. Close the graphics window to get back to the Python prompt. The functions to calculate the list of ISIs and the CV are both located in the :mod:`elephant.statistics` module. Thus, for each spike train in our list, we first call the :func:`isi` function which returns an array of all *N-1* ISIs for the *N* spikes in the input spike train (refer to the online help using ``help(isi)``). We then feed the list of ISIs into the :func:`cv` function, which returns a single value for the coefficient of variation::
@@ -77,7 +95,7 @@ As predicted by theory, the CV values are clustered around 1. This concludes our
     :width: 600 px
     :align: center
     :figwidth: 80 %
-    
+
     Distribution of CV values of the ISIs of 100 Poisson spike trains.
 
 
