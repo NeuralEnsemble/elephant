@@ -1,39 +1,37 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
 [1] for neural trajectory visualization of parallel spike trains. GPFA applies
-factor analysis (FA) time-binned spike count data to reduce the dimensionality
-and at the same time smoothes the resulting low-dimensional trajectories by
-fitting a Gaussian process (GP) model to them.
+factor analysis (FA) to time-binned spike count data to reduce the
+dimensionality and at the same time smoothes the resulting low-dimensional
+trajectories by fitting a Gaussian process (GP) model to them.
 
 The input consists of a set of trials (Y), each containing a list of spike
-trains (N neurons). The output is the projection (X) of the data in space
-of pre-chosen dimension x_dim < N.
+trains (N neurons). The output is the projection (X) of the data in a space
+of pre-chosen dimensionality x_dim < N.
 
-Under the assumption of a linear relation between the latent variable X and the
-actual data Y in addition to a noise term (i.e.,
-:math:`Y = C * X + d + Gauss(0,R)`), the projection corresponds to the
+Under the assumption of a linear relation (transform matrix C) between the
+latent variable X following a Gaussian process and the spike train data Y with
+a bias d and  a noise term of zero mean and (co)variance R (i.e.,
+:math:`Y = C X + d + Gauss(0,R)`), the projection corresponds to the
 conditional probability E[X|Y].
-
-A Gaussian process (X) of dimension x_dim < N is adopted to extract smooth
-neural trajectories. The parameters (C, d, R) are estimated from the data using
-factor analysis technique.
+The parameters (C, d, R) as well as the time scales and variances of the
+Gaussian process are estimated from the data using an expectation-maximization
+(EM) algorithm.
 
 Internally, the analysis consists of the following steps:
 
-0) bin the data to get a sequence of N dimensional vectors of spike counts for
-   each time bin, and choose the reduced dimension x_dim
+0) bin the spike train data to get a sequence of N dimensional vectors of spike
+counts in respective time bins, and choose the reduced dimensionality x_dim
 
-1) expectation maximization for the parameters C, d, R and the time-scale of
-   the Gaussian process, using all the trials provided as input (cf.,
-   `gpfa_core.em()`)
+1) expectation-maximization for fitting of the parameters C, d, R and the
+time-scales and variances of the Gaussian process, using all the trials
+provided as input (c.f., `gpfa_core.em()`)
 
-2) projection of single trials in the low dimensional space (cf.,
-   `gpfa_core.exact_inference_with_ll()`)
+2) projection of single trials in the low dimensional space (c.f.,
+`gpfa_core.exact_inference_with_ll()`)
 
-3) orthonormalization of the matrix C and the corresponding subspace:
-   (cf., `gpfa_core.orthonormalize()`)
-
-
+3) orthonormalization of the matrix C and the corresponding subspace, for
+visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
 
 References
 ----------
