@@ -27,8 +27,9 @@ from . import (statistics,
                waveform_features,
                gpfa)
 
-try:
-    from . import pandas_bridge, asset
+    from . import pandas_bridge
+    from . import asset
+    from . import spade
 except ImportError:
     # requirements-extras are missing
     # please run command `pip install -r requirements-extras.txt`

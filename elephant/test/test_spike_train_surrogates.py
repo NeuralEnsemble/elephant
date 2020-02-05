@@ -289,7 +289,7 @@ class SurrogatesTestCase(unittest.TestCase):
         surrs = surr.surrogates(st, dt=3 * pq.ms, n=nr_surr,
                                 surr_method='shuffle_isis', edges=False)
 
-        self.assertRaises(ValueError, surr.surrogates, st, n=1,
+        self.assertRaises(AttributeError, surr.surrogates, st, n=1,
                           surr_method='spike_shifting',
                           dt=None, decimals=None, edges=True)
         self.assertTrue(len(surrs) == nr_surr)
@@ -324,7 +324,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         # Test fast version
         joint_isi_instance = surr.JointISI(st, dither=dither)
-        surrs = joint_isi_instance.dithering(n_surr=n_surr)
+        surrs = joint_isi_instance.dithering(n_surrogates=n_surr)
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
@@ -342,7 +342,7 @@ class SurrogatesTestCase(unittest.TestCase):
                                            method='window',
                                            dither=2*dither,
                                            num_bins=50)
-        surrs = joint_isi_instance.dithering(n_surr=n_surr)
+        surrs = joint_isi_instance.dithering(n_surrogates=n_surr)
 
         self.assertIsInstance(surrs, list)
         self.assertEqual(len(surrs), n_surr)
@@ -374,18 +374,14 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(len(surrog), 0)
 
     def test_joint_isi_dithering_output(self):
-        st = stg.homogeneous_poisson_process_with_refr_period(
+        st = stg.homogeneous_poisson_process(
             rate=100. * pq.Hz,
-            refr_period=3 * pq.ms,
+            refractory_period=3 * pq.ms,
             t_stop=0.1 * pq.s)
         surrog_st = surr.JointISI(st).dithering()[0]
-        ground_truth = [27.99123087, 33.92680035, 39.94386642, 46.60932914,
-                        51.77647236, 58.00172645,
-                        68.15027025, 75.79592778, 84.09942906, 97.34738152]
+        ground_truth = [0.005571, 0.018363, 0.026825, 0.036336, 0.045193,
+                        0.05146, 0.058489, 0.078053]
         assert_array_almost_equal(surrog_st.magnitude, ground_truth)
-
-
-
 
 
 def suite():

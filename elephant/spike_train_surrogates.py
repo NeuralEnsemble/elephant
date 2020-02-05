@@ -39,11 +39,14 @@ Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+from __future__ import division, print_function, unicode_literals
+
+import random
+
 import numpy as np
 import quantities as pq
 import neo
 from scipy.ndimage import gaussian_filter
-import random
 
 try:
     import elephant.statistics as es
@@ -51,6 +54,10 @@ try:
     isi = es.isi
 except ImportError:
     from .statistics import isi  # Convenience when in elephant working dir.
+
+# List of all available surrogate methods
+SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
+                'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering']
 
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
@@ -264,7 +271,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
         # Create list of surrogate spike trains by random ISI permutation
         sts = []
-        for i in range(n):
+        for _ in range(n):
             surr_times = np.cumsum(np.random.permutation(ISIs)) * \
                 spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
@@ -394,7 +401,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
         Size of the time bins within which to randomise the spike times.
         Note: the last bin arrives until `spiketrain.t_stop` and might have
         width different from `binsize`.
-    n : int (optional)
+    n : int, optional
         Number of surrogates to be generated.
         Default: 1
 
@@ -544,56 +551,8 @@ class JointISI(object):
                  refr_period=4. * pq.ms
                  ):
         """
-        Parameters
-        ----------
-        spiketrain: neo.SpikeTrain
-            Input spiketrain to create surrogates from.
-        dither: pq.Quantity, optional
-            This quantity describes the maximum displacement of a spike, when
-            method is 'window'. It is also used for the uniform dithering for
-            the spikes, which are outside the regime in the Joint-ISI
-            histogram, where Joint-ISI dithering is applicable.
-            Default: 15.*pq.ms
-        truncation_limit: pq.Quantity, optional
-            The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
-            within the range `[0, inf]`. Since this is computationally not
-            feasible, the Joint-ISI distribution is truncated for high ISI.
-            The Joint-ISI histogram is calculated for
-            :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
-            Default: 100*pq.ms
-        num_bins: int, optional
-            The size of the joint-ISI-distribution will be
-            `num_bins*num_bins/2`.
-            Default: 100
-        sigma: pq.Quantity, optional
-            The standard deviation of the Gaussian kernel, with which
-            the data is convolved.
-            Default: 2.*pq.ms
-        alternate: boolean, optional
-            If `alternate` is True, then all even spikes are dithered followed
-            by all odd spikes. Otherwise, the spikes are dithered in ascending
-            order.
-            Default: True.
-        use_sqrt: boolean, optional
-            If `use_sqrt` is True, the joint-ISI histogram is preprocessed with
-            a square root (following Gerstein et al. 2004).
-            Default: False
-        method: string, optional
-            * 'window': the spike movement is limited to the parameter `dither`
-            * 'fast': the spike can move in the whole range between the
-                previous and subsequent spikes (computationally efficient).
-            Default: 'fast'
-        cutoff: boolean, optional
-            If set to True, then the Filtering of the Joint-ISI histogram is
-            limited to the lower side by the minimal ISI.
-            This can be necessary, if in the data there is a certain refractory
-            period, which will be destroyed by the convolution with the
-            2d-Gaussian function.
-            Default: True
-        refr_period: pq.Quantity, optional
-            Defines the refractory period of the dithered `spiketrain` unless
-            the smallest ISI of the `spiketrain` is lower than this value.
-            Default: 4.*pq.ms
+        Constructor
+        (actual documentation is in class documentation, see above!)
         """
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
@@ -622,21 +581,21 @@ class JointISI(object):
         self.max_change_index = self.isi_to_index(self.dither)
         self.max_change_isi = self.index_to_isi(self.max_change_index)
 
-    def get_magnitude(self, x):
+    def get_magnitude(self, quantity):
         """
         Parameters
         ----------
-        x: pq.Quantity or float
+        quantity: pq.Quantity or float
 
         Returns
         -------
         float
-            The magnitude of `x`, rescaled to the units of the input
+            The magnitude of `quantity`, rescaled to the units of the input
             `spiketrain`.
         """
-        if isinstance(x, pq.Quantity):
-            return x.rescale(self.unit).magnitude
-        return x
+        if isinstance(quantity, pq.Quantity):
+            return quantity.rescale(self.unit).magnitude
+        return quantity
 
     @property
     def too_less_spikes(self):
@@ -715,8 +674,8 @@ class JointISI(object):
                 start_index = self.isi_to_index(self.refr_period)
                 joint_isi_histogram[
                     start_index:, start_index:] = gaussian_filter(
-                    joint_isi_histogram[start_index:, start_index:],
-                    sigma=self.sigma / self.bin_width)
+                        joint_isi_histogram[start_index:, start_index:],
+                        sigma=self.sigma / self.bin_width)
                 joint_isi_histogram[:start_index, :] = 0
                 joint_isi_histogram[:, :start_index] = 0
             else:
@@ -744,7 +703,7 @@ class JointISI(object):
             return (array - array[0]) / (array[-1] - array[0])
         return np.zeros_like(array)
 
-    def dithering(self, n_surr=1):
+    def dithering(self, n_surrogates=1):
         """
         Implementation of Joint-ISI-dithering for spiketrains that pass the
         threshold of the dense rate, if not a uniform dithered spiketrain is
@@ -753,7 +712,7 @@ class JointISI(object):
 
         Parameters
         ----------
-        n_surr: int
+        n_surrogates: int
             The number of dithered spiketrains to be returned.
             Default: 1
 
@@ -764,7 +723,7 @@ class JointISI(object):
             `spiketrain`
         """
         if self.too_less_spikes:
-            return [self.spiketrain] * n_surr
+            return [self.spiketrain] * n_surrogates
 
         # Checks, whether the preprocessing is already done.
         if self._jisih_cumulatives is None:
@@ -772,7 +731,7 @@ class JointISI(object):
 
         dithered_sts = []
         isi_to_dither = self.isi
-        for surr_number in range(n_surr):
+        for _ in range(n_surrogates):
             dithered_isi = self._get_dithered_isi(isi_to_dither)
 
             dithered_st = self.spiketrain[0].magnitude + \
@@ -967,13 +926,17 @@ def surrogates(
         'joint_isi_dithering': None}
 
     if surr_method not in surrogate_types.keys():
-        raise ValueError('specified surr_method (=%s) not valid' % surr_method)
+        raise AttributeError(
+            'specified surr_method (=%s) not valid' % surr_method)
 
-    if surr_method in ['dither_spike_train', 'dither_spikes', 'jitter_spikes']:
+    if surr_method in ['dither_spike_train', 'dither_spikes']:
         return surrogate_types[surr_method](
             spiketrain, dt, n=n, decimals=decimals, edges=edges)
-    elif surr_method in ['randomise_spikes', 'shuffle_isis']:
+    if surr_method in ['randomise_spikes', 'shuffle_isis']:
         return surrogate_types[surr_method](
             spiketrain, n=n, decimals=decimals)
-    elif surr_method == 'joint_isi_dithering':
-        return JointISI(spiketrain).dithering(n)
+    elif surr_method == 'jitter_spikes':
+        return surrogate_types[surr_method](
+            spiketrain, dt, n=n)
+    # surr_method == 'joint_isi_dithering':
+    return JointISI(spiketrain).dithering(n)
