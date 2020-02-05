@@ -23,7 +23,9 @@ from . import (statistics,
                conversion,
                neo_tools,
                cell_assembly_detection,
-               waveform_features)
+               spade,
+               waveform_features,
+               gpfa)
 
 try:
     from . import pandas_bridge
@@ -31,6 +33,7 @@ try:
     from . import spade
 except ImportError:
     # requirements-extras are missing
+    # please run command `pip install -r requirements-extras.txt`
     pass
 
 
