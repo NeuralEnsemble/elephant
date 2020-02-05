@@ -27,6 +27,7 @@ from . import (statistics,
                waveform_features,
                gpfa)
 
+try:
     from . import pandas_bridge
     from . import asset
     from . import spade
