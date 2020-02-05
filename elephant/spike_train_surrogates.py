@@ -48,12 +48,7 @@ import quantities as pq
 import neo
 from scipy.ndimage import gaussian_filter
 
-try:
-    import elephant.statistics as es
-
-    isi = es.isi
-except ImportError:
-    from .statistics import isi  # Convenience when in elephant working dir.
+from elephant.statistics import isi
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
