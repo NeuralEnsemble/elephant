@@ -26,7 +26,7 @@ _SPARSITY_MEMORY_EFFICIENT_THR = 0.1
 class _CrossCorrHist(object):
     """
     Cross-correlation histogram for `BinnedSpikeTrain`s.
-    This class is used inside the `cross_correlation_histogram()` function
+    This class is used inside :func:`cross_correlation_histogram` function
     and is not meant to be used outside of it.
     """
 
@@ -498,7 +498,7 @@ def cross_correlation_histogram(
         same bin. If True, such spikes are considered as a single spike;
         otherwise they are considered as different spikes.
         Default: False.
-    kernel : array or None, optional
+    kernel : np.ndarray or None, optional
         A one dimensional array containing an optional smoothing kernel applied
         to the resulting CCH. The length N of the kernel indicates the
         smoothing window. The smoothing window cannot be larger than the
@@ -510,7 +510,7 @@ def cross_correlation_histogram(
           * bartlett: numpy.bartlett(N)
         If None is specified, the CCH is not smoothed.
         Default: None
-    method : string, optional
+    method : {'speed', 'memory'}, optional
         Defines the algorithm to use. "speed" uses numpy.correlate to calculate
         the correlation between two binned spike trains using a non-sparse data
         representation. Due to various optimizations, it is the fastest
@@ -531,7 +531,7 @@ def cross_correlation_histogram(
 
         Offset bins correspond to correlations at a delay equivalent
         to the difference between the spike times of `binned_st1`
-        ("reference neuron") and those of `binned_st2` ("target neruon"): an
+        ("reference neuron") and those of `binned_st2` ("target neuron"): an
         entry at positive lags corresponds to a spike in `binned_st2` following
         a spike in `binned_st1` bins to the right, and an entry at negative
         lags corresponds to a spike in `binned_st1` following a spike in
@@ -563,35 +563,35 @@ def cross_correlation_histogram(
     ----------
     .. [1] "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
 
-    Example
-    -------
-        Plot the cross-correlation histogram between two Poisson spike trains
-        >>> import elephant
-        >>> import matplotlib.pyplot as plt
-        >>> import quantities as pq
+    Examples
+    --------
+    Plot the cross-correlation histogram between two Poisson spike trains
+    >>> import elephant
+    >>> import matplotlib.pyplot as plt
+    >>> import quantities as pq
 
-        >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
-        ...        elephant.spike_train_generation.homogeneous_poisson_process(
-        ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-        ...        binsize=5. * pq.ms)
-        >>> binned_st2 = elephant.conversion.BinnedSpikeTrain(
-        ...        elephant.spike_train_generation.homogeneous_poisson_process(
-        ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-        ...        binsize=5. * pq.ms)
+    >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
+    ...        elephant.spike_train_generation.homogeneous_poisson_process(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        binsize=5. * pq.ms)
+    >>> binned_st2 = elephant.conversion.BinnedSpikeTrain(
+    ...        elephant.spike_train_generation.homogeneous_poisson_process(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        binsize=5. * pq.ms)
 
-        >>> cc_hist = \
-        ...    elephant.spike_train_correlation.cross_correlation_histogram(
-        ...        binned_st1, binned_st2, window=[-30,30],
-        ...        border_correction=False,
-        ...        binary=False, kernel=None, method='memory')
+    >>> cc_hist = \
+    ...    elephant.spike_train_correlation.cross_correlation_histogram(
+    ...        binned_st1, binned_st2, window=[-30,30],
+    ...        border_correction=False,
+    ...        binary=False, kernel=None, method='memory')
 
-        >>> plt.bar(left=cc_hist[0].times.magnitude,
-        ...         height=cc_hist[0][:, 0].magnitude,
-        ...         width=cc_hist[0].sampling_period.magnitude)
-        >>> plt.xlabel('time (' + str(cc_hist[0].times.units) + ')')
-        >>> plt.ylabel('cross-correlation histogram')
-        >>> plt.axis('tight')
-        >>> plt.show()
+    >>> plt.bar(left=cc_hist[0].times.magnitude,
+    ...         height=cc_hist[0][:, 0].magnitude,
+    ...         width=cc_hist[0].sampling_period.magnitude)
+    >>> plt.xlabel('time (' + str(cc_hist[0].times.units) + ')')
+    >>> plt.ylabel('cross-correlation histogram')
+    >>> plt.axis('tight')
+    >>> plt.show()
 
     Alias
     -----
@@ -682,7 +682,11 @@ def cross_correlation_histogram(
         cross_corr = cch_builder.correlate_speed(cch_mode=cch_mode)
 
     if border_correction:
-        cross_corr = cch_builder.border_correction(cross_corr)
+        if window == 'valid':
+            warnings.warn(
+                "Border correction is ignored with 'valid' window mode")
+        else:
+            cross_corr = cch_builder.border_correction(cross_corr)
     if kernel is not None:
         cross_corr = cch_builder.kernel_smoothing(cross_corr, kernel=kernel)
     if cross_corr_coef:
