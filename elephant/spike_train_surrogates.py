@@ -185,7 +185,7 @@ def dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates=1,
     Returns
     -------
     dithered_spiketrains : list of neo.SpikeTrain
-        Each element is an independetn surrogate spiketrain of 'spiketrain',
+        Each element is an independent surrogate spiketrain of 'spiketrain',
         where each spike is moved.
     """
     if len(spiketrain) == 0:
@@ -197,7 +197,7 @@ def dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates=1,
 
     dither = dither.rescale(unit).magnitude
     refractory_period = refractory_period.rescale(unit).magnitude
-    refractory_period = min(refractory_period, min(np.diff(spiketrain)))
+    refractory_period = np.min(np.diff(spiketrain), initial=refractory_period)
 
     dithered_spiketrains = []
     for _ in range(n_surrogates):
