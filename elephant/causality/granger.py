@@ -176,7 +176,9 @@ def pairwise_granger(signals, order):
     coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
 
     directional_causality_x_y = np.log(var_x[0]/cov_xy[0, 0])
+    print(f'directional_x_y is {var_x[0]/cov_xy[0, 0]}. The variance of x is {var_x[0]}, the covariance_xy is {cov_xy[0, 0]}')
     directional_causality_y_x = np.log(var_y[0]/cov_xy[1, 1])
+    print(f'directional_x_y is {var_y[0]/cov_xy[0, 0]}. The variance of x is {var_y[0]}, the covariance_xy is {cov_xy[0, 0]}')
 
     cov_determinant = np.linalg.det(cov_xy)
 
