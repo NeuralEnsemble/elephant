@@ -10,68 +10,72 @@ written by Eilif Muller, or from the NeuroTools signals.analogs module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
-import math
 import random
 import warnings
+from functools import partial
 
+import neo
 import numpy as np
-from neo import SpikeTrain
-from quantities import ms, mV, Hz, Quantity, dimensionless
+import quantities as pq
 
 from elephant.spike_train_surrogates import dither_spike_train
 
 
-def spike_extraction(signal, threshold=0.0 * mV, sign='above',
-                     time_stamps=None, extr_interval=(-2 * ms, 4 * ms)):
+def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
+                     time_stamps=None, extr_interval=(-2 * pq.ms, 4 * pq.ms)):
     """
     Return the peak times for all events that cross threshold and the
     waveforms. Usually used for extracting spikes from a membrane
     potential to calculate waveform properties.
-    Similar to spike_train_generation.peak_detection.
 
     Parameters
     ----------
-    signal : neo AnalogSignal object
-        'signal' is an analog signal.
-    threshold : A quantity, e.g. in mV
-        'threshold' contains a value that must be reached for an event
-        to be detected. Default: 0.0 * mV.
-    sign : 'above' or 'below'
-        'sign' determines whether to count thresholding crossings
-        that cross above or below the threshold. Default: 'above'.
-    time_stamps: None, quantity array or Object with .times interface
-        if 'spike_train' is a quantity array or exposes a quantity array
-        exposes the .times interface, it provides the time_stamps
-        around which the waveform is extracted. If it is None, the
-        function peak_detection is used to calculate the time_stamps
-        from signal. Default: None.
-    extr_interval: unpackable time quantities, len == 2
-        'extr_interval' specifies the time interval around the
-        time_stamps where the waveform is extracted. The default is an
-        interval of '6 ms'. Default: (-2 * ms, 4 * ms).
+    signal : neo.AnalogSignal
+        An analog input signal.
+    threshold : pq.Quantity, optional
+        Contains a value that must be reached for an event to be detected.
+        Default: 0.0 * pq.mV.
+    sign : {'above', 'below'}, optional
+        Determines whether to count threshold crossings that cross above or
+        below the threshold.
+        Default: 'above'.
+    time_stamps : pq.Quantity, optional
+        If `spike_train` is a `pq.Quantity` array, `time_stamps` provides the
+        time stamps around which the waveform is extracted. If it is None, the
+        function `peak_detection` is used to calculate the time_stamps
+        from signal.
+        Default: None.
+    extr_interval : tuple of pq.Quantity
+        Specifies the time interval around the `time_stamps` where the waveform
+        is extracted.
+        Default: (-2 * pq.ms, 4 * pq.ms).
 
     Returns
     -------
-    result_st : neo SpikeTrain object
-        'result_st' contains the time_stamps of each of the spikes and
-        the waveforms in result_st.waveforms.
+    result_st : neo.SpikeTrain
+        Contains the time_stamps of each of the spikes and the waveforms in
+        `result_st.waveforms`.
+
+    See Also
+    --------
+    elephant.spike_train_generation.peak_detection
     """
     # Get spike time_stamps
     if time_stamps is None:
         time_stamps = peak_detection(signal, threshold, sign=sign)
     elif hasattr(time_stamps, 'times'):
         time_stamps = time_stamps.times
-    elif type(time_stamps) is Quantity:
-        raise TypeError("time_stamps must be None, a quantity array or" +
+    elif isinstance(time_stamps, pq.Quantity):
+        raise TypeError("time_stamps must be None, a pq.Quantity array or" +
                         " expose the.times interface")
 
     if len(time_stamps) == 0:
-        return SpikeTrain(time_stamps, units=signal.times.units,
-                          t_start=signal.t_start, t_stop=signal.t_stop,
-                          waveforms=np.array([]),
-                          sampling_rate=signal.sampling_rate)
+        return neo.SpikeTrain(time_stamps, units=signal.times.units,
+                              t_start=signal.t_start, t_stop=signal.t_stop,
+                              waveforms=np.array([]),
+                              sampling_rate=signal.sampling_rate)
 
     # Unpack the extraction interval from tuple or array
     extr_left, extr_right = extr_interval
@@ -81,9 +85,9 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
     if any(np.diff(time_stamps) < extr_interval[1]):
         warnings.warn("Waveforms overlap.", UserWarning)
 
-    data_left = ((extr_left * signal.sampling_rate).simplified).magnitude
+    data_left = (extr_left * signal.sampling_rate).simplified.magnitude
 
-    data_right = ((extr_right * signal.sampling_rate).simplified).magnitude
+    data_right = (extr_right * signal.sampling_rate).simplified.magnitude
 
     data_stamps = (((time_stamps - signal.t_start) *
                     signal.sampling_rate).simplified).magnitude
@@ -107,7 +111,7 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
         to_delete = np.array([idx for idx, x in enumerate(waveforms)
                               if len(x) < max_len])
         waveforms = np.delete(waveforms, to_delete, axis=0)
-        waveforms = np.array([x for x in waveforms])
+        waveforms = np.array(waveforms)
         warnings.warn("Waveforms " +
                       ("{:d}, " * len(to_delete)).format(*to_delete) +
                       "exceeded signal and had to be deleted. " +
@@ -115,13 +119,14 @@ def spike_extraction(signal, threshold=0.0 * mV, sign='above',
 
     waveforms = waveforms[:, np.newaxis, :]
 
-    return SpikeTrain(time_stamps, units=signal.times.units,
-                      t_start=signal.t_start, t_stop=signal.t_stop,
-                      sampling_rate=signal.sampling_rate, waveforms=waveforms,
-                      left_sweep=extr_left)
+    return neo.SpikeTrain(time_stamps, units=signal.times.units,
+                          t_start=signal.t_start, t_stop=signal.t_stop,
+                          sampling_rate=signal.sampling_rate,
+                          waveforms=waveforms,
+                          left_sweep=extr_left)
 
 
-def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
+def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
     """
     Returns the times when the analog signal crosses a threshold.
     Usually used for extracting spike times from a membrane potential.
@@ -129,33 +134,36 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
 
     Parameters
     ----------
-    signal : neo AnalogSignal object
-        'signal' is an analog signal.
-    threshold : A quantity, e.g. in mV
-        'threshold' contains a value that must be reached
-        for an event to be detected. Default: 0.0 * mV.
-    sign : 'above' or 'below'
-        'sign' determines whether to count thresholding crossings
-        that cross above or below the threshold.
-    format : None or 'raw'
-        Whether to return as SpikeTrain (None)
-        or as a plain array of times ('raw').
+    signal : neo.AnalogSignal
+        An analog input signal.
+    threshold : pq.Quantity, optional
+        Contains a value that must be reached for an event to be detected.
+        Default: 0.0 * pq.mV.
+    sign : {'above', 'below'}, optional
+        Determines whether to count threshold crossings that cross above or
+        below the threshold.
+        Default: 'above'
 
     Returns
     -------
-    result_st : neo SpikeTrain object
-        'result_st' contains the spike times of each of the events (spikes)
-        extracted from the signal.
+    result_st : neo.SpikeTrain
+        Contains the spike times of each of the events (spikes) extracted from
+        the signal.
     """
 
-    assert threshold is not None, "A threshold must be provided"
+    if not isinstance(threshold, pq.Quantity):
+        raise ValueError('threshold must be a pq.Quantity')
 
-    if sign is 'above':
+    if sign not in ('above', 'below'):
+        raise ValueError("sign should be 'above' or 'below'")
+
+    if sign == 'above':
         cutout = np.where(signal > threshold)[0]
-    elif sign in 'below':
+    # sign == 'below'
+    else:
         cutout = np.where(signal < threshold)[0]
 
-    if len(cutout) <= 0:
+    if len(cutout) == 0:
         events_base = np.zeros(0)
     else:
         take = np.where(np.diff(cutout) > 1)[0] + 1
@@ -171,12 +179,12 @@ def threshold_detection(signal, threshold=0.0 * mV, sign='above'):
             events_base = np.array(
                 [event.magnitude for event in events])  # Workaround
 
-    result_st = SpikeTrain(events_base, units=signal.times.units,
-                           t_start=signal.t_start, t_stop=signal.t_stop)
+    result_st = neo.SpikeTrain(events_base, units=signal.times.units,
+                               t_start=signal.t_start, t_stop=signal.t_stop)
     return result_st
 
 
-def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
+def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
     """
     Return the peak times for all events that cross threshold.
     Usually used for extracting spike times from a membrane potential.
@@ -184,36 +192,43 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
 
     Parameters
     ----------
-    signal : neo AnalogSignal object
-        'signal' is an analog signal.
-    threshold : A quantity, e.g. in mV
-        'threshold' contains a value that must be reached
-        for an event to be detected.
-    sign : 'above' or 'below'
-        'sign' determines whether to count thresholding crossings that
-        cross above or below the threshold. Default: 'above'.
-    format : None or 'raw'
-        Whether to return as SpikeTrain (None) or as a plain array
-        of times ('raw'). Default: None.
+    signal : neo.AnalogSignal
+        An analog input signal.
+    threshold : pq.Quantity, optional
+        Contains a value that must be reached for an event to be detected.
+        Default: 0.*pq.mV
+    sign : {'above', 'below'}, optional
+        Determines whether to count threshold crossings that cross above or
+        below the threshold.
+        Default: 'above'.
+    format : {None, 'raw'}, optional
+        Whether to return as SpikeTrain (None) or as a plain array of times
+        ('raw').
+        Default: None.
 
     Returns
     -------
-    result_st : neo SpikeTrain object
-        'result_st' contains the spike times of each of the events
-        (spikes) extracted from the signal.
+    result_st : neo.SpikeTrain
+        Contains the spike times of each of the events (spikes) extracted from
+        the signal.
     """
-    assert threshold is not None, "A threshold must be provided"
+    if not isinstance(threshold, pq.Quantity):
+        raise ValueError('threshold must be a pq.Quantity')
 
-    if sign is 'above':
+    if sign not in ('above', 'below'):
+        raise ValueError("sign should be 'above' or 'below'")
+
+    if format not in (None, 'raw'):
+        raise ValueError("Format argument must be None or 'raw'")
+
+    if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
-    elif sign in 'below':
+    else:  # sign == 'below'
         cutout = np.where(signal < threshold)[0]
         peak_func = np.argmin
-    else:
-        raise ValueError("sign must be 'above' or 'below'")
 
-    if len(cutout) <= 0:
+    if len(cutout) == 0:
         events_base = np.zeros(0)
     else:
         # Select thr crossings lasting at least 2 dtps, np.diff(cutout) > 2
@@ -249,17 +264,17 @@ def peak_detection(signal, threshold=0.0 * mV, sign='above', format=None):
             events_base = np.array(
                 [event.magnitude for event in events])  # Workaround
     if format is None:
-        result_st = SpikeTrain(events_base, units=signal.times.units,
-                               t_start=signal.t_start, t_stop=signal.t_stop)
-    elif 'raw':
-        result_st = events_base
+        result_st = neo.SpikeTrain(events_base, units=signal.times.units,
+                                   t_start=signal.t_start,
+                                   t_stop=signal.t_stop)
+    # format == 'raw'
     else:
-        raise ValueError("Format argument must be None or 'raw'")
+        result_st = events_base
 
     return result_st
 
 
-def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
+def _homogeneous_process(interval_generator, mean_rate, t_start, t_stop,
                          as_array):
     """
     Returns a spike train whose spikes are a realization of a random process
@@ -275,7 +290,7 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
     if number < 100:
         number = min(5 + np.ceil(2 * n), 100)
     assert number > 4  # if positive, number cannot be less than 5
-    isi = rescale(interval_generator(*args, size=int(number)))
+    isi = rescale(interval_generator(size=int(number)))
     spikes = np.cumsum(isi)
     spikes += t_start
 
@@ -283,66 +298,123 @@ def _homogeneous_process(interval_generator, args, mean_rate, t_start, t_stop,
     if i == len(spikes):
         # ISI buffer overrun
         extra_spikes = []
-        t_last = spikes[-1] + rescale(interval_generator(*args, size=1))[0]
+        t_last = spikes[-1] + rescale(interval_generator(size=1))[0]
         while t_last < t_stop:
-            extra_spikes.append(t_last)
-            t_last = t_last + rescale(interval_generator(*args, size=1))[0]
+            extra_spikes.append(t_last.magnitude)
+            t_last = t_last + rescale(interval_generator(size=1))[0]
+
         # np.concatenate does not conserve units
-        spikes = Quantity(
-            np.concatenate(
-                (spikes, extra_spikes)).magnitude, units=spikes.units)
+        spikes = pq.Quantity(
+            np.concatenate((spikes.magnitude, extra_spikes)),
+            units=spikes.units)
     else:
         spikes = spikes[:i]
 
     if as_array:
         spikes = spikes.magnitude
     else:
-        spikes = SpikeTrain(
+        spikes = neo.SpikeTrain(
             spikes, t_start=t_start, t_stop=t_stop, units=spikes.units)
 
     return spikes
 
 
-def homogeneous_poisson_process(rate, t_start=0.0 * ms, t_stop=1000.0 * ms,
-                                as_array=False):
+def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
+                                t_stop=1000.0 * pq.ms, as_array=False,
+                                refractory_period=None):
     """
     Returns a spike train whose spikes are a realization of a Poisson process
     with the given rate, starting at time `t_start` and stopping time `t_stop`.
 
-    All numerical values should be given as Quantities, e.g. 100*Hz.
+    All numerical values should be given as Quantities, e.g. `100*pq.Hz`.
 
     Parameters
     ----------
+    rate : pq.Quantity
+        The rate of the discharge.
+    t_start : pq.Quantity, optional
+        The beginning of the spike train.
+        Default: 0 pq.ms
+    t_stop : pq.Quantity, optional
+        The end of the spike train.
+        Default: 1000 pq.ms
+    as_array : bool, optional
+        If True, a NumPy array of sorted spikes is returned,
+        rather than a `neo.SpikeTrain` object.
+        Default: False
+    refractory_period : pq.Quantity, optional
+        `pq.Quantity` scalar with dimension time. The time period after one
+        spike no other spike is emitted.
+        Default: None
 
-    rate : Quantity scalar with dimension 1/time
-           The rate of the discharge.
-    t_start : Quantity scalar with dimension time
-              The beginning of the spike train.
-    t_stop : Quantity scalar with dimension time
-             The end of the spike train.
-    as_array : bool
-               If True, a NumPy array of sorted spikes is returned,
-               rather than a SpikeTrain object.
+    Returns
+    -------
+    spiketrain : neo.SpikeTrain or np.ndarray
+        Homogeneous Poisson process realization, stored in `neo.SpikeTrain`
+        if `as_array` is False (default) and `np.ndarray` otherwise.
 
     Raises
     ------
-    ValueError : If `t_start` and `t_stop` are not of type `pq.Quantity`.
+    ValueError
+        If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
+
+        If `refractory_period` is not None or not of type `pq.Quantity`.
+
+        If `refractory_period` is not None and the period between two
+        successive spikes (`1 / rate`) is smaller than the `refractory_period`.
 
     Examples
     --------
-        >>> from quantities import Hz, ms
-        >>> spikes = homogeneous_poisson_process(50*Hz, 0*ms, 1000*ms)
-        >>> spikes = homogeneous_poisson_process(
-            20*Hz, 5000*ms, 10000*ms, as_array=True)
+    >>> import quantities as pq
+    >>> spikes = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
+    ...     t_stop=1000*pq.ms)
+    >>> spikes = homogeneous_poisson_process(
+    ...     20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms, as_array=True)
+    >>> spikes = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
+    ...     t_stop=1000*pq.ms, refractory_period = 3*pq.ms)
 
     """
-    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
+    if not (isinstance(t_start, pq.Quantity) and
+            isinstance(t_stop, pq.Quantity)):
         raise ValueError("t_start and t_stop must be of type pq.Quantity")
+    if not isinstance(rate, pq.Quantity):
+        raise ValueError("rate must be of type pq.Quantity")
+    if not isinstance(refractory_period, pq.Quantity) and \
+            refractory_period is not None:
+        raise ValueError("refr_period must be of type pq.Quantity or None")
+
     rate = rate.rescale(1 / t_start.units)
-    mean_interval = 1 / rate.magnitude
-    return _homogeneous_process(
-        np.random.exponential, (mean_interval,), rate, t_start, t_stop,
-        as_array)
+    rate_magnitude = rate.magnitude
+
+    # Case without a refractory period
+    if refractory_period is None:
+        interval_generator = partial(np.random.exponential, 1 / rate_magnitude)
+        return _homogeneous_process(
+            interval_generator, rate, t_start, t_stop,
+            as_array)
+
+    # Case with a refractory period
+    refractory_period = refractory_period.rescale(t_start.units)
+    refractory_period_magnitude = refractory_period.magnitude
+
+    if rate_magnitude * refractory_period_magnitude >= 1.:
+        raise ValueError("Period between two successive spikes must be larger"
+                         "than the refractory period. Decrease either the"
+                         "firing rate or the refractory period.")
+
+    effective_rate_magnitude = \
+        rate_magnitude / (1. - rate_magnitude * refractory_period_magnitude)
+
+    def interval_generator(size):
+        return refractory_period_magnitude + \
+            np.random.exponential(1. / effective_rate_magnitude, size)
+
+    spiketrain = _homogeneous_process(interval_generator, rate,
+                                      t_start - refractory_period, t_stop,
+                                      as_array)
+    if not as_array:
+        spiketrain.t_start = t_start
+    return spiketrain
 
 
 def inhomogeneous_poisson_process(rate, as_array=False):
@@ -356,37 +428,48 @@ def inhomogeneous_poisson_process(rate, as_array=False):
         A `neo.AnalogSignal` representing the rate profile evolving over time.
         Its values have all to be `>=0`. The output spiketrain will have
         `t_start = rate.t_start` and `t_stop = rate.t_stop`
-    as_array : bool
-           If True, a NumPy array of sorted spikes is returned,
-           rather than a SpikeTrain object.
+    as_array : bool, optional
+        If True, a NumPy array of sorted spikes is returned,
+        rather than a SpikeTrain object.
+        Default: False
+
+    Returns
+    -------
+    spiketrain : neo.SpikeTrain or np.ndarray
+        Inhomogeneous Poisson process realization, stored in `neo.SpikeTrain`
+        if `as_array` is False (default) and `np.ndarray` otherwise.
+
     Raises
     ------
-    ValueError : If `rate` contains any negative value.
+    ValueError
+        If `rate` contains a negative value.
+
     """
     # Check rate contains only positive values
     if any(rate < 0) or not rate.size:
         raise ValueError(
             'rate must be a positive non empty signal, representing the'
             'rate at time t')
-    else:
-        # Generate n hidden Poisson SpikeTrains with rate equal to the peak rate
-        max_rate = np.max(rate)
-        homogeneous_poiss = homogeneous_poisson_process(
-            rate=max_rate, t_stop=rate.t_stop, t_start=rate.t_start)
-        # Compute the rate profile at each spike time by interpolation
-        rate_interpolated = _analog_signal_linear_interp(
-            signal=rate, times=homogeneous_poiss.magnitude *
-            homogeneous_poiss.units)
-        # Accept each spike at time t with probability rate(t)/max_rate
-        u = np.random.uniform(size=len(homogeneous_poiss)) * max_rate
-        spikes = homogeneous_poiss[u < rate_interpolated.flatten()]
-        if as_array:
-            spikes = spikes.magnitude
-        return spikes
+
+    # Generate n hidden Poisson SpikeTrains with rate equal
+    # to the peak rate
+    max_rate = np.max(rate)
+    homogeneous_poiss = homogeneous_poisson_process(
+        rate=max_rate, t_stop=rate.t_stop, t_start=rate.t_start)
+    # Compute the rate profile at each spike time by interpolation
+    rate_interpolated = _analog_signal_linear_interp(
+        signal=rate, times=homogeneous_poiss.magnitude *
+        homogeneous_poiss.units)
+    # Accept each spike at time t with probability rate(t)/max_rate
+    u = np.random.uniform(size=len(homogeneous_poiss)) * max_rate
+    spikes = homogeneous_poiss[u < rate_interpolated.flatten()]
+    if as_array:
+        spikes = spikes.magnitude
+    return spikes
 
 
 def _analog_signal_linear_interp(signal, times):
-    '''
+    """
     Compute the linear interpolation of a signal at desired times.
 
     Given the `signal` (neo.AnalogSignal) taking value `s0` and `s1` at two
@@ -397,16 +480,17 @@ def _analog_signal_linear_interp(signal, times):
 
     Parameters
     ----------
-    times : Quantity vector(time)
-        The time points for which the interpolation is computed
-
-    signal : neo.core.AnalogSignal
+    signal : neo.AnalogSignal
         The analog signal containing the discretization of the function to
         interpolate
+    times : pq.Quantity
+        The time points for which the interpolation is computed
+
     Returns
-    ------
-    out: Quantity array representing the values of the interpolated signal at the
-    times given by times
+    -------
+    out: pq.Quantity
+        representing the values of the interpolated signal at
+        the times given by times
 
     Notes
     -----
@@ -417,7 +501,7 @@ def _analog_signal_linear_interp(signal, times):
     For the interpolation at times t such that `t[-1] <= t <= signal.t_stop`,
     the value of `signal` at `signal.t_stop` is taken to be that
     at time `t[-1]`.
-    '''
+    """
     dt = signal.sampling_period
     t_start = signal.t_start.rescale(signal.times.units)
     t_stop = signal.t_stop.rescale(signal.times.units)
@@ -428,7 +512,7 @@ def _analog_signal_linear_interp(signal, times):
         [signal.magnitude, signal[-1].magnitude]).flatten()
     times_extended = np.hstack([signal.times, t_stop]) * signal.times.units
     time_ids = np.floor(((times - t_start) / dt).rescale(
-        dimensionless).magnitude).astype('i')
+        pq.dimensionless).magnitude).astype('i')
 
     # Compute the slope m of the signal at each time in times
     y1 = signal_extended[time_ids]
@@ -440,70 +524,82 @@ def _analog_signal_linear_interp(signal, times):
     return out.rescale(signal.units)
 
 
-def homogeneous_gamma_process(a, b, t_start=0.0 * ms, t_stop=1000.0 * ms,
+def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
                               as_array=False):
     """
     Returns a spike train whose spikes are a realization of a gamma process
     with the given parameters, starting at time `t_start` and stopping time
-    `t_stop` (average rate will be b/a).
-
-    All numerical values should be given as Quantities, e.g. 100*Hz.
+    `t_stop` (average rate will be `b/a`). All numerical values should be
+    given as Quantities, e.g. `100*pq.Hz`.
 
     Parameters
     ----------
-
     a : int or float
         The shape parameter of the gamma distribution.
-    b : Quantity scalar with dimension 1/time
+    b : pq.Quantity
         The rate parameter of the gamma distribution.
-    t_start : Quantity scalar with dimension time
-              The beginning of the spike train.
-    t_stop : Quantity scalar with dimension time
-             The end of the spike train.
-    as_array : bool
-               If True, a NumPy array of sorted spikes is returned,
-               rather than a SpikeTrain object.
+    t_start : pq.Quantity, optional
+        The beginning of the spike train.
+        Default: 0 * pq.ms
+    t_stop : pq.Quantity, optional
+        The end of the spike train.
+        Default: 1000 * pq.ms
+    as_array : bool, optional
+        If True, a NumPy array of sorted spikes is returned, rather than a
+        `neo.SpikeTrain` object.
+        Default: False
+
+    Returns
+    -------
+    spiketrain : neo.SpikeTrain or np.ndarray
+        Homogeneous Gamma process realization, stored in `neo.SpikeTrain`
+        if `as_array` is False (default) and `np.ndarray` otherwise.
 
     Raises
     ------
-    ValueError : If `t_start` and `t_stop` are not of type `pq.Quantity`.
+    ValueError
+        If `t_start` and `t_stop` are not of type `pq.Quantity`.
 
     Examples
     --------
-        >>> from quantities import Hz, ms
-        >>> spikes = homogeneous_gamma_process(2.0, 50*Hz, 0*ms, 1000*ms)
-        >>> spikes = homogeneous_gamma_process(
-                5.0, 20*Hz, 5000*ms, 10000*ms, as_array=True)
+    >>> import quantities as pq
+    >>> spikes = homogeneous_gamma_process(2.0, 50*pq.Hz, 0*pq.ms,
+    ...                                       1000*pq.ms)
+    >>> spikes = homogeneous_gamma_process(
+    ...        5.0, 20*pq.Hz, 5000*pq.ms, 10000*pq.ms, as_array=True)
 
     """
-    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
-        raise ValueError("t_start and t_stop must be of type pq.Quantity")
+    if not (isinstance(t_start, pq.Quantity) and
+            isinstance(t_stop, pq.Quantity)):
+        raise ValueError("t_start and t_stop must be of type pq.pq.Quantity")
     b = b.rescale(1 / t_start.units).simplified
     rate = b / a
     k, theta = a, (1 / b.magnitude)
-    return _homogeneous_process(np.random.gamma, (k, theta), rate, t_start, t_stop, as_array)
+    interval_generator = partial(np.random.gamma, k, theta)
+    return _homogeneous_process(interval_generator, rate, t_start,
+                                t_stop, as_array)
 
 
-def _n_poisson(rate, t_stop, t_start=0.0 * ms, n=1):
+def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
     """
     Generates one or more independent Poisson spike trains.
 
     Parameters
     ----------
-    rate : Quantity or Quantity array
+    rate : pq.Quantity scalar or pq.Quantity array
         Expected firing rate (frequency) of each output SpikeTrain.
         Can be one of:
-        *  a single Quantity value: expected firing rate of each output
+        *  a single pq.Quantity value: expected firing rate of each output
            SpikeTrain
-        *  a Quantity array: rate[i] is the expected firing rate of the i-th
+        *  a pq.Quantity array: rate[i] is the expected firing rate of the i-th
            output SpikeTrain
-    t_stop : Quantity
+    t_stop : pq.Quantity
         Single common stop time of each output SpikeTrain. Must be > t_start.
-    t_start : Quantity (optional)
+    t_start : pq.Quantity, optional
         Single common start time of each output SpikeTrain. Must be < t_stop.
-        Default: 0 s.
-    n: int (optional)
-        If rate is a single Quantity value, n specifies the number of
+        Default: 0 * pq.ms
+    n: int, optional
+        If rate is a single pq.Quantity value, n specifies the number of
         SpikeTrains to be generated. If rate is an array, n is ignored and the
         number of SpikeTrains is equal to len(rate).
         Default: 1
@@ -530,7 +626,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * ms, n=1):
             't_start (=%s) must be < t_stop (=%s)' % (t_start, t_stop))
 
     # Set number n of output spike trains (specified or set to len(rate))
-    if not (type(n) == int and n > 0):
+    if not (isinstance(n, int) and n > 0):
         raise ValueError('n (=%s) must be a positive integer' % str(n))
     rate_dl = rate.simplified.magnitude.flatten()
 
@@ -545,13 +641,14 @@ def _n_poisson(rate, t_stop, t_start=0.0 * ms, n=1):
             raise ValueError('rate must have non-negative elements.')
     sts = []
     for r in rates:
-        sts.append(homogeneous_poisson_process(r * Hz, t_start, t_stop))
+        sts.append(homogeneous_poisson_process(r * pq.Hz, t_start, t_stop))
     return sts
 
 
 def single_interaction_process(
-        rate, rate_c, t_stop, n=2, jitter=0 * ms, coincidences='deterministic',
-        t_start=0 * ms, min_delay=0 * ms, return_coinc=False):
+        rate, rate_c, t_stop, n=2, jitter=0 * pq.ms,
+        coincidences='deterministic', t_start=0 * pq.ms, min_delay=0 * pq.ms,
+        return_coinc=False):
     """
     Generates a multidimensional Poisson SIP (single interaction process)
     plus independent Poisson processes
@@ -560,14 +657,14 @@ def single_interaction_process(
     except for simultaneous events in all of them. This routine generates
     a SIP plus additional parallel independent Poisson processes.
 
-    See [1].
+    See _[1].
 
     Parameters
-    -----------
-    t_stop: quantities.Quantity
+    ----------
+    t_stop : pq.Quantity
         Total time of the simulated processes. The events are drawn between
         0 and `t_stop`.
-    rate: quantities.Quantity
+    rate : pq.Quantity
         Overall mean rate of the time series to be generated (coincidence
         rate `rate_c` is subtracted to determine the background rate). Can be:
         * a float, representing the overall mean rate of each process. If
@@ -575,41 +672,42 @@ def single_interaction_process(
         * an iterable of floats (one float per process), each float
           representing the overall mean rate of a process. If so, all the
           entries must be larger than `rate_c`.
-    rate_c: quantities.Quantity
+    rate_c : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP).
         The SIP spike trains will have coincident events with rate `rate_c`
         plus independent 'background' events with rate `rate-rate_c`.
-    n: int, optional
-        If `rate` is a single Quantity value, `n` specifies the number of
+    n : int, optional
+        If `rate` is a single pq.Quantity value, `n` specifies the number of
         SpikeTrains to be generated. If rate is an array, `n` is ignored and
         the number of SpikeTrains is equal to `len(rate)`.
-        Default: 1
-    jitter: quantities.Quantity, optional
+        Default: 2
+    jitter : pq.Quantity, optional
         Jitter for the coincident events. If `jitter == 0`, the events of all
         n correlated processes are exactly coincident. Otherwise, they are
         jittered around a common time randomly, up to +/- `jitter`.
-    coincidences: string, optional
+        Default: 0 * pq.ms
+    coincidences : string, optional
         Whether the total number of injected coincidences must be determin-
         istic (i.e. rate_c is the actual rate with which coincidences are
         generated) or stochastic (i.e. rate_c is the mean rate of coincid-
         ences):
-        * 'deterministic': deterministic rate
-        * 'stochastic': stochastic rate
+          * 'deterministic': deterministic rate
+
+          * 'stochastic': stochastic rate
         Default: 'deterministic'
-    t_start: quantities.Quantity, optional
+    t_start : pq.Quantity, optional
         Starting time of the series. If specified, it must be lower than
-        t_stop
-        Default: 0 * ms
-    min_delay: quantities.Quantity, optional
+        `t_stop`.
+        Default: 0 * pq.ms
+    min_delay : pq.Quantity, optional
         Minimum delay between consecutive coincidence times.
-        Default: 0 * ms
-    return_coinc: bool, optional
+        Default: 0 * pq.ms
+    return_coinc : bool, optional
         Whether to return the coincidence times for the SIP process
         Default: False
 
-
     Returns
-    --------
+    -------
     output: list
         Realization of a SIP consisting of n Poisson processes characterized
         by synchronous events (with the given jitter)
@@ -619,21 +717,24 @@ def single_interaction_process(
 
     References
     ----------
-    [1] Kuhn, Aertsen, Rotter (2003) Neural Comput 15(1):67-101
+    .. [1] Kuhn, Aertsen, Rotter (2003) Neural Comput 15(1):67-101
 
-    EXAMPLE:
+    Examples
+    --------
+    >>> import quantities as pq
+    >>> import elephant.spike_train_generation as stg
+    >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  rate_c=4,
+    ...                                             t_stop=1*pq.s,
+    ...                                             n=10, return_coinc = True)
 
-    >>> import quantities as qt
-    >>> import jelephant.core.stocmod as sm
-    >>> sip, coinc = sm.sip_poisson(n=10, n=0, t_stop=1*qt.sec, \
-            rate=20*qt.Hz,  rate_c=4, return_coinc = True)
-
-    *************************************************************************
     """
 
     # Check if n is a positive integer
     if not (isinstance(n, int) and n > 0):
         raise ValueError('n (=%s) must be a positive integer' % str(n))
+    if coincidences not in ('deterministic', 'stochastic'):
+        raise ValueError(
+            "coincidences must be 'deterministic' or 'stochastic'")
 
     # Assign time unit to jitter, or check that its existing unit is a time
     # unit
@@ -642,14 +743,14 @@ def single_interaction_process(
     # Define the array of rates from input argument rate. Check that its length
     # matches with n
     if rate.ndim == 0:
-        if rate < 0 * Hz:
+        if rate < 0 * pq.Hz:
             raise ValueError(
                 'rate (=%s) must be non-negative.' % str(rate))
         rates_b = np.array(
             [rate.magnitude for _ in range(n)]) * rate.units
     else:
         rates_b = np.array(rate).flatten() * rate.units
-        if not all(rates_b >= 0. * Hz):
+        if not all(rates_b >= 0. * pq.Hz):
             raise ValueError('*rate* must have non-negative elements')
 
     # Check: rate>=rate_c
@@ -657,7 +758,7 @@ def single_interaction_process(
         raise ValueError('all elements of *rate* must be >= *rate_c*')
 
     # Check min_delay < 1./rate_c
-    if not (rate_c == 0 * Hz or min_delay < 1. / rate_c):
+    if not (rate_c == 0 * pq.Hz or min_delay < 1. / rate_c):
         raise ValueError(
             "'*min_delay* (%s) must be lower than 1/*rate_c* (%s)." %
             (str(min_delay), str((1. / rate_c).rescale(min_delay.units))))
@@ -666,41 +767,46 @@ def single_interaction_process(
     # (coincidences still lacking)
     embedded_poisson_trains = _n_poisson(
         rate=rates_b - rate_c, t_stop=t_stop, t_start=t_start)
-    # Convert the trains from neo SpikeTrain objects to simpler Quantity
+    # Convert the trains from neo SpikeTrain objects to simpler pq.Quantity
     # objects
     embedded_poisson_trains = [
-        emb.view(Quantity) for emb in embedded_poisson_trains]
+        emb.view(pq.Quantity) for emb in embedded_poisson_trains]
 
     # Generate the array of times for coincident events in SIP, not closer than
-    # min_delay. The array is generated as a quantity from the Quantity class
-    # in the quantities module
+    # min_delay. The array is generated as a pq.Quantity.
     if coincidences == 'deterministic':
-        Nr_coinc = int(((t_stop - t_start) * rate_c).rescale(dimensionless))
+        n_coincidences = int(
+            ((t_stop - t_start) * rate_c).rescale(pq.dimensionless))
         while True:
             coinc_times = t_start + \
-                np.sort(np.random.random(Nr_coinc)) * (t_stop - t_start)
+                np.sort(np.random.random(n_coincidences)) * (
+                    t_stop - t_start)
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
-    elif coincidences == 'stochastic':
+    # coincidences == 'stochastic'
+    else:
         while True:
             coinc_times = homogeneous_poisson_process(
                 rate=rate_c, t_stop=t_stop, t_start=t_start)
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
-        # Convert coinc_times from a neo SpikeTrain object to a Quantity object
+        # Convert coinc_times from a neo SpikeTrain object to a pq.Quantity
+        # object
         # pq.Quantity(coinc_times.base)*coinc_times.units
-        coinc_times = coinc_times.view(Quantity)
+        coinc_times = coinc_times.view(pq.Quantity)
         # Set the coincidence times to T-jitter if larger. This ensures that
         # the last jittered spike time is <T
-        for i in range(len(coinc_times)):
-            if coinc_times[i] > t_stop - jitter:
-                coinc_times[i] = t_stop - jitter
+        effective_t_stop = t_stop - jitter
+        for i, coinc_time in enumerate(coinc_times):
+            if coinc_time > effective_t_stop:
+                coinc_times[i] = effective_t_stop
 
     # Replicate coinc_times n times, and jitter each event in each array by
     # +/- jitter (within (t_start, t_stop))
     embedded_coinc = coinc_times + \
         np.random.random(
-            (len(rates_b), len(coinc_times))) * 2 * jitter - jitter
+            (
+                len(rates_b), len(coinc_times))) * 2 * jitter - jitter
     embedded_coinc = embedded_coinc + \
         (t_start - embedded_coinc) * (embedded_coinc < t_start) - \
         (t_stop - embedded_coinc) * (embedded_coinc > t_stop)
@@ -713,13 +819,13 @@ def single_interaction_process(
             embedded_coinc[m].rescale(t_stop.units))) * t_stop.units)
         for m in range(len(rates_b))]
 
-    # Convert back sip_process and coinc_times from Quantity objects to
+    # Convert back sip_process and coinc_times from pq.Quantity objects to
     # neo.SpikeTrain objects
     sip_process = [
-        SpikeTrain(t, t_start=t_start, t_stop=t_stop).rescale(t_stop.units)
+        neo.SpikeTrain(t, t_start=t_start, t_stop=t_stop).rescale(t_stop.units)
         for t in sip_process]
     coinc_times = [
-        SpikeTrain(t, t_start=t_start, t_stop=t_stop).rescale(t_stop.units)
+        neo.SpikeTrain(t, t_start=t_start, t_stop=t_stop).rescale(t_stop.units)
         for t in embedded_coinc]
 
     # Return the processes in the specified output_format
@@ -739,8 +845,7 @@ def _pool_two_spiketrains(a, b, extremes='inner'):
     ----------
     a, b : neo.SpikeTrains
         Spike trains to be pooled
-
-    extremes: str, optional
+    extremes : {'inner', 'outer'}, optional
         Only spikes of a and b in the specified extremes are considered.
         * 'inner': pool all spikes from max(a.tstart_ b.t_start) to
            min(a.t_stop, b.t_stop)
@@ -748,15 +853,15 @@ def _pool_two_spiketrains(a, b, extremes='inner'):
            max(a.t_stop, b.t_stop)
         Default: 'inner'
 
-    Output
-    ------
-    neo.SpikeTrain containing all spikes in a and b falling in the
-    specified extremes
+    Returns
+    -------
+    neo.SpikeTrain
+        containing all spikes in a and b falling in the specified extremes
     """
 
     unit = a.units
-    times_a_dimless = list(a.view(Quantity).magnitude)
-    times_b_dimless = list(b.rescale(unit).view(Quantity).magnitude)
+    times_a_dimless = list(a.view(pq.Quantity).magnitude)
+    times_b_dimless = list(b.rescale(unit).view(pq.Quantity).magnitude)
     times = (times_a_dimless + times_b_dimless) * unit
 
     if extremes == 'outer':
@@ -767,25 +872,24 @@ def _pool_two_spiketrains(a, b, extremes='inner'):
         t_stop = min(a.t_stop, b.t_stop)
         times = times[times > t_start]
         times = times[times < t_stop]
-
     else:
         raise ValueError(
             'extremes (%s) can only be "inner" or "outer"' % extremes)
-    pooled_train = SpikeTrain(
+
+    pooled_train = neo.SpikeTrain(
         times=sorted(times.magnitude), units=unit, t_start=t_start,
         t_stop=t_stop)
     return pooled_train
 
 
-def _pool_spiketrains(trains, extremes='inner'):
+def _pool_spiketrains(spiketrains, extremes='inner'):
     """
     Pool spikes from any number of spike trains into a unique spike train.
 
     Parameters
     ----------
-    trains: list
-        list of spike trains to merge
-
+    spiketrains: list of neo.SpikeTrain
+        A list of spiketrains to merge.
     extremes: str, optional
         Only spikes of a and b in the specified extremes are considered.
         * 'inner': pool all spikes from min(a.t_start b.t_start) to
@@ -794,21 +898,22 @@ def _pool_spiketrains(trains, extremes='inner'):
            min(a.t_stop, b.t_stop)
         Default: 'inner'
 
-    Output
-    ------
-    neo.SpikeTrain containing all spikes in trains falling in the
-    specified extremes
+    Returns
+    -------
+    neo.SpikeTrain
+        containing all spikes in trains falling in the specified extremes
     """
 
-    merge_trains = trains[0]
-    for t in trains[1:]:
+    merge_trains = spiketrains[0]
+    for spiketrain in spiketrains[1:]:
         merge_trains = _pool_two_spiketrains(
-            merge_trains, t, extremes=extremes)
+            merge_trains, spiketrain, extremes=extremes)
     t_start, t_stop = merge_trains.t_start, merge_trains.t_stop
     merge_trains = sorted(merge_trains)
     merge_trains = np.squeeze(merge_trains)
-    merge_trains = SpikeTrain(
-        merge_trains, t_stop=t_stop, t_start=t_start, units=trains[0].units)
+    merge_trains = neo.SpikeTrain(
+        merge_trains, t_stop=t_stop, t_start=t_start,
+        units=spiketrains[0].units)
     return merge_trains
 
 
@@ -820,26 +925,26 @@ def _sample_int_from_pdf(a, n):
 
 
     Parameters
-    -----
-    a: numpy.array
+    ----------
+    a : np.ndarray
         Probability vector (i..e array of sum 1) that at each entry j carries
         the probability to sample j (j=0,1,...,len(a)-1).
-
-    n: int
+    n : int
         Number of samples generated with the function
 
-    Output
+    Returns
     -------
-    array of n samples taking values between 0 and n=len(a)-1.
+    np.ndarray
+        An array of n samples taking values between `0` and `n=len(a)-1`.
     """
 
     A = np.cumsum(a)  # cumulative distribution of a
     u = np.random.uniform(0, 1, size=n)
-    U = np.array([u for i in a]).T  # copy u (as column vector) len(a) times
+    U = np.array([u for _ in a]).T  # copy u (as column vector) len(a) times
     return (A < U).sum(axis=1)
 
 
-def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * ms):
+def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate the hidden ("mother") Poisson process for a Compound Poisson
     Process (CPP).
@@ -847,21 +952,21 @@ def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * ms):
 
     Parameters
     ----------
-    A : numpy.array
+    A : np.ndarray
         Amplitude distribution. A[j] represents the probability of a
         synchronous event of size j.
         The sum over all entries of a must be equal to one.
-    t_stop : quantities.Quantity
+    t_stop : pq.Quantity
         The stopping time of the mother process
-    rate : quantities.Quantity
+    rate : pq.Quantity
         Homogeneous rate of the n spike trains that will be genereted by the
         CPP function
-    t_start : quantities.Quantity, optional
+    t_start : pq.Quantity, optional
         The starting time of the mother process
-        Default: 0 ms
+        Default: 0 pq.ms
 
-    Output
-    ------
+    Returns
+    -------
     Poisson spike train representing the mother process generating the CPP
     """
     N = len(A) - 1
@@ -871,29 +976,30 @@ def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * ms):
         rate=exp_mother, t_stop=t_stop, t_start=t_start)
 
 
-def _cpp_hom_stat(A, t_stop, rate, t_start=0 * ms):
+def _cpp_hom_stat(A, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
 
     Parameters
     ----------
-    A : numpy.ndarray
+    A : np.ndarray
         Amplitude distribution. A[j] represents the probability of a
         synchronous event of size j.
         The sum over all entries of A must be equal to one.
-    t_stop : quantities.Quantity
+    t_stop : pq.Quantity
         The end time of the output spike trains
-    rate : quantities.Quantity
+    rate : pq.Quantity
         Average rate of each spike train generated
-    t_start : quantities.Quantity, optional
+    t_start : pq.Quantity, optional
         The start time of the output spike trains
-        Default: 0 ms
+        Default: 0 pq.ms
 
-    Output
-    ------
-    List of n neo.SpikeTrains, having average firing rate r and correlated
-    such to form a CPP with amplitude distribution a
+    Returns
+    -------
+    list of neo.SpikeTrain
+        with n elements, having average firing rate r and correlated such to
+        form a CPP with amplitude distribution a
     """
 
     # Generate mother process and associated spike labels
@@ -914,47 +1020,48 @@ def _cpp_hom_stat(A, t_stop, rate, t_start=0 * ms):
             for train_id in train_ids:
                 spike_matrix[train_id, spike_id] = True  # and spike to True
 
-        times = [[] for i in range(N)]
+        times = [[]] * N
         for train_id, row in enumerate(spike_matrix):
-            times[train_id] = mother[row].view(Quantity)
+            times[train_id] = mother[row].view(pq.Quantity)
 
     except MemoryError:  # Slower (~2x) but less memory-consuming approach
         print('memory case')
-        times = [[] for i in range(N)]
+        times = [[]] * N
         for t, l in zip(mother, labels):
             train_ids = random.sample(range(N), l)
             for train_id in train_ids:
                 times[train_id].append(t)
 
-    trains = [SpikeTrain(
+    trains = [neo.SpikeTrain(
         times=t, t_start=t_start, t_stop=t_stop) for t in times]
 
     return trains
 
 
-def _cpp_het_stat(A, t_stop, rate, t_start=0. * ms):
+def _cpp_het_stat(A, t_stop, rate, t_start=0. * pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
 
     Parameters
     ----------
-    A : array
+    A : np.ndarray
         CPP's amplitude distribution. A[j] represents the probability of
         a synchronous event of size j among the generated spike trains.
         The sum over all entries of A must be equal to one.
-    t_stop : Quantity (time)
+    t_stop : pq.Quantity
         The end time of the output spike trains
-    rate : Quantity (1/time)
+    rate : pq.Quantity
         Average rate of each spike train generated
-    t_start : quantities.Quantity, optional
+    t_start : pq.Quantity, optional
         The start time of the output spike trains
-        Default: 0 ms
+        Default: 0 pq.ms
 
-    Output
-    ------
-    List of neo.SpikeTrains with different firing rates, forming
-    a CPP with amplitude distribution A
+    Returns
+    -------
+    list of neo.SpikeTrain
+        List of neo.SpikeTrains with different firing rates, forming
+        a CPP with amplitude distribution `A`.
     """
 
     # Computation of Parameters of the two CPPs that will be merged
@@ -968,10 +1075,10 @@ def _cpp_het_stat(A, t_stop, rate, t_start=0. * ms):
     r_mother = r1 + r2  # rate of the hidden mother process
 
     # Check the analytical constraint for the amplitude distribution
-    if A[1] < (r1 / r_mother).rescale(dimensionless).magnitude:
+    if A[1] < (r1 / r_mother).rescale(pq.dimensionless).magnitude:
         raise ValueError('A[1] too small / A[i], i>1 too high')
 
-    # Compute the amplitude distrib of the correlated CPP, and generate it
+    # Compute the amplitude distribution of the correlated CPP, and generate it
     a = [(r_mother * i) / float(r2) for i in A]
     a[1] = a[1] - r1 / float(r2)
     CPP = _cpp_hom_stat(a, t_stop, r_min, t_start)
@@ -985,9 +1092,9 @@ def _cpp_het_stat(A, t_stop, rate, t_start=0. * ms):
     return out
 
 
-def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
+def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * pq.ms):
     """
-    Generate a Compound Poisson Process (CPP; see [1]) with a given amplitude
+    Generate a Compound Poisson Process (CPP; see _[1]) with a given amplitude
     distribution A and stationary marginal rates r.
 
     The CPP process is a model for parallel, correlated processes with Poisson
@@ -1006,35 +1113,35 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
 
     Parameters
     ----------
-    rate : quantities.Quantity
+    rate : pq.Quantity
         Average rate of each spike train generated. Can be:
           - a single value, all spike trains will have same rate rate
           - an array of values (of length len(A)-1), each indicating the
             firing rate of one process in output
-    A : array
-        CPP's amplitude distribution. A[j] represents the probability of
+    A : np.ndarray
+        CPP's amplitude distribution. `A[j]` represents the probability of
         a synchronous event of size j among the generated spike trains.
         The sum over all entries of A must be equal to one.
-    t_stop : quantities.Quantity
+    t_stop : pq.Quantity
         The end time of the output spike trains.
-    shift : None or quantities.Quantity, optional
-        If None, the injected synchrony is exact. If shift is a Quantity, all
-        the spike trains are shifted independently by a random amount in
-        the interval [-shift, +shift].
+    shift : pq.Quantity, optional
+        If `None`, the injected synchrony is exact.
+        If shift is a `pq.Quantity`, all the spike trains are shifted
+        independently by a random amount in the interval `[-shift, +shift]`.
         Default: None
-    t_start : quantities.Quantity, optional
+    t_start : pq.Quantity, optional
         The t_start time of the output spike trains.
-        Default: 0 s
+        Default: 0 pq.ms
 
     Returns
     -------
-    List of neo.SpikeTrains
+    list of neo.SpikeTrain
         SpikeTrains with specified firing rates forming the CPP with amplitude
         distribution A.
 
     References
     ----------
-    [1] Staude, Rotter, Gruen (2010) J Comput Neurosci 29:327-350.
+    .. [1] Staude, Rotter, Gruen (2010) J Comput Neurosci 29:327-350.
     """
     # Check A is a probability distribution (it sums to 1 and is positive)
     if abs(sum(A) - 1) > np.finfo('float').eps:
@@ -1042,137 +1149,30 @@ def compound_poisson_process(rate, A, t_stop, shift=None, t_start=0 * ms):
             'A must be a probability vector, sum(A)= %f !=1' % (sum(A)))
     if any([a < 0 for a in A]):
         raise ValueError(
-            'A must be a probability vector, all the elements of must be >0')
-    # Check that the rate is not an empty Quantity
+            'A must be a probability vector, each element must be >0')
+    # Check that the rate is not an empty pq.Quantity
     if rate.ndim == 1 and len(rate.magnitude) == 0:
-        raise ValueError('Rate is an empty Quantity array')
+        raise ValueError('Rate is an empty pq.Quantity array')
     # Return empty spike trains for specific parameters
-    elif A[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
+    if A[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
         return [
-            SpikeTrain([] * t_stop.units, t_stop=t_stop,
-                       t_start=t_start) for i in range(len(A) - 1)]
-    else:
-        # Homogeneous rates
-        if rate.ndim == 0:
-            cpp = _cpp_hom_stat(A=A, t_stop=t_stop, rate=rate, t_start=t_start)
-        # Heterogeneous rates
-        else:
-            cpp = _cpp_het_stat(A=A, t_stop=t_stop, rate=rate, t_start=t_start)
+            neo.SpikeTrain([] * t_stop.units, t_stop=t_stop,
+                           t_start=t_start) for _ in range(len(A) - 1)]
 
-        if shift is None:
-            return cpp
+    # Homogeneous rates
+    if rate.ndim == 0:
+        cpp = _cpp_hom_stat(A=A, t_stop=t_stop, rate=rate, t_start=t_start)
+    # Heterogeneous rates
+    else:
+        cpp = _cpp_het_stat(A=A, t_stop=t_stop, rate=rate, t_start=t_start)
+
+    if shift is not None:
         # Dither the output spiketrains
-        else:
-            cpp = [
-                dither_spike_train(cp, shift=shift, edges=True)[0]
-                for cp in cpp]
-            return cpp
+        cpp = [dither_spike_train(cp, shift=shift, edges=True)[0]
+               for cp in cpp]
+
+    return cpp
 
 
 # Alias for the compound poisson process
 cpp = compound_poisson_process
-
-
-def homogeneous_poisson_process_with_refr_period(rate,
-                                                 refr_period=2. * ms,
-                                                 t_start=0.0 * ms,
-                                                 t_stop=1000.0 * ms,
-                                                 as_array=False):
-    """
-    Returns a spike train whose spikes are a realization of a Poisson process
-    with the given rate and refractory period starting at time `t_start` and
-    stopping time `t_stop`.
-
-    All numerical values should be given as Quantities, e.g. 100*Hz.
-
-    Parameters
-    ----------
-    rate : Quantity
-           Quantity scalar with dimension 1/time
-           The rate of the discharge.
-    refr_period : Quantity
-                  Quantity scalar with dimension time
-                  The time period the after one spike no other spike is
-                  emitted.
-                  Default: 2 ms
-    t_start : Quantity
-              Quantity scalar with dimension time
-              The beginning of the spike train.
-              Default: 0 ms
-    t_stop : Quantity
-             Quantity scalar with dimension time
-             The end of the spike train.
-             Default: 1000 ms
-    as_array : bool
-               If True, a NumPy array of sorted spikes is returned,
-               rather than a SpikeTrain object.
-               Default: False
-
-    Returns
-    -------
-    st : SpikeTrain or np.ndarray
-        Array of spike times.
-        If `as_array` is False, the output is wrapped in `neo.SpikeTrain`.
-
-    Raises
-    ------
-    ValueError
-        If one of `rate`, `refr_period`, `t_start` and `t_stop` is not
-        of type `pq.Quantity`.
-        If `t_stop <= t_start`.
-        If the period between two successive spikes (`1 / rate`) is
-        smaller than the `refr_period`.
-
-    Examples
-    --------
-        >>> from quantities import Hz, ms
-        >>> spikes = homogeneous_poisson_process_with_refr_period(
-            50*Hz, 3*ms, 0*ms, 1000*ms)
-        >>> spikes = homogeneous_poisson_process_with_refr_period(
-            20*Hz, 5*ms, 5000*ms, 10000*ms, as_array=True)
-
-    """
-    if not isinstance(t_start, Quantity) or not isinstance(t_stop, Quantity):
-        raise ValueError("t_start and t_stop must be of type pq.Quantity")
-    if not isinstance(refr_period, Quantity):
-        raise ValueError("refr_period must be of type pq.Quantity")
-    if not isinstance(rate, Quantity):
-        raise ValueError("rate must be of type pq.Quantity")
-
-    if t_stop.units != t_start.units:
-        t_stop = t_stop.rescale(t_start.units)
-
-    if t_stop <= t_start:
-        raise ValueError("t_stop must be larger than t_start")
-
-    rate_mag = rate.rescale(1 / t_start.units).magnitude
-    refr_period_mag = refr_period.rescale(t_start.units).magnitude
-
-    if 1. / rate_mag <= refr_period_mag:
-        raise ValueError("Period between two successive spikes must be larger"
-                         "than the refractory period. Decrease either the"
-                         "firing rate or the refractory period.")
-
-    duration = (t_stop - t_start).magnitude
-    mean_spike_count = rate_mag * duration
-    spike_count = np.random.poisson(lam=mean_spike_count)
-
-    # Check that the number of spikes drawn from the Poisson distribution,
-    # can fit in the duration regarding the refractory period.
-    spike_count = min(spike_count, math.ceil(duration / refr_period_mag))
-
-    # Due to the refractory period the effective space in where the spikes
-    # can be placed is shortened by (spike_count - 1) times the
-    # refr. period.
-    eff_duration = duration - (spike_count - 1) * refr_period_mag
-
-    # In this effective time interval each spike is placed uniformly,
-    # and after sorting to each ISI one refractory period is added
-    st = np.random.uniform(high=eff_duration, size=spike_count)
-    st.sort()
-    st += refr_period_mag * np.arange(spike_count)
-    st += t_start.magnitude
-    if not as_array:
-        return SpikeTrain(st, t_start=t_start, t_stop=t_stop,
-                          units=t_start.units)
-    return st
