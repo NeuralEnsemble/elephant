@@ -532,13 +532,16 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
         Wavelet transform of the input data. When `freq` was given as a list,
         the way how the wavelet transforms for different frequencies are
         returned depends on the input type:
+
         * when the input was a `neo.AnalogSignal`, the returned array has
-        shape (`Nt`, `Nch`, `Nf`), where :math:`Nf = `len(freq)``, such that
-        the last dimension indexes the frequencies.
+          shape (`Nt`, `Nch`, `Nf`), where `Nf` = `len(freq)`, such that the
+          last dimension indexes the frequencies;
+
         * when the input was a `np.ndarray` or list of shape
-        (`a`, `b`, ..., `c`, `Nt`), the returned array has a shape
-        (`a`, `b`, ..., `c`, `Nf`, `Nt`), such that the second last dimension
-        indexes the frequencies.
+          (`a`, `b`, ..., `c`, `Nt`), the returned array has a shape
+          (`a`, `b`, ..., `c`, `Nf`, `Nt`), such that the second last
+          dimension indexes the frequencies.
+
         To summarize, `signal_wt.ndim` = `signal.ndim` + 1, with the
         additional dimension in the last axis (for `neo.AnalogSignal` input)
         or the second last axis (`np.ndarray` or list input) indexing the
@@ -706,7 +709,7 @@ def hilbert(signal, N='nextpow'):
     >>> analytic_signal = hilbert(a, N='nextpow')
     >>> angles = np.angle(analytic_signal)
     >>> amplitudes = np.abs(analytic_signal)
-    >>> print angles
+    >>> print(angles)
     [[-1.57079633]
      [-1.51334228]
      [-1.46047675]
