@@ -15,7 +15,7 @@ import warnings
 
 import neo
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 from quantities import V, s, ms, second, Hz, kHz, mV, dimensionless
 from scipy.stats import expon
 from scipy.stats import kstest, poisson
@@ -151,73 +151,126 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
 
 class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_statistics(self):
         # This is a statistical test that has a non-zero chance of failure
         # during normal operation. Thus, we set the random seed to a value that
         # creates a realization passing the test.
-        np.random.seed(seed=12345)
 
         for rate in [123.0 * Hz, 0.123 * kHz]:
             for t_stop in [2345 * ms, 2.345 * second]:
-                spiketrain = stgen.homogeneous_poisson_process(
-                    rate, t_stop=t_stop)
-                intervals = isi(spiketrain)
+                # zero refractory period should act as no refractory period
+                for refractory_period in (None, 0 * ms):
+                    np.random.seed(seed=12345)
+                    spiketrain = stgen.homogeneous_poisson_process(
+                        rate, t_stop=t_stop,
+                        refractory_period=refractory_period)
+                    intervals = isi(spiketrain)
 
-                expected_spike_count = int((rate * t_stop).simplified)
-                # should fail about 1 time in 1000
-                self.assertLess(
-                    pdiff(expected_spike_count, spiketrain.size), 0.2)
+                    expected_mean_isi = 1. / rate.simplified
+                    self.assertAlmostEqual(
+                        expected_mean_isi.magnitude,
+                        intervals.mean().simplified.magnitude,
+                        places=3)
 
-                expected_mean_isi = (1 / rate)
-                self.assertLess(
-                    pdiff(expected_mean_isi, intervals.mean()), 0.2)
+                    expected_first_spike = 0 * ms
+                    self.assertLess(
+                        spiketrain[0] - expected_first_spike,
+                        7 * expected_mean_isi)
 
-                expected_first_spike = 0 * ms
-                self.assertLess(
-                    spiketrain[0] - expected_first_spike,
-                    7 * expected_mean_isi)
+                    expected_last_spike = t_stop
+                    self.assertLess(expected_last_spike -
+                                    spiketrain[-1], 7 * expected_mean_isi)
 
-                expected_last_spike = t_stop
-                self.assertLess(expected_last_spike -
-                                spiketrain[-1], 7 * expected_mean_isi)
+                    # Kolmogorov-Smirnov test
+                    D, p = kstest(intervals.rescale(t_stop.units),
+                                  "expon",
+                                  # args are (loc, scale)
+                                  args=(
+                        0, expected_mean_isi.rescale(
+                            t_stop.units)),
+                        alternative='two-sided')
+                    self.assertGreater(p, 0.001)
+                    self.assertLess(D, 0.12)
 
-                # Kolmogorov-Smirnov test
-                D, p = kstest(intervals.rescale(t_stop.units),
-                              "expon",
-                              # args are (loc, scale)
-                              args=(
-                    0, expected_mean_isi.rescale(
-                        t_stop.units)),
-                    alternative='two-sided')
-                self.assertGreater(p, 0.001)
-                self.assertLess(D, 0.12)
-
-    def test_low_rates(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            """
-            Catch RuntimeWarning: divide by zero encountered in true_divide
-            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            """
-            spiketrain = stgen.homogeneous_poisson_process(0 * Hz,
-                                                           t_stop=1000 * ms)
-        self.assertEqual(spiketrain.size, 0)
-        # not really a test, just making sure that all code paths are covered
-        spiketrain = stgen.homogeneous_poisson_process(
-            1 * Hz, t_stop=1000 * ms)
-
-    def test_buffer_overrun(self):
-        np.random.seed(6085)  # this seed should produce a buffer overrun
-        t_stop = 1000 * ms
+    def test_zero_refractory_period(self):
         rate = 10 * Hz
-        spiketrain = stgen.homogeneous_poisson_process(rate, t_stop=t_stop)
-        expected_last_spike = t_stop
-        expected_mean_isi = (1 / rate).rescale(ms)
-        self.assertLess(expected_last_spike -
-                        spiketrain[-1], 4 * expected_mean_isi)
+        t_stop = 20 * s
+        np.random.seed(27)
+        sp1 = stgen.homogeneous_poisson_process(rate, t_stop=t_stop,
+                                                as_array=True)
+        np.random.seed(27)
+        sp2 = stgen.homogeneous_poisson_process(rate, t_stop=t_stop,
+                                                refractory_period=0 * ms,
+                                                as_array=True)
+        assert_array_almost_equal(sp1, sp2)
+
+    def test_t_start_and_t_stop(self):
+        rate = 10 * Hz
+        t_start = 17 * ms
+        t_stop = 2 * s
+        for refractory_period in (None, 3 * ms):
+            spiketrain = stgen.homogeneous_poisson_process(
+                rate=rate, t_start=t_start, t_stop=t_stop,
+                refractory_period=refractory_period)
+            self.assertEqual(spiketrain.t_start, t_start)
+            self.assertEqual(spiketrain.t_stop, t_stop)
+
+    def test_zero_rate(self):
+        for refractory_period in (None, 3 * ms):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                """
+                Catch RuntimeWarning: divide by zero encountered in true_divide
+                mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
+                """
+                sp = stgen.homogeneous_poisson_process(
+                    rate=0 * Hz, t_stop=10 * s,
+                    refractory_period=refractory_period)
+                self.assertEqual(sp.size, 0)
+
+    def test_nondecrease_spike_times(self):
+        for refractory_period in (None, 3 * ms):
+            np.random.seed(27)
+            spiketrain = stgen.homogeneous_poisson_process(
+                rate=10 * Hz, t_stop=1000 * s,
+                refractory_period=refractory_period)
+            diffs = np.diff(spiketrain.times)
+            self.assertTrue((diffs >= 0).all())
+
+    def test_compare_with_as_array(self):
+        rate = 10 * Hz
+        t_stop = 10 * s
+        for refractory_period in (None, 3 * ms):
+            np.random.seed(27)
+            spiketrain = stgen.homogeneous_poisson_process(
+                rate=rate, t_stop=t_stop, refractory_period=refractory_period)
+            self.assertIsInstance(spiketrain, neo.SpikeTrain)
+            np.random.seed(27)
+            spiketrain_array = stgen.homogeneous_poisson_process(
+                rate=rate, t_stop=t_stop, refractory_period=refractory_period,
+                as_array=True)
+            # don't check with isinstance: Quantity is a subclass of np.ndarray
+            self.assertTrue(type(spiketrain_array) is np.ndarray)
+            assert_array_almost_equal(spiketrain.times.magnitude,
+                                      spiketrain_array)
+
+    def test_invalid(self):
+        rate = 10 * Hz
+        for refractory_period in (None, 3 * ms):
+            # t_stop < t_start
+            hpp = stgen.homogeneous_poisson_process
+            self.assertRaises(
+                ValueError, hpp, rate=rate, t_start=5 * ms,
+                t_stop=1 * ms, refractory_period=refractory_period)
+
+            # no units provided for rate, t_stop
+            self.assertRaises(ValueError, hpp, rate=10,
+                              refractory_period=refractory_period)
+            self.assertRaises(ValueError, hpp, rate=rate, t_stop=5,
+                              refractory_period=refractory_period)
+
+        # no units provided for refractory_period
+        self.assertRaises(ValueError, hpp, rate=rate, refractory_period=2)
 
 
 class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
@@ -240,7 +293,7 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         np.random.seed(seed=12345)
 
         for rate in [self.rate_profile, self.rate_profile.rescale(kHz)]:
-            for refractory_period in [3*ms, None]:
+            for refractory_period in [3 * ms, None]:
                 spiketrain = stgen.inhomogeneous_poisson_process(
                     rate, refractory_period=refractory_period)
                 intervals = isi(spiketrain)
@@ -286,9 +339,9 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, stgen.inhomogeneous_poisson_process,
             self.rate_profile,
-            refractory_period=1000*ms)
+            refractory_period=1000 * ms)
 
-    def test_low_rates(self):
+    def test_zero_rate(self):
         for refractory_period in [3 * ms, None]:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -309,9 +362,6 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
 
 
 class HomogeneousGammaProcessTestCase(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def test_statistics(self):
         # This is a statistical test that has a non-zero chance of failure
@@ -352,6 +402,19 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
                               alternative='two-sided')
                 self.assertGreater(p, 0.001)
                 self.assertLess(D, 0.25)
+
+    def test_compare_with_as_array(self):
+        a = 3.
+        b = 10 * Hz
+        np.random.seed(27)
+        spiketrain = stgen.homogeneous_gamma_process(a=a, b=b)
+        self.assertIsInstance(spiketrain, neo.SpikeTrain)
+        np.random.seed(27)
+        spiketrain_array = stgen.homogeneous_gamma_process(a=a, b=b,
+                                                           as_array=True)
+        # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
+        self.assertTrue(type(spiketrain_array) is np.ndarray)
+        assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
 
 
 class _n_poisson_TestCase(unittest.TestCase):
@@ -569,7 +632,7 @@ class cppTestCase(unittest.TestCase):
             number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
             """
             self.assertRaises(
-                AssertionError, stgen.cpp, A=[0, 1, 0],
+                ValueError, stgen.cpp, A=[0, 1, 0],
                 t_stop=10 * 1000 * ms,
                 rate=-3 * Hz)
         # test wrong unit for rate
@@ -744,65 +807,6 @@ class cppTestCase(unittest.TestCase):
 
 
 class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
-
-    def test_statistics(self):
-        # This is a statistical test that has a non-zero chance of failure
-        # during normal operation. Thus, we set the random seed to a value that
-        # creates a realization passing the test.
-        np.random.seed(seed=12345)
-        hpp = stgen.homogeneous_poisson_process
-
-        for rate in [123.0 * Hz, 0.123 * kHz]:
-            for t_stop in [2345 * ms, 2.345 * second]:
-                spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3 * ms)
-
-                intervals = isi(spiketrain)
-
-                expected_spike_count = int((rate * t_stop).simplified)
-                # should fail about 1 time in 1000
-                self.assertLess(
-                    pdiff(expected_spike_count, spiketrain.size), 0.2)
-
-                expected_mean_isi = (1 / rate)
-                self.assertLess(
-                    pdiff(expected_mean_isi, intervals.mean()), 0.2)
-
-                expected_first_spike = 0 * ms
-                self.assertLess(
-                    spiketrain[0] - expected_first_spike,
-                    7 * expected_mean_isi)
-
-                expected_last_spike = t_stop
-                self.assertLess(expected_last_spike -
-                                spiketrain[-1], 7 * expected_mean_isi)
-
-    def test_low_rates(self):
-        hpp = stgen.homogeneous_poisson_process
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            # Catch RuntimeWarning: divide by zero encountered in true_divide
-            # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            spiketrain = hpp(rate=0 * Hz, t_stop=1000 * ms,
-                             refractory_period=3 * ms)
-        self.assertEqual(spiketrain.size, 0)
-        # not really a test, just making sure that all code paths are covered
-        spiketrain = hpp(1 * Hz, t_stop=1000 * ms, refractory_period=3 * ms)
-
-    def test_buffer_overrun(self):
-        hpp = stgen.homogeneous_poisson_process
-        np.random.seed(6085)  # this seed should produce a buffer overrun
-        t_stop = 1000 * ms
-        rate = 10 * Hz
-        spiketrain = hpp(rate, t_stop=t_stop, refractory_period=3 * ms)
-        expected_last_spike = t_stop
-        expected_mean_isi = (1 / rate).rescale(ms)
-        self.assertLess(expected_last_spike -
-                        spiketrain[-1], 4 * expected_mean_isi)
-
-    def test_as_array(self):
-        hpp = stgen.homogeneous_poisson_process
-        spiketrain = hpp(rate=10 * Hz, as_array=True, refractory_period=3 * ms)
-        self.assertTrue(isinstance(spiketrain, np.ndarray))
 
     def test_invalid(self):
         rate = 10 * Hz
