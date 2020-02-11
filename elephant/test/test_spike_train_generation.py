@@ -254,6 +254,22 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
             assert_array_almost_equal(spiketrain.times.magnitude,
                                       spiketrain_array)
 
+    def test_effective_rate_refractory_period(self):
+        np.random.seed(27)
+        rate_expected = 10 * Hz
+        refractory_period = 90 * ms  # 10 ms of effective ISI
+        spiketrain = stgen.homogeneous_poisson_process(
+            rate_expected, t_stop=1000 * s,
+            refractory_period=refractory_period)
+        rate_obtained = len(spiketrain) / spiketrain.t_stop
+        rate_obtained = rate_obtained.simplified
+        self.assertAlmostEqual(rate_expected.simplified,
+                               rate_obtained.simplified, places=1)
+        intervals = isi(spiketrain)
+        isi_mean_expected = 1. / rate_expected
+        self.assertAlmostEqual(isi_mean_expected.simplified,
+                               intervals.mean().simplified, places=3)
+
     def test_invalid(self):
         rate = 10 * Hz
         for refractory_period in (None, 3 * ms):
@@ -340,6 +356,23 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
             ValueError, stgen.inhomogeneous_poisson_process,
             self.rate_profile,
             refractory_period=1000 * ms)
+
+    def test_effective_rate_refractory_period(self):
+        np.random.seed(27)
+        rate_expected = 10 * Hz
+        refractory_period = 90 * ms  # 10 ms of effective ISI
+        rates = neo.AnalogSignal(np.repeat(rate_expected, 1000), units=Hz,
+                                 t_start=0 * ms, sampling_rate=1 * Hz)
+        spiketrain = stgen.inhomogeneous_poisson_process(
+            rates, refractory_period=refractory_period)
+        rate_obtained = len(spiketrain) / spiketrain.t_stop
+        self.assertAlmostEqual(rate_expected, rate_obtained.simplified,
+                               places=1)
+        intervals_inhomo = isi(spiketrain)
+        isi_mean_expected = 1. / rate_expected
+        self.assertAlmostEqual(isi_mean_expected.simplified,
+                               intervals_inhomo.mean().simplified,
+                               places=3)
 
     def test_zero_rate(self):
         for refractory_period in [3 * ms, None]:
@@ -488,7 +521,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         # Check the output length
         self.assertEqual(len(sip), self.n)
         self.assertEqual(
-            len(coinc[0]), (self.rate_c * self.t_stop).rescale(dimensionless))
+            len(coinc[0]), (self.rate_c * self.t_stop).simplified.magnitude)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

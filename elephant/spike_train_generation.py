@@ -451,7 +451,7 @@ def inhomogeneous_poisson_process(rate, as_array=False,
 
     """
     # Check rate contains only positive values
-    if any(rate < 0) or not rate.size:
+    if np.any(rate < 0) or rate.size == 0:
         raise ValueError(
             'rate must be a positive non empty signal, representing the'
             'rate at time t')
@@ -459,28 +459,25 @@ def inhomogeneous_poisson_process(rate, as_array=False,
             refractory_period is not None:
         raise ValueError("refr_period must be of type pq.Quantity or None")
 
+    rate_max = np.max(rate)
     if refractory_period is not None:
-        if (np.max(rate) * refractory_period).rescale(
-                pq.dimensionless).magnitude >= 1.:
+        if (rate_max * refractory_period).simplified >= 1.:
             raise ValueError(
                 "Period between two successive spikes must be larger "
                 "than the refractory period. Decrease either the "
                 "firing rate or the refractory period.")
         # effective rate parameter for the refractory period case
-        rate = rate / (1 - rate*refractory_period).rescale(
-            pq.dimensionless).magnitude
+        rate = rate / (1. - (rate * refractory_period).simplified)
 
     # Generate n hidden Poisson SpikeTrains with rate equal
     # to the peak rate
-    max_rate = np.max(rate)
     homogeneous_poiss = homogeneous_poisson_process(
-        rate=max_rate, t_stop=rate.t_stop, t_start=rate.t_start)
+        rate=rate_max, t_stop=rate.t_stop, t_start=rate.t_start)
     # Compute the rate profile at each spike time by interpolation
     rate_interpolated = _analog_signal_linear_interp(
-        signal=rate, times=homogeneous_poiss.magnitude *
-        homogeneous_poiss.units)
+        signal=rate, times=homogeneous_poiss.times)
     # Accept each spike at time t with probability rate(t)/max_rate
-    random_uniforms = np.random.uniform(size=len(homogeneous_poiss)) * max_rate
+    random_uniforms = np.random.uniform(size=len(homogeneous_poiss)) * rate_max
     spikes = homogeneous_poiss[random_uniforms < rate_interpolated.flatten()]
 
     if refractory_period is not None:
@@ -516,13 +513,9 @@ def _thinning_for_refractory_period(spiketrain, refractory_period):
     thinned_spiketrain : np.ndarray
         thinned out spiketrain
     """
-    thinned_spiketrain = []
-    previous_spike = -refractory_period
-    for spike in spiketrain:
-        if spike > previous_spike + refractory_period:
-            thinned_spiketrain.append(spike)
-            previous_spike = spike
-    return np.array(thinned_spiketrain)
+    mask_valid = np.diff(spiketrain, prepend=0) > refractory_period
+    thinned_spiketrain = spiketrain[mask_valid]
+    return thinned_spiketrain
 
 
 def _analog_signal_linear_interp(signal, times):
@@ -569,8 +562,8 @@ def _analog_signal_linear_interp(signal, times):
     signal_extended = np.vstack(
         [signal.magnitude, signal[-1].magnitude]).flatten()
     times_extended = np.hstack([signal.times, t_stop]) * signal.times.units
-    time_ids = np.floor(((times - t_start) / sampling_period).rescale(
-        pq.dimensionless).magnitude).astype('i')
+    time_ids = (times - t_start) / sampling_period
+    time_ids = np.floor(time_ids.simplified.magnitude).astype(np.int32)
 
     # Compute the slope of the signal at each time in times
     signal_1 = signal_extended[time_ids]
@@ -744,7 +737,7 @@ def single_interaction_process(
         n correlated processes are exactly coincident. Otherwise, they are
         jittered around a common time randomly, up to +/- `jitter`.
         Default: 0 * pq.ms
-    coincidences : string, optional
+    coincidences : {'deterministic', 'stochastic'}, optional
         Whether the total number of injected coincidences must be determin-
         istic (i.e. rate_c is the actual rate with which coincidences are
         generated) or stochastic (i.e. rate_c is the mean rate of coincid-
@@ -789,7 +782,7 @@ def single_interaction_process(
 
     # Check if n is a positive integer
     if not (isinstance(n, int) and n > 0):
-        raise ValueError('n (=%s) must be a positive integer' % str(n))
+        raise ValueError('n (={}) must be a positive integer'.format(n))
     if coincidences not in ('deterministic', 'stochastic'):
         raise ValueError(
             "coincidences must be 'deterministic' or 'stochastic'")
@@ -803,10 +796,10 @@ def single_interaction_process(
     if rate.ndim == 0:
         if rate < 0 * pq.Hz:
             raise ValueError(
-                'rate (=%s) must be non-negative.' % str(rate))
-        rates_b = np.array([rate.magnitude] * n) * rate.units
+                'rate (={}) must be non-negative.'.format(rate))
+        rates_b = np.repeat(rate, n)
     else:
-        rates_b = np.array(rate).flatten() * rate.units
+        rates_b = rate.flatten()
         if not all(rates_b >= 0. * pq.Hz):
             raise ValueError('*rate* must have non-negative elements')
 
@@ -832,8 +825,10 @@ def single_interaction_process(
     # Generate the array of times for coincident events in SIP, not closer than
     # min_delay. The array is generated as a pq.Quantity.
     if coincidences == 'deterministic':
-        n_coincidences = int(round(
-            ((t_stop - t_start) * rate_c).rescale(pq.dimensionless)))
+        # P. Bouss: we want the closest approximation to the average
+        # coincidence count.
+        n_coincidences = (t_stop - t_start) * rate_c
+        n_coincidences = round(n_coincidences.simplified.item())
         while True:
             coinc_times = t_start + \
                 np.sort(np.random.random(n_coincidences)) * (
@@ -846,16 +841,14 @@ def single_interaction_process(
                 rate=rate_c, t_stop=t_stop, t_start=t_start)
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
-        # Convert coinc_times from a neo SpikeTrain object to a pq.Quantity
-        # object
-        # pq.Quantity(coinc_times.base)*coinc_times.units
-        coinc_times = coinc_times.view(pq.Quantity)
+        coinc_times = coinc_times.simplified
+        units = coinc_times.units
         # Set the coincidence times to T-jitter if larger. This ensures that
         # the last jittered spike time is <T
         effective_t_stop = t_stop - jitter
-        for i, coinc_time in enumerate(coinc_times):
-            if coinc_time > effective_t_stop:
-                coinc_times[i] = effective_t_stop
+        coinc_times = np.minimum(coinc_times.magnitude,
+                                 effective_t_stop.simplified.magnitude)
+        coinc_times = coinc_times * units
 
     # Replicate coinc_times n times, and jitter each event in each array by
     # +/- jitter (within (t_start, t_stop))
@@ -995,8 +988,9 @@ def _sample_int_from_pdf(probability_density, n_samples):
 
     cumulative_distribution = np.cumsum(probability_density)
     random_uniforms = np.random.uniform(0, 1, size=n_samples)
-    # copy random_uniforms (as column vector) len(probability_density) times
-    random_uniforms = np.array([random_uniforms] * len(probability_density)).T
+    random_uniforms = np.repeat(np.expand_dims(random_uniforms, axis=1),
+                                repeats=len(probability_density),
+                                axis=1)
     return (cumulative_distribution < random_uniforms).sum(axis=1)
 
 
@@ -1027,7 +1021,7 @@ def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * pq.ms):
     """
     n_spiketrains = len(A) - 1
     # expected amplitude
-    exp_amplitude = np.dot(A, range(n_spiketrains + 1))
+    exp_amplitude = np.dot(A, np.arange(n_spiketrains + 1))
     # expected rate of the mother process
     exp_mother_rate = (n_spiketrains * rate) / exp_amplitude
     return homogeneous_poisson_process(
