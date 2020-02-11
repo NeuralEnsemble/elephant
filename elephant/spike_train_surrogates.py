@@ -189,21 +189,21 @@ def dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates=1,
         where each spike is moved.
     """
     if len(spiketrain) == 0:
-        return [spiketrain] * n_surrogates
+        return [spiketrain.copy() for _ in range(n_surrogates)]
 
-    unit = spiketrain.units
+    units = spiketrain.units
     t_start, t_stop = spiketrain.t_start.magnitude, spiketrain.t_stop.magnitude
-    spiketrain = spiketrain.magnitude
 
-    dither = dither.rescale(unit).magnitude
-    refractory_period = refractory_period.rescale(unit).magnitude
-    refractory_period = np.min(np.diff(spiketrain), initial=refractory_period)
+    dither = dither.rescale(units).magnitude
+    refractory_period = refractory_period.rescale(units).magnitude
+    refractory_period = np.min(np.diff(spiketrain.magnitude),
+                               initial=refractory_period)
 
     dithered_spiketrains = []
     for _ in range(n_surrogates):
-        dithered_spiketrain = np.copy(spiketrain)
-        random_ordered_ids = np.random.choice(
-            len(spiketrain), size=len(spiketrain), replace=False)
+        dithered_spiketrain = np.copy(spiketrain.magnitude)
+        random_ordered_ids = np.arange(len(spiketrain))
+        np.random.shuffle(random_ordered_ids)
 
         for random_id in random_ordered_ids:
             spike = dithered_spiketrain[random_id]
@@ -225,7 +225,7 @@ def dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates=1,
 
         dithered_spiketrains.append(
             neo.SpikeTrain(dithered_spiketrain, t_start=t_start, t_stop=t_stop,
-                           units=unit))
+                           units=units))
     return dithered_spiketrains
 
 
