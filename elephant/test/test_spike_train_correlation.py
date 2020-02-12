@@ -269,7 +269,7 @@ class CorrCoefTestCase(unittest.TestCase):
                                   sc.corrcoef(binned_st, fast=True))
 
 
-class cross_correlation_histogram_TestCase(unittest.TestCase):
+class CrossCorrelationHistogramTest(unittest.TestCase):
 
     def setUp(self):
         # These two arrays must be such that they do not have coincidences
@@ -483,13 +483,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             ValueError,
             sc.cross_correlation_histogram, self.binned_st1,
             self.st_check_binsize)
-        # Check different t_start and t_stop
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram,
-            self.st_check_t_start, self.binned_st2)
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram,
-            self.st_check_t_stop, self.binned_st2)
         # Check input are one dimensional
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram,
@@ -602,6 +595,64 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         Test if alias cch still exists.
         '''
         self.assertEqual(sc.cross_correlation_histogram, sc.cch)
+
+
+@unittest.skipUnless(python_version_major == 3, "subTest requires 3.4")
+class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
+
+    def _run_sub_tests(self, st1, st2, lags_true):
+        for window in ('valid', 'full'):
+            with self.subTest(msg="window={}".format(window),
+                              window=window):
+                st1_binned = conv.BinnedSpikeTrain(st1, binsize=1 * pq.s)
+                st2_binned = conv.BinnedSpikeTrain(st2, binsize=1 * pq.s)
+                cch, bins = sc.cross_correlation_histogram(
+                    st1_binned, st2_binned, window=window)
+                cch_memory, _ = sc.cross_correlation_histogram(
+                    st1_binned, st2_binned, window=window, method='memory',
+                )
+                assert_array_almost_equal(cch.magnitude, cch_memory.magnitude)
+                cch_np = np.correlate(st1_binned.to_array()[0],
+                                      st2_binned.to_array()[0],
+                                      mode=window)
+                assert_array_almost_equal(np.ravel(cch.magnitude),
+                                          cch_np[::-1])
+                assert_array_equal(bins, lags_true[window])
+
+    def test_cross_correlation_histogram_valid_full_overlap(self):
+        # ex. 1 in the source code
+        st1 = neo.SpikeTrain([3.5, 4.5, 7.5] * pq.s, t_start=3 * pq.s,
+                             t_stop=8 * pq.s)
+        st2 = neo.SpikeTrain([1.5, 2.5, 4.5, 8.5, 9.5, 10.5]
+                             * pq.s, t_start=1 * pq.s, t_stop=13 * pq.s)
+        lags_true = {
+            'valid': np.arange(-2, 6),
+            'full': np.arange(-6, 10)
+        }
+        self._run_sub_tests(st1, st2, lags_true)
+
+    def test_cross_correlation_histogram_valid_partial_overlap(self):
+        # ex. 2 in the source code
+        st1 = neo.SpikeTrain([2.5, 3.5, 4.5, 6.5] * pq.s, t_start=1 * pq.s,
+                             t_stop=7 * pq.s)
+        st2 = neo.SpikeTrain([3.5, 5.5, 6.5, 7.5, 8.5] *
+                             pq.s, t_start=2 * pq.s, t_stop=9 * pq.s)
+        lags_true = {
+            'valid': [1, 2],
+            'full': np.arange(-4, 8)
+        }
+        self._run_sub_tests(st1, st2, lags_true)
+
+    def test_cross_correlation_histogram_valid_no_overlap(self):
+        st1 = neo.SpikeTrain([2.5, 3.5, 4.5, 6.5] * pq.s, t_start=1 * pq.s,
+                             t_stop=7 * pq.s)
+        st2 = neo.SpikeTrain([3.5, 5.5, 6.5, 7.5, 8.5] * pq.s + 6 * pq.s,
+                             t_start=8 * pq.s, t_stop=15 * pq.s)
+        lags_true = {
+            'valid': [7, 8],
+            'full': np.arange(2, 14)
+        }
+        self._run_sub_tests(st1, st2, lags_true)
 
 
 class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):

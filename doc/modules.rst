@@ -11,6 +11,7 @@ Function Reference by Module
    reference/conversion
    reference/cubic
    reference/current_source_density
+   reference/gpfa
    reference/kernels
    reference/neo_tools
    reference/pandas_bridge
