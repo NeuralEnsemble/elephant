@@ -13,9 +13,7 @@ import neo
 import numpy as np
 import quantities as pq
 import scipy.signal
-from scipy import integrate, sparse
-
-import elephant.conversion
+from scipy import integrate
 
 # The highest sparsity of the `BinnedSpikeTrain` matrix for which
 # memory-efficient (sparse) implementation of `covariance()` is faster than
