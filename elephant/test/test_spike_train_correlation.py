@@ -582,7 +582,8 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             border_correction[mask],
-            (min_num_bins / (min_num_bins - num_bins_outside_window))[mask])
+            (float(min_num_bins)
+             / (min_num_bins - num_bins_outside_window))[mask])
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
