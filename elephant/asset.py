@@ -44,13 +44,12 @@ References:
 from __future__ import division, print_function, unicode_literals
 
 import itertools
-
+import warnings
 import neo
 import numpy as np
 import quantities as pq
 import scipy.spatial
 import scipy.stats
-from scipy import special
 from sklearn.cluster import dbscan as dbscan
 from tqdm import trange, tqdm
 
@@ -1095,7 +1094,13 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     du, du_indices = np.unique(du, axis=0, return_inverse=True)
 
     # precompute logarithms
-    log_du = np.log(du)
+    # ignore warnings about infinities, see inside the loop:
+    # we replace 0 * ln(0) by 1 to get exp(0 * ln(0)) = 0 ** 0 = 1
+    # the remaining infinities correctly evaluate to
+    # exp(ln(0)) = exp(-inf) = 0
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)
+        log_du = np.log(du)
     log_1 = np.log(1.)
 
     # prepare arrays for usage inside the loop
@@ -1131,8 +1136,8 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
         di = -np.diff(np.hstack([n, matrix_entries, 0]))
 
         # reshape the matrix to be compatible with du
-        for idx in range(len(di)):
-            di_scratch[:, idx].fill(di[idx])
+        for idx, current_di in enumerate(di):
+            di_scratch[:, idx].fill(current_di)
 
         # use precomputed factorials
         sum_log_di_factorial = log_factorial[di].sum()
@@ -1149,9 +1154,9 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
         # correct)
         log_du_scratch[di_scratch == 0] = log_1
 
-        prod_DU2 = di_scratch * log_du_scratch
-        sum_DU2 = prod_DU2.sum(axis=1)
-        logP = sum_DU2 - sum_log_di_factorial
+        di_log_du = di_scratch * log_du_scratch
+        sum_di_log_du = di_log_du.sum(axis=1)
+        logP = sum_di_log_du - sum_log_di_factorial
 
         P_total += np.exp(logP + logK)
 
