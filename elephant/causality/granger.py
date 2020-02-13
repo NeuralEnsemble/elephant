@@ -195,30 +195,3 @@ def pairwise_granger(signals, order):
                      total_interdependence=total_interdependence)
 
 
-if __name__ == '__main__':
-
-    np.random.seed(1)
-    length_2d = 10000
-    signal = np.zeros((2, length_2d))
-
-    order = 2
-    weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
-    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
-    weights = np.stack((weights_1, weights_2))
-
-    noise_cov = np.array([[1., 0.0], [0.0, 1.]])
-
-    for i in range(length_2d):
-        for lag in range(order):
-            signal[:, i] += np.dot(weights[lag], signal[:, i-lag-1])
-        rnd_var = np.random.multivariate_normal([0, 0], noise_cov)
-        signal[0, i] += rnd_var[0]
-        signal[1, i] += rnd_var[1]
-
-    causality = pairwise_granger(signal, 2)
-
-    print('Directional causality: First onto second component', causality.directional_causality_x_y)
-    print('Directional causality: Second onto first component', causality.directional_causality_y_x)
-    print('Instantaneous causality:', causality.instantaneous_causality)
-    print('Total interdependence', causality.total_interdependence)
