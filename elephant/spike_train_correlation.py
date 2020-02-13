@@ -138,11 +138,14 @@ class _CrossCorrHist(object):
         np.ndarray
             Cross-correlation array with the border correction applied.
         """
-        max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
+        min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
         left_edge, right_edge = self.window
-        n_values_fall_in_window = max_num_bins + 1 - np.abs(
-            np.arange(left_edge, right_edge + 1))
-        correction = float(max_num_bins + 1) / n_values_fall_in_window
+        valid_lags = _get_valid_lags(self.binned_st1, self.binned_st2)
+        lags_to_compute = np.arange(left_edge, right_edge + 1)
+        outer_subtraction = np.subtract.outer(lags_to_compute, valid_lags)
+        min_distance_from_window = np.abs(outer_subtraction).min(axis=1)
+        n_values_fall_in_window = min_num_bins - min_distance_from_window
+        correction = float(min_num_bins) / n_values_fall_in_window
         return cross_corr * correction
 
     def cross_corr_coef(self, cross_corr):
@@ -710,7 +713,8 @@ def cross_correlation_histogram(
     if border_correction:
         if window == 'valid':
             warnings.warn(
-                "Border correction is ignored with 'valid' window mode")
+                "Border correction does not have any effect in "
+                "'valid' window mode since there are no border effects!")
         else:
             cross_corr = cch_builder.border_correction(cross_corr)
     if kernel is not None:

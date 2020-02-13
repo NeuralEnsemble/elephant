@@ -548,23 +548,41 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
     def test_border_correction(self):
         '''Test if the border correction for bins at the edges is correctly
         performed'''
-        cch_corrected, _ = sc.cross_correlation_histogram(
+
+        # check that nothing changes for valid lags
+        cch_valid, _ = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='full',
             border_correction=True, binary=False, kernel=None)
-        cch_corrected_mem, _ = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            border_correction=True, binary=False, kernel=None, method='memory')
-        cch, _ = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            border_correction=False, binary=False, kernel=None)
-        cch_mem, _ = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            border_correction=False, binary=False, kernel=None,
-            method='memory')
+        valid_lags = sc._get_valid_lags(self.binned_st1, self.binned_st2)
+        left_edge, right_edge = valid_lags[(0, -1), ]
+        cch_builder = sc._CrossCorrHist(self.binned_st1, self.binned_st2,
+                                        window=(left_edge, right_edge))
+        cch_valid = cch_builder.correlate_speed(cch_mode='valid')
+        cch_corrected = cch_builder.border_correction(cch_valid)
 
-        self.assertEqual(np.any(np.not_equal(cch, cch_corrected)), True)
-        self.assertEqual(np.any(np.not_equal(cch_mem, cch_corrected_mem)),
-                         True)
+        np.testing.assert_array_equal(cch_valid, cch_corrected)
+
+        # test the border correction for lags without full overlap
+        cch_full, lags_full = sc.cross_correlation_histogram(
+            self.binned_st1, self.binned_st2, window='full')
+
+        cch_full_corrected, _ = sc.cross_correlation_histogram(
+            self.binned_st1, self.binned_st2, window='full',
+            border_correction=True)
+
+        num_bins_outside_window = np.min(np.abs(
+            np.subtract.outer(lags_full, valid_lags)), axis=1)
+
+        min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
+
+        border_correction = (cch_full_corrected / cch_full).magnitude.flatten()
+
+        # exclude NaNs caused by zeros in the cch
+        mask = np.logical_not(np.isnan(border_correction))
+
+        np.testing.assert_array_almost_equal(
+            border_correction[mask],
+            (min_num_bins / (min_num_bins - num_bins_outside_window))[mask])
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
