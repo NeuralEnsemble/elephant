@@ -174,7 +174,6 @@ class AssetTestCase(unittest.TestCase):
         st1 = neo.SpikeTrain([1, 2, 4]*pq.ms, t_stop=6*pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4]*pq.ms, t_stop=6*pq.ms)
         st3 = neo.SpikeTrain([2, 5]*pq.ms, t_start=1*pq.ms, t_stop=6*pq.ms)
-        st4 = neo.SpikeTrain([1, 3, 6]*pq.ms, t_stop=8*pq.ms)
         binsize = 1 * pq.ms
 
         # Check that the routine works for correct input...
@@ -191,28 +190,21 @@ class AssetTestCase(unittest.TestCase):
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
         # ...different t_start, t_stop on the two time axes
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_start_y=1*pq.ms,
-            t_stop_x=5*pq.ms, t_stop_y=6*pq.ms)
-        trueimat_1_2 = np.array([[0.,  0.,  0.,  0., 0.],
-                                 [2.,  1.,  1.,  2., 0.],
-                                 [1.,  1.,  0.,  1., 0.],
-                                 [1.,  0.,  1.,  1., 0.],
-                                 [2.,  1.,  1.,  2., 0.]])
+            [st1, st2], binsize, t_start_y=6*pq.ms,
+            spiketrains_y=[st + 6 * pq.ms for st in [st1, st2]],
+            t_stop_x=5*pq.ms, t_stop_y=11*pq.ms)
         self.assertTrue(np.all(xedges == np.arange(6)*pq.ms))  # correct bins
+        np.testing.assert_array_almost_equal(yedges, np.arange(6, 12)*pq.ms)
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
 
         # Check that errors are raised correctly...
-        # ...for t_stop too large compared to length of spike trains
+        # ...for partially overlapping time intervals
         self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st2], binsize=binsize, t_stop_x=8*pq.ms)
+                          spiketrains=[st1, st2], binsize=binsize,
+                          t_start_y=1*pq.ms)
         # ...for different SpikeTrain's t_starts
         self.assertRaises(ValueError, asset.intersection_matrix,
                           spiketrains=[st1, st3], binsize=binsize)
-        # ...when the analysis is specified for a time span where the
-        # spike trains are not defined (e.g. t_start_x < SpikeTrain.t_start)
-        self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st2], binsize=binsize,
-                          t_start_x=-2*pq.ms, t_start_y=-2*pq.ms)
 
 
 def suite():

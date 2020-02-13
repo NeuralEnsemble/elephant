@@ -209,7 +209,6 @@ def _transactions(spiketrains, binsize, t_start=None, t_stop=None, ids=None):
     if t_stop is None:
         t_stop = _signals_same_tstop(trains)
 
-    # TODO: try to only bin once?
     # Bin the spike trains and take for each of them the ids of filled bins
     binned = conv.BinnedSpikeTrain(
         trains, binsize=binsize, t_start=t_start, t_stop=t_stop)
@@ -265,8 +264,9 @@ def intersection_matrix(
     Generates the intersection matrix from a list of spike trains.
 
     Given a list of SpikeTrains, consider two binned versions of them
-    differing for the starting time of the binning (t_start_x and t_start_y
-    respectively; the two times can be identical). Then calculate the
+    differing for the starting and ending times of the binning (t_start_x,
+    t_stop_x, t_start_y and t_stop_y respectively; the time intervals can be
+    either identical or completely disjoint). Then calculate the
     intersection matrix M of the two binned data, where M[i,j] is the overlap
     of bin i in the first binned data and bin j in the second binned data
     (i.e. the number of spike trains spiking both at bin i and at bin j).
@@ -280,15 +280,34 @@ def intersection_matrix(
     binsize : pq.Quantity
         size of the time bins used to define synchronous spikes in the given
         SpikeTrains.
+    spiketrains_y : list of neo.SpikeTrain, optional
+        list of SpikeTrains for the second time dimension
+        if unspecified, spiketrains is used for both
+        Default: None
     t_start_x : pq.Quantity, optional
-        time start of the binning for the first axis of the intersection
+        start time of the binning for the first axis of the intersection
         matrix, respectively.
         If None (default) the attribute t_start of the SpikeTrains is used
         (if the same for all spike trains).
         Default: None
     t_start_y : pq.Quantity, optional
-        time start of the binning for the second axis of the intersection
+        start time of the binning for the second axis of the intersection
         matrix
+        If None (default) the attribute t_start of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_stop_x : pq.Quantity, optional
+        stop time of the binning for the first axis of the intersection
+        matrix, respectively.
+        If None (default) the attribute t_stop of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_stop_y : pq.Quantity, optional
+        stop time of the binning for the second axis of the intersection
+        matrix
+        If None (default) the attribute t_stop of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
     norm : int, optional
         type of normalization to be applied to each entry [i,j] of the
         intersection matrix. Given the sets s_i, s_j of neuron ids in the
@@ -313,9 +332,6 @@ def intersection_matrix(
         edges of the bins used for the vertical axis of imat. If imat is
         a matrix of shape (n, n), y_edges has length n+1
     """
-    # TODO: update the docs
-    # TODO: Don't do anything twice for x and y if they are the same
-    # TODO: only allow full or no overlap of x and y
 
     if spiketrains_y is None:
         spiketrains_y = spiketrains
@@ -331,99 +347,62 @@ def intersection_matrix(
     if t_stop_y is None:
         t_stop_y = _signals_same_tstop(spiketrains_y)
 
-    # Check that all SpikeTrains are defined until t_stop at least
-    for i, st in enumerate(spiketrains):
-        if not (st.t_stop > t_stop_x or
-                _quantities_almost_equal(st.t_stop, t_stop_x)):
-            msg = 'SpikeTrain %d on x axis is shorter than the required time ' % i + \
-                  'span: t_stop (%s) < %s' % (st.t_stop, t_stop_x)
-            raise ValueError(msg)
+    msg = 'The time intervals for x and y need to be either identical'
+    'or fully disjoint, but they are:'
+    'x: ({}, {}) and y: ({}, {}).'.format(t_start_x, t_stop_x,
+                                          t_start_y, t_stop_y)
 
-    for i, st in enumerate(spiketrains_y):
-        if not (st.t_stop > t_stop_y or
-                _quantities_almost_equal(st.t_stop, t_stop_y)):
-            msg = 'SpikeTrain %d on y axis is shorter than the required time ' % i + \
-                  'span: t_stop (%s) < %s' % (st.t_stop, t_stop_y)
+    if t_start_x == t_start_y:
+        if not _quantities_almost_equal(t_stop_x, t_stop_y):
             raise ValueError(msg)
-
-    # TODO: is this necessary?
-    # For both x and y axis, cut all SpikeTrains between t_start and t_stop
-    sts_x = [st.time_slice(t_start=t_start_x, t_stop=t_stop_x)
-             for st in spiketrains]
-    sts_y = [st.time_slice(t_start=t_start_y, t_stop=t_stop_y)
-             for st in spiketrains_y]
+    elif ((t_start_x < t_start_y < t_stop_x)
+          or (t_start_x < t_stop_y < t_stop_x)):
+        raise ValueError(msg)
 
     # Compute the binned spike train matrices, along both time axes
     bsts_x = conv.BinnedSpikeTrain(
-        sts_x, binsize=binsize,
+        spiketrains, binsize=binsize,
         t_start=t_start_x, t_stop=t_stop_x)
     bsts_y = conv.BinnedSpikeTrain(
-        sts_y, binsize=binsize,
+        spiketrains_y, binsize=binsize,
         t_start=t_start_y, t_stop=t_stop_y)
     xx = bsts_x.bin_edges.rescale(binsize.units)
     yy = bsts_y.bin_edges.rescale(binsize.units)
 
-    # Compute imat either by matrix multiplication (~20x faster) or by
-    # nested for loops (more memory efficient)
-    try:  # try the fast version
-        bsts_x = bsts_x.to_bool_array().astype(np.float32)
-        bsts_y = bsts_y.to_bool_array().astype(np.float32)
+    # Compute imat by matrix multiplication
+    bsts_x = bsts_x.to_sparse_array()
+    bsts_y = bsts_y.to_sparse_array()
 
-        # Compute the number of spikes in each bin, for both time axes
-        spikes_per_bin_x = bsts_x.sum(axis=0)
-        spikes_per_bin_y = bsts_y.sum(axis=0)
+    # Compute the number of spikes in each bin, for both time axes
+    spikes_per_bin_x = bsts_x.sum(axis=0)
+    spikes_per_bin_y = bsts_y.sum(axis=0)
 
-        # Compute the intersection matrix imat
-        imat = bsts_x.T.dot(bsts_y)
-        for ii, bin_ii in enumerate(np.expand_dims(bsts_x.T, axis=2)):
-            # Normalize the row according to the specified normalization
-            if norm == 0 or norm is None or bin_ii.sum() == 0:
-                norm_coef = 1.
-            elif norm == 1:
-                norm_coef = np.minimum(
-                    spikes_per_bin_x[ii], spikes_per_bin_y)
-            elif norm == 2:
-                norm_coef = np.sqrt(
-                    spikes_per_bin_x[ii] * spikes_per_bin_y)
-            elif norm == 3:
-                norm_coef = np.count_nonzero(bin_ii + bsts_y, axis=0)
-            imat[ii, :] = imat[ii, :] / norm_coef
+    # Compute the intersection matrix imat
+    imat = bsts_x.T.dot(bsts_y).toarray().astype(np.float32)
+    for ii in range(bsts_x.shape[1]):
+        # Normalize the row according to the specified normalization
+        if norm == 0 or norm is None or bsts_x[:, ii].sum() == 0:
+            norm_coef = 1.
+        elif norm == 1:
+            norm_coef = np.minimum(
+                spikes_per_bin_x[ii], spikes_per_bin_y)
+        elif norm == 2:
+            norm_coef = np.sqrt(
+                spikes_per_bin_x[ii] * spikes_per_bin_y)
+        elif norm == 3:
+            norm_coef = np.array([(bsts_x[:, ii]
+                                   + bsts_y[:, jj]).count_nonzero()
+                                  for jj in range(bsts_y.shape[1])])
+        imat[ii, :] = imat[ii, :] / norm_coef
 
-        # If normalization required, for each j such that bsts_y[j] is
-        # identically 0 the code above sets imat[:, j] to identically nan.
-        # Substitute 0s instead. Then refill the main diagonal with 1s.
-        if norm and norm >= 0.5:
-            ybins_equal_0 = np.where(spikes_per_bin_y == 0)[0]
-            for y_id in ybins_equal_0:
-                imat[:, y_id] = 0
-            np.fill_diagonal(imat, val=1)
-
-    except MemoryError:  # use the memory-efficient version
-        # Compute the list spiking neurons per bin, along both axes
-        ids_per_bin_x = _transactions(
-            sts_x, binsize, t_start=t_start_x, t_stop=t_stop_x)
-        ids_per_bin_y = _transactions(
-            sts_y, binsize, t_start=t_start_y, t_stop=t_stop_y)
-
-        # Generate the intersection matrix
-        N_bins_x = len(spikes_per_bin_x)
-        N_bins_y = len(spikes_per_bin_y)
-        imat = np.zeros((N_bins_x, N_bins_y))
-        for ii in range(N_bins_x):
-            for jj in range(N_bins_y):
-                if len(ids_per_bin_x[ii]) * len(ids_per_bin_y[jj]) != 0:
-                    imat[ii, jj] = len(set(ids_per_bin_x[ii]).intersection(
-                        set(ids_per_bin_y[jj])))
-                    # Normalise according to the desired normalisation type:
-                    if norm == 1:
-                        imat[ii, jj] /= float(min(len(ids_per_bin_x[ii]),
-                                                  len(ids_per_bin_y[jj])))
-                    elif norm == 2:
-                        imat[ii, jj] /= np.sqrt(float(
-                            len(ids_per_bin_x[ii]) * len(ids_per_bin_y[jj])))
-                    elif norm == 3:
-                        imat[ii, jj] /= float(len(set(
-                            ids_per_bin_x[ii]).union(set(ids_per_bin_y[jj]))))
+    # If normalization required, for each j such that bsts_y[j] is
+    # identically 0 the code above sets imat[:, j] to identically nan.
+    # Substitute 0s instead. Then refill the main diagonal with 1s.
+    if norm and norm >= 0.5:
+        ybins_equal_0 = np.where(spikes_per_bin_y == 0)[0]
+        for y_id in ybins_equal_0:
+            imat[:, y_id] = 0
+        np.fill_diagonal(imat, val=1)
 
     # Return the intersection matrix and the edges of the bins used for the
     # x and y axes, respectively.
