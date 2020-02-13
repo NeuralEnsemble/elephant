@@ -673,8 +673,8 @@ def probability_matrix_montecarlo(
     at disposal, see below) and calculates their intersection matrix M.
     For each entry (i, j), the intersection cdf P[i, j] is then given by:
 
-    .. centered::  P[i, j] = #(spike_train_surrogates such that M[i, j] < I[i, j]) /
-                        #(spike_train_surrogates)
+    .. centered::  P[i, j] = #(spike_train_surrogates such that
+                   M[i, j] < I[i, j]) / #(spike_train_surrogates)
 
     If P[i, j] is large (close to 1), I[i, j] is statistically significant:
     the probability to observe an overlap equal to or larger than I[i, j]
@@ -697,9 +697,12 @@ def probability_matrix_montecarlo(
     surr_method : str, optional
         the method to use to generate surrogate spike trains. Can be one of:
 
-            * 'dither_spike_train': see spike_train_surrogates.train_shifting() [dt needed]
-            * 'spike_dithering': see spike_train_surrogates.spike_dithering() [dt needed]
-            * 'spike_jittering': see spike_train_surrogates.spike_jittering() [dt needed]
+            * 'dither_spike_train': see spike_train_surrogates.train_shifting()
+                                    [dt needed]
+            * 'spike_dithering': see spike_train_surrogates.spike_dithering()
+                                 [dt needed]
+            * 'spike_jittering': see spike_train_surrogates.spike_jittering()
+                                 [dt needed]
             * 'spike_time_rand': see spike_train_surrogates.spike_time_rand()
             * 'isi_shuffling': see spike_train_surrogates.isi_shuffling()
 
@@ -850,8 +853,9 @@ def probability_matrix_analytical(
     if spiketrains_y is None:
         spiketrains_y = spiketrains
 
-    # TODO: think about maybe passing the binned spiketrains to intersection_matrix
-    #       instead of spiketrains and include a type check to skip the second binning
+    # TODO: think about maybe passing the binned spiketrains to
+    #       intersection_matrix instead of spiketrains and include
+    #       a type check to skip the second binning
     # Bin the spike trains
     bsts_x = conv.BinnedSpikeTrain(
         spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x)
@@ -1207,8 +1211,9 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     l, w = filter_shape
     d = l if nr_largest is None else nr_largest
 
-    # Check consistent arguments
     # TODO: what to do close to the diagonal if the matrix is symmetric?
+    #       flatten lmat, consider this in jsf_uniform_orderstat
+    # Check consistent arguments
     assert diag == 0 or diag == 1, \
         'diag must be 0 (45 degree filtering) or 1 (135 degree filtering)'
     assert w < l, 'w must be lower than l'
@@ -1252,7 +1257,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
                 row_patches * flattened_filt, axis=1)[:, -d:]
 
             lmat[:, y + (l // 2),
-            (l // 2): (l // 2) + N_bin_x - l + 1] = largest_vals.T
+                 (l // 2): (l // 2) + N_bin_x - l + 1] = largest_vals.T
 
     except MemoryError:  # if too large, do it serially by for loops
         print('pmat neighbours slow version due to memory error')
@@ -1323,7 +1328,7 @@ def joint_probability_matrix(
     >>> jmat = joint_probability_matrix(pmat, filter_shape=(fl, fw))
 
     """
-    # TODO: maybe check if pmat is symmetrical and then only do this on one half?
+    # TODO: how to deal with symmetric matrices?
 
     # Find for each P_ij in the probability matrix its neighbors and maximize
     # them by the maximum value 1-pvmin
@@ -1432,7 +1437,8 @@ def sse_intersection(sse1, sse2, intersection='linkwise'):
 
         * if 'pixelwise', it yields a new SSE which retains only events in sse1
           whose pixel position matches a pixel position in sse2. This operation
-          is not symmetric: intersection(sse1, sse2) != intersection(sse2, sse1).
+          is not symmetric:
+          intersection(sse1, sse2) != intersection(sse2, sse1).
         * if 'linkwise', an additional step is performed where each retained
           synchronous event SK in sse1 is intersected with the corresponding
           event in sse2. This yields a symmetric operation:
@@ -1493,9 +1499,9 @@ def sse_difference(sse1, sse2, difference='linkwise'):
         * if 'pixelwise', it yields a new SSE which contains all (and only) the
           events in sse1 whose pixel position doesn't match any pixel in sse2.
         * if 'linkwise', for each pixel (i, j) in sse1 and corresponding
-          synchronous event S1, if (i, j) is a pixel in sse2 corresponding to the
-          event S2, it retains the set difference S1 - S2. If (i, j) is not a
-          pixel in sse2, it retains the full set S1.
+          synchronous event S1, if (i, j) is a pixel in sse2 corresponding
+          to the event S2, it retains the set difference S1 - S2. If (i, j)
+          is not a pixel in sse2, it retains the full set S1.
 
     Note that in either case the difference is a non-symmetric operation:
     intersection(sse1, sse2) != intersection(sse2, sse1).
