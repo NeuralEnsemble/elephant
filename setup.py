@@ -20,11 +20,11 @@ with open(os.path.join(os.path.dirname(__file__),
 
 with open("README.md") as f:
     long_description = f.read()
-with open('requirements.txt') as fp:
+with open('requirements/requirements.txt') as fp:
     install_requires = fp.read()
 extras_require = {}
 for extra in ['extras', 'docs', 'tests', 'tutorials']:
-    with open('requirements-{0}.txt'.format(extra)) as fp:
+    with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
 
 

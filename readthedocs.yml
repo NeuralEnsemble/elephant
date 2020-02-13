@@ -8,13 +8,10 @@ sphinx:
   builder: html
   configuration: doc/conf.py
 
+conda:
+  environment: requirements/environment.yml
+
 python:
-    version: 3.7
     install:
         - method: pip
           path: .
-          extra_requirements:
-            - extras
-            - docs
-            - tutorials
-        
