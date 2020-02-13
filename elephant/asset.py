@@ -737,36 +737,41 @@ def probability_matrix_montecarlo(
         t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x,
         t_stop_y=t_stop_y)
 
-    # TODO: check performance, parallelise where possible
-
-    # Generate surrogate spike trains as a list surrs; for each spike train
-    # i, surrs[i] is a list of length n_surr, containing the
-    # spike_train_surrogates of i
-    surrs = [spike_train_surrogates.surrogates(
-        st, n=n_surr, surr_method=surr_method, dt=j, decimals=None, edges=True)
-        for st in spiketrains]
-
-    if spiketrains_y is None:
-        surrs_y = surrs
-    else:
-        surrs_y = [spike_train_surrogates.surrogates(st, n=n_surr,
-                                                     surr_method=surr_method,
-                                                     dt=j, decimals=None,
-                                                     edges=True)
-                   for st in spiketrains_y]
-
+    # Generate surrogate spike trains as a list surrs
     # Compute the p-value matrix pmat; pmat[i, j] counts the fraction of
     # surrogate data whose intersection value at (i, j) is lower than or
     # equal to that of the original data
     pmat = np.array(np.zeros(imat.shape), dtype=int)
+
     for surr_id in trange(n_surr, desc="pmat_bootstrap", disable=not verbose):
-        surrs_i = [st[surr_id] for st in surrs]  # Take each i-th surrogate
-        surrs_y_i = [st[surr_id] for st in surrs_y]  # Take each i-th surrogate
+        if mpi_accelerated and surr_id % size != rank:
+            continue
+        surrs = [spike_train_surrogates.surrogates(st, n=1,
+                                                   surr_method=surr_method,
+                                                   dt=j, decimals=None,
+                                                   edges=True)
+                 for st in spiketrains]
+
+        if spiketrains_y is None:
+            surrs_y = surrs
+        else:
+            surrs_y = [spike_train_surrogates.surrogates(
+                           st, n=1, surr_method=surr_method, dt=j,
+                           decimals=None, edges=True)
+                       for st in spiketrains_y]
+
         imat_surr, xx, yy = intersection_matrix(  # compute the related imat
-            surrs_i, binsize=binsize, spiketrains_y=surrs_y_i,
+            surrs, binsize=binsize, spiketrains_y=surrs_y,
             t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x,
             t_stop_y=t_stop_y)
+
         pmat += (imat_surr <= imat - 1)
+
+        del imat_surr
+
+    if mpi_accelerated:
+        pmat = comm.reduce(pmat, op=MPI.SUM, root=0)
+
     pmat = pmat * 1. / n_surr
 
     return imat, pmat, x_edges, y_edges
