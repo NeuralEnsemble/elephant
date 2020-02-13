@@ -59,8 +59,13 @@ import elephant.spike_train_surrogates as spike_train_surrogates
 try:
     from mpi4py import MPI
     mpi_accelerated = True
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
 except ImportError:
     mpi_accelerated = False
+    size = 1
+    rank = 0
 
 
 # =============================================================================
@@ -1003,11 +1008,6 @@ def probability_matrix_analytical(
 
     pmat = np.zeros(imat.shape)
 
-    if mpi_accelerated:
-        comm = MPI.COMM_WORLD
-        size = comm.Get_size()
-        rank = comm.Get_rank()
-
     for i in range(imat.shape[0]):
         if mpi_accelerated and i % size != rank:
             continue
@@ -1111,11 +1111,6 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     # precompute log(factorial)s
     # pad with a zero to get 0! = 1
     log_factorial = np.hstack((0, np.cumsum(np.log(range(1, n + 1)))))
-
-    if mpi_accelerated:
-        comm = MPI.COMM_WORLD
-        size = comm.Get_size()
-        rank = comm.Get_rank()
 
     # compute the probabilities for each unique row of du
     # only loop over the indices and do all du entries at once
