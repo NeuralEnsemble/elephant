@@ -9,8 +9,9 @@ steps:
 
        >>> binsize = 5 * pq.ms
        >>> dt = 1 * pq.s
-       >>> imat, x_edges, y_edges = intersection_matrix(sts, binsize, dt, norm=2)
-       >>> pmat, x_edges, y_edges = probability_matrix_analytical(
+       >>> imat, x_edges, y_edges = intersection_matrix(sts, binsize,
+       ...                                              dt, norm=2)
+       >>> imat, pmat, x_edges, y_edges = probability_matrix_analytical(
        ...        sts, binsize, dt)
 
 2) Compute the joint probability matrix jmat, using a suitable filter:
@@ -677,8 +678,7 @@ def cluster_matrix_entries(mat, eps=10, min_neighbors=2, stretch=5):
 def probability_matrix_montecarlo(
         spiketrains, binsize, spiketrains_y=None,
         t_start_x=None, t_start_y=None, t_stop_x=None, t_stop_y=None,
-        surr_method='dither_spike_train', j=None, n_surr=100, verbose=False,
-        return_imat=False):
+        surr_method='dither_spike_train', j=None, n_surr=100, verbose=False):
     """
     Given a list of parallel spike trains, estimate the cumulative probability
      of each entry in their intersection matrix (see: intersection_matrix())
@@ -787,17 +787,14 @@ def probability_matrix_montecarlo(
         pmat += (imat_surr <= imat - 1)
     pmat = pmat * 1. / n_surr
 
-    # TODO: just always return imat
-    if return_imat:
-        return imat, pmat, x_edges, y_edges
-    return pmat, x_edges, y_edges
+    return imat, pmat, x_edges, y_edges
 
 
 def probability_matrix_analytical(
         spiketrains, binsize, spiketrains_y=None,
         t_start_x=None, t_start_y=None, t_stop_x=None, t_stop_y=None,
         fir_rates_x='estimate', fir_rates_y='estimate',
-        kernel_width=100 * pq.ms, verbose=False, return_imat=False):
+        kernel_width=100 * pq.ms, verbose=False):
     """
     Given a list of spike trains, approximates the cumulative probability of
     each entry in their intersection matrix (see: intersection_matrix()).
@@ -1026,10 +1023,7 @@ def probability_matrix_analytical(
         for elem in elems:
             pmat[elem[0], elem[1]] = 0.5
 
-    # TODO: always return imat
-    if return_imat:
-        return imat, pmat, xx, yy
-    return pmat, xx, yy
+    return imat, pmat, xx, yy
 
 
 def _wrong_order(a):
