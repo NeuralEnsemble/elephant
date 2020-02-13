@@ -20,7 +20,6 @@ else:
     import elephant.asset as asset
     HAVE_SKLEARN = True
     stretchedmetric2d = asset._stretched_metric_2d
-    cluster = asset.cluster_matrix_entries
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
@@ -59,31 +58,6 @@ class AssetTestCase(unittest.TestCase):
         E = scipy.spatial.distance_matrix(points, points)
         # assert D == E
         np.testing.assert_array_almost_equal(D, E, decimal=12)
-
-    def test_cluster_correct(self):
-        mat = np.zeros((6, 6))
-        mat[[2, 4, 5], [0, 0, 1]] = 1
-        mat_clustered = cluster(mat, eps=4, min_neighbors=2, stretch=6)
-
-        mat_correct = np.zeros((6, 6))
-        mat_correct[[4, 5], [0, 1]] = 1
-        mat_correct[2, 0] = -1
-        np.testing.assert_array_equal(mat_clustered, mat_correct)
-
-    def test_cluster_symmetric(self):
-        x = [0, 1, 2, 5, 6, 7]
-        y = [3, 4, 5, 1, 2, 3]
-        mat = np.zeros((10, 10))
-        mat[x, y] = 1
-        mat = mat + mat.T
-        # compute stretched distance matrix
-        mat_clustered = cluster(mat, eps=4, min_neighbors=2, stretch=6)
-        mat_equals_m1 = (mat_clustered == -1)
-        mat_equals_0 = (mat_clustered == 0)
-        mat_larger_0 = (mat_clustered > 0)
-        np.testing.assert_array_equal(mat_equals_m1, mat_equals_m1.T)
-        np.testing.assert_array_equal(mat_equals_0, mat_equals_0.T)
-        np.testing.assert_array_equal(mat_larger_0, mat_larger_0.T)
 
     def test_sse_difference(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
@@ -146,29 +120,44 @@ class AssetTestCase(unittest.TestCase):
         self.assertIsInstance(mask_1_2[0, 0], np.bool_)
 
     def test_cluster_matrix_entries(self):
-        mat = np.array([[False, False, True, False],
-                        [False, True, False, False],
-                        [True, False, False, True],
-                        [False, False, True, False]])
-        clustered1 = asset.cluster_matrix_entries(
+        # test with symmetric matrix
+        mat = np.array([[0, 0, 1, 0],
+                        [0, 0, 0, 1],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0]])
+        clustered = asset.cluster_matrix_entries(
             mat, eps=1.5, min_neighbors=2, stretch=1)
-        clustered2 = asset.cluster_matrix_entries(
+        correct = np.array([[0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0]])
+        np.testing.assert_array_equal(clustered, correct)
+
+        # test with non-symmetric matrix
+        mat = np.array([[0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [1, 0, 0, 1],
+                        [0, 1, 0, 0]])
+        clustered = asset.cluster_matrix_entries(
             mat, eps=1.5, min_neighbors=3, stretch=1)
-        clustered1_correctA = np.array([[0, 0, 1, 0],
-                                       [0, 1, 0, 0],
-                                       [1, 0, 0, 2],
-                                       [0, 0, 2, 0]])
-        clustered1_correctB = np.array([[0, 0, 2, 0],
-                                       [0, 2, 0, 0],
-                                       [2, 0, 0, 1],
-                                       [0, 0, 1, 0]])
-        clustered2_correct = np.array([[0, 0, 1, 0],
-                                       [0, 1, 0, 0],
-                                       [1, 0, 0, -1],
-                                       [0, 0, -1, 0]])
-        self.assertTrue(np.all(clustered1 == clustered1_correctA) or
-                        np.all(clustered1 == clustered1_correctB))
-        self.assertTrue(np.all(clustered2 == clustered2_correct))
+        correct = np.array([[0, 1, 0, 0],
+                            [0, 0, 1, 0],
+                            [-1, 0, 0, 1],
+                            [0, -1, 0, 0]])
+        np.testing.assert_array_equal(clustered, correct)
+
+        # test with lowered min_neighbors
+        mat = np.array([[0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [1, 0, 0, 1],
+                        [0, 1, 0, 0]])
+        clustered = asset.cluster_matrix_entries(
+            mat, eps=1.5, min_neighbors=2, stretch=1)
+        correct = np.array([[0, 1, 0, 0],
+                            [0, 0, 1, 0],
+                            [2, 0, 0, 1],
+                            [0, 2, 0, 0]])
+        np.testing.assert_array_equal(clustered, correct)
 
     def test_intersection_matrix(self):
         st1 = neo.SpikeTrain([1, 2, 4]*pq.ms, t_stop=6*pq.ms)

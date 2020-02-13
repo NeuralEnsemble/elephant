@@ -625,11 +625,15 @@ def cluster_matrix_entries(mat, eps=10, min_neighbors=2, stretch=5):
             * 0 if the corresponding element in mat was non-positive
             * -1 if the element does not belong to any cluster
     """
-    # TODO: maybe check if mat is symmetrical and then only do this on one half?
 
     # Don't do anything if mat is identically zero
     if np.all(mat == 0):
         return mat
+
+    symmetric = np.all(mat == mat.T)
+
+    if symmetric:
+        mat = np.tril(mat, -1)
 
     # List the significant pixels of mat in a 2-columns array
     xpos_sgnf, ypos_sgnf = np.where(mat > 0)
