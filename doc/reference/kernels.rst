@@ -3,4 +3,3 @@
 ===================
 
 .. automodule:: elephant.kernels
-   :members:

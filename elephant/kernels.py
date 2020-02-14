@@ -4,6 +4,38 @@ Definition of a hierarchy of classes for kernel functions to be used
 in convolution, e.g., for data smoothing (low pass filtering) or
 firing rate estimation.
 
+
+Base kernel classes
+~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: kernels/
+
+    Kernel
+    SymmetricKernel
+
+Symmetric kernels
+~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: kernels/
+
+    RectangularKernel
+    TriangularKernel
+    EpanechnikovLikeKernel
+    GaussianKernel
+    LaplacianKernel
+
+Asymmetric kernels
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: kernels/
+
+    ExponentialKernel
+    AlphaKernel
+
+
 Examples
 --------
 >>> import quantities as pq
@@ -25,10 +57,12 @@ class Kernel(object):
     r"""
     This is the base class for commonly used kernels.
 
-    General definition of kernel:
+    **General definition of kernel:**
+
     A function :math:`K(x, y)` is called a kernel function if
     :math:`\int{K(x, y) g(x) g(y) \textrm{d}x \textrm{d}y} \ \geq 0 \quad
     \forall g \in L_2`
+
 
     Currently implemented kernels are:
         - rectangular
@@ -39,13 +73,13 @@ class Kernel(object):
         - exponential (asymmetric)
         - alpha function (asymmetric)
 
-    In neuroscience a popular application of kernels is in performing smoothing
-    operations via convolution. In this case, the kernel has the properties of
-    a probability density, i.e., it is positive and normalized to one. Popular
-    choices are the rectangular or Gaussian kernels.
+    In neuroscience, a popular application of kernels is in performing
+    smoothing operations via convolution. In this case, the kernel has the
+    properties of a probability density, i.e., it is positive and normalized
+    to one. Popular choices are the rectangular or Gaussian kernels.
 
-    Exponential and alpha kernels may also be used to represent the postynaptic
-    current / potentials in a linear (current-based) model.
+    Exponential and alpha kernels may also be used to represent the
+    postynaptic current/potentials in a linear (current-based) model.
 
     Parameters
     ----------
@@ -60,9 +94,7 @@ class Kernel(object):
     ------
     TypeError
         If `sigma` is not `pq.Quantity`.
-
         If `sigma` is negative.
-
         If `invert` is not `bool`.
 
     """
@@ -255,6 +287,18 @@ class Kernel(object):
         """
         return False
 
+    @property
+    def min_cutoff(self):
+        """
+        Half width of the kernel.
+
+        Returns
+        -------
+        float
+            The returned value varies according to the kernel type.
+        """
+        raise NotImplementedError
+
 
 class SymmetricKernel(Kernel):
     """
@@ -388,11 +432,13 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         to the problem of finding the roots of a polynomial of third order.
         The implemented formulas are based on the solution of this problem
         given in [1]_, where the following 3 solutions are given:
-            - :math:`u_1 = 1`: Solution on negative side
-            - :math:`u_2 = \\frac{-1 + i\\sqrt{3}}{2}`: Solution for larger
-              values than zero crossing of the density
-            - :math:`u_3 = \\frac{-1 - i\\sqrt{3}}{2}`: Solution for smaller
-              values than zero crossing of the density
+
+        * :math:`u_1 = 1`, solution on negative side;
+        * :math:`u_2 = \\frac{-1 + i\\sqrt{3}}{2}`, solution for larger
+          values than zero crossing of the density;
+        * :math:`u_3 = \\frac{-1 - i\\sqrt{3}}{2}`, solution for smaller
+          values than zero crossing of the density.
+
         The solution :math:`u_3` is the relevant one for the problem at hand,
         since it involves only positive area contributions.
 
