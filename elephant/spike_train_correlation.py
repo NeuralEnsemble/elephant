@@ -115,8 +115,8 @@ class _CrossCorrHist(object):
         left_edge, right_edge = self.window
         if cch_mode == 'pad':
             # Zero padding to stay between left_edge and right_edge
-            pad_width = max(-left_edge, 0), max(right_edge, 0)
-            st1_arr = np.pad(st1_arr, pad_width=pad_width, mode='constant')
+            pad_width = min(max(-left_edge, 0), max(right_edge, 0))
+            st2_arr = np.pad(st2_arr, pad_width=pad_width, mode='constant')
             cch_mode = 'valid'
         # Cross correlate the spike trains
         cross_corr = scipy.signal.fftconvolve(st2_arr, st1_arr[::-1],
@@ -670,15 +670,16 @@ def cross_correlation_histogram(
     #    zero-lag is at 4 ms
 
     # Set the time window in which is computed the cch
-    if isinstance(window[0], int) and isinstance(window[1], int):
+    if np.issubdtype(type(window[0]), int) and np.issubdtype(type(window[1]),
+                                                             int):
         # ex. 1) lags range: [w[0] - 2, w[1] - 2] ms
         # ex. 2) lags range: [w[0] + 1, w[1] + 1] ms
         # ex. 3) lags range: [w[0] + 3, w[0] + 3] ms
-        if window[0] >= window[1] or window[0] <= window_min \
-                or window[1] >= window_max:
+        if window[0] >= window[1] or window[0] < window_min \
+                or window[1] > window_max:
             raise ValueError(
                 "The window exceeds the length of the spike trains")
-        left_edge, right_edge = window[0], window[1]
+        left_edge, right_edge = window
         lags = np.arange(left_edge + t_start_shift,
                          right_edge + 1 + t_start_shift, dtype=np.int32)
         cch_mode = 'pad'
@@ -724,12 +725,10 @@ def cross_correlation_histogram(
 
     # Transform the array count into an AnalogSignal
     cch_result = neo.AnalogSignal(
-        signal=cross_corr.reshape(cross_corr.size, 1),
+        signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
         t_start=(lags[0] - 0.5) * binned_st1.binsize,
         sampling_period=binned_st1.binsize)
-    # Return only the hist_bins bins and counts before and after the
-    # central one
     return cch_result, lags
 
 

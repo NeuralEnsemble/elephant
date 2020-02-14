@@ -496,8 +496,10 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         cch_win, bin_ids = sc.cch(
             self.binned_st1, self.binned_st2, window=[-30, 30])
         cch_win_mem, bin_ids_mem = sc.cch(
-            self.binned_st1, self.binned_st2, window=[-30, 30])
+            self.binned_st1, self.binned_st2, window=[-30, 30],
+            method='memory')
 
+        self.assertEqual(len(bin_ids), cch_win.shape[0])
         assert_array_equal(bin_ids, np.arange(-30, 31, 1))
         assert_array_equal(
             (bin_ids - 0.5) * self.binned_st1.binsize, cch_win.times)
@@ -623,20 +625,30 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
         for window in ('valid', 'full'):
             with self.subTest(msg="window={}".format(window),
                               window=window):
-                st1_binned = conv.BinnedSpikeTrain(st1, binsize=1 * pq.s)
-                st2_binned = conv.BinnedSpikeTrain(st2, binsize=1 * pq.s)
-                cch, bins = sc.cross_correlation_histogram(
+                binsize = 1 * pq.s
+                st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
+                st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
+                t_start_shift = (st2.t_start - st1.t_start) / binsize
+                t_start_shift = int(t_start_shift.simplified.magnitude)
+                left, right = lags_true[window][(0, -1), ] - t_start_shift
+                cch_window, lags_window = sc.cross_correlation_histogram(
+                    st1_binned, st2_binned, window=(left, right)
+                )
+                self.assertEqual(len(lags_window), cch_window.shape[0])
+                cch, lags = sc.cross_correlation_histogram(
                     st1_binned, st2_binned, window=window)
                 cch_memory, _ = sc.cross_correlation_histogram(
                     st1_binned, st2_binned, window=window, method='memory',
                 )
                 assert_array_almost_equal(cch.magnitude, cch_memory.magnitude)
+                assert_array_almost_equal(cch.magnitude, cch_window.magnitude)
                 cch_np = np.correlate(st1_binned.to_array()[0],
                                       st2_binned.to_array()[0],
                                       mode=window)
                 assert_array_almost_equal(np.ravel(cch.magnitude),
                                           cch_np[::-1])
-                assert_array_equal(bins, lags_true[window])
+                assert_array_equal(lags, lags_true[window])
+                assert_array_equal(lags, lags_window)
 
     def test_cross_correlation_histogram_valid_full_overlap(self):
         # ex. 1 in the source code
@@ -645,8 +657,8 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
         st2 = neo.SpikeTrain([1.5, 2.5, 4.5, 8.5, 9.5, 10.5]
                              * pq.s, t_start=1 * pq.s, t_stop=13 * pq.s)
         lags_true = {
-            'valid': np.arange(-2, 6),
-            'full': np.arange(-6, 10)
+            'valid': np.arange(-2, 6, dtype=np.int32),
+            'full': np.arange(-6, 10, dtype=np.int32)
         }
         self._run_sub_tests(st1, st2, lags_true)
 
@@ -657,8 +669,8 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
         st2 = neo.SpikeTrain([3.5, 5.5, 6.5, 7.5, 8.5] *
                              pq.s, t_start=2 * pq.s, t_stop=9 * pq.s)
         lags_true = {
-            'valid': [1, 2],
-            'full': np.arange(-4, 8)
+            'valid': np.arange(1, 3, dtype=np.int32),
+            'full': np.arange(-4, 8, dtype=np.int32)
         }
         self._run_sub_tests(st1, st2, lags_true)
 
@@ -668,8 +680,8 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
         st2 = neo.SpikeTrain([3.5, 5.5, 6.5, 7.5, 8.5] * pq.s + 6 * pq.s,
                              t_start=8 * pq.s, t_stop=15 * pq.s)
         lags_true = {
-            'valid': [7, 8],
-            'full': np.arange(2, 14)
+            'valid': np.arange(7, 9, dtype=np.int32),
+            'full': np.arange(2, 14, dtype=np.int32)
         }
         self._run_sub_tests(st1, st2, lags_true)
 
