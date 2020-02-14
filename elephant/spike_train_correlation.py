@@ -43,6 +43,48 @@ class _CrossCorrHist(object):
         self.binned_st2 = binned_st2
         self.window = window
 
+    @staticmethod
+    def get_valid_lags(binned_st1, binned_st2):
+        """
+        Computes the lags at which the cross-correlation
+        of the input spiketrains can be calculated with full
+        overlap.
+
+        Parameters
+        ----------
+        binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
+            Binned spike trains to cross-correlate. The input spike trains can
+            have any `t_start` and `t_stop`.
+
+        Returns
+        -------
+        lags : np.ndarray
+            Array of lags at which the cross-correlation can be computed
+            at full overlap (valid mode).
+        """
+
+        binsize = binned_st1.binsize
+
+        # see cross_correlation_histogram for the examples
+        if binned_st1.num_bins < binned_st2.num_bins:
+            # ex. 1) lags range: [-2, 5] ms
+            # ex. 2) lags range: [1, 2] ms
+            left_edge = (binned_st2.t_start -
+                         binned_st1.t_start) / binsize
+            right_edge = (binned_st2.t_stop -
+                          binned_st1.t_stop) / binsize
+        else:
+            # ex. 3) lags range: [-1, 3] ms
+            left_edge = (binned_st2.t_stop -
+                         binned_st1.t_stop) / binsize
+            right_edge = (binned_st2.t_start -
+                          binned_st1.t_start) / binsize
+        right_edge = int(right_edge.simplified.magnitude)
+        left_edge = int(left_edge.simplified.magnitude)
+        lags = np.arange(left_edge, right_edge + 1, dtype=np.int32)
+
+        return lags
+
     def correlate_memory(self, cch_mode):
         """
         Slow, but memory safe mode.
@@ -140,7 +182,8 @@ class _CrossCorrHist(object):
         """
         min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
         left_edge, right_edge = self.window
-        valid_lags = _get_valid_lags(self.binned_st1, self.binned_st2)
+        valid_lags = _CrossCorrHist.get_valid_lags(self.binned_st1,
+                                                   self.binned_st2)
         lags_to_compute = np.arange(left_edge, right_edge + 1)
         outer_subtraction = np.subtract.outer(lags_to_compute, valid_lags)
         min_distance_from_window = np.abs(outer_subtraction).min(axis=1)
@@ -461,48 +504,6 @@ def _covariance_sparse(binned_sts, corrcoef_norm):
     return res
 
 
-def _get_valid_lags(binned_st1, binned_st2):
-    """
-    Computes the lags at which the cross-correlation
-    of the input spiketrains can be calculated with full
-    overlap.
-
-    Parameters
-    ----------
-    binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
-        Binned spike trains to cross-correlate. The input spike trains can have
-        any `t_start` and `t_stop`.
-
-    Returns
-    -------
-    lags : np.ndarray
-        Array of lags at which the cross-correlation can be computed
-        at full overlap.
-    """
-
-    binsize = binned_st1.binsize
-
-    # see cross_correlation_histogram for the examples
-    if binned_st1.num_bins < binned_st2.num_bins:
-        # ex. 1) lags range: [-2, 5] ms
-        # ex. 2) lags range: [1, 2] ms
-        left_edge = (binned_st2.t_start -
-                     binned_st1.t_start) / binsize
-        right_edge = (binned_st2.t_stop -
-                      binned_st1.t_stop) / binsize
-    else:
-        # ex. 3) lags range: [-1, 3] ms
-        left_edge = (binned_st2.t_stop -
-                     binned_st1.t_stop) / binsize
-        right_edge = (binned_st2.t_start -
-                      binned_st1.t_start) / binsize
-    right_edge = int(right_edge.simplified.magnitude)
-    left_edge = int(left_edge.simplified.magnitude)
-    lags = np.arange(left_edge, right_edge + 1, dtype=np.int32)
-
-    return lags
-
-
 def cross_correlation_histogram(
         binned_st1, binned_st2, window='full', border_correction=False,
         binary=False, kernel=None, method='speed', cross_corr_coef=False):
@@ -694,7 +695,7 @@ def cross_correlation_histogram(
                          right_edge + 1 + t_start_shift, dtype=np.int32)
         cch_mode = window
     elif window == 'valid':
-        lags = _get_valid_lags(binned_st1, binned_st2)
+        lags = _CrossCorrHist.get_valid_lags(binned_st1, binned_st2)
         left_edge, right_edge = lags[(0, -1), ]
         cch_mode = window
     else:

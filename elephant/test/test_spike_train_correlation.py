@@ -555,7 +555,8 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         cch_valid, _ = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='full',
             border_correction=True, binary=False, kernel=None)
-        valid_lags = sc._get_valid_lags(self.binned_st1, self.binned_st2)
+        valid_lags = sc._CrossCorrHist.get_valid_lags(self.binned_st1,
+                                                      self.binned_st2)
         left_edge, right_edge = valid_lags[(0, -1), ]
         cch_builder = sc._CrossCorrHist(self.binned_st1, self.binned_st2,
                                         window=(left_edge, right_edge))
