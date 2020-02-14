@@ -469,7 +469,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
             for s in surr]
 
 
-def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=True):
+def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
     """
     Bin shuffling surrogate generation, both with and without moving window
     Given a spiketrain, the function bins it and shuffles the binned spike
@@ -501,43 +501,39 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=True):
     """
     # Define standard time unit; all time Quantities are converted to
     # scalars after being rescaled to this unit, to use the power of numpy
-    surr = []
     t_start = spiketrain.t_start
     t_stop = spiketrain.t_stop
+    n_bins = conv._calc_num_bins(binsize, t_start, t_stop)
+    print(n_bins)
+    surr = np.empty((n, n_bins))
     for n_surr in range(n):
         binned_st = conv.BinnedSpikeTrain(
-            spiketrain, binsize=binsize).to_array()[0]
+            spiketrain, binsize=binsize)
+        # TODO: solve this better
+        if n_surr == 0:
+            # TODO: crearlo grande quanto surr
+            bin_grid = binned_st.bin_centers.magnitude
+        binned_st = binned_st.to_bool_array()[0]
         st_length = len(binned_st)
         if sliding:
-            for window_position in range(0, st_length - dt):
+            for window_position in range(st_length - dt):
                 # shuffling the binned spike train within the window
-                chunk_to_shuffle = binned_st[window_position:window_position + dt]
-                np.random.shuffle(chunk_to_shuffle)
-                # clipping data
-                binned_st[window_position:window_position +
-                          dt] = \
-                    (np.array(chunk_to_shuffle) > 0).astype(int)
+                np.random.shuffle(binned_st[window_position:window_position + dt])
         else:
             windows = st_length // dt
             windows_remainder = st_length % dt
+            # TODO: reshape the matrix and avoid for loop
             for window_position in range(windows):
                 # shuffling the binned spike train within the window
-                chunk_to_shuffle = binned_st[window_position *
-                                             dt:window_position * dt + dt]
-                np.random.shuffle(chunk_to_shuffle)
-                # clipping data
-                binned_st[window_position * dt:window_position *
-                          dt + dt] = \
-                    (np.array(chunk_to_shuffle) > 0).astype(int)
+                np.random.shuffle(binned_st[window_position:window_position + dt])
             if windows_remainder != 0:
-                chunk_to_shuffle = binned_st[window_position * dt:]
-                np.random.shuffle(chunk_to_shuffle)
-                # clipping data
-                binned_st[window_position * dt:] = \
-                    (np.array(chunk_to_shuffle) > 0).astype(int)
+                np.random.shuffle(binned_st[window_position * dt:])
+        surr[n_surr] = binned_st
     # go back to continuous time and place spike in the middle
     # of the bin
-    surr.append(np.where(binned_st)[0] * binsize + binsize/2)
+    print(bin_grid, type(bin_grid))
+    print(surr, type(surr))
+    surr = bin_grid[surr]
     return [neo.SpikeTrain(s + t_start,
                            t_start=t_start,
                            t_stop=t_stop).rescale(spiketrain.units)
