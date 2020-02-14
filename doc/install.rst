@@ -107,5 +107,5 @@ or::
 .. _`Conda environment`: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 .. _`tqdm`: https://pypi.org/project/tqdm/
 .. _`six`: https://pypi.org/project/six/
-.. _requirements: https://github.com/NeuralEnsemble/elephant/blob/master/requirements.txt
+.. _requirements: https://github.com/NeuralEnsemble/elephant/blob/master/requirements/requirements.txt
 .. _PyPI: https://pypi.org/

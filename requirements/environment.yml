@@ -1,0 +1,18 @@
+name: elephant
+
+dependencies:
+  - python>=3.6
+  - pip
+  - mpi4py
+  - numpy
+  - scipy
+  - tqdm
+  - pandas
+  - scikit-learn
+  - statsmodels
+  - pip:
+      - -r file:requirements.txt
+      - -r file:requirements-extras.txt
+      - -r file:requirements-docs.txt
+      - -r file:requirements-tests.txt
+      - -r file:requirements-tutorials.txt

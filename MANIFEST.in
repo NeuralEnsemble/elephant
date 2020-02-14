@@ -1,5 +1,5 @@
 recursive-include elephant *.py
-include requirements*.txt
+include requirements/*
 include README.md
 include LICENSE.txt
 include elephant/VERSION
