@@ -153,6 +153,15 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                         + self.causality.instantaneous_causality
         assert_array_almost_equal(self.causality.total_interdependence, causality_sum, decimal=8)
 
+    def test_all_four_result_values_are_numpy_arrays(self):
+        self.assertIsInstance(self.causality.directional_causality_x_y,
+                              np.ndarray)
+        self.assertIsInstance(self.causality.directional_causality_y_x,
+                              np.ndarray)
+        self.assertIsInstance(self.causality.instantaneous_causality,
+                              np.ndarray)
+        self.assertIsInstance(self.causality.total_interdependence, np.ndarray)
+
     def tearDown(self) -> None:
         pass
 
