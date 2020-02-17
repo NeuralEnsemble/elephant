@@ -831,7 +831,8 @@ def single_interaction_process(
         # P. Bouss: we want the closest approximation to the average
         # coincidence count.
         n_coincidences = (t_stop - t_start) * rate_c
-        n_coincidences = round(n_coincidences.simplified.item())
+        # Conversion to integer necessary for python 2
+        n_coincidences = int(round(n_coincidences.simplified.item()))
         while True:
             coinc_times = t_start + \
                 np.sort(np.random.random(n_coincidences)) * (
