@@ -1242,9 +1242,5 @@ def compound_poisson_process(
     return compound_poisson_spiketrains
 
 
-def cpp(rate, A, t_stop, shift=None, t_start=0 * pq.ms):
-    """
-    Alias for :func:`compound_poisson_process`
-    """
-    return compound_poisson_process(
-        rate, A, t_stop, shift=shift, t_start=t_start)
+# Alias for :func:`compound_poisson_process`
+cpp = compound_poisson_process
