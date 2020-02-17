@@ -646,16 +646,23 @@ def cross_correlation_histogram(
     # resolution
     if binned_st1.matrix_rows != 1 or binned_st2.matrix_rows != 1:
         raise ValueError("Spike trains must be one dimensional")
-    if not np.isclose(binned_st1.binsize.simplified.magnitude,
-                      binned_st2.binsize.simplified.magnitude):
+    if not np.isclose(binned_st1.binsize.simplified.item(),
+                      binned_st2.binsize.simplified.item()):
         raise ValueError("Bin sizes must be equal")
 
     binsize = binned_st1.binsize
-    window_min = -binned_st1.num_bins + 1
-    window_max = binned_st2.num_bins - 1
+    left_edge_min = -binned_st1.num_bins + 1
+    right_edge_max = binned_st2.num_bins - 1
 
-    t_start_shift = (binned_st2.t_start - binned_st1.t_start) / binsize
-    t_start_shift = t_start_shift.simplified.magnitude
+    t_lags_shift = (binned_st2.t_start - binned_st1.t_start) / binsize
+    t_lags_shift = t_lags_shift.simplified.item()
+    if not np.isclose(t_lags_shift, int(t_lags_shift)):
+        # For example, if binsize=1 ms, binned_st1.t_start=0 ms, and
+        # binned_st2.t_start=0.5 ms then there is a global shift in the
+        # binning of the spike trains.
+        raise ValueError(
+            "Binned spiketrains time shift is not multiple of binsize")
+    t_lags_shift = int(t_lags_shift)
 
     # In the examples below we fix st2 and "move" st1.
     # Zero-lag is equal to `max(st1.t_start, st2.t_start)`.
@@ -670,29 +677,31 @@ def cross_correlation_histogram(
     #    t_start_shift = 3 ms
     #    zero-lag is at 4 ms
 
-    # Set the time window in which is computed the cch
-    if np.issubdtype(type(window[0]), int) and np.issubdtype(type(window[1]),
-                                                             int):
+    # Find left and right edges of unaligned (time-dropped) time signals
+    if len(window) == 2 and np.issubdtype(type(window[0]), int) \
+            and np.issubdtype(type(window[1]), int):
         # ex. 1) lags range: [w[0] - 2, w[1] - 2] ms
         # ex. 2) lags range: [w[0] + 1, w[1] + 1] ms
         # ex. 3) lags range: [w[0] + 3, w[0] + 3] ms
-        if window[0] >= window[1] or window[0] < window_min \
-                or window[1] > window_max:
+        if window[0] >= window[1]:
+            raise ValueError(
+                "Window's left edge ({left}) must be lower than the right "
+                "edge ({right})".format(left=window[0], right=window[1]))
+        left_edge, right_edge = np.subtract(window, t_lags_shift)
+        if left_edge < left_edge_min or right_edge > right_edge_max:
             raise ValueError(
                 "The window exceeds the length of the spike trains")
-        left_edge, right_edge = window
-        lags = np.arange(left_edge + t_start_shift,
-                         right_edge + 1 + t_start_shift, dtype=np.int32)
+        lags = np.arange(window[0], window[1] + 1, dtype=np.int32)
         cch_mode = 'pad'
     elif window == 'full':
         # cch computed for all the possible entries
         # ex. 1) lags range: [-6, 9] ms
         # ex. 2) lags range: [-4, 7] ms
         # ex. 3) lags range: [-2, 4] ms
-        left_edge = window_min
-        right_edge = window_max
-        lags = np.arange(left_edge + t_start_shift,
-                         right_edge + 1 + t_start_shift, dtype=np.int32)
+        left_edge = left_edge_min
+        right_edge = right_edge_max
+        lags = np.arange(left_edge + t_lags_shift,
+                         right_edge + 1 + t_lags_shift, dtype=np.int32)
         cch_mode = window
     elif window == 'valid':
         lags = _CrossCorrHist.get_valid_lags(binned_st1, binned_st2)

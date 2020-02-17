@@ -629,9 +629,7 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
                 binsize = 1 * pq.s
                 st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
                 st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
-                t_start_shift = (st2.t_start - st1.t_start) / binsize
-                t_start_shift = int(t_start_shift.simplified.magnitude)
-                left, right = lags_true[window][(0, -1), ] - t_start_shift
+                left, right = lags_true[window][(0, -1), ]
                 cch_window, lags_window = sc.cross_correlation_histogram(
                     st1_binned, st2_binned, window=(left, right)
                 )
@@ -685,6 +683,18 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
             'full': np.arange(2, 14, dtype=np.int32)
         }
         self._run_sub_tests(st1, st2, lags_true)
+
+    def test_invalid_time_shift(self):
+        # time shift of 0.4 s is not multiple of binsize=1 s
+        st1 = neo.SpikeTrain([2.5, 3.5] * pq.s, t_start=1 * pq.s,
+                             t_stop=7 * pq.s)
+        st2 = neo.SpikeTrain([3.5, 5.5] * pq.s, t_start=1.4 * pq.s,
+                             t_stop=7.4 * pq.s)
+        binsize = 1 * pq.s
+        st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
+        st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
+        self.assertRaises(ValueError, sc.cross_correlation_histogram,
+                          st1_binned, st2_binned)
 
 
 class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
