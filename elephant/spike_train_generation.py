@@ -12,7 +12,6 @@ written by Eilif Muller, or from the NeuroTools signals.analogs module.
 
 from __future__ import division, print_function, unicode_literals
 
-import random
 import warnings
 from functools import partial
 
@@ -223,8 +222,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
-    else:
-        # sign == 'below'
+    else:  # sign == 'below'
         cutout = np.where(signal < threshold)[0]
         peak_func = np.argmin
 
@@ -265,8 +263,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
         result_st = neo.SpikeTrain(events_base, units=signal.times.units,
                                    t_start=signal.t_start,
                                    t_stop=signal.t_stop)
-    else:
-        # format == 'raw'
+    else:  # format == 'raw'
         result_st = events_base
 
     return result_st
@@ -468,6 +465,7 @@ def inhomogeneous_poisson_process(rate, as_array=False,
                 "firing rate or the refractory period.")
         # effective rate parameter for the refractory period case
         rate = rate / (1. - (rate * refractory_period).simplified)
+        rate_max = np.max(rate)
 
     # Generate n hidden Poisson SpikeTrains with rate equal
     # to the peak rate
@@ -513,9 +511,13 @@ def _thinning_for_refractory_period(spiketrain, refractory_period):
     thinned_spiketrain : np.ndarray
         thinned out spiketrain
     """
-    mask_valid = np.diff(spiketrain, prepend=0) > refractory_period
-    thinned_spiketrain = spiketrain[mask_valid]
-    return thinned_spiketrain
+    thinned_spiketrain = []
+    previous_spike = -refractory_period
+    for spike in spiketrain:
+        if spike > previous_spike + refractory_period:
+            thinned_spiketrain.append(spike)
+            previous_spike = spike
+    return np.array(thinned_spiketrain)
 
 
 def _analog_signal_linear_interp(signal, times):
@@ -774,6 +776,7 @@ def single_interaction_process(
     --------
     >>> import quantities as pq
     >>> import elephant.spike_train_generation as stg
+    # TODO: check if rate_c=4 is correct.
     >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  rate_c=4,
     ...                                             t_stop=1*pq.s,
     ...                                             n=10, return_coinc = True)
