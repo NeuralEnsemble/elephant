@@ -105,8 +105,8 @@ class _CrossCorrHist(object):
         st1_bin_idx_unique = st1_spmat.nonzero()[1]
         st2_bin_idx_unique = st2_spmat.nonzero()[1]
 
-        # needs to correct the bins for the valid mode, because the spiketrains
-        # have unequal t_start
+        # 'valid' mode requires bins correction due to the shift in t_starts
+        # 'full' and 'pad' modes don't need this correction
         if cch_mode == "valid":
             if binned_st1.num_bins > binned_st2.num_bins:
                 st2_bin_idx_unique += right_edge
