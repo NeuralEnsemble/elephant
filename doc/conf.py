@@ -42,7 +42,9 @@ extensions = [
     'sphinxcontrib.bibtex',
     'matplotlib.sphinxext.plot_directive',
     'numpydoc',
-    'nbsphinx']
+    'nbsphinx',
+    'sphinx_tabs.tabs',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

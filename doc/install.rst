@@ -1,19 +1,110 @@
-.. _install:
-
 ************
 Installation
 ************
 
-Elephant requires Python 2.7, 3.5, 3.6, 3.7, or 3.8. If you do not already have a Python environment configured on your computer, please see the instructions for installing the :ref:`dependencies`. Otherwise, scroll to :ref:`installation`.
+The easiest way to install Elephant is by creating a conda environment, followed by ``pip install elephant``.
+Below is the explanation of how to proceed with these two steps.
 
 
-.. _dependencies:
+Prerequisites
+=============
 
-Dependencies
+Elephant requires Python_ 2.7, 3.5, 3.6, 3.7, or 3.8.
+
+.. tabs::
+
+
+    .. tab:: (recommended) Conda (Linux/MacOS/Windows)
+
+        1. Create your conda environment (e.g., `elephant_env`):
+
+           .. code-block:: sh
+
+              conda create --name elephant_env python=3.7 numpy scipy tqdm
+
+        2. Activate your environment:
+
+           .. code-block:: sh
+
+              conda activate elephant_env
+
+
+    .. tab:: Debian/Ubuntu
+
+        Open a terminal and run:
+
+        .. code-block:: sh
+
+           sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
+
+
+
+Installation
 ============
 
+.. tabs::
+
+
+    .. tab:: Stable release version
+
+        The easiest way to install Elephant is via pip_:
+
+           .. code-block:: sh
+
+              pip install elephant
+
+        To upgrade to a newer release use the ``--upgrade`` flag:
+
+           .. code-block:: sh
+
+              pip install --upgrade elephant
+
+        If you do not have permission to install software systemwide, you can
+        install into your user directory using the ``--user`` flag:
+
+           .. code-block:: sh
+
+              pip install --user elephant
+
+        To install Elephant with all extra packages, do:
+
+           .. code-block:: sh
+
+              pip install elephant[extras]
+
+
+    .. tab:: Development version
+
+        If you have `Git <https://git-scm.com/>`_ installed on your system,
+        it is also possible to install the development version of Elephant.
+
+        Before installing the development version, you may need to uninstall
+        the previously installed version of Elephant:
+
+           .. code-block:: sh
+
+              pip uninstall elephant
+
+        Then do:
+
+           .. code-block:: sh
+
+              git clone git://github.com/NeuralEnsemble/elephant.git
+              cd elephant
+              pip install -e .
+
+        or:
+
+           .. code-block:: sh
+
+              pip install git+https://github.com/NeuralEnsemble/elephant.git
+
+
+
+Dependencies
+------------
+
 The following packages are required to use Elephant (refer to requirements_ for the exact package versions):
-    * Python_ 2.7, 3.5
     * numpy_ - fast array computations
     * scipy_ - scientific library for Python
     * quantities_ - support for physical quantities with units (mV, ms, etc.)
@@ -21,81 +112,15 @@ The following packages are required to use Elephant (refer to requirements_ for 
     * tqdm_ - progress bar
     * six_ - Python 2 and 3 compatibility utilities
 
+These packages are automatically installed when you run ``pip install elephant``.
+
 The following packages are optional in order to run certain parts of Elephant:
     * `pandas <https://pypi.org/project/pandas/>`_ - for the :doc:`pandas_bridge <reference/pandas_bridge>` module
     * `scikit-learn <https://pypi.org/project/scikit-learn/>`_ - for the :doc:`ASSET <reference/asset>` analysis
     * `nose <https://pypi.org/project/nose/>`_ - for running tests
     * `numpydoc <https://pypi.org/project/numpydoc/>`_ and `sphinx <https://pypi.org/project/Sphinx/>`_ - for building the documentation
 
-All dependencies can be found on the Python package index (PyPI_).
-
-
-Conda (Windows/Linux/macOS)
---------------------------
-
-We recommend using the Anaconda_ Python distribution and installing all dependencies in a `Conda environment`_, e.g.::
-
-    $ conda create -n neuroscience python numpy scipy pip six tqdm
-    $ conda activate neuroscience
-    $ pip install quantities neo
-
-
-
-Debian/Ubuntu
--------------
-For Debian/Ubuntu, you can install numpy and scipy as system packages using apt-get::
-
-    $ sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
-
-Further packages are found on the Python package index (PyPI_) and can only be installed with pip_::
-
-    $ pip install quantities neo
-
-
-.. _installation:
-
-Installation
-============
-
-Install the released version
-----------------------------
-
-The easiest way to install Elephant is via pip_::
-
-    $ pip install elephant    
-
-To upgrade to a newer release use the ``--upgrade`` flag::
-
-    $ pip install --upgrade elephant
-
-If you do not have permission to install software systemwide, you can install into your user directory using the ``--user`` flag::
-
-    $ pip install --user elephant
-
-To install Elephant with all extra packages, do::
-
-    $ pip install elephant[extras]
-
-
-Install the development version
--------------------------------
-
-If you have `Git <https://git-scm.com/>`_ installed on your system, it is also possible to install the development version of Elephant.
-
-Before installing the development version, you may need to uninstall the standard version of Elephant using pip::
-
-    $ pip uninstall elephant
-
-Then do::
-
-    $ git clone git://github.com/NeuralEnsemble/elephant.git
-    $ cd elephant
-    $ pip install -e .
-
-or::
-
-    $ pip install git+https://github.com/NeuralEnsemble/elephant.git
-
+These and above packages are automatically installed when you run ``pip install elephant[extras]``.
 
 .. _`Python`: http://python.org/
 .. _`numpy`: http://www.numpy.org/
