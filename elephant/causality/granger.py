@@ -48,7 +48,30 @@ def _lag_covariances(signals, dimension, max_lag):
     lag_corr : np.ndarray
         correlations matrices of lagged signals
     """
+    length = np.size(signals[0])
+    assert (length >= max_lag), 'maximum lag larger than size of data'
 
+    #if dimension == 1:
+    #    lag_covariances = np.zeros(max_lag+1)
+    #    for lag in range(max_lag+1)
+
+    signals_mean = signals - np.mean(signals, keepdims = True)
+
+    lag_covariances = np.zeros((max_lag+1, dimension, dimension))
+
+    for lag in range(0,max_lag+1):
+       for row in range(dimension):
+           for  column in range(dimension):
+               covariance = np.mean(signal[row,:length-lag]*
+                                    signals_mean[column,lag:], dtype =
+                                    np.float64)
+               #covariance = np.dot(signals_mean[row,:length-lag],
+               #                     signals_mean[column,lag:])/length
+
+               lag_covariances[lag,row,column] += covariance
+
+    return lag_covariances
+    '''
     length = np.size(signals[0])
 
     assert (length >= max_lag), 'maximum lag larger than size of data'
@@ -64,7 +87,7 @@ def _lag_covariances(signals, dimension, max_lag):
         lag_covariances.append(temp_corr/(length-i))
 
     return np.asarray(lag_covariances)
-
+    '''
 
 def _yule_walker_matrix(data, dimension, order):
     """
@@ -91,11 +114,11 @@ def _yule_walker_matrix(data, dimension, order):
         for block_column in range(block_row, order):
             yule_walker_matrix[block_row*dimension: (block_row+1)*dimension,
                                block_column*dimension:
-                               (block_column+1)*dimension] = lag_covariances[block_column-block_row]
+                               (block_column+1)*dimension] = lag_covariances[block_column-block_row].T
 
             yule_walker_matrix[block_column*dimension: (block_column+1)*dimension,
                                block_row*dimension:
-                               (block_row+1)*dimension] = lag_covariances[block_column-block_row].T
+                               (block_row+1)*dimension] = lag_covariances[block_column-block_row]
     return yule_walker_matrix, lag_covariances
 
 
@@ -129,11 +152,11 @@ def _vector_arm(signals, dimension, order):
 
     coeffs = np.stack(coeffs)
 
-    cov_matrix = np.zeros((dimension, dimension))
+    #cov_matrix = np.zeros((dimension, dimension))
 
-    #cov_matrix = lag_covariances[0]
+    cov_matrix = np.copy(lag_covariances[0])
     for i in range(order):
-        cov_matrix += np.matmul(coeffs[i], lag_covariances[i+1])
+        cov_matrix -= np.matmul(coeffs[i], lag_covariances[i+1])
 
     return coeffs, cov_matrix
 
@@ -171,9 +194,17 @@ def pairwise_granger(signals, order):
 
     coeffs_x, var_x = _vector_arm(signal_x, 1, order)
     coeffs_y, var_y = _vector_arm(signal_y, 1, order)
-    print(var_x)
-    print(var_y)
     coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
+    print('########################################')
+    print(coeffs_xy)
+    print(cov_xy)
+    print('########################################')
+    print(coeffs_x)
+    print(var_x)
+    print('########################################')
+    print(coeffs_y)
+    print(var_y)
+    print('########################################')
 
     directional_causality_x_y = np.log(var_x[0]/cov_xy[0, 0])
     print(f'directional_x_y is {var_x[0]/cov_xy[0, 0]}. The variance of x is {var_x[0]}, the covariance_xy is {cov_xy[0, 0]}')
@@ -186,8 +217,6 @@ def pairwise_granger(signals, order):
 
     total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
 
-    print(coeffs_xy)
-    print(cov_xy)
 
     return Causality(directional_causality_x_y=directional_causality_x_y,
                      directional_causality_y_x=directional_causality_y_x,
@@ -197,8 +226,8 @@ def pairwise_granger(signals, order):
 
 if __name__ == '__main__':
 
-    np.random.seed(1)
-    length_2d = 10000
+    np.random.seed(2)
+    length_2d = 100000
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -206,6 +235,7 @@ if __name__ == '__main__':
     weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
 
     weights = np.stack((weights_1, weights_2))
+    print(weights)
 
     noise_cov = np.array([[1., 0.0], [0.0, 1.]])
 
