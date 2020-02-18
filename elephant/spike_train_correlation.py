@@ -656,13 +656,13 @@ def cross_correlation_histogram(
 
     t_lags_shift = (binned_st2.t_start - binned_st1.t_start) / binsize
     t_lags_shift = t_lags_shift.simplified.item()
-    if not np.isclose(t_lags_shift, int(t_lags_shift)):
+    if not np.isclose(t_lags_shift, round(t_lags_shift)):
         # For example, if binsize=1 ms, binned_st1.t_start=0 ms, and
         # binned_st2.t_start=0.5 ms then there is a global shift in the
         # binning of the spike trains.
         raise ValueError(
             "Binned spiketrains time shift is not multiple of binsize")
-    t_lags_shift = int(t_lags_shift)
+    t_lags_shift = int(round(t_lags_shift))
 
     # In the examples below we fix st2 and "move" st1.
     # Zero-lag is equal to `max(st1.t_start, st2.t_start)`.
