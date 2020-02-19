@@ -11,10 +11,10 @@ time series recordings from electrodes, such as the local field potentials
 (LFP) or intracellular voltages. In addition to providing a common platform for
 analysis codes from different laboratories, the Elephant project aims to
 provide a consistent and homogeneous analysis framework that is built on a
-modular foundation. Elephant is the direct successor to Neurotools [#f1]_ and
-maintains ties to complementary projects such as ephyviewer [#f2]_ and
-neurotic [#f3]_ for raw data visualization. The input-output data format is
-either Neo_ [#f4]_ or Numpy_ array.
+modular foundation. Elephant is the direct successor to Neurotools_ and
+maintains ties to complementary projects such as ephyviewer_ and
+neurotic_ for raw data visualization. The input-output data format is
+either Neo_ or Numpy_ array.
 
 Table of Contents
 -----------------
@@ -40,15 +40,11 @@ Table of Contents
 .. * :ref:`search`
 
 
-References
-----------
-
-.. [#f1]  http://neuralensemble.org/NeuroTools/
-.. [#f2]  https://ephyviewer.readthedocs.io/en/latest/
-.. [#f3]  https://neurotic.readthedocs.io/en/latest/
-.. [#f4]  Garcia et al. (2014) Front.~Neuroinform. 8:10
-.. _`Neo`: http://neuralensemble.org/neo/
-.. _`Numpy`: http://www.numpy.org/
+.. _Neurotools:  http://neuralensemble.org/NeuroTools/
+.. _ephyviewer:  https://ephyviewer.readthedocs.io/en/latest/
+.. _neurotic:  https://neurotic.readthedocs.io/en/latest/
+.. _Neo: http://neuralensemble.org/neo/
+.. _Numpy: http://www.numpy.org/
 
 
 .. |date| date::
