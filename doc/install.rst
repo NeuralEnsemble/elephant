@@ -1,3 +1,5 @@
+.. _install:
+
 ************
 Installation
 ************
@@ -78,14 +80,14 @@ Installation
         If you have `Git <https://git-scm.com/>`_ installed on your system,
         it is also possible to install the development version of Elephant.
 
-        Before installing the development version, you may need to uninstall
-        the previously installed version of Elephant:
+        1. Before installing the development version, you may need to uninstall
+           the previously installed version of Elephant:
 
            .. code-block:: sh
 
               pip uninstall elephant
 
-        Then do:
+        2. Clone the repository install the local version:
 
            .. code-block:: sh
 
@@ -93,18 +95,13 @@ Installation
               cd elephant
               pip install -e .
 
-        or:
-
-           .. code-block:: sh
-
-              pip install git+https://github.com/NeuralEnsemble/elephant.git
-
 
 
 Dependencies
 ------------
 
 The following packages are required to use Elephant (refer to requirements_ for the exact package versions):
+
     * numpy_ - fast array computations
     * scipy_ - scientific library for Python
     * quantities_ - support for physical quantities with units (mV, ms, etc.)
@@ -115,6 +112,7 @@ The following packages are required to use Elephant (refer to requirements_ for 
 These packages are automatically installed when you run ``pip install elephant``.
 
 The following packages are optional in order to run certain parts of Elephant:
+
     * `pandas <https://pypi.org/project/pandas/>`_ - for the :doc:`pandas_bridge <reference/pandas_bridge>` module
     * `scikit-learn <https://pypi.org/project/scikit-learn/>`_ - for the :doc:`ASSET <reference/asset>` analysis
     * `nose <https://pypi.org/project/nose/>`_ - for running tests
