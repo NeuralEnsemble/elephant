@@ -1,17 +1,20 @@
-.. Elephant documentation master file, created by
-   sphinx-quickstart on Thu Aug 22 08:39:42 2013.
-
-
 *********************************************
 Elephant - Electrophysiology Analysis Toolkit
 *********************************************
 
-Synopsis
---------
+*Elephant* (Electrophysiology Analysis Toolkit) is an emerging open-source,
+community centered library for the analysis of electrophysiological data in
+the Python programming language.
 
-
-*Elephant* is a toolbox for the analysis of electrophysiological data based on the Neo_ framework. This manual covers the installation of Elephant in an existing Python environment, several tutorials to help get you started, information on the structure and conventions of the library, a list of modules, and help for future contributors to Elephant.
-
+The focus of Elephant is on generic analysis functions for spike train data and
+time series recordings from electrodes, such as the local field potentials
+(LFP) or intracellular voltages. In addition to providing a common platform for
+analysis codes from different laboratories, the Elephant project aims to
+provide a consistent and homogeneous analysis framework that is built on a
+modular foundation. Elephant is the direct successor to Neurotools [#f1]_ and
+maintains ties to complementary projects such as ephyviewer [#f2]_ and
+neurotic [#f3]_ for raw data visualization. The input-output data format is
+either Neo_ [#f4]_ or Numpy_ array.
 
 Table of Contents
 -----------------
@@ -19,7 +22,6 @@ Table of Contents
 .. toctree::
     :maxdepth: 1
 
-    overview
     install
     tutorial
     modules
@@ -38,7 +40,15 @@ Table of Contents
 .. * :ref:`search`
 
 
-.. _`Neo`: https://github.com/NeuralEnsemble/python-neo
+References
+----------
+
+.. [#f1]  http://neuralensemble.org/NeuroTools/
+.. [#f2]  https://ephyviewer.readthedocs.io/en/latest/
+.. [#f3]  https://neurotic.readthedocs.io/en/latest/
+.. [#f4]  Garcia et al. (2014) Front.~Neuroinform. 8:10
+.. _`Neo`: http://neuralensemble.org/neo/
+.. _`Numpy`: http://www.numpy.org/
 
 
 .. |date| date::
