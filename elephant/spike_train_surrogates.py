@@ -529,11 +529,11 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
             if windows_remainder != 0:
                 np.random.shuffle(binned_st[window_position * dt:])
         surr[n_surr] = binned_st
+        surr[n_surr] = bin_grid[surr.astype(bool)]
     # go back to continuous time and place spike in the middle
     # of the bin
     print(bin_grid, type(bin_grid))
     print(surr, type(surr))
-    surr = bin_grid[surr]
     return [neo.SpikeTrain(s + t_start,
                            t_start=t_start,
                            t_stop=t_stop).rescale(spiketrain.units)
