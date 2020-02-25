@@ -1,12 +1,11 @@
-***************************
-Elephant Coding Style Guide
-***************************
+.. _style_guide:
+
+********************************
+Coding Style Guide with Examples
+********************************
 
 This guide follows mostly:
 https://github.com/numpy/numpy/blob/master/doc/example.py.
-
-Rules are based on numpydoc, PEP8 and results of discussions during the
-Elephant Hackathon 2020.
 
 In the Python code blocks below, some remarks are included using JavaScript
 style notation <!-- comment -->. They provide additional information regarding
@@ -34,20 +33,231 @@ The example below illustrates show it should be implemented.
     :py:mod:`unitary_event_analysis.py<elephant.unitary_event_analysis>`
     """
 
-Mandatory imports
------------------
 
-Each source file must always have the following import immediately after
-the module docstring:
+Function docstring. Naming conventions
+--------------------------------------
+
+The function below illustrates how arguments and functions should be named
+throughout Elephant.
 
 .. code-block:: python
 
-    from __future__ import division, print_function, unicode_literals
+    def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
+                         target_spiketrain, signal, signals, max_iterations,
+                         min_threshold, n_bins, n_surrogates, bin_size, max_size,
+                         time_limits, time_range, t_start, t_stop, period, order,
+                         error, capacity, source_matrix, cov_matrix,
+                         selection_method='aic'
+                         ):
+        r"""
+        Full example of the docstring and naming conventions.
 
-Class docstrings
-----------------
+        Function names should be in lowercase, with words written in full, and
+        separated by underscores. Exceptions are for common abbreviations, such
+        as "psd" or "isi". But words such as "coherence" must be written in full,
+        and not truncated (e.g. "cohere").
 
-Each class should have a detailed docstring, according to the example below:
+        If the truncation or abbreviation not in conformity to this naming
+        convention was adopted to maintain similarity to a function used
+        extensively in another language or package, mention this in the "Notes"
+        section, like the comment below:
+        <!--
+        Notes
+        -----
+        This function is similar to `welch_cohere` function in MATLAB.
+        -->
+
+        The rationale for the naming of each parameter in this example will be
+        explained in the relevant "Parameters" section. Class parameters and
+        attributes also follow the same naming convention.
+
+        Parameters
+        ----------
+        <!-- As a general rule, each word is written in full lowercase, separated
+        by underscores. Special cases apply according to the examples below -->
+        spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
+            Within Elephant, this is how to name an input parameter that contains
+            at least one spike train. The parameter name is in plural (i.e.,
+            `spiketrains`). The function will deal with converting a single
+            `neo.SpikeTrain` to a list of `neo.SpikeTrain` if needed.
+            Note that although these are two words, they are NOT separated by
+            underscore because Neo does not use underscore, and Elephant must keep
+            compatibility. Do not use names such as `sts`, `spks`, or
+            `spike_trains`.
+        spiketrain: neo.SpikeTrain
+            If the function EXPLICITLY requires only a single spike train, then
+            the parameter should be named in singular (i.e., `spiketrain`). Do
+            not use names such as `st`, `spk`, or `spike_train`.
+        reference_spiketrain : neo.SpikeTrain
+            If a function uses more than one parameter with single spike trains,
+            then each parameter name begins with a meaningful name,
+            followed by "_spiketrain" in singular form.
+        target_spiketrain: neo.SpikeTrain
+            Second parameter that is a single spike train. Note that the difference
+            from `reference_spiketrain` is indicated by a meaningful name at the
+            beginning.
+        signal : neo.AnalogSignal
+            If a single `neo.AnalogSignal` object is passed to the function, even if
+            it contains several signals (arrays).
+        signals : list of neo.AnalogSignal
+            If the parameter is a container that has at least one `neo.AnalogSignal`
+            object. The name of the parameter is `signals` (plural).
+        max_iterations : int
+            Parameters that represent a maximum value should start with "max_"
+            prefix, followed by the description as a full word. Therefore, do not
+            use names such as `max_iter` or `maxiter`.
+        min_threshold : float
+            Same case as for maximum. Parameters that represent a minimum value
+            should start with "min_" prefix, followed by the description as a full
+            word. Therefore, do not use names such as `min_thr` or `minthr`.
+        n_bins : int
+            Parameters that represent a number should start with the prefix "n_".
+            Do not use `numbins`, `bin_number`, or `num_bins`. The prefix should
+            be followed by a meaningful word in full.
+        n_surrogates : int
+            The description should always be meaningful an without abbreviations.
+            Therefore, do not use terms as `n` or `n_surr`, that are not
+            immediately understood.
+        bin_size : pq.Quantity or int
+            Separate the words by underscore. Do not use `binsize`. Old functions
+            which use `binsize` will be gradually refactored to conform to the new
+            convention.
+        max_size : float
+            Another example showing that words should be separated by underscores.
+            This intersects with the naming convention for a maximum value.
+        time_limits: list or tuple
+            For parameters that define minimum and maximum values as a list or
+            tuple (e.g., [-2, 2]), the parameter must start with a meaningful
+            word followed by the suffix "_limits". Preferentially, one should use
+            two separated parameters (e.g., `max_time` and `min_time` following
+            the convention for maximum and minimum already mentioned). But should
+            the function require the definition of limits in this form, use the
+            name `_limits` and not `_range` (see next parameter).
+        time_range: list
+            For parameters that behave like a Python range (e.g. [1, 2, 3, 4])), in
+            the sense that it is a sequence, not only the lower and upper limits
+            as in the example above, the parameter should start with a meaningful
+            name followed by the suffix "_range".
+        t_start : pq.Quantity
+            Standard name within Elephant for defining starting times.
+        t_stop : pq.Quantity
+            Standard name within Elephant for defining stopping times.
+        period : pq.Quantity
+            Oscillation period.
+            Always use informative names. In this case, one could name the
+            parameter as simply as `T`, since this is standard for referring to
+            periods. If the function is implementing computations based on a paper
+            that has a formula with a variable "T", acknowledge this after
+            describing the formula in the docstring. Therefore, write a sentence
+            like "`period` refers to :math:`T`"
+            If the Elephant function uses an external function (such as from
+            `scipy`), and such function has an argument named `T`, also
+            acknowledge this in the docstring. Therefore, write a sentence like
+            "`period` is forwarded as argument `T` of `scipy.uses_T` function".
+            If the external function already has an informative parameter name
+            (such as `period`), the same parameter name can be used in the Elephant
+            function if forwarded.
+            If several input parameters are forwarded or are members
+            of a formula, the docstring can present them together as a list.
+            But always use informative names, not single letter names if this is
+            how they are described in the paper or implemented in another function.
+        order : int
+            Order of the Butterworth filter.
+            This is an example of how the `N` parameter of `scipy.signal.butter`
+            function could be provided by the user of the Elephant function.
+            The docstring would present a text similar to
+            "`order` is passed as the `N` argument for `scipy.signal.butter` function".
+            Also, in the code implementation, use keyword arguments to make this
+            explicit (see the implementation of the function below)
+        error : float
+            In the case the function has an input parameter that corresponds to a
+            greek letter in a formula (in a paper, for instance) always use the
+            meaning of the greek letter. Therefore, should :math:`\epsilon` refer
+            to the error in the formula, the parameter should be named `error`. As
+            already mentioned, this is acknowledged in the docstring after the
+            description of the formula.
+        capacity : float
+            Capacity value.
+            When using parameters based on a paper (which, e.g., derives some
+            formula), and the parameter's name in this paper is a single letter
+            (such as `C` for capacity), always use the meaning
+            of the letter. Therefore, the parameter should be named `capacity`,
+            not `C`. Acknowledge this in the docstring as already mentioned.
+        source_matrix: np.ndarray
+            Parameters that are matrices should end with the suffix "_matrix", and
+            start with a meaningful name.
+        cov_matrix: np.ndarray
+            A few exceptions allow the use of abbreviations instead of full words
+            in the name of the parameter. These are:
+            * "cov" for "covariance" (e.g., `cov_matrix`)
+            * "lfp" for "local_field_potential" (e.g. `lfp_signal`)
+            * "corr" for "correlation" (e.g. `corr_matrix`).
+            THESE EXCEPTIONS ARE NOT ACCEPTED FOR FUNCTION NAMES. Therefore, a
+            parameter would be named `cov_matrix`, but the function would be named
+            `calculate_covariance_matrix`. If the function name becomes very long,
+            then an alias may be created and described appropriately in the "Notes"
+            section, as mentioned above. For aliases, see example below.
+        selection_method : {'aic', 'bic'}
+            Metric for selecting the autoregressive model.
+            If 'aic', uses the Akaike Information Criterion (AIC).
+            If 'bic', uses Bayesian Information Criterion (BIC).
+            Default: 'bic', because it is more reliable than AIC due to the
+            mathematical properties (see Notes [3]).
+            <!-- Note that the default value that comes in the last line is
+            followed by comma and a brief reasoning for defining the default
+            `selection_method`). -->
+
+        <!-- Other remarks:
+        1. Do not use general parameter names, such as `data` or `matrix`.
+        2. Do not use general result names, such as `result` or `output`.
+        3. Avoid capitalization (such as the examples mentioned for parameters
+           such as `T` for period, or `C` for capacity or a correlation matrix.
+        -->
+
+        Returns
+        -------
+            frequency : float
+                The frequency of the signal.
+            filtered_signal : np.ndarray
+                Signal filtered using Butterworth filter.
+
+        Notes
+        -----
+        1. Frequency is defined as:
+
+        .. math::
+
+            f = \frac{1}{T}
+
+           `period` corresponds to :math:`T`
+
+        2. `order` is passed as the `N` parameter when calling
+           `scipy.signal.butter`.
+        3. According to [1]_, BIC should be used instead of AIC for this
+           computation. The brief rationale is .......
+
+        References
+        ----------
+        .. [1] Author, "Why BIC is better than AIC for AR model", Statistics,
+               vol. 1, pp. 1-15, 1996.
+
+        """
+        # We use Butterworth filter from scipy to perform some calculation.
+        # Note that parameter `N` is passed using keys, taking the value of the
+        # `order` input parameter
+        filtered_signal = scipy.signal.butter(N=order, ...)
+
+        # Here we calculate a return value using a function variable. Note that
+        # this variable is named in the "Returns" section
+        frequency = 1 / period
+        return frequency, filtered_signal
+
+
+
+Class docstring
+---------------
+
+Class docstrings follow function docstring format. Here is an example.
 
 .. code-block:: python
 
@@ -423,298 +633,3 @@ Each class should have a detailed docstring, according to the example below:
 
             """
             pass
-
-
-    # Classes are separated by two blank lines
-    class MyOtherClass(object):
-        """
-        Class documentation
-        """
-
-        def __init__(self, params):
-            """
-            Constructor
-            """
-
-            pass
-
-
-Function docstrings
--------------------
-
-.. code-block:: python
-
-    # Functions also need 2 blank lines between any structures.
-    def top_level_function(param):
-        """
-        The same docstring guidelines as mentioned above for classes.
-        """
-        pass
-
-Naming convention for parameters
---------------------------------
-
-The function below illustrates how arguments and functions should be named
-throughout Elephant.
-
-.. code-block:: python
-
-    def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
-                         target_spiketrain, signal, signals, max_iterations,
-                         min_threshold, n_bins, n_surrogates, bin_size, max_size,
-                         time_limits, time_range, t_start, t_stop, period, order,
-                         error, capacity, source_matrix, cov_matrix,
-                         selection_method='aic'
-                         ):
-        r"""
-        Full example of the docstring and naming conventions.
-
-        Function names should be in lowercase, with words written in full, and
-        separated by underscores. Exceptions are for common abbreviations, such
-        as "psd" or "isi". But words such as "coherence" must be written in full,
-        and not truncated (e.g. "cohere").
-
-        If the truncation or abbreviation not in conformity to this naming
-        convention was adopted to maintain similarity to a function used
-        extensively in another language or package, mention this in the "Notes"
-        section, like the comment below:
-        <!--
-        Notes
-        -----
-        This function is similar to `welch_cohere` function in MATLAB.
-        -->
-
-        The rationale for the naming of each parameter in this example will be
-        explained in the relevant "Parameters" section. Class parameters and
-        attributes also follow the same naming convention.
-
-        Parameters
-        ----------
-        <!-- As a general rule, each word is written in full lowercase, separated
-        by underscores. Special cases apply according to the examples below -->
-        spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
-            Within Elephant, this is how to name an input parameter that contains
-            at least one spike train. The parameter name is in plural (i.e.,
-            `spiketrains`). The function will deal with converting a single
-            `neo.SpikeTrain` to a list of `neo.SpikeTrain` if needed.
-            Note that although these are two words, they are NOT separated by
-            underscore because Neo does not use underscore, and Elephant must keep
-            compatibility. Do not use names such as `sts`, `spks`, or
-            `spike_trains`.
-        spiketrain: neo.SpikeTrain
-            If the function EXPLICITLY requires only a single spike train, then
-            the parameter should be named in singular (i.e., `spiketrain`). Do
-            not use names such as `st`, `spk`, or `spike_train`.
-        reference_spiketrain : neo.SpikeTrain
-            If a function uses more than one parameter with single spike trains,
-            then each parameter name begins with a meaningful name,
-            followed by "_spiketrain" in singular form.
-        target_spiketrain: neo.SpikeTrain
-            Second parameter that is a single spike train. Note that the difference
-            from `reference_spiketrain` is indicated by a meaningful name at the
-            beginning.
-        signal : neo.AnalogSignal
-            If a single `neo.AnalogSignal` object is passed to the function, even if
-            it contains several signals (arrays).
-        signals : list of neo.AnalogSignal
-            If the parameter is a container that has at least one `neo.AnalogSignal`
-            object. The name of the parameter is `signals` (plural).
-        max_iterations : int
-            Parameters that represent a maximum value should start with "max_"
-            prefix, followed by the description as a full word. Therefore, do not
-            use names such as `max_iter` or `maxiter`.
-        min_threshold : float
-            Same case as for maximum. Parameters that represent a minimum value
-            should start with "min_" prefix, followed by the description as a full
-            word. Therefore, do not use names such as `min_thr` or `minthr`.
-        n_bins : int
-            Parameters that represent a number should start with the prefix "n_".
-            Do not use `numbins`, `bin_number`, or `num_bins`. The prefix should
-            be followed by a meaningful word in full.
-        n_surrogates : int
-            The description should always be meaningful an without abbreviations.
-            Therefore, do not use terms as `n` or `n_surr`, that are not
-            immediately understood.
-        bin_size : pq.Quantity or int
-            Separate the words by underscore. Do not use `binsize`. Old functions
-            which use `binsize` will be gradually refactored to conform to the new
-            convention.
-        max_size : float
-            Another example showing that words should be separated by underscores.
-            This intersects with the naming convention for a maximum value.
-        time_limits: list or tuple
-            For parameters that define minimum and maximum values as a list or
-            tuple (e.g., [-2, 2]), the parameter must start with a meaningful
-            word followed by the suffix "_limits". Preferentially, one should use
-            two separated parameters (e.g., `max_time` and `min_time` following
-            the convention for maximum and minimum already mentioned). But should
-            the function require the definition of limits in this form, use the
-            name `_limits` and not `_range` (see next parameter).
-        time_range: list
-            For parameters that behave like a Python range (e.g. [1, 2, 3, 4])), in
-            the sense that it is a sequence, not only the lower and upper limits
-            as in the example above, the parameter should start with a meaningful
-            name followed by the suffix "_range".
-        t_start : pq.Quantity
-            Standard name within Elephant for defining starting times.
-        t_stop : pq.Quantity
-            Standard name within Elephant for defining stopping times.
-        period : pq.Quantity
-            Oscillation period.
-            Always use informative names. In this case, one could name the
-            parameter as simply as `T`, since this is standard for referring to
-            periods. If the function is implementing computations based on a paper
-            that has a formula with a variable "T", acknowledge this after
-            describing the formula in the docstring. Therefore, write a sentence
-            like "`period` refers to :math:`T`"
-            If the Elephant function uses an external function (such as from
-            `scipy`), and such function has an argument named `T`, also
-            acknowledge this in the docstring. Therefore, write a sentence like
-            "`period` is forwarded as argument `T` of `scipy.uses_T` function".
-            If the external function already has an informative parameter name
-            (such as `period`), the same parameter name can be used in the Elephant
-            function if forwarded.
-            If several input parameters are forwarded or are members
-            of a formula, the docstring can present them together as a list.
-            But always use informative names, not single letter names if this is
-            how they are described in the paper or implemented in another function.
-        order : int
-            Order of the Butterworth filter.
-            This is an example of how the `N` parameter of `scipy.signal.butter`
-            function could be provided by the user of the Elephant function.
-            The docstring would present a text similar to
-            "`order` is passed as the `N` argument for `scipy.signal.butter` function".
-            Also, in the code implementation, use keyword arguments to make this
-            explicit (see the implementation of the function below)
-        error : float
-            In the case the function has an input parameter that corresponds to a
-            greek letter in a formula (in a paper, for instance) always use the
-            meaning of the greek letter. Therefore, should :math:`\epsilon` refer
-            to the error in the formula, the parameter should be named `error`. As
-            already mentioned, this is acknowledged in the docstring after the
-            description of the formula.
-        capacity : float
-            Capacity value.
-            When using parameters based on a paper (which, e.g., derives some
-            formula), and the parameter's name in this paper is a single letter
-            (such as `C` for capacity), always use the meaning
-            of the letter. Therefore, the parameter should be named `capacity`,
-            not `C`. Acknowledge this in the docstring as already mentioned.
-        source_matrix: np.ndarray
-            Parameters that are matrices should end with the suffix "_matrix", and
-            start with a meaningful name.
-        cov_matrix: np.ndarray
-            A few exceptions allow the use of abbreviations instead of full words
-            in the name of the parameter. These are:
-            * "cov" for "covariance" (e.g., `cov_matrix`)
-            * "lfp" for "local_field_potential" (e.g. `lfp_signal`)
-            * "corr" for "correlation" (e.g. `corr_matrix`).
-            THESE EXCEPTIONS ARE NOT ACCEPTED FOR FUNCTION NAMES. Therefore, a
-            parameter would be named `cov_matrix`, but the function would be named
-            `calculate_covariance_matrix`. If the function name becomes very long,
-            then an alias may be created and described appropriately in the "Notes"
-            section, as mentioned above. For aliases, see example below.
-        selection_method : {'aic', 'bic'}
-            Metric for selecting the autoregressive model.
-            If 'aic', uses the Akaike Information Criterion (AIC).
-            If 'bic', uses Bayesian Information Criterion (BIC).
-            Default: 'bic', because it is more reliable than AIC due to the
-            mathematical properties (see Notes [3]).
-            <!-- Note that the default value that comes in the last line is
-            followed by comma and a brief reasoning for defining the default
-            `selection_method`). -->
-
-        <!-- Other remarks:
-        1. Do not use general parameter names, such as `data` or `matrix`.
-        2. Do not use general result names, such as `result` or `output`.
-        3. Avoid capitalization (such as the examples mentioned for parameters
-           such as `T` for period, or `C` for capacity or a correlation matrix.
-        -->
-
-        Returns
-        -------
-            frequency : float
-                The frequency of the signal.
-            filtered_signal : np.ndarray
-                Signal filtered using Butterworth filter.
-
-        Notes
-        -----
-        1. Frequency is defined as:
-
-        .. math::
-
-            f = \frac{1}{T}
-
-           `period` corresponds to :math:`T`
-
-        2. `order` is passed as the `N` parameter when calling
-           `scipy.signal.butter`.
-        3. According to [1]_, BIC should be used instead of AIC for this
-           computation. The brief rationale is .......
-
-        References
-        ----------
-        .. [1] Author, "Why BIC is better than AIC for AR model", Statistics,
-               vol. 1, pp. 1-15, 1996.
-
-        """
-        # We use Butterworth filter from scipy to perform some calculation.
-        # Note that parameter `N` is passed using keys, taking the value of the
-        # `order` input parameter
-        filtered_signal = scipy.signal.butter(N=order, ...)
-
-        # Here we calculate a return value using a function variable. Note that
-        # this variable is named in the "Returns" section
-        frequency = 1 / period
-        return frequency, filtered_signal
-
-
-Aliases
--------
-
-In general, aliases should be avoided in Elephant as a solution for
-long function names. If it is necessary, this example shows how to implement.
-All aliases names must be informed in the function docstring.
-
-.. code-block:: python
-
-    def another_top_level_function(parameter):
-        """
-        The same docstring guidelines as in the class above.
-
-        Notes
-        -----
-        Alias: atlf
-        """
-        pass
-
-    # Create an alias for a function with particularly long name
-    # check the docstring of `another_top_level_function` to see how to mention
-    # the alias. This should be placed immediately after the function definition,
-    # or, if several, at the end of the file.
-    atlf = another_top_level_function
-
-
-Wrapper functions
-~~~~~~~~~~~~~~~~~
-
-This is the model for wrapped functions.
-Note that this function has parameters that do not conform to the name
-convention.
-
-.. code-block:: python
-
-    def wrapped_function(T, c, s):
-        """
-        Wrapper for function `module.function`.
-
-        Notes
-        -----
-        If the Elephant function is a wrapper, use the same argument names as
-        in the wrapped function, but write in the docstring first line that this
-        is a wrapper for a function. The reason or other informative text could
-        be provided in the "Notes" section.
-
-        """
-        return module.function(T, c, s)

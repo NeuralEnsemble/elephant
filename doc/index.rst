@@ -28,6 +28,7 @@ Table of Contents
     developers_guide
     authors
     release_notes
+    get_in_touch
     acknowledgements
 
 

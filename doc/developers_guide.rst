@@ -1,218 +1,79 @@
+.. _developers_guide:
+
 =================
 Developers' Guide
 =================
 
-.. toctree::
-    :maxdepth: 1
-
-    style_guide
-    documentation_guide
-
+The documentation guide (how to write a good documentation, naming conventions,
+docstring examples) is in :ref:`documentation_guide`.
 
 These instructions are for developing on a Unix-like platform, e.g. Linux or
-Mac OS X, with the bash shell. If you develop on Windows, please get in touch.
+Mac OS X, with the bash shell. If you develop on Windows, please
+:ref:`get_in_touch`.
 
 
-Mailing lists
--------------
+1. Follow the instructions in :ref:`prerequisites` to setup a clean conda
+   environment. To be safe, run::
 
-General discussion of Elephant development takes place in the `NeuralEnsemble Google
-group`_.
+    $ pip uninstall elephant
 
-Discussion of issues should take place on the :ref:`issue_tracker`.
+   to uninstall ``elephant`` in case you've installed it previously as a pip
+   package.
 
+2. Fork `Elephant <https://github.com/NeuralEnsemble/elephant>`_ as described
+   in `Fork a repo <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_.
+   Download Elephant source code from your forked repo::
 
-.. _issue_tracker:
-
-Using the issue tracker
------------------------
-
-If you find a bug in Elephant, please create a new ticket on the `Github issue tracker <https://github.com/NeuralEnsemble/elephant/issues>`_.
-Choose a name that is as specific as possible to the problem you've found, and
-in the description give as much information as you think is necessary to
-recreate the problem. The best way to do this is to create the shortest possible
-Python script that demonstrates the problem, and attach the file to the ticket.
-
-If you have an idea for an improvement to Elephant, create a ticket with type
-"enhancement". If you already have an implementation of the idea, open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
-
-
-Requirements
-------------
-
-See :doc:`install`. We strongly recommend using virtualenv_ or similar.
-
-
-Getting the source code
------------------------
-
-We use the Git version control system. The best way to contribute is through
-GitHub_. You will first need a GitHub account, and you should then fork the
-repository at https://github.com/NeuralEnsemble/elephant
-(see http://help.github.com/fork-a-repo/).
-
-To get a local copy of the repository::
-
-    $ cd /some/directory
-    $ git clone git@github.com:<username>/elephant.git
-
-Now you need to make sure that the ``elephant`` package is on your PYTHONPATH.
-You can do this by installing Elephant::
-
+    $ git clone git://github.com/<your-github-profile>/elephant.git
     $ cd elephant
-    $ pip install -e .
 
-The ``pip install -e .`` command allows you to follow the development branch as it changes by creating links in the right places and installing the command line scripts to the appropriate locations.
+3. Install requirements.txt, (optionally) requirements-extras.txt, and
+   requirements-tests.txt::
 
-Then, if you want to update Elephant at any time, in the same directory do::
+    $ pip install -r requirements/requirements.txt
+    $ pip install -r requirements/requirements-extras.txt  # optional
+    $ pip install -r requirements/requirements-tests.txt
 
-    $ git pull
+4. Before you make any changes, run the test suite to make sure all the tests
+   pass on your system::
 
+    $ nosetests .
 
-Running the test suite
-----------------------
+   You can specify a particular module to test, for example
+   ``test_statistics.py``::
 
-Before you make any changes, run the test suite to make sure all the tests pass
-on your system::
+    $ nosetests elephant/test/test_statistics.py
 
-    $ cd elephant/test
+   At the end, if you see "OK", then all the tests passed (or were skipped
+   because certain dependencies are not installed), otherwise it will report
+   on tests that failed or produced errors.
 
-With Python 2.7 or 3.x::
+5. **Implement the functional you want to add in Elephant**. This includes
+   (either of them):
 
-    $ python -m unittest discover
-    $ python3 -m unittest discover
+   * fixing a bug;
+   * improving the documentation;
+   * adding a new functional.
 
-If you have nose installed::
+6. If it was a new functional, please write:
 
-    $ nosetests
+   - documentation (refer to :ref:`documentation_guide`);
+   - tests to cover your new functions as much as possible.
 
-At the end, if you see "OK", then all the tests
-passed (or were skipped because certain dependencies are not installed),
-otherwise it will report on tests that failed or produced errors.
+7. Run the tests again as described in step 4.
 
+8. Commit your changes::
 
-Writing tests
--------------
-
-You should try to write automated tests for any new code that you add. If you
-have found a bug and want to fix it, first write a test that isolates the bug
-(and that therefore fails with the existing codebase). Then apply your fix and
-check that the test now passes.
-
-To see how well the tests cover the code base, run::
-
-    $ nosetests --with-coverage --cover-package=elephant --cover-erase
-
-
-Working on the documentation
-----------------------------
-
-The documentation is written in `reStructuredText`_, using the `Sphinx`_
-documentation system. To build the documentation::
-
-    $ cd elephant/doc
-    $ make html
-
-Then open ``_build/html/index.html`` in your browser.
-Docstrings should conform to the `NumPy docstring standard`_.
-
-To check that all example code in the documentation is correct, run::
-
-    $ make doctest
-
-To check that all URLs in the documentation are correct, run::
-
-    $ make linkcheck
-
-
-Committing your changes
------------------------
-
-Once you are happy with your changes, **run the test suite again to check
-that you have not introduced any new bugs**. Then you can commit them to your
-local repository::
-
-    $ git commit -m 'informative commit message'
-
-If this is your first commit to the project, please add your name and
-affiliation/employer to :file:`doc/source/authors.rst`
-
-You can then push your changes to your online repository on GitHub::
-
+    $ git add .
+    $ git commit -m "informative commit message"
     $ git push
 
-Once you think your changes are ready to be included in the main Elephant repository,
-open a pull request on GitHub (see https://help.github.com/articles/using-pull-requests).
+   If this is your first commit to the project, please add your name and
+   affiliation/employer to :file:`doc/authors.rst`
+
+9. Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
+   Then we'll merge your code in Elephant.
 
 
-Python 3
---------
-
-Elephant should work with Python 2.7 and Python 3.
-
-So far, we have managed to write code that works with both Python 2 and 3.
-Mainly this involves avoiding the ``print`` statement (use ``logging.info``
-instead), and putting ``from __future__ import division`` at the beginning of
-any file that uses division.
-
-If in doubt, `Porting to Python 3`_ by Lennart Regebro is an excellent resource.
-
-The most important thing to remember is to run tests with at least one version
-of Python 2 and at least one version of Python 3. There is generally no problem
-in having multiple versions of Python installed on your computer at once: e.g.,
-on Ubuntu Python 2 is available as ``python`` and Python 3 as ``python3``, while
-on Arch Linux Python 2 is ``python2`` and Python 3 ``python``. See `PEP394`_ for
-more on this.
-
-
-Coding standards and style
---------------------------
-
-All code should conform as much as possible to `PEP 8`_, and should run with
-Python 2.7 and 3.x
-
-
-Making a release (maintainers only)
------------------------------------
-
-1. Increment the Elephant package version in :file:`elephant/VERSION`.
-
-2. Add a section in :file:`doc/release_notes.rst`, describing in short the changes made from the previous release.
-
-3. Check that the copyright statement (in :file:`LICENCE.txt`, :file:`README.md`, and :file:`doc/conf.py`) is correct.
-
-4. If there is a new module do not forget to add the modulename to the :file:`doc/modules.rst` and make a file with a short description in :file:`doc/reference/<modulename>.rst`.
-
-To build a source package (see `Packaging Python Projects <https://packaging.python.org/tutorials/packaging-projects/#generating-distribution-archives>`_)::
-
-    $ pip install --user --upgrade twine
-    $ python setup.py sdist
-
-To upload the package to `PyPI`_ (if you have the necessary permissions)::
-
-    $ python -m twine upload dist/elephant-x.x.x.tar.gz
-
-Finally, tag the release in the Git repository and push it::
-
-    $ git tag <version>
-    $ git push --tags upstream
-
-Here, version should be of the form ``vX.Y.Z``.
-
-
-.. _Python: http://www.python.org
-.. _nose: http://somethingaboutorange.com/mrl/projects/nose/
-.. _neo: http://neuralensemble.org/neo
-.. _coverage: http://nedbatchelder.com/code/coverage/
-.. _`PEP 8`: http://www.python.org/dev/peps/pep-0008/
-.. _`Porting to Python 3`: http://python3porting.com/
-.. _`NeuralEnsemble Google group`: http://groups.google.com/group/neuralensemble
-.. _reStructuredText: http://docutils.sourceforge.net/rst.html
-.. _Sphinx: http://sphinx.pocoo.org/
-.. _numpy: http://www.numpy.org/
-.. _quantities: http://pypi.python.org/pypi/quantities
-.. _PEP394: http://www.python.org/dev/peps/pep-0394/
-.. _PyPI: http://pypi.python.org
-.. _GitHub: http://github.com
-.. _`NumPy docstring standard`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
-.. _`virtualenv`: https://virtualenv.pypa.io/en/latest/
+.. note:: If you experience a problem during one of the steps above, please
+          contact us by :ref:`get_in_touch`.

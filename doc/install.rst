@@ -8,6 +8,8 @@ The easiest way to install Elephant is by creating a conda environment, followed
 Below is the explanation of how to proceed with these two steps.
 
 
+.. _prerequisites:
+
 Prerequisites
 =============
 
@@ -87,7 +89,7 @@ Installation
 
               pip uninstall elephant
 
-        2. Clone the repository install the local version:
+        2. Clone the repository and install the local version:
 
            .. code-block:: sh
 
@@ -122,7 +124,7 @@ These and above packages are automatically installed when you run ``pip install 
 
 .. _`Python`: http://python.org/
 .. _`numpy`: http://www.numpy.org/
-.. _`scipy`: http://scipy.org/scipylib/
+.. _`scipy`: https://www.scipy.org/
 .. _`quantities`: http://pypi.python.org/pypi/quantities
 .. _`neo`: http://pypi.python.org/pypi/neo
 .. _`pip`: http://pypi.python.org/pypi/pip
