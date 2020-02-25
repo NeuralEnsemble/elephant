@@ -347,3 +347,6 @@ def process_docstring_remove_copyright(app, what, name, obj, options, lines):
 def setup(app):
     app.connect('autodoc-process-docstring',
                 process_docstring_remove_copyright)
+    # TODO: remove custom.css once
+    #  https://github.com/readthedocs/sphinx_rtd_theme/issues/750 is fixed
+    app.add_stylesheet("custom.css")
