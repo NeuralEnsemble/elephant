@@ -6,12 +6,29 @@ neurons by comparing the empirical spike coincidences (precision of a few ms)
 to the expected number based on the firing rates of the neurons
 (see :cite:`unitary_event_analysis-Gruen99_67`).
 
-.. include:: unitary_event_analysis-overview.rst
+Background
+~~~~~~~~~~
+
+It has been proposed that cortical neurons organize dynamically into functional
+groups (“cell assemblies”) by the temporal structure of their joint spiking
+activity. The Unitary Events analysis method detects conspicuous patterns of
+synchronous spike activity among simultaneously recorded single neurons. The
+statistical significance of a pattern is evaluated by comparing the empirical
+number of occurrences to the number expected given the firing rates of the
+neurons. Key elements of the method are the proper formulation of the null
+hypothesis and the derivation of the corresponding count distribution of
+synchronous spike events used in the significance test. The analysis is
+performed in a sliding window manner and yields a time-resolved measure of
+significant spike synchrony. For further reading, see
+:cite:`unitary_event_analysis-Riehle97_1950,unitary_event_analysis-Gruen02_43,\
+unitary_event_analysis-Gruen02_81,unitary_event_analysis-Gruen03,\
+unitary_event_analysis-Gruen09_1126,unitary_event_analysis-Gruen99_67`.
+
 
 .. current_module elephant.unitary_event_analysis
 
-Overview of Functions
----------------------
+Functions overview
+------------------
 
 .. autosummary::
     :toctree: unitary_event_analysis/
