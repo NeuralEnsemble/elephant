@@ -10,9 +10,3 @@ dependencies:
   - pandas
   - scikit-learn
   - statsmodels
-  - pip:
-      - -r file:requirements.txt
-      - -r file:requirements-extras.txt
-      - -r file:requirements-docs.txt
-      - -r file:requirements-tests.txt
-      - -r file:requirements-tutorials.txt
