@@ -3,7 +3,8 @@
 Unitary Event (UE) analysis is a statistical method to analyze in a time
 resolved manner excess spike correlation between simultaneously recorded
 neurons by comparing the empirical spike coincidences (precision of a few ms)
-to the expected number based on the firing rates of the neurons.
+to the expected number based on the firing rates of the neurons
+(see :cite:`unitary_event_analysis-Gruen99_67`).
 
 .. include:: unitary_event_analysis-overview.rst
 

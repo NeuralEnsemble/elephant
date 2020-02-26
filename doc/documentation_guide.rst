@@ -12,7 +12,7 @@ Each module (python source file) should start with a short description of the
 listed functionality. Class and function docstrings should conform to the
 `NumPy docstring standard <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
 
-.. note:: We highly recommend exploring :ref:`style_guide`.
+.. note:: We highly recommend exploring our :ref:`style_guide`.
 
 
 Building the documentation

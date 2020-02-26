@@ -13,8 +13,12 @@ analysis codes from different laboratories, the Elephant project aims to
 provide a consistent and homogeneous analysis framework that is built on a
 modular foundation. Elephant is the direct successor to Neurotools_ and
 maintains ties to complementary projects such as ephyviewer_ and
-neurotic_ for raw data visualization. The input-output data format is
-either Neo_ or Numpy_ array.
+neurotic_ for raw data visualization.
+
+The input-output data format is either Neo_, Quantity_ or Numpy_ array.
+Quantity is a Numpy-wrapper package for handling physical quantities like
+seconds, milliseconds, Hz, volts, etc. Quantity is used in both Neo and
+Elephant.
 
 Table of Contents
 -----------------
@@ -46,6 +50,7 @@ Table of Contents
 .. _neurotic:  https://neurotic.readthedocs.io/en/latest/
 .. _Neo: http://neuralensemble.org/neo/
 .. _Numpy: http://www.numpy.org/
+.. _Quantity: https://python-quantities.readthedocs.io/en/latest/
 
 
 .. |date| date::
