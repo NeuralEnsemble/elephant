@@ -480,7 +480,7 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
     ----------
     spiketrain : neo.SpikeTrain
         as elephant.spiketrain
-    window_length : int
+    dt : int
         length of slided/not slided window
     binsize : quantities.Quantity
         Size of the time bins within which to randomise the spike times.
@@ -505,38 +505,34 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
     t_stop = spiketrain.t_stop
     n_bins = conv._calc_num_bins(binsize, t_start, t_stop)
     print(n_bins)
-    surr = np.empty((n, n_bins))
+    surr = []
+    binned_st = conv.BinnedSpikeTrain(
+        spiketrain, binsize=binsize)
+    bin_grid = binned_st.bin_centers.magnitude
+    binned_st = binned_st.to_bool_array()[0]
+    st_length = len(binned_st)
     for n_surr in range(n):
-        binned_st = conv.BinnedSpikeTrain(
-            spiketrain, binsize=binsize)
-        # TODO: solve this better
-        if n_surr == 0:
-            # TODO: crearlo grande quanto surr
-            bin_grid = binned_st.bin_centers.magnitude
-        binned_st = binned_st.to_bool_array()[0]
-        st_length = len(binned_st)
+        surr_binned = np.copy(binned_st)
         if sliding:
             for window_position in range(st_length - dt):
                 # shuffling the binned spike train within the window
-                np.random.shuffle(binned_st[window_position:window_position + dt])
+                np.random.shuffle(surr_binned[window_position:window_position + dt])
         else:
             windows = st_length // dt
             windows_remainder = st_length % dt
             # TODO: reshape the matrix and avoid for loop
             for window_position in range(windows):
                 # shuffling the binned spike train within the window
-                np.random.shuffle(binned_st[window_position:window_position + dt])
+                np.random.shuffle(surr_binned[window_position * dt:(window_position + 1) * dt])
             if windows_remainder != 0:
-                np.random.shuffle(binned_st[window_position * dt:])
-        surr[n_surr] = binned_st
-        surr[n_surr] = bin_grid[surr.astype(bool)]
+                np.random.shuffle(surr_binned[windows * dt:])
+        surr.append(bin_grid[surr_binned.astype(bool)])
     # go back to continuous time and place spike in the middle
     # of the bin
-    print(bin_grid, type(bin_grid))
-    print(surr, type(surr))
-    return [neo.SpikeTrain(s + t_start,
+    return [neo.SpikeTrain(s + t_start.magnitude,
                            t_start=t_start,
-                           t_stop=t_stop).rescale(spiketrain.units)
+                           t_stop=t_stop,
+                           units=spiketrain.units)
             for s in surr]
 
 
