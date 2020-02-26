@@ -10,7 +10,7 @@ the tutorials or launch them in mybinder to change and interact with the code.
 Introductory
 ------------
 
-* Statistics, introductory.
+* Statistics of spike trains.
 
   Covers ``statistics`` module with an introduction to
   `Neo <https://neo.readthedocs.io/en/stable/>`_ input-output data types like

@@ -4,12 +4,8 @@
 Developers' Guide
 =================
 
-The documentation guide (how to write a good documentation, naming conventions,
-docstring examples) is in :ref:`documentation_guide`.
-
-These instructions are for developing on a Unix-like platform, e.g. Linux or
-Mac OS X, with the bash shell. If you develop on Windows, please
-:ref:`get_in_touch`.
+.. note:: The documentation guide (how to write a good documentation, naming
+          conventions, docstring examples) is in :ref:`documentation_guide`.
 
 
 1. Follow the instructions in :ref:`prerequisites` to setup a clean conda
