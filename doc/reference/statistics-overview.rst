@@ -25,22 +25,8 @@ Often, neuroscientists will use multiple trials to make an estimate of the time-
    plt.plot(histogram.time,histogram)
 
 
-Spike interval statistics
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Explain
-
-
-Statistics across spike trains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Explain
-
-
-.. plot::
-
-    import matplotlib.pyplot as plt
-    plt.plot([1,2,3],[4,5,6])
+.. TODO Spike interval statistics
+.. TODO Statistics across spike trains
 
 
 Tutorial

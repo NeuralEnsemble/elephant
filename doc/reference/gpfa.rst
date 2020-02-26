@@ -1,6 +1,6 @@
-=========================================
-`GPFA` - Gaussian-process factor analysis
-=========================================
+=======================================
+Gaussian-Process Factor Analysis (GPFA)
+=======================================
 
 .. automodule:: elephant.gpfa.gpfa
    :members:

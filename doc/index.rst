@@ -27,7 +27,7 @@ Table of Contents
     :maxdepth: 1
 
     install
-    tutorial
+    tutorials
     modules
     developers_guide
     authors
