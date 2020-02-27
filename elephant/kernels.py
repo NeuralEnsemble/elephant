@@ -64,14 +64,15 @@ class Kernel(object):
     \forall g \in L_2`
 
 
-    Currently implemented kernels are:
-        - rectangular
-        - triangular
-        - epanechnikovlike
-        - gaussian
-        - laplacian
-        - exponential (asymmetric)
-        - alpha function (asymmetric)
+    **Currently implemented kernels are:**
+
+        * rectangular
+        * triangular
+        * epanechnikovlike
+        * gaussian
+        * laplacian
+        * exponential (asymmetric)
+        * alpha function (asymmetric)
 
     In neuroscience, a popular application of kernels is in performing
     smoothing operations via convolution. In this case, the kernel has the
