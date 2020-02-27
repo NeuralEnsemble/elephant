@@ -126,7 +126,9 @@ autosummary_generate = True
 html_theme = 'alabaster'
 html_theme_options = {
     'font_family': 'Arial',
-    'body_text':'gray'}
+    'page_width': '1200px',  # default is 940
+    'sidebar_width': '280px',  # default is 220
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -350,6 +352,3 @@ def process_docstring_remove_copyright(app, what, name, obj, options, lines):
 def setup(app):
     app.connect('autodoc-process-docstring',
                 process_docstring_remove_copyright)
-    # TODO: remove custom.css once
-    #  https://github.com/readthedocs/sphinx_rtd_theme/issues/750 is fixed
-    app.add_stylesheet("custom.css")
