@@ -9,6 +9,7 @@ of Elephant functionalities, e.g., to perform analysis in sliding windows.
 import sys
 import time
 from functools import wraps
+import multiprocessing
 import numpy as np
 import quantities as pq
 import elephant
@@ -73,9 +74,230 @@ class ParallelContext(object):
         return results
 
 
+class ParallelContext_Multithread(ParallelContext):
+    """
+    This function initializes a parallel context based on threads.
+
+    Parameters:
+    n_workers: int
+        Number of ranks to be used as workers. If `None` is set, all cores of
+        the current system are used. 
+        Default: None
+    """
+
+    def __init__(self, n_workers=None):
+        self.name = "Parallel context using threads"
+
+        # Save ranks for slaves
+        if n_workers is None:
+            self.n_workers = int(multiprocessing.cpu_count() - spare_core)
+        else:
+            worker_ranks = set(worker_ranks)
+            if (len(worker_ranks) > self.comm_size-1 or
+                    max(worker_ranks) > self.comm_size or
+                    min(worker_ranks) < 1):
+                raise ValueError(
+                    "Elements of worker_ranks must be >0 and <N, "
+                    "where N is the communicator size.")
+            self.worker_ranks = list(worker_ranks)
+            self.worker_ranks.sort()
+
+        # Save number of workers
+        self.n_workers = len(self.worker_ranks)
+
+    def terminate(self):
+        """
+        This function terminates the MPI subsystem.
+
+        This function will send a terminate signal to all workers. It will
+        return once all workers acknowledge the signal, so that the master can
+        safely exit, knowing that all workers are done computing their thing.
+        """
+        # Shut down workers
+        for worker in self.worker_ranks:
+            req = self.comm.isend(
+                0, worker, tag=MPI_TERM_WORKER)
+            req.wait()
+
+    def __run_worker(self):
+        """
+        The main worker loop that distributes jobs among the nodes.
+
+        This is the function run on each worker upon initialization. It will
+        continue until it receives an MPI_TERM_WORKER message. While running,
+        the function waits for the master to instruct the worker to perform a
+        function with a specific arguments. After execution, it reports back to
+        the master that the worker is done and ready to execute another
+        function.
+        """
+        keep_working = True
+
+        while keep_working:
+            if self.comm.iprobe(source=0, tag=MPI_SEND_HANDLER):
+                # Await a handler function
+                req = self.comm.irecv(source=0, tag=MPI_SEND_HANDLER)
+                handler = req.wait()
+
+                # Get input type: list or single item
+                req = self.comm.irecv(
+                    source=0, tag=MPI_SEND_INPUT_TYPE)
+                result_type = req.wait()
+
+                if result_type == 0:
+                    # Get input
+                    req = self.comm.irecv(
+                        source=0, tag=MPI_SEND_INPUT)
+                    data = req.wait()
+                else:
+                    # Get input as a list
+                    data = []
+                    for _ in range(result_type):
+                        req = self.comm.irecv(
+                            source=0, tag=MPI_SEND_INPUT)
+                        data.append(req.wait())
+
+                # Execute handler
+                result = handler.worker(data)
+
+                # Report back that we are done
+                req = self.comm.isend(
+                    True, 0, tag=MPI_WORKER_DONE)
+                req.wait()
+
+                # Report back output type: list or single item
+                if type(result) is list:
+                    result_type = len(result)
+                    if result_type == 0:
+                        result = None
+                else:
+                    result_type = 0
+                req = self.comm.isend(
+                    result_type, 0, tag=MPI_SEND_OUTPUT_TYPE)
+                req.wait()
+
+                # Send return value
+                if result_type == 0:
+                    req = self.comm.isend(
+                        result, 0, tag=MPI_SEND_OUTPUT)
+                    req.wait()
+                else:
+                    for list_item in result:
+                        req = self.comm.isend(
+                            list_item, 0, tag=MPI_SEND_OUTPUT)
+                        req.wait()
+            elif self.comm.iprobe(source=0, tag=MPI_TERM_WORKER):
+                keep_working = False
+
+        # The worker will exit, since it has no further defined function
+        sys.exit(0)
+
+    def execute(self):
+        """
+        Executes the current queue of jobs on the MPI workers, and returns all
+        results when done.
+
+        Returns:
+        --------
+        results : dict
+            A dictionary containing results of all submitted jobs. The keys are
+            set to the job ID, and integer number counting the submitted jobs,
+            starting at 0.
+        """
+        # Save status of each worker
+        worker_busy = [False for _ in range(self.n_workers)]
+
+        # Save job ID currently executed by each worker
+        worker_job_id = [-1 for _ in range(self.n_workers)]
+
+        # Job ID counter
+        job_id = 0
+
+        # Save results for each job
+        results = {}
+
+        # Send all spike trains
+        while job_id < len(self.arg_list) or True in worker_busy:
+            # Is there a free worker and work left to do?
+            if job_id < len(self.arg_list) and False in worker_busy:
+                idle_worker_index = worker_busy.index(False)
+                idle_worker = self.worker_ranks[
+                    idle_worker_index]
+
+                next_arg = self.arg_list[job_id]
+
+                # Send handler
+                req = self.comm.isend(
+                    self.handler, idle_worker, tag=MPI_SEND_HANDLER)
+                req.wait()
+
+                # Report on input type: list or single item
+                if type(next_arg) is list:
+                    arg_type = len(next_arg)
+                    if arg_type == 0:
+                        next_arg = None
+                else:
+                    arg_type = 0
+                req = self.comm.isend(
+                    arg_type, idle_worker, tag=MPI_SEND_INPUT_TYPE)
+                req.wait()
+
+                # Send return value
+                if arg_type == 0:
+                    req = self.comm.isend(
+                        next_arg, idle_worker, tag=MPI_SEND_INPUT)
+                    req.wait()
+                else:
+                    for list_item in next_arg:
+                        req = self.comm.isend(
+                            list_item, idle_worker, tag=MPI_SEND_INPUT)
+                        req.wait()
+
+                # Send data
+                req = self.comm.isend(
+                    next_arg, idle_worker, tag=MPI_SEND_INPUT)
+                req.wait()
+
+                worker_busy[idle_worker_index] = True
+                worker_job_id[idle_worker_index] = job_id
+                job_id += 1
+
+            # Any completing worker?
+            for worker_index, worker in enumerate(
+                    self.worker_ranks):
+                if self.comm.iprobe(
+                        source=worker, tag=MPI_WORKER_DONE):
+                    req = self.comm.irecv(
+                        source=worker, tag=MPI_WORKER_DONE)
+                    _ = req.wait()
+
+                    # Get output type: list or single item
+                    req = self.comm.irecv(
+                        source=worker, tag=MPI_SEND_OUTPUT_TYPE)
+                    arg_type = req.wait()
+
+                    if arg_type == 0:
+                        # Get output
+                        req = self.comm.irecv(
+                            source=worker, tag=MPI_SEND_OUTPUT)
+                        result = req.wait()
+                    else:
+                        result = []
+                        for _ in range(arg_type):
+                            req = self.comm.irecv(
+                                source=worker, tag=MPI_SEND_OUTPUT)
+                            result.append(req.wait())
+
+                    # Save results and mark the worker as idle
+                    results[worker_job_id[worker_index]] = result
+                    worker_busy[worker_index] = False
+
+        # Return results dictionary
+        return results
+
+
 class ParallelContext_MPI(ParallelContext):
     """
-    This function initializes the MPI subsystem.
+    This function initializes a parallel context using the MPI subsystem.
 
     Parameters:
     comm: MPI.Communicator or None
@@ -122,7 +344,7 @@ class ParallelContext_MPI(ParallelContext):
             self.worker_ranks.sort()
 
         # Save number of workers
-        self.num_workers = len(self.worker_ranks)
+        self.n_workers = len(self.worker_ranks)
 
         # Save status and name of the rank
         self.status = MPI.Status()
@@ -235,10 +457,10 @@ class ParallelContext_MPI(ParallelContext):
             starting at 0.
         """
         # Save status of each worker
-        worker_busy = [False for _ in range(self.num_workers)]
+        worker_busy = [False for _ in range(self.n_workers)]
 
         # Save job ID currently executed by each worker
-        worker_job_id = [-1 for _ in range(self.num_workers)]
+        worker_job_id = [-1 for _ in range(self.n_workers)]
 
         # Job ID counter
         job_id = 0
