@@ -269,6 +269,7 @@ def lv(v, with_nan=False):
     ValueError
         If an empty list is specified, or if the sequence has less than two
         entries and `with_nan` is False.
+
         If a matrix is passed to the function. Only vector inputs are
         supported.
 
@@ -349,6 +350,7 @@ def cv2(v, with_nan=False):
     ValueError
         If an empty list is specified, or if the sequence has less than two
         entries and `with_nan` is False.
+
         If a matrix is passed to the function. Only vector inputs are
         supported.
 
@@ -455,15 +457,22 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     ------
     TypeError:
         If `spiketrain` is not an instance of `neo.SpikeTrain`.
+
         If `sampling_period` is not a `pq.Quantity`.
+
         If `sampling_period` is not larger than zero.
+
         If `kernel` is neither instance of `kernels.Kernel` nor string 'auto'.
+
         If `cutoff` is neither `float` nor `int`.
+
         If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
+
         If `trim` is not `bool`.
 
     ValueError:
         If `sampling_period` is smaller than zero.
+
         If `kernel` is 'auto' and the function was unable to calculate optimal
         kernel width for instantaneous rate from input data.
 
@@ -472,6 +481,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     UserWarning
         If `cutoff` is less than `min_cutoff` attribute of `kernel`, the width
         of the kernel is adjusted to a minimally allowed width.
+
         If the instantaneous firing rate approximation contains negative values
         with respect to a tolerance (less than -1e-8), possibly due to machine
         precision errors.

@@ -185,7 +185,7 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
         Each element of the list must contain 2 channel indices.
         If `np.ndarray`, the second axis must have dimension 2.
     env : bool, optional
-        If True, return the Hilbert envelope of cross-correlation function.
+        If True, returns the Hilbert envelope of cross-correlation function.
         Default: False
     nlags : int, optional
         Defines the number of lags for cross-correlation function. If a `float`
@@ -410,6 +410,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
     ValueError
         If `filter_function` is not one of 'lfilter', 'filtfilt',
         or 'sosfiltfilt'.
+
         If both `highpass_freq` and `lowpass_freq` are None.
 
     References
@@ -552,6 +553,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     ValueError
         If `freq` (or one of the values in `freq` when it is a list) is
         greater than the half of `fs`.
+
         If `nco` is not positive.
 
     Notes
