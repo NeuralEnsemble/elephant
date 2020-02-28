@@ -701,66 +701,64 @@ def jointJ_window_analysis(
 
     Parameters
     ----------
-    data: list
-          List of spike trains (`neo.SpikeTrain` objects) in different trials
-                               0-axis --> Trials
-                               1-axis --> Neurons
-                               2-axis --> Spike times
-    binsize: pq.Quantity
+    data : list
+        A list of spike trains (`neo.SpikeTrain` objects) in different trials:
+            0-axis --> Trials
+
+            1-axis --> Neurons
+
+            2-axis --> Spike times
+    binsize : pq.Quantity
         The size of bins for discretizing spike trains.
-    winsize: pq.Quantity
+    winsize : pq.Quantity
         The size of the window of analysis.
-    winstep: pq.Quantity
+    winstep : pq.Quantity
         The size of the window step.
-    pattern_hash: list of int
+    pattern_hash : list of int
         list of interested patterns in hash values
         (see `hash_from_pattern` and `inverse_hash_from_pattern` functions)
-    method: str
-         The method with which the unitary events whould be computed
-         'analytic_TrialByTrial' -- > calculate the expectency
-         (analytically) on each trial, then sum over all trials.
-         'analytic_TrialAverage' -- > calculate the expectency
-         by averaging over trials.
-         (cf. Gruen et al. 2003)
-         'surrogate_TrialByTrial' -- > calculate the distribution
-         of expected coincidences by spike time randomzation in
-         each trial and sum over trials.
-         Default is 'analytic_trialByTrial'
-    t_start: float or pq.Quantity, optional
-          The start time to use for the time points.
-          If not specified, retrieved from the `t_start` attribute of
-          spiketrains.
-    t_stop: float or pq.Quantity, optional
-         The start time to use for the time points.
-         If not specified, retrieved from the `t_stop` attribute of
-         spiketrains.
-    n_surr: int, optional
-         The number of surrogates to be used.
-         Default is 100.
+    method : str
+        The method with which the unitary events whould be computed
+          'analytic_TrialByTrial' -- > calculate the expectency
+          (analytically) on each trial, then sum over all trials.
+
+          'analytic_TrialAverage' -- > calculate the expectency
+          by averaging over trials (cf. Gruen et al. 2003).
+
+          'surrogate_TrialByTrial' -- > calculate the distribution
+          of expected coincidences by spike time randomzation in
+          each trial and sum over trials.
+        Default is 'analytic_trialByTrial'
+    t_start : float or pq.Quantity, optional
+        The start time to use for the time points.
+        If not specified, retrieved from the `t_start` attribute of
+        spiketrains.
+    t_stop : float or pq.Quantity, optional
+        The start time to use for the time points.
+        If not specified, retrieved from the `t_stop` attribute of
+        spiketrains.
+    n_surr : int, optional
+        The number of surrogates to be used.
+        Default is 100.
 
     Returns
     -------
     dict
-          Js: list of float
-              JointSurprise of different given patterns within each window
-              shape: different pattern hash --> 0-axis
-                  different window --> 1-axis
-          indices: list of list of int
-              list of indices of pattern within each window
-              shape: different pattern hash --> 0-axis
-                  different window --> 1-axis
-          n_emp: list of int
-              empirical number of each observed pattern.
-              shape: different pattern hash --> 0-axis
-                  different window --> 1-axis
-          n_exp: list of float
-              expeced number of each pattern.
-              shape: different pattern hash --> 0-axis
-                  different window --> 1-axis
-          rate_avg: list of float
-              average firing rate of each neuron
-              shape: different pattern hash --> 0-axis
-                  different window --> 1-axis
+        The values of each key has the shape of
+          different pattern hash --> 0-axis
+
+          different window --> 1-axis
+        Js: list of float
+          JointSurprise of different given patterns within each window.
+        indices: list of list of int
+          A list of indices of pattern within each window.
+        n_emp: list of int
+          The empirical number of each observed pattern.
+        n_exp: list of float
+          The expected number of each pattern.
+        rate_avg: list of float
+          The average firing rate of each neuron.
+
 
     Raises
     ------
@@ -773,8 +771,8 @@ def jointJ_window_analysis(
     Warns
     -----
     UserWarning
-        The ratio between `winsize` and `binsize` is not an integer.
-        The ratio between `winstep` and `binsize` is not an integer.
+        The ratio between `winsize` or `winstep` and `binsize` is not an
+        integer.
 
     """
     if not isinstance(data[0][0], neo.SpikeTrain):
