@@ -216,6 +216,7 @@ numpydoc_show_class_members = False
 # https://github.com/sphinx-doc/sphinx/issues/6705#issuecomment-536197438
 html4_writer = True
 
+
 # -- Options for LaTeX output --------------------------------------------
 
 latex_elements = {
