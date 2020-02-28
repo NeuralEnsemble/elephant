@@ -186,14 +186,14 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
         If `np.ndarray`, the second axis must have dimension 2.
     env : bool, optional
         If True, returns the Hilbert envelope of cross-correlation function.
-        Default: False
+        Default: False.
     nlags : int, optional
         Defines the number of lags for cross-correlation function. If a `float`
         is passed, it will be rounded to the nearest integer. Number of
         samples of output is `2*nlags+1`.
         If None, the number of samples of the output is equal to the number of
         samples of the input signal (namely `nt`).
-        Default: None
+        Default: None.
     scaleopt : {'none', 'biased', 'unbiased', 'normalized', 'coeff'}, optional
         Normalization option, equivalent to matlab `xcorr(..., scaleopt)`.
         Specified as one of the following.

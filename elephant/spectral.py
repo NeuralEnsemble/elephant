@@ -90,10 +90,15 @@ def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
     ------
     ValueError
         If `x` and `y` do not have the same shape.
+
         If `window` is tuple or `np.ndarray` and has more than 1 dimension.
+
         If length of `window` is greater than the length of the `axis`.
+
         If `scaling` is neither 'density' nor 'spectrum'.
+
         If `noverlap` is greater than or equal to `nperseg`.
+
         If `nfft` is less than `nperseg`.
 
     Warns
@@ -321,13 +326,19 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     ------
     ValueError
         If `overlap` is not in the interval [0, 1).
+
         If `freq_res` is not positive.
+
         If `freq_res` is too high for the given data size.
+
         If `freq_res` is None and `len_seg` is not a positive number.
+
         If `freq_res` is None and `len_seg` is greater than the length of data
         on `axis`.
+
         If both `freq_res` and `len_seg` are None and `num_seg` is not a
         positive number.
+
         If both `freq_res` and `len_seg` are None and `num_seg` is greater
         than the length of data on `axis`.
 
@@ -527,13 +538,19 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     ------
     ValueError
         If `overlap` is not in the interval [0, 1).
+
         If `freq_res` is not positive.
+
         If `freq_res` is too high for the given data size.
+
         If `freq_res` is None and `len_seg` is not a positive number.
+
         If `freq_res` is None and `len_seg` is greater than the length of data
         on `axis`.
+
         If both `freq_res` and `len_seg` are None and `num_seg` is not a
         positive number.
+
         If both `freq_res` and `len_seg` are None and `num_seg` is greater
         than the length of data on `axis`.
 

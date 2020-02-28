@@ -28,7 +28,7 @@ def waveform_width(waveform, cutoff=0.75):
     cutoff : float, optional
         Defines the normalized range `[0, cutoff]` of the input sequence for
         computing the minimum. Must be in `[0, 1)` range.
-        Default: 0.75
+        Default: 0.75.
 
     Returns
     -------

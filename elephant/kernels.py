@@ -89,13 +89,15 @@ class Kernel(object):
     invert: bool, optional
         If True, asymmetric kernels (e.g., exponential or alpha kernels) are
         inverted along the time axis.
-        Default: False
+        Default: False.
 
     Raises
     ------
     TypeError
         If `sigma` is not `pq.Quantity`.
+
         If `sigma` is negative.
+
         If `invert` is not `bool`.
 
     """
@@ -133,6 +135,7 @@ class Kernel(object):
         ------
         TypeError
             If `t` is not `pq.Quantity`.
+
             If the dimensionality of `t` and :attr:`sigma` are different.
 
         """
@@ -236,6 +239,7 @@ class Kernel(object):
         ------
         TypeError
             If `fraction` is neither a float nor an int.
+
             If `fraction` is not in the interval [0, 1).
 
         """

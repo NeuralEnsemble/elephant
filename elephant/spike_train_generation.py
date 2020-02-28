@@ -141,7 +141,7 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or
         below the threshold.
-        Default: 'above'
+        Default: 'above'.
 
     Returns
     -------
@@ -195,7 +195,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above', format=None):
         An analog input signal.
     threshold : pq.Quantity, optional
         Contains a value that must be reached for an event to be detected.
-        Default: 0.*pq.mV
+        Default: 0.*pq.mV.
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or
         below the threshold.
@@ -329,18 +329,18 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
         The rate of the discharge.
     t_start : pq.Quantity, optional
         The beginning of the spike train.
-        Default: 0 pq.ms
+        Default: 0 * pq.ms.
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1000 pq.ms
+        Default: 1000 * pq.ms.
     as_array : bool, optional
         If True, a NumPy array of sorted spikes is returned,
         rather than a `neo.SpikeTrain` object.
-        Default: False
+        Default: False.
     refractory_period : pq.Quantity or None, optional
         `pq.Quantity` scalar with dimension time. The time period after one
         spike no other spike is emitted.
-        Default: None
+        Default: None.
 
     Returns
     -------
@@ -427,11 +427,11 @@ def inhomogeneous_poisson_process(rate, as_array=False,
     as_array : bool, optional
         If True, a NumPy array of sorted spikes is returned,
         rather than a SpikeTrain object.
-        Default: False
+        Default: False.
     refractory_period : pq.Quantity or None, optional
         `pq.Quantity` scalar with dimension time. The time period after one
         spike no other spike is emitted.
-        Default: None
+        Default: None.
 
     Returns
     -------
@@ -596,14 +596,14 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
         The rate parameter of the gamma distribution.
     t_start : pq.Quantity, optional
         The beginning of the spike train.
-        Default: 0 * pq.ms
+        Default: 0 * pq.ms.
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1000 * pq.ms
+        Default: 1000 * pq.ms.
     as_array : bool, optional
         If True, a NumPy array of sorted spikes is returned, rather than a
         `neo.SpikeTrain` object.
-        Default: False
+        Default: False.
 
     Returns
     -------
