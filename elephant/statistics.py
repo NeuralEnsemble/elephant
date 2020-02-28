@@ -914,22 +914,22 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     Returns
     -------
     dict
-        y : np.ndarray
+        'y' : np.ndarray
             Estimated density.
-        t : np.ndarray
+        't' : np.ndarray
             Points at which estimation was computed.
-        optw : float
+        'optw' : float
             Optimal kernel bandwidth given as standard deviation sigma
-        w : np.ndarray
+        'w' : np.ndarray
             Kernel bandwidths examined (standard deviation sigma).
-        C : np.ndarray
+        'C' : np.ndarray
             Cost functions of `w`.
-        confb95 : tuple of np.ndarray
+        'confb95' : tuple of np.ndarray
             Bootstrap 95% confidence interval: (lower level, upper level).
             If `bootstrap` is False, `confb95` is None.
-        yb : np.ndarray
+        'yb' : np.ndarray
             Bootstrap samples.
-            If `bootstrap` is False, `confb95` is None.
+            If `bootstrap` is False, `yb` is None.
 
         If no optimal kernel could be found, all entries of the dictionary are
         set to None.
