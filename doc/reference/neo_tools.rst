@@ -1,6 +1,6 @@
-=========================================================
-`neo_tools` - Utility functions to manipulate Neo objects
-=========================================================
+=====================
+Neo objects utilities
+=====================
 
 .. automodule:: elephant.neo_tools
    :members:

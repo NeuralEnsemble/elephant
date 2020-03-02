@@ -7,6 +7,7 @@ Function Reference by Module
 
    reference/asset
    reference/cell_assembly_detection
+   reference/change_point_detection
    reference/conversion
    reference/cubic
    reference/current_source_density
@@ -14,6 +15,7 @@ Function Reference by Module
    reference/kernels
    reference/neo_tools
    reference/pandas_bridge
+   reference/phase_analysis
    reference/signal_processing
    reference/spade
    reference/spectral

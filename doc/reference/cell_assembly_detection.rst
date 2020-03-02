@@ -1,6 +1,6 @@
-===============================
-`CAD` - Cell assembly detection
-===============================
+=======================
+Cell assembly detection
+=======================
 
 .. automodule:: elephant.cell_assembly_detection
-   :members:
+   :members: cell_assembly_detection

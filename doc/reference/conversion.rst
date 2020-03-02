@@ -1,6 +1,6 @@
-======================================
-`conversion` - Data format conversions
-======================================
+=============================
+BinnedSpikeTrain (conversion)
+=============================
 
 .. automodule:: elephant.conversion
    :members:

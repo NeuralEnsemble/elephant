@@ -1,83 +1,79 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Basic processing procedures for analog signals (e.g., performing a z-score of a
 signal, or filtering a signal).
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
-'''
+"""
 
-from __future__ import division, print_function
-
-import warnings
+from __future__ import division, print_function, unicode_literals
 
 import neo
 import numpy as np
-import numpy.matlib as npm
 import quantities as pq
 import scipy.signal
 
 
 def zscore(signal, inplace=True):
-    '''
-    Apply a z-score operation to one or several AnalogSignal objects.
+    r"""
+    Apply a z-score operation to one or several `neo.AnalogSignal` objects.
 
-    The z-score operation subtracts the mean :math:`\\mu` of the signal, and
-    divides by its standard deviation :math:`\\sigma`:
+    The z-score operation subtracts the mean :math:`\mu` of the signal, and
+    divides by its standard deviation :math:`\sigma`:
 
     .. math::
-         Z(x(t))= \\frac{x(t)-\\mu}{\\sigma}
+         Z(x(t)) = \frac{x(t)-\mu}{\sigma}
 
-    If an AnalogSignal containing multiple signals is provided, the
-    z-transform is always calculated for each signal individually.
+    If a `neo.AnalogSignal` object containing multiple signals is provided,
+    the z-transform is always calculated for each signal individually.
 
-    If a list of AnalogSignal objects is supplied, the mean and standard
+    If a list of `neo.AnalogSignal` objects is supplied, the mean and standard
     deviation are calculated across all objects of the list. Thus, all list
     elements are z-transformed by the same values of :math:`\\mu` and
-    :math:`\\sigma`. For AnalogSignals, each signal of the array is
-    treated separately across list elements. Therefore, the number of signals
-    must be identical for each AnalogSignal of the list.
+    :math:`\sigma`. For a `neo.AnalogSignal` that contains multiple signals,
+    each signal of the array is treated separately across list elements.
+    Therefore, the number of signals must be identical for each
+    `neo.AnalogSignal` object of the list.
 
     Parameters
     ----------
     signal : neo.AnalogSignal or list of neo.AnalogSignal
         Signals for which to calculate the z-score.
-    inplace : bool
-        If True, the contents of the input signal(s) is replaced by the
-        z-transformed signal. Otherwise, a copy of the original
-        AnalogSignal(s) is returned. Default: True
+    inplace : bool, optional
+        If True, the contents of the input `signal` is replaced by the
+        z-transformed signal.
+        If False, a copy of the original `signal` is returned.
+        Default: True.
 
     Returns
     -------
-    neo.AnalogSignal or list of neo.AnalogSignal
-        The output format matches the input format: for each supplied
-        AnalogSignal object a corresponding object is returned containing
-        the z-transformed signal with the unit dimensionless.
+    signal_ztransofrmed : neo.AnalogSignal or list of neo.AnalogSignal
+        The output format matches the input format: for each input
+        `neo.AnalogSignal`, a corresponding `neo.AnalogSignal` is returned,
+        containing the z-transformed signal with dimensionless unit.
 
-    Use Case
-    --------
-    You may supply a list of AnalogSignal objects, where each object in
+    Notes
+    -----
+    You may supply a list of `neo.AnalogSignal` objects, where each object in
     the list contains the data of one trial of the experiment, and each signal
-    of the AnalogSignal corresponds to the recordings from one specific
-    electrode in a particular trial. In this scenario, you will z-transform the
-    signal of each electrode separately, but transform all trials of a given
-    electrode in the same way.
+    of the `neo.AnalogSignal` corresponds to the recordings from one specific
+    electrode in a particular trial. In this scenario, you will z-transform
+    the signal of each electrode separately, but transform all trials of a
+    given electrode in the same way.
 
     Examples
     --------
+    Z-transform a single `neo.AnalogSignal`, containing only a single signal.
+
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    ...
     >>> a = neo.AnalogSignal(
-    ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1)*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
-    >>> b = neo.AnalogSignal(
-    ...       np.transpose([[1, 2, 3, 4, 5, 6], [11, 12, 13, 14, 15, 16]])*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
-    >>> c = neo.AnalogSignal(
-    ...       np.transpose([[21, 22, 23, 24, 25, 26], [31, 32, 33, 34, 35, 36]])*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
-    >>> print zscore(a)
+    ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1) * pq.mV,
+    ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
+    >>> zscore(a).as_quantity()
     [[-1.46385011]
      [-0.87831007]
      [-0.29277002]
@@ -85,7 +81,13 @@ def zscore(signal, inplace=True):
      [ 0.87831007]
      [ 1.46385011]] dimensionless
 
-    >>> print zscore(b)
+    Z-transform a single `neo.AnalogSignal` containing multiple signals.
+
+    >>> b = neo.AnalogSignal(
+    ...       np.transpose([[1, 2, 3, 4, 5, 6],
+    ...                     [11, 12, 13, 14, 15, 16]]) * pq.mV,
+    ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
+    >>> zscore(b).as_quantity()
     [[-1.46385011 -1.46385011]
      [-0.87831007 -0.87831007]
      [-0.29277002 -0.29277002]
@@ -93,7 +95,14 @@ def zscore(signal, inplace=True):
      [ 0.87831007  0.87831007]
      [ 1.46385011  1.46385011]] dimensionless
 
-    >>> print zscore([b,c])
+    Z-transform a list of `neo.AnalogSignal`, each one containing more than
+    one signal:
+
+    >>> c = neo.AnalogSignal(
+    ...       np.transpose([[21, 22, 23, 24, 25, 26],
+    ...                     [31, 32, 33, 34, 35, 36]]) * pq.mV,
+    ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
+    >>> zscore([b, c])
     [<AnalogSignal(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
        [-1.01772411, -1.01394628],
@@ -108,9 +117,10 @@ def zscore(signal, inplace=True):
        [ 1.11974608,  1.08576948],
        [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
        sampling rate: 1000.0 Hz)>]
-    '''
+
+    """
     # Transform input to a list
-    if type(signal) is not list:
+    if not isinstance(signal, list):
         signal = [signal]
 
     # Calculate mean and standard deviation
@@ -118,7 +128,7 @@ def zscore(signal, inplace=True):
     m = np.mean(signal_stacked, axis=0)
     s = np.std(signal_stacked, axis=0)
 
-    result = []
+    signal_ztransofrmed = []
     for sig in signal:
         sig_normalized = sig.magnitude - m.magnitude
         sig_normalized = np.divide(sig_normalized, s.magnitude,
@@ -133,27 +143,34 @@ def zscore(signal, inplace=True):
             #      https://github.com/NeuralEnsemble/python-neo/issues/752
             sig_normalized.array_annotate(**sig.array_annotations)
         sig_dimless = sig_normalized / sig.units
-        result.append(sig_dimless)
+        signal_ztransofrmed.append(sig_dimless)
 
     # Return single object, or list of objects
-    if len(result) == 1:
-        return result[0]
-    else:
-        return result
+    if len(signal_ztransofrmed) == 1:
+        signal_ztransofrmed = signal_ztransofrmed[0]
+    return signal_ztransofrmed
 
 
 def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
                                scaleopt='unbiased'):
     r"""
-    Calculates the pairwise cross-correlation estimate of `signal[ch_pairs]`
-    [1]_.
+    Computes unbiased estimator of the cross-correlation function.
+
+    The calculations are based on [1]_:
 
     .. math::
-             R_{xy}(\tau) = \frac{1}{normalizer} \left<x(t),y(t+\tau)\right>
 
-    :math:`R_{xy}(\tau)` is calculated in a pairwise manner, i.e.
+             R(\tau) = \frac{1}{N-|k|} R'(\tau) \\
+
+    where :math:`R'(\tau) = \left<x(t)y(t+\tau)\right>` in a pairwise
+    manner, i.e.:
+
     `signal[ch_pairs[0,0]]` vs `signal[ch_pairs[0,1]]`,
-    `signal[ch_pairs[1,0]]` vs `signal[ch_pairs[1,1]]`, and so on.
+
+    `signal[ch_pairs[1,0]]` vs `signal[ch_pairs[1,1]]`,
+
+    and so on.
+
     The input time series are z-scored beforehand. `scaleopt` controls the
     choice of :math:`R_{xy}(\tau)` normalizer. Alternatively, returns the
     Hilbert envelope of :math:`R_{xy}(\tau)`, which is useful to determine the
@@ -161,25 +178,31 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
-        Shape: `[nt, nch]`
-        Signal with `nt` number of samples that contains `nch` LFP channels
-    ch_pairs : np.ndarray or list
-        Shape: `[n, 2]`
-        List with `n` channel pairs for which to compute cross-correlation,
-        each element of list must contain 2 channel indices
+    signal : (nt, nch) neo.AnalogSignal
+        Signal with `nt` number of samples that contains `nch` LFP channels.
+    ch_pairs : list or (n, 2) np.ndarray
+        List with `n` channel pairs for which to compute cross-correlation.
+        Each element of the list must contain 2 channel indices.
+        If `np.ndarray`, the second axis must have dimension 2.
     env : bool, optional
-        Return Hilbert envelope of cross-correlation function
-        Default: False
+        If True, returns the Hilbert envelope of cross-correlation function.
+        Default: False.
     nlags : int, optional
-        Defines the number of lags for the cross-correlation function. The
-        number of output samples is `2*nlags+1`. If `None`, the number of
-        output samples is equal to the number of input samples, namely `nt`.
-        Default: None
+        Defines the number of lags for cross-correlation function. If a `float`
+        is passed, it will be rounded to the nearest integer. Number of
+        samples of output is `2*nlags+1`.
+        If None, the number of samples of the output is equal to the number of
+        samples of the input signal (namely `nt`).
+        Default: None.
     scaleopt : {'none', 'biased', 'unbiased', 'normalized', 'coeff'}, optional
         Normalization option, equivalent to matlab `xcorr(..., scaleopt)`.
         Specified as one of the following.
-        * 'none': raw, unscaled cross-correlation :math:`R_{xy}(\tau)`.
+
+        * 'none': raw, unscaled cross-correlation
+
+        .. math::
+            R_{xy}(\tau)
+
         * 'biased': biased estimate of the cross-correlation:
 
         .. math::
@@ -188,64 +211,70 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
         * 'unbiased': unbiased estimate of the cross-correlation:
 
         .. math::
-            R_{xy,unbiased}(\tau) = \frac{1}{N-\tau) R_{xy}{\tau)
+            R_{xy,unbiased}(\tau) = \frac{1}{N-\tau} R_{xy}(\tau)
 
         * 'normalized' or 'coeff': normalizes the sequence so that the
-           autocorrelations at zero lag equal 1:
+          autocorrelations at zero lag equal 1:
 
         .. math::
-            R_{xy,coeff}(\tau) = \frac{1}{\sqrt{R_{xx}(0) R_{yy}(0)}
+            R_{xy,coeff}(\tau) = \frac{1}{\sqrt{R_{xx}(0) R_{yy}(0)}}
                                  R_{xy}(\tau)
 
-        Default: 'unbiased'
+        Default: 'unbiased'.
 
     Returns
     -------
     cross_corr : neo.AnalogSignal
         Shape: `[2*nlags+1, n]`
         Pairwise cross-correlation functions for channel pairs given by
-        `ch_pairs`. If `env=True`, the output is the Hilbert envelope of the
-        pairwise cross-correlation function. This is helpful to compute the
-        correlation length for oscillating cross-correlation functions
+        `ch_pairs`. If `env` is True, the output is the Hilbert envelope of
+        the pairwise cross-correlation function. This is helpful to compute
+        the correlation length for oscillating cross-correlation functions.
 
     Raises
     ------
     ValueError
-        If the input signal is not an object of `neo.AnalogSignal`.
-    ValueError
-        If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
-    ValueError
-        If `env` is not a boolean.
-    ValueError
-        If `nlags` is not a positive integer.
-    ValueError
-        If `scaleopt` is not one of the predefined above keywords.
+        If input `signal` is not a `neo.AnalogSignal`.
 
-    Examples
-    --------
-        >>> dt = 0.02
-        >>> N = 2018
-        >>> f = 0.5
-        >>> t = np.arange(N)*dt
-        >>> x = np.zeros((N,2))
-        >>> x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
-        >>> x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
-        >>> # Generate neo.AnalogSignals from x
-        >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
-        >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
-        >>> rho = elephant.signal_processing.cross_correlation_function(
-        >>>     signal, [0,1], nlags=150)
-        >>> env = elephant.signal_processing.cross_correlation_function(
-        >>>     signal, [0,1], nlags=150, env=True)
-        >>> plt.plot(rho.times, rho)
-        >>> plt.plot(env.times, env) # should be equal to one
-        >>> plt.show()
+        If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
+
+        If `env` is not a boolean.
+
+        If `nlags` is not a positive integer.
+
+        If `scaleopt` is not one of the predefined above keywords.
 
     References
     ----------
     .. [1] Stoica, P., & Moses, R. (2005). Spectral Analysis of Signals.
        Prentice Hall. Retrieved from http://user.it.uu.se/~ps/SAS-new.pdf,
        Eq. 2.2.3.
+
+    Examples
+    --------
+    >>> import neo
+    >>> import quantities as pq
+    >>> import matplotlib.pyplot as plt
+    ...
+    >>> dt = 0.02
+    >>> N = 2018
+    >>> f = 0.5
+    >>> t = np.arange(N)*dt
+    >>> x = np.zeros((N,2))
+    >>> x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
+    >>> x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
+    ...
+    >>> # Generate neo.AnalogSignals from x and find cross-correlation
+    >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
+    >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
+    >>> rho = cross_correlation_function(signal, [0,1], nlags=150)
+    >>> env = cross_correlation_function(signal, [0,1], nlags=150,
+    ...     env=True)
+    ...
+    >>> plt.plot(rho.times, rho)
+    >>> plt.plot(env.times, env) # should be equal to one
+    >>> plt.show()
+
     """
 
     # Make ch_pairs a 2D array
@@ -303,8 +332,8 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     # Return neo.AnalogSignal
     cross_corr = neo.AnalogSignal(xcorr,
                                   units='',
-                                  t_start=tau[0]*signal.sampling_period,
-                                  t_stop=tau[-1]*signal.sampling_period,
+                                  t_start=tau[0] * signal.sampling_period,
+                                  t_stop=tau[-1] * signal.sampling_period,
                                   sampling_rate=signal.sampling_rate,
                                   dtype=float)
     return cross_corr
@@ -313,65 +342,88 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
 def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
            filter_function='filtfilt', fs=1.0, axis=-1):
     """
-    Butterworth filtering function for neo.AnalogSignal. Filter type is
-    determined according to how values of `highpass_freq` and `lowpass_freq`
-    are given (see Parameters section for details).
+    Butterworth filtering function for `neo.AnalogSignal`.
+
+    Filter type is determined according to how values of `highpass_freq` and
+    `lowpass_freq` are given (see "Parameters" section for details).
 
     Parameters
     ----------
-    signal : AnalogSignal or Quantity array or NumPy ndarray
-        Time series data to be filtered. When given as Quantity array or NumPy
-        ndarray, the sampling frequency should be given through the keyword
-        argument `fs`.
-    highpass_freq, lowpass_freq : Quantity or float
-        High-pass and low-pass cut-off frequencies, respectively. When given as
-        float, the given value is taken as frequency in Hz.
-        Filter type is determined depending on values of these arguments:
-            * highpass_freq only (lowpass_freq = None):    highpass filter
-            * lowpass_freq only (highpass_freq = None):    lowpass filter
-            * highpass_freq < lowpass_freq:    bandpass filter
-            * highpass_freq > lowpass_freq:    bandstop filter
-    order : int
-        Order of Butterworth filter. Default is 4.
-    filter_function : string
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+        Time series data to be filtered.
+        If `pq.Quantity` or `np.ndarray`, the sampling frequency should be
+        given through the keyword argument `fs`.
+    highpass_freq : pq.Quantity of float, optional
+        High-pass cut-off frequency. If `float`, the given value is taken as
+        frequency in Hz.
+        Default: None.
+    lowpass_freq : pq.Quantity or float, optional
+        Low-pass cut-off frequency. If `float`, the given value is taken as
+        frequency in Hz.
+        Filter type is determined depending on the values of `lowpass_freq`
+        and `highpass_freq`:
+
+        * `highpass_freq` only (`lowpass_freq` is None): highpass filter
+
+        * `lowpass_freq` only (`highpass_freq` is None): lowpass filter
+
+        * `highpass_freq` < `lowpass_freq`: bandpass filter
+
+        * `highpass_freq` > `lowpass_freq`: bandstop filter
+
+        Default: None.
+    order : int, optional
+        Order of the Butterworth filter.
+        Default: 4.
+    filter_function : {'filtfilt', 'lfilter', 'sosfiltfilt'}, optional
         Filtering function to be used. Available filters:
-            * 'filtfilt': `scipy.signal.filtfilt()`;
-            * 'lfilter': `scipy.signal.lfilter()`;
-            * 'sosfiltfilt': `scipy.signal.sosfiltfilt()`.
+
+        * 'filtfilt': `scipy.signal.filtfilt`;
+
+        * 'lfilter': `scipy.signal.lfilter`;
+
+        * 'sosfiltfilt': `scipy.signal.sosfiltfilt`.
+
         In most applications 'filtfilt' should be used, because it doesn't
         bring about phase shift due to filtering. For numerically stable
         filtering, in particular higher order filters, use 'sosfiltfilt'
-        (see issue
-        https://github.com/NeuralEnsemble/elephant/issues/220).
-        Default is 'filtfilt'.
-    fs : Quantity or float
-        The sampling frequency of the input time series. When given as float,
-        its value is taken as frequency in Hz. When the input is given as neo
-        AnalogSignal, its attribute is used to specify the sampling
-        frequency and this parameter is ignored. Default is 1.0.
-    axis : int
-        Axis along which filter is applied. Default is -1.
+        (see [1]_).
+        Default: 'filtfilt'.
+    fs : pq.Quantity or float, optional
+        The sampling frequency of the input time series. When given as
+        `float`, its value is taken as frequency in Hz. When `signal` is given
+        as `neo.AnalogSignal`, its attribute is used to specify the sampling
+        frequency and this parameter is ignored.
+        Default: 1.0.
+    axis : int, optional
+        Axis along which filter is applied.
+        Default: last axis (-1).
 
     Returns
     -------
-    filtered_signal : AnalogSignal or Quantity array or NumPy ndarray
+    filtered_signal : neo.AnalogSignal or pq.Quantity or np.ndarray
         Filtered input data. The shape and type is identical to those of the
-        input.
+        input `signal`.
 
     Raises
     ------
     ValueError
         If `filter_function` is not one of 'lfilter', 'filtfilt',
         or 'sosfiltfilt'.
-        When both `highpass_freq` and `lowpass_freq` are None.
+
+        If both `highpass_freq` and `lowpass_freq` are None.
+
+    References
+    ----------
+    .. [1] https://github.com/NeuralEnsemble/elephant/issues/220
 
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
     if filter_function not in available_filters:
         raise ValueError("Invalid `filter_function`: {filter_function}. "
                          "Available filters: {available_filters}".format(
-                          filter_function=filter_function,
-                          available_filters=available_filters))
+                             filter_function=filter_function,
+                             available_filters=available_filters))
     # design filter
     if hasattr(signal, 'sampling_rate'):
         fs = signal.sampling_rate.rescale(pq.Hz).magnitude
@@ -437,66 +489,87 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
 
 
 def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
-    """
-    Compute the wavelet transform of a given signal with Morlet mother wavelet.
-    The parametrization of the wavelet is based on [1].
+    r"""
+    Compute the wavelet transform of a given signal with Morlet mother
+    wavelet.
+
+    The parametrization of the wavelet is based on [1]_.
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or array_like
+    signal : (Nt, Nch) neo.AnalogSignal or np.ndarray or list
         Time series data to be wavelet-transformed. When multi-dimensional
-        array_like is given, the time axis must be the last dimension of
-        the array_like.
-    freq : float or list of floats
+        `np.ndarray` or list is given, the time axis must be the last
+        dimension. If `neo.AnalogSignal`, `Nt` is the number of time points
+        and `Nch` is the number of channels.
+    freq : float or list of float
         Center frequency of the Morlet wavelet in Hz. Multiple center
         frequencies can be given as a list, in which case the function
         computes the wavelet transforms for all the given frequencies at once.
-    nco : float (optional)
+    nco : float, optional
         Size of the mother wavelet (approximate number of oscillation cycles
-        within a wavelet; related to the wavelet number w as w ~ 2 pi nco / 6),
-        as defined in [1]. A larger nco value leads to a higher frequency
+        within a wavelet). A larger `nco` value leads to a higher frequency
         resolution and a lower temporal resolution, and vice versa. Typically
-        used values are in a range of 3 - 8, but one should be cautious when
+        used values are in a range of 3–8, but one should be cautious when
         using a value smaller than ~ 6, in which case the admissibility of the
-        wavelet is not ensured (cf. [2]). Default value is 6.0.
-    fs : float (optional)
-        Sampling rate of the input data in Hz. When `signal` is given as an
-        AnalogSignal, the sampling frequency is taken from its attribute and
-        this parameter is ignored. Default value is 1.0.
-    zero_padding : bool (optional)
+        wavelet is not ensured (cf. [2]_).
+        Default: 6.0.
+    fs : float, optional
+        Sampling rate of the input data in Hz.
+        When `signal` is given as a `neo.AnalogSignal`, the sampling frequency
+        is taken from its attribute and this parameter is ignored.
+        Default: 1.0.
+    zero_padding : bool, optional
         Specifies whether the data length is extended to the least power of
         2 greater than the original length, by padding zeros to the tail, for
-        speeding up the computation. In the case of True, the extended part is
-        cut out from the final result before returned, so that the output
-        has the same length as the input. Default is True.
+        speeding up the computation.
+        If True, the extended part is cut out from the final result before
+        returned, so that the output has the same length as the input.
+        Default: True.
 
     Returns
     -------
-    signal_wt: complex array
+    signal_wt : np.ndarray
         Wavelet transform of the input data. When `freq` was given as a list,
         the way how the wavelet transforms for different frequencies are
-        returned depends on the input type. When the input was an AnalogSignal
-        of shape (Nt, Nch), where Nt and Nch are the numbers of time points and
-        channels, respectively, the returned array has a shape (Nt, Nch, Nf),
-        where Nf = `len(freq)`, such that the last dimension indexes the
-        frequencies. When the input was an array_like of shape
-        (a, b, ..., c, Nt), the returned array has a shape
-        (a, b, ..., c, Nf, Nt), such that the second last dimension indexes the
+        returned depends on the input type:
+
+        * when the input was a `neo.AnalogSignal`, the returned array has
+          shape (`Nt`, `Nch`, `Nf`), where `Nf` = `len(freq)`, such that the
+          last dimension indexes the frequencies;
+
+        * when the input was a `np.ndarray` or list of shape
+          (`a`, `b`, ..., `c`, `Nt`), the returned array has a shape
+          (`a`, `b`, ..., `c`, `Nf`, `Nt`), such that the second last
+          dimension indexes the frequencies.
+
+        To summarize, `signal_wt.ndim` = `signal.ndim` + 1, with the
+        additional dimension in the last axis (for `neo.AnalogSignal` input)
+        or the second last axis (`np.ndarray` or list input) indexing the
         frequencies.
-        To summarize, `signal_wt.ndim` = `signal.ndim` + 1, with the additional
-        dimension in the last axis (for AnalogSignal input) or the second last
-        axis (for array_like input) indexing the frequencies.
 
     Raises
     ------
     ValueError
-        If `freq` (or one of the values in `freq` when it is a list) is greater
-        than the half of `fs`, or `nco` is not positive.
+        If `freq` (or one of the values in `freq` when it is a list) is
+        greater than the half of `fs`.
+
+        If `nco` is not positive.
+
+    Notes
+    -----
+    `nco` is related to the wavelet number :math:`w` as
+    :math:`w \sim 2 \pi \frac{'nco'}{6}`, as defined in [1]_.
 
     References
     ----------
-    1. Le van Quyen et al. J Neurosci Meth 111:83-98 (2001)
-    2. Farge, Annu Rev Fluid Mech 24:395-458 (1992)
+    .. [1] M. Le Van Quyen, J. Foucher, J. Lachaux, E. Rodriguez, A. Lutz,
+           J. Martinerie, & F.J. Varela, "Comparison of Hilbert transform and
+           wavelet methods for the analysis of neuronal synchrony," J Neurosci
+           Meth, vol. 111, pp. 83–98, 2001.
+    .. [2] M. Farge, "Wavelet Transforms and their Applications to
+           Turbulence," Annu Rev Fluid Mech, vol. 24, pp. 395–458, 1992.
+
     """
     def _morlet_wavelet_ft(freq, nco, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
@@ -525,7 +598,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     if isinstance(freq, (list, tuple, np.ndarray)):
         freqs = np.asarray(freq)
     else:
-        freqs = np.array([freq,])
+        freqs = np.array([freq, ])
     if isinstance(freqs[0], pq.quantity.Quantity):
         freqs = [f.rescale('Hz').magnitude for f in freqs]
 
@@ -553,7 +626,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # perform wavelet transform by convoluting the signal with the wavelets
     if data.ndim == 1:
         data = np.expand_dims(data, 0)
-    data = np.expand_dims(data, data.ndim-1)
+    data = np.expand_dims(data, data.ndim - 1)
     data = np.fft.ifft(np.fft.fft(data, n) * wavelet_fts)
     signal_wt = data[..., 0:n_orig]
 
@@ -572,70 +645,88 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
 
 
 def hilbert(signal, N='nextpow'):
-    '''
-    Apply a Hilbert transform to an AnalogSignal object in order to obtain its
-    (complex) analytic signal.
+    """
+    Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
+    obtain its (complex) analytic signal.
 
-    The time series of the instantaneous angle and amplitude can be obtained as
-    the angle (np.angle) and absolute value (np.abs) of the complex analytic
-    signal, respectively.
+    The time series of the instantaneous angle and amplitude can be obtained
+    as the angle (`np.angle` function) and absolute value (`np.abs` function)
+    of the complex analytic signal, respectively.
 
-    By default, the function will zero-pad the signal to a length corresponding
-    to the next higher power of 2. This will provide higher computational
-    efficiency at the expense of memory. In addition, this circumvents a
-    situation where for some specific choices of the length of the input,
-    scipy.signal.hilbert() will not terminate.
+    By default, the function will zero-pad the signal to a length
+    corresponding to the next higher power of 2. This will provide higher
+    computational efficiency at the expense of memory. In addition, this
+    circumvents a situation where, for some specific choices of the length of
+    the input, `scipy.signal.hilbert` function will not terminate.
 
     Parameters
-    -----------
+    ----------
     signal : neo.AnalogSignal
-        Signal(s) to transform
-    N : string or int
+        Signal(s) to transform.
+    N : int or {'none', 'nextpow'}, optional
         Defines whether the signal is zero-padded.
-            'none': no padding
-            'nextpow':  zero-pad to the next length that is a power of 2
-            int: directly specify the length to zero-pad to (indicates the
-                number of Fourier components, see parameter N of
-                scipy.signal.hilbert()).
+        If 'none', no padding.
+        If 'nextpow', zero-pad to the next length that is a power of 2.
+        If it is an `int`, directly specify the length to zero-pad to
+        (indicates the number of Fourier components).
         Default: 'nextpow'.
 
     Returns
     -------
     neo.AnalogSignal
         Contains the complex analytic signal(s) corresponding to the input
-        signals. The unit of the analytic signal is dimensionless.
+        `signal`. The unit of the returned `neo.AnalogSignal` is
+        dimensionless.
 
-    Example
-    -------
+    Raises
+    ------
+    ValueError:
+        If `N` is not an integer or neither 'nextpow' nor 'none'.
+
+    Notes
+    -----
+    If `N` is an integer, this is passed as the parameter `N` of
+    `scipy.signal.hilbert` function.
+
+    Examples
+    --------
     Create a sine signal at 5 Hz with increasing amplitude and calculate the
-    instantaneous phases
+    instantaneous phases:
 
-    >>> t = np.arange(0, 5000) * ms
-    >>> f = 5. * Hz
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> import neo
+    >>> import matplotlib.pyplot as plt
+    ...
+    >>> t = np.arange(0, 5000) * pq.ms
+    >>> f = 5. * pq.Hz
     >>> a = neo.AnalogSignal(
     ...       np.array(
     ...           (1 + t.magnitude / t[-1].magnitude) * np.sin(
-    ...               2. * np.pi * f * t.rescale(s))).reshape((-1,1))*mV,
-    ...       t_start=0*s, sampling_rate=1000*Hz)
-
+    ...               2. * np.pi * f * t.rescale(pq.s))).reshape(
+    ...                   (-1,1)) * pq.mV,
+    ...       t_start=0*pq.s,
+    ...       sampling_rate=1000*pq.Hz)
+    ...
     >>> analytic_signal = hilbert(a, N='nextpow')
     >>> angles = np.angle(analytic_signal)
     >>> amplitudes = np.abs(analytic_signal)
-    >>> print angles
-            [[-1.57079633]
-             [-1.51334228]
-             [-1.46047675]
-             ...,
-             [-1.73112977]
-             [-1.68211683]
-             [-1.62879501]]
-    >>> plt.plot(t,angles)
-    '''
+    >>> print(angles)
+    [[-1.57079633]
+     [-1.51334228]
+     [-1.46047675]
+     ...,
+     [-1.73112977]
+     [-1.68211683]
+     [-1.62879501]]
+    >>> plt.plot(t, angles)
+
+    """
     # Length of input signals
     n_org = signal.shape[0]
 
     # Right-pad signal to desired length using the signal itself
-    if type(N) == int:
+    if isinstance(N, int):
         # User defined padding
         n = N
     elif N == 'nextpow':
@@ -670,81 +761,91 @@ def hilbert(signal, N='nextpow'):
 
 
 def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
-    '''
-    Calculate the rectified area under the curve (RAUC) for an AnalogSignal.
+    """
+    Calculate the rectified area under the curve (RAUC) for a
+    `neo.AnalogSignal`.
 
     The signal is optionally divided into bins with duration `bin_duration`,
     and the rectified signal (absolute value) is integrated within each bin to
     find the area under the curve. The mean or median of the signal or an
-    arbitrary baseline may optionally be subtracted before rectification. If
-    the number of bins is 1 (default), a single value is returned for each
-    channel in the input signal. Otherwise, an AnalogSignal containing the
-    values for each bin is returned along with the times of the centers of the
-    bins.
+    arbitrary baseline may optionally be subtracted before rectification.
 
     Parameters
     ----------
     signal : neo.AnalogSignal
         The signal to integrate. If `signal` contains more than one channel,
         each is integrated separately.
-    bin_duration : quantities.Quantity
-        The length of time that each integration should span. If None, there
-        will be only one bin spanning the entire signal duration. If
-        `bin_duration` does not divide evenly into the signal duration, the end
-        of the signal is padded with zeros to accomodate the final,
+    baseline : pq.Quantity or {'mean', 'median'}, optional
+        A factor to subtract from the signal before rectification.
+        If 'mean', the mean value of the entire `signal` is subtracted on a
+        channel-by-channel basis.
+        If 'median', the median value of the entire `signal` is subtracted on
+        a channel-by-channel basis.
+        Default: None.
+    bin_duration : pq.Quantity, optional
+        The length of time that each integration should span.
+        If None, there will be only one bin spanning the entire signal
+        duration.
+        If `bin_duration` does not divide evenly into the signal duration, the
+        end of the signal is padded with zeros to accomodate the final,
         overextending bin.
-        Default: None
-    baseline : string or quantities.Quantity
-        A factor to subtract from the signal before rectification. If `'mean'`
-        or `'median'`, the mean or median value of the entire signal is
-        subtracted on a channel-by-channel basis.
-        Default: None
-    t_start, t_stop : quantities.Quantity
-        Times to start and end the algorithm. The signal is cropped using
-        `signal.time_slice(t_start, t_stop)` after baseline removal. Useful if
-        you want the RAUC for a short section of the signal but want the
-        mean or median calculation (`baseline='mean'` or `baseline='median'`)
-        to use the entire signal for better baseline estimation.
-        Default: None
+        Default: None.
+    t_start: pq.Quantity, optional
+        Time to start the algorithm.
+        If None, starts at the beginning of `signal`.
+        Default: None.
+    t_stop : pq.Quantity, optional
+        Time to end the algorithm.
+        If None, ends at the last time of `signal`.
+        The signal is cropped using `signal.time_slice(t_start, t_stop)` after
+        baseline removal. Useful if you want the RAUC for a short section of
+        the signal but want the mean or median calculation (`baseline`='mean'
+        or `baseline`='median') to use the entire signal for better baseline
+        estimation.
+        Default: None.
 
     Returns
     -------
-    quantities.Quantity or neo.AnalogSignal
+    pq.Quantity or neo.AnalogSignal
         If the number of bins is 1, the returned object is a scalar or
-        vector Quantity containing a single RAUC value for each channel.
-        Otherwise, the returned object is an AnalogSignal containing the
+        vector `pq.Quantity` containing a single RAUC value for each channel.
+        Otherwise, the returned object is a `neo.AnalogSignal` containing the
         RAUC(s) for each bin stored as a sample, with times corresponding to
         the center of each bin. The output signal will have the same number
         of channels as the input signal.
 
     Raises
     ------
-    TypeError
-        If the input signal is not a neo.AnalogSignal.
-    TypeError
-        If `bin_duration` is not None or a Quantity.
-    TypeError
-        If `baseline` is not None, `'mean'`, `'median'`, or a Quantity.
-    '''
+    ValueError
+        If `signal` is not `neo.AnalogSignal`.
+
+        If `bin_duration` is not None or `pq.Quantity`.
+
+        If `baseline` is not None, 'mean', 'median', or `pq.Quantity`.
+
+    See Also
+    --------
+    neo.AnalogSignal.time_slice : how `t_start` and `t_stop` are used
+
+    """
 
     if not isinstance(signal, neo.AnalogSignal):
-        raise TypeError('Input signal is not a neo.AnalogSignal!')
+        raise ValueError('Input signal is not a neo.AnalogSignal!')
 
     if baseline is None:
         pass
-    elif baseline is 'mean':
+    elif baseline == 'mean':
         # subtract mean from each channel
         signal = signal - signal.mean(axis=0)
-    elif baseline is 'median':
+    elif baseline == 'median':
         # subtract median from each channel
         signal = signal - np.median(signal.as_quantity(), axis=0)
     elif isinstance(baseline, pq.Quantity):
         # subtract arbitrary baseline
         signal = signal - baseline
     else:
-        raise TypeError(
-            'baseline must be None, \'mean\', \'median\', '
-            'or a Quantity: {}'.format(baseline))
+        raise ValueError("baseline must be either None, 'mean', 'median', or "
+                         "a Quantity. Got {}".format(baseline))
 
     # slice the signal after subtracting baseline
     signal = signal.time_slice(t_start, t_stop)
@@ -752,12 +853,14 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     if bin_duration is not None:
         # from bin duration, determine samples per bin and number of bins
         if isinstance(bin_duration, pq.Quantity):
-            samples_per_bin = int(np.round(
-                bin_duration.rescale('s')/signal.sampling_period.rescale('s')))
-            n_bins = int(np.ceil(signal.shape[0]/samples_per_bin))
+            samples_per_bin = int(
+                np.round(
+                    bin_duration.rescale('s') /
+                    signal.sampling_period.rescale('s')))
+            n_bins = int(np.ceil(signal.shape[0] / samples_per_bin))
         else:
-            raise TypeError(
-                'bin_duration must be a Quantity: {}'.format(bin_duration))
+            raise ValueError("bin_duration must be a Quantity. Got {}".format(
+                bin_duration))
     else:
         # all samples in one bin
         samples_per_bin = signal.shape[0]
@@ -781,16 +884,15 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
 
     else:
         # return an AnalogSignal with times corresponding to center of each bin
-        rauc_sig = neo.AnalogSignal(
-            rauc,
-            t_start=signal.t_start.rescale(bin_duration.units)+bin_duration/2,
-            sampling_period=bin_duration)
+        t_start = signal.t_start.rescale(bin_duration.units) + bin_duration / 2
+        rauc_sig = neo.AnalogSignal(rauc, t_start=t_start,
+                                    sampling_period=bin_duration)
         return rauc_sig
 
 
 def derivative(signal):
-    '''
-    Calculate the derivative of an AnalogSignal.
+    """
+    Calculate the derivative of a `neo.AnalogSignal`.
 
     Parameters
     ----------
@@ -800,25 +902,26 @@ def derivative(signal):
 
     Returns
     -------
-    neo.AnalogSignal
-        The returned object is an AnalogSignal containing the differences
-        between each successive sample value of the input signal divided by the
-        sampling period. Times are centered between the successive samples of
-        the input. The output signal will have the same number of channels as
-        the input signal.
+    derivative_sig: neo.AnalogSignal
+        The returned object is a `neo.AnalogSignal` containing the differences
+        between each successive sample value of the input signal divided by
+        the sampling period. Times are centered between the successive samples
+        of the input. The output signal will have the same number of channels
+        as the input signal.
 
     Raises
     ------
     TypeError
-        If the input signal is not a neo.AnalogSignal.
-    '''
+        If `signal` is not a `neo.AnalogSignal`.
+
+    """
 
     if not isinstance(signal, neo.AnalogSignal):
         raise TypeError('Input signal is not a neo.AnalogSignal!')
 
     derivative_sig = neo.AnalogSignal(
         np.diff(signal.as_quantity(), axis=0) / signal.sampling_period,
-        t_start=signal.t_start+signal.sampling_period/2,
+        t_start=signal.t_start + signal.sampling_period / 2,
         sampling_period=signal.sampling_period)
 
     return derivative_sig

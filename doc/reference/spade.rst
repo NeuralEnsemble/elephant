@@ -1,6 +1,6 @@
-================================================
-`SPADE` - Spike Pattern Detection and Evaluation
-================================================
+==============================================
+Spike Pattern Detection and Evaluation (SPADE)
+==============================================
 
 .. automodule:: elephant.spade
    :members:
