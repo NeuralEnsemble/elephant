@@ -481,8 +481,10 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
     ----------
     spiketrain : neo.SpikeTrain
         as elephant.spiketrain
-    dt : int
-        length of slided/not slided window
+    dt : quantities.Quantity
+        length of slided/not slided window. The effective window is twice
+        the range given in input, in order for it to be comparable to the
+        other surrogate methods
     binsize : quantities.Quantity
         Size of the time bins within which to randomise the spike times.
         Note: the last bin arrives until `spiketrain.t_stop` and might have
@@ -504,8 +506,12 @@ def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
     # scalars after being rescaled to this unit, to use the power of numpy
     t_start = spiketrain.t_start
     t_stop = spiketrain.t_stop
-    n_bins = conv._calc_num_bins(binsize, t_start, t_stop)
-    print(n_bins)
+    # rescale dt in binsize units
+    if dt.rescale(pq.ms).magnitude % binsize.rescale(pq.ms).magnitude != 0:
+        raise ValueError('dt has to be a multiple of the binsize')
+    # real dt is twice the range given as for the other surr methods
+    dt = int(dt.rescale(pq.ms).magnitude /
+             binsize.rescale(pq.ms).magnitude) * 2
     surr = []
     binned_st = conv.BinnedSpikeTrain(
         spiketrain, binsize=binsize)
