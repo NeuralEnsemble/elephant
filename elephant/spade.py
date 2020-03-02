@@ -1265,6 +1265,10 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
         if surr_method == 'joint_isi_dithering':
             surrs = [instance.dithering()[0] for
                      instance in joint_isi_instances]
+        elif surr_method == 'bin_shuffling':
+            surrs = [surr.surrogates(
+                spiketrain, n=1, binsize=binsize, surr_method=surr_method,
+                dt=dither)[0] for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n=1, surr_method=surr_method,
