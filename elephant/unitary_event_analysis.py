@@ -33,7 +33,7 @@ Tutorial
 Run tutorial interactively:
 
 .. image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/unitary_event_analysis.ipynb
 
 

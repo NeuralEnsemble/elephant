@@ -19,7 +19,7 @@ Introductory
   :doc:`View the notebook <../tutorials/statistics>` or run interactively:
 
   .. image:: https://mybinder.org/badge.svg
-     :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc?filepath=doc/tutorials/statistics.ipynb
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/statistics.ipynb
 
 
 Advanced
@@ -35,7 +35,7 @@ Advanced
   interactively:
 
   .. image:: https://mybinder.org/badge.svg
-     :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc?filepath=doc/tutorials/unitary_event_analysis.ipynb
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/unitary_event_analysis.ipynb
 
 * Gaussian Process Factor Analysis (GPFA).
 
@@ -45,4 +45,4 @@ Advanced
   :doc:`View the notebook <../tutorials/gpfa>` or run interactively:
 
   .. image:: https://mybinder.org/badge.svg
-     :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc?filepath=doc/tutorials/gpfa.ipynb
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/gpfa.ipynb
