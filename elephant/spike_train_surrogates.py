@@ -58,7 +58,8 @@ except ImportError:
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
-                'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering']
+                'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
+                'bin_shuffling']
 
 
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
