@@ -7,7 +7,7 @@ to the expected number based on the firing rates of the neurons
 (see :cite:`unitary_event_analysis-Gruen99_67`).
 
 Background
-~~~~~~~~~~
+----------
 
 It has been proposed that cortical neurons organize dynamically into functional
 groups (“cell assemblies”) by the temporal structure of their joint spiking
@@ -23,6 +23,18 @@ significant spike synchrony. For further reading, see
 :cite:`unitary_event_analysis-Riehle97_1950,unitary_event_analysis-Gruen02_43,\
 unitary_event_analysis-Gruen02_81,unitary_event_analysis-Gruen03,\
 unitary_event_analysis-Gruen09_1126,unitary_event_analysis-Gruen99_67`.
+
+
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/unitary_event_analysis>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc
+            ?filepath=doc/tutorials/unitary_event_analysis.ipynb
 
 
 .. current_module elephant.unitary_event_analysis
@@ -696,8 +708,9 @@ def jointJ_window_analysis(
         method='analytic_TrialByTrial', t_start=None,
         t_stop=None, binary=True, n_surr=100):
     """
-    Calculates the joint surprise in a sliding window fashion (see
-    :cite:`unitary_event_analysis-Gruen99_67`).
+    Calculates the joint surprise in a sliding window fashion.
+
+    Implementation is based on :cite:`unitary_event_analysis-Gruen99_67`.
 
     Parameters
     ----------

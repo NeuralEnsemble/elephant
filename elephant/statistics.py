@@ -3,6 +3,18 @@
 Statistical measures of spike trains (e.g., Fano factor) and functions to
 estimate firing rates.
 
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/statistics>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/INM-6/elephant/enh/module_doc
+            ?filepath=doc/tutorials/statistics.ipynb
+
+
 .. current_module elephant.statistics
 
 Functions overview
@@ -750,7 +762,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
 def complexity_pdf(spiketrains, binsize):
     """
-    Complexity Distribution [1]_ of a list of `neo.SpikeTrain` objects.
+    Complexity Distribution of a list of `neo.SpikeTrain` objects.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
@@ -758,6 +770,8 @@ def complexity_pdf(spiketrains, binsize):
     It provides for each complexity (== number of active neurons per bin) the
     number of occurrences. The normalization of that histogram to 1 is the
     probability density.
+
+    Implementation is based on [1]_.
 
     Parameters
     ----------
