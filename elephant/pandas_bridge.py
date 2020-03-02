@@ -18,7 +18,7 @@ from elephant.neo_tools import (extract_neo_attrs, get_all_epochs,
 
 
 warnings.simplefilter('once', DeprecationWarning)
-warnings.warn("pandas_bridge module will be removed in Elephant v0.7.x",
+warnings.warn("pandas_bridge module will be removed in Elephant v0.8.x",
               DeprecationWarning)
 
 
