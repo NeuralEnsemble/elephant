@@ -288,6 +288,25 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         # no units provided for refractory_period
         self.assertRaises(ValueError, hpp, rate=rate, refractory_period=2)
 
+    def test_deprecated_homogeneous_poisson_process_with_refr_period(self):
+        # TODO: remove in v0.8.0
+        rate = 10 * Hz
+        t_start = 17 * ms
+        t_stop = 2 * s
+        refractory_period = 3 * ms
+        np.random.seed(28)
+        spiketrain = stgen.homogeneous_poisson_process(
+                rate=rate, t_start=t_start, t_stop=t_stop,
+                refractory_period=refractory_period)
+        np.random.seed(28)
+        spiketrain_depr = stgen.homogeneous_poisson_process_with_refr_period(
+            rate=rate, refr_period=refractory_period, t_start=t_start,
+            t_stop=t_stop
+        )
+        assert_array_almost_equal(spiketrain_depr.times, spiketrain.times)
+        self.assertAlmostEqual(spiketrain_depr.t_start, spiketrain.t_start)
+        self.assertAlmostEqual(spiketrain_depr.t_stop, spiketrain.t_stop)
+
 
 class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
     def setUp(self):
