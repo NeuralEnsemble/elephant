@@ -274,7 +274,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _sample_quantiles(sample, p):
-    '''
+    r'''
     Given a sample of values extracted from a probability distribution,
     estimates the quantile(s) associated to p-value(s) p.
 
@@ -628,7 +628,7 @@ def mask_matrices(matrices, thresholds):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle):
-    '''
+    r'''
     Given a list of points on the real plane, identified by their absciss x
     and ordinate y, compute a stretched transformation of the Euclidean
     distance among each of them.
@@ -696,7 +696,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
 
 
 def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
-    '''
+    r'''
     Given a matrix mat, replaces its positive elements with integers
     representing different cluster ids. Each cluster comprises close-by
     elements.
@@ -892,7 +892,7 @@ def probability_matrix_montecarlo(
 def probability_matrix_analytical(
         spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
         fir_rates='estimate', kernel_width=100 * pq.ms, verbose=False):
-    '''
+    r'''
     Given a list of spike trains, approximates the cumulative probability of
     each entry in their intersection matrix (see: intersection_matrix()).
 
@@ -1077,7 +1077,7 @@ def probability_matrix_analytical(
 
 
 def _jsf_uniform_orderstat_3d(u, alpha, n):
-    '''
+    r'''
     Considered n independent random variables X1, X2, ..., Xn all having
     uniform distribution in the interval (alpha, 1):
 
