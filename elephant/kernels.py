@@ -186,8 +186,8 @@ class Kernel(object):
         whole probability mass of the kernel is concentrated over negative
         support for inverted kernels.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fraction : float
             Fraction of the whole area which has to be enclosed.
 
