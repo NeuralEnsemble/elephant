@@ -44,8 +44,8 @@ lib
 lib64
 # sphinx build directory
 doc/_build
-doc/reference/statistics/
-doc/reference/unitary_event_analysis/
+doc/reference/toctree/*
+!doc/reference/toctree/kernels/
 *.h5
 # setup.py dist directory
 dist

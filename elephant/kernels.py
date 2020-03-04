@@ -9,7 +9,7 @@ Base kernel classes
 ~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: kernels/
+    :toctree: toctree/kernels/
 
     Kernel
     SymmetricKernel
@@ -18,7 +18,7 @@ Symmetric kernels
 ~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: kernels/
+    :toctree: toctree/kernels/
 
     RectangularKernel
     TriangularKernel
@@ -30,7 +30,7 @@ Asymmetric kernels
 ~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: kernels/
+    :toctree: toctree/kernels/
 
     ExponentialKernel
     AlphaKernel

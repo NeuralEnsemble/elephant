@@ -8,7 +8,8 @@ The following people have contributed code and/or ideas to the current version
 of Elephant. The institutional affiliations are those at the time of the
 contribution, and may not be the current affiliation of a contributor.
 
-Do you want to contribute to Elephant? Please refer to :ref:`developers_guide`.
+Do you want to contribute to Elephant? Please refer to the
+:ref:`developers_guide`.
 
 * Alper Yegenoglu [1]
 * Andrew Davison [2]
