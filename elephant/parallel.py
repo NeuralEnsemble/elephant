@@ -173,18 +173,20 @@ class ParallelContext_MPI(ParallelContext):
         self.comm_size = self.comm.Get_size()
 
         # Save ranks for slaves
+        if self.comm_size == 1:
+                raise ValueError("Communicator size must be at least 2.")
         if worker_ranks is None:
-            self.worker_ranks = range(1, self.comm_size)
+            worker_ranks = list(range(1, self.comm_size))
         else:
-            worker_ranks = set(worker_ranks)
-            if (len(worker_ranks) > self.comm_size-1 or
-                    max(worker_ranks) > self.comm_size or
-                    min(worker_ranks) < 1):
-                raise ValueError(
-                    "Elements of worker_ranks must be >0 and <N, "
-                    "where N is the communicator size.")
-            self.worker_ranks = list(worker_ranks)
-            self.worker_ranks.sort()
+            worker_ranks = list(set(worker_ranks))
+        if (len(worker_ranks) > self.comm_size-1 or
+                max(worker_ranks) > self.comm_size or
+                min(worker_ranks) < 1):
+            raise ValueError(
+                "Elements of worker_ranks must be >0 and <N, "
+                "where N is the communicator size.")
+        self.worker_ranks = worker_ranks
+        self.worker_ranks.sort()
 
         # Save number of workers
         self.n_workers = len(self.worker_ranks)
@@ -391,7 +393,27 @@ class ParallelContext_MPI(ParallelContext):
         return results
 
 
+class GlobalParallelContext():
+    """
+    This class defines a global parallel context to be used, e.g., by
+    decorators or other parallelized functions.
+    """
+
+    def __init__(self):
+        self.global_parallel_context = ParallelContext()
+
+    def get_current_context(self):
+        return self.global_parallel_context
+
+
+# This defines the global parallel context
+global_pc = GlobalParallelContext()
+
+
 class JobQueueHandlers(object):
+    """
+    This is a base class for all job queue handlers.
+    """
     def __init__(self):
         pass
 
@@ -400,6 +422,20 @@ class JobQueueHandlers(object):
 
 
 class JobQueueListExpandHandler(JobQueueHandlers):
+    """
+    Jobs that call an Elephant with all elements of a list as the first of the
+    parameters.
+    
+    Parameters:
+    -----------
+    func : function
+        This is the underlying function to be executed.
+    args : list
+        Arguments to pass to func, with the exception of
+        the first argument (which is later given by iteration of the list).
+    kwargs : dict
+        Keyword arguments to pass to func.
+    """
     def __init__(self, func, *args, **kwargs):
         self.func = func
         self.args = args
@@ -409,6 +445,34 @@ class JobQueueListExpandHandler(JobQueueHandlers):
         return self.func(single_input, *self.args, **self.kwargs)
 
 
+class ParallelContextEmbarassingList():
+    '''
+    This is a decorator that transforms the first argument from a list into
+    a series of function calls for each element
+    '''
+    def __init__(self):
+        pass
+
+    def __call__(self, func):
+        @wraps(func)
+        def embarassing_list_expand(*args, **kwargs):
+            # If the first input argument is a list, then feed it into the
+            # parallel context
+            global global_pc
+            if type(args[0]) is list:
+                # TODO: Handle case where len(args)==1
+                handler = JobQueueListExpandHandler(func, *args[1:], **kwargs)
+                # TODO: Remove this print
+                print(global_pc.get_current_context().name)
+                global_pc.get_current_context().add_list_job(args[0], handler)
+                results_parallel = global_pc.get_current_context().execute()
+                return results_parallel
+            else:
+                return func(*args, **kwargs)
+        return embarassing_list_expand
+
+
+@ParallelContextEmbarassingList()
 def spike_train_generation(rate, n, t_start, t_stop):
     '''
     Returns a list of `n` spiketrains corresponding to the rates given in
@@ -419,11 +483,25 @@ def spike_train_generation(rate, n, t_start, t_stop):
 
 
 def main():
+    # Override global parallel context to use multithreading
+    global_pc.global_parallel_context = ParallelContext_Multithread()
+
+    # Test if script is running with mpirun, e.g.,:
+    #     mpirun -n <cores> python elephant/parallel.py
+    # If not, don't bother about MPI.
+    if MPI.COMM_WORLD.Get_size() < 2:
+        test_mpi = False
+    else:
+        test_mpi = True
+    # TODO: For later, check why MPI fails so miserably, don't test for now
+    test_mpi = False
+
     # Initialize serial context (take everything, default)
     pc_serial = ParallelContext()
 
     # Initialize MPI context (take everything, default)
-    # pc_mpi = ParallelContext_MPI()
+    if test_mpi:
+        pc_mpi = ParallelContext_MPI()
 
     # Initialize MPI context (take everything, default)
     pc_mp = ParallelContext_Multithread()
@@ -433,9 +511,10 @@ def main():
     # if pc_mpi.rank != 0:
     #    sys.exit(0)
 
-    print("MP Context:\nWorkers: %i\n\n" % (pc_mp.n_workers))
-    # print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n\n" % (
-    #    pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
+    print("MP Context:\nWorkers: %i\n" % (pc_mp.n_workers))
+    if test_mpi:
+        print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n" % (
+           pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
 
     # =========================================================================
     # Test 1: Spike train generation
@@ -464,12 +543,14 @@ def main():
     tb = time.time()-tb
     print("Serial generation done.\n")
 
-#     tc = time.time()
-#     pc_mpi.add_list_job(rate_list, handler_generate)
-#     spiketrain_list_mpi = pc_mpi.execute()
-#     tc = time.time()-tc
-#     print("MPI generation done.\n")
-    tc = 0
+    if test_mpi:
+        tc = time.time()
+        pc_mpi.add_list_job(rate_list, handler_generate)
+        spiketrain_list_mpi = pc_mpi.execute()
+        tc = time.time()-tc
+        print("MPI generation done.\n")
+    else:
+        tc = 999
 
     td = time.time()
     pc_mp.add_list_job(
@@ -478,10 +559,17 @@ def main():
     td = time.time()-td
     print("MP generation done.\n")
 
+#     te = time.time()
+#     spiketrain_list_decorated = spike_train_generation(
+#             rate_list, n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+#     te = time.time()-te
+#     print("Decorator-style generation done.\n")
+    te = 0
+
     print(
         "Generation execution times:" +
-        "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s" %
-        (ta, tb, tc, td))
+        "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s, Dec: %f s" %
+        (ta, tb, tc, td, te))
 
     # =========================================================================
     # Test 2: Calculate a time histogram
@@ -508,12 +596,14 @@ def main():
     print("Serial calculation done.\n")
 
     # Test 3: MPI Handler
-#     tc = time.time()
-#     pc_mpi.add_list_job(spiketrain_list_standard, handler)
-#     results_mpi = pc_mpi.execute()
-#     tc = time.time()-tc
-#     print("MPI calculation done.\n")
-    tc = 0
+    if test_mpi:
+        tc = time.time()
+        pc_mpi.add_list_job(spiketrain_list_standard, handler)
+        results_mpi = pc_mpi.execute()
+        tc = time.time()-tc
+        print("MPI calculation done.\n")
+    else:
+        tc = 999
 
     # Test 4: MP Handler
     td = time.time()
@@ -521,7 +611,6 @@ def main():
     results_mp = pc_mp.execute()
     td = time.time()-td
     print("MP calculation done.\n")
-    tc = 0
 
     print(
         "Calculation execution times:" +
@@ -533,14 +622,17 @@ def main():
     cmp2 = 5
     print("Standard result: %f" % results_standard[cmp1][cmp2])
     print("Serial result: %f" % results_serial[cmp1][cmp2])
-#     print("MPI result: %f" % results_mpi[99][cmp2])
+    if test_mpi:
+        print("MPI result: %f" % results_mpi[99][cmp2])
     print("MP result: %f" % results_mp[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_serial[cmp1][cmp2])
-#     assert(results_standard[cmp1][cmp2] == results_mpi[cmp1][cmp2])
+    if test_mpi:
+        assert(results_standard[cmp1][cmp2] == results_mpi[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_mp[cmp1][cmp2])
 
     # Terminate MPI
-#     pc_mpi.terminate()
+    if test_mpi:
+        pc_mpi.terminate()
 
 
 if __name__ == "__main__":
