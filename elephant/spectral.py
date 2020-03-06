@@ -9,219 +9,10 @@ spectrum).
 
 from __future__ import division, print_function, unicode_literals
 
-import warnings
-
-import numpy as np
-import scipy.signal
-import scipy.fftpack as fftpack
-import scipy.signal.signaltools as signaltools
-from scipy.signal.windows import get_window
-from six import string_types
-import quantities as pq
 import neo
-
-
-def _welch(x, y, fs=1.0, window='hanning', nperseg=256, noverlap=None,
-           nfft=None, detrend='constant', scaling='density', axis=-1):
-    """
-    A helper function to estimate cross spectral density using Welch's method.
-
-    Welch's method [1]_ computes an estimate of the cross spectral density
-    by dividing the data into overlapping segments, computing a modified
-    periodogram for each segment and averaging the cross-periodograms.
-
-    Parameters
-    ----------
-    x : list or tuple or np.ndarray
-        Time series of measurement values for the first signal.
-        It will be converted to `np.ndarray`.
-    y : list or tuple or np.ndarray
-        Time series of measurement values for the second signal.
-        It will be converted to `np.ndarray`.
-    fs : float, optional
-        Sampling frequency of the `x` and `y` time series in units of Hz.
-        Default: 1.0.
-    window : str or tuple or np.ndarray, optional
-        Desired window to use.
-        If `window` is a string, see `scipy.signal.get_window` for a list of
-        windows and required parameters.
-        If `window` is tuple or `np.ndarray`, it will be used directly as the
-        window, and its length will be used for `nperseg`. If not string,
-        it will be treated as `np.ndarray`, and the result must be a vector
-        with length less than or equal to the length of the last axes of `x`
-        and `y`.
-        Default: 'hanning'.
-    nperseg : int, optional
-        Length of each segment.
-        Default: 256.
-    noverlap : int, optional
-        Number of points to overlap between segments.
-        If None, `noverlap` will be set to `nperseg`/2.
-        Default: None.
-    nfft : int, optional
-        Length of the FFT used, if a zero-padded FFT is desired.
-        If None, the FFT length is `nperseg`.
-        Default: None.
-    detrend : str or function, optional
-        Specifies how to detrend each segment.
-        If `detrend` is a string, it is passed as the `type` argument to
-        `scipy.signal.detrend`.
-        If it is a function, it takes a segment as input and returns a
-        detrended segment.
-        Default: 'constant'.
-    scaling : {'density', 'spectrum'}, optional
-        If 'density', computes the power spectral density where Pxx has units
-        of V**2/Hz if `x` is measured in V.
-        If 'spectrum', computes the power spectrum where Pxx has units of V**2
-        if `x` is measured in V.
-        Default: 'density'.
-    axis : int, optional
-        Axis along which the periodogram is computed.
-        Default: last axis (-1).
-
-    Returns
-    -------
-    f : np.ndarray
-        Array of sample frequencies.
-    Pxy : np.ndarray
-        Cross spectral density or cross spectrum of `x` and `y`.
-
-    Raises
-    ------
-    ValueError
-        If `x` and `y` do not have the same shape.
-
-        If `window` is tuple or `np.ndarray` and has more than 1 dimension.
-
-        If length of `window` is greater than the length of the `axis`.
-
-        If `scaling` is neither 'density' nor 'spectrum'.
-
-        If `noverlap` is greater than or equal to `nperseg`.
-
-        If `nfft` is less than `nperseg`.
-
-    Warns
-    -----
-    UserWarning
-        If `nperseg` is greater than the shape of the axis used (`axis`),
-        `nperseg` will be changed to the shape of `axis`.
-
-    Notes
-    -----
-    1. This function is a slightly modified version of `scipy.signal.welch`
-       function, with modifications based on
-       `matplotlib.mlab._spectral_helper`.
-    2. An appropriate amount of overlap will depend on the choice of window
-       and on your requirements. For the default 'hanning' window, an overlap
-       of 50% is a reasonable trade off between accurately estimating
-       the signal power, while not over counting any of the data. Narrower
-       windows may require a larger overlap.
-    3. If `noverlap` is 0, this method is equivalent to Bartlett's method
-       [2]_.
-
-    References
-    ----------
-    .. [1] P. Welch, "The use of the fast Fourier transform for the
-           estimation of power spectra: A method based on time averaging
-           over short, modified periodograms", IEEE Trans. Audio
-           Electroacoust., vol. 15, pp. 70-73, 1967.
-    .. [2] M.S. Bartlett, "Periodogram Analysis and Continuous Spectra",
-           Biometrika, vol. 37, pp. 1-16, 1950.
-    """
-    # TODO: This function should be replaced by `scipy.signal.csd()`, which
-    # will appear in SciPy 0.16.0.
-
-    # The checks for if y is x are so that we can use the same function to
-    # obtain both power spectrum and cross spectrum without doing extra
-    # calculations.
-    same_data = y is x
-    # Make sure we're dealing with a numpy array. If y and x were the same
-    # object to start with, keep them that way
-    x = np.asarray(x)
-    if same_data:
-        y = x
-    else:
-        if x.shape != y.shape:
-            raise ValueError("x and y must be of the same shape.")
-        y = np.asarray(y)
-
-    if x.size == 0:
-        return np.empty(x.shape), np.empty(x.shape)
-
-    if axis != -1:
-        x = np.rollaxis(x, axis, len(x.shape))
-        if not same_data:
-            y = np.rollaxis(y, axis, len(y.shape))
-
-    if x.shape[-1] < nperseg:
-        warnings.warn('nperseg = %d, is greater than x.shape[%d] = %d, using '
-                      'nperseg = x.shape[%d]'
-                      % (nperseg, axis, x.shape[axis], axis))
-        nperseg = x.shape[-1]
-
-    if isinstance(window, string_types) or type(window) is tuple:
-        win = get_window(window, nperseg)
-    else:
-        win = np.asarray(window)
-        if len(win.shape) != 1:
-            raise ValueError('window must be 1-D')
-        if win.shape[0] > x.shape[-1]:
-            raise ValueError('window is longer than x.')
-        nperseg = win.shape[0]
-
-    if scaling == 'density':
-        scale = 1.0 / (fs * (win * win).sum())
-    elif scaling == 'spectrum':
-        scale = 1.0 / win.sum()**2
-    else:
-        raise ValueError('Unknown scaling: %r' % scaling)
-
-    if noverlap is None:
-        noverlap = nperseg // 2
-    elif noverlap >= nperseg:
-        raise ValueError('noverlap must be less than nperseg.')
-
-    if nfft is None:
-        nfft = nperseg
-    elif nfft < nperseg:
-        raise ValueError('nfft must be greater than or equal to nperseg.')
-
-    if not hasattr(detrend, '__call__'):
-        detrend_func = lambda seg: signaltools.detrend(seg, type=detrend)
-    elif axis != -1:
-        # Wrap this function so that it receives a shape that it could
-        # reasonably expect to receive.
-        def detrend_func(seg):
-            seg = np.rollaxis(seg, -1, axis)
-            seg = detrend(seg)
-            return np.rollaxis(seg, axis, len(seg.shape))
-    else:
-        detrend_func = detrend
-
-    step = nperseg - noverlap
-    indices = np.arange(0, x.shape[-1] - nperseg + 1, step)
-
-    for k, ind in enumerate(indices):
-        x_dt = detrend_func(x[..., ind:ind + nperseg])
-        xft = fftpack.fft(x_dt * win, nfft)
-        if same_data:
-            yft = xft
-        else:
-            y_dt = detrend_func(y[..., ind:ind + nperseg])
-            yft = fftpack.fft(y_dt * win, nfft)
-        if k == 0:
-            Pxy = (xft * yft.conj())
-        else:
-            Pxy *= k / (k + 1.0)
-            Pxy += (xft * yft.conj()) / (k + 1.0)
-    Pxy *= scale
-    f = fftpack.fftfreq(nfft, 1.0 / fs)
-
-    if axis != -1:
-        Pxy = np.rollaxis(Pxy, -1, axis)
-
-    return f, Pxy
+import numpy as np
+import quantities as pq
+import scipy.signal
 
 
 def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
@@ -572,8 +363,7 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     """
 
-    # initialize a parameter dict (to be given to _welch()) with
-    # the parameters directly passed on to _welch()
+    # initialize a parameter dict for scipy.signal.csd()
     params = {'window': window, 'nfft': nfft,
               'detrend': detrend, 'scaling': scaling, 'axis': axis}
 
@@ -627,10 +417,11 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     params['nperseg'] = nperseg
     params['noverlap'] = int(nperseg * overlap)
 
-    freqs, Pxy = _welch(xdata, ydata, **params)
-    freqs, Pxx = _welch(xdata, xdata, **params)
-    freqs, Pyy = _welch(ydata, ydata, **params)
-    coherency = np.abs(Pxy)**2 / (np.abs(Pxx) * np.abs(Pyy))
+    freqs, Pxx = scipy.signal.welch(xdata, **params)
+    _, Pyy = scipy.signal.welch(ydata, **params)
+    _, Pxy = scipy.signal.csd(xdata, ydata, **params)
+
+    coherency = np.abs(Pxy) ** 2 / (Pxx * Pyy)
     phase_lag = np.angle(Pxy)
 
     # attach proper units to return values
