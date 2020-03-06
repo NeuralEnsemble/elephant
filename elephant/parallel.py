@@ -484,7 +484,8 @@ def spike_train_generation(rate, n, t_start, t_stop):
 
 def main():
     # Override global parallel context to use multithreading
-    global_pc.global_parallel_context = ParallelContext_Multithread()
+    # TODO: For now, this does not work, thus stick with serial jobs
+    # global_pc.global_parallel_context = ParallelContext_Multithread()
 
     # Test if script is running with mpirun, e.g.,:
     #     mpirun -n <cores> python elephant/parallel.py
@@ -559,12 +560,11 @@ def main():
     td = time.time()-td
     print("MP generation done.\n")
 
-#     te = time.time()
-#     spiketrain_list_decorated = spike_train_generation(
-#             rate_list, n=1000, t_start=0*pq.s, t_stop=20*pq.s)
-#     te = time.time()-te
-#     print("Decorator-style generation done.\n")
-    te = 0
+    te = time.time()
+    spiketrain_list_decorated = spike_train_generation(
+            rate_list, n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+    te = time.time()-te
+    print("Decorator-style generation done.\n")
 
     print(
         "Generation execution times:" +
