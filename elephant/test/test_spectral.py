@@ -211,9 +211,9 @@ class WelchCohereTestCase(unittest.TestCase):
         freqs_np, coherency_np, phase_lag_np =\
             elephant.spectral.welch_cohere(x.magnitude.flatten(), y.magnitude.flatten(),
                 fs=1/sampling_period, freq_res=freq_res)
-        assert_array_almost_equal(freqs.simplified.magnitude, freqs_np)
-        assert_array_almost_equal(coherency[:, 0], coherency_np)
-        assert_array_almost_equal(phase_lag[:, 0], phase_lag_np)
+        assert_array_equal(freqs.simplified.magnitude, freqs_np)
+        assert_array_equal(coherency[:, 0], coherency_np)
+        assert_array_equal(phase_lag[:, 0], phase_lag_np)
 
         # - check the behavior of parameter `axis` using multidimensional data
         num_channel = 4
