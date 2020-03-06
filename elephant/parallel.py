@@ -132,9 +132,7 @@ class ParallelContext_Multithread(ParallelContext):
         for job_id, job in enumerate(jobs):
             results[job_id] = job.get()
 
-        print("Multiprocessing done.")
         pool.join()
-        print("Multiprocessing joined.")
         pool.terminate()
 
         return results
@@ -439,7 +437,6 @@ def main():
     # print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n\n" % (
     #    pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
 
-
     # =========================================================================
     # Test 1: Spike train generation
     # =========================================================================
@@ -486,11 +483,10 @@ def main():
         "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s" %
         (ta, tb, tc, td))
 
-
     # =========================================================================
     # Test 2: Calculate a time histogram
     # =========================================================================
-    
+
     # Create a new queue operating on the current context
     handler = JobQueueListExpandHandler(
         elephant.statistics.time_histogram, binsize=50 * pq.ms, output='rate')
