@@ -65,10 +65,8 @@ class ParallelContext(object):
         results = {}
 
         # Send all arguments
-        while job_id < len(self.arg_list):
-            next_arg = self.arg_list[job_id]
-            results[job_id] = self.handler.worker(next_arg)
-            job_id += 1
+        for job_id, arg in enumerate(self.arg_list):
+            results[job_id] = self.handler.worker(arg)
 
         # Return results dictionary
         return results
@@ -81,115 +79,31 @@ class ParallelContext_Multithread(ParallelContext):
     Parameters:
     n_workers: int
         Number of ranks to be used as workers. If `None` is set, all cores of
-        the current system are used. 
+        the current system are used.
         Default: None
     """
 
     def __init__(self, n_workers=None):
         self.name = "Parallel context using threads"
 
+        n_max_workers = int(multiprocessing.cpu_count() - 1)
+
         # Save ranks for slaves
         if n_workers is None:
-            self.n_workers = int(multiprocessing.cpu_count() - spare_core)
-        else:
-            worker_ranks = set(worker_ranks)
-            if (len(worker_ranks) > self.comm_size-1 or
-                    max(worker_ranks) > self.comm_size or
-                    min(worker_ranks) < 1):
-                raise ValueError(
-                    "Elements of worker_ranks must be >0 and <N, "
-                    "where N is the communicator size.")
-            self.worker_ranks = list(worker_ranks)
-            self.worker_ranks.sort()
+            n_workers = n_max_workers
+
+        if n_workers < 1 or n_workers > n_max_workers:
+            raise ValueError(
+                "Too few available cores, cannot initialize multithreading.")
 
         # Save number of workers
-        self.n_workers = len(self.worker_ranks)
+        self.n_workers = n_workers
 
     def terminate(self):
         """
-        This function terminates the MPI subsystem.
-
-        This function will send a terminate signal to all workers. It will
-        return once all workers acknowledge the signal, so that the master can
-        safely exit, knowing that all workers are done computing their thing.
+        This function terminates the threading subsystem.
         """
-        # Shut down workers
-        for worker in self.worker_ranks:
-            req = self.comm.isend(
-                0, worker, tag=MPI_TERM_WORKER)
-            req.wait()
-
-    def __run_worker(self):
-        """
-        The main worker loop that distributes jobs among the nodes.
-
-        This is the function run on each worker upon initialization. It will
-        continue until it receives an MPI_TERM_WORKER message. While running,
-        the function waits for the master to instruct the worker to perform a
-        function with a specific arguments. After execution, it reports back to
-        the master that the worker is done and ready to execute another
-        function.
-        """
-        keep_working = True
-
-        while keep_working:
-            if self.comm.iprobe(source=0, tag=MPI_SEND_HANDLER):
-                # Await a handler function
-                req = self.comm.irecv(source=0, tag=MPI_SEND_HANDLER)
-                handler = req.wait()
-
-                # Get input type: list or single item
-                req = self.comm.irecv(
-                    source=0, tag=MPI_SEND_INPUT_TYPE)
-                result_type = req.wait()
-
-                if result_type == 0:
-                    # Get input
-                    req = self.comm.irecv(
-                        source=0, tag=MPI_SEND_INPUT)
-                    data = req.wait()
-                else:
-                    # Get input as a list
-                    data = []
-                    for _ in range(result_type):
-                        req = self.comm.irecv(
-                            source=0, tag=MPI_SEND_INPUT)
-                        data.append(req.wait())
-
-                # Execute handler
-                result = handler.worker(data)
-
-                # Report back that we are done
-                req = self.comm.isend(
-                    True, 0, tag=MPI_WORKER_DONE)
-                req.wait()
-
-                # Report back output type: list or single item
-                if type(result) is list:
-                    result_type = len(result)
-                    if result_type == 0:
-                        result = None
-                else:
-                    result_type = 0
-                req = self.comm.isend(
-                    result_type, 0, tag=MPI_SEND_OUTPUT_TYPE)
-                req.wait()
-
-                # Send return value
-                if result_type == 0:
-                    req = self.comm.isend(
-                        result, 0, tag=MPI_SEND_OUTPUT)
-                    req.wait()
-                else:
-                    for list_item in result:
-                        req = self.comm.isend(
-                            list_item, 0, tag=MPI_SEND_OUTPUT)
-                        req.wait()
-            elif self.comm.iprobe(source=0, tag=MPI_TERM_WORKER):
-                keep_working = False
-
-        # The worker will exit, since it has no further defined function
-        sys.exit(0)
+        pass
 
     def execute(self):
         """
@@ -203,95 +117,26 @@ class ParallelContext_Multithread(ParallelContext):
             set to the job ID, and integer number counting the submitted jobs,
             starting at 0.
         """
-        # Save status of each worker
-        worker_busy = [False for _ in range(self.n_workers)]
+        # Create a pool
+        pool = multiprocessing.Pool(processes=self.n_workers)
 
-        # Save job ID currently executed by each worker
-        worker_job_id = [-1 for _ in range(self.n_workers)]
+        # Launch jobs
+        jobs = []
+        for arg in self.arg_list:
+            jobs.append(pool.apply_async(
+                func=self.handler.worker, args=[arg]))
+        pool.close()
 
-        # Job ID counter
-        job_id = 0
-
-        # Save results for each job
+        # Wait for jobs to finish
         results = {}
+        for job_id, job in enumerate(jobs):
+            results[job_id] = job.get()
 
-        # Send all spike trains
-        while job_id < len(self.arg_list) or True in worker_busy:
-            # Is there a free worker and work left to do?
-            if job_id < len(self.arg_list) and False in worker_busy:
-                idle_worker_index = worker_busy.index(False)
-                idle_worker = self.worker_ranks[
-                    idle_worker_index]
+        print("Multiprocessing done.")
+        pool.join()
+        print("Multiprocessing joined.")
+        pool.terminate()
 
-                next_arg = self.arg_list[job_id]
-
-                # Send handler
-                req = self.comm.isend(
-                    self.handler, idle_worker, tag=MPI_SEND_HANDLER)
-                req.wait()
-
-                # Report on input type: list or single item
-                if type(next_arg) is list:
-                    arg_type = len(next_arg)
-                    if arg_type == 0:
-                        next_arg = None
-                else:
-                    arg_type = 0
-                req = self.comm.isend(
-                    arg_type, idle_worker, tag=MPI_SEND_INPUT_TYPE)
-                req.wait()
-
-                # Send return value
-                if arg_type == 0:
-                    req = self.comm.isend(
-                        next_arg, idle_worker, tag=MPI_SEND_INPUT)
-                    req.wait()
-                else:
-                    for list_item in next_arg:
-                        req = self.comm.isend(
-                            list_item, idle_worker, tag=MPI_SEND_INPUT)
-                        req.wait()
-
-                # Send data
-                req = self.comm.isend(
-                    next_arg, idle_worker, tag=MPI_SEND_INPUT)
-                req.wait()
-
-                worker_busy[idle_worker_index] = True
-                worker_job_id[idle_worker_index] = job_id
-                job_id += 1
-
-            # Any completing worker?
-            for worker_index, worker in enumerate(
-                    self.worker_ranks):
-                if self.comm.iprobe(
-                        source=worker, tag=MPI_WORKER_DONE):
-                    req = self.comm.irecv(
-                        source=worker, tag=MPI_WORKER_DONE)
-                    _ = req.wait()
-
-                    # Get output type: list or single item
-                    req = self.comm.irecv(
-                        source=worker, tag=MPI_SEND_OUTPUT_TYPE)
-                    arg_type = req.wait()
-
-                    if arg_type == 0:
-                        # Get output
-                        req = self.comm.irecv(
-                            source=worker, tag=MPI_SEND_OUTPUT)
-                        result = req.wait()
-                    else:
-                        result = []
-                        for _ in range(arg_type):
-                            req = self.comm.irecv(
-                                source=worker, tag=MPI_SEND_OUTPUT)
-                            result.append(req.wait())
-
-                    # Save results and mark the worker as idle
-                    results[worker_job_id[worker_index]] = result
-                    worker_busy[worker_index] = False
-
-        # Return results dictionary
         return results
 
 
@@ -580,26 +425,33 @@ def main():
     pc_serial = ParallelContext()
 
     # Initialize MPI context (take everything, default)
-    pc_mpi = ParallelContext_MPI()
+    # pc_mpi = ParallelContext_MPI()
+
+    # Initialize MPI context (take everything, default)
+    pc_mp = ParallelContext_Multithread()
 
     # Initialize MPI context (use only ranks 3 and 4 as slave, 0 as master)
     # pc_mpi = ParallelContext_MPI(worker_ranks=[3, 4])
     # if pc_mpi.rank != 0:
     #    sys.exit(0)
 
-    print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n" % (
-        pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
+    print("MP Context:\nWorkers: %i\n\n" % (pc_mp.n_workers))
+    # print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n\n" % (
+    #    pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
+
 
     # =========================================================================
-    # User defined worker
+    # Test 1: Spike train generation
     # =========================================================================
 
     # Create a list of lists of spiketrains
     rate_list = list(np.linspace(10, 20, 20)*pq.Hz)
 
     ta = time.time()
-    spiketrain_list_standard = [spike_train_generation(
-            rate, n=1000, t_start=0*pq.s, t_stop=20*pq.s) for rate in rate_list]
+    spiketrain_list_standard = [
+        spike_train_generation(
+            rate, n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+        for rate in rate_list]
     ta = time.time()-ta
     print("Standard generation done.\n")
 
@@ -609,21 +461,36 @@ def main():
         n=1000, t_start=0*pq.s, t_stop=20*pq.s)
 
     tb = time.time()
-    pc_serial.add_list_job(rate_list, handler_generate)
+    pc_serial.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
     spiketrain_list_serial = pc_serial.execute()
     tb = time.time()-tb
     print("Serial generation done.\n")
 
-    tc = time.time()
-    pc_mpi.add_list_job(rate_list, handler_generate)
-    spiketrain_list_mpi = pc_mpi.execute()
-    tc = time.time()-tc
-    print("Parallel generation done.\n")
+#     tc = time.time()
+#     pc_mpi.add_list_job(rate_list, handler_generate)
+#     spiketrain_list_mpi = pc_mpi.execute()
+#     tc = time.time()-tc
+#     print("MPI generation done.\n")
+    tc = 0
+
+    td = time.time()
+    pc_mp.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_mp = pc_mp.execute()
+    td = time.time()-td
+    print("MP generation done.\n")
 
     print(
         "Generation execution times:" +
-        "\nStandard: %f s, Serial: %f s, Parallel: %f s" % (ta, tb, tc))
+        "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s" %
+        (ta, tb, tc, td))
 
+
+    # =========================================================================
+    # Test 2: Calculate a time histogram
+    # =========================================================================
+    
     # Create a new queue operating on the current context
     handler = JobQueueListExpandHandler(
         elephant.statistics.time_histogram, binsize=50 * pq.ms, output='rate')
@@ -645,25 +512,39 @@ def main():
     print("Serial calculation done.\n")
 
     # Test 3: MPI Handler
-    tc = time.time()
-    pc_mpi.add_list_job(spiketrain_list_standard, handler)
-    results_mpi = pc_mpi.execute()
-    tc = time.time()-tc
-    print("Parallel calculation done.\n")
+#     tc = time.time()
+#     pc_mpi.add_list_job(spiketrain_list_standard, handler)
+#     results_mpi = pc_mpi.execute()
+#     tc = time.time()-tc
+#     print("MPI calculation done.\n")
+    tc = 0
+
+    # Test 4: MP Handler
+    td = time.time()
+    pc_mp.add_list_job(spiketrain_list_standard, handler)
+    results_mp = pc_mp.execute()
+    td = time.time()-td
+    print("MP calculation done.\n")
+    tc = 0
 
     print(
         "Calculation execution times:" +
-        "\nStandard: %f s, Serial: %f s, Parallel: %f s" % (ta, tb, tc))
+        "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s" %
+        (ta, tb, tc, td))
 
     # These results should match
-    print("Standard result: %f" % results_standard[99])
-    print("Serial result: %f" % results_serial[99])
-    print("Parallel result: %f" % results_mpi[99])
-    assert(results_standard[99][5] == results_serial[99][5])
-    assert(results_standard[99][5] == results_mpi[99][5])
+    cmp1 = 15
+    cmp2 = 5
+    print("Standard result: %f" % results_standard[cmp1][cmp2])
+    print("Serial result: %f" % results_serial[cmp1][cmp2])
+#     print("MPI result: %f" % results_mpi[99][cmp2])
+    print("MP result: %f" % results_mp[cmp1][cmp2])
+    assert(results_standard[cmp1][cmp2] == results_serial[cmp1][cmp2])
+#     assert(results_standard[cmp1][cmp2] == results_mpi[cmp1][cmp2])
+    assert(results_standard[cmp1][cmp2] == results_mp[cmp1][cmp2])
 
     # Terminate MPI
-    pc_mpi.terminate()
+#     pc_mpi.terminate()
 
 
 if __name__ == "__main__":
