@@ -422,10 +422,7 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     _, Pxy = scipy.signal.csd(xdata, ydata, **params)
 
     coherency = np.abs(Pxy) ** 2 / (Pxx * Pyy)
-
-    # conjugate is taken to follow the old behavior of _welch() function
-    # that was a copy-paste of scipy v0.16.0
-    phase_lag = np.angle(Pxy.conj())
+    phase_lag = np.angle(Pxy)
 
     # attach proper units to return values
     if isinstance(x, pq.quantity.Quantity):

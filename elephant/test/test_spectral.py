@@ -206,7 +206,7 @@ class WelchCohereTestCase(unittest.TestCase):
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertAlmostEqual(freqs[coherency.argmax()], signal_freq,
             places=2)
-        self.assertAlmostEqual(phase_lag[coherency.argmax()], np.pi/2,
+        self.assertAlmostEqual(phase_lag[coherency.argmax()], -np.pi/2,
             places=2)
         freqs_np, coherency_np, phase_lag_np =\
             elephant.spectral.welch_cohere(x.magnitude.flatten(), y.magnitude.flatten(),
@@ -224,9 +224,9 @@ class WelchCohereTestCase(unittest.TestCase):
             elephant.spectral.welch_cohere(x_multidim, y_multidim)
         freqs_T, coherency_T, phase_lag_T =\
             elephant.spectral.welch_cohere(x_multidim.T, y_multidim.T, axis=0)
-        assert_array_almost_equal(freqs, freqs_T)
-        assert_array_almost_equal(coherency, coherency_T.T)
-        assert_array_almost_equal(phase_lag, phase_lag_T.T)
+        assert_array_equal(freqs, freqs_T)
+        assert_array_equal(coherency, coherency_T.T)
+        assert_array_equal(phase_lag, phase_lag_T.T)
 
     def test_welch_cohere_input_types(self):
         # generate a test data
