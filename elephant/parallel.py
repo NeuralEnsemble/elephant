@@ -313,7 +313,7 @@ class ParallelContext_MPI(ParallelContext):
         # Save results for each job
         results = {}
 
-        # Send all spike trains
+        # Send all jobs
         while job_id < len(self.arg_list) or True in worker_busy:
             # Is there a free worker and work left to do?
             if job_id < len(self.arg_list) and False in worker_busy:
@@ -330,10 +330,12 @@ class ParallelContext_MPI(ParallelContext):
 
                 # Report on input type: list or single item
                 if type(next_arg) is list:
+                    # List of values
                     arg_type = len(next_arg)
                     if arg_type == 0:
                         next_arg = None
                 else:
+                    # Single value
                     arg_type = 0
                 req = self.comm.isend(
                     arg_type, idle_worker, tag=MPI_SEND_INPUT_TYPE)
@@ -341,10 +343,12 @@ class ParallelContext_MPI(ParallelContext):
 
                 # Send return value
                 if arg_type == 0:
+                    # Single value
                     req = self.comm.isend(
                         next_arg, idle_worker, tag=MPI_SEND_INPUT)
                     req.wait()
                 else:
+                    # List of values
                     for list_item in next_arg:
                         req = self.comm.isend(
                             list_item, idle_worker, tag=MPI_SEND_INPUT)
@@ -355,6 +359,7 @@ class ParallelContext_MPI(ParallelContext):
                     next_arg, idle_worker, tag=MPI_SEND_INPUT)
                 req.wait()
 
+                # Mark worker as busy and record its job ID
                 worker_busy[idle_worker_index] = True
                 worker_job_id[idle_worker_index] = job_id
                 job_id += 1
@@ -425,7 +430,7 @@ class JobQueueListExpandHandler(JobQueueHandlers):
     """
     Jobs that call an Elephant with all elements of a list as the first of the
     parameters.
-    
+
     Parameters:
     -----------
     func : function
@@ -463,7 +468,7 @@ class ParallelContextEmbarassingList():
                 # TODO: Handle case where len(args)==1
                 handler = JobQueueListExpandHandler(func, *args[1:], **kwargs)
                 # TODO: Remove this print
-                print(global_pc.get_current_context().name)
+                # print(global_pc.get_current_context().name)
                 global_pc.get_current_context().add_list_job(args[0], handler)
                 results_parallel = global_pc.get_current_context().execute()
                 return results_parallel
@@ -472,7 +477,7 @@ class ParallelContextEmbarassingList():
         return embarassing_list_expand
 
 
-@ParallelContextEmbarassingList()
+#@ParallelContextEmbarassingList()
 def spike_train_generation(rate, n, t_start, t_stop):
     '''
     Returns a list of `n` spiketrains corresponding to the rates given in
@@ -480,6 +485,15 @@ def spike_train_generation(rate, n, t_start, t_stop):
     '''
     return [elephant.spike_train_generation.homogeneous_poisson_process(
             rate, t_start=0*pq.s, t_stop=20*pq.s) for _ in range(n)]
+
+
+def print_data(st):
+    '''
+    Returns a list of `n` spiketrains corresponding to the rates given in
+    `rate_list`.
+    '''
+    print(st.t_stop)
+    print(st.sampling_rate)
 
 
 def main():
@@ -495,7 +509,7 @@ def main():
     else:
         test_mpi = True
     # TODO: For later, check why MPI fails so miserably, don't test for now
-    test_mpi = False
+    # test_mpi = False
 
     # Initialize serial context (take everything, default)
     pc_serial = ParallelContext()
@@ -521,21 +535,30 @@ def main():
     # Test 1: Spike train generation
     # =========================================================================
 
-    # Create a list of lists of spiketrains
+    # Create a list of lists of spiketrains Each inner list of spike trains has
+    # n_spiketrains entries, each with the same rate. The rate for the i-th
+    # inner list is given by rate_list[i-1].
     rate_list = list(np.linspace(10, 20, 20)*pq.Hz)
+    n_spiketrains = 10
 
     ta = time.time()
     spiketrain_list_standard = [
         spike_train_generation(
-            rate, n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+            rate, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
         for rate in rate_list]
     ta = time.time()-ta
     print("Standard generation done.\n")
 
     # Create a new queue operating on the current context
+    handler_print = JobQueueListExpandHandler(print_data)
+    pc_mp.add_list_job(spiketrain_list_standard[0], handler_print)
+    _ = pc_mp.execute()
+    print("MPI-prerun generation done.\n")
+
+    # Create a new queue operating on the current context
     handler_generate = JobQueueListExpandHandler(
         spike_train_generation,
-        n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+        n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
 
     tb = time.time()
     pc_serial.add_list_job(
@@ -561,8 +584,8 @@ def main():
     print("MP generation done.\n")
 
     te = time.time()
-    spiketrain_list_decorated = spike_train_generation(
-            rate_list, n=1000, t_start=0*pq.s, t_stop=20*pq.s)
+#     spiketrain_list_decorated = spike_train_generation(
+#             rate_list, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
     te = time.time()-te
     print("Decorator-style generation done.\n")
 
@@ -574,6 +597,9 @@ def main():
     # =========================================================================
     # Test 2: Calculate a time histogram
     # =========================================================================
+
+    # In the following, we calculate the PSTH for list of n_spiketrains
+    # spiketrains.
 
     # Create a new queue operating on the current context
     handler = JobQueueListExpandHandler(
