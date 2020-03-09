@@ -9,10 +9,11 @@ of Elephant functionalities, e.g., to perform analysis in sliding windows.
 import sys
 import time
 from functools import wraps
-import multiprocessing
 import numpy as np
 import quantities as pq
 import elephant
+import multiprocessing
+import concurrent.futures
 from mpi4py import MPI
 
 
@@ -72,9 +73,9 @@ class ParallelContext(object):
         return results
 
 
-class ParallelContext_Multithread(ParallelContext):
+class ParallelContext_Multiprocessing(ParallelContext):
     """
-    This function initializes a parallel context based on threads.
+    This function initializes a parallel context based on multiple processes.
 
     Parameters:
     n_workers: int
@@ -84,7 +85,7 @@ class ParallelContext_Multithread(ParallelContext):
     """
 
     def __init__(self, n_workers=None):
-        self.name = "Parallel context using threads"
+        self.name = "Parallel context using multiprocessing"
 
         n_max_workers = int(multiprocessing.cpu_count() - 1)
 
@@ -94,16 +95,10 @@ class ParallelContext_Multithread(ParallelContext):
 
         if n_workers < 1 or n_workers > n_max_workers:
             raise ValueError(
-                "Too few available cores, cannot initialize multithreading.")
+                "Too few available cores, cannot initialize multiprocessing.")
 
         # Save number of workers
         self.n_workers = n_workers
-
-    def terminate(self):
-        """
-        This function terminates the threading subsystem.
-        """
-        pass
 
     def execute(self):
         """
@@ -136,6 +131,88 @@ class ParallelContext_Multithread(ParallelContext):
         pool.terminate()
 
         return results
+
+
+class ParallelContext_ConcurrentThreads(ParallelContext):
+    """
+    This function initializes a parallel context based on threads via
+    concurrent.futures.
+
+    Parameters:
+    n_workers: int
+        Number of ranks to be used as workers. If `None` is set, all cores of
+        the current system are used.
+        Default: None
+    """
+
+    def __init__(self, n_workers=None):
+        self.name = "Parallel context using threads via concurrent.futures."
+
+        # Save number of workers
+        if n_workers is None:
+            self.n_workers = int(multiprocessing.cpu_count() - 1)
+        else:
+            self.n_workers = n_workers
+
+    def execute(self):
+        """
+        Executes the current queue of jobs on the MPI workers, and returns all
+        results when done.
+
+        Returns:
+        --------
+        results : dict
+            A dictionary containing results of all submitted jobs. The keys are
+            set to the job ID, and integer number counting the submitted jobs,
+            starting at 0.
+        """
+        # Build thread executor and execute
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.n_workers) as executor:
+            results = executor.map(self.handler.worker, self.arg_list)
+
+        return [x for x in results]
+
+
+class ParallelContext_ConcurrentProcesses(ParallelContext):
+    """
+    This function initializes a parallel context based on processes via
+    concurrent.futures.
+
+    Parameters:
+    n_workers: int
+        Number of ranks to be used as workers. If `None` is set, all cores of
+        the current system are used.
+        Default: None
+    """
+
+    def __init__(self, n_workers=None):
+        self.name = "Parallel context using processes via concurrent.futures."
+
+        # Save number of workers
+        if n_workers is None:
+            self.n_workers = int(multiprocessing.cpu_count() - 1)
+        else:
+            self.n_workers = n_workers
+
+    def execute(self):
+        """
+        Executes the current queue of jobs on the MPI workers, and returns all
+        results when done.
+
+        Returns:
+        --------
+        results : dict
+            A dictionary containing results of all submitted jobs. The keys are
+            set to the job ID, and integer number counting the submitted jobs,
+            starting at 0.
+        """
+        # Build thread executor and execute
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self.n_workers) as executor:
+            results = executor.map(self.handler.worker, self.arg_list)
+
+        return [x for x in results]
 
 
 class ParallelContext_MPI(ParallelContext):
@@ -497,7 +574,7 @@ def spike_train_generation(rate, n, t_start, t_stop):
 def main():
     # Override global parallel context to use multithreading
     # TODO: For now, this does not work, thus stick with serial jobs
-    # global_pc.global_parallel_context = ParallelContext_Multithread()
+    # global_pc.global_parallel_context = ParallelContext_Multiprocessing()
 
     # Test if script is running with mpirun, e.g.,:
     #     mpirun -n <cores> python elephant/parallel.py
@@ -506,8 +583,6 @@ def main():
         test_mpi = False
     else:
         test_mpi = True
-    # TODO: For later, check why MPI fails so miserably, don't test for now
-    # test_mpi = False
 
     # Initialize serial context (take everything, default)
     pc_serial = ParallelContext()
@@ -516,8 +591,16 @@ def main():
     if test_mpi:
         pc_mpi = ParallelContext_MPI()
 
-    # Initialize MPI context (take everything, default)
-    pc_mp = ParallelContext_Multithread()
+    # Initialize multiprocessing context (take everything, default)
+    pc_mp = ParallelContext_Multiprocessing()
+
+    # Initialize concurrent.futures context with threads (take everything,
+    # default)
+    pc_cft = ParallelContext_ConcurrentThreads()
+
+    # Initialize concurrent.futures context with processes (take everything,
+    # default)
+    pc_cfp = ParallelContext_ConcurrentProcesses()
 
     # Initialize MPI context (use only ranks 3 and 4 as slave, 0 as master)
     # pc_mpi = ParallelContext_MPI(worker_ranks=[3, 4])
@@ -574,18 +657,34 @@ def main():
         arg_list=rate_list, handler=handler_generate)
     spiketrain_list_mp = pc_mp.execute()
     td = time.time()-td
-    print("MP generation done.\n")
+    print("Multiprocessing  generation done.\n")
 
     te = time.time()
+    pc_cft.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_cft = pc_cft.execute()
+    te = time.time()-te
+    print("Concurrent.futures threads generation done.\n")
+
+    tf = time.time()
+    pc_cfp.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_cfp = pc_cfp.execute()
+    tf = time.time()-tf
+    print("Concurrent.futures processes generation done.\n")
+
+    tg = time.time()
     spiketrain_list_decorated = spike_train_generation(
         rate_list, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
-    te = time.time()-te
+    tg = time.time()-tg
     print("Decorator-style generation done.\n")
 
     print(
         "Generation execution times:" +
-        "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s, Dec: %f s" %
-        (ta, tb, tc, td, te))
+        "\nStandard: %f s, Serial: %f s, MPI: %f s, "
+        "MP: %f s, Concurrent threads: %f s, Concurrent processes: %f s, "
+        "Dec: %f s\n\n" %
+        (ta, tb, tc, td, te, tf, tg))
 
     # =========================================================================
     # Test 2: Calculate a time histogram
@@ -598,7 +697,6 @@ def main():
     handler = JobQueueListExpandHandler(
         elephant.statistics.time_histogram, binsize=50 * pq.ms, output='rate')
 
-    # Test 1: Standard
     results_standard = {}
     ta = time.time()
     for i, s in enumerate(spiketrain_list_standard):
@@ -607,14 +705,12 @@ def main():
     ta = time.time()-ta
     print("Standard calculation done.\n")
 
-    # Test 2: Serial Handler
     tb = time.time()
     pc_serial.add_list_job(spiketrain_list_standard, handler)
     results_serial = pc_serial.execute()
     tb = time.time()-tb
     print("Serial calculation done.\n")
 
-    # Test 3: MPI Handler
     if test_mpi:
         tc = time.time()
         pc_mpi.add_list_job(spiketrain_list_standard, handler)
@@ -624,30 +720,46 @@ def main():
     else:
         tc = 999
 
-    # Test 4: MP Handler
     td = time.time()
     pc_mp.add_list_job(spiketrain_list_standard, handler)
     results_mp = pc_mp.execute()
     td = time.time()-td
-    print("MP calculation done.\n")
+    print("Multiprocessing calculation done.\n")
+
+    te = time.time()
+    pc_cft.add_list_job(spiketrain_list_standard, handler)
+    results_cft = pc_cft.execute()
+    te = time.time()-te
+    print("Concurrent.futures threads calculation done.\n")
+
+    tf = time.time()
+    pc_cfp.add_list_job(spiketrain_list_standard, handler)
+    results_cfp = pc_cfp.execute()
+    tf = time.time()-tf
+    print("Concurrent.futures processes calculation done.\n")
 
     print(
         "Calculation execution times:" +
-        "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s" %
-        (ta, tb, tc, td))
+        "\nStandard: %f s, Serial: %f s, MPI: %f s, "
+        "MP: %f s, Concurrent threads: %f s, Concurrent processes: %f s\n\n" %
+        (ta, tb, tc, td, te, tf))
 
     # These results should match, test last element of results
     cmp1 = len(rate_list)-1
     cmp2 = 5
-    print("Standard result: %f" % results_standard[cmp1][cmp2])
+    print("Result Assertions\nStandard result: %f" % results_standard[cmp1][cmp2])
     print("Serial result: %f" % results_serial[cmp1][cmp2])
     if test_mpi:
         print("MPI result: %f" % results_mpi[cmp1][cmp2])
     print("MP result: %f" % results_mp[cmp1][cmp2])
+    print("Concurrent.futures threads result: %f" % results_cft[cmp1][cmp2])
+    print("Concurrent.futures threads result: %f" % results_cfp[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_serial[cmp1][cmp2])
     if test_mpi:
         assert(results_standard[cmp1][cmp2] == results_mpi[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_mp[cmp1][cmp2])
+    assert(results_standard[cmp1][cmp2] == results_cft[cmp1][cmp2])
+    assert(results_standard[cmp1][cmp2] == results_cfp[cmp1][cmp2])
 
     # Terminate MPI
     if test_mpi:
