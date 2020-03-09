@@ -22,16 +22,18 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               spade,
                cell_assembly_detection,
+               spade,
                waveform_features,
-               parallel)
+               gpfa)
 
 try:
     from . import pandas_bridge
     from . import asset
+    from . import spade
 except ImportError:
     # requirements-extras are missing
+    # please run command `pip install -r requirements-extras.txt`
     pass
 
 

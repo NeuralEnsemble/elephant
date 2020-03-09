@@ -41,6 +41,8 @@ References:
 [1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted)
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import scipy.spatial
 import scipy.stats
@@ -67,7 +69,7 @@ def _signals_same_tstart(signals):
     signals : list
         a list of signals (e.g. AnalogSignals or SpikeTrains) having
         attribute `t_start`
-        
+
     Returns
     -------
     t_start : Quantity
@@ -272,7 +274,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _sample_quantiles(sample, p):
-    '''
+    r'''
     Given a sample of values extracted from a probability distribution,
     estimates the quantile(s) associated to p-value(s) p.
 
@@ -626,7 +628,7 @@ def mask_matrices(matrices, thresholds):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle):
-    '''
+    r'''
     Given a list of points on the real plane, identified by their absciss x
     and ordinate y, compute a stretched transformation of the Euclidean
     distance among each of them.
@@ -694,7 +696,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
 
 
 def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
-    '''
+    r'''
     Given a matrix mat, replaces its positive elements with integers
     representing different cluster ids. Each cluster comprises close-by
     elements.
@@ -890,7 +892,7 @@ def probability_matrix_montecarlo(
 def probability_matrix_analytical(
         spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
         fir_rates='estimate', kernel_width=100 * pq.ms, verbose=False):
-    '''
+    r'''
     Given a list of spike trains, approximates the cumulative probability of
     each entry in their intersection matrix (see: intersection_matrix()).
 
@@ -899,15 +901,15 @@ def probability_matrix_analytical(
 
         * Bin each spike train at the specified binsize: this yields a binary
           array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
-        * If required, estimate the rate profile of each spike train by 
-          convolving the binned array with a boxcar kernel of user-defined 
+        * If required, estimate the rate profile of each spike train by
+          convolving the binned array with a boxcar kernel of user-defined
           length
         * For each neuron k and each pair of bins i and j, compute the
           probability p_ijk that neuron k fired in both bins i and j.
         * Approximate the probability distribution of the intersection value
           at (i, j) by a Poisson distribution with mean parameter
           l = \sum_k (p_ijk),
-          justified by Le Cam's approximation of a sum of independent 
+          justified by Le Cam's approximation of a sum of independent
           Bernouilli random variables with a Poisson distribution.
 
     Parameters
@@ -1075,7 +1077,7 @@ def probability_matrix_analytical(
 
 
 def _jsf_uniform_orderstat_3d(u, alpha, n):
-    '''
+    r'''
     Considered n independent random variables X1, X2, ..., Xn all having
     uniform distribution in the interval (alpha, 1):
 

@@ -13,6 +13,8 @@ mathematical sense and time-scale dependent.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import quantities as pq
 import numpy as np
 import scipy as sp
