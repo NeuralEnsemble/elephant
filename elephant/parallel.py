@@ -242,17 +242,22 @@ class ParallelContext_MPI(ParallelContext):
                 result_type = req.wait()
 
                 if result_type == 0:
-                    # Get input
+                    # Get input as single value
                     req = self.comm.irecv(
                         source=0, tag=MPI_SEND_INPUT)
                     data = req.wait()
+                    # TODO: Remove print
+                    # print("Receiving: " + str(type(data)))
                 else:
                     # Get input as a list
                     data = []
+                    import copy
                     for _ in range(result_type):
                         req = self.comm.irecv(
                             source=0, tag=MPI_SEND_INPUT)
-                        data.append(req.wait())
+                        data.append(copy.deepcopy(req.wait()))
+                        # TODO: Remove print
+                        # print("Receiving list of: " + str(type(data[-1])))
 
                 # Execute handler
                 result = handler.worker(data)
@@ -321,6 +326,9 @@ class ParallelContext_MPI(ParallelContext):
                 idle_worker = self.worker_ranks[
                     idle_worker_index]
 
+                # TODO: Remove print
+                # print("Sending %i to %i" % (job_id, idle_worker))
+
                 next_arg = self.arg_list[job_id]
 
                 # Send handler
@@ -341,23 +349,22 @@ class ParallelContext_MPI(ParallelContext):
                     arg_type, idle_worker, tag=MPI_SEND_INPUT_TYPE)
                 req.wait()
 
-                # Send return value
+                # Send input value
                 if arg_type == 0:
                     # Single value
+                    # TODO: Remove print
+                    # print("Sending: " + str(type(next_arg)))
                     req = self.comm.isend(
                         next_arg, idle_worker, tag=MPI_SEND_INPUT)
                     req.wait()
                 else:
                     # List of values
                     for list_item in next_arg:
+                        # TODO: Remove print
+                        # print("Sending: " + str(type(list_item)))
                         req = self.comm.isend(
                             list_item, idle_worker, tag=MPI_SEND_INPUT)
                         req.wait()
-
-                # Send data
-                req = self.comm.isend(
-                    next_arg, idle_worker, tag=MPI_SEND_INPUT)
-                req.wait()
 
                 # Mark worker as busy and record its job ID
                 worker_busy[idle_worker_index] = True
@@ -477,7 +484,7 @@ class ParallelContextEmbarassingList():
         return embarassing_list_expand
 
 
-#@ParallelContextEmbarassingList()
+@ParallelContextEmbarassingList()
 def spike_train_generation(rate, n, t_start, t_stop):
     '''
     Returns a list of `n` spiketrains corresponding to the rates given in
@@ -485,15 +492,6 @@ def spike_train_generation(rate, n, t_start, t_stop):
     '''
     return [elephant.spike_train_generation.homogeneous_poisson_process(
             rate, t_start=0*pq.s, t_stop=20*pq.s) for _ in range(n)]
-
-
-def print_data(st):
-    '''
-    Returns a list of `n` spiketrains corresponding to the rates given in
-    `rate_list`.
-    '''
-    print(st.t_stop)
-    print(st.sampling_rate)
 
 
 def main():
@@ -528,8 +526,11 @@ def main():
 
     print("MP Context:\nWorkers: %i\n" % (pc_mp.n_workers))
     if test_mpi:
-        print("MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n" % (
-           pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size))
+        print(
+            "MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n"
+            "Workers: %i" % (
+                pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size,
+                pc_mpi.n_workers))
 
     # =========================================================================
     # Test 1: Spike train generation
@@ -539,7 +540,7 @@ def main():
     # n_spiketrains entries, each with the same rate. The rate for the i-th
     # inner list is given by rate_list[i-1].
     rate_list = list(np.linspace(10, 20, 20)*pq.Hz)
-    n_spiketrains = 10
+    n_spiketrains = 1000
 
     ta = time.time()
     spiketrain_list_standard = [
@@ -548,12 +549,6 @@ def main():
         for rate in rate_list]
     ta = time.time()-ta
     print("Standard generation done.\n")
-
-    # Create a new queue operating on the current context
-    handler_print = JobQueueListExpandHandler(print_data)
-    pc_mp.add_list_job(spiketrain_list_standard[0], handler_print)
-    _ = pc_mp.execute()
-    print("MPI-prerun generation done.\n")
 
     # Create a new queue operating on the current context
     handler_generate = JobQueueListExpandHandler(
@@ -567,14 +562,12 @@ def main():
     tb = time.time()-tb
     print("Serial generation done.\n")
 
+    tc = time.time()
     if test_mpi:
-        tc = time.time()
         pc_mpi.add_list_job(rate_list, handler_generate)
         spiketrain_list_mpi = pc_mpi.execute()
-        tc = time.time()-tc
-        print("MPI generation done.\n")
-    else:
-        tc = 999
+    tc = time.time()-tc
+    print("MPI generation done.\n")
 
     td = time.time()
     pc_mp.add_list_job(
@@ -584,8 +577,8 @@ def main():
     print("MP generation done.\n")
 
     te = time.time()
-#     spiketrain_list_decorated = spike_train_generation(
-#             rate_list, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
+    spiketrain_list_decorated = spike_train_generation(
+        rate_list, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
     te = time.time()-te
     print("Decorator-style generation done.\n")
 
@@ -643,13 +636,13 @@ def main():
         "\nStandard: %f s, Serial: %f s, MPI: %f s, MP: %f s" %
         (ta, tb, tc, td))
 
-    # These results should match
-    cmp1 = 15
+    # These results should match, test last element of results
+    cmp1 = len(rate_list)-1
     cmp2 = 5
     print("Standard result: %f" % results_standard[cmp1][cmp2])
     print("Serial result: %f" % results_serial[cmp1][cmp2])
     if test_mpi:
-        print("MPI result: %f" % results_mpi[99][cmp2])
+        print("MPI result: %f" % results_mpi[cmp1][cmp2])
     print("MP result: %f" % results_mp[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_serial[cmp1][cmp2])
     if test_mpi:
