@@ -352,6 +352,8 @@ def intersection_matrix(
     'x: ({}, {}) and y: ({}, {}).'.format(t_start_x, t_stop_x,
                                           t_start_y, t_stop_y)
 
+    # the starts have to be perfectly aligned for the binning to work
+    # the stops can differ without impacting the binning
     if t_start_x == t_start_y:
         if not _quantities_almost_equal(t_stop_x, t_stop_y):
             raise ValueError(msg)
@@ -688,10 +690,28 @@ def probability_matrix_montecarlo(
         width of the time bins used to compute the probability matrix
     dt : quantities.Quantity
         time span for which to consider the given SpikeTrains
-    t_start_x, t_start_y : quantities.Quantity, optional
-        time start of the binning for the first and second axes of the
-        intersection matrix, respectively.
+    t_start_x : pq.Quantity, optional
+        start time of the binning for the first axis of the intersection
+        matrix, respectively.
         If None (default) the attribute t_start of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_start_y : pq.Quantity, optional
+        start time of the binning for the second axis of the intersection
+        matrix
+        If None (default) the attribute t_start of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_stop_x : pq.Quantity, optional
+        stop time of the binning for the first axis of the intersection
+        matrix, respectively.
+        If None (default) the attribute t_stop of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_stop_y : pq.Quantity, optional
+        stop time of the binning for the second axis of the intersection
+        matrix
+        If None (default) the attribute t_stop of the SpikeTrains is used
         (if the same for all spike trains).
         Default: None
     surr_method : str, optional
@@ -728,6 +748,15 @@ def probability_matrix_montecarlo(
         estimated probability of having an overlap between bins i and j
         STRICTLY LOWER than the observed overlap, under the null hypothesis
         of independence of the input spike trains.
+    imat : np.ndarray of float
+        the intersection matrix of a list of spike trains. Has shape (n,n),
+        where n is the number of bins time was discretized in.
+    x_edges : np.ndarray
+        edges of the bins used for the horizontal axis of imat. If imat is
+        a matrix of shape (n, n), x_edges has length n+1
+    y_edges : np.ndarray
+        edges of the bins used for the vertical axis of imat. If imat is
+        a matrix of shape (n, n), y_edges has length n+1
 
     See also
     --------
@@ -739,6 +768,10 @@ def probability_matrix_montecarlo(
         spiketrains, binsize=binsize, spiketrains_y=spiketrains_y,
         t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x,
         t_stop_y=t_stop_y)
+
+    symmetric = False
+    if _quantities_almost_equal(x_edges[0], y_edges[0]):
+        symmetric = True
 
     # Generate surrogate spike trains as a list surrs
     # Compute the p-value matrix pmat; pmat[i, j] counts the fraction of
@@ -752,7 +785,7 @@ def probability_matrix_montecarlo(
         surrs = [spike_train_surrogates.surrogates(st, n=1,
                                                    surr_method=surr_method,
                                                    dt=j, decimals=None,
-                                                   edges=True)
+                                                   edges=True)[0]
                  for st in spiketrains]
 
         if spiketrains_y is None:
@@ -760,7 +793,7 @@ def probability_matrix_montecarlo(
         else:
             surrs_y = [spike_train_surrogates.surrogates(
                            st, n=1, surr_method=surr_method, dt=j,
-                           decimals=None, edges=True)
+                           decimals=None, edges=True)[0]
                        for st in spiketrains_y]
 
         imat_surr, xx, yy = intersection_matrix(  # compute the related imat
@@ -772,12 +805,73 @@ def probability_matrix_montecarlo(
 
         del imat_surr
 
-    if mpi_accelerated:
-        pmat = comm.reduce(pmat, op=MPI.SUM, root=0)
+    pmat = comm.allreduce(pmat, op=MPI.SUM, root=0)
 
     pmat = pmat * 1. / n_surr
 
-    return imat, pmat, x_edges, y_edges
+    if symmetric:
+        pmat[np.diag_indices_from(pmat)] = 0.5
+
+    return pmat, imat, x_edges, y_edges
+
+
+def _rate_of_binned_spiketrain(binned_sts, kernel_width,
+                               binsize, verbose=False):
+    """TODO: Docstring for rate_of_binned_spiketrain.
+
+    :binned_sts: TODO
+    :verbose: TODO
+    :returns: TODO
+
+    """
+    if verbose is True:
+        print('compute rates by boxcar-kernel convolution...')
+
+    # Create the boxcar kernel and convolve it with the binned spike trains
+    k = int((kernel_width / binsize).rescale(pq.dimensionless))
+    kernel = np.ones(k) * 1. / k
+    rate = np.vstack([np.convolve(bst, kernel, mode='same')
+                      for bst in binned_sts])
+
+    # The convolution results in an array decreasing at the borders due
+    # to absence of spikes beyond the borders. Replace the first and last
+    # (k//2) elements with the (k//2)-th / (n-k//2)-th ones, respectively
+    k2 = k // 2
+    for i in range(rate.shape[0]):
+        rate[i, :k2] = rate[i, k2]
+        rate[i, -k2:] = rate[i, -k2 - 1]
+
+    # Multiply the firing rates by the proper unit
+    rate = rate * (1. / binsize).rescale('Hz')
+
+    return rate
+
+
+def _interpolate_signals(signals, sampling_times, verbose=False):
+    """TODO: Docstring for _interpolate_at_bin_edges.
+
+    :signal: TODO
+    :verbose: TODO
+    :returns: TODO
+
+    """
+    # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
+    for i, signal in enumerate(signals):
+        if len(signal.shape) == 2:
+            signals[i] = signal.reshape((-1,))
+        elif len(signal.shape) > 2:
+            raise ValueError(
+                'elements in fir_rates have too many dimensions')
+
+    if verbose is True:
+        print('create time slices of the rates...')
+
+    # Interpolate in the time bins
+    interpolated_signal = np.vstack([_analog_signal_step_interp(
+                                signal, sampling_times).rescale('Hz').magnitude
+                            for signal in signals]) * pq.Hz
+
+    return interpolated_signal
 
 
 def probability_matrix_analytical(
@@ -812,12 +906,28 @@ def probability_matrix_analytical(
         p-values
     binsize : quantities.Quantity
         width of the time bins used to compute the probability matrix
-    dt : quantities.Quantity
-        time span for which to consider the given SpikeTrains
-    t_start_x, t_start_y : quantities.Quantity, optional
-        time start of the binning for the first and second axes of the
-        intersection matrix, respectively.
+    t_start_x : pq.Quantity, optional
+        start time of the binning for the first axis of the intersection
+        matrix, respectively.
         If None (default) the attribute t_start of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_start_y : pq.Quantity, optional
+        start time of the binning for the second axis of the intersection
+        matrix
+        If None (default) the attribute t_start of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_stop_x : pq.Quantity, optional
+        stop time of the binning for the first axis of the intersection
+        matrix, respectively.
+        If None (default) the attribute t_stop of the SpikeTrains is used
+        (if the same for all spike trains).
+        Default: None
+    t_stop_y : pq.Quantity, optional
+        stop time of the binning for the second axis of the intersection
+        matrix
+        If None (default) the attribute t_stop of the SpikeTrains is used
         (if the same for all spike trains).
         Default: None
     fir_rates: list of neo.AnalogSignals or 'estimate', optional
@@ -840,6 +950,9 @@ def probability_matrix_analytical(
         estimated probability of having an overlap between bins i and j
         STRICTLY LOWER THAN the observed overlap, under the null hypothesis
         of independence of the input spike trains.
+    imat : np.ndarray of float
+        the intersection matrix of a list of spike trains. Has shape (n,n),
+        where n is the number of bins time was discretized in.
     x_edges : numpy.ndarray
         edges of the bins used for the horizontal axis of pmat. If pmat is
         a matrix of shape (n, n), x_edges has length n+1
@@ -848,14 +961,12 @@ def probability_matrix_analytical(
         a matrix of shape (n, n), y_edges has length n+1
     """
 
-    # TODO: Don't do anything twice for x and y if they are the same
+    symmetric = False
 
     if spiketrains_y is None:
+        symmetric = True
         spiketrains_y = spiketrains
 
-    # TODO: think about maybe passing the binned spiketrains to
-    #       intersection_matrix instead of spiketrains and include
-    #       a type check to skip the second binning
     # Bin the spike trains
     bsts_x = conv.BinnedSpikeTrain(
         spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x)
@@ -874,92 +985,31 @@ def probability_matrix_analytical(
 
     # If rates are to be estimated, create the rate profiles as Quantity
     # objects obtained by boxcar-kernel convolution
-    # TODO: this is duplicated for x and y
-    # TODO: use statistics.instantaneous_rate instead (?!)
     if fir_rates_x == 'estimate':
-        if verbose is True:
-            print('compute rates by boxcar-kernel convolution...')
-
-        # Create the boxcar kernel and convolve it with the binned spike trains
-        k = int((kernel_width / binsize).rescale(pq.dimensionless))
-        kernel = np.ones(k) * 1. / k
-        fir_rate_x = np.vstack([np.convolve(bst, kernel, mode='same')
-                                for bst in bsts_x_matrix])
-
-        # The convolution results in an array decreasing at the borders due
-        # to absence of spikes beyond the borders. Replace the first and last
-        # (k//2) elements with the (k//2)-th / (n-k//2)-th ones, respectively
-        k2 = k // 2
-        for i in range(fir_rate_x.shape[0]):
-            fir_rate_x[i, :k2] = fir_rate_x[i, k2]
-            fir_rate_x[i, -k2:] = fir_rate_x[i, -k2 - 1]
-
-        # Multiply the firing rates by the proper unit
-        fir_rate_x = fir_rate_x * (1. / binsize).rescale('Hz')
+        fir_rate_x = _rate_of_binned_spiketrain(bsts_x_matrix, kernel_width,
+                                                binsize, verbose)
 
     # If rates provided as lists of AnalogSignals, create time slices for both
     # axes, interpolate in the time bins of interest and convert to Quantity
     elif isinstance(fir_rates_x, list):
-        # Reshape all rates to one-dimensional array object (e.g. AnalogSignal)
-        for i, rate in enumerate(fir_rates_x):
-            if len(rate.shape) == 2:
-                fir_rates_x[i] = rate.reshape((-1,))
-            elif len(rate.shape) > 2:
-                raise ValueError(
-                    'elements in fir_rates have too many dimensions')
-
-        if verbose is True:
-            print('create time slices of the rates...')
-
-        # Interpolate in the time bins
-        times_x = bsts_x.bin_edges[:-1]
-        fir_rate_x = pq.Hz * np.vstack([_analog_signal_step_interp(
-            signal, times_x).rescale('Hz').magnitude for signal in
-                                        fir_rates_x])
+        fir_rate_x = _interpolate_signals(fir_rates_x, bsts_x.bin_edges[:-1],
+                                          verbose)
 
     else:
         raise ValueError('fir_rates_x must be a list or the string "estimate"')
 
-    if fir_rates_y == 'estimate':
-        if verbose is True:
-            print('compute rates by boxcar-kernel convolution...')
+    if symmetric:
+        fir_rate_y = fir_rate_x
 
-        # Create the boxcar kernel and convolve it with the binned spike trains
-        k = int((kernel_width / binsize).rescale(pq.dimensionless))
-        kernel = np.ones(k) * 1. / k
-        fir_rate_y = np.vstack([np.convolve(bst, kernel, mode='same')
-                                for bst in bsts_y_matrix])
-
-        # The convolution results in an array decreasing at the borders due
-        # to absence of spikes beyond the borders. Replace the first and last
-        # (k//2) elements with the (k//2)-th / (n-k//2)-th ones, respectively
-        k2 = k // 2
-        for i in range(fir_rate_y.shape[0]):
-            fir_rate_y[i, :k2] = fir_rate_y[i, k2]
-            fir_rate_y[i, -k2:] = fir_rate_y[i, -k2 - 1]
-
-        # Multiply the firing rates by the proper unit
-        fir_rate_y = fir_rate_y * (1. / binsize).rescale('Hz')
+    elif fir_rates_y == 'estimate':
+        fir_rate_y = _rate_of_binned_spiketrain(bsts_y_matrix, kernel_width,
+                                                binsize, verbose)
 
     # If rates provided as lists of AnalogSignals, create time slices for both
     # axes, interpolate in the time bins of interest and convert to Quantity
     elif isinstance(fir_rates_y, list):
-        # Reshape all rates to one-dimensional array object (e.g. AnalogSignal)
-        for i, rate in enumerate(fir_rates_y):
-            if len(rate.shape) == 2:
-                fir_rates_y[i] = rate.reshape((-1,))
-            elif len(rate.shape) > 2:
-                raise ValueError(
-                    'elements in fir_rates_y have too many dimensions')
-
-        if verbose is True:
-            print('create time slices of the rates...')
-
-        # Interpolate in the time bins
-        times_y = bsts_y.bin_edges[:-1]
-        fir_rate_y = pq.Hz * np.vstack([_analog_signal_step_interp(
-            signal, times_y).rescale('Hz').magnitude for signal in
-                                        fir_rates_y])
+        fir_rate_y = _interpolate_signals(fir_rates_y, bsts_y.bin_edges[:-1],
+                                          verbose)
 
     else:
         raise ValueError('fir_rates_y must be a list or the string "estimate"')
@@ -971,8 +1021,11 @@ def probability_matrix_analytical(
 
     spike_probs_x = [1. - np.exp(-(rate * binsize).rescale(
         pq.dimensionless).magnitude) for rate in fir_rate_x]
-    spike_probs_y = [1. - np.exp(-(rate * binsize).rescale(
-        pq.dimensionless).magnitude) for rate in fir_rate_y]
+    if symmetric:
+        spike_probs_y = spike_probs_x
+    else:
+        spike_probs_y = [1. - np.exp(-(rate * binsize).rescale(
+            pq.dimensionless).magnitude) for rate in fir_rate_y]
 
     # For each neuron k compute the matrix of probabilities p_ijk that neuron
     # k spikes in both bins i and j. (For i = j it's just spike_probs[k][i])
@@ -1006,15 +1059,13 @@ def probability_matrix_analytical(
         for i in range(imat.shape[0]):
             pmat[i] = comm.bcast(pmat[i], root=i % size)
 
-    # Substitute 0.5 to the elements along the main diagonal
-    diag_id, elems = _reference_diagonal(xx, yy)
-    if diag_id is not None:
+    if symmetric:
+        # Substitute 0.5 to the elements along the main diagonal
         if verbose is True:
             print("substitute 0.5 to elements along the main diagonal...")
-        for elem in elems:
-            pmat[elem[0], elem[1]] = 0.5
+        pmat[np.diag_indices_from(pmat)] = 0.5
 
-    return imat, pmat, xx, yy
+    return pmat, imat, xx, yy
 
 
 def _wrong_order(a):
@@ -1064,7 +1115,8 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
         Note: the joint probability matrix computed for the ASSET analysis
         is 1-S.
     """
-    d, A, B = u.shape
+    # TODO: fix u.shape in docstring
+    d, num_p_vals = u.shape
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
     # used to compute the integral as a sum over all possibilities
@@ -1077,13 +1129,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     # Add to the 3D matrix u a bottom layer equal to alpha and a
     # top layer equal to 1. Then compute the difference du along
     # the first dimension.
-    du = np.diff(u, prepend=alpha, append=1, axis=0)
-
-    # in order to avoid doing the same calculation multiple times:
-    # find all unique sets of values in du and store the corresponding indices
-    # flatten the second and third dimension in order to use np.unique
-    du = du.reshape(d+1, A*B).T
-    du, du_indices = np.unique(du, axis=0, return_inverse=True)
+    du = np.diff(u, prepend=alpha, append=1, axis=1)
 
     # precompute logarithms
     # ignore warnings about infinities, see inside the loop:
@@ -1163,13 +1209,13 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
 
         # We need to return the collected totals instead of the local P_total
         # restore the original shape using the stored indices
-        return totals[du_indices].reshape((A, B))
+        return totals
 
     # restore the original shape using the stored indices
-    return P_total[du_indices].reshape((A, B))
+    return P_total
 
 
-def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
+def _pmat_neighbors(mat, filter_shape, nr_largest=None):
     """
     Build the 3D matrix L of largest neighbors of elements in a 2D matrix mat.
 
@@ -1178,8 +1224,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     to L[i, j, :].
     The zone around mat[i, j] where largest neighbors are collected from is
     a rectangular area (kernel) of shape (l, w) = filter_shape centered around
-    mat[i, j] and aligned along the diagonal where mat[i, j] lies into
-    (if diag=0, default) or along the anti-diagonal (is diag = 1)
+    mat[i, j] and aligned along the diagonal.
 
     Arguments
     ---------
@@ -1194,13 +1239,6 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
         If None (default) the filter length l is used
         Default: 0
 
-    diag : int, optional
-        which diagonal of mat[i, j] to align the kernel to in order to
-        find its largest neighbors.
-        * 0: main diagonal
-        * 1: anti-diagonal
-        Default: 0
-
     Returns
     -------
     L : ndarray
@@ -1211,20 +1249,21 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     l, w = filter_shape
     d = l if nr_largest is None else nr_largest
 
-    # TODO: what to do close to the diagonal if the matrix is symmetric?
-    #       flatten lmat, consider this in jsf_uniform_orderstat
+    # if the matrix is symmetric the diagonal was set to 0.5
+    # when computing the probability matrix
+    symmetric = np.all(mat[np.diag_indices_from(mat)] == 0.5)
+
     # Check consistent arguments
-    assert diag == 0 or diag == 1, \
-        'diag must be 0 (45 degree filtering) or 1 (135 degree filtering)'
     assert w < l, 'w must be lower than l'
-    # TODO: maybe warn the user if l is an even number?
+    if not ((w % 2) and (l % 2)):
+        warnings.warn('The kernel is not centered on the datapoint in whose'
+                      'calculation it is used. Consider using odd values'
+                      'for both entries of filter_shape.')
 
     # Construct the kernel
     filt = np.ones((l, l), dtype=np.float32)
     filt = np.triu(filt, -w)
     filt = np.tril(filt, w)
-    if diag == 1:
-        filt = np.fliplr(filt)
 
     # Convert mat values to floats, and replaces np.infs with specified input
     # values
@@ -1233,47 +1272,34 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
     # Initialize the matrix of d-largest values as a matrix of zeroes
     lmat = np.zeros((d, mat.shape[0], mat.shape[1]), dtype=np.float32)
 
-    # TODO: make this on a 3D matrix to parallelize...
     N_bin_y = mat.shape[0]
     N_bin_x = mat.shape[1]
-    bin_range_y = range(N_bin_y - l + 1)
-    bin_range_x = range(N_bin_x - l + 1)
+    # if the matrix is symmetric do not use kernel positions intersected
+    # by the diagonal
+    if symmetric:
+        bin_range_y = trange(l, N_bin_y - l + 1)
+    else:
+        bin_range_y = trange(N_bin_y - l + 1)
+        bin_range_x = trange(N_bin_x - l + 1)
 
-    # TODO: nicify and/or comment
-    # Compute fmat
-    try:  # try by stacking the different patches of each row of mat
-        print('pmat neighbours fast version')
-        flattened_filt = filt.flatten()
-        for y in bin_range_y:
-            # creates a 2D matrix of shape (N_bin-l+1, l**2), where each row
-            # is a flattened patch (length l**2) from the y-th row of mat
-            row_patches = np.zeros((len(bin_range_x), l ** 2))
-            for x in bin_range_x:
-                row_patches[x, :] = (mat[y:y + l, x:x + l]).flatten()
-
-            # take the l largest values in each row (patch) and assign them
-            # to the corresponding row in lmat
-            largest_vals = np.sort(
-                row_patches * flattened_filt, axis=1)[:, -d:]
-
-            lmat[:, y + (l // 2),
-                 (l // 2): (l // 2) + N_bin_x - l + 1] = largest_vals.T
-
-    except MemoryError:  # if too large, do it serially by for loops
-        print('pmat neighbours slow version due to memory error')
-        for y in bin_range_y:  # one step to the right;
-            for x in bin_range_x:  # one step down
-                patch = mat[y: y + l, x: x + l]
-                mskd = np.multiply(filt, patch)
-                largest_vals = np.sort(d, mskd.flatten())[-d:]
-                lmat[:, y + (l // 2), x + (l // 2)] = largest_vals
+    # compute matrix of largest values
+    # TODO: document the behaviour of only keeping the lower triangle
+    for y in bin_range_y:
+        if symmetric:
+            # x range depends on y position
+            bin_range_x = trange(y - l + 1)
+        for x in bin_range_x:
+            patch = mat[y: y + l, x: x + l]
+            mskd = np.multiply(filt, patch)
+            largest_vals = np.sort(mskd, axis=None)[-d:]
+            lmat[:, y + (l // 2), x + (l // 2)] = largest_vals
 
     return lmat
 
 
 def joint_probability_matrix(
         pmat, filter_shape, nr_largest=None, alpha=0, pvmin=1e-5,
-        verbose=False, old_calculation=False):
+        verbose=False):
     """
     Map a probability matrix pmat to a joint probability matrix jmat, where
     jmat[i, j] is the joint p-value of the largest neighbors of pmat[i, j].
@@ -1328,19 +1354,31 @@ def joint_probability_matrix(
     >>> jmat = joint_probability_matrix(pmat, filter_shape=(fl, fw))
 
     """
-    # TODO: how to deal with symmetric matrices?
 
     # Find for each P_ij in the probability matrix its neighbors and maximize
     # them by the maximum value 1-pvmin
     pmat_neighb = _pmat_neighbors(
-        pmat, filter_shape=filter_shape, nr_largest=nr_largest, diag=0)
+        pmat, filter_shape=filter_shape, nr_largest=nr_largest)
 
     pmat_neighb = np.minimum(pmat_neighb, 1. - pvmin)
+
+    # in order to avoid doing the same calculation multiple times:
+    # find all unique sets of values in pmat_neighb
+    # and store the corresponding indices
+    # flatten the second and third dimension in order to use np.unique
+    num_p_vals = np.prod(pmat.shape)
+    pmat_neighb = pmat_neighb.reshape(nr_largest,
+                                      num_p_vals).T
+    pmat_neighb, pmat_neighb_indices = np.unique(pmat_neighb, axis=0,
+                                                 return_inverse=True)
 
     # Compute the joint p-value matrix jpvmat
     l, w = filter_shape
     n = l * (1 + 2 * w) - w * (w + 1)  # number of entries covered by kernel
     jpvmat = _jsf_uniform_orderstat_3d(pmat_neighb, alpha, n, verbose=verbose)
+
+    # restore the original shape using the stored indices
+    jpvmat = jpvmat[pmat_neighb_indices].reshape((pmat.shape))
 
     return 1. - jpvmat
 
