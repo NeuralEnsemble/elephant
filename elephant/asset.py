@@ -347,10 +347,10 @@ def intersection_matrix(
     if t_stop_y is None:
         t_stop_y = _signals_same_tstop(spiketrains_y)
 
-    msg = 'The time intervals for x and y need to be either identical'
-    'or fully disjoint, but they are:'
-    'x: ({}, {}) and y: ({}, {}).'.format(t_start_x, t_stop_x,
-                                          t_start_y, t_stop_y)
+    msg = 'The time intervals for x and y need to be either identical '\
+          'or fully disjoint, but they are:\n'\
+          'x: ({}, {}) and y: ({}, {}).'.format(t_start_x, t_stop_x,
+                                                t_start_y, t_stop_y)
 
     # the starts have to be perfectly aligned for the binning to work
     # the stops can differ without impacting the binning
