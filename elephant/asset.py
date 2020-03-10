@@ -817,12 +817,8 @@ def probability_matrix_montecarlo(
 
 def _rate_of_binned_spiketrain(binned_sts, kernel_width,
                                binsize, verbose=False):
-    """TODO: Docstring for rate_of_binned_spiketrain.
-
-    :binned_sts: TODO
-    :verbose: TODO
-    :returns: TODO
-
+    """Calculate the rate of binned spiketrains using convolution with
+    a boxcar kernel.
     """
     if verbose is True:
         print('compute rates by boxcar-kernel convolution...')
@@ -848,12 +844,7 @@ def _rate_of_binned_spiketrain(binned_sts, kernel_width,
 
 
 def _interpolate_signals(signals, sampling_times, verbose=False):
-    """TODO: Docstring for _interpolate_at_bin_edges.
-
-    :signal: TODO
-    :verbose: TODO
-    :returns: TODO
-
+    """Interpolate signals at given sampling times.
     """
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
@@ -1082,20 +1073,20 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
 
     .. centered::  Xi ~ Uniform(alpha, 1),
 
-    with alpha \in [0, 1), and given a 3D matrix U = (u_ijk) where each U_ij
-    is an array of length d: U_ij = [u0, u1, ..., u_{d-1}] of
+    with alpha \in [0, 1), and given a 2D matrix U = (u_ij) where each U_i
+    is an array of length d: U_i = [u0, u1, ..., u_{d-1}] of
     quantiles, with u1 <= u2 <= ... <= un, computes the joint survival function
     (jsf) of the d highest order statistics (U_{n-d+1}, U_{n-d+2}, ..., U_n),
-    where U_i := "i-th highest X's" at each u_ij, i.e.:
+    where U_k := "k-th highest X's" at each u_i, i.e.:
 
-    .. centered::  jsf(u_ij) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
+    .. centered::  jsf(u_i) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
 
 
     Arguments
     ---------
-    u : numpy.ndarray of shape (A, B, d)
-        3D matrix of floats between 0 and 1.
-        Each vertical column u_ij is an array of length d, considered a set of
+    u : numpy.ndarray of shape (A, d)
+        2D matrix of floats between 0 and 1.
+        Each row u_i is an array of length d, considered a set of
         `d` largest order statistics extracted from a sample of `n` random
         variables whose cdf is F(x)=x for each x.
         The routine computes the joint cumulative probability of the `d`
@@ -1109,13 +1100,12 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
 
     Returns
     -------
-    S : numpy.ndarray of shape (A, B)
+    S : numpy.ndarray of shape (A, )
         matrix of joint survival probabilities. s_ij is the joint survival
         probability of the values {u_ijk, k=0, ..., d-1}.
         Note: the joint probability matrix computed for the ASSET analysis
         is 1-S.
     """
-    # TODO: fix u.shape in docstring
     d, num_p_vals = u.shape
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
@@ -1225,6 +1215,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
     The zone around mat[i, j] where largest neighbors are collected from is
     a rectangular area (kernel) of shape (l, w) = filter_shape centered around
     mat[i, j] and aligned along the diagonal.
+    If mat is symmetric, only the triangle below the diagonal is considered.
 
     Arguments
     ---------
@@ -1283,7 +1274,6 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
         bin_range_x = trange(N_bin_x - l + 1)
 
     # compute matrix of largest values
-    # TODO: document the behaviour of only keeping the lower triangle
     for y in bin_range_y:
         if symmetric:
             # x range depends on y position
