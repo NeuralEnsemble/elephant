@@ -16,6 +16,13 @@ import multiprocessing
 import concurrent.futures
 from mpi4py import MPI
 
+# TODO investigate MPI futures
+from mpi4py import futures as mpifutures
+
+# TODO Investigate dill
+# import dill
+# MPI.pickle.dumps = dill.dumps
+# MPI.pickle.loads = dill.loads
 
 # MPI message tags
 MPI_SEND_HANDLER = 1
@@ -46,6 +53,27 @@ class ParallelContext(object):
     def add_list_job(self, arg_list, handler):
         self.arg_list = arg_list
         self.handler = handler
+
+    def add_sliding_window_job(
+            self, t_start, t_stop, window_size, window_step, handler):
+
+        # Save parameters for window sliding
+        self.t_start = t_start
+        self.t_stop = t_stop
+        self.window_size = window_size
+        self.window_step = window_step
+        self.handler = handler
+
+        # Create sliding windows
+        self.arg_list = []
+        num_windows = int(
+            ((t_stop - window_size - t_start) /
+             window_step).simplified.magnitude)
+        for window_start in range(num_windows):
+            self.arg_list.append([
+                t_start + window_start * window_step,
+                t_start + window_start * window_step + window_size]
+                )
 
     def execute(self):
         """
@@ -210,6 +238,58 @@ class ParallelContext_ConcurrentProcesses(ParallelContext):
         # Build thread executor and execute
         with concurrent.futures.ProcessPoolExecutor(
                 max_workers=self.n_workers) as executor:
+            results = executor.map(self.handler.worker, self.arg_list)
+
+        return [x for x in results]
+
+
+class ParallelContext_ConcurrentMPI(ParallelContext):
+    """
+    This function initializes a parallel context based on processes via
+    concurrent.futures.
+
+    Parameters:
+    n_workers: int
+        Number of ranks to be used as workers. If `None` is set, all cores of
+        the current system are used.
+        Default: None
+    """
+
+    def __init__(self, comm=None, n_workers=None):
+        self.name = "Parallel context using MPI via concurrent.futures."
+
+        # Save communicator
+        if comm is None:
+            self.comm = MPI.COMM_WORLD
+        else:
+            self.comm = comm
+
+        # Get size of current MPI communicator
+        self.comm_size = self.comm.Get_size()
+
+        # Save number of workers
+        self.n_workers = self.comm_size
+
+        # Save status and name of the rank
+        self.status = MPI.Status()
+        self.rank_name = MPI.Get_processor_name()
+        self.rank = self.comm.Get_rank()
+
+    def execute(self):
+        """
+        Executes the current queue of jobs on the MPI workers, and returns all
+        results when done.
+
+        Returns:
+        --------
+        results : dict
+            A dictionary containing results of all submitted jobs. The keys are
+            set to the job ID, and integer number counting the submitted jobs,
+            starting at 0.
+        """
+        # Build thread executor and execute
+        with mpifutures.MPICommExecutor(
+                comm=self.comm, root=0) as executor:
             results = executor.map(self.handler.worker, self.arg_list)
 
         return [x for x in results]
@@ -512,8 +592,8 @@ class JobQueueHandlers(object):
 
 class JobQueueListExpandHandler(JobQueueHandlers):
     """
-    Jobs that call an Elephant with all elements of a list as the first of the
-    parameters.
+    Jobs that call an Elephant function with all elements of a list as the
+    first of the parameters.
 
     Parameters:
     -----------
@@ -532,6 +612,46 @@ class JobQueueListExpandHandler(JobQueueHandlers):
 
     def worker(self, single_input):
         return self.func(single_input, *self.args, **self.kwargs)
+
+
+class JobQueueSlidingWindowHandler(JobQueueHandlers):
+    """
+    Jobs that call an Elephant function with data chopped in a sliding window.
+
+    Parameters:
+    -----------
+    func : function
+        This is the underlying function to be executed.
+    args : list
+        This is the first argument to `func`, and it will be cut by the sliding
+        window.
+    args : list
+        Arguments to pass to func, with the exception of
+        the first argument (which is later given by iteration of the list).
+    kwargs : dict
+        Keyword arguments to pass to func.
+    """
+    def __init__(self, func, cut_arg, *args, **kwargs):
+        self.func = func
+        self.cut_arg = cut_arg
+        self.args = args
+        self.kwargs = kwargs
+
+    def worker(self, cut_input):
+        return self.func(self.cut_arg, *self.args, **self.kwargs)
+        print(cut_input)
+        print(self.cut_arg[0][0])
+        print(self.kwargs)
+        
+#         return self.func(
+#             self.cut_arg,
+#             *self.args, **self.kwargs)
+
+#         return self.func(
+#             [_.time_slice(
+#                     cut_input['t_start'], cut_input['t_stop'])
+#                 for _ in self.cut_arg],
+#             *self.args, **self.kwargs)
 
 
 class ParallelContextEmbarassingList():
@@ -574,7 +694,7 @@ def spike_train_generation(rate, n, t_start, t_stop):
 def main():
     # Override global parallel context to use multithreading
     # TODO: For now, this does not work, thus stick with serial jobs
-    # global_pc.global_parallel_context = ParallelContext_Multiprocessing()
+    global_pc.global_parallel_context = ParallelContext_ConcurrentThreads()
 
     # Test if script is running with mpirun, e.g.,:
     #     mpirun -n <cores> python elephant/parallel.py
@@ -602,6 +722,10 @@ def main():
     # default)
     pc_cfp = ParallelContext_ConcurrentProcesses()
 
+    # Initialize concurrent.futures context with MPI (take everything,
+    # default)
+    # pc_cfm = ParallelContext_ConcurrentMPI()
+
     # Initialize MPI context (use only ranks 3 and 4 as slave, 0 as master)
     # pc_mpi = ParallelContext_MPI(worker_ranks=[3, 4])
     # if pc_mpi.rank != 0:
@@ -611,7 +735,7 @@ def main():
     if test_mpi:
         print(
             "MPI Context:\nMaster: %s, rank %i; Communicator size: %i\n"
-            "Workers: %i" % (
+            "Workers: %i\n" % (
                 pc_mpi.rank_name, pc_mpi.rank, pc_mpi.comm_size,
                 pc_mpi.n_workers))
 
@@ -639,52 +763,59 @@ def main():
         n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
 
     tb = time.time()
-    pc_serial.add_list_job(
-        arg_list=rate_list, handler=handler_generate)
-    spiketrain_list_serial = pc_serial.execute()
+#     pc_serial.add_list_job(
+#         arg_list=rate_list, handler=handler_generate)
+#     spiketrain_list_serial = pc_serial.execute()
     tb = time.time()-tb
     print("Serial generation done.\n")
 
     tc = time.time()
-    if test_mpi:
-        pc_mpi.add_list_job(rate_list, handler_generate)
-        spiketrain_list_mpi = pc_mpi.execute()
+#     if test_mpi:
+#         pc_mpi.add_list_job(arg_list=rate_list, handler=handler_generate)
+#         spiketrain_list_mpi = pc_mpi.execute()
     tc = time.time()-tc
     print("MPI generation done.\n")
 
     td = time.time()
-    pc_mp.add_list_job(
-        arg_list=rate_list, handler=handler_generate)
-    spiketrain_list_mp = pc_mp.execute()
+#     pc_mp.add_list_job(
+#         arg_list=rate_list, handler=handler_generate)
+#     spiketrain_list_mp = pc_mp.execute()
     td = time.time()-td
     print("Multiprocessing  generation done.\n")
 
     te = time.time()
-    pc_cft.add_list_job(
-        arg_list=rate_list, handler=handler_generate)
-    spiketrain_list_cft = pc_cft.execute()
+#     pc_cft.add_list_job(
+#         arg_list=rate_list, handler=handler_generate)
+#     spiketrain_list_cft = pc_cft.execute()
     te = time.time()-te
     print("Concurrent.futures threads generation done.\n")
 
     tf = time.time()
-    pc_cfp.add_list_job(
-        arg_list=rate_list, handler=handler_generate)
-    spiketrain_list_cfp = pc_cfp.execute()
+#     pc_cfp.add_list_job(
+#         arg_list=rate_list, handler=handler_generate)
+#     spiketrain_list_cfp = pc_cfp.execute()
     tf = time.time()-tf
     print("Concurrent.futures processes generation done.\n")
 
     tg = time.time()
-    spiketrain_list_decorated = spike_train_generation(
-        rate_list, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
+#     pc_cfm.add_list_job(
+#         arg_list=rate_list, handler=handler_generate)
+#     spiketrain_list_cfm = pc_cfm.execute()
     tg = time.time()-tg
+    print("Concurrent.futures MPI generation done.\n")
+
+    th = time.time()
+#     spiketrain_list_decorated = spike_train_generation(
+#         rate_list, n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
+    th = time.time()-th
     print("Decorator-style generation done.\n")
 
     print(
         "Generation execution times:" +
         "\nStandard: %f s, Serial: %f s, MPI: %f s, "
         "MP: %f s, Concurrent threads: %f s, Concurrent processes: %f s, "
-        "Dec: %f s\n\n" %
-        (ta, tb, tc, td, te, tf, tg))
+        "Concurrent MPI: %f s, Dec: %f s\n\n" %
+        (ta, tb, tc, td, te, tf, tg, th))
 
     # =========================================================================
     # Test 2: Calculate a time histogram
@@ -694,47 +825,45 @@ def main():
     # spiketrains.
 
     # Create a new queue operating on the current context
-    handler = JobQueueListExpandHandler(
+    handler_calc = JobQueueListExpandHandler(
         elephant.statistics.time_histogram, binsize=50 * pq.ms, output='rate')
 
     results_standard = {}
     ta = time.time()
-    for i, s in enumerate(spiketrain_list_standard):
-        results_standard[i] = elephant.statistics.time_histogram(
-            s, binsize=50 * pq.ms, output='rate')
+#     for i, s in enumerate(spiketrain_list_standard):
+#         results_standard[i] = elephant.statistics.time_histogram(
+#             s, binsize=50 * pq.ms, output='rate')
     ta = time.time()-ta
     print("Standard calculation done.\n")
 
     tb = time.time()
-    pc_serial.add_list_job(spiketrain_list_standard, handler)
-    results_serial = pc_serial.execute()
+#     pc_serial.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+#     results_serial = pc_serial.execute()
     tb = time.time()-tb
     print("Serial calculation done.\n")
 
-    if test_mpi:
-        tc = time.time()
-        pc_mpi.add_list_job(spiketrain_list_standard, handler)
-        results_mpi = pc_mpi.execute()
-        tc = time.time()-tc
-        print("MPI calculation done.\n")
-    else:
-        tc = 999
+    tc = time.time()
+#     if test_mpi:
+#         pc_mpi.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+#         results_mpi = pc_mpi.execute()
+    tc = time.time()-tc
+    print("MPI calculation done.\n")
 
     td = time.time()
-    pc_mp.add_list_job(spiketrain_list_standard, handler)
-    results_mp = pc_mp.execute()
+#     pc_mp.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+#     results_mp = pc_mp.execute()
     td = time.time()-td
     print("Multiprocessing calculation done.\n")
 
     te = time.time()
-    pc_cft.add_list_job(spiketrain_list_standard, handler)
-    results_cft = pc_cft.execute()
+#     pc_cft.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+#     results_cft = pc_cft.execute()
     te = time.time()-te
     print("Concurrent.futures threads calculation done.\n")
 
     tf = time.time()
-    pc_cfp.add_list_job(spiketrain_list_standard, handler)
-    results_cfp = pc_cfp.execute()
+#     pc_cfp.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+#     results_cfp = pc_cfp.execute()
     tf = time.time()-tf
     print("Concurrent.futures processes calculation done.\n")
 
@@ -744,6 +873,51 @@ def main():
         "MP: %f s, Concurrent threads: %f s, Concurrent processes: %f s\n\n" %
         (ta, tb, tc, td, te, tf))
 
+    # =========================================================================
+    # Test 3: Calculate a sliding window time histogram for one set of
+    # spiketrains
+    # =========================================================================
+
+    handler_slide = JobQueueSlidingWindowHandler(
+        elephant.statistics.time_histogram,
+        cut_arg=spiketrain_list_standard[0],
+        binsize=10 * pq.ms, output='rate')
+
+    tb = time.time()
+    pc_serial.add_sliding_window_job(
+        t_start=0*pq.s, t_stop=20*pq.s, window_size=1*pq.s,
+        window_step=0.5*pq.s, handler=handler_slide)
+    slidingresult_serial = pc_serial.execute()
+    tb = time.time()-tb
+    print("Serial sliding done.\n")
+
+    tc = time.time()
+#     if test_mpi:
+#         pc_mpi.add_sliding_window_job(
+#             t_start=0*pq.s, t_stop=20*pq.s, window_size=1*pq.s,
+#             window_step=0.5*pq.s, handler=handler_slide)
+#         slidingresult_mpi = pc_mpi.execute()
+    tc = time.time()-tc
+    print("MPI sliding done.\n")
+
+    tf = time.time()
+    pc_cfp.add_sliding_window_job(
+        t_start=0*pq.s, t_stop=20*pq.s, window_size=1*pq.s,
+        window_step=0.5*pq.s, handler=handler_slide)
+    slidingresult_cfp = pc_cfp.execute()
+    tf = time.time()-tf
+    print("Concurrent.futures processes sliding done.\n")
+
+    print(
+        "Calculation execution times:" +
+        "\nSerial: %f s, MPI: %f s, Concurrent processes: %f s\n\n" %
+        (tb, tc, tf))
+
+    # Terminate MPI
+    if test_mpi:
+        pc_mpi.terminate()
+
+    sys.exit(0)
     # These results should match, test last element of results
     cmp1 = len(rate_list)-1
     cmp2 = 5
@@ -760,10 +934,6 @@ def main():
     assert(results_standard[cmp1][cmp2] == results_mp[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_cft[cmp1][cmp2])
     assert(results_standard[cmp1][cmp2] == results_cfp[cmp1][cmp2])
-
-    # Terminate MPI
-    if test_mpi:
-        pc_mpi.terminate()
 
 
 if __name__ == "__main__":
