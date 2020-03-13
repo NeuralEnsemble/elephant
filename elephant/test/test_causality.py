@@ -26,7 +26,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         # Set up that is equivalent to the one in POC granger repository
         np.random.seed(1)
         # length_2d = 10000
-        length_2d = 10
+        length_2d = 100
         self.signal = np.zeros((2, length_2d))
 
         order = 2
