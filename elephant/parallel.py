@@ -763,37 +763,37 @@ def main():
         n=n_spiketrains, t_start=0*pq.s, t_stop=20*pq.s)
 
     tb = time.time()
-#     pc_serial.add_list_job(
-#         arg_list=rate_list, handler=handler_generate)
-#     spiketrain_list_serial = pc_serial.execute()
+    pc_serial.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_serial = pc_serial.execute()
     tb = time.time()-tb
     print("Serial generation done.\n")
 
     tc = time.time()
-#     if test_mpi:
-#         pc_mpi.add_list_job(arg_list=rate_list, handler=handler_generate)
-#         spiketrain_list_mpi = pc_mpi.execute()
+    if test_mpi:
+        pc_mpi.add_list_job(arg_list=rate_list, handler=handler_generate)
+        spiketrain_list_mpi = pc_mpi.execute()
     tc = time.time()-tc
     print("MPI generation done.\n")
 
     td = time.time()
-#     pc_mp.add_list_job(
-#         arg_list=rate_list, handler=handler_generate)
-#     spiketrain_list_mp = pc_mp.execute()
+    pc_mp.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_mp = pc_mp.execute()
     td = time.time()-td
     print("Multiprocessing  generation done.\n")
 
     te = time.time()
-#     pc_cft.add_list_job(
-#         arg_list=rate_list, handler=handler_generate)
-#     spiketrain_list_cft = pc_cft.execute()
+    pc_cft.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_cft = pc_cft.execute()
     te = time.time()-te
     print("Concurrent.futures threads generation done.\n")
 
     tf = time.time()
-#     pc_cfp.add_list_job(
-#         arg_list=rate_list, handler=handler_generate)
-#     spiketrain_list_cfp = pc_cfp.execute()
+    pc_cfp.add_list_job(
+        arg_list=rate_list, handler=handler_generate)
+    spiketrain_list_cfp = pc_cfp.execute()
     tf = time.time()-tf
     print("Concurrent.futures processes generation done.\n")
 
@@ -830,40 +830,40 @@ def main():
 
     results_standard = {}
     ta = time.time()
-#     for i, s in enumerate(spiketrain_list_standard):
-#         results_standard[i] = elephant.statistics.time_histogram(
-#             s, binsize=50 * pq.ms, output='rate')
+    for i, s in enumerate(spiketrain_list_standard):
+        results_standard[i] = elephant.statistics.time_histogram(
+            s, binsize=50 * pq.ms, output='rate')
     ta = time.time()-ta
     print("Standard calculation done.\n")
 
     tb = time.time()
-#     pc_serial.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
-#     results_serial = pc_serial.execute()
+    pc_serial.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+    results_serial = pc_serial.execute()
     tb = time.time()-tb
     print("Serial calculation done.\n")
 
     tc = time.time()
-#     if test_mpi:
-#         pc_mpi.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
-#         results_mpi = pc_mpi.execute()
+    if test_mpi:
+        pc_mpi.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+        results_mpi = pc_mpi.execute()
     tc = time.time()-tc
     print("MPI calculation done.\n")
 
     td = time.time()
-#     pc_mp.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
-#     results_mp = pc_mp.execute()
+    pc_mp.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+    results_mp = pc_mp.execute()
     td = time.time()-td
     print("Multiprocessing calculation done.\n")
 
     te = time.time()
-#     pc_cft.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
-#     results_cft = pc_cft.execute()
+    pc_cft.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+    results_cft = pc_cft.execute()
     te = time.time()-te
     print("Concurrent.futures threads calculation done.\n")
 
     tf = time.time()
-#     pc_cfp.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
-#     results_cfp = pc_cfp.execute()
+    pc_cfp.add_list_job(arg_list=spiketrain_list_standard, handler=handler_calc)
+    results_cfp = pc_cfp.execute()
     tf = time.time()-tf
     print("Concurrent.futures processes calculation done.\n")
 
@@ -891,6 +891,7 @@ def main():
     tb = time.time()-tb
     print("Serial sliding done.\n")
 
+    # TODO: Sliding Window MPI doesn't work for a weird reason
     tc = time.time()
 #     if test_mpi:
 #         pc_mpi.add_sliding_window_job(
@@ -909,7 +910,7 @@ def main():
     print("Concurrent.futures processes sliding done.\n")
 
     print(
-        "Calculation execution times:" +
+        "Sliding execution times:" +
         "\nSerial: %f s, MPI: %f s, Concurrent processes: %f s\n\n" %
         (tb, tc, tf))
 
