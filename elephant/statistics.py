@@ -244,7 +244,6 @@ def fanofactor(spiketrains):
     return fano
 
 
-@elephant.parallel.ParallelContextEmbarassingList()
 def lv(v, with_nan=False):
     r"""
     Calculate the measure of local variation LV for a sequence of time
