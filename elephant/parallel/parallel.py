@@ -1,5 +1,5 @@
 """
-The `elephant.parallel` package provides a classes to parallelize calls to any
+The `elephant.parallel` package provides classes to parallelize calls to any
 user-specified function.
 
 The typical use case is calling a function many times with different
@@ -14,6 +14,7 @@ from functools import update_wrapper, partial
 
 import mpi4py.futures
 from mpi4py import MPI
+
 
 class SingleProcess(object):
     """
