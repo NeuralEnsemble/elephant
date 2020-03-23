@@ -46,3 +46,17 @@ Advanced
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/gpfa.ipynb
+
+
+Performance
+-----------
+
+* Parallel
+
+  ``elephant.parallel`` module provides a simple interface to parallelize
+  multiple calls to any user-specified function.
+
+  :doc:`View the notebook <../tutorials/parallel>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/parallel.ipynb

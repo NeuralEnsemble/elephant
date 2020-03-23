@@ -1,9 +1,34 @@
 """
-The `elephant.parallel` package provides classes to parallelize calls to any
+The ``elephant.parallel`` package provides classes to parallelize calls to any
 user-specified function.
 
 The typical use case is calling a function many times with different
 parameters.
+
+.. note::  This parallelization module is independent from Elephant and can be
+           easily used in other projects.
+
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/parallel>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/parallel.ipynb
+
+
+Available Executors
+-------------------
+
+.. autosummary::
+    :toctree: parallel/
+
+    ProcessPoolExecutor
+    MPIPoolExecutor
+    MPICommExecutor
+
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -68,11 +93,11 @@ class ProcessPoolExecutor(SingleProcess):
     class.
 
     `ProcessPoolExecutor` is recommended to use if you have one physical
-    machine (laptop).
+    machine (laptop or PC).
 
     Parameters
     ----------
-    max_workers: int or None
+    max_workers : int or None
         The maximum number of processes that can be used to
         execute the given calls. If None or not given then as many
         worker processes will be created as the machine has processors.
@@ -137,7 +162,11 @@ class MPIPoolExecutor(ProcessPoolExecutor):
     -----
     `-m mpi4py.futures` command line option is needed to execute python scripts
     with MPI:
-      `$ mpiexec -n numprocs python -m mpi4py.futures pyfile [arg] ...`
+
+    .. code-block:: sh
+
+       mpiexec -n numprocs python -m mpi4py.futures pyfile [arg] ...
+
     For more information of how to launch MPI processes in python refer to
     https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line
     """
@@ -169,7 +198,11 @@ class MPICommExecutor(MPIPoolExecutor):
     -----
     `-m mpi4py.futures` command line option is needed to execute python scripts
     with MPI:
-      `$ mpiexec -n numprocs python -m mpi4py.futures pyfile [arg] ...`
+
+    .. code-block:: sh
+
+       mpiexec -n numprocs python -m mpi4py.futures pyfile [arg] ...
+
     For more information of how to launch MPI processes in python refer to
     https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line
     """
