@@ -403,7 +403,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         # Test storing of sparse mat
         sparse_bool = x_bool.to_sparse_bool_array()
         self.assertTrue(np.array_equal(
-            sparse_bool.toarray(), x_bool.to_sparse_bool_array().toarray()))
+            sparse_bool.toarray(),
+            x_bool.to_sparse_bool_array().toarray()))
 
         # New class without calculating the matrix
         x = cv.BinnedSpikeTrain(b, binsize=pq.s, t_start=0 * pq.s,

@@ -833,6 +833,7 @@ class BinnedSpikeTrain(object):
         --------
         >>> import elephant.conversion as conv
         >>> import neo as n
+        >>> import quantities as pq
         >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
         ...                  t_stop=10.0 * pq.s)
         >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s,
