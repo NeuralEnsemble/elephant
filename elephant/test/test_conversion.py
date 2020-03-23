@@ -12,7 +12,8 @@ import unittest
 import neo
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
+from numpy.testing.utils import (assert_array_almost_equal,
+                                 assert_array_equal)
 
 import elephant.conversion as cv
 
@@ -195,22 +196,6 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.spiketrain_b = neo.SpikeTrain(
             [0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
         self.binsize = 1 * pq.s
-
-    def test_get_num_of_spikes(self):
-        spiketrains = [self.spiketrain_a, self.spiketrain_b]
-        for spiketrain in spiketrains:
-            binned = cv.BinnedSpikeTrain(spiketrain, num_bins=10,
-                                         binsize=1 * pq.s, t_start=0 * pq.s)
-            self.assertEqual(binned.get_num_of_spikes(),
-                             len(binned.spike_indices[0]))
-        binned_matrix = cv.BinnedSpikeTrain(spiketrains, num_bins=10,
-                                            binsize=1 * pq.s)
-        n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
-        n_spikes_per_row_from_indices = list(map(len,
-                                                 binned_matrix.spike_indices))
-        assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
-        self.assertEqual(binned_matrix.get_num_of_spikes(),
-                         sum(n_spikes_per_row_from_indices))
 
     def test_get_num_of_spikes(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
@@ -417,8 +402,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
 
         # Test storing of sparse mat
         sparse_bool = x_bool.to_sparse_bool_array()
-        self.assertTrue(np.array_equal(sparse_bool.toarray(),
-                                       x_bool.to_sparse_bool_array().toarray()))
+        self.assertTrue(np.array_equal(
+            sparse_bool.toarray(), x_bool.to_sparse_bool_array().toarray()))
 
         # New class without calculating the matrix
         x = cv.BinnedSpikeTrain(b, binsize=pq.s, t_start=0 * pq.s,
@@ -635,6 +620,16 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)
         bst = cv.BinnedSpikeTrain(train, num_bins=100)
         self.assertAlmostEqual(bst.sparsity, 0.1)
+
+    # Test fix for rounding errors
+    def test_binned_spiketrain_rounding(self):
+        train = neo.SpikeTrain(times=np.arange(120000) / 30000. * pq.s,
+                               t_start=0*pq.s, t_stop=4*pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=0*pq.s, t_stop=4*pq.s,
+                                  binsize=1./30000.*pq.s)
+        assert_array_equal(bst.to_array().nonzero()[1],
+                           np.arange(120000))
 
 
 if __name__ == '__main__':

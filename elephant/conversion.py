@@ -18,7 +18,6 @@ from copy import deepcopy
 import neo
 import numpy as np
 import quantities as pq
-import scipy
 import scipy.sparse as sps
 
 from elephant.utils import is_binary
@@ -174,6 +173,15 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 ###########################################################################
 
 
+def _detect_rounding_errors(values, tolerance=1e-8):
+    """
+    Finds rounding errors in values that will be cast to int afterwards.
+    Returns True for values that are within tolerance of the next integer.
+    Works for both scalars and numpy arrays.
+    """
+    return 1 - (values % 1) <= tolerance
+
+
 def _calc_tstart(num_bins, binsize, t_stop):
     """
     Calculates the start point from given parameters.
@@ -255,8 +263,11 @@ def _calc_num_bins(binsize, t_start, t_stop):
         if t_stop < t_start:
             raise ValueError("t_stop (%s) is smaller than t_start (%s)"
                              % (t_stop, t_start))
-        return int(((t_stop - t_start).rescale(
-            binsize.units) / binsize).magnitude)
+        num_bins = ((t_stop - t_start).rescale(
+                        binsize.units) / binsize.magnitude).item()
+        if _detect_rounding_errors(num_bins):
+            num_bins += 1
+        return int(num_bins)
 
 
 def _calc_binsize(num_bins, t_start, t_stop):
@@ -917,12 +928,21 @@ class BinnedSpikeTrain(object):
         row_ids, column_ids = [], []
         # data
         counts = []
-        for idx, elem in enumerate(spiketrains):
-            ev = elem.view(pq.Quantity)
-            scale = np.array(((ev - self.t_start).rescale(
-                self.binsize.units) / self.binsize).magnitude, dtype=int)
-            la = np.logical_and(ev >= self.t_start.rescale(self.binsize.units),
-                                ev <= self.t_stop.rescale(self.binsize.units))
+
+        for idx, st in enumerate(spiketrains):
+            times = (st.times - self.t_start).rescale(self.binsize.units)
+            scale = np.array((times / self.binsize).magnitude)
+
+            # shift spikes that are very close
+            # to the right edge into the next bin
+            scale[_detect_rounding_errors(scale)] += .5
+
+            scale = scale.astype(int)
+
+            la = np.logical_and(times >= 0 * self.binsize.units,
+                                times <= (self.t_stop
+                                          - self.t_start).rescale(
+                                              self.binsize.units))
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
             f, c = np.unique(filled_tmp, return_counts=True)
