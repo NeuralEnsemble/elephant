@@ -115,7 +115,6 @@ These packages are automatically installed when you run ``pip install elephant``
 
 The following packages are optional in order to run certain parts of Elephant:
 
-    * `pandas <https://pypi.org/project/pandas/>`_ - for the :doc:`pandas_bridge <reference/pandas_bridge>` module
     * `scikit-learn <https://pypi.org/project/scikit-learn/>`_ - for the :doc:`ASSET <reference/asset>` analysis
     * `nose <https://pypi.org/project/nose/>`_ - for running tests
     * `numpydoc <https://pypi.org/project/numpydoc/>`_ and `sphinx <https://pypi.org/project/Sphinx/>`_ - for building the documentation

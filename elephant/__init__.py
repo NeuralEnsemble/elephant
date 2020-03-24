@@ -28,7 +28,6 @@ from . import (statistics,
                gpfa)
 
 try:
-    from . import pandas_bridge
     from . import asset
     from . import spade
 except ImportError:
