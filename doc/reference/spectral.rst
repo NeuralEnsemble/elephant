@@ -1,6 +1,6 @@
-==============================
-`spectral` - Spectral analysis
-==============================
+=================
+Spectral analysis
+=================
 
 .. automodule:: elephant.spectral
    :members:

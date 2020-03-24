@@ -1,6 +1,5 @@
-===================
-`kernels` - Kernels
-===================
+=======
+Kernels
+=======
 
 .. automodule:: elephant.kernels
-   :members:

@@ -1,34 +1,41 @@
-.. Elephant documentation master file, created by
-   sphinx-quickstart on Thu Aug 22 08:39:42 2013.
-
-
 *********************************************
 Elephant - Electrophysiology Analysis Toolkit
 *********************************************
 
-Synopsis
---------
-    
+*Elephant* (Electrophysiology Analysis Toolkit) is an emerging open-source,
+community centered library for the analysis of electrophysiological data in
+the Python programming language.
 
-*Elephant* is a toolbox for the analysis of electrophysiological data based on the Neo_ framework. This manual covers the installation of Elephant in an existing Python environment, several tutorials to help get you started, information on the structure and conventions of the library, a list of modules, and help for future contributors to Elephant.
+The focus of Elephant is on generic analysis functions for spike train data and
+time series recordings from electrodes, such as the local field potentials
+(LFP) or intracellular voltages. In addition to providing a common platform for
+analysis codes from different laboratories, the Elephant project aims to
+provide a consistent and homogeneous analysis framework that is built on a
+modular foundation. Elephant is the direct successor to Neurotools_ and
+maintains ties to complementary projects such as ephyviewer_ and
+neurotic_ for raw data visualization.
 
-	
+The input-output data format is either Neo_, Quantity_ or Numpy_ array.
+Quantity is a Numpy-wrapper package for handling physical quantities like
+seconds, milliseconds, Hz, volts, etc. Quantity is used in both Neo and
+Elephant.
+
 Table of Contents
 -----------------
 
 .. toctree::
     :maxdepth: 1
 
-    overview
     install
-    tutorial
+    tutorials
     modules
     developers_guide
     authors
     release_notes
+    get_in_touch
     acknowledgements
 
-   
+
 
 .. Indices and tables
 .. ==================
@@ -38,7 +45,12 @@ Table of Contents
 .. * :ref:`search`
 
 
-.. _`Neo`: https://github.com/NeuralEnsemble/python-neo
+.. _Neurotools:  http://neuralensemble.org/NeuroTools/
+.. _ephyviewer:  https://ephyviewer.readthedocs.io/en/latest/
+.. _neurotic:  https://neurotic.readthedocs.io/en/latest/
+.. _Neo: http://neuralensemble.org/neo/
+.. _Numpy: http://www.numpy.org/
+.. _Quantity: https://python-quantities.readthedocs.io/en/latest/
 
 
 .. |date| date::

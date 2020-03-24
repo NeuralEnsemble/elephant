@@ -11,22 +11,22 @@ import unittest
 
 import neo
 import numpy as np
+import quantities as pq
 import scipy.signal as spsig
 import scipy.stats
-from numpy.testing.utils import assert_array_almost_equal
-import quantities as pq
-import elephant.signal_processing
 from numpy.ma.testutils import assert_array_equal, assert_allclose
+from numpy.testing.utils import assert_array_almost_equal
+
+import elephant.signal_processing
 
 
-class XCorrelationTestCase(unittest.TestCase):
-
+class PairwiseCrossCorrelationTest(unittest.TestCase):
     # Set parameters
-    sampling_period = 0.02*pq.s
-    sampling_rate = 1./sampling_period
+    sampling_period = 0.02 * pq.s
+    sampling_rate = 1. / sampling_period
     n_samples = 2018
-    time = np.arange(n_samples)*sampling_period
-    freq = 1.*pq.Hz
+    times = np.arange(n_samples) * sampling_period
+    freq = 1. * pq.Hz
 
     def test_cross_correlation_freqs(self):
         '''
@@ -35,19 +35,23 @@ class XCorrelationTestCase(unittest.TestCase):
         E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
         '''
         freq_arr = np.linspace(0.5, 15, 8) * pq.Hz
-        signal = np.zeros((self.n_samples, 2))
+        signal = np.zeros((self.n_samples, 3))
         for freq in freq_arr:
-            signal[:, 0] = np.sin(2.*np.pi*freq*self.time)
-            signal[:, 1] = np.cos(2.*np.pi*freq*self.time)
+            signal[:, 0] = np.sin(2. * np.pi * freq * self.times)
+            signal[:, 1] = np.cos(2. * np.pi * freq * self.times)
+            signal[:, 2] = np.cos(2. * np.pi * freq * self.times + 0.2)
             # Convert signal to neo.AnalogSignal
-            signal_neo = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
-                                      sampling_rate=self.sampling_rate,
-                                      dtype=float)
+            signal_neo = neo.AnalogSignal(signal, units='mV',
+                                          t_start=0. * pq.ms,
+                                          sampling_rate=self.sampling_rate,
+                                          dtype=float)
             rho = elephant.signal_processing.cross_correlation_function(
-                signal_neo, [0, 1])
+                signal_neo, [[0, 1], [0, 2]])
             # Cross-correlation of sine and cosine should be sine
             assert_array_almost_equal(
-                rho.magnitude[:, 0], np.sin(2.*np.pi*freq*rho.times), decimal=2)
+                rho.magnitude[:, 0], np.sin(2. * np.pi * freq * rho.times),
+                decimal=2)
+            self.assertEqual(rho.shape, (signal.shape[0], 2))  # 2 pairs
 
     def test_cross_correlation_nlags(self):
         '''
@@ -55,8 +59,8 @@ class XCorrelationTestCase(unittest.TestCase):
         '''
         nlags = 30
         signal = np.zeros((self.n_samples, 2))
-        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
-        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
@@ -72,8 +76,8 @@ class XCorrelationTestCase(unittest.TestCase):
         '''
         phi = np.pi/6.
         signal = np.zeros((self.n_samples, 2))
-        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time+phi)
-        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times + phi)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
@@ -85,23 +89,64 @@ class XCorrelationTestCase(unittest.TestCase):
             rho.magnitude[:, 0], np.sin(2.*np.pi*self.freq*rho.times+phi),
             decimal=2)
 
-    def test_cross_correlation_env(self):
+    def test_cross_correlation_envelope(self):
         '''
         Envelope of sine vs cosine
         '''
         # Sine with phase shift phi vs cosine for different frequencies
         nlags = 800 # nlags need to be smaller than N/2 b/c border effects
         signal = np.zeros((self.n_samples, 2))
-        signal[:, 0] = 0.2 * np.sin(2.*np.pi*self.freq*self.time)
-        signal[:, 1] = 5.3 * np.cos(2.*np.pi*self.freq*self.time)
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
         signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
-        env = elephant.signal_processing.cross_correlation_function(
+        envelope = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1], nlags=nlags, env=True)
         # Envelope should be one for sinusoidal function
-        assert_array_almost_equal(env, np.ones_like(env), decimal=2)
+        assert_array_almost_equal(envelope, np.ones_like(envelope), decimal=2)
+
+    def test_cross_correlation_biased(self):
+        signal = np.c_[np.sin(2. * np.pi * self.freq * self.times),
+                       np.cos(2. * np.pi * self.freq * self.times)] * pq.mV
+        signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate)
+        raw = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], scaleopt='none'
+        )
+        biased = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], scaleopt='biased'
+        )
+        assert_array_almost_equal(biased, raw / biased.shape[0])
+
+    def test_cross_correlation_coeff(self):
+        signal = np.c_[np.sin(2. * np.pi * self.freq * self.times),
+                       np.cos(2. * np.pi * self.freq * self.times)] * pq.mV
+        signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate)
+        normalized = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], scaleopt='coeff'
+        )
+        sig1, sig2 = signal.magnitude.T
+        target_numpy = np.correlate(sig1, sig2, mode="same")
+        target_numpy /= np.sqrt((sig1 ** 2).sum() * (sig2 ** 2).sum())
+        target_numpy = np.expand_dims(target_numpy, axis=1)
+        assert_array_almost_equal(normalized.magnitude,
+                                  target_numpy,
+                                  decimal=3)
+
+    def test_cross_correlation_coeff_autocorr(self):
+        # Numpy/Matlab equivalent
+        signal = np.sin(2. * np.pi * self.freq * self.times)
+        signal = signal[:, np.newaxis] * pq.mV
+        signal = neo.AnalogSignal(signal, t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate)
+        normalized = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 0], scaleopt='coeff'
+        )
+        # auto-correlation at zero lag should equal 1
+        self.assertAlmostEqual(normalized[normalized.shape[0] // 2], 1)
 
 
 class ZscoreTestCase(unittest.TestCase):
@@ -194,6 +239,15 @@ class ZscoreTestCase(unittest.TestCase):
 
         # Assert original signal is untouched
         self.assertEqual(signal[0, 0].magnitude, self.test_seq1[0])
+
+    def test_zscore_array_annotations(self):
+        signal = neo.AnalogSignal(
+            self.test_seq1, units='mV',
+            t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz,
+            array_annotations=dict(valid=True, my_list=[0]))
+        zscored = elephant.signal_processing.zscore(signal, inplace=False)
+        self.assertDictEqual(signal.array_annotations,
+                             zscored.array_annotations)
 
     def test_zscore_single_multidim_inplace(self):
         """
@@ -391,7 +445,8 @@ class ButterTestCase(unittest.TestCase):
         # generate white noise AnalogSignal
         noise = neo.AnalogSignal(
             np.random.normal(size=5000),
-            sampling_rate=1000 * pq.Hz, units='mV')
+            sampling_rate=1000 * pq.Hz, units='mV',
+            array_annotations=dict(valid=True, my_list=[0]))
 
         kwds = {'signal': noise, 'highpass_freq': 250.0 * pq.Hz,
                 'lowpass_freq': None, 'filter_function': 'filtfilt'}
@@ -411,6 +466,10 @@ class ButterTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(psd_filtfilt[0, 0], psd_lfilter[0, 0])
         self.assertAlmostEqual(psd_filtfilt[0, 0], psd_sosfiltfilt[0, 0])
+
+        # Test if array_annotations are preserved
+        self.assertDictEqual(noise.array_annotations,
+                             filtered_noise.array_annotations)
 
     def test_butter_invalid_filter_function(self):
         # generate a dummy AnalogSignal
@@ -521,11 +580,13 @@ class HilbertTestCase(unittest.TestCase):
             self.amplitude[:, 2] * np.cos(self.phase[:, 2]),
             self.amplitude[:, 3] * np.cos(self.phase[:, 3])])
 
+        array_annotations = dict(my_list=np.arange(sigs.shape[0]))
         self.long_signals = neo.AnalogSignal(
             sigs.T, units='mV',
             t_start=0. * pq.ms,
             sampling_rate=(len(time) / (time[-1] - time[0])).rescale(pq.Hz),
-            dtype=float)
+            dtype=float,
+            array_annotations=array_annotations)
 
         # Generate test data covering a single oscillation cycle in 1s only
         phases = np.arange(0, 2 * np.pi, np.pi / 256)
@@ -563,6 +624,14 @@ class HilbertTestCase(unittest.TestCase):
             self.long_signals, N=16384)
         self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
+
+    def test_hilbert_array_annotations(self):
+        output = elephant.signal_processing.hilbert(self.long_signals,
+                                                    N='nextpow')
+        # Test if array_annotations are preserved
+        self.assertSetEqual(set(output.array_annotations.keys()), {"my_list"})
+        assert_array_equal(output.array_annotations['my_list'],
+                           self.long_signals.array_annotations['my_list'])
 
     def test_hilbert_theoretical_long_signals(self):
         """
@@ -921,19 +990,19 @@ class RAUCTestCase(unittest.TestCase):
         '''Test rauc on non-AnalogSignal'''
         kwds = {'signal': np.arange(5)}
         self.assertRaises(
-            TypeError, elephant.signal_processing.rauc, **kwds)
+            ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_invalid_bin_duration(self):
         '''Test rauc on bad bin duration'''
         kwds = {'signal': self.test_signal1, 'bin_duration': 'bad'}
         self.assertRaises(
-            TypeError, elephant.signal_processing.rauc, **kwds)
+            ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_invalid_baseline(self):
         '''Test rauc on bad baseline'''
         kwds = {'signal': self.test_signal1, 'baseline': 'bad'}
         self.assertRaises(
-            TypeError, elephant.signal_processing.rauc, **kwds)
+            ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_units(self):
         '''Test rauc returns Quantity or AnalogSignal with correct units'''

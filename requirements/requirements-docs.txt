@@ -1,0 +1,7 @@
+# Packages required to build docs (in addition to requirements-tutorials.rst)
+numpydoc>=0.5
+jupyter>=1.0.0
+sphinx>=2.4.3
+nbsphinx>=0.5.0
+sphinxcontrib-bibtex>=1.0.0
+sphinx-tabs>=1.1.13

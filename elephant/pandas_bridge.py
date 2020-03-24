@@ -10,10 +10,16 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import pandas as pd
+import warnings
 import quantities as pq
 
 from elephant.neo_tools import (extract_neo_attrs, get_all_epochs,
                                 get_all_events, get_all_spiketrains)
+
+
+warnings.simplefilter('once', DeprecationWarning)
+warnings.warn("pandas_bridge module will be removed in Elephant v0.8.x",
+              DeprecationWarning)
 
 
 def _multiindex_from_dict(inds):

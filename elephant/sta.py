@@ -7,7 +7,8 @@ analog signals.
 :license: Modified BSD, see LICENSE.txt for details.
 '''
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import scipy.signal
 import quantities as pq
@@ -33,8 +34,8 @@ def spike_triggered_average(signal, spiketrains, window):
     window : tuple of 2 Quantity objects with dimensions of time.
         'window' is the start time and the stop time, relative to a spike, of
         the time interval for signal averaging.
-        If the window size is not a multiple of the sampling interval of the 
-        signal the window will be extended to the next multiple. 
+        If the window size is not a multiple of the sampling interval of the
+        signal the window will be extended to the next multiple.
 
     Returns
     -------
@@ -47,7 +48,7 @@ def spike_triggered_average(signal, spiketrains, window):
         no spike was either given or all given spikes had to be ignored
         because of a too large averaging interval, the corresponding returned
         analog signal has all entries as nan. The number of used spikes and
-        unused spikes for each analog signal are returned as annotations to 
+        unused spikes for each analog signal are returned as annotations to
         the returned AnalogSignal object.
 
     Examples

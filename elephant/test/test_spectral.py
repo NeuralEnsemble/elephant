@@ -12,6 +12,7 @@ import numpy as np
 import scipy.signal as spsig
 import quantities as pq
 import neo.core as n
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 import elephant.spectral
 
@@ -205,14 +206,14 @@ class WelchCohereTestCase(unittest.TestCase):
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertAlmostEqual(freqs[coherency.argmax()], signal_freq,
             places=2)
-        self.assertAlmostEqual(phase_lag[coherency.argmax()], np.pi/2,
+        self.assertAlmostEqual(phase_lag[coherency.argmax()], -np.pi/2,
             places=2)
         freqs_np, coherency_np, phase_lag_np =\
             elephant.spectral.welch_cohere(x.magnitude.flatten(), y.magnitude.flatten(),
                 fs=1/sampling_period, freq_res=freq_res)
-        self.assertTrue((freqs == freqs_np).all() and
-                        (coherency[:, 0] == coherency_np).all() and
-                        (phase_lag[:, 0] == phase_lag_np).all())
+        assert_array_equal(freqs.simplified.magnitude, freqs_np)
+        assert_array_equal(coherency[:, 0], coherency_np)
+        assert_array_equal(phase_lag[:, 0], phase_lag_np)
 
         # - check the behavior of parameter `axis` using multidimensional data
         num_channel = 4
@@ -223,9 +224,9 @@ class WelchCohereTestCase(unittest.TestCase):
             elephant.spectral.welch_cohere(x_multidim, y_multidim)
         freqs_T, coherency_T, phase_lag_T =\
             elephant.spectral.welch_cohere(x_multidim.T, y_multidim.T, axis=0)
-        self.assertTrue(np.all(freqs==freqs_T))
-        self.assertTrue(np.all(coherency==coherency_T.T))
-        self.assertTrue(np.all(phase_lag==phase_lag_T.T))
+        assert_array_equal(freqs, freqs_T)
+        assert_array_equal(coherency, coherency_T.T)
+        assert_array_equal(phase_lag, phase_lag_T.T)
 
     def test_welch_cohere_input_types(self):
         # generate a test data
