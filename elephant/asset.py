@@ -1206,7 +1206,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     return P_total
 
 
-def _pmat_neighbors(mat, filter_shape, nr_largest=None):
+def _pmat_neighbors(mat, filter_shape, nr_largest):
     """
     Build the 3D matrix L of largest neighbors of elements in a 2D matrix mat.
 
@@ -1239,7 +1239,6 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
 
     """
     l, w = filter_shape
-    d = l if nr_largest is None else nr_largest
 
     # if the matrix is symmetric the diagonal was set to 0.5
     # when computing the probability matrix
@@ -1262,7 +1261,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
     mat = np.array(mat, dtype=np.float32)
 
     # Initialize the matrix of d-largest values as a matrix of zeroes
-    lmat = np.zeros((d, mat.shape[0], mat.shape[1]), dtype=np.float32)
+    lmat = np.zeros((nr_largest, mat.shape[0], mat.shape[1]), dtype=np.float32)
 
     N_bin_y = mat.shape[0]
     N_bin_x = mat.shape[1]
@@ -1282,7 +1281,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
         for x in bin_range_x:
             patch = mat[y: y + l, x: x + l]
             mskd = np.multiply(filt, patch)
-            largest_vals = np.sort(mskd, axis=None)[-d:]
+            largest_vals = np.sort(mskd, axis=None)[-nr_largest:]
             lmat[:, y + (l // 2), x + (l // 2)] = largest_vals
 
     return lmat
@@ -1345,6 +1344,8 @@ def joint_probability_matrix(
     >>> jmat = joint_probability_matrix(pmat, filter_shape=(fl, fw))
 
     """
+    l, w = filter_shape
+    nr_largest = l if nr_largest is None else nr_largest
 
     # Find for each P_ij in the probability matrix its neighbors and maximize
     # them by the maximum value 1-pvmin
@@ -1364,7 +1365,6 @@ def joint_probability_matrix(
                                                  return_inverse=True)
 
     # Compute the joint p-value matrix jpvmat
-    l, w = filter_shape
     n = l * (1 + 2 * w) - w * (w + 1)  # number of entries covered by kernel
     jpvmat = _jsf_uniform_orderstat_3d(pmat_neighb, alpha, n, verbose=verbose)
 
