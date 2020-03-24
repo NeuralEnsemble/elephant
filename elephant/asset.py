@@ -769,15 +769,14 @@ def probability_matrix_montecarlo(
         t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x,
         t_stop_y=t_stop_y)
 
-    symmetric = False
-    if _quantities_almost_equal(x_edges[0], y_edges[0]):
-        symmetric = True
+    symmetric = _quantities_almost_equal(x_edges[0], y_edges[0])
 
     # Generate surrogate spike trains as a list surrs
     # Compute the p-value matrix pmat; pmat[i, j] counts the fraction of
     # surrogate data whose intersection value at (i, j) is lower than or
     # equal to that of the original data
-    pmat = np.array(np.zeros(imat.shape), dtype=int)
+    # TODO: replace with np.int32
+    pmat = np.zeros(imat.shape, dtype=int)
 
     for surr_id in trange(n_surr, desc="pmat_bootstrap", disable=not verbose):
         if mpi_accelerated and surr_id % size != rank:
@@ -810,7 +809,7 @@ def probability_matrix_montecarlo(
     pmat = pmat * 1. / n_surr
 
     if symmetric:
-        pmat[np.diag_indices_from(pmat)] = 0.5
+        np.fill_diagonal(pmat, 0.5)
 
     return pmat, imat, x_edges, y_edges
 
@@ -820,12 +819,12 @@ def _rate_of_binned_spiketrain(binned_sts, kernel_width,
     """Calculate the rate of binned spiketrains using convolution with
     a boxcar kernel.
     """
-    if verbose is True:
+    if verbose:
         print('compute rates by boxcar-kernel convolution...')
 
     # Create the boxcar kernel and convolve it with the binned spike trains
-    k = int((kernel_width / binsize).rescale(pq.dimensionless))
-    kernel = np.ones(k) * 1. / k
+    k = int((kernel_width / binsize).simplified.item())
+    kernel = np.full(k, fill_value=1. / k)
     rate = np.vstack([np.convolve(bst, kernel, mode='same')
                       for bst in binned_sts])
 
@@ -848,13 +847,12 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
     """
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
-        if len(signal.shape) == 2:
-            signals[i] = signal.reshape((-1,))
-        elif len(signal.shape) > 2:
-            raise ValueError(
-                'elements in fir_rates have too many dimensions')
+        if signal.ndim == 2:
+            signals[i] = signal.flatten()
+        elif signal.ndim > 2:
+            raise ValueError('elements in fir_rates must have 2 dimensions')
 
-    if verbose is True:
+    if verbose:
         print('create time slices of the rates...')
 
     # Interpolate in the time bins
@@ -1006,7 +1004,7 @@ def probability_matrix_analytical(
         raise ValueError('fir_rates_y must be a list or the string "estimate"')
 
     # For each neuron, compute the prob. that that neuron spikes in any bin
-    if verbose is True:
+    if verbose:
         print(
             'compute the prob. that each neuron fires in each pair of bins...')
 
@@ -1027,7 +1025,7 @@ def probability_matrix_analytical(
     # which describe, at each (i, j), the approximated overlap probability.
     # This matrix is just the sum of the probability matrices computed above
 
-    if verbose is True:
+    if verbose:
         print("compute the probability matrix by Le Cam's approximation...")
 
     Mu = np.sum(spike_prob_mats, axis=0)
@@ -1052,9 +1050,9 @@ def probability_matrix_analytical(
 
     if symmetric:
         # Substitute 0.5 to the elements along the main diagonal
-        if verbose is True:
+        if verbose:
             print("substitute 0.5 to elements along the main diagonal...")
-        pmat[np.diag_indices_from(pmat)] = 0.5
+        np.fill_diagonal(pmat, 0.5)
 
     return pmat, imat, xx, yy
 
@@ -1132,6 +1130,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
     log_1 = np.log(1.)
 
     # prepare arrays for usage inside the loop
+    # TODO replace with np.int32
     di_scratch = np.empty_like(du, dtype=np.int)
     log_du_scratch = np.empty_like(log_du)
 
@@ -1161,7 +1160,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
             continue
 
         # we only need the differences of the indices:
-        di = -np.diff(np.hstack([n, matrix_entries, 0]))
+        di = -np.diff(matrix_entries, prepend=n, append=0)
 
         # reshape the matrix to be compatible with du
         for idx, current_di in enumerate(di):
@@ -1242,7 +1241,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
 
     # if the matrix is symmetric the diagonal was set to 0.5
     # when computing the probability matrix
-    symmetric = np.all(mat[np.diag_indices_from(mat)] == 0.5)
+    symmetric = np.all(np.diagonal(mat) == 0.5)
 
     # Check consistent arguments
     assert w < l, 'w must be lower than l'
@@ -1258,7 +1257,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None):
 
     # Convert mat values to floats, and replaces np.infs with specified input
     # values
-    mat = 1. * mat.copy()
+    mat = np.array(mat, dtype=np.float32)
 
     # Initialize the matrix of d-largest values as a matrix of zeroes
     lmat = np.zeros((d, mat.shape[0], mat.shape[1]), dtype=np.float32)
