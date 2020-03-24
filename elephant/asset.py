@@ -1104,7 +1104,7 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
         Note: the joint probability matrix computed for the ASSET analysis
         is 1-S.
     """
-    d, num_p_vals = u.shape
+    num_p_vals, d = u.shape
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
     # used to compute the integral as a sum over all possibilities
@@ -1113,7 +1113,6 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
 
     # Compute the log of the integral's coefficient
     logK = np.sum(np.log(np.arange(1, n + 1))) - n * np.log(1 - alpha)
-
     # Add to the 3D matrix u a bottom layer equal to alpha and a
     # top layer equal to 1. Then compute the difference du along
     # the first dimension.
