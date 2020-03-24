@@ -1058,6 +1058,8 @@ def probability_matrix_analytical(
 
 
 def _wrong_order(a):
+    if a[-1] > a[0]:
+        return True
     for i in range(len(a) - 1):
         if a[i] < a[i + 1]:
             return True
