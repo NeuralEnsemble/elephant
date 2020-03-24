@@ -804,7 +804,7 @@ def probability_matrix_montecarlo(
 
         del imat_surr
 
-    pmat = comm.allreduce(pmat, op=MPI.SUM, root=0)
+    pmat = comm.allreduce(pmat, op=MPI.SUM)
 
     pmat = pmat * 1. / n_surr
 
