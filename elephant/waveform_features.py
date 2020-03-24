@@ -28,7 +28,7 @@ def waveform_width(waveform, cutoff=0.75):
     cutoff : float, optional
         Defines the normalized range `[0, cutoff]` of the input sequence for
         computing the minimum. Must be in `[0, 1)` range.
-        Default: 0.75
+        Default: 0.75.
 
     Returns
     -------
@@ -67,34 +67,31 @@ def waveform_snr(spiketrain):
     Signal-to-noise ratio is defined as the difference in mean peak-to-trough
     voltage divided by twice the mean SD. The mean SD is computed by
     measuring the SD of the spike waveform over all acquired spikes
-    at each of the sample time points of the waveform and then averaging [1].
+    at each of the sample time points of the waveform and then averaging [1]_.
 
     Parameters
     ----------
+    spiketrain : neo.SpikeTrain
+        The spike times with attached waveforms.
 
-    spiketrain : Neo SpikeTrain
-                 The spike times with attached waveforms.
     Returns
     -------
-
     snr : float
-            signal-to-noise ratio according to Hatsopoulos 2007
+        signal-to-noise ratio according to [1]_
 
     Raises
     ------
-
     ValueError
         If `spiketrain` has no attached waveforms.
 
     References
     ----------
 
-    [1] Hatsopoulos, N. G., Xu, Q. & Amit, Y.
-        Encoding of Movement Fragments in the Motor Cortex.
-        J. Neurosci. 27, 5105–5114 (2007).
+    .. [1] Hatsopoulos, N. G., Xu, Q. & Amit, Y.
+           Encoding of Movement Fragments in the Motor Cortex.
+           J. Neurosci. 27, 5105–5114 (2007).
 
     """
-
     # check whether spiketrain contains waveforms
     if spiketrain.waveforms is None:
         raise ValueError('There are no waveforms attached to this \

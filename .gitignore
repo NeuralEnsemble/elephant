@@ -44,6 +44,9 @@ lib
 lib64
 # sphinx build directory
 doc/_build
+doc/reference/statistics/
+doc/reference/unitary_event_analysis/
+*.h5
 # setup.py dist directory
 dist
 sdist

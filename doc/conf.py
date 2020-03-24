@@ -11,8 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
 import os
+import sys
+from datetime import date
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -28,12 +29,19 @@ sys.path.insert(0, '..')
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
-    'numpydoc']
+    'sphinx.ext.mathjax',
+    'sphinxcontrib.bibtex',
+    'matplotlib.sphinxext.plot_directive',
+    'numpydoc',
+    'nbsphinx',
+    'sphinx_tabs.tabs',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -50,7 +58,8 @@ master_doc = 'index'
 # General information about the project.
 project = u'Elephant'
 authors = u'Elephant authors and contributors'
-copyright = u'2014-2019, ' + authors
+copyright = u"2014-{this_year}, {authors}".format(this_year=date.today().year,
+                                                  authors=authors)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -77,7 +86,11 @@ version = '.'.join(release.split('.')[:-1])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = [
+    '_build',
+    '**.ipynb_checkpoints',
+    'maintainers_guide.rst',  # should not be visible for users
+]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -99,12 +112,27 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
+# Only execute Jupyter notebooks that have no evaluated cells
+nbsphinx_execute = 'auto'
+# Kernel to use for execution
+nbsphinx_kernel_name = 'python3'
+# Cancel compile on errors in notebooks
+nbsphinx_allow_errors = False
+
+# Required to automatically create a summary page for each function listed in
+# the autosummary fields of each module.
+autosummary_generate = True
 
 # -- Options for HTML output ---------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinxdoc'
+html_theme = 'alabaster'
+html_theme_options = {
+    'font_family': 'Arial',
+    'page_width': '1200px',  # default is 940
+    'sidebar_width': '280px',  # default is 220
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -133,7 +161,7 @@ html_favicon = 'images/elephant_favicon.ico'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -163,10 +191,10 @@ html_use_index = True
 #html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -183,17 +211,23 @@ htmlhelp_basename = 'elephantdoc'
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
 
+# A fix for Alabaster theme for no space between a citation reference
+# and citation text
+# https://github.com/sphinx-doc/sphinx/issues/6705#issuecomment-536197438
+html4_writer = True
+
+
 # -- Options for LaTeX output --------------------------------------------
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
