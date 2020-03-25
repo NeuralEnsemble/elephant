@@ -33,7 +33,7 @@ Table of Contents
     authors
     release_notes
     get_in_touch
-    acknowledgements
+    acknowledgments
 
 
 

@@ -24,7 +24,7 @@ Rate estimation
 ~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: statistics/
+    :toctree: toctree/statistics/
 
     mean_firing_rate
     instantaneous_rate
@@ -36,7 +36,7 @@ Spike interval statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: statistics/
+    :toctree: toctree/statistics/
 
     isi
     cv
@@ -48,7 +48,7 @@ Statistics across spike trains
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: statistics/
+    :toctree: toctree/statistics/
 
     fanofactor
     complexity_pdf

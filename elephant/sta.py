@@ -204,10 +204,8 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     spiketrain : SpikeTrain or BinnedSpikeTrain
         Single spike train to perform the analysis on. The binsize of the
         binned spike train must match the sampling_rate of signal.
-
-    KWArgs
-    ------
-    All KWArgs are passed to scipy.signal.coherence().
+    **kwargs:
+        All kwargs are passed to `scipy.signal.coherence()`.
 
     Returns
     -------
@@ -219,8 +217,8 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
         contains the frequency values corresponding to the first dimension of
         the 'coherence' array
 
-    Example
-    -------
+    Examples
+    --------
 
     Plot the SFC between a regular spike train at 20 Hz, and two sinusoidal
     time series at 20 Hz and 23 Hz, respectively.
