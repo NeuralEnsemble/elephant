@@ -48,8 +48,8 @@ Advanced
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/gpfa.ipynb
 
 
-Performance
------------
+Additional
+----------
 
 * Parallel
 
