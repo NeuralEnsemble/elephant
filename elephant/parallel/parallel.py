@@ -6,7 +6,8 @@ The typical use case is calling a function many times with different
 parameters.
 
 .. note::  This parallelization module is independent from Elephant and can be
-           easily used in other projects.
+           used to parallelize mutually independent calls to arbitrary
+           functions.
 
 Tutorial
 --------
