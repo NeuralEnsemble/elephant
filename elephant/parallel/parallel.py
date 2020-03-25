@@ -24,7 +24,7 @@ Available Executors
 -------------------
 
 .. autosummary::
-    :toctree: parallel/
+    :toctree: toctree/parallel/
 
     ProcessPoolExecutor
     MPIPoolExecutor
