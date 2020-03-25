@@ -412,20 +412,6 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     return spiketrain
 
 
-def homogeneous_poisson_process_with_refr_period(rate,
-                                                 refr_period=2. * pq.ms,
-                                                 t_start=0.0 * pq.ms,
-                                                 t_stop=1000.0 * pq.ms,
-                                                 as_array=False):
-    warnings.warn("homogeneous_poisson_process_with_refr_period() function is "
-                  "deprecated and will be deleted in v0.8.0 release. Use "
-                  "homogeneous_poisson_process(refractory_period=...) instead",
-                  DeprecationWarning)
-    return homogeneous_poisson_process(rate=rate, t_start=t_start,
-                                       t_stop=t_stop, as_array=as_array,
-                                       refractory_period=refr_period)
-
-
 def inhomogeneous_poisson_process(rate, as_array=False,
                                   refractory_period=None):
     """
