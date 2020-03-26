@@ -51,6 +51,7 @@ install:
       conda config --set always_yes yes;
       conda update conda;
       conda env create -f requirements/environment.yml;
+      conda uninstall -y mpi4py;  # mpi programs should start with mpiexec;
       conda activate elephant;
       pip list;
     else
