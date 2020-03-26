@@ -69,7 +69,6 @@ import neo
 from neo.core import SpikeTrain
 import elephant.conversion as conv
 import elephant.kernels as kernels
-import elephant.parallel
 import warnings
 
 cv = scipy.stats.variation
