@@ -2,4 +2,4 @@
 Parallel
 ========
 
-.. automodule:: elephant.parallel.parallel
+.. automodule:: elephant.parallel

@@ -26,7 +26,7 @@ matrix:
       env: DISTRIB="pip"
       before_install: sudo apt install -y libopenmpi-dev openmpi-bin
       before_script: pip install -r requirements/requirements-extras.txt
-      script: mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
+      script: mpiexec -n 1 python -m mpi4py.futures -m nose --with-coverage --cover-package=elephant
       after_success: coveralls || echo "coveralls failed"
 
     - name: "conda 3.7"
