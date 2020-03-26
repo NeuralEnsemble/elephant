@@ -136,7 +136,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
         The dither range of each spike is adjusted such that the spike can not
         fall into the `refractory_period` of the previous or next spike.
         To account this, the refractory period is estimated as the smallest ISI
-        of the spike train.
+        of the spike train. The given argument `refractory_period` here is thus
+        an initial estimation.
         Note, that with this option a spike cannot "jump" over the previous or
         next spike as it is normally possible.
         If set to `None`, no refractoriness is in dithering.
