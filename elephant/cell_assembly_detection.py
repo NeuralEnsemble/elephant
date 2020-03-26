@@ -20,8 +20,8 @@ scale (binsize), assumed to be recorded in parallel, the CAD analysis can be
 applied as demonstrated in this short toy example of 5 parallel spike trains
 that exhibit fully synchronous events of order 5.
 
-Example
--------
+Examples
+--------
 >>> import matplotlib.pyplot as plt
 >>> import elephant.conversion as conv
 >>> import elephant.spike_train_generation

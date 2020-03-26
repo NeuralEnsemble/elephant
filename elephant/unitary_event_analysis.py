@@ -43,7 +43,7 @@ Functions overview
 ------------------
 
 .. autosummary::
-    :toctree: unitary_event_analysis/
+    :toctree: toctree/unitary_event_analysis/
 
     jointJ_window_analysis
 

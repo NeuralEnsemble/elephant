@@ -83,7 +83,7 @@ The module docstring of ``elephant/x.py`` is also standardized in its structure:
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     .. autosummary::
-        :toctree: x/
+        :toctree: toctree/x/
 
         function1
         function2
@@ -92,7 +92,7 @@ The module docstring of ``elephant/x.py`` is also standardized in its structure:
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     .. autosummary::
-        :toctree: x/
+        :toctree: toctree/x/
 
         function3
         function4
@@ -119,29 +119,35 @@ Making a release
 1. Increment the Elephant package version in :file:`elephant/VERSION`.
 
 2. Add a section in :file:`doc/release_notes.rst`, describing in short the
-changes made from the previous release.
+   changes made from the previous release.
 
 3. Check that the copyright statement (in :file:`LICENSE.txt`,
-:file:`README.md`, and :file:`doc/conf.py`) is correct.
+   :file:`README.md`, and :file:`doc/conf.py`) is correct.
 
-4. If there is a new module do not forget to add the modulename to the
-:file:`doc/modules.rst` and make a file with a short description in
-:file:`doc/reference/<modulename>.rst`.
+4. If there is a new module do not forget to add the module name to the
+   :file:`doc/modules.rst` and make a file with a short description in
+   :file:`doc/reference/<modulename>.rst`.
 
-To build a source package (see `Packaging Python Projects
-<https://packaging.python.org/tutorials/packaging-projects/#generating-distribution-archives>`_)::
+5. Remove :file:`elephant/spade_src/fim.so`. Otherwise, it'll be included in
+   the built package (it should be downloaded at pip install).
+
+6. Build a source package and upload it to PyPi.
+
+   Build a source package (see `Packaging Python Projects
+   <https://packaging.python.org/tutorials/packaging-projects/#generating-distribution-archives>`_)::
 
     $ pip install --user --upgrade twine
     $ python setup.py sdist
 
-To upload the package to `PyPI <http://pypi.python.org>`_
-(if you have the necessary permissions)::
+   To upload the package to `PyPI <http://pypi.python.org>`_
+   (if you have the necessary permissions)::
 
-    $ python -m twine upload dist/elephant-x.x.x.tar.gz
+    $ python -m twine upload dist/elephant-X.Y.Z.tar.gz
 
-Finally, tag the release in the Git repository and push it::
+7. Finally, make a release on GitHub UI page and copy-paste the release notes.
+   Then tag the release in the Git repository and push it::
 
     $ git tag <version>
     $ git push --tags upstream
 
-Here, version should be of the form ``vX.Y.Z``.
+   Here, version should be of the form ``vX.Y.Z``.

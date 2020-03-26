@@ -21,20 +21,13 @@ import scipy as sp
 import elephant.kernels as kernels
 from neo.core import SpikeTrain
 
-# Problem of conversion from Python 2 to Python 3:
-# 'xrange' in Python 2 is 'range' in Python 3.
-try:
-    xrange
-except NameError:
-    xrange = range
-
 
 def _create_matrix_from_indexed_function(
         shape, func, symmetric_2d=False, **func_params):
     mat = np.empty(shape)
     if symmetric_2d:
-        for i in xrange(shape[0]):
-            for j in xrange(i, shape[1]):
+        for i in range(shape[0]):
+            for j in range(i, shape[1]):
                 mat[i, j] = mat[j, i] = func(i, j, **func_params)
     else:
         for idx in np.ndindex(*shape):
@@ -99,18 +92,19 @@ def victor_purpura_dist(
 
     Returns
     -------
-        2-D array
-        Matrix containing the VP distance of all pairs of spike trains.
+    np.ndarray
+        2-D Matrix containing the VP distance of all pairs of spike trains.
 
-    Example
-    -------
-        import elephant.spike_train_dissimilarity_measures as stdm
-        q   = 1.0 / (10.0 * pq.ms)
-        st_a = SpikeTrain([10, 20, 30], units='ms', t_stop= 1000.0)
-        st_b = SpikeTrain([12, 24, 30], units='ms', t_stop= 1000.0)
-        vp_f = stdm.victor_purpura_dist([st_a, st_b], q)[0, 1]
-        vp_i = stdm.victor_purpura_dist(
-                   [st_a, st_b], q, algorithm='intuitive')[0, 1]
+    Examples
+    --------
+    >>> import quantities as pq
+    >>> from elephant.spike_train_dissimilarity import victor_purpura_dist
+    >>> q = 1.0 / (10.0 * pq.ms)
+    >>> st_a = SpikeTrain([10, 20, 30], units='ms', t_stop= 1000.0)
+    >>> st_b = SpikeTrain([12, 24, 30], units='ms', t_stop= 1000.0)
+    >>> vp_f = victor_purpura_dist([st_a, st_b], q)[0, 1]
+    >>> vp_i = victor_purpura_dist([st_a, st_b], q,
+    ...        algorithm='intuitive')[0, 1]
     """
     for train in trains:
         if not (isinstance(train, (pq.quantity.Quantity, SpikeTrain)) and
@@ -199,7 +193,7 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
 
     Returns
     -------
-        float
+    float
         The Victor-Purpura distance of train_a and train_b
     """
 
@@ -218,7 +212,7 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
         ((np.sqrt(6.0) * kernel.sigma) * kern).simplified)
     k = 1 - 2 * as_fortran
 
-    for i in xrange(min_dim):
+    for i in range(min_dim):
         # determine G[i, i] == accumulated_min[:, 0]
         accumulated_min = cost[:, :-i - 1] + k[i:, i]
         accumulated_min[1, :train_b.size - i] = \
@@ -268,18 +262,18 @@ def _victor_purpura_dist_for_st_pair_intuitive(
 
     Returns
     -------
-        float
+    float
         The Victor-Purpura distance of train_a and train_b
     """
     nspk_a = len(train_a)
     nspk_b = len(train_b)
     scr = np.zeros((nspk_a+1, nspk_b+1))
-    scr[:, 0] = xrange(0, nspk_a+1)
-    scr[0, :] = xrange(0, nspk_b+1)
+    scr[:, 0] = range(0, nspk_a+1)
+    scr[0, :] = range(0, nspk_b+1)
 
     if nspk_a > 0 and nspk_b > 0:
-        for i in xrange(1, nspk_a+1):
-            for j in xrange(1, nspk_b+1):
+        for i in range(1, nspk_a+1):
+            for j in range(1, nspk_b+1):
                 scr[i, j] = min(scr[i-1, j]+1, scr[i, j-1]+1)
                 scr[i, j] = min(scr[i, j], scr[i-1, j-1] + np.float64((
                                q*abs(train_a[i-1]-train_b[j-1])).simplified))
@@ -319,17 +313,17 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, sort=True):
 
     Returns
     -------
-        2-D array
-        Matrix containing the van Rossum distances for all pairs of
+    np.ndarray
+        2-D Matrix containing the van Rossum distances for all pairs of
         spike trains.
 
-    Example
-    -------
-        import elephant.spike_train_dissimilarity_measures as stdm
-        tau = 10.0 * pq.ms
-        st_a = SpikeTrain([10, 20, 30], units='ms', t_stop= 1000.0)
-        st_b = SpikeTrain([12, 24, 30], units='ms', t_stop= 1000.0)
-        vr   = stdm.van_rossum_dist([st_a, st_b], tau)[0, 1]
+    Examples
+    --------
+    >>> from elephant.spike_train_dissimilarity import van_rossum_dist
+    >>> tau = 10.0 * pq.ms
+    >>> st_a = SpikeTrain([10, 20, 30], units='ms', t_stop= 1000.0)
+    >>> st_b = SpikeTrain([12, 24, 30], units='ms', t_stop= 1000.0)
+    >>> vr = van_rossum_dist([st_a, st_b], tau)[0, 1]
     """
     for train in trains:
         if not (isinstance(train, (pq.quantity.Quantity, SpikeTrain)) and
@@ -386,9 +380,9 @@ def _summed_dist_matrix(spiketrains, tau, presorted=False):
 
     exp_diffs = np.exp(values[:, :-1] - values[:, 1:])
     markage = np.zeros(values.shape)
-    for u in xrange(len(spiketrains)):
+    for u in range(len(spiketrains)):
         markage[u, 0] = 0
-        for i in xrange(sizes[u] - 1):
+        for i in range(sizes[u] - 1):
             markage[u, i + 1] = (markage[u, i] + 1.0) * exp_diffs[u, i]
 
     # Same spiketrain terms
@@ -396,9 +390,9 @@ def _summed_dist_matrix(spiketrains, tau, presorted=False):
     D[np.diag_indices_from(D)] = sizes + 2.0 * np.sum(markage, axis=1)
 
     # Cross spiketrain terms
-    for u in xrange(D.shape[0]):
+    for u in range(D.shape[0]):
         all_ks = np.searchsorted(values[u], values, 'left') - 1
-        for v in xrange(u):
+        for v in range(u):
             js = np.searchsorted(values[v], values[u], 'right') - 1
             ks = all_ks[v]
             slice_j = np.s_[np.searchsorted(js, 0):sizes[u]]
