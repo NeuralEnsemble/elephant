@@ -12,6 +12,7 @@ matrix:
     - name: "conda 2.7"
       python: 2.7
       env: DISTRIB="conda"
+      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
 
     - name: "pip 2.7"
       python: 2.7
@@ -32,10 +33,12 @@ matrix:
     - name: "conda 3.7"
       python: 3.7
       env: DISTRIB="conda"
+      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
 
     - name: "conda 3.8"
       python: 3.8
       env: DISTRIB="conda"
+      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
 
     - name: "pip 3.8"
       python: 3.8
