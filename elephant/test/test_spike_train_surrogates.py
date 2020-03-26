@@ -94,7 +94,7 @@ class SurrogatesTestCase(unittest.TestCase):
         dither = 10 * pq.ms
         surrogate_trains = surr.dither_spikes(
             spiketrain, dither=dither, n=n_surrogates,
-            conserve_refr_period=True)
+            refractory_period=4*pq.ms)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -121,7 +121,7 @@ class SurrogatesTestCase(unittest.TestCase):
         dither = 10 * pq.ms
         surrogate_train = surr.dither_spikes(
             spiketrain, dither=dither, n=1,
-            conserve_refr_period=True)[0]
+            refractory_period=4*pq.ms)[0]
         self.assertEqual(len(surrogate_train), 0)
 
     def test_randomise_spikes_output_format(self):

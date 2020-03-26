@@ -61,8 +61,46 @@ SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'dither_spikes_with_refractory_period']
 
 
+def _dither_spikes_with_refractory_period(spiketrain, dither, n,
+                                          refractory_period):
+    units = spiketrain.units
+    t_start = spiketrain.t_start.rescale(units).magnitude
+    t_stop = spiketrain.t_stop.rescale(units).magnitude
+
+    dither = dither.rescale(units).magnitude
+    refractory_period = refractory_period.rescale(units).magnitude
+    refractory_period = np.min(np.diff(spiketrain.magnitude),
+                               initial=refractory_period)
+
+    dithered_spiketrains = []
+    for _ in range(n):
+        dithered_st = np.copy(spiketrain.magnitude)
+        random_ordered_ids = np.arange(len(spiketrain))
+        np.random.shuffle(random_ordered_ids)
+
+        for random_id in random_ordered_ids:
+            spike = dithered_st[random_id]
+            prev_spike = dithered_st[random_id - 1] \
+                if random_id > 0 \
+                else t_start - refractory_period
+            next_spike = dithered_st[random_id + 1] \
+                if random_id < len(spiketrain) - 1 \
+                else t_stop + refractory_period
+            prev_dither = min(dither, spike - prev_spike - refractory_period)
+            next_dither = min(dither, next_spike - spike - refractory_period)
+
+            dt = (prev_dither + next_dither) * random.random() - prev_dither
+            dithered_st[random_id] += dt
+
+        dithered_spiketrains.append(dithered_st)
+
+    dithered_spiketrains = np.array(dithered_spiketrains) * units
+
+    return dithered_spiketrains
+
+
 def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
-                  conserve_refr_period=False):
+                  refractory_period=None):
     """
     Generates surrogates of a spike train by spike dithering.
 
@@ -94,14 +132,15 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
         (for `edges = True`) or set them to the range's closest end
         (for `edges = False`).
         Default: True.
-    conserve_refr_period : bool, optional
-        the dither range for each spike is adjusted such that it can not fall
-        into the refractory period of the previous or next spike.
-        For this the refractorx period is estimated as the least ISI of the
-        spike train, but at highest to 4 ms.
+    refractory_period : pq.Quantity or None, optional
+        The dither range of each spike is adjusted such that the spike can not
+        fall into the `refractory_period` of the previous or next spike.
+        To account this, the refractory period is estimated as the smallest ISI
+        of the spike train.
         Note, that with this option a spike cannot "jump" over the previous or
         next spike as it is normally possible.
-        Default: False
+        If set to `None`, no refractoriness is in dithering.
+        Default: None
 
     Returns
     -------
@@ -130,57 +169,25 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
         [0.0 ms, 1000.0 ms])>]
 
     """
-    if conserve_refr_period:
-        INITIAL_REFR_PERIOD = 4*pq.ms
+    if len(spiketrain) == 0:
+        # return the empty spiketrain `n` times
+        return [spiketrain.copy() for _ in range(n)]
 
     units = spiketrain.units
     t_start = spiketrain.t_start.rescale(units).magnitude
     t_stop = spiketrain.t_stop.rescale(units).magnitude
 
-    # Transform spiketrain into a Quantity object (needed for matrix algebra)
-    spiketrain = spiketrain.view(pq.Quantity)
-
-    if len(spiketrain) == 0:
-        return [spiketrain.copy() for _ in range(n)]
-
-    if not conserve_refr_period:
+    if refractory_period is None or refractory_period == 0:
         # Main: generate the surrogates
         dithered_spiketrains = spiketrain.reshape((1, len(spiketrain))) \
             + 2 * dither * np.random.random_sample((n, len(spiketrain)))\
             - dither
+    elif isinstance(refractory_period, pq.Quantity):
+        dithered_spiketrains = _dither_spikes_with_refractory_period(
+            spiketrain, dither, n, refractory_period
+        )
     else:
-        dither = dither.rescale(units).magnitude
-        refractory_period = INITIAL_REFR_PERIOD.rescale(units).magnitude
-        refractory_period = np.min(np.diff(spiketrain.magnitude),
-                                   initial=refractory_period)
-
-        dithered_spiketrains = []
-        for _ in range(n):
-            dithered_spiketrain = np.copy(spiketrain.magnitude)
-            random_ordered_ids = np.arange(len(spiketrain))
-            np.random.shuffle(random_ordered_ids)
-
-            for random_id in random_ordered_ids:
-                spike = dithered_spiketrain[random_id]
-
-                prev_spike = dithered_spiketrain[random_id - 1] \
-                    if random_id > 0 \
-                    else t_start - refractory_period
-                next_spike = dithered_spiketrain[random_id + 1] \
-                    if random_id < len(spiketrain) - 1 \
-                    else t_stop + refractory_period
-
-                prev_dither = min(dither,
-                                  spike - prev_spike - refractory_period)
-                next_dither = min(dither,
-                                  next_spike - spike - refractory_period)
-
-                dt = (prev_dither + next_dither) * random.random()\
-                    - prev_dither
-                dithered_spiketrain[random_id] += dt
-
-            dithered_spiketrains.append(dithered_spiketrain)
-        dithered_spiketrains = np.array(dithered_spiketrains) * units
+        raise ValueError("refractory_period must be of type pq.Quantity")
 
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
