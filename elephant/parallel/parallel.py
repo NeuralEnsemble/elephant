@@ -38,12 +38,9 @@ Available Executors
 import concurrent.futures
 from functools import update_wrapper, partial
 
-try:
-    import mpi4py.futures
-    from mpi4py import MPI
-    HAVE_MPI = True
-except ImportError:  # pragma: no cover
-    HAVE_MPI = False
+import mpi4py.futures
+from mpi4py import MPI
+
 
 class SingleProcess(object):
     """
