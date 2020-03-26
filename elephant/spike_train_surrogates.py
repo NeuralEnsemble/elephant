@@ -989,16 +989,13 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
-        'dither_spikes_with_refractory_period':
-            partial(dither_spikes, refractory_period=4*pq.ms),
         'joint_isi_dithering': None}
 
     if surr_method not in surrogate_types.keys():
         raise AttributeError(
             'specified surr_method (=%s) not valid' % surr_method)
 
-    if surr_method in ('dither_spike_train', 'dither_spikes',
-                       'dither_spikes_with_refractory_period'):
+    if surr_method in ('dither_spike_train', 'dither_spikes'):
         return surrogate_types[surr_method](
             spiketrain, dt, n=n, decimals=decimals, edges=edges)
     if surr_method in ('randomise_spikes', 'shuffle_isis'):
