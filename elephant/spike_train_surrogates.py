@@ -989,7 +989,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
         'dither_spikes_with_refractory_period':
-            partial(dither_spikes, conserve_refr_period=True),
+            partial(dither_spikes, refractory_period=4*pq.ms),
         'joint_isi_dithering': None}
 
     if surr_method not in surrogate_types.keys():
