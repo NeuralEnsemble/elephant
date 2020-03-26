@@ -92,8 +92,9 @@ class SurrogatesTestCase(unittest.TestCase):
                                      150, 180, 350] * pq.ms, t_stop=.5 * pq.s)
         n_surrogates = 2
         dither = 10 * pq.ms
-        surrogate_trains = surr.dither_spikes_with_refractory_period(
-            spiketrain, dither=dither, n_surrogates=n_surrogates)
+        surrogate_trains = surr.dither_spikes(
+            spiketrain, dither=dither, n=n_surrogates,
+            conserve_refr_period=True)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -118,8 +119,9 @@ class SurrogatesTestCase(unittest.TestCase):
         spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
         dither = 10 * pq.ms
-        surrogate_train = surr.dither_spikes_with_refractory_period(
-            spiketrain, dither=dither, n_surrogates=1)[0]
+        surrogate_train = surr.dither_spikes(
+            spiketrain, dither=dither, n=1,
+            conserve_refr_period=True)[0]
         self.assertEqual(len(surrogate_train), 0)
 
     def test_randomise_spikes_output_format(self):
