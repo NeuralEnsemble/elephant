@@ -120,6 +120,9 @@ class AssetTestCase(unittest.TestCase):
         self.assertTrue(np.all(mask_1_2 == mask_1_2_correct))
         self.assertIsInstance(mask_1_2[0, 0], np.bool_)
 
+        self.assertRaises(ValueError, asset.mask_matrices, [], [])
+        self.assertRaises(ValueError, asset.mask_matrices, [np.arange(5)], [])
+
     def test_cluster_matrix_entries(self):
         # test with symmetric matrix
         mat = np.array([[0, 0, 1, 0],
@@ -160,10 +163,17 @@ class AssetTestCase(unittest.TestCase):
                             [0, 2, 0, 0]])
         np.testing.assert_array_equal(clustered, correct)
 
+        mat = np.zeros((4, 4))
+        clustered = asset.cluster_matrix_entries(
+            mat, eps=1.5, min_neighbors=2, stretch=1)
+        correct = mat
+        np.testing.assert_array_equal(clustered, correct)
+
     def test_intersection_matrix(self):
         st1 = neo.SpikeTrain([1, 2, 4]*pq.ms, t_stop=6*pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4]*pq.ms, t_stop=6*pq.ms)
         st3 = neo.SpikeTrain([2, 5]*pq.ms, t_start=1*pq.ms, t_stop=6*pq.ms)
+        st4 = neo.SpikeTrain([1, 3, 4]*pq.ms, t_stop=5*pq.ms)
         binsize = 1 * pq.ms
 
         # Check that the routine works for correct input...
@@ -195,6 +205,9 @@ class AssetTestCase(unittest.TestCase):
         # ...for different SpikeTrain's t_starts
         self.assertRaises(ValueError, asset.intersection_matrix,
                           spiketrains=[st1, st3], binsize=binsize)
+        # ...for different SpikeTrain's t_stops
+        self.assertRaises(ValueError, asset.intersection_matrix,
+                          spiketrains=[st1, st4], binsize=binsize)
 
     def test_integration(self):
         # define parameters
