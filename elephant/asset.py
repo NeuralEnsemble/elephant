@@ -411,54 +411,6 @@ def intersection_matrix(
     return imat, xx, yy
 
 
-def _reference_diagonal(x_edges, y_edges):
-    """
-    Given two arrays of time bin edges :math:`x_edges = (X_1, X_2, ..., X_k)`
-    and :math:`y_edges = (Y_1, Y_2, ..., Y_k)`, considers the matrix `M`
-    such that :math:`M_{ij} = (X_i, Y_j)` and finds the reference diagonal of
-    `M`, i.e. the diagonal of `M` whose elements are of the type `(a, a)`.
-    Returns the index of such diagonal and its elements.
-
-    For example, if :math:`x_edges = (0, 1, 2, 3) ms` and :math:`y_edges =
-    (1, 2, 3, 4) ms`, then the index of the reference diagonal is -1
-    (first off-diagonal below the main diagonal) and its elements are
-    (-1, 0), (0, 1), (1, 2), (2, 3).
-
-    """
-    diag_id = None
-    error_msg = \
-        'the time axes (%s-%s and %s-%s)' % (
-            x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]) + \
-        ' overlap but the overlapping bin edges are not aligned' \
-        '. Bad alignment of the time axes.'
-
-    if y_edges[0] > x_edges[0]:
-        if y_edges[0] < x_edges[-1]:
-            bin_ids = np.where(
-                _quantities_almost_equal(x_edges, y_edges[0]))[0]
-            if len(bin_ids) == 0:
-                raise ValueError(error_msg)
-            diag_id = - bin_ids[0]
-    else:
-        if y_edges[-1] > x_edges[0]:
-            bin_ids = np.where(y_edges == x_edges[0])[0]
-            if len(bin_ids) == 0:
-                raise ValueError(error_msg)
-            diag_id = bin_ids[0]
-
-    m = len(x_edges) - 1
-
-    if diag_id is None:
-        return diag_id, np.array([])
-    elif diag_id >= 0:
-        elements = np.column_stack([np.arange(m - diag_id),
-                                    np.arange(diag_id, m)])
-    else:
-        elements = np.column_stack([np.arange(diag_id, m),
-                                    np.arange(m - diag_id)])
-    return diag_id, elements
-
-
 def mask_matrices(matrices, thresholds):
     """
     Given a list of matrices and a list of thresholds, return a boolean matrix
