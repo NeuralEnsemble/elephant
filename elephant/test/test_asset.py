@@ -199,6 +199,37 @@ class AssetTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(yedges, np.arange(6, 12)*pq.ms)
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
 
+        # test with norm=1
+        imat_1_2, xedges, yedges = asset.intersection_matrix(
+            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms, norm=1)
+        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
+                                 [0.,  1.,  1.,  1.,  1.],
+                                 [0.,  1.,  1.,  0.,  1.],
+                                 [0.,  1.,  0.,  1.,  1.],
+                                 [0.,  1.,  1.,  1.,  1.]])
+        np.testing.assert_array_equal(imat_1_2, trueimat_1_2)
+
+        # test with norm=2
+        imat_1_2, xedges, yedges = asset.intersection_matrix(
+            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms, norm=2)
+        sq = np.sqrt(2) / 2.
+        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
+                                 [0.,  1.,  sq,  sq,  1.],
+                                 [0.,  sq,  1.,  0.,  sq],
+                                 [0.,  sq,  0.,  1.,  sq],
+                                 [0.,  1.,  sq,  sq,  1.]])
+        np.testing.assert_array_almost_equal(imat_1_2, trueimat_1_2)
+
+        # test with norm=3
+        imat_1_2, xedges, yedges = asset.intersection_matrix(
+            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms, norm=3)
+        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
+                                 [0.,  1.,  .5,  .5,  1.],
+                                 [0.,  .5,  1.,  0.,  .5],
+                                 [0.,  .5,  0.,  1.,  .5],
+                                 [0.,  1.,  .5,  .5,  1.]])
+        np.testing.assert_array_almost_equal(imat_1_2, trueimat_1_2)
+
         # Check that errors are raised correctly...
         # ...for partially overlapping time intervals
         self.assertRaises(ValueError, asset.intersection_matrix,
