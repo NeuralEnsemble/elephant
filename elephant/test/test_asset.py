@@ -128,10 +128,10 @@ class AssetTestCase(unittest.TestCase):
                         [0, 1, 0, 0]])
         clustered = asset.cluster_matrix_entries(
             mat, eps=1.5, min_neighbors=2, stretch=1)
-        correct = np.array([[0, 0, 0, 0],
-                            [0, 0, 0, 0],
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0]])
+        correct = np.array([[0, 0, 1, 0],
+                            [0, 0, 0, 1],
+                            [2, 0, 0, 0],
+                            [0, 2, 0, 0]])
         np.testing.assert_array_equal(clustered, correct)
 
         # test with non-symmetric matrix
