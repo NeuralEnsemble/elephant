@@ -14,14 +14,14 @@ class MPIPoolExecutor(ProcessPoolExecutor):
 
     Notes
     -----
-    `-m mpi4py.futures` command line option is needed to execute python scripts
+    `-m mpi4py.futures` command line option is needed to execute Python scripts
     with MPI:
 
     .. code-block:: sh
 
        mpiexec -n numprocs python -m mpi4py.futures pyfile [arg] ...
 
-    For more information of how to launch MPI processes in python refer to
+    For more information of how to launch MPI processes in Python refer to
     https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line
     """
 
@@ -50,14 +50,14 @@ class MPICommExecutor(MPIPoolExecutor):
 
     Notes
     -----
-    `-m mpi4py.futures` command line option is needed to execute python scripts
+    `-m mpi4py.futures` command line option is needed to execute Python scripts
     with MPI:
 
     .. code-block:: sh
 
        mpiexec -n numprocs python -m mpi4py.futures pyfile [arg] ...
 
-    For more information of how to launch MPI processes in python refer to
+    For more information of how to launch MPI processes in Python refer to
     https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line
     """
     def __init__(self, comm=None, root=0):

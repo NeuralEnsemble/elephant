@@ -35,11 +35,13 @@ Available Executors
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import warnings
+
 from .parallel import ProcessPoolExecutor, SingleProcess
 
 try:
     from .mpi import MPIPoolExecutor, MPICommExecutor
 except ImportError:
     # mpi4py is missing
-    # please run command `pip install -r requirements-extras.txt`
-    pass
+    warnings.warn("mpi4py package is missing. Please run 'pip install mpi4py' "
+                  "in a terminal to activate MPI features.")

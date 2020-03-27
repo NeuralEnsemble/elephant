@@ -19,7 +19,6 @@ from . import (statistics,
                current_source_density,
                change_point_detection,
                phase_analysis,
-               parallel,
                sta,
                conversion,
                neo_tools,
@@ -34,7 +33,7 @@ try:
     from . import spade
 except ImportError:
     # requirements-extras are missing
-    # please run command `pip install -r requirements-extras.txt`
+    # please install Elephant with `pip install elephant[extras]`
     pass
 
 
