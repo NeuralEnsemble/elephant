@@ -387,15 +387,19 @@ def intersection_matrix(
             norm_coef = 1.
         elif norm == 1:
             norm_coef = np.minimum(
-                spikes_per_bin_x[ii], spikes_per_bin_y)
+                spikes_per_bin_x[:, ii], spikes_per_bin_y)
         elif norm == 2:
             norm_coef = np.sqrt(
-                spikes_per_bin_x[ii] * spikes_per_bin_y)
+                spikes_per_bin_x[:, ii] * spikes_per_bin_y)
         elif norm == 3:
             norm_coef = np.array([(bsts_x[:, ii]
                                    + bsts_y[:, jj]).count_nonzero()
                                   for jj in range(bsts_y.shape[1])])
-        imat[ii, :] = imat[ii, :] / norm_coef
+        # ignore division by zero warnings
+        # we deal with the affected values below
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            imat[ii, :] = imat[ii, :] / norm_coef
 
     # If normalization required, for each j such that bsts_y[j] is
     # identically 0 the code above sets imat[:, j] to identically nan.
@@ -404,7 +408,6 @@ def intersection_matrix(
         ybins_equal_0 = np.where(spikes_per_bin_y == 0)[0]
         for y_id in ybins_equal_0:
             imat[:, y_id] = 0
-        np.fill_diagonal(imat, val=1)
 
     # Return the intersection matrix and the edges of the bins used for the
     # x and y axes, respectively.
