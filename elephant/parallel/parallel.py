@@ -50,7 +50,7 @@ class SingleProcess(object):
 
 class ProcessPoolExecutor(SingleProcess):
     """
-    The wrapper of python built-in `concurrent.futures.ProcessPoolExecutor`
+    The wrapper of Python built-in `concurrent.futures.ProcessPoolExecutor`
     class.
 
     `ProcessPoolExecutor` is recommended to use if you have one physical
