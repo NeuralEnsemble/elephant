@@ -1145,10 +1145,8 @@ def _jsf_uniform_orderstat_3d(u, alpha, n, verbose=False):
             op=MPI.SUM)
 
         # We need to return the collected totals instead of the local P_total
-        # restore the original shape using the stored indices
         return totals
 
-    # restore the original shape using the stored indices
     return P_total
 
 
