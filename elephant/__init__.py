@@ -27,6 +27,9 @@ from . import (statistics,
                waveform_features,
                gpfa)
 
+# not included modules on purpose:
+#   parallel: avoid warns when elephant is imported
+
 try:
     from . import pandas_bridge
     from . import asset
