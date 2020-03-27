@@ -12,6 +12,7 @@ import scipy.spatial
 import quantities as pq
 import neo
 import random
+from elephant import statistics, kernels
 
 try:
     import sklearn
@@ -399,6 +400,101 @@ class AssetTestCase(unittest.TestCase):
                              (8, 8): {2, 5, 8}}}
         self.assertDictEqual(sses, expected_sses)
 
+    def test_integration_provided_rates(self):
+        # define parameters
+        np.random.seed(1)
+        random.seed(1)
+        size_group = 3
+        size_sse = 3
+        binsize = 3 * pq.ms
+        delay = 18 * pq.ms
+        T = 4 * delay + 2 * size_sse * binsize
+        time_between_sses = 2 * delay
+        kernel_width = 9 * pq.ms
+        alpha = 0.9
+        filter_shape = (5, 1)
+        nr_largest = 3
+        eps = 3
+        min_neighbors = 3
+        stretch = 5
+        # ground truth for pmats
+        starting_bin = int((delay/binsize).magnitude.item())
+        indices_pmat_1 = np.arange(starting_bin, starting_bin + size_sse)
+        indices_pmat = (indices_pmat_1, indices_pmat_1)
+        # generate spike trains
+        spiketrains = [neo.SpikeTrain([index_spiketrain] * binsize
+                                      + delay,
+                                      t_start=0*pq.ms,
+                                      t_stop=2 * delay + size_sse * binsize)
+                       for index_group in range(size_group)
+                       for index_spiketrain in range(size_sse)]
+        spiketrains_y = [neo.SpikeTrain([index_spiketrain] * binsize
+                                        + time_between_sses + delay
+                                        + size_sse * binsize,
+                                        t_start=size_sse * binsize + 2 * delay,
+                                        t_stop=T)
+                         for index_group in range(size_group)
+                         for index_spiketrain in range(size_sse)]
+        # calculate rates
+        rates_x = [statistics.instantaneous_rate(
+            st,
+            kernel=kernels.RectangularKernel(sigma=kernel_width
+                                             / 2. / np.sqrt(3.)),
+            sampling_period=1*pq.ms)
+                   for st in spiketrains]
+        rates_y = [statistics.instantaneous_rate(
+            st,
+            kernel=kernels.RectangularKernel(sigma=kernel_width
+                                             / 2. / np.sqrt(3.)),
+            sampling_period=1*pq.ms)
+                   for st in spiketrains_y]
+
+        # calculate probability matrix analytical
+        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
+            spiketrains,
+            spiketrains_y=spiketrains_y,
+            binsize=binsize,
+            fir_rates_x=rates_x,
+            fir_rates_y=rates_y)
+        # test probability matrices
+        np.testing.assert_array_equal(np.where(pmat > alpha), indices_pmat)
+        # calculate joint probability matrix
+        jmat = asset.joint_probability_matrix(pmat,
+                                              filter_shape=filter_shape,
+                                              nr_largest=nr_largest,
+                                              verbose=True)
+        # test joint probability matrix
+        index_high_probabilities = ([6, 6, 7, 7, 7, 8, 8],
+                                    [6, 7, 6, 7, 8, 7, 8])
+        index_medium_probabilities = ([5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9],
+                                      [5, 6, 5, 6, 7, 6, 7, 8, 7, 8, 9, 8, 9])
+        index_low_probabilities = ([4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,
+                                    8,  8,  8,  9,  9, 9, 10, 10],
+                                   [4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                                    7,  8,  9,  8,  9, 10,  9, 10])
+        np.testing.assert_array_equal(np.where(jmat > 0.98),
+                                      index_high_probabilities)
+        np.testing.assert_array_equal(np.where(jmat > 0.9),
+                                      index_medium_probabilities)
+        np.testing.assert_array_equal(np.where(jmat > 0.8),
+                                      index_low_probabilities)
+        # test if all other entries are zeros
+        mask_zeros = np.ones(jmat.shape, bool)
+        mask_zeros[index_low_probabilities] = False
+        self.assertTrue(np.all(jmat[mask_zeros] == 0))
+
+        # calculate mask matrix and cluster matrix
+        mmat = asset.mask_matrices([pmat, jmat], [alpha, alpha])
+        cmat = asset.cluster_matrix_entries(mmat,
+                                            eps=eps,
+                                            min_neighbors=min_neighbors,
+                                            stretch=stretch)
+
+        # extract sses and test them
+        sses = asset.extract_sse(spiketrains, binsize, cmat, spiketrains_y)
+        expected_sses = {1: {(6, 6): {0, 3, 6}, (7, 7): {1, 4, 7},
+                             (8, 8): {2, 5, 8}}}
+        self.assertDictEqual(sses, expected_sses)
 
 def suite():
     suite = unittest.makeSuite(AssetTestCase, 'test')
