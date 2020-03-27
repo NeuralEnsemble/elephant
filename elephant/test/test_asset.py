@@ -173,7 +173,6 @@ class AssetTestCase(unittest.TestCase):
         st1 = neo.SpikeTrain([1, 2, 4]*pq.ms, t_stop=6*pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4]*pq.ms, t_stop=6*pq.ms)
         st3 = neo.SpikeTrain([2, 5]*pq.ms, t_start=1*pq.ms, t_stop=6*pq.ms)
-        st4 = neo.SpikeTrain([1, 3, 4]*pq.ms, t_stop=5*pq.ms)
         binsize = 1 * pq.ms
 
         # Check that the routine works for correct input...
@@ -207,7 +206,8 @@ class AssetTestCase(unittest.TestCase):
                           spiketrains=[st1, st3], binsize=binsize)
         # ...for different SpikeTrain's t_stops
         self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st4], binsize=binsize)
+                          spiketrains=[st1, st2], binsize=binsize,
+                          t_stop_x=5*pq.ms)
 
     def test_integration(self):
         # define parameters
