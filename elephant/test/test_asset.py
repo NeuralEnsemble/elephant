@@ -224,13 +224,13 @@ class AssetTestCase(unittest.TestCase):
         kernel_width = 9 * pq.ms
         jitter = 9 * pq.ms
         alpha = 0.9
-        filter_shape = (5,1)
+        filter_shape = (5, 1)
         nr_largest = 3
         eps = 3
         min_neighbors = 3
         stretch = 5
         n_surr = 20
-        # ground gruth for pmats
+        # ground truth for pmats
         starting_bin_1 = int((delay/binsize).magnitude.item())
         starting_bin_2 = int((2 * delay/binsize +
                               time_between_sses/binsize).magnitude.item())
@@ -246,8 +246,8 @@ class AssetTestCase(unittest.TestCase):
                                        bins_between_sses] * binsize
                                       + delay + 1 * pq.ms,
                                       t_stop=T)
-                       for index_group in np.arange(size_group)
-                       for index_spiketrain in np.arange(size_sse)]
+                       for index_group in range(size_group)
+                       for index_spiketrain in range(size_sse)]
         # calculate probability matrix analytical
         pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
             spiketrains,
@@ -256,11 +256,11 @@ class AssetTestCase(unittest.TestCase):
         # calculate probability matrix montecarlo
         pmat_montecarlo, imat, x_bins, y_bins = \
             asset.probability_matrix_montecarlo(
-            spiketrains,
-            j=jitter,
-            binsize=binsize,
-            n_surr=n_surr,
-            surr_method='dither_spikes')
+                spiketrains,
+                j=jitter,
+                binsize=binsize,
+                n_surr=n_surr,
+                surr_method='dither_spikes')
         # test probability matrices
         np.testing.assert_array_equal(np.where(pmat > alpha), indices_pmat)
         np.testing.assert_array_equal(np.where(pmat_montecarlo > alpha),
@@ -274,12 +274,11 @@ class AssetTestCase(unittest.TestCase):
         index_high_probabilities = (np.array([9,  9, 10, 10, 10, 11, 11]),
                                     np.array([3, 4, 3, 4, 5, 4, 5]))
         index_medium_probabilities = (np.array([8,  8,  9,  9,  9, 10, 10,
-                                                 10, 11, 11, 11, 12, 12]),
+                                                10, 11, 11, 11, 12, 12]),
                                       np.array([2, 3, 2, 3, 4, 3, 4, 5, 4, 5,
                                                 6, 5, 6]))
-        index_low_probabilities = (np.array([7,  8,  8,  9,  9,  9, 10, 10,
-                                             10, 11, 11, 11, 12, 12, 12, 13,
-                                             13]),
+        index_low_probabilities = (np.array([7,  8,  8,  9,  9,  9, 10, 10, 10,
+                                             11, 11, 11, 12, 12, 12, 13, 13]),
                                    np.array([2, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5,
                                              6, 5, 6, 7, 6, 7]))
         np.testing.assert_array_equal(np.where(jmat > 0.98),
@@ -495,6 +494,7 @@ class AssetTestCase(unittest.TestCase):
         expected_sses = {1: {(6, 6): {0, 3, 6}, (7, 7): {1, 4, 7},
                              (8, 8): {2, 5, 8}}}
         self.assertDictEqual(sses, expected_sses)
+
 
 def suite():
     suite = unittest.makeSuite(AssetTestCase, 'test')
