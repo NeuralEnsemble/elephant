@@ -16,6 +16,7 @@ import scipy.spatial
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 from elephant import statistics, kernels
+from elephant.spike_train_generation import homogeneous_poisson_process
 
 try:
     import sklearn
@@ -256,6 +257,35 @@ class AssetTestIntegration(unittest.TestCase):
     def setUp(self):
         # common for all tests
         self.binsize = 3 * pq.ms
+
+    def test_probability_matrix_symmetric(self):
+        np.random.seed(1)
+        kernel_width = 9 * pq.ms
+        rate = 50 * pq.Hz
+        n_spiketrains = 50
+        spiketrains = []
+        spiketrains_copy = []
+        for _ in range(n_spiketrains):
+            st = homogeneous_poisson_process(rate, t_stop=100 * pq.ms)
+            spiketrains.append(st)
+            spiketrains_copy.append(st.copy())
+
+        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
+            spiketrains,
+            binsize=self.binsize,
+            kernel_width=kernel_width)
+
+        pmat_copy, imat_copy, x_bins_copy, y_bins_copy = \
+            asset.probability_matrix_analytical(
+                spiketrains,
+                spiketrains_y=spiketrains,
+                binsize=self.binsize,
+                kernel_width=kernel_width)
+
+        assert_array_almost_equal(pmat, pmat_copy)
+        assert_array_almost_equal(imat, imat_copy)
+        assert_array_almost_equal(x_bins, x_bins_copy)
+        assert_array_almost_equal(y_bins, y_bins_copy)
 
     def _test_integration_subtest(self, spiketrains, spiketrains_y,
                                   indices_pmat, index_proba, expected_sses):

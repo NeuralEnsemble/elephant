@@ -915,7 +915,6 @@ def probability_matrix_analytical(
     bsts_x_matrix = bsts_x.to_bool_array()
 
     if symmetric:
-        spiketrains_y = spiketrains
         bsts_y = bsts_x
         bsts_y_matrix = bsts_x_matrix
 
