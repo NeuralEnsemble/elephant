@@ -7,5 +7,6 @@ dependencies:
   - numpy
   - scipy
   - tqdm
+  - pandas
   - scikit-learn
   - statsmodels
