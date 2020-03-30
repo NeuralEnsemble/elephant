@@ -6,12 +6,15 @@ Unit tests for the ASSET analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import unittest
-import numpy as np
-import scipy.spatial
-import quantities as pq
-import neo
 import random
+import unittest
+
+import neo
+import numpy as np
+import quantities as pq
+import scipy.spatial
+from numpy.testing import assert_array_almost_equal, assert_array_equal
+
 from elephant import statistics, kernels
 
 try:
@@ -20,6 +23,7 @@ except ImportError:
     HAVE_SKLEARN = False
 else:
     import elephant.asset as asset
+
     HAVE_SKLEARN = True
     stretchedmetric2d = asset._stretched_metric_2d
 
@@ -47,7 +51,7 @@ class AssetTestCase(unittest.TestCase):
         y = (1, 2, 0)
         stretch = 10
         D = stretchedmetric2d(x, y, stretch=stretch, ref_angle=45)
-        np.testing.assert_array_almost_equal(D, D.T, decimal=12)
+        assert_array_almost_equal(D, D.T, decimal=12)
 
     def test_stretched_metric_2d_equals_euclidean_if_stretch_1(self):
         x = np.arange(10)
@@ -59,7 +63,7 @@ class AssetTestCase(unittest.TestCase):
         points = np.vstack([x, y]).T
         E = scipy.spatial.distance_matrix(points, points)
         # assert D == E
-        np.testing.assert_array_almost_equal(D, E, decimal=12)
+        assert_array_almost_equal(D, E, decimal=12)
 
     def test_sse_difference(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
@@ -138,7 +142,7 @@ class AssetTestCase(unittest.TestCase):
                             [0, 0, 0, 1],
                             [2, 0, 0, 0],
                             [0, 2, 0, 0]])
-        np.testing.assert_array_equal(clustered, correct)
+        assert_array_equal(clustered, correct)
 
         # test with non-symmetric matrix
         mat = np.array([[0, 1, 0, 0],
@@ -151,7 +155,7 @@ class AssetTestCase(unittest.TestCase):
                             [0, 0, 1, 0],
                             [-1, 0, 0, 1],
                             [0, -1, 0, 0]])
-        np.testing.assert_array_equal(clustered, correct)
+        assert_array_equal(clustered, correct)
 
         # test with lowered min_neighbors
         mat = np.array([[0, 1, 0, 0],
@@ -164,96 +168,99 @@ class AssetTestCase(unittest.TestCase):
                             [0, 0, 1, 0],
                             [2, 0, 0, 1],
                             [0, 2, 0, 0]])
-        np.testing.assert_array_equal(clustered, correct)
+        assert_array_equal(clustered, correct)
 
         mat = np.zeros((4, 4))
         clustered = asset.cluster_matrix_entries(
             mat, eps=1.5, min_neighbors=2, stretch=1)
         correct = mat
-        np.testing.assert_array_equal(clustered, correct)
+        assert_array_equal(clustered, correct)
 
     def test_intersection_matrix(self):
-        st1 = neo.SpikeTrain([1, 2, 4]*pq.ms, t_stop=6*pq.ms)
-        st2 = neo.SpikeTrain([1, 3, 4]*pq.ms, t_stop=6*pq.ms)
-        st3 = neo.SpikeTrain([2, 5]*pq.ms, t_start=1*pq.ms, t_stop=6*pq.ms)
+        st1 = neo.SpikeTrain([1, 2, 4] * pq.ms, t_stop=6 * pq.ms)
+        st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)
+        st3 = neo.SpikeTrain([2, 5] * pq.ms, t_start=1 * pq.ms,
+                             t_stop=6 * pq.ms)
         binsize = 1 * pq.ms
 
         # Check that the routine works for correct input...
         # ...same t_start, t_stop on both time axes
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms)
-        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
-                                 [0.,  2.,  1.,  1.,  2.],
-                                 [0.,  1.,  1.,  0.,  1.],
-                                 [0.,  1.,  0.,  1.,  1.],
-                                 [0.,  2.,  1.,  1.,  2.]])
-        self.assertTrue(np.all(xedges == np.arange(6)*pq.ms))  # correct bins
-        self.assertTrue(np.all(yedges == np.arange(6)*pq.ms))  # correct bins
+            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms)
+        trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
+                                 [0., 2., 1., 1., 2.],
+                                 [0., 1., 1., 0., 1.],
+                                 [0., 1., 0., 1., 1.],
+                                 [0., 2., 1., 1., 2.]])
+        self.assertTrue(np.all(xedges == np.arange(6) * pq.ms))  # correct bins
+        self.assertTrue(np.all(yedges == np.arange(6) * pq.ms))  # correct bins
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
         # ...different t_start, t_stop on the two time axes
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_start_y=6*pq.ms,
+            [st1, st2], binsize, t_start_y=6 * pq.ms,
             spiketrains_y=[st + 6 * pq.ms for st in [st1, st2]],
-            t_stop_x=5*pq.ms, t_stop_y=11*pq.ms)
-        self.assertTrue(np.all(xedges == np.arange(6)*pq.ms))  # correct bins
-        np.testing.assert_array_almost_equal(yedges, np.arange(6, 12)*pq.ms)
+            t_stop_x=5 * pq.ms, t_stop_y=11 * pq.ms)
+        self.assertTrue(np.all(xedges == np.arange(6) * pq.ms))  # correct bins
+        assert_array_almost_equal(yedges, np.arange(6, 12) * pq.ms)
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
 
         # test with norm=1
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms, norm=1)
-        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
-                                 [0.,  1.,  1.,  1.,  1.],
-                                 [0.,  1.,  1.,  0.,  1.],
-                                 [0.,  1.,  0.,  1.,  1.],
-                                 [0.,  1.,  1.,  1.,  1.]])
-        np.testing.assert_array_equal(imat_1_2, trueimat_1_2)
+            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms,
+            norm=1)
+        trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
+                                 [0., 1., 1., 1., 1.],
+                                 [0., 1., 1., 0., 1.],
+                                 [0., 1., 0., 1., 1.],
+                                 [0., 1., 1., 1., 1.]])
+        assert_array_equal(imat_1_2, trueimat_1_2)
 
         # test with norm=2
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms, norm=2)
+            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms,
+            norm=2)
         sq = np.sqrt(2) / 2.
-        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
-                                 [0.,  1.,  sq,  sq,  1.],
-                                 [0.,  sq,  1.,  0.,  sq],
-                                 [0.,  sq,  0.,  1.,  sq],
-                                 [0.,  1.,  sq,  sq,  1.]])
-        np.testing.assert_array_almost_equal(imat_1_2, trueimat_1_2)
+        trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
+                                 [0., 1., sq, sq, 1.],
+                                 [0., sq, 1., 0., sq],
+                                 [0., sq, 0., 1., sq],
+                                 [0., 1., sq, sq, 1.]])
+        assert_array_almost_equal(imat_1_2, trueimat_1_2)
 
         # test with norm=3
         imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5*pq.ms, t_stop_y=5*pq.ms, norm=3)
-        trueimat_1_2 = np.array([[0.,  0.,  0.,  0.,  0.],
-                                 [0.,  1.,  .5,  .5,  1.],
-                                 [0.,  .5,  1.,  0.,  .5],
-                                 [0.,  .5,  0.,  1.,  .5],
-                                 [0.,  1.,  .5,  .5,  1.]])
-        np.testing.assert_array_almost_equal(imat_1_2, trueimat_1_2)
+            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms,
+            norm=3)
+        trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
+                                 [0., 1., .5, .5, 1.],
+                                 [0., .5, 1., 0., .5],
+                                 [0., .5, 0., 1., .5],
+                                 [0., 1., .5, .5, 1.]])
+        assert_array_almost_equal(imat_1_2, trueimat_1_2)
 
         # Check that errors are raised correctly...
         # ...for partially overlapping time intervals
         self.assertRaises(ValueError, asset.intersection_matrix,
                           spiketrains=[st1, st2], binsize=binsize,
-                          t_start_y=1*pq.ms)
+                          t_start_y=1 * pq.ms)
         # ...for different SpikeTrain's t_starts
         self.assertRaises(ValueError, asset.intersection_matrix,
                           spiketrains=[st1, st3], binsize=binsize)
         # ...for different SpikeTrain's t_stops
         self.assertRaises(ValueError, asset.intersection_matrix,
                           spiketrains=[st1, st2], binsize=binsize,
-                          t_stop_x=5*pq.ms)
+                          t_stop_x=5 * pq.ms)
 
-    def test_integration(self):
+
+class AssetTestIntegration(unittest.TestCase):
+    def setUp(self):
+        # common for all tests
+        self.binsize = 3 * pq.ms
+
+    def _test_integration_subtest(self, spiketrains, spiketrains_y,
+                                  indices_pmat, index_proba, expected_sses):
         # define parameters
-        np.random.seed(1)
         random.seed(1)
-        size_group = 3
-        size_sse = 3
-        T = 60 * pq.ms
-        binsize = 3 * pq.ms
-        delay = 9 * pq.ms
-        bins_between_sses = 3
-        time_between_sses = 9 * pq.ms
         kernel_width = 9 * pq.ms
         jitter = 9 * pq.ms
         alpha = 0.9
@@ -263,10 +270,91 @@ class AssetTestCase(unittest.TestCase):
         min_neighbors = 3
         stretch = 5
         n_surr = 20
+
+        def _get_rates(_spiketrains):
+            kernel_sigma = kernel_width / 2. / np.sqrt(3.)
+            kernel = kernels.RectangularKernel(sigma=kernel_sigma)
+            rates = [statistics.instantaneous_rate(
+                st,
+                kernel=kernel,
+                sampling_period=1 * pq.ms)
+                for st in _spiketrains]
+            return rates
+
+        # calculate probability matrix analytical
+        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
+            spiketrains,
+            spiketrains_y=spiketrains_y,
+            binsize=self.binsize,
+            kernel_width=kernel_width)
+
+        # check if pmat is the same when rates are provided
+        pmat_as_rates, imat_as_rates, x_bins_as_rates, y_bins_as_rates = \
+            asset.probability_matrix_analytical(
+                spiketrains,
+                spiketrains_y=spiketrains_y,
+                binsize=self.binsize,
+                fir_rates_x=_get_rates(spiketrains),
+                fir_rates_y=_get_rates(spiketrains_y))
+        assert_array_almost_equal(pmat, pmat_as_rates)
+        assert_array_almost_equal(imat, imat_as_rates)
+        assert_array_almost_equal(x_bins, x_bins_as_rates)
+        assert_array_almost_equal(y_bins, y_bins_as_rates)
+
+        # calculate probability matrix montecarlo
+        pmat_montecarlo, imat, x_bins, y_bins = \
+            asset.probability_matrix_montecarlo(
+                spiketrains,
+                spiketrains_y=spiketrains_y,
+                j=jitter,
+                binsize=self.binsize,
+                n_surr=n_surr,
+                surr_method='dither_spikes')
+
+        # test probability matrices
+        assert_array_equal(np.where(pmat > alpha), indices_pmat)
+        assert_array_equal(np.where(pmat_montecarlo > alpha),
+                           indices_pmat)
+        # calculate joint probability matrix
+        jmat = asset.joint_probability_matrix(pmat,
+                                              filter_shape=filter_shape,
+                                              nr_largest=nr_largest,
+                                              verbose=True)
+        # test joint probability matrix
+        assert_array_equal(np.where(jmat > 0.98), index_proba['high'])
+        assert_array_equal(np.where(jmat > 0.9), index_proba['medium'])
+        assert_array_equal(np.where(jmat > 0.8), index_proba['low'])
+        # test if all other entries are zeros
+        mask_zeros = np.ones(jmat.shape, bool)
+        mask_zeros[index_proba['low']] = False
+        self.assertTrue(np.all(jmat[mask_zeros] == 0))
+
+        # calculate mask matrix and cluster matrix
+        mmat = asset.mask_matrices([pmat, jmat], [alpha, alpha])
+        cmat = asset.cluster_matrix_entries(mmat,
+                                            eps=eps,
+                                            min_neighbors=min_neighbors,
+                                            stretch=stretch)
+
+        # extract sses and test them
+        sses = asset.extract_sse(spiketrains, self.binsize, cmat,
+                                 spiketrains_y)
+        self.assertDictEqual(sses, expected_sses)
+
+    def test_integration(self):
+        # define parameters
+        np.random.seed(1)
+        size_group = 3
+        size_sse = 3
+        T = 60 * pq.ms
+        delay = 9 * pq.ms
+        bins_between_sses = 3
+        time_between_sses = 9 * pq.ms
         # ground truth for pmats
-        starting_bin_1 = int((delay/binsize).magnitude.item())
-        starting_bin_2 = int((2 * delay/binsize +
-                              time_between_sses/binsize).magnitude.item())
+        starting_bin_1 = int((delay / self.binsize).magnitude.item())
+        starting_bin_2 = int(
+            (2 * delay / self.binsize + time_between_sses / self.binsize
+             ).magnitude.item())
         indices_pmat_1 = np.arange(starting_bin_1, starting_bin_1 + size_sse)
         indices_pmat_2 = np.arange(starting_bin_2,
                                    starting_bin_2 + size_sse)
@@ -276,67 +364,29 @@ class AssetTestCase(unittest.TestCase):
         spiketrains = [neo.SpikeTrain([index_spiketrain,
                                        index_spiketrain +
                                        size_sse +
-                                       bins_between_sses] * binsize
+                                       bins_between_sses] * self.binsize
                                       + delay + 1 * pq.ms,
                                       t_stop=T)
                        for index_group in range(size_group)
                        for index_spiketrain in range(size_sse)]
-        # calculate probability matrix analytical
-        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
-            spiketrains,
-            binsize=binsize,
-            kernel_width=kernel_width)
-        # calculate probability matrix montecarlo
-        pmat_montecarlo, imat, x_bins, y_bins = \
-            asset.probability_matrix_montecarlo(
-                spiketrains,
-                j=jitter,
-                binsize=binsize,
-                n_surr=n_surr,
-                surr_method='dither_spikes')
-        # test probability matrices
-        np.testing.assert_array_equal(np.where(pmat > alpha), indices_pmat)
-        np.testing.assert_array_equal(np.where(pmat_montecarlo > alpha),
-                                      indices_pmat)
-        # calculate joint probability matrix
-        jmat = asset.joint_probability_matrix(pmat,
-                                              filter_shape=filter_shape,
-                                              nr_largest=nr_largest,
-                                              verbose=True)
-        # test joint probability matrix
-        index_high_probabilities = (np.array([9,  9, 10, 10, 10, 11, 11]),
-                                    np.array([3, 4, 3, 4, 5, 4, 5]))
-        index_medium_probabilities = (np.array([8,  8,  9,  9,  9, 10, 10,
-                                                10, 11, 11, 11, 12, 12]),
-                                      np.array([2, 3, 2, 3, 4, 3, 4, 5, 4, 5,
-                                                6, 5, 6]))
-        index_low_probabilities = (np.array([7,  8,  8,  9,  9,  9, 10, 10, 10,
-                                             11, 11, 11, 12, 12, 12, 13, 13]),
-                                   np.array([2, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5,
-                                             6, 5, 6, 7, 6, 7]))
-        np.testing.assert_array_equal(np.where(jmat > 0.98),
-                                      index_high_probabilities)
-        np.testing.assert_array_equal(np.where(jmat > 0.9),
-                                      index_medium_probabilities)
-        np.testing.assert_array_equal(np.where(jmat > 0.8),
-                                      index_low_probabilities)
-        # test if all other entries are zeros
-        mask_zeros = np.ones(jmat.shape, bool)
-        mask_zeros[index_low_probabilities] = False
-        self.assertTrue(np.all(jmat[mask_zeros] == 0))
-
-        # calculate mask matrix and cluster matrix
-        mmat = asset.mask_matrices([pmat, jmat], [alpha, alpha])
-        cmat = asset.cluster_matrix_entries(mmat,
-                                            eps=eps,
-                                            min_neighbors=min_neighbors,
-                                            stretch=stretch)
-
-        # extract sses and test them
-        sses = asset.extract_sse(spiketrains, binsize, cmat)
+        index_proba = {
+            "high": (np.array([9, 9, 10, 10, 10, 11, 11]),
+                     np.array([3, 4, 3, 4, 5, 4, 5])),
+            "medium": (np.array([8, 8, 9, 9, 9, 10, 10,
+                                 10, 11, 11, 11, 12, 12]),
+                       np.array([2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 6, 5, 6])),
+            "low": (np.array([7, 8, 8, 9, 9, 9, 10, 10, 10,
+                              11, 11, 11, 12, 12, 12, 13, 13]),
+                    np.array([2, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5,
+                              6, 5, 6, 7, 6, 7]))
+        }
         expected_sses = {1: {(9, 3): {0, 3, 6}, (10, 4): {1, 4, 7},
                              (11, 5): {2, 5, 8}}}
-        self.assertDictEqual(sses, expected_sses)
+        self._test_integration_subtest(spiketrains,
+                                       spiketrains_y=spiketrains,
+                                       indices_pmat=indices_pmat,
+                                       index_proba=index_proba,
+                                       expected_sses=expected_sses)
 
     def test_integration_nonsymmetric(self):
         # define parameters
@@ -344,189 +394,44 @@ class AssetTestCase(unittest.TestCase):
         random.seed(1)
         size_group = 3
         size_sse = 3
-        binsize = 3 * pq.ms
         delay = 18 * pq.ms
-        T = 4 * delay + 2 * size_sse * binsize
+        T = 4 * delay + 2 * size_sse * self.binsize
         time_between_sses = 2 * delay
-        kernel_width = 9 * pq.ms
-        jitter = 9 * pq.ms
-        alpha = 0.9
-        filter_shape = (5, 1)
-        nr_largest = 3
-        eps = 3
-        min_neighbors = 3
-        stretch = 5
-        n_surr = 20
         # ground truth for pmats
-        starting_bin = int((delay/binsize).magnitude.item())
+        starting_bin = int((delay / self.binsize).magnitude.item())
         indices_pmat_1 = np.arange(starting_bin, starting_bin + size_sse)
         indices_pmat = (indices_pmat_1, indices_pmat_1)
         # generate spike trains
-        spiketrains = [neo.SpikeTrain([index_spiketrain] * binsize
-                                      + delay,
-                                      t_start=0*pq.ms,
-                                      t_stop=2 * delay + size_sse * binsize)
-                       for index_group in range(size_group)
-                       for index_spiketrain in range(size_sse)]
-        spiketrains_y = [neo.SpikeTrain([index_spiketrain] * binsize
-                                        + time_between_sses + delay
-                                        + size_sse * binsize,
-                                        t_start=size_sse * binsize + 2 * delay,
-                                        t_stop=T)
-                         for index_group in range(size_group)
-                         for index_spiketrain in range(size_sse)]
-        # calculate probability matrix analytical
-        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
-            spiketrains,
-            spiketrains_y=spiketrains_y,
-            binsize=binsize,
-            kernel_width=kernel_width)
-        # calculate probability matrix montecarlo
-        pmat_montecarlo, imat, x_bins, y_bins = \
-            asset.probability_matrix_montecarlo(
-                spiketrains,
-                spiketrains_y=spiketrains_y,
-                j=jitter,
-                binsize=binsize,
-                n_surr=n_surr,
-                surr_method='dither_spikes')
-        # test probability matrices
-        np.testing.assert_array_equal(np.where(pmat > alpha), indices_pmat)
-        np.testing.assert_array_equal(np.where(pmat_montecarlo > alpha),
-                                      indices_pmat)
-        # calculate joint probability matrix
-        jmat = asset.joint_probability_matrix(pmat,
-                                              filter_shape=filter_shape,
-                                              nr_largest=nr_largest,
-                                              verbose=True)
-        # test joint probability matrix
-        index_high_probabilities = ([6, 6, 7, 7, 7, 8, 8],
-                                    [6, 7, 6, 7, 8, 7, 8])
-        index_medium_probabilities = ([5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9],
-                                      [5, 6, 5, 6, 7, 6, 7, 8, 7, 8, 9, 8, 9])
-        index_low_probabilities = ([4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,
-                                    8,  8,  8,  9,  9, 9, 10, 10],
-                                   [4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
-                                    7,  8,  9,  8,  9, 10,  9, 10])
-        np.testing.assert_array_equal(np.where(jmat > 0.98),
-                                      index_high_probabilities)
-        np.testing.assert_array_equal(np.where(jmat > 0.9),
-                                      index_medium_probabilities)
-        np.testing.assert_array_equal(np.where(jmat > 0.8),
-                                      index_low_probabilities)
-        # test if all other entries are zeros
-        mask_zeros = np.ones(jmat.shape, bool)
-        mask_zeros[index_low_probabilities] = False
-        self.assertTrue(np.all(jmat[mask_zeros] == 0))
-
-        # calculate mask matrix and cluster matrix
-        mmat = asset.mask_matrices([pmat, jmat], [alpha, alpha])
-        cmat = asset.cluster_matrix_entries(mmat,
-                                            eps=eps,
-                                            min_neighbors=min_neighbors,
-                                            stretch=stretch)
-
-        # extract sses and test them
-        sses = asset.extract_sse(spiketrains, binsize, cmat, spiketrains_y)
+        spiketrains = [
+            neo.SpikeTrain([index_spiketrain] * self.binsize + delay,
+                           t_start=0 * pq.ms,
+                           t_stop=2 * delay + size_sse * self.binsize)
+            for index_group in range(size_group)
+            for index_spiketrain in range(size_sse)]
+        spiketrains_y = [
+            neo.SpikeTrain([index_spiketrain] * self.binsize + delay +
+                           time_between_sses + size_sse * self.binsize,
+                           t_start=size_sse * self.binsize + 2 * delay,
+                           t_stop=T)
+            for index_group in range(size_group)
+            for index_spiketrain in range(size_sse)]
+        index_proba = {
+            "high": ([6, 6, 7, 7, 7, 8, 8],
+                     [6, 7, 6, 7, 8, 7, 8]),
+            "medium": ([5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9],
+                       [5, 6, 5, 6, 7, 6, 7, 8, 7, 8, 9, 8, 9]),
+            "low": ([4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7,
+                     8, 8, 8, 9, 9, 9, 10, 10],
+                    [4, 5, 4, 5, 6, 5, 6, 7, 6, 7, 8,
+                     7, 8, 9, 8, 9, 10, 9, 10])
+        }
         expected_sses = {1: {(6, 6): {0, 3, 6}, (7, 7): {1, 4, 7},
                              (8, 8): {2, 5, 8}}}
-        self.assertDictEqual(sses, expected_sses)
-
-    def test_integration_provided_rates(self):
-        # define parameters
-        np.random.seed(1)
-        random.seed(1)
-        size_group = 3
-        size_sse = 3
-        binsize = 3 * pq.ms
-        delay = 18 * pq.ms
-        T = 4 * delay + 2 * size_sse * binsize
-        time_between_sses = 2 * delay
-        kernel_width = 9 * pq.ms
-        alpha = 0.9
-        filter_shape = (5, 1)
-        nr_largest = 3
-        eps = 3
-        min_neighbors = 3
-        stretch = 5
-        # ground truth for pmats
-        starting_bin = int((delay/binsize).magnitude.item())
-        indices_pmat_1 = np.arange(starting_bin, starting_bin + size_sse)
-        indices_pmat = (indices_pmat_1, indices_pmat_1)
-        # generate spike trains
-        spiketrains = [neo.SpikeTrain([index_spiketrain] * binsize
-                                      + delay,
-                                      t_start=0*pq.ms,
-                                      t_stop=2 * delay + size_sse * binsize)
-                       for index_group in range(size_group)
-                       for index_spiketrain in range(size_sse)]
-        spiketrains_y = [neo.SpikeTrain([index_spiketrain] * binsize
-                                        + time_between_sses + delay
-                                        + size_sse * binsize,
-                                        t_start=size_sse * binsize + 2 * delay,
-                                        t_stop=T)
-                         for index_group in range(size_group)
-                         for index_spiketrain in range(size_sse)]
-        # calculate rates
-        rates_x = [statistics.instantaneous_rate(
-            st,
-            kernel=kernels.RectangularKernel(sigma=kernel_width
-                                             / 2. / np.sqrt(3.)),
-            sampling_period=1*pq.ms)
-                   for st in spiketrains]
-        rates_y = [statistics.instantaneous_rate(
-            st,
-            kernel=kernels.RectangularKernel(sigma=kernel_width
-                                             / 2. / np.sqrt(3.)),
-            sampling_period=1*pq.ms)
-                   for st in spiketrains_y]
-
-        # calculate probability matrix analytical
-        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
-            spiketrains,
-            spiketrains_y=spiketrains_y,
-            binsize=binsize,
-            fir_rates_x=rates_x,
-            fir_rates_y=rates_y)
-        # test probability matrices
-        np.testing.assert_array_equal(np.where(pmat > alpha), indices_pmat)
-        # calculate joint probability matrix
-        jmat = asset.joint_probability_matrix(pmat,
-                                              filter_shape=filter_shape,
-                                              nr_largest=nr_largest,
-                                              verbose=True)
-        # test joint probability matrix
-        index_high_probabilities = ([6, 6, 7, 7, 7, 8, 8],
-                                    [6, 7, 6, 7, 8, 7, 8])
-        index_medium_probabilities = ([5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9],
-                                      [5, 6, 5, 6, 7, 6, 7, 8, 7, 8, 9, 8, 9])
-        index_low_probabilities = ([4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,
-                                    8,  8,  8,  9,  9, 9, 10, 10],
-                                   [4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
-                                    7,  8,  9,  8,  9, 10,  9, 10])
-        np.testing.assert_array_equal(np.where(jmat > 0.98),
-                                      index_high_probabilities)
-        np.testing.assert_array_equal(np.where(jmat > 0.9),
-                                      index_medium_probabilities)
-        np.testing.assert_array_equal(np.where(jmat > 0.8),
-                                      index_low_probabilities)
-        # test if all other entries are zeros
-        mask_zeros = np.ones(jmat.shape, bool)
-        mask_zeros[index_low_probabilities] = False
-        self.assertTrue(np.all(jmat[mask_zeros] == 0))
-
-        # calculate mask matrix and cluster matrix
-        mmat = asset.mask_matrices([pmat, jmat], [alpha, alpha])
-        cmat = asset.cluster_matrix_entries(mmat,
-                                            eps=eps,
-                                            min_neighbors=min_neighbors,
-                                            stretch=stretch)
-
-        # extract sses and test them
-        sses = asset.extract_sse(spiketrains, binsize, cmat, spiketrains_y)
-        expected_sses = {1: {(6, 6): {0, 3, 6}, (7, 7): {1, 4, 7},
-                             (8, 8): {2, 5, 8}}}
-        self.assertDictEqual(sses, expected_sses)
+        self._test_integration_subtest(spiketrains,
+                                       spiketrains_y=spiketrains_y,
+                                       indices_pmat=indices_pmat,
+                                       index_proba=index_proba,
+                                       expected_sses=expected_sses)
 
 
 def suite():
