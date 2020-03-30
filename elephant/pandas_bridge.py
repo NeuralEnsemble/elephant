@@ -582,8 +582,8 @@ def slice_spiketrain(pdobj, t_start=None, t_stop=None):
     pdobj : scalar, pandas Series, DataFrame, or Panel
             The returned data type is the same as the type of `pdobj`
 
-    Note
-    ----
+    Notes
+    -----
 
     The order of the index and/or column levels of the returned object may
     differ  from the order of the original.

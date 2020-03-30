@@ -15,6 +15,7 @@ Function Reference by Module
    reference/kernels
    reference/neo_tools
    reference/pandas_bridge
+   reference/parallel
    reference/phase_analysis
    reference/signal_processing
    reference/spade

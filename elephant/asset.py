@@ -615,7 +615,7 @@ def probability_matrix_montecarlo(
         surr_method='dither_spike_train', j=None, n_surr=100, verbose=False):
     """
     Given a list of parallel spike trains, estimate the cumulative probability
-     of each entry in their intersection matrix (see: intersection_matrix())
+    of each entry in their intersection matrix (see: intersection_matrix())
     by a Monte Carlo approach using surrogate data.
     Contrarily to the analytical version (see: probability_matrix_analytical())
     the Monte Carlo one does not incorporate the assumptions of Poissonianity
@@ -1283,16 +1283,20 @@ def joint_probability_matrix(
     ----------
     [1] Torre et al (in prep) ...
 
-    Example
-    -------
-    # Assuming to have a list sts of parallel spike trains over 1s recording,
-    # the following code computes the intersection/probability/joint-prob
-    # matrices imat/pmat/jmat using a bin width of 5 ms
+    Examples
+    --------
+    Assuming to have a list sts of parallel spike trains over 1s recording,
+    the following code computes the intersection/probability/joint-prob
+    matrices imat/pmat/jmat using a bin width of 5 ms:
+
+    >>> import quantities as pq
+    >>> from elephant import asset
     >>> T = 1 * pq.s
     >>> binsize = 5 * pq.ms
-    >>> imat, xedges, yedges = intersection_matrix(sts, binsize=binsize, dt=T)
-    >>> pmat = probability_matrix_analytical(sts, binsize, dt=T)
-    >>> jmat = joint_probability_matrix(pmat, filter_shape=(fl, fw))
+    >>> imat, xedges, yedges = asset.intersection_matrix(sts,
+    ...                        binsize=binsize, dt=T)
+    >>> pmat = asset.probability_matrix_analytical(sts, binsize, dt=T)
+    >>> jmat = asset.joint_probability_matrix(pmat, filter_shape=(fl, fw))
 
     """
     l, w = filter_shape
