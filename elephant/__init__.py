@@ -27,13 +27,16 @@ from . import (statistics,
                waveform_features,
                gpfa)
 
+# not included modules on purpose:
+#   parallel: avoid warns when elephant is imported
+
 try:
     from . import pandas_bridge
     from . import asset
     from . import spade
 except ImportError:
     # requirements-extras are missing
-    # please run command `pip install -r requirements-extras.txt`
+    # please install Elephant with `pip install elephant[extras]`
     pass
 
 
