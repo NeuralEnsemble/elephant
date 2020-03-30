@@ -737,13 +737,13 @@ def probability_matrix_montecarlo(
                                                    edges=True)[0]
                  for st in spiketrains]
 
-        if spiketrains_y is None:
+        if symmetric:
             surrs_y = surrs
         else:
             surrs_y = [spike_train_surrogates.surrogates(
                            st, n=1, surr_method=surr_method, dt=j,
                            decimals=None, edges=True)[0]
-                       for st in spiketrains_y]
+                       for st in spiketrains]
 
         imat_surr, xx, yy = intersection_matrix(  # compute the related imat
             surrs, binsize=binsize, spiketrains_y=surrs_y,
@@ -900,25 +900,35 @@ def probability_matrix_analytical(
         a matrix of shape (n, n), y_edges has length n+1
     """
 
-    symmetric = False
+    # Compute the intersection matrix of the original data
+    imat, x_edges, y_edges = intersection_matrix(
+        spiketrains, binsize=binsize, spiketrains_y=spiketrains_y,
+        t_start_x=t_start_x, t_start_y=t_start_y, t_stop_x=t_stop_x,
+        t_stop_y=t_stop_y)
 
-    if spiketrains_y is None:
-        symmetric = True
-        spiketrains_y = spiketrains
+    symmetric = _quantities_almost_equal(x_edges[0], y_edges[0])
 
     # Bin the spike trains
     bsts_x = conv.BinnedSpikeTrain(
         spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x)
-    bsts_y = conv.BinnedSpikeTrain(
-        spiketrains_y, binsize=binsize, t_start=t_start_y, t_stop=t_stop_y)
 
     bsts_x_matrix = bsts_x.to_bool_array()
-    bsts_y_matrix = bsts_y.to_bool_array()
 
-    # Check that the nr. neurons is identical between the two axes
-    if bsts_x_matrix.shape[0] != bsts_y_matrix.shape[0]:
-        raise ValueError(
-            'Different number of neurons along the x and y axis!')
+    if symmetric:
+        spiketrains_y = spiketrains
+        bsts_y = bsts_x
+        bsts_y_matrix = bsts_x_matrix
+
+    else:
+        bsts_y = conv.BinnedSpikeTrain(
+            spiketrains_y, binsize=binsize, t_start=t_start_y, t_stop=t_stop_y)
+
+        bsts_y_matrix = bsts_y.to_bool_array()
+
+        # Check that the nr. neurons is identical between the two axes
+        if bsts_x_matrix.shape[0] != bsts_y_matrix.shape[0]:
+            raise ValueError(
+                'Different number of neurons along the x and y axis!')
 
     # Define the firing rate profiles
 
@@ -981,11 +991,6 @@ def probability_matrix_analytical(
     Mu = np.sum(spike_prob_mats, axis=0)
 
     # Compute the probability matrix obtained from imat using the Poisson pdfs
-    imat, xx, yy = intersection_matrix(
-        spiketrains, spiketrains_y=spiketrains_y, binsize=binsize,
-        t_start_x=t_start_x,
-        t_start_y=t_start_y, t_stop_x=t_stop_x, t_stop_y=t_stop_y)
-
     pmat = np.zeros(imat.shape)
 
     for i in range(imat.shape[0]):
@@ -1004,7 +1009,7 @@ def probability_matrix_analytical(
             print("substitute 0.5 to elements along the main diagonal...")
         np.fill_diagonal(pmat, 0.5)
 
-    return pmat, imat, xx, yy
+    return pmat, imat, x_edges, y_edges
 
 
 def _wrong_order(a):
@@ -1382,11 +1387,22 @@ def extract_sse(spiketrains, binsize, cmat, spiketrains_y=None,
     tracts_x = _transactions(
         spiketrains, binsize=binsize, t_start=t_start_x, t_stop=t_stop_x,
         ids=ids)
-    t_start_y = _signals_same_tstart(spiketrains_y)
-    t_stop_y = _signals_same_tstop(spiketrains_y)
-    tracts_y = _transactions(
-        spiketrains_y, binsize=binsize, t_start=t_start_y, t_stop=t_stop_y,
-        ids=ids)
+
+    if spiketrains_y is None:
+        diag_id = 0
+        tracts_y = tracts_x
+    else:
+        t_start_y = _signals_same_tstart(spiketrains_y)
+        t_stop_y = _signals_same_tstop(spiketrains_y)
+
+        if _quantities_almost_equal(t_start_x, t_start_y):
+            diag_id = 0
+            tracts_y = tracts_x
+
+        else:
+            tracts_y = _transactions(
+                spiketrains_y, binsize=binsize,
+                t_start=t_start_y, t_stop=t_stop_y, ids=ids)
 
     # Reconstruct each worm, link by link
     sse_dict = {}
