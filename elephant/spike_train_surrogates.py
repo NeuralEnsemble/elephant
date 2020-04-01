@@ -69,6 +69,8 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n,
 
     dither = dither.rescale(units).magnitude
     refractory_period = refractory_period.rescale(units).magnitude
+    # The initially guesses refractory period is compared to the minimal ISI.
+    # The smaller value is taken as the refractory to calculate with.
     refractory_period = np.min(np.diff(spiketrain.magnitude),
                                initial=refractory_period)
 
@@ -83,10 +85,17 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n,
             prev_spike = dithered_st[random_id - 1] \
                 if random_id > 0 \
                 else t_start - refractory_period
+            # subtract refractory period so that the first spike can move up
+            # to t_start
             next_spike = dithered_st[random_id + 1] \
                 if random_id < len(spiketrain) - 1 \
                 else t_stop + refractory_period
+            # add refractory period so that the last spike can move up
+            # to t_stop
+
+            # Dither range in the direction to the previous spike
             prev_dither = min(dither, spike - prev_spike - refractory_period)
+            # Dither range in the direction to the next spike
             next_dither = min(dither, next_spike - spike - refractory_period)
 
             dt = (prev_dither + next_dither) * random.random() - prev_dither
