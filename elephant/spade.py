@@ -1261,10 +1261,17 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
         joint_isi_instances = [surr.JointISI(spiketrain, dither=dither,
                                              method='window')
                                for spiketrain in spiketrains]
+    elif surr_method == 'isi_dithering':
+        isi_instances = [surr.JointISI(spiketrain, dither=dither,
+                                       method='window', isi_dithering=True)
+                         for spiketrain in spiketrains]
     for i in range(len_partition + add_remainder):
         if surr_method == 'joint_isi_dithering':
             surrs = [instance.dithering()[0] for
                      instance in joint_isi_instances]
+        elif surr_method == 'isi_dithering':
+            surrs = [instance.dithering()[0] for
+                     instance in isi_instances]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n=1, surr_method=surr_method,
