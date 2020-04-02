@@ -527,6 +527,11 @@ class JointISI(object):
         Defines the refractory period of the dithered `spiketrain` unless
         the smallest ISI of the `spiketrain` is lower than this value.
         Default: 4. * pq.ms.
+    isi_dithering : boolean, optional
+        If true the Joint-ISI distribution is evaluated as the outer product
+        of the ISI-distribution with itself. Thus, all serial correlations are
+        destroyed.
+        Default: False
 
     Attributes
     ----------
@@ -551,7 +556,8 @@ class JointISI(object):
                  use_sqrt=False,
                  method='fast',
                  cutoff=True,
-                 refr_period=4. * pq.ms
+                 refr_period=4. * pq.ms,
+                 isi_dithering=False
                  ):
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
@@ -579,6 +585,8 @@ class JointISI(object):
 
         self.max_change_index = self.isi_to_index(self.dither)
         self.max_change_isi = self.index_to_isi(self.max_change_index)
+
+        self.isi_dithering = isi_dithering
 
     def get_magnitude(self, quantity):
         """
@@ -667,11 +675,18 @@ class JointISI(object):
         if self.too_less_spikes:
             return None
         isis = self.isi
-        joint_isi_histogram = np.histogram2d(
-            isis[:-1], isis[1:],
-            bins=[self.num_bins, self.num_bins],
-            range=[[0., self.truncation_limit],
-                   [0., self.truncation_limit]])[0]
+        if not self.isi_dithering:
+            joint_isi_histogram = np.histogram2d(
+                isis[:-1], isis[1:],
+                bins=[self.num_bins, self.num_bins],
+                range=[[0., self.truncation_limit],
+                       [0., self.truncation_limit]])[0]
+        else:
+            isi_histogram = np.histogram(
+                isis,
+                bins=self.num_bins,
+                range=[0., self.truncation_limit])[0]
+            joint_isi_histogram = np.outer(isi_histogram, isi_histogram)
 
         if self.use_sqrt:
             joint_isi_histogram = np.sqrt(joint_isi_histogram)
