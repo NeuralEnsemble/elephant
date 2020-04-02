@@ -132,7 +132,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
         Number of surrogates to be generated.
         Default: 1.
     decimals : int or None, optional
-        Number of decimal points for every spike time in the surrogates.
+        Number of decimal points for every spike time in the surrogates at a
+        millisecond level.
         If None, machine precision is used.
         Default: None.
     edges : bool, optional
@@ -189,35 +190,39 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
 
     if refractory_period is None or refractory_period == 0:
         # Main: generate the surrogates
-        dithered_spiketrains = spiketrain.reshape((1, len(spiketrain))) \
+        dither = dither.rescale(units).magnitude
+        dithered_spiketrains = \
+            spiketrain.magnitude.reshape((1, len(spiketrain))) \
             + 2 * dither * np.random.random_sample((n, len(spiketrain)))\
             - dither
+        dithered_spiketrains.sort(axis=0)
+
+        if edges:
+            # Leave out all spikes outside
+            # [spiketrain.t_start, spiketrain.t_stop]
+            dithered_spiketrains = \
+                [train[
+                     np.all([t_start < train, train < t_stop], axis=0)]
+                 for train in dithered_spiketrains]
+        else:
+            # Move all spikes outside
+            # [spiketrain.t_start, spiketrain.t_stop] to the range's ends
+            dithered_spiketrains = np.minimum(
+                np.maximum(dithered_spiketrains, t_start),
+                t_stop)
+
+        dithered_spiketrains = dithered_spiketrains * units
+
     elif isinstance(refractory_period, pq.Quantity):
         dithered_spiketrains = _dither_spikes_with_refractory_period(
-            spiketrain, dither, n, refractory_period
-        )
+            spiketrain, dither, n, refractory_period)
     else:
         raise ValueError("refractory_period must be of type pq.Quantity")
 
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
-        dithered_spiketrains = dithered_spiketrains.round(decimals)
-
-    if edges is False:
-        # Move all spikes outside [spiketrain.t_start, spiketrain.t_stop] to
-        # the range's ends
-        dithered_spiketrains = np.minimum(
-            np.maximum(
-                dithered_spiketrains.magnitude,
-                t_start),
-            t_stop) * units
-    else:
-        # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         dithered_spiketrains = \
-            [np.sort(
-                train[np.all([train >= t_start, train < t_stop], axis=0)])
-             * units
-             for train in dithered_spiketrains.magnitude]
+            dithered_spiketrains.rescale(pq.ms).round(decimals).rescale(units)
 
     # Return the surrogates as list of neo.SpikeTrain
     return [neo.SpikeTrain(
