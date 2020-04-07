@@ -71,9 +71,13 @@ import elephant.conversion as conv
 import elephant.kernels as kernels
 import warnings
 
+from elephant.buffalo.provenance import Provenance
+from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
+
 cv = scipy.stats.variation
 
 
+@Provenance(inputs=['spiketrain'])
 def isi(spiketrain, axis=-1):
     """
     Return an array containing the inter-spike intervals of the spike train.
@@ -107,6 +111,7 @@ def isi(spiketrain, axis=-1):
     return intervals
 
 
+@Provenance(inputs=['spiketrain'])
 def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     """
     Return the firing rate of the spike train.
@@ -202,6 +207,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                       axis=axis) / (t_stop - t_start)
 
 
+@Provenance(inputs=['spiketrain'])
 def fanofactor(spiketrains):
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
