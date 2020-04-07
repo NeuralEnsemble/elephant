@@ -780,6 +780,15 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                                warnings_raised=warnings_raised)
 
 
+def psth(spiketrains, binsize, event_time, event_label=None,
+         t_start=None, t_stop=None, output='counts', binary=False, old=False):
+    histogram = time_histogram(spiketrains, binsize, t_start=t_start,
+                               t_stop=t_stop, output=output,
+                               binary=binary, old=old)
+    return PSTHObject.from_time_histogram(histogram, event_time,
+                                          event_label=event_label)
+
+
 def complexity_pdf(spiketrains, binsize):
     """
     Complexity Distribution of a list of `neo.SpikeTrain` objects.
