@@ -35,7 +35,7 @@ CC implemented the kCSD methods, kCSD1D(MC and CC)
 CC and EH developed the interface to elephant.
 """
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 import neo
 import quantities as pq
@@ -176,7 +176,7 @@ def estimate_csd(lfp, coords=None, method=None,
                                   methods: {}".format(", ".join(icsd_methods)))
 
         if 'f_type' in kwargs:
-            if (kwargs['f_type'] is not 'identity') and  \
+            if (kwargs['f_type'] != 'identity') and  \
                (kwargs['f_order'] is None):
                 raise ValueError("The order of {} filter must be \
                                   specified".format(kwargs['f_type']))

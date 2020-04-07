@@ -1,12 +1,65 @@
 # -*- coding: utf-8 -*-
 """
-Statistical measures of spike trains (e.g., Fano factor) and functions to estimate firing rates.
+Statistical measures of spike trains (e.g., Fano factor) and functions to
+estimate firing rates.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/statistics>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/statistics.ipynb
+
+
+.. current_module elephant.statistics
+
+Functions overview
+------------------
+
+Rate estimation
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: toctree/statistics/
+
+    mean_firing_rate
+    instantaneous_rate
+    time_histogram
+    sskernel
+
+
+Spike interval statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: toctree/statistics/
+
+    isi
+    cv
+    lv
+    cv2
+
+
+Statistics across spike trains
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: toctree/statistics/
+
+    fanofactor
+    complexity_pdf
+
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 from __future__ import division, print_function
+# do not import unicode_literals
+# (quantities rescale does not work with unicodes)
 
 import numpy as np
 import quantities as pq
@@ -17,31 +70,31 @@ from neo.core import SpikeTrain
 import elephant.conversion as conv
 import elephant.kernels as kernels
 import warnings
-# warnings.simplefilter('always', DeprecationWarning)
+
+cv = scipy.stats.variation
 
 
 def isi(spiketrain, axis=-1):
     """
-    Return an array containing the inter-spike intervals of the SpikeTrain.
+    Return an array containing the inter-spike intervals of the spike train.
 
-    Accepts a Neo SpikeTrain, a Quantity array, or a plain NumPy array.
-    If either a SpikeTrain or Quantity array is provided, the return value will
-    be a quantities array, otherwise a plain NumPy array. The units of
-    the quantities array will be the same as spiketrain.
+    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
+    `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` is provided,
+    the return value will be `pq.Quantity`, otherwise `np.ndarray`. The units
+    of `pq.Quantity` will be the same as `spiketrain`.
 
     Parameters
     ----------
-
-    spiketrain : Neo SpikeTrain or Quantity array or NumPy ndarray
-                 The spike times.
+    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+        The spike times.
     axis : int, optional
-           The axis along which the difference is taken.
-           Default is the last axis.
+        The axis along which the difference is taken.
+        Default: the last axis.
 
     Returns
     -------
-
-    NumPy array or quantities array.
+    intervals : np.ndarray or pq.Quantity
+        The inter-spike intervals of the `spiketrain`.
 
     """
     if axis is None:
@@ -56,54 +109,54 @@ def isi(spiketrain, axis=-1):
 
 def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     """
-    Return the firing rate of the SpikeTrain.
+    Return the firing rate of the spike train.
 
-    Accepts a Neo SpikeTrain, a Quantity array, or a plain NumPy array.
-    If either a SpikeTrain or Quantity array is provided, the return value will
-    be a quantities array, otherwise a plain NumPy array. The units of
-    the quantities array will be the inverse of the spiketrain.
+    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
+    `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` array is
+    provided, the return value will be a `pq.Quantity` array, otherwise a
+    plain `np.ndarray`. The units of the `pq.Quantity` array will be the
+    inverse of the `spiketrain`.
 
     The interval over which the firing rate is calculated can be optionally
-    controlled with `t_start` and `t_stop`
+    controlled with `t_start` and `t_stop`.
 
     Parameters
     ----------
-
-    spiketrain : Neo SpikeTrain or Quantity array or NumPy ndarray
-                 The spike times.
-    t_start : float or Quantity scalar, optional
-              The start time to use for the interval.
-              If not specified, retrieved from the``t_start`
-              attribute of `spiketrain`.  If that is not present, default to
-              `0`.  Any value from `spiketrain` below this value is ignored.
-    t_stop : float or Quantity scalar, optional
-             The stop time to use for the time points.
-             If not specified, retrieved from the `t_stop`
-             attribute of `spiketrain`.  If that is not present, default to
-             the maximum value of `spiketrain`.  Any value from
-             `spiketrain` above this value is ignored.
+    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+        The spike times.
+    t_start : float or pq.Quantity, optional
+        The start time to use for the interval.
+        If None, retrieved from the `t_start` attribute of `spiketrain`. If
+        that is not present, default to 0. Any value from `spiketrain` below
+        this value is ignored.
+        Default: None.
+    t_stop : float or pq.Quantity, optional
+        The stop time to use for the time points.
+        If not specified, retrieved from the `t_stop` attribute of
+        `spiketrain`. If that is not present, default to the maximum value of
+        `spiketrain`. Any value from `spiketrain` above this value is ignored.
+        Default: None.
     axis : int, optional
-           The axis over which to do the calculation.
-           Default is `None`, do the calculation over the flattened array.
+        The axis over which to do the calculation.
+        If None, do the calculation over the flattened array.
+        Default: None.
 
     Returns
     -------
-
-    float, quantities scalar, NumPy array or quantities array.
-
-    Notes
-    -----
-
-    If `spiketrain` is a Quantity or Neo SpikeTrain and `t_start` or `t_stop`
-    are not, `t_start` and `t_stop` are assumed to have the same units as
-    `spiketrain`.
+    float or pq.Quantity or np.ndarray
+        The firing rate of the `spiketrain`
 
     Raises
     ------
-
     TypeError
-        If `spiketrain` is a NumPy array and `t_start` or `t_stop`
-        is a quantity scalar.
+        If `spiketrain` is a `np.ndarray` and `t_start` or `t_stop` is
+        `pq.Quantity`.
+
+    Notes
+    -----
+    If `spiketrain` is a `pq.Quantity` or `neo.SpikeTrain`, and `t_start` or
+    `t_stop` are not `pq.Quantity`, `t_start` and `t_stop` are assumed to have
+    the same units as `spiketrain`.
 
     """
     if t_start is None:
@@ -149,36 +202,35 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                       axis=axis) / (t_stop - t_start)
 
 
-# we make `cv` an alias for scipy.stats.variation for the convenience
-# of former NeuroTools users
-cv = scipy.stats.variation
-
-
 def fanofactor(spiketrains):
-    """
+    r"""
     Evaluates the empirical Fano factor F of the spike counts of
-    a list of `neo.core.SpikeTrain` objects.
+    a list of `neo.SpikeTrain` objects.
 
     Given the vector v containing the observed spike counts (one per
     spike train) in the time window [t0, t1], F is defined as:
 
-                        F := var(v)/mean(v).
+    .. math::
+        F := \frac{var(v)}{mean(v)}
 
     The Fano factor is typically computed for spike trains representing the
-    activity of the same neuron over different trials. The higher F, the larger
-    the cross-trial non-stationarity. In theory for a time-stationary Poisson
-    process, F=1.
+    activity of the same neuron over different trials. The higher F, the
+    larger the cross-trial non-stationarity. In theory for a time-stationary
+    Poisson process, F=1.
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain objects, quantity arrays, numpy arrays or lists
-        Spike trains for which to compute the Fano factor of spike counts.
+    spiketrains : list
+        List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
+        spike times for which to compute the Fano factor of spike counts.
 
     Returns
     -------
-    fano : float or nan
-        The Fano factor of the spike counts of the input spike trains. If an
-        empty list is specified, or if all spike trains are empty, F:=nan.
+    fano : float
+        The Fano factor of the spike counts of the input spike trains.
+        Returns np.NaN if an empty list is specified, or if all spike trains
+        are empty.
+
     """
     # Build array of spike counts (one per spike train)
     spike_counts = np.array([len(t) for t in spiketrains])
@@ -192,63 +244,66 @@ def fanofactor(spiketrains):
 
 
 def lv(v, with_nan=False):
-    """
-    Calculate the measure of local variation LV for
-    a sequence of time intervals between events.
+    r"""
+    Calculate the measure of local variation LV for a sequence of time
+    intervals between events.
 
-    Given a vector v containing a sequence of intervals, the LV is
-    defined as:
+    Given a vector v containing a sequence of intervals, the LV is defined as:
 
-    .math $$ LV := \\frac{1}{N}\\sum_{i=1}^{N-1}
+    .. math::
+        LV := \frac{1}{N} \sum_{i=1}^{N-1}
+                          \frac{3(isi_i-isi_{i+1})^2}
+                          {(isi_i+isi_{i+1})^2}
 
-                   \\frac{3(isi_i-isi_{i+1})^2}
-                          {(isi_i+isi_{i+1})^2} $$
-
-    The LV is typically computed as a substitute for the classical
-    coefficient of variation for sequences of events which include
-    some (relatively slow) rate fluctuation.  As with the CV, LV=1 for
-    a sequence of intervals generated by a Poisson process.
+    The LV is typically computed as a substitute for the classical coefficient
+    of variation for sequences of events which include some (relatively slow)
+    rate fluctuation.  As with the CV, LV=1 for a sequence of intervals
+    generated by a Poisson process.
 
     Parameters
     ----------
-
-    v : quantity array, numpy array or list
-        Vector of consecutive time intervals
-        
-    with_nans : bool, optional
-        If `True`, lv of an spike train with less than two spikes 
-        results in a `NaN` value and a warning is raised. 
-        If `False`, an value error is raised. 
-        Default: `True`
+    v : pq.Quantity or np.ndarray or list
+        Vector of consecutive time intervals.
+    with_nan : bool, optional
+        If True, `lv` of a spike train with less than two spikes results in a
+        np.NaN value and a warning is raised.
+        If False, a `ValueError` exception is raised with a spike train with
+        less than two spikes.
+        Default: True.
 
     Returns
     -------
-    lvar : float
-       The LV of the inter-spike interval of the input sequence.
+    float
+        The LV of the inter-spike interval of the input sequence.
 
     Raises
     ------
-    ValueError :
-       If an empty list is specified, or if the sequence has less
-       than two entries, an AttributeError will be raised.
-    ValueError :
-        Only vector inputs are supported.  If a matrix is passed to the
-        function a ValueError will be raised.
+    ValueError
+        If an empty list is specified, or if the sequence has less than two
+        entries and `with_nan` is False.
 
+        If a matrix is passed to the function. Only vector inputs are
+        supported.
+
+    Warns
+    -----
+    UserWarning
+        If `with_nan` is True and the `lv` is calculated for a spike train
+        with less than two spikes, generating a np.NaN.
 
     References
     ----------
-    ..[1] Shinomoto, S., Shima, K., & Tanji, J. (2003). Differences in spiking
-    patterns among cortical neurons. Neural Computation, 15, 2823–2842.
-
+    .. [1] S. Shinomoto, K. Shima, & J. Tanji, "Differences in spiking
+           patterns among cortical neurons," Neural Computation, vol. 15,
+           pp. 2823–2842, 2003.
 
     """
     # convert to array, cast to float
     v = np.asarray(v)
-    # ensure the input ia a vector
+    # ensure the input is a vector
     if len(v.shape) > 1:
         raise ValueError("Input shape is larger than 1. Please provide "
-                             "a vector as an input.")
+                         "a vector as an input.")
 
     # ensure we have enough entries
     if v.size < 2:
@@ -260,8 +315,8 @@ def lv(v, with_nan=False):
 
         else:
             raise ValueError("Input size is too small. Please provide "
-                                 "an input with more than 1 entry. lv returned any"
-                                 "value since the argument `with_nan` is False")
+                             "an input with more than 1 entry. lv returned any"
+                             "value since the argument `with_nan` is False")
 
     # calculate LV and return result
     # raise error if input is multi-dimensional
@@ -269,54 +324,61 @@ def lv(v, with_nan=False):
 
 
 def cv2(v, with_nan=False):
-    """
-    Calculate the measure of CV2 for a sequence of time intervals between 
+    r"""
+    Calculate the measure of CV2 for a sequence of time intervals between
     events.
 
-    Given a vector v containing a sequence of intervals, the CV2 is
-    defined as:
+    Given a vector v containing a sequence of intervals, the CV2 is defined
+    as:
 
-    .math $$ CV2 := \\frac{1}{N}\\sum_{i=1}^{N-1}
-
-                   \\frac{2|isi_{i+1}-isi_i|}
-                          {|isi_{i+1}+isi_i|} $$
+    .. math::
+        CV2 := \frac{1}{N} \sum{i=1}^{N-1}
+                           \frac{2|isi_{i+1}-isi_i|}
+                          {|isi_{i+1}+isi_i|}
 
     The CV2 is typically computed as a substitute for the classical
-    coefficient of variation (CV) for sequences of events which include
-    some (relatively slow) rate fluctuation.  As with the CV, CV2=1 for
-    a sequence of intervals generated by a Poisson process.
+    coefficient of variation (CV) for sequences of events which include some
+    (relatively slow) rate fluctuation.  As with the CV, CV2=1 for a sequence
+    of intervals generated by a Poisson process.
 
     Parameters
     ----------
-
-    v : quantity array, numpy array or list
-        Vector of consecutive time intervals
-
-    with_nans : bool, optional
-        If `True`, cv2 with less than two spikes results in a `NaN` value 
-        and a warning is raised. 
-        If `False`, an attribute error is raised. 
-        Default: `True`
+    v : pq.Quantity or np.ndarray or list
+        Vector of consecutive time intervals.
+    with_nan : bool, optional
+        If True, `cv2` of a spike train with less than two spikes results in a
+        np.NaN value and a warning is raised.
+        If False, `ValueError` exception is raised with a spike train with
+        less than two spikes.
+        Default: True.
 
     Returns
     -------
-    cv2 : float
-       The CV2 of the inter-spike interval of the input sequence.
+    float
+        The CV2 of the inter-spike interval of the input sequence.
 
     Raises
     ------
-    ValueError :
-       If an empty list is specified, or if the sequence has less
-       than two entries, an AttributeError will be raised.
-    ValueError :
-        Only vector inputs are supported.  If a matrix is passed to the
-        function an AttributeError will be raised.
+    ValueError
+        If an empty list is specified, or if the sequence has less than two
+        entries and `with_nan` is False.
+
+        If a matrix is passed to the function. Only vector inputs are
+        supported.
+
+    Warns
+    -----
+    UserWarning
+        If `with_nan` is True and `cv2` is calculated for a sequence with less
+        than two entries, generating a np.NaN.
 
     References
     ----------
-    ..[1] Holt, G. R., Softky, W. R., Koch, C., & Douglas, R. J. (1996). 
-    Comparison of discharge variability in vitro and in vivo in cat visual 
-    cortex neurons. Journal of neurophysiology, 75(5), 1806-1814.
+    .. [1] G. R. Holt, W. R. Softky, C. Koch, & R. J. Douglas, "Comparison of
+           discharge variability in vitro and in vivo in cat visual cortex
+           neurons," Journal of Neurophysiology, vol. 75, no. 5, pp. 1806-1814,
+           1996.
+
     """
     # convert to array, cast to float
     v = np.asarray(v)
@@ -324,7 +386,7 @@ def cv2(v, with_nan=False):
     # ensure the input ia a vector
     if len(v.shape) > 1:
         raise ValueError("Input shape is larger than 1. Please provide "
-                             "a vector as an input.")
+                         "a vector as an input.")
 
     # ensure we have enough entries
     if v.size < 2:
@@ -335,204 +397,11 @@ def cv2(v, with_nan=False):
             return np.NaN
         else:
             raise ValueError("Input size is too small. Please provide "
-                                 "an input with more than 1 entry. cv2 returns any"
-                                 "value since the argument `with_nan` is `False`")
+                             "an input with more than 1 entry. cv2 returns any"
+                             "value since the argument `with_nan` is `False`")
 
     # calculate CV2 and return result
     return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
-
-
-# sigma2kw and kw2sigma only needed for oldfct_instantaneous_rate!
-# to finally be taken out of Elephant
-
-def sigma2kw(form):  # pragma: no cover
-    warnings.simplefilter('always', DeprecationWarning)
-    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
-    if form.upper() == 'BOX':
-        coeff = 2.0 * np.sqrt(3)
-    elif form.upper() == 'TRI':
-        coeff = 2.0 * np.sqrt(6)
-    elif form.upper() == 'EPA':
-        coeff = 2.0 * np.sqrt(5)
-    elif form.upper() == 'GAU':
-        coeff = 2.0 * 2.7  # > 99% of distribution weight
-    elif form.upper() == 'ALP':
-        coeff = 5.0
-    elif form.upper() == 'EXP':
-        coeff = 5.0
-
-    return coeff
-
-
-def kw2sigma(form):  # pragma: no cover
-    warnings.simplefilter('always', DeprecationWarning)
-    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
-    return 1/sigma2kw(form)
-
-
-# to finally be taken out of Elephant
-def make_kernel(form, sigma, sampling_period, direction=1):  # pragma: no cover
-    """
-    Creates kernel functions for convolution.
-
-    Constructs a numeric linear convolution kernel of basic shape to be used
-    for data smoothing (linear low pass filtering) and firing rate estimation
-    from single trial or trial-averaged spike trains.
-
-    Exponential and alpha kernels may also be used to represent postynaptic
-    currents / potentials in a linear (current-based) model.
-
-    Parameters
-    ----------
-    form : {'BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'}
-        Kernel form. Currently implemented forms are BOX (boxcar),
-        TRI (triangle), GAU (gaussian), EPA (epanechnikov), EXP (exponential),
-        ALP (alpha function). EXP and ALP are asymmetric kernel forms and
-        assume optional parameter `direction`.
-    sigma : Quantity
-        Standard deviation of the distribution associated with kernel shape.
-        This parameter defines the time resolution of the kernel estimate
-        and makes different kernels comparable (cf. [1] for symmetric kernels).
-        This is used here as an alternative definition to the cut-off
-        frequency of the associated linear filter.
-    sampling_period : float
-        Temporal resolution of input and output.
-    direction : {-1, 1}
-        Asymmetric kernels have two possible directions.
-        The values are -1 or 1, default is 1. The
-        definition here is that for direction = 1 the
-        kernel represents the impulse response function
-        of the linear filter. Default value is 1.
-
-    Returns
-    -------
-    kernel : numpy.ndarray
-        Array of kernel. The length of this array is always an odd
-        number to represent symmetric kernels such that the center bin
-        coincides with the median of the numeric array, i.e for a
-        triangle, the maximum will be at the center bin with equal
-        number of bins to the right and to the left.
-    norm : float
-        For rate estimates. The kernel vector is normalized such that
-        the sum of all entries equals unity sum(kernel)=1. When
-        estimating rate functions from discrete spike data (0/1) the
-        additional parameter `norm` allows for the normalization to
-        rate in spikes per second.
-
-        For example:
-        ``rate = norm * scipy.signal.lfilter(kernel, 1, spike_data)``
-    m_idx : int
-        Index of the numerically determined median (center of gravity)
-        of the kernel function.
-
-    Examples
-    --------
-    To obtain single trial rate function of trial one should use::
-
-        r = norm * scipy.signal.fftconvolve(sua, kernel)
-
-    To obtain trial-averaged spike train one should use::
-
-        r_avg = norm * scipy.signal.fftconvolve(sua, np.mean(X,1))
-
-    where `X` is an array of shape `(l,n)`, `n` is the number of trials and
-    `l` is the length of each trial.
-
-    See also
-    --------
-    elephant.statistics.instantaneous_rate
-
-    References
-    ----------
-
-    .. [1] Meier R, Egert U, Aertsen A, Nawrot MP, "FIND - a unified framework
-       for neural data analysis"; Neural Netw. 2008 Oct; 21(8):1085-93.
-
-    .. [2] Nawrot M, Aertsen A, Rotter S, "Single-trial estimation of neuronal
-       firing rates - from single neuron spike trains to population activity";
-       J. Neurosci Meth 94: 81-92; 1999.
-
-    """
-    warnings.simplefilter('always', DeprecationWarning)
-    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
-    forms_abbreviated = np.array(['BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'])
-    forms_verbose = np.array(['boxcar', 'triangle', 'gaussian', 'epanechnikov',
-                              'exponential', 'alpha'])
-    if form in forms_verbose:
-        form = forms_abbreviated[forms_verbose == form][0]
-
-    assert form.upper() in ('BOX', 'TRI', 'GAU', 'EPA', 'EXP', 'ALP'), \
-        "form must be one of either 'BOX','TRI','GAU','EPA','EXP' or 'ALP'!"
-
-    assert direction in (1, -1), "direction must be either 1 or -1"
-
-    # conversion to SI units (s)
-    if sigma < 0:
-        raise ValueError('sigma must be positive!')
-
-    SI_sigma = sigma.rescale('s').magnitude
-    SI_time_stamp_resolution = sampling_period.rescale('s').magnitude
-
-    norm = 1. / SI_time_stamp_resolution
-
-    if form.upper() == 'BOX':
-        w = 2.0 * SI_sigma * np.sqrt(3)
-        # always odd number of bins
-        width = 2 * np.floor(w / 2.0 / SI_time_stamp_resolution) + 1
-        height = 1. / width
-        kernel = np.ones((1, width)) * height  # area = 1
-
-    elif form.upper() == 'TRI':
-        w = 2 * SI_sigma * np.sqrt(6)
-        halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
-        trileft = np.arange(1, halfwidth + 2)
-        triright = np.arange(halfwidth, 0, -1)  # odd number of bins
-        triangle = np.append(trileft, triright)
-        kernel = triangle / triangle.sum()  # area = 1
-
-    elif form.upper() == 'EPA':
-        w = 2.0 * SI_sigma * np.sqrt(5)
-        halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)
-        base = np.arange(-halfwidth, halfwidth + 1)
-        parabula = base**2
-        epanech = parabula.max() - parabula  # inverse parabula
-        kernel = epanech / epanech.sum()  # area = 1
-
-    elif form.upper() == 'GAU':
-        w = 2.0 * SI_sigma * 2.7  # > 99% of distribution weight
-        halfwidth = np.floor(w / 2.0 / SI_time_stamp_resolution)  # always odd
-        base = np.arange(-halfwidth, halfwidth + 1) * SI_time_stamp_resolution
-        g = np.exp(
-            -(base**2) / 2.0 / SI_sigma**2) / SI_sigma / np.sqrt(2.0 * np.pi)
-        kernel = g / g.sum()  # area = 1
-
-    elif form.upper() == 'ALP':
-        w = 5.0 * SI_sigma
-        alpha = np.arange(
-            1, (
-                2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
-            1) * SI_time_stamp_resolution
-        alpha = (2.0 / SI_sigma**2) * alpha * np.exp(
-            -alpha * np.sqrt(2) / SI_sigma)
-        kernel = alpha / alpha.sum()  # normalization
-        if direction == -1:
-            kernel = np.flipud(kernel)
-
-    elif form.upper() == 'EXP':
-        w = 5.0 * SI_sigma
-        expo = np.arange(
-            1, (
-                2.0 * np.floor(w / SI_time_stamp_resolution / 2.0) + 1) +
-            1) * SI_time_stamp_resolution
-        expo = np.exp(-expo / SI_sigma)
-        kernel = expo / expo.sum()
-        if direction == -1:
-            kernel = np.flipud(kernel)
-
-    kernel = kernel.ravel()
-    m_idx = np.nonzero(kernel.cumsum() >= 0.5)[0].min()
-
-    return kernel, norm, m_idx
 
 
 def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
@@ -542,79 +411,106 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Parameters
     -----------
-    spiketrain : neo.SpikeTrain or list of neo.SpikeTrain objects
-        Neo object that contains spike times, the unit of the time stamps
-        and t_start and t_stop of the spike train.
-    sampling_period : Time Quantity
+    spiketrain : neo.SpikeTrain or list of neo.SpikeTrain
+        Neo object(s) that contains spike times, the unit of the time stamps,
+        and `t_start` and `t_stop` of the spike train.
+    sampling_period : pq.Quantity
         Time stamp resolution of the spike times. The same resolution will
-        be assumed for the kernel
-    kernel : string 'auto' or callable object of :class:`Kernel` from module
-        'kernels.py'. Currently implemented kernel forms are rectangular,
-        triangular, epanechnikovlike, gaussian, laplacian, exponential,
-        and alpha function.
-        Example: kernel = kernels.RectangularKernel(sigma=10*ms, invert=False)
+        be assumed for the kernel.
+    kernel : str or `kernels.Kernel`, optional
+        The string 'auto' or callable object of class `kernels.Kernel`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
-        rate estimation.
-        Default: 'auto'. In this case, the optimized kernel width for the
-        rate estimation is calculated according to [1] and with this width
-        a gaussian kernel is constructed. Automatized calculation of the
-        kernel width is not available for other than gaussian kernel shapes.
-    cutoff : float
+        rate estimation. Currently implemented kernel forms are rectangular,
+        triangular, epanechnikovlike, gaussian, laplacian, exponential, and
+        alpha function.
+        If 'auto', the optimized kernel width for the rate estimation is
+        calculated according to [1]_ and with this width a gaussian kernel is
+        constructed. Automatized calculation of the kernel width is not
+        available for other than gaussian kernel shapes.
+        Default: 'auto'.
+    cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
         the kernel, i.e., the considered width of the kernel in terms of
         multiples of the standard deviation sigma.
-        Default: 5.0
-    t_start : Time Quantity (optional)
-        Start time of the interval used to compute the firing rate. If None
-        assumed equal to spiketrain.t_start
-        Default: None
-    t_stop : Time Quantity (optional)
+        Default: 5.0.
+    t_start : pq.Quantity, optional
+        Start time of the interval used to compute the firing rate.
+        If None, `t_start` is assumed equal to `t_start` attribute of
+        `spiketrain`.
+        Default: None.
+    t_stop : pq.Quantity, optional
         End time of the interval used to compute the firing rate (included).
-        If None assumed equal to spiketrain.t_stop
-        Default: None
-    trim : bool
-        if False, the output of the Fast Fourier Transformation being a longer
+        If None, `t_stop` is assumed equal to `t_stop` attribute of
+        `spiketrain`.
+        Default: None.
+    trim : bool, optional
+        If False, the output of the Fast Fourier Transformation being a longer
         vector than the input vector by the size of the kernel is reduced back
-        to the original size of the considered time interval of the spiketrain
-        using the median of the kernel.
-        if True, only the region of the convolved signal is returned, where
+        to the original size of the considered time interval of the
+        `spiketrain` using the median of the kernel.
+        If True, only the region of the convolved signal is returned, where
         there is complete overlap between kernel and spike train. This is
         achieved by reducing the length of the output of the Fast Fourier
         Transformation by a total of two times the size of the kernel, and
-        t_start and t_stop are adjusted.
-        Default: False
+        `t_start` and `t_stop` are adjusted.
+        Default: False.
 
     Returns
     -------
     rate : neo.AnalogSignal
         Contains the rate estimation in unit hertz (Hz). In case a list of
         spike trains was given, this is the combined rate of all spike trains
-        (not the average rate). 'rate.times' contains the time axis of the rate
+        (not the average rate). `rate.times` contains the time axis of the rate
         estimate. The unit of this property is the same as the resolution that
-        is given via the argument 'sampling_period' to the function.
+        is given via the argument `sampling_period` to the function.
 
     Raises
     ------
     TypeError:
-        If `spiketrain` is not an instance of :class:`SpikeTrain` of Neo.
-        If `sampling_period` is not a time quantity.
-        If `kernel` is neither instance of :class:`Kernel` or string 'auto'.
-        If `cutoff` is neither float nor int.
-        If `t_start` and `t_stop` are neither None nor a time quantity.
-        If `trim` is not bool.
+        If `spiketrain` is not an instance of `neo.SpikeTrain`.
+
+        If `sampling_period` is not a `pq.Quantity`.
+
+        If `sampling_period` is not larger than zero.
+
+        If `kernel` is neither instance of `kernels.Kernel` nor string 'auto'.
+
+        If `cutoff` is neither `float` nor `int`.
+
+        If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
+
+        If `trim` is not `bool`.
 
     ValueError:
         If `sampling_period` is smaller than zero.
 
-    Example
-    --------
-    kernel = kernels.AlphaKernel(sigma = 0.05*s, invert = True)
-    rate = instantaneous_rate(spiketrain, sampling_period = 2*ms, kernel)
+        If `kernel` is 'auto' and the function was unable to calculate optimal
+        kernel width for instantaneous rate from input data.
+
+    Warns
+    -----
+    UserWarning
+        If `cutoff` is less than `min_cutoff` attribute of `kernel`, the width
+        of the kernel is adjusted to a minimally allowed width.
+
+        If the instantaneous firing rate approximation contains negative values
+        with respect to a tolerance (less than -1e-8), possibly due to machine
+        precision errors.
 
     References
     ----------
-    ..[1] H. Shimazaki, S. Shinomoto, J Comput Neurosci (2010) 29:171–182.
+    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
+           spike rate estimation," J Comput Neurosci, vol. 29, pp. 171–182,
+           2010.
+
+    Examples
+    --------
+    >>> import quantities as pq
+    >>> from elephant import kernels
+    >>> kernel = kernels.AlphaKernel(sigma=0.05*pq.s, invert=True)
+    >>> rate = instantaneous_rate(spiketrain, sampling_period=2*pq.ms,
+    ...     kernel=kernel)
 
     """
     # Merge spike trains if list of spike trains given:
@@ -626,10 +522,13 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         if t_stop is None:
             t_stop = spiketrain[0].t_stop
         spikes = np.concatenate([st.magnitude for st in spiketrain])
-        merged_spiketrain = SpikeTrain(np.sort(spikes), units=spiketrain[0].units,
+        merged_spiketrain = SpikeTrain(np.sort(spikes),
+                                       units=spiketrain[0].units,
                                        t_start=t_start, t_stop=t_stop)
-        return instantaneous_rate(merged_spiketrain, sampling_period=sampling_period,
-                                  kernel=kernel, cutoff=cutoff, t_start=t_start,
+        return instantaneous_rate(merged_spiketrain,
+                                  sampling_period=sampling_period,
+                                  kernel=kernel, cutoff=cutoff,
+                                  t_start=t_start,
                                   t_stop=t_stop, trim=trim)
 
     # Checks of input variables:
@@ -643,7 +542,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
             pq.Quantity(1, "s").dimensionality):
         raise TypeError(
             "The sampling period must be a time quantity!\n"
-            "    Found: %s, value %s" % (type(sampling_period), str(sampling_period)))
+            "    Found: %s, value %s" % (
+                type(sampling_period), str(sampling_period)))
 
     if sampling_period.magnitude < 0:
         raise ValueError("The sampling period must be larger than zero.")
@@ -680,7 +580,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     # main function:
     units = pq.CompoundUnit(
-        "%s*s" % str(sampling_period.rescale('s').magnitude))
+        "{}*s".format(sampling_period.rescale('s').item()))
     spiketrain = spiketrain.rescale(units)
     if t_start is None:
         t_start = spiketrain.t_start
@@ -712,7 +612,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                       sampling_period.rescale(units).magnitude) * units
 
     r = scipy.signal.fftconvolve(time_vector,
-                                 kernel(t_arr).rescale(pq.Hz).magnitude, 'full')
+                                 kernel(t_arr).rescale(pq.Hz).magnitude,
+                                 'full')
     if np.any(r < -1e-8):  # abs tolerance in np.isclose
         warnings.warn("Instantaneous firing rate approximation contains "
                       "negative values, possibly caused due to machine "
@@ -738,46 +639,68 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
-    Time Histogram of a list of :attr:`neo.SpikeTrain` objects.
+    Time Histogram of a list of `neo.SpikeTrain` objects.
 
     Parameters
     ----------
-    spiketrains : List of neo.SpikeTrain objects
-        Spiketrains with a common time axis (same `t_start` and `t_stop`)
-    binsize : quantities.Quantity
+    spiketrains : list of neo.SpikeTrain
+        `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
+    binsize : pq.Quantity
         Width of the histogram's time bins.
-    t_start, t_stop : Quantity (optional)
-        Start and stop time of the histogram. Only events in the input
-        `spiketrains` falling between `t_start` and `t_stop` (both included)
-        are considered in the histogram. If `t_start` and/or `t_stop` are not
-        specified, the maximum `t_start` of all :attr:spiketrains is used as
-        `t_start`, and the minimum `t_stop` is used as `t_stop`.
-        Default: t_start = t_stop = None
-    output : str (optional)
+    t_start : pq.Quantity, optional
+        Start time of the histogram. Only events in `spiketrains` falling
+        between `t_start` and `t_stop` (both included) are considered in the
+        histogram.
+        If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
+        `t_start`.
+        Default: None.
+    t_stop : pq.Quantity, optional
+        Stop time of the histogram. Only events in `spiketrains` falling
+        between `t_start` and `t_stop` (both included) are considered in the
+        histogram.
+        If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
+        `t_stop`.
+        Default: None.
+    output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
-        * `counts`'`: spike counts at each bin (as integer numbers)
-        * `mean`: mean spike counts per spike train
-        * `rate`: mean spike rate per spike train. Like 'mean', but the
+        * 'counts': spike counts at each bin (as integer numbers)
+        * 'mean': mean spike counts per spike train
+        * 'rate': mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
-    binary : bool (optional)
-        If **True**, indicates whether all spiketrain objects should first
-        binned to a binary representation (using the `BinnedSpikeTrain` class
-        in the `conversion` module) and the calculation of the histogram is
-        based on this representation.
+        Default: 'counts'.
+    binary : bool, optional
+        If True, indicates whether all `neo.SpikeTrain` objects should first
+        be binned to a binary representation (using the
+        `conversion.BinnedSpikeTrain` class) and the calculation of the
+        histogram is based on this representation.
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
-        Default: False
+        Default: False.
 
     Returns
     -------
-    time_hist : neo.AnalogSignal
-        A neo.AnalogSignal object containing the histogram values.
-        `AnalogSignal[j]` is the histogram computed between
+    neo.AnalogSignal
+        A `neo.AnalogSignal` object containing the histogram values.
+        `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+
+    Raises
+    ------
+    ValueError
+        If `output` is not 'counts', 'mean' or 'rate'.
+
+    Warns
+    -----
+    UserWarning
+        If `t_start` is None and the objects in `spiketrains` have different
+        `t_start` values.
+        If `t_stop` is None and the objects in `spiketrains` have different
+        `t_stop` values.
 
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
+
     """
     min_tstop = 0
     if t_start is None:
@@ -839,27 +762,30 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
 def complexity_pdf(spiketrains, binsize):
     """
-    Complexity Distribution [1] of a list of :attr:`neo.SpikeTrain` objects.
+    Complexity Distribution of a list of `neo.SpikeTrain` objects.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
-    spike trains computed with a bin width of binsize.
+    spike trains computed with a bin width of `binsize`.
     It provides for each complexity (== number of active neurons per bin) the
     number of occurrences. The normalization of that histogram to 1 is the
     probability density.
 
+    Implementation is based on [1]_.
+
     Parameters
     ----------
-    spiketrains : List of neo.SpikeTrain objects
-    Spiketrains with a common time axis (same `t_start` and `t_stop`)
-    binsize : quantities.Quantity
-    Width of the histogram's time bins.
+    spiketrains : list of neo.SpikeTrain
+        Spike trains with a common time axis (same `t_start` and `t_stop`)
+    binsize : pq.Quantity
+        Width of the histogram's time bins.
 
     Returns
     -------
-    time_hist : neo.AnalogSignal
-    A neo.AnalogSignal object containing the histogram values.
-    `AnalogSignal[j]` is the histogram computed between .
+    complexity_distribution : neo.AnalogSignal
+        A `neo.AnalogSignal` object containing the histogram values.
+        `neo.AnalogSignal[j]` is the histogram computed between
+        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
     See also
     --------
@@ -867,10 +793,10 @@ def complexity_pdf(spiketrains, binsize):
 
     References
     ----------
-    [1]Gruen, S., Abeles, M., & Diesmann, M. (2008). Impact of higher-order
-    correlations on coincidence distributions of massively parallel data.
-    In Dynamic Brain-from Neural Spikes to Behaviors (pp. 96-114).
-    Springer Berlin Heidelberg.
+    .. [1] S. Gruen, M. Abeles, & M. Diesmann, "Impact of higher-order
+           correlations on coincidence distributions of massively parallel
+           data," In "Dynamic Brain - from Neural Spikes to Behaviors",
+           pp. 96-114, Springer Berlin Heidelberg, 2008.
 
     """
     # Computing the population histogram with parameter binary=True to clip the
@@ -892,7 +818,8 @@ def complexity_pdf(spiketrains, binsize):
     return complexity_distribution
 
 
-"""Kernel Bandwidth Optimization.
+"""
+Kernel Bandwidth Optimization.
 
 Python implementation by Subhasis Ray.
 
@@ -906,7 +833,9 @@ This was translated into Python by Subhasis Ray, NCBS. Tue Jun 10
 
 
 def nextpow2(x):
-    """ Return the smallest integral power of 2 that >= x """
+    """
+    Return the smallest integral power of 2 that is equal or larger than `x`.
+    """
     n = 2
     while n < x:
         n = 2 * n
@@ -915,25 +844,27 @@ def nextpow2(x):
 
 def fftkernel(x, w):
     """
+    Applies the Gauss kernel smoother to an input signal using FFT algorithm.
 
-    y = fftkernel(x,w)
+    Parameters
+    ----------
+    x : np.ndarray
+        Vector with sample signal.
+    w : float
+        Kernel bandwidth (the standard deviation) in unit of the sampling
+        resolution of `x`.
 
-    Function `fftkernel' applies the Gauss kernel smoother to an input
-    signal using FFT algorithm.
+    Returns
+    -------
+    y : np.ndarray
+        The smoothed signal.
 
-    Input argument
-    x:    Sample signal vector.
-    w: 	Kernel bandwidth (the standard deviation) in unit of
-    the sampling resolution of x.
-
-    Output argument
-    y: 	Smoothed signal.
-
-    MAY 5/23, 2012 Author Hideaki Shimazaki
-    RIKEN Brain Science Insitute
-    http://2000.jukuin.keio.ac.jp/shimazaki
-
-    Ported to Python: Subhasis Ray, NCBS. Tue Jun 10 10:42:38 IST 2014
+    Notes
+    -----
+    1. MAY 5/23, 2012 Author Hideaki Shimazaki
+       RIKEN Brain Science Insitute
+       http://2000.jukuin.keio.ac.jp/shimazaki
+    2. Ported to Python: Subhasis Ray, NCBS. Tue Jun 10 10:42:38 IST 2014
 
     """
     L = len(x)
@@ -942,7 +873,7 @@ def fftkernel(x, w):
     X = np.fft.fft(x, n)
     f = np.arange(0, n, 1.0) / n
     f = np.concatenate((-f[:int(n / 2)], f[int(n / 2):0:-1]))
-    K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
+    K = np.exp(-0.5 * (w * 2 * np.pi * f) ** 2)
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
     return y
@@ -966,11 +897,11 @@ def ilogexp(x):
 
 def cost_function(x, N, w, dt):
     """
+    Computes the cost function for `sskernel`.
 
-    The cost function
     Cn(w) = sum_{i,j} int k(x - x_i) k(x - x_j) dx - 2 sum_{i~=j} k(x_i - x_j)
 
-     """
+    """
     yh = np.abs(fftkernel(x, w / dt))  # density
     # formula for density
     C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * \
@@ -983,41 +914,55 @@ def cost_function(x, N, w, dt):
 
 def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     """
-
     Calculates optimal fixed kernel bandwidth, given as the standard deviation
     sigma.
 
-    spiketimes: sequence of spike times (sorted to be ascending).
-
-    tin: (optional) time points at which the kernel bandwidth is to be
-    estimated.
-
-    w: (optional) vector of kernel bandwidths (standard deviation sigma). If
-    specified, optimal bandwidth is selected from this.
-
-    bootstrap (optional): whether to calculate the 95% confidence
-    interval. (default False)
+    Parameters
+    ----------
+    spiketimes : np.ndarray
+        Sequence of spike times (sorted to be ascending).
+    tin : np.ndarray, optional
+        Time points at which the kernel bandwidth is to be estimated.
+        If None, `spiketimes` is used.
+        Default: None.
+    w : np.ndarray, optional
+        Vector of kernel bandwidths (standard deviation sigma).
+        If specified, optimal bandwidth is selected from this.
+        If None, `w` is obtained through a golden-section search on a log-exp
+        scale.
+        Default: None.
+    bootstrap : bool, optional
+        If True, calculates the 95% confidence interval using Bootstrap.
+        Default: False.
 
     Returns
+    -------
+    dict
+        'y' : np.ndarray
+            Estimated density.
+        't' : np.ndarray
+            Points at which estimation was computed.
+        'optw' : float
+            Optimal kernel bandwidth given as standard deviation sigma
+        'w' : np.ndarray
+            Kernel bandwidths examined (standard deviation sigma).
+        'C' : np.ndarray
+            Cost functions of `w`.
+        'confb95' : tuple of np.ndarray
+            Bootstrap 95% confidence interval: (lower level, upper level).
+            If `bootstrap` is False, `confb95` is None.
+        'yb' : np.ndarray
+            Bootstrap samples.
+            If `bootstrap` is False, `yb` is None.
 
-    A dictionary containing the following key value pairs:
+        If no optimal kernel could be found, all entries of the dictionary are
+        set to None.
 
-    'y': estimated density,
-    't': points at which estimation was computed,
-    'optw': optimal kernel bandwidth given as standard deviation sigma
-    'w': kernel bandwidths examined (standard deviation sigma),
-    'C': cost functions of w,
-    'confb95': (lower bootstrap confidence level, upper bootstrap confidence level),
-    'yb': bootstrap samples.
-
-    If no optimal kernel could be found, all entries of the dictionary are set
-    to None.
-
-
-    Ref: Shimazaki, Hideaki, and Shigeru Shinomoto. 2010. Kernel
-    Bandwidth Optimization in Spike Rate Estimation. Journal of
-    Computational Neuroscience 29 (1-2):
-    171-82. doi:10.1007/s10827-009-0180-4.
+    References
+    ----------
+    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
+           spike rate estimation," Journal of Computational Neuroscience,
+           vol. 29, no. 1-2, pp. 171-82, 2010. doi:10.1007/s10827-009-0180-4.
 
     """
 
@@ -1028,7 +973,8 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         dt = np.min(isi)
         tin = np.linspace(np.min(spiketimes),
                           np.max(spiketimes),
-                          min(int(time / dt + 0.5), 1000))  # The 1000 seems somewhat arbitrary
+                          min(int(time / dt + 0.5),
+                              1000))  # The 1000 seems somewhat arbitrary
         t = tin
     else:
         time = np.max(tin) - np.min(tin)
@@ -1073,7 +1019,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         f1, y1 = cost_function(yhist, N, logexp(c1), dt)
         f2, y2 = cost_function(yhist, N, logexp(c2), dt)
         k = 0
-        while (np.abs(b - a) > (tolerance * (np.abs(c1) + np.abs(c2))))\
+        while (np.abs(b - a) > (tolerance * (np.abs(c1) + np.abs(c2)))) \
                 and (k < imax):
             if f1 < f2:
                 b = c2
@@ -1127,19 +1073,22 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
             'yb': yb}
 
 
-def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None, t_stop=None):
+def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None,
+                                         t_stop=None):
     for spiketrain in spiketrainlist:
         if not isinstance(spiketrain, SpikeTrain):
             raise TypeError(
                 "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
-                "    Found: %s, value %s" % (type(spiketrain), str(spiketrain)))
-        if t_start is None and not spiketrain.t_start == spiketrainlist[0].t_start:
+                "    Found: %s, value %s" % (
+                    type(spiketrain), str(spiketrain)))
+        if t_start is None and not spiketrain.t_start == spiketrainlist[
+                0].t_start:
             raise ValueError(
                 "the spike trains must have the same t_start!")
-        if t_stop is None and not spiketrain.t_stop == spiketrainlist[0].t_stop:
+        if t_stop is None and not spiketrain.t_stop == spiketrainlist[
+                0].t_stop:
             raise ValueError(
                 "the spike trains must have the same t_stop!")
         if not spiketrain.units == spiketrainlist[0].units:
             raise ValueError(
                 "the spike trains must have the same units!")
-    return None

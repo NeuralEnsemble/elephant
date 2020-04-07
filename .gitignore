@@ -44,6 +44,9 @@ lib
 lib64
 # sphinx build directory
 doc/_build
+doc/reference/toctree/*
+!doc/reference/toctree/kernels/
+*.h5
 # setup.py dist directory
 dist
 sdist
@@ -66,7 +69,7 @@ cover
 ######################
 .directory
 .gdb_history
-.DS_Store?
+.DS_Store
 ehthumbs.db
 Icon?
 Thumbs.db
@@ -75,3 +78,5 @@ Thumbs.db
 ###################################
 # ignored folder for fast prototyping
 ignored/
+
+.ipynb_checkpoints/

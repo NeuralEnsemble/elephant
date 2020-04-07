@@ -185,9 +185,10 @@ class binarize_TestCase(unittest.TestCase):
                                       t_stop=3 * pq.s)
         assert_array_equal(bst.bin_edges, [0., 2.] * pq.s)
         assert_array_equal(bst.spike_indices, [[]])  # no binned spikes
+        self.assertEqual(bst.get_num_of_spikes(), 0)
 
 
-class TimeHistogramTestCase(unittest.TestCase):
+class BinnedSpikeTrainTestCase(unittest.TestCase):
     def setUp(self):
         self.spiketrain_a = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
@@ -195,11 +196,37 @@ class TimeHistogramTestCase(unittest.TestCase):
             [0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
         self.binsize = 1 * pq.s
 
-    def tearDown(self):
-        self.spiketrain_a = None
-        del self.spiketrain_a
-        self.spiketrain_b = None
-        del self.spiketrain_b
+    def test_get_num_of_spikes(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        for spiketrain in spiketrains:
+            binned = cv.BinnedSpikeTrain(spiketrain, num_bins=10,
+                                         binsize=1 * pq.s, t_start=0 * pq.s)
+            self.assertEqual(binned.get_num_of_spikes(),
+                             len(binned.spike_indices[0]))
+        binned_matrix = cv.BinnedSpikeTrain(spiketrains, num_bins=10,
+                                            binsize=1 * pq.s)
+        n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
+        n_spikes_per_row_from_indices = list(map(len,
+                                                 binned_matrix.spike_indices))
+        assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
+        self.assertEqual(binned_matrix.get_num_of_spikes(),
+                         sum(n_spikes_per_row_from_indices))
+
+    def test_get_num_of_spikes(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        for spiketrain in spiketrains:
+            binned = cv.BinnedSpikeTrain(spiketrain, num_bins=10,
+                                         binsize=1 * pq.s, t_start=0 * pq.s)
+            self.assertEqual(binned.get_num_of_spikes(),
+                             len(binned.spike_indices[0]))
+        binned_matrix = cv.BinnedSpikeTrain(spiketrains, num_bins=10,
+                                            binsize=1 * pq.s)
+        n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
+        n_spikes_per_row_from_indices = list(map(len,
+                                                 binned_matrix.spike_indices))
+        assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
+        self.assertEqual(binned_matrix.get_num_of_spikes(),
+                         sum(n_spikes_per_row_from_indices))
 
     def test_binned_spiketrain_sparse(self):
         a = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
@@ -211,8 +238,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         x_sparse = [2, 1, 2, 1]
         s = x.to_sparse_array()
         self.assertTrue(np.array_equal(s.data, x_sparse))
-        self.assertTrue(
-            np.array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]]))
+        assert_array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]])
 
     def test_binned_spiketrain_shape(self):
         a = self.spiketrain_a
@@ -604,6 +630,11 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
         self.assertTrue(bst.bin_centers.units == pq.ms)
         self.assertTrue(bst.bin_edges.units == pq.ms)
+
+    def test_binned_sparsity(self):
+        train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)
+        bst = cv.BinnedSpikeTrain(train, num_bins=100)
+        self.assertAlmostEqual(bst.sparsity, 0.1)
 
 
 if __name__ == '__main__':

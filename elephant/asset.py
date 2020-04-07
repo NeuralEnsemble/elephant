@@ -41,6 +41,8 @@ References:
 [1] Torre, Canova, Denker, Gerstein, Helias, Gruen (submitted)
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import scipy.spatial
 import scipy.stats
@@ -67,7 +69,7 @@ def _signals_same_tstart(signals):
     signals : list
         a list of signals (e.g. AnalogSignals or SpikeTrains) having
         attribute `t_start`
-        
+
     Returns
     -------
     t_start : Quantity
@@ -272,7 +274,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _sample_quantiles(sample, p):
-    '''
+    r'''
     Given a sample of values extracted from a probability distribution,
     estimates the quantile(s) associated to p-value(s) p.
 
@@ -626,7 +628,7 @@ def mask_matrices(matrices, thresholds):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle):
-    '''
+    r'''
     Given a list of points on the real plane, identified by their absciss x
     and ordinate y, compute a stretched transformation of the Euclidean
     distance among each of them.
@@ -694,7 +696,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
 
 
 def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
-    '''
+    r'''
     Given a matrix mat, replaces its positive elements with integers
     representing different cluster ids. Each cluster comprises close-by
     elements.
@@ -785,9 +787,9 @@ def cluster_matrix_entries(mat, eps=10, min=2, stretch=5):
 def probability_matrix_montecarlo(
         spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
         surr_method='dither_spike_train', j=None, n_surr=100, verbose=False):
-    '''
+    """
     Given a list of parallel spike trains, estimate the cumulative probability
-     of each entry in their intersection matrix (see: intersection_matrix())
+    of each entry in their intersection matrix (see: intersection_matrix())
     by a Monte Carlo approach using surrogate data.
     Contrarily to the analytical version (see: probability_matrix_analytical())
     the Monte Carlo one does not incorporate the assumptions of Poissonianity
@@ -797,8 +799,8 @@ def probability_matrix_montecarlo(
     at disposal, see below) and calculates their intersection matrix M.
     For each entry (i, j), the intersection cdf P[i, j] is then given by:
 
-    .. centered::  P[i, j] = #(spike_train_surrogates such that M[i, j] < I[i, j]) /
-                        #(spike_train_surrogates)
+    .. centered::  P[i, j] = #(spike_train_surrogates such that M[i, j] <
+                            I[i, j]) / #(spike_train_surrogates)
 
     If P[i, j] is large (close to 1), I[i, j] is statistically significant:
     the probability to observe an overlap equal to or larger then I[i, j]
@@ -851,7 +853,7 @@ def probability_matrix_montecarlo(
     See also
     --------
     probability_matrix_analytical : for analytical derivation of the matrix
-    '''
+    """
 
     # Compute the intersection matrix of the original data
     imat, x_edges, y_edges = intersection_matrix(
@@ -890,7 +892,7 @@ def probability_matrix_montecarlo(
 def probability_matrix_analytical(
         spiketrains, binsize, dt, t_start_x=None, t_start_y=None,
         fir_rates='estimate', kernel_width=100 * pq.ms, verbose=False):
-    '''
+    r'''
     Given a list of spike trains, approximates the cumulative probability of
     each entry in their intersection matrix (see: intersection_matrix()).
 
@@ -899,15 +901,15 @@ def probability_matrix_analytical(
 
         * Bin each spike train at the specified binsize: this yields a binary
           array of 1s (spike in bin) and 0s (no spike in bin) (clipping used)
-        * If required, estimate the rate profile of each spike train by 
-          convolving the binned array with a boxcar kernel of user-defined 
+        * If required, estimate the rate profile of each spike train by
+          convolving the binned array with a boxcar kernel of user-defined
           length
         * For each neuron k and each pair of bins i and j, compute the
           probability p_ijk that neuron k fired in both bins i and j.
         * Approximate the probability distribution of the intersection value
           at (i, j) by a Poisson distribution with mean parameter
           l = \sum_k (p_ijk),
-          justified by Le Cam's approximation of a sum of independent 
+          justified by Le Cam's approximation of a sum of independent
           Bernouilli random variables with a Poisson distribution.
 
     Parameters
@@ -1075,7 +1077,7 @@ def probability_matrix_analytical(
 
 
 def _jsf_uniform_orderstat_3d(u, alpha, n):
-    '''
+    r'''
     Considered n independent random variables X1, X2, ..., Xn all having
     uniform distribution in the interval (alpha, 1):
 
@@ -1258,7 +1260,7 @@ def _pmat_neighbors(mat, filter_shape, nr_largest=None, diag=0):
 
 def joint_probability_matrix(
         pmat, filter_shape, nr_largest=None, alpha=0, pvmin=1e-5):
-    '''
+    """
     Map a probability matrix pmat to a joint probability matrix jmat, where
     jmat[i, j] is the joint p-value of the largest neighbors of pmat[i, j].
 
@@ -1300,18 +1302,22 @@ def joint_probability_matrix(
     ----------
     [1] Torre et al (in prep) ...
 
-    Example
-    -------
-    # Assuming to have a list sts of parallel spike trains over 1s recording,
-    # the following code computes the intersection/probability/joint-prob
-    # matrices imat/pmat/jmat using a bin width of 5 ms
+    Examples
+    --------
+    Assuming to have a list sts of parallel spike trains over 1s recording,
+    the following code computes the intersection/probability/joint-prob
+    matrices imat/pmat/jmat using a bin width of 5 ms:
+
+    >>> import quantities as pq
+    >>> from elephant import asset
     >>> T = 1 * pq.s
     >>> binsize = 5 * pq.ms
-    >>> imat, xedges, yedges = intersection_matrix(sts, binsize=binsize, dt=T)
-    >>> pmat = probability_matrix_analytical(sts, binsize, dt=T)
-    >>> jmat = joint_probability_matrix(pmat, filter_shape=(fl, fw))
+    >>> imat, xedges, yedges = asset.intersection_matrix(sts,
+    ...                        binsize=binsize, dt=T)
+    >>> pmat = asset.probability_matrix_analytical(sts, binsize, dt=T)
+    >>> jmat = asset.joint_probability_matrix(pmat, filter_shape=(fl, fw))
 
-    '''
+    """
     # Find for each P_ij in the probability matrix its neighbors and maximize
     # them by the maximum value 1-pvmin
     pmat_neighb = _pmat_neighbors(
