@@ -59,7 +59,7 @@ from elephant.statistics import isi
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
-                'dither_spikes_with_refractory_period']
+                'dither_spikes_with_refractory_period', 'shift_spiketrains']
 
 
 def _dither_spikes_with_refractory_period(spiketrain, dither, n,
