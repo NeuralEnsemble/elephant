@@ -1275,7 +1275,7 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
         elif surr_method == 'shift_spiketrain':
             surrs = [
                 surr.spiketrain_shifting(spiketrain, trial_length=500 * pq.ms,
-                                         dither=dither,
+                                         dt=dither,
                                          sep=2 * winlen * binsize, n=1)[0]
                 for spiketrain in spiketrains]
         else:
