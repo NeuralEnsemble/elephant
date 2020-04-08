@@ -593,7 +593,7 @@ def concepts_mining(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the spiketrains and clipping (binary matrix)
     binary_matrix = conv.BinnedSpikeTrain(
-        spiketrains, binsize, tolerance=None).to_sparse_bool_array().tocoo()
+        spiketrains, binsize).to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
