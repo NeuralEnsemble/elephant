@@ -1085,7 +1085,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         return surrogate_types[surr_method](
             spiketrain, dt, n=n)
     if surr_method == 'shift_spiketrain':
-        return surrogate_types['shift_spiketrain'](
+        return surrogate_types[surr_method](
             spiketrain, trial_length=trial_length, dt=dt, sep=sep, n=n)
     # surr_method == 'joint_isi_dithering':
     return JointISI(spiketrain).dithering(n)

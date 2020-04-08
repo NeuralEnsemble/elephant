@@ -1272,6 +1272,12 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
             surrs = [surr.dither_spikes(
                 spiketrain, dither=dither, n=1, refractory_period=binsize)[0]
                      for spiketrain in spiketrains]
+        elif surr_method == 'shift_spiketrain':
+            surrs = [
+                surr.spiketrain_shifting(spiketrain, trial_length=500 * pq.ms,
+                                         dither=dither,
+                                         sep=2 * winlen * binsize, n=1)[0]
+                for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n=1, surr_method=surr_method,
