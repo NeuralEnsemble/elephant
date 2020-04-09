@@ -50,9 +50,34 @@ def bic(cov, order, dimension, length):
     bic : float
         information criterion
     '''
-    bic = 2 * np.log(np.linalg.det(cov)) + 2*(dimension**2)*order*np.log(length)/length
+    bic = 2 * np.log(np.linalg.det(cov)) \
+            + 2*(dimension**2)*order*np.log(length)/length
 
     return bic
+
+def aic(cov, order, dimension, length):
+    '''
+    Calculate AkaikeInformation Criterion
+    Parameters
+    ----------
+    cov : np.ndarray
+        covariance matrix of auto regressive model
+    order : int
+        order of autoregressive model
+    dimension : int
+        dimensionality of the data
+    length : int
+        number of time samples
+
+    Returns
+    -------
+    aic : float
+        information criterion
+    '''
+    aic = 2 * np.log(np.linalg.det(cov)) \
+            + 2*(dimension**2)*order/length
+
+    return aic
 
 def _lag_covariances(signals, dimension, max_lag):
     """
@@ -183,7 +208,8 @@ def _vector_arm(signals, dimension, order):
 
     return coeffs, cov_matrix
 
-def _optimal_vector_arm(signals, dimension, max_order):
+def _optimal_vector_arm(signals, dimension, max_order,
+                        information_criterion = 'bic'):
     '''
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
@@ -195,6 +221,9 @@ def _optimal_vector_arm(signals, dimension, max_order):
         dimensionality of the data
     max_order : int
         maximal order to consider
+    information_criterion : string
+        bic for Bayesian information_criterion,
+        aic for Akaike information criterion
 
     Returns
     -------
@@ -210,26 +239,33 @@ def _optimal_vector_arm(signals, dimension, max_order):
 
     length = np.size(signals[0])
 
-    optimal_bic = np.infty
+    optimal_ic = np.infty
     optimal_order = 1
     optimal_coeffs = np.zeros((dimension,dimension, optimal_order))
     optimal_cov_matrix = np.zeros((dimension, dimension))
+
+    if information_criterion == 'bic':
+        evaluate_ic = bic
+    elif information_criterion == 'aic':
+        evaluate_ic = aic
+    else:
+        raise ValueError(f"Information criterion {information_criterion} not valid")
 
 
     for order in range(1, max_order + 1):
         coeffs, cov_matrix = _vector_arm(signals, dimension, order)
 
-        temp_bic = bic(cov_matrix, order, dimension, length)
+        temp_ic = evaluate_ic(cov_matrix, order, dimension, length)
 
-        if temp_bic < optimal_bic:
-            optimal_bic = temp_bic
+        if temp_ic < optimal_ic:
+            optimal_ic = temp_ic
             optimal_order = order
             optimal_coeffs = coeffs
             optimal_cov_matrix = cov_matrix
 
     return optimal_coeffs, optimal_cov_matrix, optimal_order
 
-def pairwise_granger(signals, max_order):
+def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     """
     Determine Granger Causality of two time series
     Note: order parameter should be removed
@@ -239,6 +275,9 @@ def pairwise_granger(signals, max_order):
         time series data
     order : int
         order of autoregressive model (should be removed)
+    information_criterion : string
+        bic for Bayesian information_criterion,
+        aic for Akaike information criterion
     Returns
     -------
     causality : namedTuple, where:
@@ -249,7 +288,7 @@ def pairwise_granger(signals, max_order):
     """
     # TODO: remove order parameter
     if order <= 0:
-        raise ValueError(f"The order parameter should be positive. Not {order}")
+        raise ValueError(f"The order parameter should be positive. Not {order}!")
 
     if isinstance(signals, AnalogSignal):
         signals = np.asarray(signals)
@@ -260,9 +299,12 @@ def pairwise_granger(signals, max_order):
     signal_x = np.asarray([signals[0, :]])
     signal_y = np.asarray([signals[1, :]])
 
-    coeffs_x, var_x, p_1 = _optimal_vector_arm(signal_x, 1, max_order)
-    coeffs_y, var_y, p_2 = _optimal_vector_arm(signal_y, 1, max_order)
-    coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order)
+    coeffs_x, var_x, p_1 = _optimal_vector_arm(signal_x, 1, max_order,
+                                               information_criterion)
+    coeffs_y, var_y, p_2 = _optimal_vector_arm(signal_y, 1, max_order,
+                                               information_criterion)
+    coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
+                                                 information_criterion)
 
     print('########################################')
     print(p_1)
@@ -327,6 +369,6 @@ if __name__ == "__main__":
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    causality = pairwise_granger(signal, 5)
+    causality = pairwise_granger(signal, 5, 'bic')
 
     print(causality)
