@@ -305,18 +305,6 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
                                                information_criterion)
     coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
                                                 information_criterion)
-    '''
-    'Caution: ad hoc rounding introduced!!!!!'
-    '''
-    significant_figures = int(np.log10(np.size(signal_x)))
-    print(significant_figures)
-    coeffs_x = np.around(coeffs_x, significant_figures)
-    coeffs_y = np.around(coeffs_y, significant_figures)
-    coeffs_xy = np.around(coeffs_xy, significant_figures)
-    var_x = np.around(var_x, significant_figures)
-    var_y = np.around(var_y, significant_figures)
-    cov_xy = np.around(cov_xy, significant_figures)
-
     print('########################################')
     print(p_1)
     print(p_2)
@@ -344,22 +332,36 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
 
     total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
 
-    # Round GC directly
     '''
-    directional_causality_x_y = np.around(directional_causality_x_y, 3)
-    directional_causality_y_x = np.around(directional_causality_y_x, 3)
-    instantaneous_causality = np.around(instantaneous_causality, 3)
-    total_interdependence = np.around(total_interdependence, 3)
+    Round GC according to following scheme:
+        Note that standard error scales as 1/sqrt(sample_size)
+        Calculate  significant figures according to standard error
     '''
-    return Causality(directional_causality_x_y=directional_causality_x_y,
-                     directional_causality_y_x=directional_causality_y_x,
-                     instantaneous_causality=instantaneous_causality,
-                     total_interdependence=total_interdependence)
+    length = np.size(signal_x)
+    asymptotic_std_error = 1/np.sqrt(length)
+    est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
+    print(est_sig_figures)
+
+    directional_causality_x_y_round = np.around(directional_causality_x_y,
+                                          est_sig_figures)
+    directional_causality_y_x_round = np.around(directional_causality_y_x,
+                                          est_sig_figures)
+    instantaneous_causality_round = np.around(instantaneous_causality,
+                                        est_sig_figures)
+    total_interdependence_round = directional_causality_x_y_round \
+                            + directional_causality_y_x_round \
+                            + instantaneous_causality_round
+
+
+    return Causality(directional_causality_x_y=directional_causality_x_y_round,
+                     directional_causality_y_x=directional_causality_y_x_round,
+                     instantaneous_causality=instantaneous_causality_round,
+                     total_interdependence=total_interdependence_round)
 
 
 if __name__ == "__main__":
 
-    np.random.seed(125)
+    np.random.seed(1)
     length_2d = 300
     signal = np.zeros((2, length_2d))
 
@@ -369,7 +371,7 @@ if __name__ == "__main__":
 
     weights = np.stack((weights_1, weights_2))
 
-    noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+    noise_covariance = np.array([[1., 0.], [0., 1.]])
 
     for i in range(length_2d):
         for lag in range(order):
@@ -379,6 +381,7 @@ if __name__ == "__main__":
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    causality = pairwise_granger(signal, 5, 'bic')
+    causality = pairwise_granger(signal, 10, 'bic')
 
     print(causality)
+
