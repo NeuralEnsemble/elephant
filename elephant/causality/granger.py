@@ -306,6 +306,15 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
                                                  information_criterion)
 
+    '''
+    'Caution: ad hoc rounding introduced!!!!!'
+    '''
+    significant_figures = int(np.log10(np.size(signal_x)))
+    print(significant_figures)
+    coeffs_x = np.around(coeffs_x, significant_figures)
+    coeffs_y = np.around(coeffs_y, significant_figures)
+    coeffs_xy = np.around(coeffs_xy, significant_figures)
+
     print('########################################')
     print(p_1)
     print(p_2)
@@ -333,14 +342,13 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
 
     total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
 
-    '''
-    'Caution: ad hoc rounding introduced!!!!!'
+    # Round GC directly
     '''
     directional_causality_x_y = np.around(directional_causality_x_y, 3)
     directional_causality_y_x = np.around(directional_causality_y_x, 3)
     instantaneous_causality = np.around(instantaneous_causality, 3)
     total_interdependence = np.around(total_interdependence, 3)
-
+    '''
     return Causality(directional_causality_x_y=directional_causality_x_y,
                      directional_causality_y_x=directional_causality_y_x,
                      instantaneous_causality=instantaneous_causality,
@@ -349,8 +357,8 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
 
 if __name__ == "__main__":
 
-    np.random.seed(1)
-    length_2d = 1000
+    np.random.seed(12345)
+    length_2d = 3000
     signal = np.zeros((2, length_2d))
 
     order = 2
