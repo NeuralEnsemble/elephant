@@ -304,8 +304,7 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     coeffs_y, var_y, p_2 = _optimal_vector_arm(signal_y, 1, max_order,
                                                information_criterion)
     coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
-                                                 information_criterion)
-
+                                                information_criterion)
     '''
     'Caution: ad hoc rounding introduced!!!!!'
     '''
@@ -314,6 +313,9 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     coeffs_x = np.around(coeffs_x, significant_figures)
     coeffs_y = np.around(coeffs_y, significant_figures)
     coeffs_xy = np.around(coeffs_xy, significant_figures)
+    var_x = np.around(var_x, significant_figures)
+    var_y = np.around(var_y, significant_figures)
+    cov_xy = np.around(cov_xy, significant_figures)
 
     print('########################################')
     print(p_1)
@@ -357,8 +359,8 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
 
 if __name__ == "__main__":
 
-    np.random.seed(12345)
-    length_2d = 3000
+    np.random.seed(125)
+    length_2d = 300
     signal = np.zeros((2, length_2d))
 
     order = 2
