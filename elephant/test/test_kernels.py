@@ -53,11 +53,10 @@ class kernel_TestCase(unittest.TestCase):
         self.assertEqual(kernel.is_symmetric(), False)
         self.assertEqual(rec_kernel.is_symmetric(), True)
 
-    @unittest.skip('very time-consuming test')
-    def test_error_alpha_kernel(self):
+    def test_alpha_kernel_extreme(self):
         alp_kernel = kernels.AlphaKernel(sigma=0.3*pq.ms)
-        self.assertRaises(ValueError,
-            alp_kernel.boundary_enclosing_area_fraction, 0.9999999)
+        quantile = alp_kernel.boundary_enclosing_area_fraction(0.9999999)
+        self.assertAlmostEqual(quantile.magnitude, 4.055922083048838)
 
     def test_kernels_normalization(self):
         """
