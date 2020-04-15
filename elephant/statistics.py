@@ -207,7 +207,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                       axis=axis) / (t_stop - t_start)
 
 
-@Provenance(inputs=['spiketrain'])
+@Provenance(inputs=['spiketrains'])
 def fanofactor(spiketrains):
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
@@ -775,8 +775,8 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                                 t_start=t_start)
 
     return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
-                               units=bin_hist.units, t_start=t_start,
-                               t_stop=t_stop, binary=binary,
+                               units=bin_hist.units, histogram_type=output,
+                               t_start=t_start, t_stop=t_stop, binary=binary,
                                warnings_raised=warnings_raised)
 
 
