@@ -116,7 +116,6 @@ class Kernel(object):
             raise ValueError("'invert' must be bool")
 
         self.sigma = sigma
-        self._sigma_scaled = self.sigma
         self.invert = invert
 
     def __call__(self, t):
@@ -151,12 +150,6 @@ class Kernel(object):
                             "to the callable kernel object must be the same. "
                             "Otherwise a normalization to 1 of the kernel "
                             "cannot be performed.")
-
-        self._sigma_scaled = self.sigma.rescale(t.units)
-        # FIXME: wrong and misleading
-        # A hidden variable _sigma_scaled is introduced here in order to avoid
-        # accumulation of floating point errors of sigma upon multiple
-        # usages of the _evaluate() function
 
         return self._evaluate(t)
 
@@ -322,8 +315,9 @@ class RectangularKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        return (0.5 / (np.sqrt(3.0) * self._sigma_scaled)) * \
-               (np.absolute(t) < np.sqrt(3.0) * self._sigma_scaled)
+        sigma = self.sigma.rescale(t.units)
+        return (0.5 / (np.sqrt(3.0) * sigma)) * \
+               (np.absolute(t) < np.sqrt(3.0) * sigma)
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -352,10 +346,11 @@ class TriangularKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        return (1.0 / (np.sqrt(6.0) * self._sigma_scaled)) * np.maximum(
+        sigma = self.sigma.rescale(t.units)
+        return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
             0.0,
             (1.0 - (np.absolute(t) /
-                    (np.sqrt(6.0) * self._sigma_scaled)).magnitude))
+                    (np.sqrt(6.0) * sigma)).magnitude))
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -393,9 +388,10 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        return (3.0 / (4.0 * np.sqrt(5.0) * self._sigma_scaled)) * np.maximum(
+        sigma = self.sigma.rescale(t.units)
+        return (3.0 / (4.0 * np.sqrt(5.0) * sigma)) * np.maximum(
             0.0,
-            1 - (t / (np.sqrt(5.0) * self._sigma_scaled)).magnitude ** 2)
+            1 - (t / (np.sqrt(5.0) * sigma)).magnitude ** 2)
 
     def boundary_enclosing_area_fraction(self, fraction):
         r"""
@@ -459,8 +455,9 @@ class GaussianKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        return (1.0 / (np.sqrt(2.0 * np.pi) * self._sigma_scaled)) * np.exp(
-            -0.5 * (t / self._sigma_scaled).magnitude ** 2)
+        sigma = self.sigma.rescale(t.units)
+        return (1.0 / (np.sqrt(2.0 * np.pi) * sigma)) * np.exp(
+            -0.5 * (t / sigma).magnitude ** 2)
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -486,8 +483,9 @@ class LaplacianKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        return (1 / (np.sqrt(2.0) * self._sigma_scaled)) * np.exp(
-            -(np.absolute(t) * np.sqrt(2.0) / self._sigma_scaled).magnitude)
+        sigma = self.sigma.rescale(t.units)
+        return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
+            -(np.absolute(t) * np.sqrt(2.0) / sigma).magnitude)
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -517,12 +515,13 @@ class ExponentialKernel(Kernel):
         return min_cutoff
 
     def _evaluate(self, t):
+        sigma = self.sigma.rescale(t.units)
         if not self.invert:
-            kernel = (t >= 0) * (1. / self._sigma_scaled.magnitude) * \
-                     np.exp((-t / self._sigma_scaled).magnitude) / t.units
+            kernel = (t >= 0) * (1. / sigma.magnitude) * \
+                     np.exp((-t / sigma).magnitude) / t.units
         elif self.invert:
-            kernel = (t <= 0) * (1. / self._sigma_scaled.magnitude) * \
-                     np.exp((t / self._sigma_scaled).magnitude) / t.units
+            kernel = (t <= 0) * (1. / sigma.magnitude) * \
+                     np.exp((t / sigma).magnitude) / t.units
         return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
@@ -549,14 +548,15 @@ class AlphaKernel(Kernel):
         return min_cutoff
 
     def _evaluate(self, t):
+        sigma = self.sigma.rescale(t.units)
         if not self.invert:
-            kernel = (t >= 0) * 2. * (t / self._sigma_scaled**2).magnitude *\
+            kernel = (t >= 0) * 2. * (t / sigma**2).magnitude *\
                 np.exp((
-                    -t * np.sqrt(2.) / self._sigma_scaled).magnitude) / t.units
+                    -t * np.sqrt(2.) / sigma).magnitude) / t.units
         elif self.invert:
-            kernel = (t <= 0) * -2. * (t / self._sigma_scaled**2).magnitude *\
+            kernel = (t <= 0) * -2. * (t / sigma**2).magnitude *\
                 np.exp((
-                    t * np.sqrt(2.) / self._sigma_scaled).magnitude) / t.units
+                    t * np.sqrt(2.) / sigma).magnitude) / t.units
         return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
