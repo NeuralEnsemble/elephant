@@ -548,15 +548,14 @@ class AlphaKernel(Kernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
+        t_units = t.units
+        tau = self.sigma.rescale(t_units).magnitude / math.sqrt(2)
+        t = t.magnitude
         if not self.invert:
-            kernel = (t >= 0) * 2. * (t / sigma**2).magnitude *\
-                np.exp((
-                    -t * np.sqrt(2.) / sigma).magnitude) / t.units
-        elif self.invert:
-            kernel = (t <= 0) * -2. * (t / sigma**2).magnitude *\
-                np.exp((
-                    t * np.sqrt(2.) / sigma).magnitude) / t.units
+            kernel = (t >= 0) * 1 / tau ** 2 * t * np.exp(-t / tau)
+        else:
+            kernel = (t <= 0) * 1 / tau ** 2 * (-t) * np.exp(t / tau)
+        kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
