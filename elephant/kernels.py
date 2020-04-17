@@ -202,7 +202,9 @@ class Kernel(object):
             a boundary was not possible.
 
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            "The Kernel class should not be used directly, "
+            "instead the subclasses for the single kernels.")
 
     @staticmethod
     def _check_fraction(fraction):
@@ -256,8 +258,8 @@ class Kernel(object):
         """
         cumsum = self(t).cumsum()
         dt = (t[-1] - t[0]) / (len(t) - 1)
-        a = cumsum * dt
-        return np.nonzero(a >= 0.5)[0].min()
+        quantiles = cumsum * dt
+        return np.nonzero(quantiles >= 0.5)[0].min()
 
     def is_symmetric(self):
         """
@@ -315,9 +317,12 @@ class RectangularKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
-        return (0.5 / (np.sqrt(3.0) * sigma)) * \
-               (np.absolute(t) < np.sqrt(3.0) * sigma)
+        t_units = t.units
+        t_abs = np.abs(t.magnitude)
+        tau = math.sqrt(3) * self.sigma.rescale(t_units).magnitude
+        kernel = (t_abs < tau) * 1 / (2 * tau)
+        kernel = pq.Quantity(kernel, units=1 / t_units)
+        return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -346,11 +351,12 @@ class TriangularKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
-        return (1.0 / (np.sqrt(6.0) * sigma)) * np.maximum(
-            0.0,
-            (1.0 - (np.absolute(t) /
-                    (np.sqrt(6.0) * sigma)).magnitude))
+        t_units = t.units
+        t_abs = np.abs(t.magnitude)
+        tau = math.sqrt(6) * self.sigma.rescale(t_units).magnitude
+        kernel = (t_abs < tau) * 1 / tau * (1 - t_abs / tau)
+        kernel = pq.Quantity(kernel, units=1 / t_units)
+        return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -455,9 +461,13 @@ class GaussianKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
-        return (1.0 / (np.sqrt(2.0 * np.pi) * sigma)) * np.exp(
-            -0.5 * (t / sigma).magnitude ** 2)
+        t_units = t.units
+        t = t.magnitude
+        sigma = self.sigma.rescale(t_units).magnitude
+        kernel = (1.0 / (math.sqrt(2.0 * math.pi) * sigma)) * np.exp(
+            -0.5 * (t / sigma) ** 2)
+        kernel = pq.Quantity(kernel, units=1 / t_units)
+        return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -483,9 +493,12 @@ class LaplacianKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
-        return (1 / (np.sqrt(2.0) * sigma)) * np.exp(
-            -(np.absolute(t) * np.sqrt(2.0) / sigma).magnitude)
+        t_units = t.units
+        t = t.magnitude
+        tau = self.sigma.rescale(t_units).magnitude / math.sqrt(2)
+        kernel = 1 / (2 * tau) * np.exp(-np.abs(t / tau))
+        kernel = pq.Quantity(kernel, units=1 / t_units)
+        return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -515,13 +528,14 @@ class ExponentialKernel(Kernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
+        t_units = t.units
+        t = t.magnitude
+        tau = self.sigma.rescale(t_units).magnitude
         if not self.invert:
-            kernel = (t >= 0) * (1. / sigma.magnitude) * \
-                     np.exp((-t / sigma).magnitude) / t.units
-        elif self.invert:
-            kernel = (t <= 0) * (1. / sigma.magnitude) * \
-                     np.exp((t / sigma).magnitude) / t.units
+            kernel = (t >= 0) * 1 / tau * np.exp(-t / tau)
+        else:
+            kernel = (t <= 0) * 1 / tau * np.exp(t / tau)
+        kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
     def boundary_enclosing_area_fraction(self, fraction):

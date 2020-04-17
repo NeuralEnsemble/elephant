@@ -33,7 +33,7 @@ class kernel_TestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, kernels.RectangularKernel, sigma=-0.03*pq.s)
         self.assertRaises(
-            ValueError, kernels.RectangularKernel, sigma=2.0*pq.ms,
+            ValueError, kernels.AlphaKernel, sigma=2.0*pq.ms,
             invert=2)
         rec_kernel = kernels.RectangularKernel(sigma=0.3*pq.ms)
         self.assertRaises(
