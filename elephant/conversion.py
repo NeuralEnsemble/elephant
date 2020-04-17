@@ -463,7 +463,7 @@ class BinnedSpikeTrain(object):
             spiketrains = [spiketrains]
 
         # Link to input
-        self.lst_input = spiketrains
+        self.spiketrains = spiketrains
         # Set given parameters
         self.t_start = t_start
         self.t_stop = t_stop
@@ -500,6 +500,13 @@ class BinnedSpikeTrain(object):
     @property
     def matrix_columns(self):
         return self._sparse_mat_u.shape[1]
+
+    @property
+    def lst_input(self):
+        warnings.warn("'lst_input' property is renamed to 'spiketrains' and "
+                      "will be deleted in Elephant v0.9.0 ",
+                      DeprecationWarning)
+        return self.spiketrains
 
     # =========================================================================
     # There are four cases the given parameters must fulfill, or a `ValueError`
