@@ -57,7 +57,7 @@ def bic(cov, order, dimension, length):
 
 def aic(cov, order, dimension, length):
     '''
-    Calculate AkaikeInformation Criterion
+    Calculate Akaike Information Criterion
     Parameters
     ----------
     cov : np.ndarray
