@@ -60,6 +60,7 @@ SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
                 'isi_dithering', 'dither_spikes_with_refractory_period']
 
+
 def _dither_spikes_with_refractory_period(spiketrain, dither, n,
                                           refractory_period):
     units = spiketrain.units
