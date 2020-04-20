@@ -352,11 +352,10 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
                             + directional_causality_y_x_round \
                             + instantaneous_causality_round
 
-
-    return Causality(directional_causality_x_y=directional_causality_x_y_round,
-                     directional_causality_y_x=directional_causality_y_x_round,
-                     instantaneous_causality=instantaneous_causality_round,
-                     total_interdependence=total_interdependence_round)
+    return Causality(directional_causality_x_y=directional_causality_x_y_round.item(),
+                     directional_causality_y_x=directional_causality_y_x_round.item(),
+                     instantaneous_causality=instantaneous_causality_round.item(),
+                     total_interdependence=total_interdependence_round.item())
 
 
 if __name__ == "__main__":
