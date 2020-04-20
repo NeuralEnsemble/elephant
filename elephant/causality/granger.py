@@ -99,10 +99,12 @@ def _lag_covariances(signals, dimension, max_lag):
     length = np.size(signals[0])
     assert (length >= max_lag), 'maximum lag larger than size of data'
 
+    # centralize time series
     signals_mean = (signals - np.mean(signals, keepdims = True)).T
 
     lag_covariances = np.zeros((max_lag+1, dimension, dimension))
 
+    # determine lagged covariance for different time lags
     for lag in range(0,max_lag+1):
         #lag_covariances[lag] = \
         #        np.mean(np.einsum('ij,ik -> ijk',signals_mean[:length-lag],
