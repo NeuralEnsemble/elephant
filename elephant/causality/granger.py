@@ -31,6 +31,54 @@ Causality = namedtuple('causality',
 
 # TODO: The result of pairwise granger outputs three arrays and one float.
 
+def bic(cov, order, dimension, length):
+    '''
+    Calculate Bayesian Information Criterion
+    Parameters
+    ----------
+    cov : np.ndarray
+        covariance matrix of auto regressive model
+    order : int
+        order of autoregressive model
+    dimension : int
+        dimensionality of the data
+    length : int
+        number of time samples
+
+    Returns
+    -------
+    bic : float
+        information criterion
+    '''
+    bic = 2 * np.log(np.linalg.det(cov)) \
+            + 2*(dimension**2)*order*np.log(length)/length
+
+    return bic
+
+def aic(cov, order, dimension, length):
+    '''
+    Calculate Akaike Information Criterion
+    Parameters
+    ----------
+    cov : np.ndarray
+        covariance matrix of auto regressive model
+    order : int
+        order of autoregressive model
+    dimension : int
+        dimensionality of the data
+    length : int
+        number of time samples
+
+    Returns
+    -------
+    aic : float
+        information criterion
+    '''
+    aic = 2 * np.log(np.linalg.det(cov)) \
+            + 2*(dimension**2)*order/length
+
+    return aic
+
 def _lag_covariances(signals, dimension, max_lag):
     """
     Determine covariances of time series and time shift of itself up to a
@@ -62,7 +110,7 @@ def _lag_covariances(signals, dimension, max_lag):
     for lag in range(0,max_lag+1):
        for row in range(dimension):
            for  column in range(dimension):
-               covariance = np.mean(signal[row,:length-lag]*
+               covariance = np.mean(signals[row,:length-lag]*
                                     signals_mean[column,lag:], dtype =
                                     np.float64)
                #covariance = np.dot(signals_mean[row,:length-lag],
@@ -160,8 +208,64 @@ def _vector_arm(signals, dimension, order):
 
     return coeffs, cov_matrix
 
+def _optimal_vector_arm(signals, dimension, max_order,
+                        information_criterion = 'bic'):
+    '''
+    Determine optimal auto regressive model by choosing optimal order via
+    Information Criterion
+    Parameters
+    ----------
+    signal : np.ndarray
+        time series data
+    dimension : int
+        dimensionality of the data
+    max_order : int
+        maximal order to consider
+    information_criterion : string
+        bic for Bayesian information_criterion,
+        aic for Akaike information criterion
 
-def pairwise_granger(signals, order):
+    Returns
+    -------
+    optimal_coeffs: np.ndarray
+        coefficients of the autoregressive model
+    optimal_cov_mat : np.ndarray
+        covariance matrix of
+    optimal_order : int
+        optimal order
+    '''
+
+    current_optimal_order = 1
+
+    length = np.size(signals[0])
+
+    optimal_ic = np.infty
+    optimal_order = 1
+    optimal_coeffs = np.zeros((dimension,dimension, optimal_order))
+    optimal_cov_matrix = np.zeros((dimension, dimension))
+
+    if information_criterion == 'bic':
+        evaluate_ic = bic
+    elif information_criterion == 'aic':
+        evaluate_ic = aic
+    else:
+        raise ValueError(f"Information criterion {information_criterion} not valid")
+
+
+    for order in range(1, max_order + 1):
+        coeffs, cov_matrix = _vector_arm(signals, dimension, order)
+
+        temp_ic = evaluate_ic(cov_matrix, order, dimension, length)
+
+        if temp_ic < optimal_ic:
+            optimal_ic = temp_ic
+            optimal_order = order
+            optimal_coeffs = coeffs
+            optimal_cov_matrix = cov_matrix
+
+    return optimal_coeffs, optimal_cov_matrix, optimal_order
+
+def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     """
     Determine Granger Causality of two time series
     Note: order parameter should be removed
@@ -171,6 +275,9 @@ def pairwise_granger(signals, order):
         time series data
     order : int
         order of autoregressive model (should be removed)
+    information_criterion : string
+        bic for Bayesian information_criterion,
+        aic for Akaike information criterion
     Returns
     -------
     causality : namedTuple, where:
@@ -181,7 +288,7 @@ def pairwise_granger(signals, order):
     """
     # TODO: remove order parameter
     if order <= 0:
-        raise ValueError(f"The order parameter should be positive. Not {order}")
+        raise ValueError(f"The order parameter should be positive. Not {order}!")
 
     if isinstance(signals, AnalogSignal):
         signals = np.asarray(signals)
@@ -192,9 +299,16 @@ def pairwise_granger(signals, order):
     signal_x = np.asarray([signals[0, :]])
     signal_y = np.asarray([signals[1, :]])
 
-    coeffs_x, var_x = _vector_arm(signal_x, 1, order)
-    coeffs_y, var_y = _vector_arm(signal_y, 1, order)
-    coeffs_xy, cov_xy = _vector_arm(signals, 2, order)
+    coeffs_x, var_x, p_1 = _optimal_vector_arm(signal_x, 1, max_order,
+                                               information_criterion)
+    coeffs_y, var_y, p_2 = _optimal_vector_arm(signal_y, 1, max_order,
+                                               information_criterion)
+    coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
+                                                information_criterion)
+    print('########################################')
+    print(p_1)
+    print(p_2)
+    print(p_3)
     print('########################################')
     print(coeffs_xy)
     print(cov_xy)
@@ -206,10 +320,10 @@ def pairwise_granger(signals, order):
     print(var_y)
     print('########################################')
 
-    directional_causality_x_y = np.log(var_x[0]/cov_xy[0, 0])
-    print(f'directional_x_y is {var_x[0]/cov_xy[0, 0]}. The variance of x is {var_x[0]}, the covariance_xy is {cov_xy[0, 0]}')
-    directional_causality_y_x = np.log(var_y[0]/cov_xy[1, 1])
-    print(f'directional_x_y is {var_y[0]/cov_xy[0, 0]}. The variance of x is {var_y[0]}, the covariance_xy is {cov_xy[0, 0]}')
+    directional_causality_y_x = np.log(var_x[0]/cov_xy[0, 0])
+    # print(f'directional_y_x is {var_x[0]/cov_xy[0, 0]}. The variance of x is {var_x[0]}, the covariance_xy is {cov_xy[0, 0]}')
+    directional_causality_x_y = np.log(var_y[0]/cov_xy[1, 1])
+    # print(f'directional_x_y is {var_y[0]/cov_xy[0, 0]}. The variance of x is {var_y[0]}, the covariance_xy is {cov_xy[0, 0]}')
 
     cov_determinant = np.linalg.det(cov_xy)
 
@@ -218,8 +332,56 @@ def pairwise_granger(signals, order):
 
     total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
 
+    '''
+    Round GC according to following scheme:
+        Note that standard error scales as 1/sqrt(sample_size)
+        Calculate  significant figures according to standard error
+    '''
+    length = np.size(signal_x)
+    asymptotic_std_error = 1/np.sqrt(length)
+    est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
+    print(est_sig_figures)
 
-    return Causality(directional_causality_x_y=directional_causality_x_y,
-                     directional_causality_y_x=directional_causality_y_x,
-                     instantaneous_causality=instantaneous_causality,
-                     total_interdependence=total_interdependence)
+    directional_causality_x_y_round = np.around(directional_causality_x_y,
+                                          est_sig_figures)
+    directional_causality_y_x_round = np.around(directional_causality_y_x,
+                                          est_sig_figures)
+    instantaneous_causality_round = np.around(instantaneous_causality,
+                                        est_sig_figures)
+    total_interdependence_round = directional_causality_x_y_round \
+                            + directional_causality_y_x_round \
+                            + instantaneous_causality_round
+
+
+    return Causality(directional_causality_x_y=directional_causality_x_y_round,
+                     directional_causality_y_x=directional_causality_y_x_round,
+                     instantaneous_causality=instantaneous_causality_round,
+                     total_interdependence=total_interdependence_round)
+
+
+if __name__ == "__main__":
+
+    np.random.seed(1)
+    length_2d = 300
+    signal = np.zeros((2, length_2d))
+
+    order = 2
+    weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+
+    weights = np.stack((weights_1, weights_2))
+
+    noise_covariance = np.array([[1., 0.], [0., 1.]])
+
+    for i in range(length_2d):
+        for lag in range(order):
+            signal[:, i] += np.dot(weights[lag],
+                                        signal[:, i - lag - 1])
+        rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+        signal[0, i] += rnd_var[0]
+        signal[1, i] += rnd_var[1]
+
+    causality = pairwise_granger(signal, 10, 'bic')
+
+    print(causality)
+
