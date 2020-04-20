@@ -99,43 +99,18 @@ def _lag_covariances(signals, dimension, max_lag):
     length = np.size(signals[0])
     assert (length >= max_lag), 'maximum lag larger than size of data'
 
-    #if dimension == 1:
-    #    lag_covariances = np.zeros(max_lag+1)
-    #    for lag in range(max_lag+1)
-
-    signals_mean = signals - np.mean(signals, keepdims = True)
+    signals_mean = (signals - np.mean(signals, keepdims = True)).T
 
     lag_covariances = np.zeros((max_lag+1, dimension, dimension))
 
     for lag in range(0,max_lag+1):
-       for row in range(dimension):
-           for  column in range(dimension):
-               covariance = np.mean(signals[row,:length-lag]*
-                                    signals_mean[column,lag:], dtype =
-                                    np.float64)
-               #covariance = np.dot(signals_mean[row,:length-lag],
-               #                     signals_mean[column,lag:])/length
-
-               lag_covariances[lag,row,column] += covariance
-
+        #lag_covariances[lag] = \
+        #        np.mean(np.einsum('ij,ik -> ijk',signals_mean[:length-lag],
+        #                          signals_mean[lag:]), axis = 0)
+        lag_covariances[lag] = \
+                np.mean(np.matmul(signals_mean[:length-lag, :, np.newaxis],
+                                  signals_mean[lag:, np.newaxis, :]), axis = 0)
     return lag_covariances
-    '''
-    length = np.size(signals[0])
-
-    assert (length >= max_lag), 'maximum lag larger than size of data'
-
-    lag_covariances = []
-    series_mean = signals.mean(1)
-
-    for i in range(max_lag+1):
-        temp_corr = np.zeros((dimension, dimension))
-        for time in range(i, length):
-            temp_corr += np.outer(signals[:, time - i] - series_mean,
-            signals[:, time] - series_mean)
-        lag_covariances.append(temp_corr/(length-i))
-
-    return np.asarray(lag_covariances)
-    '''
 
 def _yule_walker_matrix(data, dimension, order):
     """
@@ -361,7 +336,7 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
 if __name__ == "__main__":
 
     np.random.seed(1)
-    length_2d = 300
+    length_2d = 300000
     signal = np.zeros((2, length_2d))
 
     order = 2
