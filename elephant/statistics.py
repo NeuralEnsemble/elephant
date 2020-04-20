@@ -62,6 +62,7 @@ from __future__ import division, print_function
 # (quantities rescale does not work with unicodes)
 
 import numpy as np
+import math
 import quantities as pq
 import scipy.stats
 import scipy.signal
@@ -70,6 +71,8 @@ from neo.core import SpikeTrain
 import elephant.conversion as conv
 import elephant.kernels as kernels
 import warnings
+
+from elephant.utils import is_time_quantity
 
 cv = scipy.stats.variation
 
@@ -495,7 +498,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         of the kernel is adjusted to a minimally allowed width.
 
         If the instantaneous firing rate approximation contains negative values
-        with respect to a tolerance (less than -1e-8), possibly due to machine
+        with respect to a tolerance (less than -1e-5), possibly due to machine
         precision errors.
 
     References
@@ -534,23 +537,23 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     # Checks of input variables:
     if not isinstance(spiketrain, SpikeTrain):
         raise TypeError(
-            "spiketrain must be instance of :class:`SpikeTrain` of Neo!\n"
-            "    Found: %s, value %s" % (type(spiketrain), str(spiketrain)))
+            "'spiketrain' must be an instance of :class:`neo.SpikeTrain`. \n"
+            "Found: '{}'".format(type(spiketrain)))
 
-    if not (isinstance(sampling_period, pq.Quantity) and
-            sampling_period.dimensionality.simplified ==
-            pq.Quantity(1, "s").dimensionality):
+    if not is_time_quantity(sampling_period):
         raise TypeError(
-            "The sampling period must be a time quantity!\n"
-            "    Found: %s, value %s" % (
-                type(sampling_period), str(sampling_period)))
+            "The 'sampling_period' must be a time Quantity. \n"
+            "Found: {}".format(type(sampling_period)))
 
     if sampling_period.magnitude < 0:
-        raise ValueError("The sampling period must be larger than zero.")
+        raise ValueError("The 'sampling_period' ({}) must be non-negative.".
+                         format(sampling_period))
 
     if kernel == 'auto':
-        kernel_width_sigma = sskernel(
-            spiketrain.magnitude, tin=None, bootstrap=False)['optw']
+        kernel_width_sigma = None
+        if len(spiketrain) > 0:
+            kernel_width_sigma = sskernel(
+                spiketrain.magnitude, tin=None, bootstrap=False)['optw']
         if kernel_width_sigma is None:
             raise ValueError(
                 "Unable to calculate optimal kernel width for "
@@ -558,25 +561,21 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
     elif not isinstance(kernel, kernels.Kernel):
         raise TypeError(
-            "kernel must be either instance of :class:`Kernel` "
-            "or the string 'auto'!\n"
-            "    Found: %s, value %s" % (type(kernel), str(kernel)))
+            "'kernel' must be either instance of :class:`Kernel` "
+            "or the string 'auto'. Found: %s, value %s" % (type(kernel),
+                                                           str(kernel)))
 
-    if not (isinstance(cutoff, float) or isinstance(cutoff, int)):
-        raise TypeError("cutoff must be float or integer!")
+    if not isinstance(cutoff, (float, int)):
+        raise TypeError("'cutoff' must be float or integer")
 
-    if not (t_start is None or (isinstance(t_start, pq.Quantity) and
-                                t_start.dimensionality.simplified ==
-                                pq.Quantity(1, "s").dimensionality)):
-        raise TypeError("t_start must be a time quantity!")
+    if not is_time_quantity(t_start, allow_none=True):
+        raise TypeError("'t_start' must be a time Quantity")
 
-    if not (t_stop is None or (isinstance(t_stop, pq.Quantity) and
-                               t_stop.dimensionality.simplified ==
-                               pq.Quantity(1, "s").dimensionality)):
-        raise TypeError("t_stop must be a time quantity!")
+    if not is_time_quantity(t_stop, allow_none=True):
+        raise TypeError("'t_stop' must be a time Quantity")
 
-    if not (isinstance(trim, bool)):
-        raise TypeError("trim must be bool!")
+    if not isinstance(trim, bool):
+        raise TypeError("'trim' must be bool")
 
     # main function:
     units = pq.CompoundUnit(
@@ -592,14 +591,11 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     else:
         t_stop = t_stop.rescale(spiketrain.units)
 
-    time_vector = np.zeros(int((t_stop - t_start)) + 1)
-
-    spikes_slice = spiketrain.time_slice(t_start, t_stop) \
-        if len(spiketrain) else np.array([])
-
-    for spike in spikes_slice:
-        index = int((spike - t_start))
-        time_vector[index] += 1
+    spikes_slice = spiketrain.time_slice(t_start, t_stop)
+    time_vector = np.zeros(int(t_stop - t_start) + 1, dtype=np.float32)
+    bins_active = (spikes_slice.times - t_start).magnitude.astype(np.int32)
+    bins_unique, bin_counts = np.unique(bins_active, return_counts=True)
+    time_vector[bins_unique] = bin_counts
 
     if cutoff < kernel.min_cutoff:
         cutoff = kernel.min_cutoff
@@ -611,25 +607,28 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                       sampling_period.rescale(units).magnitude,
                       sampling_period.rescale(units).magnitude) * units
 
-    r = scipy.signal.fftconvolve(time_vector,
-                                 kernel(t_arr).rescale(pq.Hz).magnitude,
-                                 'full')
-    if np.any(r < -1e-8):  # abs tolerance in np.isclose
+    rate = scipy.signal.fftconvolve(time_vector,
+                                    kernel(t_arr).rescale(pq.Hz).magnitude,
+                                    mode='full')
+
+    if np.any(rate < -1e-5):  # abs tolerance in np.isclose
         warnings.warn("Instantaneous firing rate approximation contains "
                       "negative values, possibly caused due to machine "
                       "precision errors.")
 
+    median_id = kernel.median_index(t_arr)
+    # the size of kernel() output matches the input size
+    kernel_array_size = len(t_arr)
     if not trim:
-        r = r[kernel.median_index(t_arr):-(kernel(t_arr).size -
-                                           kernel.median_index(t_arr))]
-    elif trim:
-        r = r[2 * kernel.median_index(t_arr):-2 * (kernel(t_arr).size -
-                                                   kernel.median_index(t_arr))]
-        t_start += kernel.median_index(t_arr) * spiketrain.units
-        t_stop -= (kernel(t_arr).size -
-                   kernel.median_index(t_arr)) * spiketrain.units
+        # TODO: -kernel_array_size + mi + 1 ? to be consistent with 'valid'
+        #  mode
+        rate = rate[median_id: -kernel_array_size + median_id]
+    else:
+        rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
+        t_start = t_start + median_id * spiketrain.units
+        t_stop = t_stop - (kernel_array_size - median_id) * spiketrain.units
 
-    rate = neo.AnalogSignal(signal=r.reshape(r.size, 1),
+    rate = neo.AnalogSignal(signal=np.expand_dims(rate, axis=1),
                             sampling_period=sampling_period,
                             units=pq.Hz, t_start=t_start, t_stop=t_stop)
 
@@ -836,9 +835,8 @@ def nextpow2(x):
     """
     Return the smallest integral power of 2 that is equal or larger than `x`.
     """
-    n = 2
-    while n < x:
-        n = 2 * n
+    log2_n = int(math.ceil(math.log2(x)))
+    n = 2 ** log2_n
     return n
 
 
@@ -1082,11 +1080,11 @@ def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None,
                 "    Found: %s, value %s" % (
                     type(spiketrain), str(spiketrain)))
         if t_start is None and not spiketrain.t_start == spiketrainlist[
-                0].t_start:
+            0].t_start:
             raise ValueError(
                 "the spike trains must have the same t_start!")
         if t_stop is None and not spiketrain.t_stop == spiketrainlist[
-                0].t_stop:
+            0].t_stop:
             raise ValueError(
                 "the spike trains must have the same t_stop!")
         if not spiketrain.units == spiketrainlist[0].units:

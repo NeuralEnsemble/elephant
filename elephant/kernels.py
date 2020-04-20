@@ -40,7 +40,7 @@ Examples
 --------
 >>> import quantities as pq
 >>> kernel1 = GaussianKernel(sigma=100*pq.ms)
->>> kernel2 = ExponentialKernel(sigma=8*pq.mm, invert=True)
+>>> kernel2 = ExponentialKernel(sigma=8*pq.ms, invert=True)
 
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -54,6 +54,11 @@ import numpy as np
 import quantities as pq
 import scipy.optimize
 import scipy.special
+
+__all__ = [
+    'RectangularKernel', 'TriangularKernel', 'EpanechnikovLikeKernel',
+    'GaussianKernel', 'LaplacianKernel', 'ExponentialKernel', 'AlphaKernel'
+]
 
 
 class Kernel(object):
@@ -117,6 +122,10 @@ class Kernel(object):
 
         self.sigma = sigma
         self.invert = invert
+
+    def __repr__(self):
+        return "{cls}(sigma={sigma}, invert={invert})".format(
+            cls=self.__class__.__name__, sigma=self.sigma, invert=self.invert)
 
     def __call__(self, t):
         """
@@ -256,10 +265,8 @@ class Kernel(object):
         than the minimum in the array `t`.
 
         """
-        cumsum = self(t).cumsum()
-        dt = (t[-1] - t[0]) / (len(t) - 1)
-        quantiles = cumsum * dt
-        return np.nonzero(quantiles >= 0.5)[0].min()
+        kernel = self(t).magnitude
+        return np.argsort(kernel)[len(kernel) // 2]
 
     def is_symmetric(self):
         """
