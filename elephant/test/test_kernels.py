@@ -11,6 +11,8 @@ import unittest
 import numpy as np
 import quantities as pq
 import scipy.integrate as spint
+from numpy.testing import assert_array_almost_equal
+
 import elephant.kernels as kernels
 
 
@@ -145,6 +147,31 @@ class kernel_TestCase(unittest.TestCase):
                 median = np.median(kernel_array)
                 self.assertAlmostEqual(kernel_array[median_index], median,
                                        places=resolution)
+
+    def test_element_wise_only(self):
+        # Test that kernel operation is applied element-wise without any
+        # recurrent magic (e.g., convolution)
+        np.random.seed(19)
+        t_array = np.linspace(-10, 10, num=100) * pq.s
+        t_shuffled = t_array.copy()
+        np.random.shuffle(t_shuffled)
+        for kern_cls in self.kernel_types:
+            for invert in (False, True):
+                kernel = kern_cls(sigma=1 * pq.s, invert=invert)
+                kernel_shuffled = kernel(t_shuffled)
+                kernel_shuffled.sort()
+                kernel_expected = kernel(t_array)
+                kernel_expected.sort()
+                assert_array_almost_equal(kernel_shuffled, kernel_expected)
+
+    def test_kernel_pdf_range(self):
+        t_array = np.linspace(-10, 10, num=1000) * pq.s
+        for kern_cls in self.kernel_types:
+            for invert in (False, True):
+                kernel = kern_cls(sigma=1 * pq.s, invert=invert)
+                kernel_array = kernel(t_array)
+                in_range = (kernel_array <= 1) & (kernel_array >= 0)
+                self.assertTrue(in_range.all())
 
 
 if __name__ == '__main__':
