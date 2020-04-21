@@ -499,20 +499,19 @@ class RateEstimationTestCase(unittest.TestCase):
         kernels_available.append('auto')
         kernel_resolution = 0.01 * pq.s
         for kernel in kernels_available:
-            with self.subTest(kernel=kernel):
-                rate_estimate = statistics.instantaneous_rate(
-                    self.spike_train,
-                    sampling_period=kernel_resolution,
-                    kernel=kernel,
-                    t_start=self.st_tr[0] * pq.s,
-                    t_stop=self.st_tr[1] * pq.s,
-                    trim=False)
-                num_spikes = len(self.spike_train)
-                auc = spint.cumtrapz(
-                    y=rate_estimate.magnitude.squeeze(),
-                    x=rate_estimate.times.simplified.magnitude)[-1]
-                self.assertAlmostEqual(num_spikes, auc,
-                                       delta=0.01 * num_spikes)
+            rate_estimate = statistics.instantaneous_rate(
+                self.spike_train,
+                sampling_period=kernel_resolution,
+                kernel=kernel,
+                t_start=self.st_tr[0] * pq.s,
+                t_stop=self.st_tr[1] * pq.s,
+                trim=False)
+            num_spikes = len(self.spike_train)
+            auc = spint.cumtrapz(
+                y=rate_estimate.magnitude.squeeze(),
+                x=rate_estimate.times.simplified.magnitude)[-1]
+            self.assertAlmostEqual(num_spikes, auc,
+                                   delta=0.01 * num_spikes)
 
     def test_instantaneous_rate_spiketrainlist(self):
         np.random.seed(19)
