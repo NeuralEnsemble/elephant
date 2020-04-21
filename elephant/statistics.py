@@ -162,47 +162,49 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     the same units as `spiketrain`.
 
     """
-    if t_start is None:
-        t_start = getattr(spiketrain, 't_start', 0)
+    if isinstance(spiketrain, pq.Quantity):
+        # Quantity or neo.SpikeTrain
+        if not is_time_quantity(t_start, allow_none=True):
+            raise TypeError("'t_start' must be a Quantity or None")
+        if not is_time_quantity(t_stop, allow_none=True):
+            raise TypeError("'t_stop' must be a Quantity or None")
 
-    found_t_start = False
-    if t_stop is None:
-        if hasattr(spiketrain, 't_stop'):
-            t_stop = spiketrain.t_stop
-        else:
-            t_stop = np.max(spiketrain, axis=axis)
-            found_t_start = True
-
-    # figure out what units, if any, we are dealing with
-    if hasattr(spiketrain, 'units'):
         units = spiketrain.units
-    else:
-        units = None
+        if t_start is None:
+            t_start = getattr(spiketrain, 't_start', 0 * units)
+        t_start = t_start.rescale(units).magnitude
+        if t_stop is None:
+            t_stop = getattr(spiketrain, 't_stop',
+                             np.max(spiketrain, axis=axis))
+        t_stop = t_stop.rescale(units).magnitude
 
-    # convert everything to the same units
-    if hasattr(t_start, 'units'):
-        if units is None:
-            raise TypeError('t_start cannot be a Quantity if '
-                            'spiketrain is not a quantity')
-        t_start = t_start.rescale(units)
-    elif units is not None:
-        t_start = pq.Quantity(t_start, units=units)
-    if hasattr(t_stop, 'units'):
-        if units is None:
-            raise TypeError('t_stop cannot be a Quantity if '
-                            'spiketrain is not a quantity')
-        t_stop = t_stop.rescale(units)
-    elif units is not None:
-        t_stop = pq.Quantity(t_stop, units=units)
+        # calculate as a numpy array
+        rates = mean_firing_rate(spiketrain.magnitude, t_start=t_start,
+                                 t_stop=t_stop, axis=axis)
 
-    if not axis or not found_t_start:
-        return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
-                      axis=axis) / (t_stop - t_start)
+        rates = pq.Quantity(rates, units=1. / units)
+        return rates
+    elif isinstance(spiketrain, (np.ndarray, list, tuple)):
+        if isinstance(t_start, pq.Quantity) or isinstance(t_stop, pq.Quantity):
+            raise TypeError("'t_start' and 't_stop' cannot be quantities if "
+                            "'spiketrain' is not a Quantity.")
+        spiketrain = np.asarray(spiketrain)
+        if len(spiketrain) == 0:
+            raise ValueError("Empty input spiketrain.")
+        if t_start is None:
+            t_start = 0
+        if t_stop is None:
+            t_stop = np.max(spiketrain, axis=axis)
+        time_interval = t_stop - t_start
+        if axis and isinstance(t_stop, np.ndarray):
+            t_stop = np.expand_dims(t_stop, axis)
+        rates = np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
+                       axis=axis) / time_interval
+        return rates
     else:
-        # this is needed to handle broadcasting between spiketrain and t_stop
-        t_stop_test = np.expand_dims(t_stop, axis)
-        return np.sum((spiketrain >= t_start) & (spiketrain <= t_stop_test),
-                      axis=axis) / (t_stop - t_start)
+        raise TypeError("Invalid input spiketrain type: '{}'. Allowed: "
+                        "neo.SpikeTrain, Quantity, ndarray".
+                        format(type(spiketrain)))
 
 
 def fanofactor(spiketrains):
@@ -239,11 +241,32 @@ def fanofactor(spiketrains):
     spike_counts = np.array([len(t) for t in spiketrains])
 
     # Compute FF
-    if all([count == 0 for count in spike_counts]):
+    if all(count == 0 for count in spike_counts):
         fano = np.nan
     else:
         fano = spike_counts.var() / spike_counts.mean()
     return fano
+
+
+def __variation_check(v, with_nan):
+    # ensure the input ia a vector
+    if v.ndim != 1:
+        raise ValueError("The input must be a vector, not a {}-dim matrix.".
+                         format(v.ndim))
+
+    # ensure we have enough entries
+    if v.size < 2:
+        if with_nan:
+            warnings.warn("The input size is too small. Please provide"
+                          "an input with more than 1 entry. Returning `NaN`"
+                          "since the argument `with_nan` is `True`")
+            return np.NaN
+        else:
+            raise ValueError("Input size is too small. Please provide "
+                             "an input with more than 1 entry. Set 'with_nan' "
+                             "to True to replace the error by a warning.")
+
+    return None
 
 
 def lv(v, with_nan=False):
@@ -303,26 +326,11 @@ def lv(v, with_nan=False):
     """
     # convert to array, cast to float
     v = np.asarray(v)
-    # ensure the input is a vector
-    if len(v.shape) > 1:
-        raise ValueError("Input shape is larger than 1. Please provide "
-                         "a vector as an input.")
-
-    # ensure we have enough entries
-    if v.size < 2:
-        if with_nan:
-            warnings.warn("Input size is too small. Please provide "
-                          "an input with more than 1 entry. lv returns 'NaN'"
-                          "since the argument `with_nan` is True")
-            return np.NaN
-
-        else:
-            raise ValueError("Input size is too small. Please provide "
-                             "an input with more than 1 entry. lv returned any"
-                             "value since the argument `with_nan` is False")
+    np_nan = __variation_check(v, with_nan)
+    if np_nan is not None:
+        return np_nan
 
     # calculate LV and return result
-    # raise error if input is multi-dimensional
     return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
 
 
@@ -385,23 +393,9 @@ def cv2(v, with_nan=False):
     """
     # convert to array, cast to float
     v = np.asarray(v)
-
-    # ensure the input ia a vector
-    if len(v.shape) > 1:
-        raise ValueError("Input shape is larger than 1. Please provide "
-                         "a vector as an input.")
-
-    # ensure we have enough entries
-    if v.size < 2:
-        if with_nan:
-            warnings.warn("Input size is too small. Please provide"
-                          "an input with more than 1 entry. cv2 returns `NaN`"
-                          "since the argument `with_nan` is `True`")
-            return np.NaN
-        else:
-            raise ValueError("Input size is too small. Please provide "
-                             "an input with more than 1 entry. cv2 returns any"
-                             "value since the argument `with_nan` is `False`")
+    np_nan = __variation_check(v, with_nan)
+    if np_nan is not None:
+        return np_nan
 
     # calculate CV2 and return result
     return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
@@ -714,19 +708,13 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
     if t_stop is None:
         # Find the internal range for t_stop
-        if min_tstop:
-            t_stop = min_tstop
-            if not all([min_tstop == t.t_stop for t in spiketrains]):
-                warnings.warn(
-                    "Spiketrains have different t_stop values -- "
-                    "using minimum t_stop as t_stop.")
-        else:
+        if not min_tstop:
             min_tstop = conv._get_start_stop_from_input(spiketrains)[1]
-            t_stop = min_tstop
-            if not all([min_tstop == t.t_stop for t in spiketrains]):
-                warnings.warn(
-                    "Spiketrains have different t_stop values -- "
-                    "using minimum t_stop as t_stop.")
+        t_stop = min_tstop
+        if not all([min_tstop == t.t_stop for t in spiketrains]):
+            warnings.warn(
+                "Spiketrains have different t_stop values -- "
+                "using minimum t_stop as t_stop.")
 
     sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in
                spiketrains]
@@ -754,7 +742,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     else:
         raise ValueError('Parameter output is not valid.')
 
-    return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
+    return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=binsize, units=bin_hist.units,
                             t_start=t_start)
 
@@ -810,7 +798,7 @@ def complexity_pdf(spiketrains, binsize):
     complexity_hist = complexity_hist / complexity_hist.sum()
     # Convert the Complexity pdf to an neo.AnalogSignal
     complexity_distribution = neo.AnalogSignal(
-        np.array(complexity_hist).reshape(len(complexity_hist), 1) *
+        np.expand_dims(complexity_hist, axis=1) *
         pq.dimensionless, t_start=0 * pq.dimensionless,
         sampling_period=1 * pq.dimensionless)
 

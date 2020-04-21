@@ -119,6 +119,13 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         self.targ_array_1d = self.targ_array_2d_1[0]
         self.max_array_1d = self.max_array_2d_1[0]
 
+    def test_invalid_input_spiketrain(self):
+        # empty spiketrain
+        self.assertRaises(ValueError, statistics.mean_firing_rate, [])
+        for st_invalid in (None, 0.1):
+            self.assertRaises(TypeError, statistics.mean_firing_rate,
+                              st_invalid)
+
     def test_mean_firing_rate_with_spiketrain(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
         target = pq.Quantity(self.targ_array_1d / 10., '1/ms')
@@ -128,7 +135,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
     def test_mean_firing_rate_with_spiketrain_set_ends(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
         target = pq.Quantity(2 / 0.5, '1/ms')
-        res = statistics.mean_firing_rate(st, t_start=0.4, t_stop=0.9)
+        res = statistics.mean_firing_rate(st, t_start=0.4 * pq.ms,
+                                          t_stop=0.9 * pq.ms)
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_quantities_1d(self):
@@ -139,9 +147,14 @@ class mean_firing_rate_TestCase(unittest.TestCase):
 
     def test_mean_firing_rate_with_quantities_1d_set_ends(self):
         st = pq.Quantity(self.test_array_1d, units='ms')
-        target = pq.Quantity(2 / 0.6, '1/ms')
-        res = statistics.mean_firing_rate(st, t_start=400 * pq.us, t_stop=1.)
-        assert_array_almost_equal(res, target, decimal=9)
+
+        # t_stop is not a Quantity
+        self.assertRaises(TypeError, statistics.mean_firing_rate, st,
+                          t_start=400 * pq.us, t_stop=1.)
+
+        # t_start is not a Quantity
+        self.assertRaises(TypeError, statistics.mean_firing_rate, st,
+                          t_start=0.4, t_stop=1. * pq.ms)
 
     def test_mean_firing_rate_with_plain_array_1d(self):
         st = self.test_array_1d
