@@ -258,12 +258,7 @@ class Kernel(object):
 
         Notes
         -----
-        The formula in this method using retrieval of the sampling interval
-        from `t` only works for `t` with equidistant intervals!
-        The formula calculates the Median slightly wrong by the potentially
-        ignored probability in the distribution corresponding to lower values
-        than the minimum in the array `t`.
-
+        The estimation is correct when the intervals in `t` are equidistant.
         """
         kernel = self(t).magnitude
         return np.argsort(kernel)[len(kernel) // 2]
@@ -437,13 +432,13 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         # Python's complex-operator cannot handle quantities, hence the
         # following construction on quantities is necessary:
         Delta_0 = complex(1.0 / (5.0 * self.sigma.magnitude ** 2), 0) / \
-                  self.sigma.units ** 2
+            self.sigma.units ** 2
         Delta_1 = complex(2.0 * np.sqrt(5.0) * fraction /
                           (25.0 * self.sigma.magnitude ** 3), 0) / \
-                  self.sigma.units ** 3
+            self.sigma.units ** 3
         C = ((Delta_1 + (Delta_1 ** 2.0 - 4.0 * Delta_0 ** 3.0) ** (
-                1.0 / 2.0)) /
-             2.0) ** (1.0 / 3.0)
+            1.0 / 2.0)) /
+            2.0) ** (1.0 / 3.0)
         u_3 = complex(-1.0 / 2.0, -np.sqrt(3.0) / 2.0)
         b = -5.0 * self.sigma ** 2 * (u_3 * C + Delta_0 / (u_3 * C))
         return b.real

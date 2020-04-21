@@ -413,11 +413,11 @@ class RateEstimationTestCase(unittest.TestCase):
         self.st_margin = 5.0  # seconds
         self.st_rate = 10.0  # Hertz
 
-        st_num_spikes = np.random.poisson(
-            self.st_rate * (self.st_dur - 2 * self.st_margin))
-        spike_train = np.random.rand(
-            st_num_spikes) * (
-                              self.st_dur - 2 * self.st_margin) + self.st_margin
+        np.random.seed(19)
+        duration_effective = self.st_dur - 2 * self.st_margin
+        st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
+        spike_train = np.random.rand(st_num_spikes) * duration_effective + \
+            self.st_margin
         spike_train.sort()
 
         # convert spike train into neo objects
@@ -515,11 +515,11 @@ class RateEstimationTestCase(unittest.TestCase):
                                        delta=0.01 * num_spikes)
 
     def test_instantaneous_rate_spiketrainlist(self):
-        st_num_spikes = np.random.poisson(
-            self.st_rate * (self.st_dur - 2 * self.st_margin))
-        spike_train2 = np.random.rand(
-            st_num_spikes) * (self.st_dur - 2 * self.st_margin) + \
-                       self.st_margin
+        np.random.seed(19)
+        duration_effective = self.st_dur - 2 * self.st_margin
+        st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
+        spike_train2 = np.random.rand(st_num_spikes) * duration_effective + \
+            self.st_margin
         spike_train2.sort()
         spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
                                       t_start=self.st_tr[0] * pq.s,
@@ -530,10 +530,10 @@ class RateEstimationTestCase(unittest.TestCase):
         st_rate_2 = statistics.instantaneous_rate(spike_train2,
                                                   sampling_period=0.01 * pq.s,
                                                   kernel=self.kernel)
-        combined_rate = statistics.instantaneous_rate([self.spike_train,
-                                                       spike_train2],
-                                                      sampling_period=0.01 * pq.s,
-                                                      kernel=self.kernel)
+        combined_rate = statistics.instantaneous_rate(
+            [self.spike_train, spike_train2],
+            sampling_period=0.01 * pq.s,
+            kernel=self.kernel)
         summed_rate = st_rate_1 + st_rate_2  # equivalent for identical kernels
         # 'time_vector.dtype' in instantaneous_rate() is changed from float64
         # to float32 which results in 3e-6 abs difference

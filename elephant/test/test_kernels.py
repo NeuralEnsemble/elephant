@@ -97,13 +97,13 @@ class kernel_TestCase(unittest.TestCase):
                     -b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
                 av_integr = kern * restric_defdomain
-                average = spint.cumtrapz(y=av_integr.magnitude,
-                                         x=restric_defdomain.magnitude)[-1] * \
-                          sigma.units
+                average = spint.cumtrapz(
+                    y=av_integr.magnitude,
+                    x=restric_defdomain.magnitude)[-1] * sigma.units
                 var_integr = (restric_defdomain - average) ** 2 * kern
-                variance = spint.cumtrapz(y=var_integr.magnitude,
-                                          x=restric_defdomain.magnitude)[-1] * \
-                           sigma.units ** 2
+                variance = spint.cumtrapz(
+                    y=var_integr.magnitude,
+                    x=restric_defdomain.magnitude)[-1] * sigma.units ** 2
                 stddev = np.sqrt(variance)
                 self.assertAlmostEqual(stddev, sigma, delta=0.01 * sigma)
 
@@ -138,7 +138,7 @@ class kernel_TestCase(unittest.TestCase):
 
     def test_median_index(self):
         resolution = 3
-        t_array = np.linspace(0, 1, num=10**resolution) * pq.s
+        t_array = np.linspace(0, 1, num=10 ** resolution) * pq.s
         for kern_cls in self.kernel_types:
             for invert in (False, True):
                 kernel = kern_cls(sigma=1 * pq.s, invert=invert)
