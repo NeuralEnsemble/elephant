@@ -785,7 +785,7 @@ def _remove_empty_events(sse):
     return sse_new
 
 
-def synchronous_events_is_equal(sse1, sse2):
+def synchronous_events_identical(sse1, sse2):
     """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of pixel positions and associated synchronous events
@@ -827,7 +827,7 @@ def synchronous_events_is_equal(sse1, sse2):
     return sse11 == sse22
 
 
-def synchronous_events_is_disjoint(sse1, sse2):
+def synchronous_events_no_overlap(sse1, sse2):
     """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of pixel positions and associated synchronous events
@@ -875,7 +875,7 @@ def synchronous_events_is_disjoint(sse1, sse2):
         return False
 
 
-def synchronous_events_is_subsequence(sse1, sse2):
+def synchronous_events_contained_in(sse1, sse2):
     """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of pixel positions and associated synchronous events
@@ -914,7 +914,7 @@ def synchronous_events_is_subsequence(sse1, sse2):
     sse22 = _remove_empty_events(sse2)
 
     # Return False if sse11 and sse22 are disjoint
-    if synchronous_events_is_disjoint(sse11, sse22):
+    if synchronous_events_identical(sse11, sse22):
         return False
 
     # Return False if any pixel in sse1 is not contained in sse2, or if any
@@ -928,7 +928,7 @@ def synchronous_events_is_subsequence(sse1, sse2):
 
     # Check that sse1 is a STRICT subset of sse2, i.e. that sse2 contains at
     # least one pixel or neuron id not present in sse1.
-    return not synchronous_events_is_equal(sse11, sse22)
+    return not synchronous_events_identical(sse11, sse22)
 
 
 def synchronous_events_contains_all(sse1, sse2):
@@ -968,10 +968,10 @@ def synchronous_events_contains_all(sse1, sse2):
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
 
     """
-    return synchronous_events_is_subsequence(sse2, sse1)
+    return synchronous_events_contained_in(sse2, sse1)
 
 
-def synchronous_events_is_overlap(sse1, sse2):
+def synchronous_events_overlap(sse1, sse2):
     """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of pixel positions and associated synchronous events
@@ -1002,11 +1002,11 @@ def synchronous_events_is_overlap(sse1, sse2):
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
 
     """
-    is_subsequence = synchronous_events_is_subsequence(sse1, sse2)
+    contained_in = synchronous_events_contained_in(sse1, sse2)
     contains_all = synchronous_events_contains_all(sse1, sse2)
-    is_equal = synchronous_events_is_equal(sse1, sse2)
-    is_disjoint = synchronous_events_is_disjoint(sse1, sse2)
-    return not (is_subsequence or contains_all or is_equal or is_disjoint)
+    identical = synchronous_events_identical(sse1, sse2)
+    is_disjoint = synchronous_events_no_overlap(sse1, sse2)
+    return not (contained_in or contains_all or identical or is_disjoint)
 
 
 def _signals_t_start_stop(signals, t_start=None, t_stop=None):
