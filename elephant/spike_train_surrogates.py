@@ -46,25 +46,70 @@ Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 from __future__ import division, print_function, unicode_literals
 
 import random
+from functools import partial
 
 import neo
 import numpy as np
 import quantities as pq
 from scipy.ndimage import gaussian_filter
 
-try:
-    import elephant.statistics as es
-
-    isi = es.isi
-except ImportError:
-    from .statistics import isi  # Convenience when in elephant working dir.
+from elephant.statistics import isi
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
-                'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering']
+                'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
+                'dither_spikes_with_refractory_period']
 
 
-def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
+def _dither_spikes_with_refractory_period(spiketrain, dither, n,
+                                          refractory_period):
+    units = spiketrain.units
+    t_start = spiketrain.t_start.rescale(units).magnitude
+    t_stop = spiketrain.t_stop.rescale(units).magnitude
+
+    dither = dither.rescale(units).magnitude
+    refractory_period = refractory_period.rescale(units).magnitude
+    # The initially guesses refractory period is compared to the minimal ISI.
+    # The smaller value is taken as the refractory to calculate with.
+    refractory_period = np.min(np.diff(spiketrain.magnitude),
+                               initial=refractory_period)
+
+    dithered_spiketrains = []
+    for _ in range(n):
+        dithered_st = np.copy(spiketrain.magnitude)
+        random_ordered_ids = np.arange(len(spiketrain))
+        np.random.shuffle(random_ordered_ids)
+
+        for random_id in random_ordered_ids:
+            spike = dithered_st[random_id]
+            prev_spike = dithered_st[random_id - 1] \
+                if random_id > 0 \
+                else t_start - refractory_period
+            # subtract refractory period so that the first spike can move up
+            # to t_start
+            next_spike = dithered_st[random_id + 1] \
+                if random_id < len(spiketrain) - 1 \
+                else t_stop + refractory_period
+            # add refractory period so that the last spike can move up
+            # to t_stop
+
+            # Dither range in the direction to the previous spike
+            prev_dither = min(dither, spike - prev_spike - refractory_period)
+            # Dither range in the direction to the next spike
+            next_dither = min(dither, next_spike - spike - refractory_period)
+
+            dt = (prev_dither + next_dither) * random.random() - prev_dither
+            dithered_st[random_id] += dt
+
+        dithered_spiketrains.append(dithered_st)
+
+    dithered_spiketrains = np.array(dithered_spiketrains) * units
+
+    return dithered_spiketrains
+
+
+def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
+                  refractory_period=None):
     """
     Generates surrogates of a spike train by spike dithering.
 
@@ -87,7 +132,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         Number of surrogates to be generated.
         Default: 1.
     decimals : int or None, optional
-        Number of decimal points for every spike time in the surrogates.
+        Number of decimal points for every spike time in the surrogates at a
+        millisecond level.
         If None, machine precision is used.
         Default: None.
     edges : bool, optional
@@ -96,6 +142,16 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         (for `edges = True`) or set them to the range's closest end
         (for `edges = False`).
         Default: True.
+    refractory_period : pq.Quantity or None, optional
+        The dither range of each spike is adjusted such that the spike can not
+        fall into the `refractory_period` of the previous or next spike.
+        To account this, the refractory period is estimated as the smallest ISI
+        of the spike train. The given argument `refractory_period` here is thus
+        an initial estimation.
+        Note, that with this option a spike cannot "jump" over the previous or
+        next spike as it is normally possible.
+        If set to `None`, no refractoriness is in dithering.
+        Default: None
 
     Returns
     -------
@@ -124,34 +180,54 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True):
         [0.0 ms, 1000.0 ms])>]
 
     """
-    # Transform spiketrain into a Quantity object (needed for matrix algebra)
-    data = spiketrain.view(pq.Quantity)
+    if len(spiketrain) == 0:
+        # return the empty spiketrain `n` times
+        return [spiketrain.copy() for _ in range(n)]
 
-    # Main: generate the surrogates
-    surr = data.reshape((1, len(data))) + 2 * dither * np.random.random_sample(
-        (n, len(data))) - dither
+    units = spiketrain.units
+    t_start = spiketrain.t_start.rescale(units).magnitude
+    t_stop = spiketrain.t_stop.rescale(units).magnitude
+
+    if refractory_period is None or refractory_period == 0:
+        # Main: generate the surrogates
+        dither = dither.rescale(units).magnitude
+        dithered_spiketrains = \
+            spiketrain.magnitude.reshape((1, len(spiketrain))) \
+            + 2 * dither * np.random.random_sample((n, len(spiketrain)))\
+            - dither
+        dithered_spiketrains.sort(axis=0)
+
+        if edges:
+            # Leave out all spikes outside
+            # [spiketrain.t_start, spiketrain.t_stop]
+            dithered_spiketrains = \
+                [train[
+                     np.all([t_start < train, train < t_stop], axis=0)]
+                 for train in dithered_spiketrains]
+        else:
+            # Move all spikes outside
+            # [spiketrain.t_start, spiketrain.t_stop] to the range's ends
+            dithered_spiketrains = np.minimum(
+                np.maximum(dithered_spiketrains, t_start),
+                t_stop)
+
+        dithered_spiketrains = dithered_spiketrains * units
+
+    elif isinstance(refractory_period, pq.Quantity):
+        dithered_spiketrains = _dither_spikes_with_refractory_period(
+            spiketrain, dither, n, refractory_period)
+    else:
+        raise ValueError("refractory_period must be of type pq.Quantity")
+
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
-        surr = surr.round(decimals)
+        dithered_spiketrains = \
+            dithered_spiketrains.rescale(pq.ms).round(decimals).rescale(units)
 
-    if edges is False:
-        # Move all spikes outside [spiketrain.t_start, spiketrain.t_stop] to
-        # the range's ends
-        surr = np.minimum(np.maximum(surr.simplified.magnitude,
-                                     spiketrain.t_start.simplified.magnitude),
-                          spiketrain.t_stop.simplified.magnitude) * pq.s
-    else:
-        # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
-        tstart, tstop = spiketrain.t_start.simplified.magnitude, \
-            spiketrain.t_stop.simplified.magnitude
-        surr = [np.sort(s[np.all([s >= tstart, s < tstop], axis=0)]) * pq.s
-                for s in surr.simplified.magnitude]
-
-    # Return the surrogates as SpikeTrains
-    return [neo.SpikeTrain(s,
-                           t_start=spiketrain.t_start,
-                           t_stop=spiketrain.t_stop).rescale(spiketrain.units)
-            for s in surr]
+    # Return the surrogates as list of neo.SpikeTrain
+    return [neo.SpikeTrain(
+        train, t_start=t_start, t_stop=t_stop)
+            for train in dithered_spiketrains]
 
 
 def randomise_spikes(spiketrain, n=1, decimals=None):
@@ -266,7 +342,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
         isi0 = spiketrain[0] - spiketrain.t_start
         ISIs = np.hstack([isi0, isi(spiketrain)])
 
-        # Round the ISIs to decimal position, if requested
+        # Round the isis to decimal position, if requested
         if decimals is not None:
             ISIs = ISIs.round(decimals)
 
@@ -280,12 +356,9 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
                 t_stop=spiketrain.t_stop))
 
     else:
-        sts = []
-        empty_train = neo.SpikeTrain([] * spiketrain.units,
-                                     t_start=spiketrain.t_start,
-                                     t_stop=spiketrain.t_stop)
-        for i in range(n):
-            sts.append(empty_train)
+        sts = [neo.SpikeTrain([] * spiketrain.units,
+                              t_start=spiketrain.t_start,
+                              t_stop=spiketrain.t_stop)] * n
 
     return sts
 
@@ -885,7 +958,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates
     n : int, optional
         Number of surrogates to be generated.
@@ -923,6 +996,9 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         spike trains is the same as in `spiketrain`.
     """
 
+    if not isinstance(spiketrain, neo.SpikeTrain):
+        raise ValueError("spiketrain must be of instance neo.SpikeTrain")
+
     # Define the surrogate function to use, depending on the specified method
     surrogate_types = {
         'dither_spike_train': dither_spike_train,
@@ -930,20 +1006,25 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
-        'joint_isi_dithering': None}
+        'joint_isi_dithering': JointISI(spiketrain).dithering,
+    }
 
     if surr_method not in surrogate_types.keys():
-        raise AttributeError(
-            'specified surr_method (=%s) not valid' % surr_method)
+        raise ValueError("Specified surrogate method ('{}') "
+                         "is not valid".format(surr_method))
+    surr_method = surrogate_types[surr_method]
 
-    if surr_method in ['dither_spike_train', 'dither_spikes']:
-        return surrogate_types[surr_method](
-            spiketrain, dt, n=n, decimals=decimals, edges=edges)
-    if surr_method in ['randomise_spikes', 'shuffle_isis']:
-        return surrogate_types[surr_method](
-            spiketrain, n=n, decimals=decimals)
-    elif surr_method == 'jitter_spikes':
-        return surrogate_types[surr_method](
-            spiketrain, dt, n=n)
+    # TODO: PY2 replace with inspect.signature()
+    if dt is None and surr_method in (dither_spike_train, dither_spikes,
+                                      jitter_spikes):
+        raise ValueError("{}() method requires 'dt' parameter to be "
+                         "not None".format(surr_method.__name__))
+
+    if surr_method in (dither_spike_train, dither_spikes):
+        return surr_method(spiketrain, dt, n=n, decimals=decimals, edges=edges)
+    if surr_method in (randomise_spikes, shuffle_isis):
+        return surr_method(spiketrain, n=n, decimals=decimals)
+    if surr_method == jitter_spikes:
+        return surr_method(spiketrain, dt, n=n)
     # surr_method == 'joint_isi_dithering':
-    return JointISI(spiketrain).dithering(n)
+    return surr_method(n)

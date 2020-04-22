@@ -24,47 +24,51 @@ class SurrogatesTestCase(unittest.TestCase):
 
     def test_dither_spikes_output_format(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=5 * pq.s)
-        st.t_stop = .5 * pq.s
-        nr_surr = 2
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=5 * pq.s)
+        spiketrain.t_stop = .5 * pq.s
+        n_surrogates = 2
         dither = 10 * pq.ms
-        surrs = surr.dither_spikes(st, dither=dither, n=nr_surr)
+        surrogate_trains = surr.dither_spikes(
+            spiketrain, dither=dither, n=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), nr_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        for surrog in surrs:
-            self.assertIsInstance(surrs[0], neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        self.assertIsInstance(surrogate_trains[0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains:
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
     def test_dither_spikes_empty_train(self):
 
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
         dither = 10 * pq.ms
-        surrog = surr.dither_spikes(st, dither=dither, n=1)[0]
-        self.assertEqual(len(surrog), 0)
+        surrogate_train = surr.dither_spikes(st, dither=dither, n=1)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_dither_spikes_output_decimals(self):
 
         st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
+        n_surrogates = 2
         dither = 10 * pq.ms
         np.random.seed(42)
-        surrs = surr.dither_spikes(st, dither=dither, decimals=3, n=nr_surr)
+        surrogate_trains = surr.dither_spikes(
+            st, dither=dither, decimals=3, n=n_surrogates)
 
         np.random.seed(42)
-        dither_values = np.random.random_sample((nr_surr, len(st)))
+        dither_values = np.random.random_sample((n_surrogates, len(st)))
         expected_non_dithered = np.sum(dither_values == 0)
 
         observed_non_dithered = 0
-        for surrog in surrs:
-            for i in range(len(surrog)):
-                if surrog[i] - int(surrog[i]) * pq.ms == surrog[i] - surrog[i]:
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                if surrogate_train[i] - int(surrogate_train[i]) * \
+                        pq.ms == surrogate_train[i] - surrogate_train[i]:
                     observed_non_dithered += 1
 
         self.assertEqual(observed_non_dithered, expected_non_dithered)
@@ -73,315 +77,403 @@ class SurrogatesTestCase(unittest.TestCase):
 
         st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
+        n_surrogates = 2
         dither = 10 * pq.ms
-        surrs = surr.dither_spikes(st, dither=dither, n=nr_surr, edges=False)
+        surrogate_trains = surr.dither_spikes(
+            st, dither=dither, n=n_surrogates, edges=False)
 
-        for surrog in surrs:
-            for i in range(len(surrog)):
-                self.assertLessEqual(surrog[i], st.t_stop)
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                self.assertLessEqual(surrogate_train[i], st.t_stop)
+
+    def test_dither_spikes_with_refractory_period_output_format(self):
+
+        spiketrain = neo.SpikeTrain([90, 93, 97, 100, 105,
+                                     150, 180, 350] * pq.ms, t_stop=.5 * pq.s)
+        n_surrogates = 2
+        dither = 10 * pq.ms
+        surrogate_trains = surr.dither_spikes(
+            spiketrain, dither=dither, n=n_surrogates,
+            refractory_period=4*pq.ms)
+
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
+
+        self.assertIsInstance(surrogate_trains[0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains:
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
+            # Check that refractory period is conserved
+            self.assertLessEqual(np.min(np.diff(spiketrain)),
+                                 np.min(np.diff(surrogate_train)))
+            sigma_displacement = np.std(surrogate_train - spiketrain)
+            # Check that spikes are moved
+            self.assertLessEqual(dither / 10, sigma_displacement)
+            # Spikes are not moved more than dither
+            self.assertLessEqual(sigma_displacement, dither)
+
+    def test_dither_spikes_with_refractory_period_empty_train(self):
+
+        spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+
+        dither = 10 * pq.ms
+        surrogate_train = surr.dither_spikes(
+            spiketrain, dither=dither, n=1,
+            refractory_period=4*pq.ms)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_randomise_spikes_output_format(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
-        surrs = surr.randomise_spikes(st, n=nr_surr)
+        n_surrogates = 2
+        surrogate_trains = surr.randomise_spikes(spiketrain, n=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), nr_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        for surrog in surrs:
-            self.assertIsInstance(surrs[0], neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        self.assertIsInstance(surrogate_trains[0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains:
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
     def test_randomise_spikes_empty_train(self):
 
-        st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = surr.randomise_spikes(st, n=1)[0]
-        self.assertEqual(len(surrog), 0)
+        surrogate_train = surr.randomise_spikes(spiketrain, n=1)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_randomise_spikes_output_decimals(self):
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
-        surrs = surr.randomise_spikes(st, n=nr_surr, decimals=3)
+        n_surrogates = 2
+        surrogate_trains = surr.randomise_spikes(
+            spiketrain, n=n_surrogates, decimals=3)
 
-        for surrog in surrs:
-            for i in range(len(surrog)):
-                self.assertNotEqual(surrog[i] - int(surrog[i]) * pq.ms,
-                                    surrog[i] - surrog[i])
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                self.assertNotEqual(surrogate_train[i] -
+                                    int(surrogate_train[i]) *
+                                    pq.ms, surrogate_train[i] -
+                                    surrogate_train[i])
 
     def test_shuffle_isis_output_format(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
-        surrs = surr.shuffle_isis(st, n=nr_surr)
+        n_surrogates = 2
+        surrogate_trains = surr.shuffle_isis(spiketrain, n=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), nr_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        for surrog in surrs:
-            self.assertIsInstance(surrs[0], neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        self.assertIsInstance(surrogate_trains[0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains:
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
     def test_shuffle_isis_empty_train(self):
 
-        st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = surr.shuffle_isis(st, n=1)[0]
-        self.assertEqual(len(surrog), 0)
+        surrogate_train = surr.shuffle_isis(spiketrain, n=1)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_shuffle_isis_same_isis(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = surr.shuffle_isis(st, n=1)[0]
+        surrogate_train = surr.shuffle_isis(spiketrain, n=1)[0]
 
-        st_pq = st.view(pq.Quantity)
-        surr_pq = surrog.view(pq.Quantity)
+        st_pq = spiketrain.view(pq.Quantity)
+        surr_pq = surrogate_train.view(pq.Quantity)
 
-        isi0_orig = st[0] - st.t_start
+        isi0_orig = spiketrain[0] - spiketrain.t_start
         ISIs_orig = np.sort([isi0_orig] + [isi for isi in np.diff(st_pq)])
 
-        isi0_surr = surrog[0] - surrog.t_start
+        isi0_surr = surrogate_train[0] - surrogate_train.t_start
         ISIs_surr = np.sort([isi0_surr] + [isi for isi in np.diff(surr_pq)])
 
         self.assertTrue(np.all(ISIs_orig == ISIs_surr))
 
     def test_shuffle_isis_output_decimals(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        surrog = surr.shuffle_isis(st, n=1, decimals=95)[0]
+        surrogate_train = surr.shuffle_isis(spiketrain, n=1, decimals=95)[0]
 
-        st_pq = st.view(pq.Quantity)
-        surr_pq = surrog.view(pq.Quantity)
+        st_pq = spiketrain.view(pq.Quantity)
+        surr_pq = surrogate_train.view(pq.Quantity)
 
-        isi0_orig = st[0] - st.t_start
+        isi0_orig = spiketrain[0] - spiketrain.t_start
         ISIs_orig = np.sort([isi0_orig] + [isi for isi in np.diff(st_pq)])
 
-        isi0_surr = surrog[0] - surrog.t_start
+        isi0_surr = surrogate_train[0] - surrogate_train.t_start
         ISIs_surr = np.sort([isi0_surr] + [isi for isi in np.diff(surr_pq)])
 
         self.assertTrue(np.all(ISIs_orig == ISIs_surr))
 
     def test_dither_spike_train_output_format(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
+        n_surrogates = 2
         shift = 10 * pq.ms
-        surrs = surr.dither_spike_train(st, shift=shift, n=nr_surr)
+        surrogate_trains = surr.dither_spike_train(
+            spiketrain, shift=shift, n=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), nr_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        for surrog in surrs:
-            self.assertIsInstance(surrs[0], neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        self.assertIsInstance(surrogate_trains[0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains:
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
     def test_dither_spike_train_empty_train(self):
 
-        st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
         shift = 10 * pq.ms
-        surrog = surr.dither_spike_train(st, shift=shift, n=1)[0]
-        self.assertEqual(len(surrog), 0)
+        surrogate_train = surr.dither_spike_train(
+            spiketrain, shift=shift, n=1)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_dither_spike_train_output_decimals(self):
         st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
+        n_surrogates = 2
         shift = 10 * pq.ms
-        surrs = surr.dither_spike_train(st, shift=shift, n=nr_surr, decimals=3)
+        surrogate_trains = surr.dither_spike_train(
+            st, shift=shift, n=n_surrogates, decimals=3)
 
-        for surrog in surrs:
-            for i in range(len(surrog)):
-                self.assertNotEqual(surrog[i] - int(surrog[i]) * pq.ms,
-                                    surrog[i] - surrog[i])
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                self.assertNotEqual(surrogate_train[i] -
+                                    int(surrogate_train[i]) *
+                                    pq.ms, surrogate_train[i] -
+                                    surrogate_train[i])
 
     def test_dither_spike_train_false_edges(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
+        n_surrogates = 2
         shift = 10 * pq.ms
-        surrs = surr.dither_spike_train(
-            st, shift=shift, n=nr_surr, edges=False)
+        surrogate_trains = surr.dither_spike_train(
+            spiketrain, shift=shift, n=n_surrogates, edges=False)
 
-        for surrog in surrs:
-            for i in range(len(surrog)):
-                self.assertLessEqual(surrog[i], st.t_stop)
+        for surrogate_train in surrogate_trains:
+            for i in range(len(surrogate_train)):
+                self.assertLessEqual(surrogate_train[i], spiketrain.t_stop)
 
     def test_jitter_spikes_output_format(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        nr_surr = 2
+        n_surrogates = 2
         binsize = 100 * pq.ms
-        surrs = surr.jitter_spikes(st, binsize=binsize, n=nr_surr)
+        surrogate_trains = surr.jitter_spikes(
+            spiketrain, binsize=binsize, n=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), nr_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        for surrog in surrs:
-            self.assertIsInstance(surrs[0], neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        self.assertIsInstance(surrogate_trains[0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains:
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
     def test_jitter_spikes_empty_train(self):
 
-        st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
         binsize = 75 * pq.ms
-        surrog = surr.jitter_spikes(st, binsize=binsize, n=1)[0]
-        self.assertEqual(len(surrog), 0)
+        surrogate_train = surr.jitter_spikes(
+            spiketrain, binsize=binsize, n=1)[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_jitter_spikes_same_bins(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
         binsize = 100 * pq.ms
-        surrog = surr.jitter_spikes(st, binsize=binsize, n=1)[0]
+        surrogate_train = surr.jitter_spikes(
+            spiketrain, binsize=binsize, n=1)[0]
 
-        bin_ids_orig = np.array((st.view(pq.Quantity) / binsize).rescale(
-            pq.dimensionless).magnitude, dtype=int)
-        bin_ids_surr = np.array((surrog.view(pq.Quantity) / binsize).rescale(
-            pq.dimensionless).magnitude, dtype=int)
+        bin_ids_orig = np.array(
+            (spiketrain.view(
+                pq.Quantity) /
+                binsize).rescale(
+                pq.dimensionless).magnitude,
+            dtype=int)
+        bin_ids_surr = np.array(
+            (surrogate_train.view(
+                pq.Quantity) /
+                binsize).rescale(
+                pq.dimensionless).magnitude,
+            dtype=int)
         self.assertTrue(np.all(bin_ids_orig == bin_ids_surr))
 
         # Bug encountered when the original and surrogate trains have
         # different number of spikes
-        self.assertEqual(len(st), len(surrog))
+        self.assertEqual(len(spiketrain), len(surrogate_train))
 
     def test_jitter_spikes_unequal_binsize(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 480] * pq.ms, t_stop=500 * pq.ms)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 480] * pq.ms, t_stop=500 * pq.ms)
 
         binsize = 75 * pq.ms
-        surrog = surr.jitter_spikes(st, binsize=binsize, n=1)[0]
+        surrogate_train = surr.jitter_spikes(
+            spiketrain, binsize=binsize, n=1)[0]
 
-        bin_ids_orig = np.array((st.view(pq.Quantity) / binsize).rescale(
-            pq.dimensionless).magnitude, dtype=int)
-        bin_ids_surr = np.array((surrog.view(pq.Quantity) / binsize).rescale(
-            pq.dimensionless).magnitude, dtype=int)
+        bin_ids_orig = np.array(
+            (spiketrain.view(
+                pq.Quantity) /
+                binsize).rescale(
+                pq.dimensionless).magnitude,
+            dtype=int)
+        bin_ids_surr = np.array(
+            (surrogate_train.view(
+                pq.Quantity) /
+                binsize).rescale(
+                pq.dimensionless).magnitude,
+            dtype=int)
 
         self.assertTrue(np.all(bin_ids_orig == bin_ids_surr))
 
     def test_surr_method(self):
 
-        st = neo.SpikeTrain([90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
-        nr_surr = 2
-        surrs = surr.surrogates(st, dt=3 * pq.ms, n=nr_surr,
-                                surr_method='shuffle_isis', edges=False)
+        spiketrain = neo.SpikeTrain(
+            [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
+        n_surrogates = 2
+        surrogate_trains = surr.surrogates(
+            spiketrain,
+            dt=3 * pq.ms,
+            n=n_surrogates,
+            surr_method='shuffle_isis',
+            edges=False)
 
-        self.assertRaises(AttributeError, surr.surrogates, st, n=1,
+        self.assertRaises(ValueError, surr.surrogates, spiketrain, n=1,
                           surr_method='spike_shifting',
                           dt=None, decimals=None, edges=True)
-        self.assertTrue(len(surrs) == nr_surr)
+        self.assertTrue(len(surrogate_trains) == n_surrogates)
 
-        nr_surr2 = 4
-        surrs2 = surr.surrogates(st, dt=5 * pq.ms, n=nr_surr2,
-                                 surr_method='dither_spike_train', edges=True)
+        n_surrogates2 = 4
+        surrogate_trains2 = surr.surrogates(
+            spiketrain,
+            dt=5 * pq.ms,
+            n=n_surrogates2,
+            surr_method='dither_spike_train',
+            edges=True)
 
-        for surrog in surrs:
-            self.assertTrue(isinstance(surrs[0], neo.SpikeTrain))
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
-        self.assertTrue(len(surrs) == nr_surr)
+        for surrogate_train in surrogate_trains:
+            self.assertTrue(isinstance(surrogate_trains[0], neo.SpikeTrain))
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
+        self.assertTrue(len(surrogate_trains) == n_surrogates)
 
-        for surrog in surrs2:
-            self.assertTrue(isinstance(surrs2[0], neo.SpikeTrain))
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
-        self.assertTrue(len(surrs2) == nr_surr2)
+        for surrogate_train in surrogate_trains2:
+            self.assertTrue(isinstance(surrogate_trains2[0], neo.SpikeTrain))
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
+        self.assertTrue(len(surrogate_trains2) == n_surrogates2)
 
     def test_joint_isi_dithering_format(self):
 
-        rate = 100.*pq.Hz
-        t_stop = 1.*pq.s
-        st = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
-        n_surr = 2
+        rate = 100. * pq.Hz
+        t_stop = 1. * pq.s
+        spiketrain = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
+        n_surrogates = 2
         dither = 10 * pq.ms
 
         # Test fast version
-        joint_isi_instance = surr.JointISI(st, dither=dither)
-        surrs = joint_isi_instance.dithering(n_surrogates=n_surr)
+        joint_isi_instance = surr.JointISI(spiketrain, dither=dither)
+        surrogate_trains = joint_isi_instance.dithering(
+            n_surrogates=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), n_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
         self.assertEqual(joint_isi_instance.method, 'fast')
 
-        for surrog in surrs:
-            self.assertIsInstance(surrog, neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        for surrogate_train in surrogate_trains:
+            self.assertIsInstance(surrogate_train, neo.SpikeTrain)
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
         # Test window_version
-        joint_isi_instance = surr.JointISI(st,
+        joint_isi_instance = surr.JointISI(spiketrain,
                                            method='window',
-                                           dither=2*dither,
+                                           dither=2 * dither,
                                            num_bins=50)
-        surrs = joint_isi_instance.dithering(n_surrogates=n_surr)
+        surrogate_trains = joint_isi_instance.dithering(
+            n_surrogates=n_surrogates)
 
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), n_surr)
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
         self.assertEqual(joint_isi_instance.method, 'window')
 
-        for surrog in surrs:
-            self.assertIsInstance(surrog, neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        for surrogate_train in surrogate_trains:
+            self.assertIsInstance(surrogate_train, neo.SpikeTrain)
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
         # Test surrogate methods wrapper
-        surrs = surr.surrogates(
-            st, n=n_surr, surr_method='joint_isi_dithering')
-        self.assertIsInstance(surrs, list)
-        self.assertEqual(len(surrs), n_surr)
+        surrogate_trains = surr.surrogates(
+            spiketrain, n=n_surrogates, surr_method='joint_isi_dithering')
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        for surrog in surrs:
-            self.assertIsInstance(surrog, neo.SpikeTrain)
-            self.assertEqual(surrog.units, st.units)
-            self.assertEqual(surrog.t_start, st.t_start)
-            self.assertEqual(surrog.t_stop, st.t_stop)
-            self.assertEqual(len(surrog), len(st))
+        for surrogate_train in surrogate_trains:
+            self.assertIsInstance(surrogate_train, neo.SpikeTrain)
+            self.assertEqual(surrogate_train.units, spiketrain.units)
+            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain))
 
     def test_joint_isi_dithering_empty_train(self):
-        st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
-        surrog = surr.JointISI(st).dithering()[0]
-        self.assertEqual(len(surrog), 0)
+        spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
+        surrogate_train = surr.JointISI(spiketrain).dithering()[0]
+        self.assertEqual(len(surrogate_train), 0)
 
     def test_joint_isi_dithering_output(self):
-        st = stg.homogeneous_poisson_process(
+        spiketrain = stg.homogeneous_poisson_process(
             rate=100. * pq.Hz,
             refractory_period=3 * pq.ms,
             t_stop=0.1 * pq.s)
-        surrog_st = surr.JointISI(st).dithering()[0]
+        surrogate_train = surr.JointISI(spiketrain).dithering()[0]
         ground_truth = [0.005571, 0.018363, 0.026825, 0.036336, 0.045193,
                         0.05146, 0.058489, 0.078053]
-        assert_array_almost_equal(surrog_st.magnitude, ground_truth)
+        assert_array_almost_equal(surrogate_train.magnitude, ground_truth)
 
 
 def suite():

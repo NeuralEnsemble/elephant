@@ -74,13 +74,17 @@ class AssetTestCase(unittest.TestCase):
         diff_ab_linkwise = {(1, 2): set([3]), (3, 4): set([5, 6])}
         diff_ba_linkwise = {(1, 2): set([5]), (5, 6): set([0, 2])}
         self.assertEqual(
-            asset.sse_difference(a, b, 'pixelwise'), diff_ab_pixelwise)
+            asset.synchronous_events_difference(a, b, 'pixelwise'),
+            diff_ab_pixelwise)
         self.assertEqual(
-            asset.sse_difference(b, a, 'pixelwise'), diff_ba_pixelwise)
+            asset.synchronous_events_difference(b, a, 'pixelwise'),
+            diff_ba_pixelwise)
         self.assertEqual(
-            asset.sse_difference(a, b, 'linkwise'), diff_ab_linkwise)
+            asset.synchronous_events_difference(a, b, 'linkwise'),
+            diff_ab_linkwise)
         self.assertEqual(
-            asset.sse_difference(b, a, 'linkwise'), diff_ba_linkwise)
+            asset.synchronous_events_difference(b, a, 'linkwise'),
+            diff_ba_linkwise)
 
     def test_sse_intersection(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
@@ -90,46 +94,52 @@ class AssetTestCase(unittest.TestCase):
         inters_ab_linkwise = {(1, 2): set([1, 2]), (6, 7): set([0, 1])}
         inters_ba_linkwise = {(1, 2): set([1, 2]), (6, 7): set([0, 1])}
         self.assertEqual(
-            asset.sse_intersection(a, b, 'pixelwise'), inters_ab_pixelwise)
+            asset.synchronous_events_intersection(a, b, 'pixelwise'),
+            inters_ab_pixelwise)
         self.assertEqual(
-            asset.sse_intersection(b, a, 'pixelwise'), inters_ba_pixelwise)
+            asset.synchronous_events_intersection(b, a, 'pixelwise'),
+            inters_ba_pixelwise)
         self.assertEqual(
-            asset.sse_intersection(a, b, 'linkwise'), inters_ab_linkwise)
+            asset.synchronous_events_intersection(a, b, 'linkwise'),
+            inters_ab_linkwise)
         self.assertEqual(
-            asset.sse_intersection(b, a, 'linkwise'), inters_ba_linkwise)
+            asset.synchronous_events_intersection(b, a, 'linkwise'),
+            inters_ba_linkwise)
 
     def test_sse_relations(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
         b = {(1, 2): set([1, 2, 5]), (5, 6): set([0, 2]), (6, 7): set([0, 1])}
         c = {(5, 6): set([0, 2])}
         d = {(3, 4): set([0, 1]), (5, 6): set([0, 1, 2])}
-        self.assertTrue(asset.sse_isequal({}, {}))
-        self.assertTrue(asset.sse_isequal(a, a))
-        self.assertFalse(asset.sse_isequal(b, c))
-        self.assertTrue(asset.sse_isdisjoint(a, c))
-        self.assertTrue(asset.sse_isdisjoint(a, d))
-        self.assertFalse(asset.sse_isdisjoint(a, b))
-        self.assertFalse(asset.sse_isdisjoint({}, {}))
-        self.assertTrue(asset.sse_issub(c, b))
-        self.assertTrue(asset.sse_issub(c, d))
-        self.assertFalse(asset.sse_issub(a, d))
-        self.assertFalse(asset.sse_issub(a, b))
-        self.assertTrue(asset.sse_issuper(b, c))
-        self.assertTrue(asset.sse_issuper(d, c))
-        self.assertFalse(asset.sse_issuper(a, b))
-        self.assertTrue(asset.sse_overlap(a, b))
-        self.assertFalse(asset.sse_overlap(c, d))
+        self.assertTrue(asset.synchronous_events_is_equal({}, {}))
+        self.assertTrue(asset.synchronous_events_is_equal(a, a))
+        self.assertFalse(asset.synchronous_events_is_equal(b, c))
+        self.assertTrue(asset.synchronous_events_is_disjoint(a, c))
+        self.assertTrue(asset.synchronous_events_is_disjoint(a, d))
+        self.assertFalse(asset.synchronous_events_is_disjoint(a, b))
+        self.assertFalse(asset.synchronous_events_is_disjoint({}, {}))
+        self.assertTrue(asset.synchronous_events_is_subsequence(c, b))
+        self.assertTrue(asset.synchronous_events_is_subsequence(c, d))
+        self.assertFalse(asset.synchronous_events_is_subsequence(a, d))
+        self.assertFalse(asset.synchronous_events_is_subsequence(a, b))
+        self.assertTrue(asset.synchronous_events_contains_all(b, c))
+        self.assertTrue(asset.synchronous_events_contains_all(d, c))
+        self.assertFalse(asset.synchronous_events_contains_all(a, b))
+        self.assertTrue(asset.synchronous_events_is_overlap(a, b))
+        self.assertFalse(asset.synchronous_events_is_overlap(c, d))
 
     def test_mask_matrix(self):
         mat1 = np.array([[0, 1], [1, 2]])
         mat2 = np.array([[2, 1], [1, 3]])
-        mask_1_2 = asset.mask_matrices([mat1, mat2], [1, 2])
+
+        mask_1_2 = asset.ASSET.mask_matrices([mat1, mat2], [1, 2])
         mask_1_2_correct = np.array([[False, False], [False, True]])
         self.assertTrue(np.all(mask_1_2 == mask_1_2_correct))
         self.assertIsInstance(mask_1_2[0, 0], np.bool_)
 
-        self.assertRaises(ValueError, asset.mask_matrices, [], [])
-        self.assertRaises(ValueError, asset.mask_matrices, [np.arange(5)], [])
+        self.assertRaises(ValueError, asset.ASSET.mask_matrices, [], [])
+        self.assertRaises(ValueError, asset.ASSET.mask_matrices,
+                          [np.arange(5)], [])
 
     def test_cluster_matrix_entries(self):
         # test with symmetric matrix
@@ -137,8 +147,9 @@ class AssetTestCase(unittest.TestCase):
                         [0, 0, 0, 1],
                         [1, 0, 0, 0],
                         [0, 1, 0, 0]])
-        clustered = asset.cluster_matrix_entries(
-            mat, eps=1.5, min_neighbors=2, stretch=1)
+
+        clustered = asset.ASSET.cluster_matrix_entries(
+            mat, max_distance=1.5, min_neighbors=2, stretch=1)
         correct = np.array([[0, 0, 1, 0],
                             [0, 0, 0, 1],
                             [2, 0, 0, 0],
@@ -150,8 +161,8 @@ class AssetTestCase(unittest.TestCase):
                         [0, 0, 1, 0],
                         [1, 0, 0, 1],
                         [0, 1, 0, 0]])
-        clustered = asset.cluster_matrix_entries(
-            mat, eps=1.5, min_neighbors=3, stretch=1)
+        clustered = asset.ASSET.cluster_matrix_entries(
+            mat, max_distance=1.5, min_neighbors=3, stretch=1)
         correct = np.array([[0, 1, 0, 0],
                             [0, 0, 1, 0],
                             [-1, 0, 0, 1],
@@ -163,8 +174,8 @@ class AssetTestCase(unittest.TestCase):
                         [0, 0, 1, 0],
                         [1, 0, 0, 1],
                         [0, 1, 0, 0]])
-        clustered = asset.cluster_matrix_entries(
-            mat, eps=1.5, min_neighbors=2, stretch=1)
+        clustered = asset.ASSET.cluster_matrix_entries(
+            mat, max_distance=1.5, min_neighbors=2, stretch=1)
         correct = np.array([[0, 1, 0, 0],
                             [0, 0, 1, 0],
                             [2, 0, 0, 1],
@@ -172,8 +183,8 @@ class AssetTestCase(unittest.TestCase):
         assert_array_equal(clustered, correct)
 
         mat = np.zeros((4, 4))
-        clustered = asset.cluster_matrix_entries(
-            mat, eps=1.5, min_neighbors=2, stretch=1)
+        clustered = asset.ASSET.cluster_matrix_entries(
+            mat, max_distance=1.5, min_neighbors=2, stretch=1)
         correct = mat
         assert_array_equal(clustered, correct)
 
@@ -182,33 +193,40 @@ class AssetTestCase(unittest.TestCase):
         st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)
         st3 = neo.SpikeTrain([2, 5] * pq.ms, t_start=1 * pq.ms,
                              t_stop=6 * pq.ms)
-        binsize = 1 * pq.ms
+        bin_size = 1 * pq.ms
+
+        asset_obj_same_t_start_stop = asset.ASSET(
+            [st1, st2], bin_size=bin_size, t_stop_x=5 * pq.ms,
+            t_stop_y=5 * pq.ms)
 
         # Check that the routine works for correct input...
         # ...same t_start, t_stop on both time axes
-        imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms)
+        imat_1_2 = asset_obj_same_t_start_stop.intersection_matrix()
         trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
                                  [0., 2., 1., 1., 2.],
                                  [0., 1., 1., 0., 1.],
                                  [0., 1., 0., 1., 1.],
                                  [0., 2., 1., 1., 2.]])
-        self.assertTrue(np.all(xedges == np.arange(6) * pq.ms))  # correct bins
-        self.assertTrue(np.all(yedges == np.arange(6) * pq.ms))  # correct bins
-        self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
+        assert_array_equal(asset_obj_same_t_start_stop.x_edges,
+                           np.arange(6) * pq.ms)  # correct bins
+        assert_array_equal(asset_obj_same_t_start_stop.y_edges,
+                           np.arange(6) * pq.ms)  # correct bins
+        assert_array_equal(imat_1_2, trueimat_1_2)  # correct matrix
         # ...different t_start, t_stop on the two time axes
-        imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_start_y=6 * pq.ms,
-            spiketrains_y=[st + 6 * pq.ms for st in [st1, st2]],
-            t_stop_x=5 * pq.ms, t_stop_y=11 * pq.ms)
-        self.assertTrue(np.all(xedges == np.arange(6) * pq.ms))  # correct bins
-        assert_array_almost_equal(yedges, np.arange(6, 12) * pq.ms)
+        asset_obj_different_t_start_stop = asset.ASSET(
+            [st1, st2], spiketrains_y=[st + 6 * pq.ms for st in [st1, st2]],
+            bin_size=bin_size, t_start_y=6 * pq.ms, t_stop_x=5 * pq.ms,
+            t_stop_y=11 * pq.ms)
+        imat_1_2 = asset_obj_different_t_start_stop.intersection_matrix()
+        assert_array_equal(asset_obj_different_t_start_stop.x_edges,
+                           np.arange(6) * pq.ms)  # correct bins
+        assert_array_equal(asset_obj_different_t_start_stop.y_edges,
+                           np.arange(6, 12) * pq.ms)
         self.assertTrue(np.all(imat_1_2 == trueimat_1_2))  # correct matrix
 
         # test with norm=1
-        imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms,
-            norm=1)
+        imat_1_2 = asset_obj_same_t_start_stop.intersection_matrix(
+            normalization='intersection')
         trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
                                  [0., 1., 1., 1., 1.],
                                  [0., 1., 1., 0., 1.],
@@ -217,9 +235,8 @@ class AssetTestCase(unittest.TestCase):
         assert_array_equal(imat_1_2, trueimat_1_2)
 
         # test with norm=2
-        imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms,
-            norm=2)
+        imat_1_2 = asset_obj_same_t_start_stop.intersection_matrix(
+            normalization='mean')
         sq = np.sqrt(2) / 2.
         trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
                                  [0., 1., sq, sq, 1.],
@@ -229,9 +246,8 @@ class AssetTestCase(unittest.TestCase):
         assert_array_almost_equal(imat_1_2, trueimat_1_2)
 
         # test with norm=3
-        imat_1_2, xedges, yedges = asset.intersection_matrix(
-            [st1, st2], binsize, t_stop_x=5 * pq.ms, t_stop_y=5 * pq.ms,
-            norm=3)
+        imat_1_2 = asset_obj_same_t_start_stop.intersection_matrix(
+            normalization='union')
         trueimat_1_2 = np.array([[0., 0., 0., 0., 0.],
                                  [0., 1., .5, .5, 1.],
                                  [0., .5, 1., 0., .5],
@@ -241,22 +257,23 @@ class AssetTestCase(unittest.TestCase):
 
         # Check that errors are raised correctly...
         # ...for partially overlapping time intervals
-        self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st2], binsize=binsize,
+        self.assertRaises(ValueError, asset.ASSET,
+                          spiketrains=[st1, st2], bin_size=bin_size,
                           t_start_y=1 * pq.ms)
         # ...for different SpikeTrain's t_starts
-        self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st3], binsize=binsize)
+        self.assertRaises(ValueError, asset.ASSET,
+                          spiketrains=[st1, st3], bin_size=bin_size)
         # ...for different SpikeTrain's t_stops
-        self.assertRaises(ValueError, asset.intersection_matrix,
-                          spiketrains=[st1, st2], binsize=binsize,
+        self.assertRaises(ValueError, asset.ASSET,
+                          spiketrains=[st1, st2], bin_size=bin_size,
                           t_stop_x=5 * pq.ms)
 
 
+@unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetTestIntegration(unittest.TestCase):
     def setUp(self):
         # common for all tests
-        self.binsize = 3 * pq.ms
+        self.bin_size = 3 * pq.ms
 
     def test_probability_matrix_symmetric(self):
         np.random.seed(1)
@@ -270,33 +287,36 @@ class AssetTestIntegration(unittest.TestCase):
             spiketrains.append(st)
             spiketrains_copy.append(st.copy())
 
-        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
-            spiketrains,
-            binsize=self.binsize,
+        asset_obj = asset.ASSET(spiketrains, bin_size=self.bin_size)
+        asset_obj_symmetric = asset.ASSET(spiketrains,
+                                          spiketrains_y=spiketrains_copy,
+                                          bin_size=self.bin_size)
+
+        imat = asset_obj.intersection_matrix()
+        pmat = asset_obj.probability_matrix_analytical(
             kernel_width=kernel_width)
 
-        pmat_copy, imat_copy, x_bins_copy, y_bins_copy = \
-            asset.probability_matrix_analytical(
-                spiketrains,
-                spiketrains_y=spiketrains,
-                binsize=self.binsize,
+        imat_symm = asset_obj_symmetric.intersection_matrix()
+        pmat_symm = asset_obj_symmetric.probability_matrix_analytical(
                 kernel_width=kernel_width)
 
-        assert_array_almost_equal(pmat, pmat_copy)
-        assert_array_almost_equal(imat, imat_copy)
-        assert_array_almost_equal(x_bins, x_bins_copy)
-        assert_array_almost_equal(y_bins, y_bins_copy)
+        assert_array_almost_equal(pmat, pmat_symm)
+        assert_array_almost_equal(imat, imat_symm)
+        assert_array_almost_equal(asset_obj.x_edges,
+                                  asset_obj_symmetric.x_edges)
+        assert_array_almost_equal(asset_obj.y_edges,
+                                  asset_obj_symmetric.y_edges)
 
     def _test_integration_subtest(self, spiketrains, spiketrains_y,
                                   indices_pmat, index_proba, expected_sses):
         # define parameters
         random.seed(1)
         kernel_width = 9 * pq.ms
-        jitter = 9 * pq.ms
+        surrogate_dt = 9 * pq.ms
         alpha = 0.9
         filter_shape = (5, 1)
         nr_largest = 3
-        eps = 3
+        max_distance = 3
         min_neighbors = 3
         stretch = 5
         n_surr = 20
@@ -311,45 +331,40 @@ class AssetTestIntegration(unittest.TestCase):
                 for st in _spiketrains]
             return rates
 
+        asset_obj = asset.ASSET(spiketrains, spiketrains_y,
+                                bin_size=self.bin_size)
+
+        # calculate the intersection matrix
+        imat = asset_obj.intersection_matrix()
+
         # calculate probability matrix analytical
-        pmat, imat, x_bins, y_bins = asset.probability_matrix_analytical(
-            spiketrains,
-            spiketrains_y=spiketrains_y,
-            binsize=self.binsize,
+        pmat = asset_obj.probability_matrix_analytical(
+            imat,
             kernel_width=kernel_width)
 
         # check if pmat is the same when rates are provided
-        pmat_as_rates, imat_as_rates, x_bins_as_rates, y_bins_as_rates = \
-            asset.probability_matrix_analytical(
-                spiketrains,
-                spiketrains_y=spiketrains_y,
-                binsize=self.binsize,
-                fir_rates_x=_get_rates(spiketrains),
-                fir_rates_y=_get_rates(spiketrains_y))
+        pmat_as_rates = asset_obj.probability_matrix_analytical(
+            imat,
+            firing_rates_x=_get_rates(spiketrains),
+            firing_rates_y=_get_rates(spiketrains_y))
         assert_array_almost_equal(pmat, pmat_as_rates)
-        assert_array_almost_equal(imat, imat_as_rates)
-        assert_array_almost_equal(x_bins, x_bins_as_rates)
-        assert_array_almost_equal(y_bins, y_bins_as_rates)
 
         # calculate probability matrix montecarlo
-        pmat_montecarlo, imat, x_bins, y_bins = \
-            asset.probability_matrix_montecarlo(
-                spiketrains,
-                spiketrains_y=spiketrains_y,
-                j=jitter,
-                binsize=self.binsize,
-                n_surr=n_surr,
-                surr_method='dither_spikes')
+        pmat_montecarlo = asset_obj.probability_matrix_montecarlo(
+                n_surrogates=n_surr,
+                imat=imat,
+                surrogate_dt=surrogate_dt,
+                surrogate_method='dither_spikes')
 
         # test probability matrices
         assert_array_equal(np.where(pmat > alpha), indices_pmat)
         assert_array_equal(np.where(pmat_montecarlo > alpha),
                            indices_pmat)
         # calculate joint probability matrix
-        jmat = asset.joint_probability_matrix(pmat,
-                                              filter_shape=filter_shape,
-                                              nr_largest=nr_largest,
-                                              verbose=True)
+        jmat = asset_obj.joint_probability_matrix(
+            pmat,
+            filter_shape=filter_shape,
+            n_largest=nr_largest)
         # test joint probability matrix
         assert_array_equal(np.where(jmat > 0.98), index_proba['high'])
         assert_array_equal(np.where(jmat > 0.9), index_proba['medium'])
@@ -360,18 +375,23 @@ class AssetTestIntegration(unittest.TestCase):
         self.assertTrue(np.all(jmat[mask_zeros] == 0))
 
         # calculate mask matrix and cluster matrix
-        mmat = asset.mask_matrices([pmat, jmat], [alpha, alpha])
-        cmat = asset.cluster_matrix_entries(mmat,
-                                            eps=eps,
-                                            min_neighbors=min_neighbors,
-                                            stretch=stretch)
+        mmat = asset_obj.mask_matrices([pmat, jmat], [alpha, alpha])
+        cmat = asset_obj.cluster_matrix_entries(
+            mmat,
+            max_distance=max_distance,
+            min_neighbors=min_neighbors,
+            stretch=stretch)
 
         # extract sses and test them
-        sses = asset.extract_sse(spiketrains, self.binsize, cmat,
-                                 spiketrains_y)
+        sses = asset_obj.extract_synchronous_events(cmat)
         self.assertDictEqual(sses, expected_sses)
 
     def test_integration(self):
+        """
+        The test is written according to the notebook (for developers only):
+        https://github.com/INM-6/elephant-tutorials/blob/master/
+        simple_test_asset.ipynb
+        """
         # define parameters
         np.random.seed(1)
         size_group = 3
@@ -381,9 +401,9 @@ class AssetTestIntegration(unittest.TestCase):
         bins_between_sses = 3
         time_between_sses = 9 * pq.ms
         # ground truth for pmats
-        starting_bin_1 = int((delay / self.binsize).magnitude.item())
+        starting_bin_1 = int((delay / self.bin_size).magnitude.item())
         starting_bin_2 = int(
-            (2 * delay / self.binsize + time_between_sses / self.binsize
+            (2 * delay / self.bin_size + time_between_sses / self.bin_size
              ).magnitude.item())
         indices_pmat_1 = np.arange(starting_bin_1, starting_bin_1 + size_sse)
         indices_pmat_2 = np.arange(starting_bin_2,
@@ -394,7 +414,7 @@ class AssetTestIntegration(unittest.TestCase):
         spiketrains = [neo.SpikeTrain([index_spiketrain,
                                        index_spiketrain +
                                        size_sse +
-                                       bins_between_sses] * self.binsize
+                                       bins_between_sses] * self.bin_size
                                       + delay + 1 * pq.ms,
                                       t_stop=T)
                        for index_group in range(size_group)
@@ -425,23 +445,23 @@ class AssetTestIntegration(unittest.TestCase):
         size_group = 3
         size_sse = 3
         delay = 18 * pq.ms
-        T = 4 * delay + 2 * size_sse * self.binsize
+        T = 4 * delay + 2 * size_sse * self.bin_size
         time_between_sses = 2 * delay
         # ground truth for pmats
-        starting_bin = int((delay / self.binsize).magnitude.item())
+        starting_bin = int((delay / self.bin_size).magnitude.item())
         indices_pmat_1 = np.arange(starting_bin, starting_bin + size_sse)
         indices_pmat = (indices_pmat_1, indices_pmat_1)
         # generate spike trains
         spiketrains = [
-            neo.SpikeTrain([index_spiketrain] * self.binsize + delay,
+            neo.SpikeTrain([index_spiketrain] * self.bin_size + delay,
                            t_start=0 * pq.ms,
-                           t_stop=2 * delay + size_sse * self.binsize)
+                           t_stop=2 * delay + size_sse * self.bin_size)
             for index_group in range(size_group)
             for index_spiketrain in range(size_sse)]
         spiketrains_y = [
-            neo.SpikeTrain([index_spiketrain] * self.binsize + delay +
-                           time_between_sses + size_sse * self.binsize,
-                           t_start=size_sse * self.binsize + 2 * delay,
+            neo.SpikeTrain([index_spiketrain] * self.bin_size + delay +
+                           time_between_sses + size_sse * self.bin_size,
+                           t_start=size_sse * self.bin_size + 2 * delay,
                            t_stop=T)
             for index_group in range(size_group)
             for index_spiketrain in range(size_sse)]

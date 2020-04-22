@@ -18,7 +18,6 @@ from copy import deepcopy
 import neo
 import numpy as np
 import quantities as pq
-import scipy
 import scipy.sparse as sps
 
 from elephant.utils import is_binary
@@ -174,6 +173,17 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 ###########################################################################
 
 
+def _detect_rounding_errors(values, tolerance):
+    """
+    Finds rounding errors in values that will be cast to int afterwards.
+    Returns True for values that are within tolerance of the next integer.
+    Works for both scalars and numpy arrays.
+    """
+    if tolerance is None:
+        return np.zeros_like(values, dtype=bool)
+    return 1 - (values % 1) <= tolerance
+
+
 def _calc_tstart(num_bins, binsize, t_stop):
     """
     Calculates the start point from given parameters.
@@ -224,7 +234,7 @@ def _calc_tstop(num_bins, binsize, t_start):
         return t_start.rescale(binsize.units) + num_bins * binsize
 
 
-def _calc_num_bins(binsize, t_start, t_stop):
+def _calc_num_bins(binsize, t_start, t_stop, tolerance):
     """
     Calculates the number of bins from given parameters.
 
@@ -239,6 +249,9 @@ def _calc_num_bins(binsize, t_start, t_stop):
         Start time
     t_stop : pq.Quantity
         Stop time
+    tolerance : float
+        tolerance for detection of rounding errors before casting
+        the resulting num_bins to integer
 
     Returns
     -------
@@ -255,8 +268,15 @@ def _calc_num_bins(binsize, t_start, t_stop):
         if t_stop < t_start:
             raise ValueError("t_stop (%s) is smaller than t_start (%s)"
                              % (t_stop, t_start))
-        return int(((t_stop - t_start).rescale(
-            binsize.units) / binsize).magnitude)
+        num_bins = ((t_stop - t_start).rescale(
+                        binsize.units) / binsize.magnitude).item()
+        if _detect_rounding_errors(num_bins, tolerance):
+            warnings.warn('Correcting a rounding error in the calculation '
+                          'of num_bins by increasing num_bins by 1. '
+                          'You can set tolerance=None to disable this '
+                          'behaviour.')
+            num_bins += 1
+        return int(num_bins)
 
 
 def _calc_binsize(num_bins, t_start, t_stop):
@@ -352,6 +372,12 @@ class BinnedSpikeTrain(object):
     entries contain the number of spikes that occurred in the given bin of the
     given spike train.
 
+    Note that with most common parameter combinations spike times can end up
+    on bin edges. This makes the binning susceptible to rounding errors which
+    is accounted for by moving spikes which are within tolerance of the next
+    bin edge into the following bin. This can be adjusted using the tolerance
+    parameter and turned off by setting `tolerance=None`.
+
     Parameters
     ----------
     spiketrains : neo.SpikeTrain or list of neo.SpikeTrain or np.ndarray
@@ -368,6 +394,10 @@ class BinnedSpikeTrain(object):
     t_stop : pq.Quantity, optional
         Time of the right edge of the last bin (right extreme; excluded).
         Default: None
+    tolerance : float, optional
+        Tolerance for rounding errors in the binning process and in the input
+        data
+        Default: 1e-8
 
     Raises
     ------
@@ -416,7 +446,7 @@ class BinnedSpikeTrain(object):
     """
 
     def __init__(self, spiketrains, binsize=None, num_bins=None, t_start=None,
-                 t_stop=None):
+                 t_stop=None, tolerance=1e-8):
         """
         Defines a BinnedSpikeTrain class
 
@@ -434,11 +464,12 @@ class BinnedSpikeTrain(object):
 
         # Link to input
         self.lst_input = spiketrains
-        # Set given parameter
+        # Set given parameters
         self.t_start = t_start
         self.t_stop = t_stop
         self.num_bins = num_bins
         self.binsize = binsize
+        self.tolerance = tolerance
         # Empty matrix for storage, time points matrix
         self._mat_u = None
         # Variables to store the sparse matrix
@@ -513,7 +544,8 @@ class BinnedSpikeTrain(object):
         elif t_stop is None:
             self.t_stop = _calc_tstop(num_bins, binsize, t_start)
         elif num_bins is None:
-            self.num_bins = _calc_num_bins(binsize, t_start, t_stop)
+            self.num_bins = _calc_num_bins(binsize, t_start, t_stop,
+                                           self.tolerance)
         elif binsize is None:
             self.binsize = _calc_binsize(num_bins, t_start, t_stop)
 
@@ -822,6 +854,7 @@ class BinnedSpikeTrain(object):
         --------
         >>> import elephant.conversion as conv
         >>> import neo as n
+        >>> import quantities as pq
         >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
         ...                  t_stop=10.0 * pq.s)
         >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s,
@@ -917,12 +950,29 @@ class BinnedSpikeTrain(object):
         row_ids, column_ids = [], []
         # data
         counts = []
-        for idx, elem in enumerate(spiketrains):
-            ev = elem.view(pq.Quantity)
-            scale = np.array(((ev - self.t_start).rescale(
-                self.binsize.units) / self.binsize).magnitude, dtype=int)
-            la = np.logical_and(ev >= self.t_start.rescale(self.binsize.units),
-                                ev <= self.t_stop.rescale(self.binsize.units))
+
+        for idx, st in enumerate(spiketrains):
+            times = (st.times - self.t_start).rescale(self.binsize.units)
+            scale = np.array((times / self.binsize).magnitude)
+
+            # shift spikes that are very close
+            # to the right edge into the next bin
+            rounding_error_indices = _detect_rounding_errors(scale,
+                                                             self.tolerance)
+            num_rounding_corrections = rounding_error_indices.sum()
+            if num_rounding_corrections > 0:
+                warnings.warn('Correcting {} rounding errors by shifting '
+                              'the affected spikes into the following bin. '
+                              'You can set tolerance=None to disable this '
+                              'behaviour.'.format(num_rounding_corrections))
+            scale[rounding_error_indices] += .5
+
+            scale = scale.astype(int)
+
+            la = np.logical_and(times >= 0 * self.binsize.units,
+                                times <= (self.t_stop
+                                          - self.t_start).rescale(
+                                              self.binsize.units))
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
             f, c = np.unique(filled_tmp, return_counts=True)
