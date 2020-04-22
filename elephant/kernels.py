@@ -311,6 +311,26 @@ class RectangularKernel(SymmetricKernel):
 
     The parameter `invert` has no effect on symmetric kernels.
 
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-3, 3, num=100) * pq.s
+       kernel = kernels.RectangularKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("RectangularKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
+
     """
 
     @property
@@ -344,6 +364,26 @@ class TriangularKernel(SymmetricKernel):
     the kernel.
 
     The parameter `invert` has no effect on symmetric kernels.
+
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-3, 3, num=1000) * pq.s
+       kernel = kernels.TriangularKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("TriangularKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
 
     """
 
@@ -387,6 +427,26 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     References
     ----------
     .. [1] https://de.wikipedia.org/wiki/Epanechnikov-Kern
+
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-3, 3, num=100) * pq.s
+       kernel = kernels.EpanechnikovLikeKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("EpanechnikovLikeKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
 
     """
 
@@ -455,6 +515,26 @@ class GaussianKernel(SymmetricKernel):
 
     The parameter `invert` has no effect on symmetric kernels.
 
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-3, 3, num=100) * pq.s
+       kernel = kernels.GaussianKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("GaussianKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
+
     """
 
     @property
@@ -486,6 +566,26 @@ class LaplacianKernel(SymmetricKernel):
     with :math:`\tau = \sigma / \sqrt{2}`.
 
     The parameter `invert` has no effect on symmetric kernels.
+
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-3, 3, num=1000) * pq.s
+       kernel = kernels.LaplacianKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("LaplacianKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
 
     """
 
@@ -522,6 +622,27 @@ class ExponentialKernel(Kernel):
 
     with :math:`\tau = \sigma`.
 
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-1, 4, num=100) * pq.s
+       kernel = kernels.ExponentialKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("ExponentialKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
+
+
     """
 
     @property
@@ -555,6 +676,26 @@ class AlphaKernel(Kernel):
         0, & t \leq 0 \end{array} \right.
 
     with :math:`\tau = \sigma / \sqrt{2}`.
+
+    Examples
+    --------
+
+    .. plot::
+       :include-source:
+
+       from elephant import kernels
+       import quantities as pq
+       import numpy as np
+       import matplotlib.pyplot as plt
+
+       time_array = np.linspace(-1, 4, num=100) * pq.s
+       kernel = kernels.AlphaKernel(sigma=1*pq.s)
+       kernel_time = kernel(time_array)
+       plt.plot(time_array, kernel_time)
+       plt.title("AlphaKernel with sigma=1s")
+       plt.xlabel("time, s")
+       plt.ylabel("kernel, 1/s")
+       plt.show()
 
     """
 
