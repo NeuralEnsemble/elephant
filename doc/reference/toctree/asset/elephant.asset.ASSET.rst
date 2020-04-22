@@ -6,8 +6,6 @@ elephant.asset.ASSET
 .. autoclass:: ASSET
    :members:
 
-   .. automethod:: __init__
-
 
    .. rubric:: Methods
 

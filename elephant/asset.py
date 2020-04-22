@@ -21,11 +21,11 @@ Patterns post-exploration
 
     synchronous_events_intersection
     synchronous_events_difference
-    synchronous_events_is_equal
-    synchronous_events_is_disjoint
-    synchronous_events_is_subsequence
+    synchronous_events_identical
+    synchronous_events_no_overlap
+    synchronous_events_contained_in
     synchronous_events_contains_all
-    synchronous_events_is_overlap
+    synchronous_events_overlap
 
 
 Examples
