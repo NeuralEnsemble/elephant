@@ -1014,7 +1014,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
                          "is not valid".format(surr_method))
     surr_method = surrogate_types[surr_method]
 
-    # TODO: PY2 replace with inspect.signature()
+    # PYTHON2: replace with inspect.signature()
     if dt is None and surr_method in (dither_spike_train, dither_spikes,
                                       jitter_spikes):
         raise ValueError("{}() method requires 'dt' parameter to be "
