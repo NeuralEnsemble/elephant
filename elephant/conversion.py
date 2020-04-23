@@ -536,7 +536,7 @@ class BinnedSpikeTrain(object):
         """
         # Check if num_bins is an integer (special case)
         if num_bins is not None:
-            if not np.issubdtype(type(num_bins), int):
+            if not np.issubdtype(type(num_bins), np.integer):
                 raise TypeError("num_bins is not an integer!")
         # Check if all parameters can be calculated, otherwise raise ValueError
         if t_start is None:

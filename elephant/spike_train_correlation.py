@@ -678,8 +678,8 @@ def cross_correlation_histogram(
     #    zero-lag is at 4 ms
 
     # Find left and right edges of unaligned (time-dropped) time signals
-    if len(window) == 2 and np.issubdtype(type(window[0]), int) \
-            and np.issubdtype(type(window[1]), int):
+    if len(window) == 2 and np.issubdtype(type(window[0]), np.integer) \
+            and np.issubdtype(type(window[1]), np.integer):
         # ex. 1) lags range: [w[0] - 2, w[1] - 2] ms
         # ex. 2) lags range: [w[0] + 1, w[1] + 1] ms
         # ex. 3) lags range: [w[0] + 3, w[0] + 3] ms
