@@ -16,8 +16,11 @@ class BuffaloProvGraph(object):
 
         for entry in self._edges:
             for key, value in entry.input.items():
+                function_name = entry.function.name
+                function_name = entry.function.module + "." + function_name
+                function_name = function_name.replace(".", ".<br>")
                 graph_definition += '{} -->|"{}<br>{}"|{};\n'.format(hash(value),
-                                                             entry.function.name,
+                                                             function_name,
                                                              "<br>".join(["{}:{}".format(key, value) for key, value in entry.params.items()]),
                                                              hash(entry.output))
 
