@@ -130,18 +130,20 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     t_start : float or pq.Quantity, optional
         The start time to use for the interval.
         If None, retrieved from the `t_start` attribute of `spiketrain`. If
-        that is not present, default to 0. Any value from `spiketrain` below
-        this value is ignored.
+        that is not present, default to 0. All spiketrain's spike times below
+        this value are ignored.
         Default: None.
     t_stop : float or pq.Quantity, optional
         The stop time to use for the time points.
         If not specified, retrieved from the `t_stop` attribute of
         `spiketrain`. If that is not present, default to the maximum value of
-        `spiketrain`. Any value from `spiketrain` above this value is ignored.
+        `spiketrain`. All spiketrain's spike times above this value are
+        ignored.
         Default: None.
     axis : int, optional
-        The axis over which to do the calculation.
-        If None, do the calculation over the flattened array.
+        The axis over which to do the calculation; has no effect when the
+        input is a neo.SpikeTrain, because a neo.SpikeTrain is always a 1-d
+        vector. If None, do the calculation over the flattened array.
         Default: None.
 
     Returns
@@ -152,14 +154,13 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     Raises
     ------
     TypeError
-        If `spiketrain` is a `np.ndarray` and `t_start` or `t_stop` is
+        If the input spiketrain is a `np.ndarray` but `t_start` or `t_stop` is
         `pq.Quantity`.
 
-    Notes
-    -----
-    If `spiketrain` is a `pq.Quantity` or `neo.SpikeTrain`, and `t_start` or
-    `t_stop` are not `pq.Quantity`, `t_start` and `t_stop` are assumed to have
-    the same units as `spiketrain`.
+        If the input spiketrain is a `neo.SpikeTrain` or `pq.Quantity` but
+        `t_start` or `t_stop` is not `pq.Quantity`.
+    ValueError
+        If the input spiketrain is empty.
 
     """
     if isinstance(spiketrain, pq.Quantity):
@@ -407,14 +408,14 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     Estimates instantaneous firing rate by kernel convolution.
 
     Parameters
-    -----------
+    ----------
     spiketrain : neo.SpikeTrain or list of neo.SpikeTrain
         Neo object(s) that contains spike times, the unit of the time stamps,
         and `t_start` and `t_stop` of the spike train.
     sampling_period : pq.Quantity
         Time stamp resolution of the spike times. The same resolution will
         be assumed for the kernel.
-    kernel : str or `kernels.Kernel`, optional
+    kernel : 'auto' or Kernel, optional
         The string 'auto' or callable object of class `kernels.Kernel`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
@@ -464,7 +465,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
     Raises
     ------
-    TypeError:
+    TypeError
         If `spiketrain` is not an instance of `neo.SpikeTrain`.
 
         If `sampling_period` is not a `pq.Quantity`.
@@ -478,8 +479,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
 
         If `trim` is not `bool`.
-
-    ValueError:
+    ValueError
         If `sampling_period` is smaller than zero.
 
         If `kernel` is 'auto' and the function was unable to calculate optimal
@@ -512,7 +512,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     """
     # Merge spike trains if list of spike trains given:
     if isinstance(spiketrain, list):
-        _check_consistency_of_spiketrainlist(
+        _check_consistency_of_spiketrains(
             spiketrain, t_start=t_start, t_stop=t_stop)
         if t_start is None:
             t_start = spiketrain[0].t_start
@@ -531,7 +531,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     # Checks of input variables:
     if not isinstance(spiketrain, SpikeTrain):
         raise TypeError(
-            "'spiketrain' must be an instance of :class:`neo.SpikeTrain`. \n"
+            "'spiketrain' must be an instance of neo.SpikeTrain. \n"
             "Found: '{}'".format(type(spiketrain)))
 
     if not is_time_quantity(sampling_period):
@@ -555,9 +555,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
     elif not isinstance(kernel, kernels.Kernel):
         raise TypeError(
-            "'kernel' must be either instance of :class:`Kernel` "
-            "or the string 'auto'. Found: %s, value %s" % (type(kernel),
-                                                           str(kernel)))
+            "'kernel' must be either instance of class elephant.kernels.Kernel"
+            " or the string 'auto'. Found: %s, value %s" % (type(kernel),
+                                                            str(kernel)))
 
     if not isinstance(cutoff, (float, int)):
         raise TypeError("'cutoff' must be float or integer")
@@ -1058,22 +1058,17 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
             'yb': yb}
 
 
-def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None,
-                                         t_stop=None):
-    for spiketrain in spiketrainlist:
-        if not isinstance(spiketrain, SpikeTrain):
-            raise TypeError(
-                "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
-                "    Found: %s, value %s" % (
-                    type(spiketrain), str(spiketrain)))
-        if t_start is None and not spiketrain.t_start == spiketrainlist[
-                0].t_start:
-            raise ValueError(
-                "the spike trains must have the same t_start!")
-        if t_stop is None and not spiketrain.t_stop == spiketrainlist[
-                0].t_stop:
-            raise ValueError(
-                "the spike trains must have the same t_stop!")
-        if not spiketrain.units == spiketrainlist[0].units:
-            raise ValueError(
-                "the spike trains must have the same units!")
+def _check_consistency_of_spiketrains(spiketrains, t_start=None,
+                                      t_stop=None):
+    for st in spiketrains:
+        if not isinstance(st, SpikeTrain):
+            raise TypeError("The spike trains must be instances of "
+                            "neo.SpikeTrain. Found: '{}'".
+                            format(type(st)))
+
+        if t_start is None and not st.t_start == spiketrains[0].t_start:
+            raise ValueError("The spike trains must have the same t_start.")
+        if t_stop is None and not st.t_stop == spiketrains[0].t_stop:
+            raise ValueError("The spike trains must have the same t_stop.")
+        if not st.units == spiketrains[0].units:
+            raise ValueError("The spike trains must have the same units.")
