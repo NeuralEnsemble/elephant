@@ -106,12 +106,10 @@ def _lag_covariances(signals, dimension, max_lag):
 
     # determine lagged covariance for different time lags
     for lag in range(0,max_lag+1):
-        #lag_covariances[lag] = \
-        #        np.mean(np.einsum('ij,ik -> ijk',signals_mean[:length-lag],
-        #                          signals_mean[lag:]), axis = 0)
         lag_covariances[lag] = \
-                np.mean(np.matmul(signals_mean[:length-lag, :, np.newaxis],
-                                  signals_mean[lag:, np.newaxis, :]), axis = 0)
+                np.mean(np.einsum('ij,ik -> ijk',signals_mean[:length-lag],
+                                  signals_mean[lag:]), axis = 0)
+
     return lag_covariances
 
 def _yule_walker_matrix(data, dimension, order):
@@ -347,7 +345,7 @@ if __name__ == "__main__":
 
     weights = np.stack((weights_1, weights_2))
 
-    noise_covariance = np.array([[1., 0.], [0., 1.]])
+    noise_covariance = np.array([[1., 0.2], [0.2, 1.]])
 
     for i in range(length_2d):
         for lag in range(order):
