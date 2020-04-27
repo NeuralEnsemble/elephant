@@ -585,8 +585,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     else:
         t_stop = t_stop.rescale(spiketrain.units)
 
+    # float32 makes fftconvolve less precise which may result in nan
+    time_vector = np.zeros(int(t_stop - t_start) + 1, dtype=np.float64)
     spikes_slice = spiketrain.time_slice(t_start, t_stop)
-    time_vector = np.zeros(int(t_stop - t_start) + 1, dtype=np.float32)
     bins_active = (spikes_slice.times - t_start).magnitude.astype(np.int32)
     bins_unique, bin_counts = np.unique(bins_active, return_counts=True)
     time_vector[bins_unique] = bin_counts
@@ -605,7 +606,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                                     kernel(t_arr).rescale(pq.Hz).magnitude,
                                     mode='full')
 
-    if np.any(rate < -1e-5):  # abs tolerance in np.isclose
+    if np.any(rate < -1e-8):  # abs tolerance in np.isclose
         warnings.warn("Instantaneous firing rate approximation contains "
                       "negative values, possibly caused due to machine "
                       "precision errors.")
