@@ -16,7 +16,7 @@ The method was published in Russo et al. 2017 [1]. The original
 code is in Matlab language.
 
 Given a list of discretized (binned) spike trains by a given temporal
-scale (binsize), assumed to be recorded in parallel, the CAD analysis can be
+scale (bin_size), assumed to be recorded in parallel, the CAD analysis can be
 applied as demonstrated in this short toy example of 5 parallel spike trains
 that exhibit fully synchronous events of order 5.
 
@@ -29,11 +29,11 @@ Examples
 >>> import numpy as np
 >>> import elephant.cell_assembly_detection as cad
 >>> np.random.seed(30)
->>> # Generate correlated data and bin it with a binsize of 10ms
+>>> # Generate correlated data and bin it with a bin_size of 10ms
 >>> sts = elephant.spike_train_generation.cpp(
 >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
->>> binsize = 10*pq.ms
->>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
+>>> bin_size = 10*pq.ms
+>>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
 >>> # Call of the method
 >>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
 >>> # Plotting
@@ -41,11 +41,11 @@ Examples
 >>> for neu in patterns['neurons']:
 >>>     if neu == 0:
 >>>         plt.plot(
->>>             patterns['times']*binsize, [neu]*len(patterns['times']),
+>>>             patterns['times']*bin_size, [neu]*len(patterns['times']),
 >>>             'ro', label='pattern')
 >>>     else:
 >>>         plt.plot(
->>>             patterns['times']*binsize, [neu] * len(patterns['times']),
+>>>             patterns['times']*bin_size, [neu] * len(patterns['times']),
 >>>             'ro')
 >>> # Raster plot of the data
 >>> for st_idx, st in enumerate(sts):
@@ -90,7 +90,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     significant patterns with lags (number of bins between successive spikes
     in the pattern) going from `-maxlag` to `maxlag` (second parameter of the
     function). Thus, between two successive spikes in the pattern there can
-    be at most `maxlag`*`binsize` units of time.
+    be at most `maxlag`*`bin_size` units of time.
 
     The method agglomerates pairs of units (or a unit and a preexisting
     assembly), tests their significance by a statistical test
@@ -110,7 +110,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     data : elephant.conversion.BinnedSpikeTrain
         Binned spike trains containing data to be analyzed.
     maxlag : int
-        Maximal lag to be tested. For a binning dimension of binsize the
+        Maximal lag to be tested. For a binning dimension of bin_size the
         method will test all pairs configurations with a time
         shift between '-maxlag' and 'maxlag'.
     reference_lag : int, optional
@@ -213,11 +213,11 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     ...
     >>> np.random.seed(30)
     ...
-    >>> # Generate correlated data and bin it with a binsize of 10ms
+    >>> # Generate correlated data and bin it with a bin_size of 10ms
     >>> sts = elephant.spike_train_generation.cpp(
     >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
-    >>> binsize = 10*pq.ms
-    >>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
+    >>> bin_size = 10*pq.ms
+    >>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
     ...
     >>> # Call of the method
     >>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
@@ -481,7 +481,7 @@ def _chunking(binned_pair, size_chunks, maxlag, best_lag):
     size_chunks : int
         size of chunks desired
     maxlag : int
-        max number of lags for the binsize chosen
+        max number of lags for the bin_size chosen
     best_lag : int
         lag with the higher number of coincidences
 
@@ -628,7 +628,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     # list with the binned spike trains of the two neurons
     binned_pair = [ensemble['times'], spiketrain2]
 
-    # For large binsizes, the binned spike counts may potentially fluctuate
+    # For large bin_sizes, the binned spike counts may potentially fluctuate
     # around a high mean level and never fall below some minimum count
     # considerably larger than zero for the whole time series.
     # Entries up to this minimum count would contribute
@@ -1132,7 +1132,7 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
     data : BinnedSpikeTrain object
         binned spike trains containing data to be analysed
     maxlag: int
-        maximal lag to be tested. For a binning dimension of binsize the
+        maximal lag to be tested. For a binning dimension of bin_size the
         method will test all pairs configurations with a time
         shift between -maxlag and maxlag
     alpha : float

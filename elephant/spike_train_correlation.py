@@ -62,22 +62,22 @@ class _CrossCorrHist(object):
             at full overlap (valid mode).
         """
 
-        binsize = binned_st1.binsize
+        bin_size = binned_st1.bin_size
 
         # see cross_correlation_histogram for the examples
         if binned_st1.num_bins < binned_st2.num_bins:
             # ex. 1) lags range: [-2, 5] ms
             # ex. 2) lags range: [1, 2] ms
             left_edge = (binned_st2.t_start -
-                         binned_st1.t_start) / binsize
+                         binned_st1.t_start) / bin_size
             right_edge = (binned_st2.t_stop -
-                          binned_st1.t_stop) / binsize
+                          binned_st1.t_stop) / bin_size
         else:
             # ex. 3) lags range: [-1, 3] ms
             left_edge = (binned_st2.t_stop -
-                         binned_st1.t_stop) / binsize
+                         binned_st1.t_stop) / bin_size
             right_edge = (binned_st2.t_start -
-                          binned_st1.t_start) / binsize
+                          binned_st1.t_start) / bin_size
         right_edge = int(right_edge.simplified.magnitude)
         left_edge = int(left_edge.simplified.magnitude)
         lags = np.arange(left_edge, right_edge + 1, dtype=np.int32)
@@ -330,7 +330,7 @@ def covariance(binned_sts, binary=False, fast=True):
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], binsize=5*ms))
+    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
     >>> print(cov_matrix[0, 1])
     -0.001668334167083546
 
@@ -428,7 +428,7 @@ def corrcoef(binned_sts, binary=False, fast=True):
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
+    >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
     >>> print(cc_matrix[0, 1])
     0.015477320222075359
 
@@ -620,11 +620,11 @@ def cross_correlation_histogram(
     >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
     ...        elephant.spike_train_generation.homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-    ...        binsize=5. * pq.ms)
+    ...        bin_size=5. * pq.ms)
     >>> binned_st2 = elephant.conversion.BinnedSpikeTrain(
     ...        elephant.spike_train_generation.homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-    ...        binsize=5. * pq.ms)
+    ...        bin_size=5. * pq.ms)
 
     >>> cc_hist = \
     ...    elephant.spike_train_correlation.cross_correlation_histogram(
@@ -646,27 +646,27 @@ def cross_correlation_histogram(
     # resolution
     if binned_st1.matrix_rows != 1 or binned_st2.matrix_rows != 1:
         raise ValueError("Spike trains must be one dimensional")
-    if not np.isclose(binned_st1.binsize.simplified.item(),
-                      binned_st2.binsize.simplified.item()):
+    if not np.isclose(binned_st1.bin_size.simplified.item(),
+                      binned_st2.bin_size.simplified.item()):
         raise ValueError("Bin sizes must be equal")
 
-    binsize = binned_st1.binsize
+    bin_size = binned_st1.bin_size
     left_edge_min = -binned_st1.num_bins + 1
     right_edge_max = binned_st2.num_bins - 1
 
-    t_lags_shift = (binned_st2.t_start - binned_st1.t_start) / binsize
+    t_lags_shift = (binned_st2.t_start - binned_st1.t_start) / bin_size
     t_lags_shift = t_lags_shift.simplified.item()
     if not np.isclose(t_lags_shift, round(t_lags_shift)):
-        # For example, if binsize=1 ms, binned_st1.t_start=0 ms, and
+        # For example, if bin_size=1 ms, binned_st1.t_start=0 ms, and
         # binned_st2.t_start=0.5 ms then there is a global shift in the
         # binning of the spike trains.
         raise ValueError(
-            "Binned spiketrains time shift is not multiple of binsize")
+            "Binned spiketrains time shift is not multiple of bin_size")
     t_lags_shift = int(round(t_lags_shift))
 
     # In the examples below we fix st2 and "move" st1.
     # Zero-lag is equal to `max(st1.t_start, st2.t_start)`.
-    # Binned spiketrains (t_start and t_stop) with binsize=1ms:
+    # Binned spiketrains (t_start and t_stop) with bin_size=1ms:
     # 1) st1=[3, 8] ms, st2=[1, 13] ms
     #    t_start_shift = -2 ms
     #    zero-lag is at 3 ms
@@ -737,8 +737,8 @@ def cross_correlation_histogram(
     cch_result = neo.AnalogSignal(
         signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
-        t_start=(lags[0] - 0.5) * binned_st1.binsize,
-        sampling_period=binned_st1.binsize)
+        t_start=(lags[0] - 0.5) * binned_st1.bin_size,
+        sampling_period=binned_st1.bin_size)
     return cch_result, lags
 
 
@@ -949,24 +949,24 @@ def spike_train_timescale(binned_st, tau_max):
         Slow fluctuations in recurrent networks of spiking neurons.
         Physical Review E, 92(4), 040901.
     """
-    binsize = binned_st.binsize
-    if not (tau_max / binsize).simplified.units == pq.dimensionless:
+    bin_size = binned_st.bin_size
+    if not (tau_max / bin_size).simplified.units == pq.dimensionless:
         raise AssertionError("tau_max needs units of time")
 
-    # safe casting of tau_max/binsize to integer
-    tau_max_bins = int(np.round((tau_max / binsize).simplified.magnitude))
+    # safe casting of tau_max/bin_size to integer
+    tau_max_bins = int(np.round((tau_max / bin_size).simplified.magnitude))
     if not np.isclose(tau_max.simplified.magnitude,
-                      (tau_max_bins * binsize).simplified.magnitude):
-        raise AssertionError("tau_max has to be a multiple of the binsize")
+                      (tau_max_bins * bin_size).simplified.magnitude):
+        raise AssertionError("tau_max has to be a multiple of the bin_size")
 
     cch_window = [-tau_max_bins, tau_max_bins]
     corrfct, bin_ids = cross_correlation_histogram(
         binned_st, binned_st, window=cch_window, cross_corr_coef=True
     )
     # Take only t > 0 values, in particular neglecting the delta peak.
-    corrfct_pos = corrfct.time_slice(binsize / 2, corrfct.t_stop).flatten()
+    corrfct_pos = corrfct.time_slice(bin_size / 2, corrfct.t_stop).flatten()
 
     # Calculate the timescale using trapezoidal integration
     integr = np.abs((corrfct_pos / corrfct_pos[0]).magnitude)**2
-    timescale = 2 * integrate.trapz(integr, dx=binsize)
+    timescale = 2 * integrate.trapz(integr, dx=bin_size)
     return timescale

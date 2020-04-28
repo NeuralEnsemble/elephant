@@ -250,7 +250,7 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
 
     # Bin the spike trains and take for each of them the ids of filled bins
     binned = conv.BinnedSpikeTrain(
-        trains, binsize=bin_size, t_start=t_start, t_stop=t_stop)
+        trains, bin_size=bin_size, t_start=t_start, t_stop=t_stop)
     filled_bins = binned.spike_indices
 
     # Compute and return the transaction list
@@ -1024,10 +1024,10 @@ def _intersection_matrix(spiketrains, spiketrains_y, bin_size, t_start_x,
 
     # Compute the binned spike train matrices, along both time axes
     spiketrains_binned = conv.BinnedSpikeTrain(
-        spiketrains, binsize=bin_size,
+        spiketrains, bin_size=bin_size,
         t_start=t_start_x, t_stop=t_stop_x)
     spiketrains_binned_y = conv.BinnedSpikeTrain(
-        spiketrains_y, binsize=bin_size,
+        spiketrains_y, bin_size=bin_size,
         t_start=t_start_y, t_stop=t_stop_y)
 
     # Compute imat by matrix multiplication
@@ -1149,10 +1149,10 @@ class ASSET(object):
 
         # Compute the binned spike train matrices, along both time axes
         self.spiketrains_binned = conv.BinnedSpikeTrain(
-            self.spiketrains, binsize=self.bin_size,
+            self.spiketrains, bin_size=self.bin_size,
             t_start=self.t_start_x, t_stop=self.t_stop_x)
         self.spiketrains_binned_y = conv.BinnedSpikeTrain(
-            self.spiketrains_y, binsize=self.bin_size,
+            self.spiketrains_y, bin_size=self.bin_size,
             t_start=self.t_start_y, t_stop=self.t_stop_y)
 
     @property

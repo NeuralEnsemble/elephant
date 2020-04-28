@@ -653,13 +653,13 @@ def _rate_mat_avg_trial(mat):
     return psth / (n_bins * n_trials)
 
 
-def _bintime(t, binsize):
+def _bintime(t, bin_size):
     """
-    Change the real time to `binsize` units.
+    Change the real time to `bin_size` units.
     """
     t_dl = t.rescale('ms').magnitude
-    binsize_dl = binsize.rescale('ms').magnitude
-    return np.floor(np.array(t_dl) / binsize_dl).astype(int)
+    bin_size_dl = bin_size.rescale('ms').magnitude
+    return np.floor(np.array(t_dl) / bin_size_dl).astype(int)
 
 
 def _winpos(t_start, t_stop, winsize, winstep, position='left-edge'):
@@ -704,7 +704,7 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
 
 
 def jointJ_window_analysis(
-        data, binsize, winsize, winstep, pattern_hash,
+        data, bin_size, winsize, winstep, pattern_hash,
         method='analytic_TrialByTrial', t_start=None,
         t_stop=None, binary=True, n_surr=100):
     """
@@ -721,7 +721,7 @@ def jointJ_window_analysis(
             1-axis --> Neurons
 
             2-axis --> Spike times
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         The size of bins for discretizing spike trains.
     winsize : pq.Quantity
         The size of the window of analysis.
@@ -784,7 +784,7 @@ def jointJ_window_analysis(
     Warns
     -----
     UserWarning
-        The ratio between `winsize` or `winstep` and `binsize` is not an
+        The ratio between `winsize` or `winstep` and `bin_size` is not an
         integer.
 
     """
@@ -800,30 +800,30 @@ def jointJ_window_analysis(
 
     # position of all windows (left edges)
     t_winpos = _winpos(t_start, t_stop, winsize, winstep, position='left-edge')
-    t_winpos_bintime = _bintime(t_winpos, binsize)
+    t_winpos_bintime = _bintime(t_winpos, bin_size)
 
-    winsize_bintime = _bintime(winsize, binsize)
-    winstep_bintime = _bintime(winstep, binsize)
+    winsize_bintime = _bintime(winsize, bin_size)
+    winstep_bintime = _bintime(winstep, bin_size)
 
-    if winsize_bintime * binsize != winsize:
+    if winsize_bintime * bin_size != winsize:
         warnings.warn(
-            "The ratio between winsize ({winsize}) and binsize ({binsize}) is "
-            "not an integer".format(winsize=winsize, binsize=binsize))
+            "The ratio between winsize ({winsize}) and bin_size ({bin_size}) is "
+            "not an integer".format(winsize=winsize, bin_size=bin_size))
 
-    if winstep_bintime * binsize != winstep:
+    if winstep_bintime * bin_size != winstep:
         warnings.warn(
-            "The ratio between winstep ({winstep}) and binsize ({binsize}) is "
-            "not an integer".format(winstep=winstep, binsize=binsize))
+            "The ratio between winstep ({winstep}) and bin_size ({bin_size}) is "
+            "not an integer".format(winstep=winstep, bin_size=bin_size))
 
     num_tr, N = np.shape(data)[:2]
 
-    n_bins = int((t_stop - t_start) / binsize)
+    n_bins = int((t_stop - t_start) / bin_size)
 
     mat_tr_unit_spt = np.zeros((len(data), N, n_bins))
     for tr, sts in enumerate(data):
         sts = list(sts)
         bs = conv.BinnedSpikeTrain(
-            sts, t_start=t_start, t_stop=t_stop, binsize=binsize)
+            sts, t_start=t_start, t_stop=t_stop, bin_size=bin_size)
         if binary is True:
             mat = bs.to_bool_array()
         else:
@@ -853,4 +853,4 @@ def jointJ_window_analysis(
                     'trial' + str(j)] = np.append(
                     indices_win['trial' + str(j)], indices_lst[j][0] + win_pos)
     return {'Js': Js_win, 'indices': indices_win, 'n_emp': n_emp_win,
-            'n_exp': n_exp_win, 'rate_avg': rate_avg / binsize}
+            'n_exp': n_exp_win, 'rate_avg': rate_avg / bin_size}

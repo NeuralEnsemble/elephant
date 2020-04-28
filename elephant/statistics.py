@@ -61,15 +61,18 @@ from __future__ import division, print_function
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
 
+import warnings
+
+import neo
 import numpy as np
 import quantities as pq
-import scipy.stats
 import scipy.signal
-import neo
+import scipy.stats
 from neo.core import SpikeTrain
+
 import elephant.conversion as conv
 import elephant.kernels as kernels
-import warnings
+from elephant.utils import deprecate_binsize
 
 cv = scipy.stats.variation
 
@@ -636,7 +639,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     return rate
 
 
-def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
+@deprecate_binsize
+def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
@@ -645,7 +649,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     ----------
     spiketrains : list of neo.SpikeTrain
         `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Width of the histogram's time bins.
     t_start : pq.Quantity, optional
         Start time of the histogram. Only events in `spiketrains` falling
@@ -682,7 +686,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     neo.AnalogSignal
         A `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+        `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
 
     Raises
     ------
@@ -734,7 +738,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
     # Bin the spike trains and sum across columns
     bs = conv.BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
-                               binsize=binsize)
+                               bin_size=bin_size)
 
     if binary:
         bin_hist = bs.to_sparse_bool_array().sum(axis=0)
@@ -751,22 +755,23 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         bin_hist = bin_hist * 1. / len(spiketrains) * pq.dimensionless
     elif output == 'rate':
         # Divide by number of input spike trains and bin width
-        bin_hist = bin_hist * 1. / len(spiketrains) / binsize
+        bin_hist = bin_hist * 1. / len(spiketrains) / bin_size
     else:
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
-                            sampling_period=binsize, units=bin_hist.units,
+                            sampling_period=bin_size, units=bin_hist.units,
                             t_start=t_start)
 
 
-def complexity_pdf(spiketrains, binsize):
+@deprecate_binsize
+def complexity_pdf(spiketrains, bin_size):
     """
     Complexity Distribution of a list of `neo.SpikeTrain` objects.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
-    spike trains computed with a bin width of `binsize`.
+    spike trains computed with a bin width of `bin_size`.
     It provides for each complexity (== number of active neurons per bin) the
     number of occurrences. The normalization of that histogram to 1 is the
     probability density.
@@ -777,7 +782,7 @@ def complexity_pdf(spiketrains, binsize):
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains with a common time axis (same `t_start` and `t_stop`)
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Width of the histogram's time bins.
 
     Returns
@@ -785,7 +790,7 @@ def complexity_pdf(spiketrains, binsize):
     complexity_distribution : neo.AnalogSignal
         A `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+        `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
 
     See also
     --------
@@ -801,7 +806,7 @@ def complexity_pdf(spiketrains, binsize):
     """
     # Computing the population histogram with parameter binary=True to clip the
     # spike trains before summing
-    pophist = time_histogram(spiketrains, binsize, binary=True)
+    pophist = time_histogram(spiketrains, bin_size, binary=True)
 
     # Computing the histogram of the entries of pophist (=Complexity histogram)
     complexity_hist = np.histogram(

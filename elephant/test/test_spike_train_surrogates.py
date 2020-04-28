@@ -289,9 +289,9 @@ class SurrogatesTestCase(unittest.TestCase):
             [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
         n_surrogates = 2
-        binsize = 100 * pq.ms
+        bin_size = 100 * pq.ms
         surrogate_trains = surr.jitter_spikes(
-            spiketrain, binsize=binsize, n=n_surrogates)
+            spiketrain, bin_size=bin_size, n=n_surrogates)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -307,9 +307,9 @@ class SurrogatesTestCase(unittest.TestCase):
 
         spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
-        binsize = 75 * pq.ms
+        bin_size = 75 * pq.ms
         surrogate_train = surr.jitter_spikes(
-            spiketrain, binsize=binsize, n=1)[0]
+            spiketrain, bin_size=bin_size, n=1)[0]
         self.assertEqual(len(surrogate_train), 0)
 
     def test_jitter_spikes_same_bins(self):
@@ -317,20 +317,20 @@ class SurrogatesTestCase(unittest.TestCase):
         spiketrain = neo.SpikeTrain(
             [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        binsize = 100 * pq.ms
+        bin_size = 100 * pq.ms
         surrogate_train = surr.jitter_spikes(
-            spiketrain, binsize=binsize, n=1)[0]
+            spiketrain, bin_size=bin_size, n=1)[0]
 
         bin_ids_orig = np.array(
             (spiketrain.view(
                 pq.Quantity) /
-                binsize).rescale(
+                bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
         bin_ids_surr = np.array(
             (surrogate_train.view(
                 pq.Quantity) /
-                binsize).rescale(
+                bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
         self.assertTrue(np.all(bin_ids_orig == bin_ids_surr))
@@ -339,25 +339,25 @@ class SurrogatesTestCase(unittest.TestCase):
         # different number of spikes
         self.assertEqual(len(spiketrain), len(surrogate_train))
 
-    def test_jitter_spikes_unequal_binsize(self):
+    def test_jitter_spikes_unequal_bin_size(self):
 
         spiketrain = neo.SpikeTrain(
             [90, 150, 180, 480] * pq.ms, t_stop=500 * pq.ms)
 
-        binsize = 75 * pq.ms
+        bin_size = 75 * pq.ms
         surrogate_train = surr.jitter_spikes(
-            spiketrain, binsize=binsize, n=1)[0]
+            spiketrain, bin_size=bin_size, n=1)[0]
 
         bin_ids_orig = np.array(
             (spiketrain.view(
                 pq.Quantity) /
-                binsize).rescale(
+                bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
         bin_ids_surr = np.array(
             (surrogate_train.view(
                 pq.Quantity) /
-                binsize).rescale(
+                bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
 

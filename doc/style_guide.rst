@@ -119,9 +119,8 @@ throughout Elephant.
             Therefore, do not use terms as `n` or `n_surr`, that are not
             immediately understood.
         bin_size : pq.Quantity or int
-            Separate the words by underscore. Do not use `binsize`. Old functions
-            which use `binsize` will be gradually refactored to conform to the new
-            convention.
+            Separate the words by underscore. Do not use `bin_size`. Old functions
+            which use `binsize` are deprecated.
         max_size : float
             Another example showing that words should be separated by underscores.
             This intersects with the naming convention for a maximum value.

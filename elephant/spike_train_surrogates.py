@@ -54,6 +54,7 @@ import quantities as pq
 from scipy.ndimage import gaussian_filter
 
 from elephant.statistics import isi
+from elephant.utils import deprecate_binsize
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
@@ -453,7 +454,8 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
             for s in surr]
 
 
-def jitter_spikes(spiketrain, binsize, n=1):
+@deprecate_binsize
+def jitter_spikes(spiketrain, bin_size, n=1):
     """
     Generates surrogates of a spike train by spike jittering.
 
@@ -469,10 +471,10 @@ def jitter_spikes(spiketrain, binsize, n=1):
     ----------
     spiketrain :  neo.SpikeTrain
         The spike train from which to generate the surrogates.
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Size of the time bins within which to randomize the spike times.
         Note: the last bin lasts until `spiketrain.t_stop` and might have
-        width different from `binsize`.
+        width different from `bin_size`.
     n : int, optional
         Number of surrogates to be generated.
         Default: 1.
@@ -491,30 +493,30 @@ def jitter_spikes(spiketrain, binsize, n=1):
     >>> import neo
     ...
     >>> st = neo.SpikeTrain([80, 150, 320, 480] * pq.ms, t_stop=1 * pq.s)
-    >>> print(jitter_spikes(st, binsize=100 * pq.ms))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  98.82898293,  178.45805954,  346.93993867,
         461.34268507]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, binsize=100 * pq.ms, n=2))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n=2))  # doctest: +SKIP
     [<SpikeTrain(array([  97.15720041,  199.06945744,  397.51928207,
         402.40065162]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  80.74513157,  173.69371317,  338.05860962,
         495.48869981]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, binsize=100 * pq.ms))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  4.55064897e-01,   1.31927046e+02,   3.57846265e+02,
          4.69370604e+02]) * ms, [0.0 ms, 1000.0 ms])>]
 
     """
     # Define standard time unit; all time Quantities are converted to
     # scalars after being rescaled to this unit, to use the power of numpy
-    std_unit = binsize.units
+    std_unit = bin_size.units
 
     # Compute bin edges for the jittering procedure
     # !: the last bin arrives until spiketrain.t_stop and might have
-    # size != binsize
+    # size != bin_size
     start_dl = spiketrain.t_start.rescale(std_unit).magnitude
     stop_dl = spiketrain.t_stop.rescale(std_unit).magnitude
 
-    bin_edges = start_dl + np.arange(start_dl, stop_dl, binsize.magnitude)
+    bin_edges = start_dl + np.arange(start_dl, stop_dl, bin_size.magnitude)
     bin_edges = np.hstack([bin_edges, stop_dl])
 
     # Create n surrogates with spikes randomly placed in the interval (0,1)
@@ -523,7 +525,7 @@ def jitter_spikes(spiketrain, binsize, n=1):
     # Compute the bin id of each spike
     bin_ids = np.array(
         (spiketrain.view(pq.Quantity) /
-         binsize).rescale(pq.dimensionless).magnitude, dtype=int)
+         bin_size).rescale(pq.dimensionless).magnitude, dtype=int)
 
     # Compute the size of each time bin (as a numpy array)
     bin_sizes_dl = np.diff(bin_edges)

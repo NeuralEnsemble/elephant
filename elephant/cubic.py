@@ -7,8 +7,8 @@ Given a list sts of SpikeTrains, the analysis comprises the following
 steps:
 
 1) compute the population histogram (PSTH) with the desired bin size
-       >>> binsize = 5 * pq.ms
-       >>> pop_count = elephant.statistics.time_histogram(sts, binsize)
+       >>> bin_size = 5 * pq.ms
+       >>> pop_count = elephant.statistics.time_histogram(sts, bin_size)
 
 2) apply CuBIC to the population count
        >>> alpha = 0.05  # significance level of the tests used

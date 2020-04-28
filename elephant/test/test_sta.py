@@ -230,7 +230,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         self.st0 = SpikeTrain(
             np.arange(0, tlen0.rescale(pq.ms).magnitude, 50) * pq.ms,
             t_start=0 * pq.ms, t_stop=tlen0)
-        self.bst0 = BinnedSpikeTrain(self.st0, binsize=fs0)
+        self.bst0 = BinnedSpikeTrain(self.st0, bin_size=fs0)
 
         # shortened analogsignals
         self.anasig1 = self.anasig0.time_slice(1 * pq.s, None)
@@ -243,7 +243,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs1)
         self.bst1 = BinnedSpikeTrain(
             self.st0.time_slice(self.anasig3.t_start, self.anasig3.t_stop),
-            binsize=fs1)
+            bin_size=fs1)
 
         # analogsignal containing multiple traces
         self.anasig4 = AnalogSignal(
@@ -259,21 +259,21 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
                 (tlen0.rescale(pq.ms).magnitude * .25),
                 (tlen0.rescale(pq.ms).magnitude * .75), 50) * pq.ms,
             t_start=0 * pq.ms, t_stop=tlen0)
-        self.bst3 = BinnedSpikeTrain(self.st3, binsize=fs0)
+        self.bst3 = BinnedSpikeTrain(self.st3, bin_size=fs0)
 
         self.st4 = SpikeTrain(np.arange(
             (tlen0.rescale(pq.ms).magnitude * .25),
             (tlen0.rescale(pq.ms).magnitude * .75), 50) * pq.ms,
             t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
-        self.bst4 = BinnedSpikeTrain(self.st4, binsize=fs0)
+        self.bst4 = BinnedSpikeTrain(self.st4, bin_size=fs0)
 
-        # spike train with incompatible binsize
-        self.bst5 = BinnedSpikeTrain(self.st3, binsize=fs0 * 2.)
+        # spike train with incompatible bin_size
+        self.bst5 = BinnedSpikeTrain(self.st3, bin_size=fs0 * 2.)
 
-        # spike train with same binsize as the analog signal, but with
+        # spike train with same bin_size as the analog signal, but with
         # bin edges not aligned to the time axis of the analog signal
         self.bst6 = BinnedSpikeTrain(
-            self.st3, binsize=fs0, t_start=4.5 * fs0, t_stop=tlen0 - 4.5 * fs0)
+            self.st3, bin_size=fs0, t_start=4.5 * fs0, t_stop=tlen0 - 4.5 * fs0)
 
     # =========================================================================
     # Tests for correct input handling
@@ -305,7 +305,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
                           self.anasig0, self.bst1)
 
     def test_incompatible_spiketrain_analogsignal(self):
-        # These spike trains have incompatible binning (binsize or alignment to
+        # These spike trains have incompatible binning (bin_size or alignment to
         # time axis of analog signal)
         self.assertRaises(ValueError,
                           sta.spike_field_coherence,
@@ -424,7 +424,7 @@ class sfc_TestCase_old_scipy(unittest.TestCase):
         self.st0 = SpikeTrain(
             np.arange(0, tlen0.rescale(pq.ms).magnitude, 50) * pq.ms,
             t_start=0 * pq.ms, t_stop=tlen0)
-        self.bst0 = BinnedSpikeTrain(self.st0, binsize=fs0)
+        self.bst0 = BinnedSpikeTrain(self.st0, bin_size=fs0)
 
         def test_old_scipy_version(self):
             self.assertRaises(AttributeError,  sta.spike_field_coherence,

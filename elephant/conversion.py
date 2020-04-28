@@ -20,7 +20,7 @@ import numpy as np
 import quantities as pq
 import scipy.sparse as sps
 
-from elephant.utils import is_binary
+from elephant.utils import is_binary, deprecate_binsize
 
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
@@ -184,18 +184,18 @@ def _detect_rounding_errors(values, tolerance):
     return 1 - (values % 1) <= tolerance
 
 
-def _calc_tstart(num_bins, binsize, t_stop):
+def _calc_tstart(num_bins, bin_size, t_stop):
     """
     Calculates the start point from given parameters.
 
     Calculates the start point `t_start` from the three parameters
-    `num_bins`, `binsize`, `t_stop`.
+    `num_bins`, `bin_size`, `t_stop`.
 
     Parameters
     ----------
     num_bins : int
         Number of bins
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Size of Bins
     t_stop : pq.Quantity
         Stop time
@@ -205,22 +205,22 @@ def _calc_tstart(num_bins, binsize, t_stop):
     t_start : pq.Quantity
         Starting point calculated from given parameters.
     """
-    if num_bins is not None and binsize is not None and t_stop is not None:
-        return t_stop.rescale(binsize.units) - num_bins * binsize
+    if num_bins is not None and bin_size is not None and t_stop is not None:
+        return t_stop.rescale(bin_size.units) - num_bins * bin_size
 
 
-def _calc_tstop(num_bins, binsize, t_start):
+def _calc_tstop(num_bins, bin_size, t_start):
     """
     Calculates the stop point from given parameters.
 
     Calculates the stop point `t_stop` from the three parameters
-    `num_bins`, `binsize`, `t_start`.
+    `num_bins`, `bin_size`, `t_start`.
 
     Parameters
     ----------
     num_bins : int
         Number of bins
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Size of bins
     t_start : pq.Quantity
         Start time
@@ -230,20 +230,20 @@ def _calc_tstop(num_bins, binsize, t_start):
     t_stop : pq.Quantity
         Stopping point calculated from given parameters.
     """
-    if num_bins is not None and binsize is not None and t_start is not None:
-        return t_start.rescale(binsize.units) + num_bins * binsize
+    if num_bins is not None and bin_size is not None and t_start is not None:
+        return t_start.rescale(bin_size.units) + num_bins * bin_size
 
 
-def _calc_num_bins(binsize, t_start, t_stop, tolerance):
+def _calc_num_bins(bin_size, t_start, t_stop, tolerance):
     """
     Calculates the number of bins from given parameters.
 
     Calculates the number of bins `num_bins` from the three parameters
-    `binsize`, `t_start`, `t_stop`.
+    `bin_size`, `t_start`, `t_stop`.
 
     Parameters
     ----------
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Size of Bins
     t_start : pq.Quantity
         Start time
@@ -264,12 +264,12 @@ def _calc_num_bins(binsize, t_start, t_stop, tolerance):
         When `t_stop` is smaller than `t_start`".
 
     """
-    if binsize is not None and t_start is not None and t_stop is not None:
+    if bin_size is not None and t_start is not None and t_stop is not None:
         if t_stop < t_start:
             raise ValueError("t_stop (%s) is smaller than t_start (%s)"
                              % (t_stop, t_start))
         num_bins = ((t_stop - t_start).rescale(
-                        binsize.units) / binsize.magnitude).item()
+                        bin_size.units) / bin_size.magnitude).item()
         if _detect_rounding_errors(num_bins, tolerance):
             warnings.warn('Correcting a rounding error in the calculation '
                           'of num_bins by increasing num_bins by 1. '
@@ -279,11 +279,11 @@ def _calc_num_bins(binsize, t_start, t_stop, tolerance):
         return int(num_bins)
 
 
-def _calc_binsize(num_bins, t_start, t_stop):
+def _calc_bin_size(num_bins, t_start, t_stop):
     """
     Calculates the stop point from given parameters.
 
-    Calculates the size of bins `binsize` from the three parameters
+    Calculates the size of bins `bin_size` from the three parameters
     `num_bins`, `t_start` and `t_stop`.
 
     Parameters
@@ -297,7 +297,7 @@ def _calc_binsize(num_bins, t_start, t_stop):
 
     Returns
     -------
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Size of bins calculated from given parameters.
 
     Raises
@@ -382,7 +382,7 @@ class BinnedSpikeTrain(object):
     ----------
     spiketrains : neo.SpikeTrain or list of neo.SpikeTrain or np.ndarray
         Spike train(s) to be binned.
-    binsize : pq.Quantity, optional
+    bin_size : pq.Quantity, optional
         Width of a time bin.
         Default: None
     num_bins : int, optional
@@ -408,7 +408,7 @@ class BinnedSpikeTrain(object):
         NxM or
         if type of `num_bins` is not an `int` or `num_bins` < 0.
     ValueError
-        When number of bins calculated from `t_start`, `t_stop` and `binsize`
+        When number of bins calculated from `t_start`, `t_stop` and `bin_size`
         differs from provided `num_bins` or
         if `t_stop` of any spike train is smaller than any `t_start` or
         if any spike train does not cover the full [`t_start`, t_stop`] range.
@@ -429,13 +429,13 @@ class BinnedSpikeTrain(object):
     -----
     There are four minimal configurations of the optional parameters which have
     to be provided, otherwise a `ValueError` will be raised:
-    * `t_start`, `num_bins`, `binsize`
+    * `t_start`, `num_bins`, `bin_size`
     * `t_start`, `num_bins`, `t_stop`
     * `t_start`, `bin_size`, `t_stop`
-    * `t_stop`, `num_bins`, `binsize`
+    * `t_stop`, `num_bins`, `bin_size`
 
     If `spiketrains` is a `neo.SpikeTrain` or a list thereof, it is enough to
-    explicitly provide only one parameter: `num_bins` or `binsize`. The
+    explicitly provide only one parameter: `num_bins` or `bin_size`. The
     `t_start` and `t_stop` will be calculated from given `spiketrains` (max
     `t_start` and min `t_stop` of `neo.SpikeTrain`s).
     Missing parameter will be calculated automatically.
@@ -445,7 +445,8 @@ class BinnedSpikeTrain(object):
 
     """
 
-    def __init__(self, spiketrains, binsize=None, num_bins=None, t_start=None,
+    @deprecate_binsize
+    def __init__(self, spiketrains, bin_size=None, num_bins=None, t_start=None,
                  t_stop=None, tolerance=1e-8):
         """
         Defines a BinnedSpikeTrain class
@@ -468,7 +469,7 @@ class BinnedSpikeTrain(object):
         self.t_start = t_start
         self.t_stop = t_stop
         self.num_bins = num_bins
-        self.binsize = binsize
+        self.bin_size = bin_size
         self.tolerance = tolerance
         # Empty matrix for storage, time points matrix
         self._mat_u = None
@@ -479,8 +480,8 @@ class BinnedSpikeTrain(object):
             self.num_bins = np.shape(spiketrains)[1]
         self._calc_start_stop(spiketrains)
         self._check_init_params(
-            self.binsize, self.num_bins, self.t_start, self.t_stop)
-        self._check_consistency(spiketrains, self.binsize, self.num_bins,
+            self.bin_size, self.num_bins, self.t_start, self.t_stop)
+        self._check_consistency(spiketrains, self.bin_size, self.num_bins,
                                 self.t_start, self.t_stop)
         # Now create sparse matrix
         self._convert_to_binned(spiketrains)
@@ -504,20 +505,20 @@ class BinnedSpikeTrain(object):
     # =========================================================================
     # There are four cases the given parameters must fulfill, or a `ValueError`
     # will be raised:
-    # t_start, num_bins, binsize
+    # t_start, num_bins, bin_size
     # t_start, num_bins, t_stop
     # t_start, bin_size, t_stop
-    # t_stop, num_bins, binsize
+    # t_stop, num_bins, bin_size
     # =========================================================================
 
-    def _check_init_params(self, binsize, num_bins, t_start, t_stop):
+    def _check_init_params(self, bin_size, num_bins, t_start, t_stop):
         """
         Checks given parameters.
         Calculates also missing parameter.
 
         Parameters
         ----------
-        binsize : pq.Quantity
+        bin_size : pq.Quantity
             Size of bins
         num_bins : int
             Number of bins
@@ -540,14 +541,14 @@ class BinnedSpikeTrain(object):
                 raise TypeError("num_bins is not an integer!")
         # Check if all parameters can be calculated, otherwise raise ValueError
         if t_start is None:
-            self.t_start = _calc_tstart(num_bins, binsize, t_stop)
+            self.t_start = _calc_tstart(num_bins, bin_size, t_stop)
         elif t_stop is None:
-            self.t_stop = _calc_tstop(num_bins, binsize, t_start)
+            self.t_stop = _calc_tstop(num_bins, bin_size, t_start)
         elif num_bins is None:
-            self.num_bins = _calc_num_bins(binsize, t_start, t_stop,
+            self.num_bins = _calc_num_bins(bin_size, t_start, t_stop,
                                            self.tolerance)
-        elif binsize is None:
-            self.binsize = _calc_binsize(num_bins, t_start, t_stop)
+        elif bin_size is None:
+            self.bin_size = _calc_bin_size(num_bins, t_start, t_stop)
 
     def _calc_start_stop(self, spiketrains):
         """
@@ -588,10 +589,10 @@ class BinnedSpikeTrain(object):
 
         """
         return sum(x is not None for x in
-                   [self.t_start, self.t_stop, self.binsize,
+                   [self.t_start, self.t_stop, self.bin_size,
                     self.num_bins]) >= 3
 
-    def _check_consistency(self, spiketrains, binsize, num_bins, t_start,
+    def _check_consistency(self, spiketrains, bin_size, num_bins, t_start,
                            t_stop):
         """
         Checks the given parameters for consistency
@@ -611,11 +612,11 @@ class BinnedSpikeTrain(object):
             raise AttributeError("Too few parameters given. Please provide "
                                  "at least one of the parameter which are "
                                  "None.\n"
-                                 "t_start: %s, t_stop: %s, binsize: %s, "
+                                 "t_start: %s, t_stop: %s, bin_size: %s, "
                                  "num_bins: %s" % (
                                      self.t_start,
                                      self.t_stop,
-                                     self.binsize,
+                                     self.bin_size,
                                      self.num_bins))
         if self.is_spiketrain:
             t_starts = [elem.t_start for elem in spiketrains]
@@ -635,10 +636,10 @@ class BinnedSpikeTrain(object):
                     'not defined in the ending time')
         if num_bins != int((
             (t_stop - t_start).rescale(
-                binsize.units) / binsize).magnitude):
+                bin_size.units) / bin_size).magnitude):
             raise ValueError(
                 "Inconsistent arguments t_start (%s), " % t_start +
-                "t_stop (%s), binsize (%d) " % (t_stop, binsize) +
+                "t_stop (%s), bin_size (%d) " % (t_stop, bin_size) +
                 "and num_bins (%d)" % num_bins)
         if num_bins - int(num_bins) != 0 or num_bins < 0:
             raise TypeError(
@@ -651,9 +652,9 @@ class BinnedSpikeTrain(object):
         Returns all time edges as a quantity array with :attr:`num_bins` bins.
 
         The borders of all time steps between :attr:`t_start` and
-        :attr:`t_stop` with a step :attr:`binsize`. It is crucial for many
+        :attr:`t_stop` with a step :attr:`bin_size`. It is crucial for many
         analyses that all bins have the same size, so if
-        :attr:`t_stop` - :attr:`t_start` is not divisible by :attr:`binsize`,
+        :attr:`t_stop` - :attr:`t_start` is not divisible by :attr:`bin_size`,
         there will be some leftover time at the end
         (see https://github.com/NeuralEnsemble/elephant/issues/255).
         The length of the returned array should match :attr:`num_bins`.
@@ -664,11 +665,11 @@ class BinnedSpikeTrain(object):
             All edges in interval [:attr:`t_start`, :attr:`t_stop`] with
             :attr:`num_bins` bins are returned as a quantity array.
         """
-        t_start = self.t_start.rescale(self.binsize.units).magnitude
+        t_start = self.t_start.rescale(self.bin_size.units).magnitude
         bin_edges = np.linspace(t_start, t_start + self.num_bins *
-                                self.binsize.magnitude,
+                                self.bin_size.magnitude,
                                 num=self.num_bins + 1, endpoint=True)
-        return pq.Quantity(bin_edges, units=self.binsize.units)
+        return pq.Quantity(bin_edges, units=self.bin_size.units)
 
     @property
     def bin_centers(self):
@@ -684,7 +685,7 @@ class BinnedSpikeTrain(object):
             All center edges in interval (:attr:`start`, :attr:`stop`).
 
         """
-        return self.bin_edges[:-1] + self.binsize / 2
+        return self.bin_edges[:-1] + self.bin_size / 2
 
     def to_sparse_array(self):
         """
@@ -765,7 +766,7 @@ class BinnedSpikeTrain(object):
         >>> import quantities as pq
         >>> st = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
         ...                   t_stop=10.0 * pq.s)
-        >>> x = conv.BinnedSpikeTrain(st, num_bins=10, binsize=1 * pq.s,
+        >>> x = conv.BinnedSpikeTrain(st, num_bins=10, bin_size=1 * pq.s,
         ...                           t_start=0 * pq.s)
         >>> print(x.spike_indices)
         [[0, 0, 1, 3, 4, 5, 6]]
@@ -826,7 +827,7 @@ class BinnedSpikeTrain(object):
         >>> import quantities as pq
         >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
         ...                  t_stop=10.0 * pq.s)
-        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s,
+        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, bin_size=1 * pq.s,
         ...                           t_start=0 * pq.s)
         >>> print(x.to_bool_array())
         [[ True  True False  True  True  True  True False False False]]
@@ -857,7 +858,7 @@ class BinnedSpikeTrain(object):
         >>> import quantities as pq
         >>> a = n.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
         ...                  t_stop=10.0 * pq.s)
-        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, binsize=1 * pq.s,
+        >>> x = conv.BinnedSpikeTrain(a, num_bins=10, bin_size=1 * pq.s,
         ...                           t_start=0 * pq.s)
         >>> print(x.to_array())
         [[2 1 0 1 1 1 1 0 0 0]]
@@ -952,8 +953,8 @@ class BinnedSpikeTrain(object):
         counts = []
 
         for idx, st in enumerate(spiketrains):
-            times = (st.times - self.t_start).rescale(self.binsize.units)
-            scale = np.array((times / self.binsize).magnitude)
+            times = (st.times - self.t_start).rescale(self.bin_size.units)
+            scale = np.array((times / self.bin_size).magnitude)
 
             # shift spikes that are very close
             # to the right edge into the next bin
@@ -969,10 +970,10 @@ class BinnedSpikeTrain(object):
 
             scale = scale.astype(int)
 
-            la = np.logical_and(times >= 0 * self.binsize.units,
+            la = np.logical_and(times >= 0 * self.bin_size.units,
                                 times <= (self.t_stop
                                           - self.t_start).rescale(
-                                              self.binsize.units))
+                                              self.bin_size.units))
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.num_bins]
             f, c = np.unique(filled_tmp, return_counts=True)
