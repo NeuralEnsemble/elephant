@@ -71,6 +71,8 @@ import elephant.conversion as conv
 import elephant.kernels as kernels
 import warnings
 
+from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
+
 cv = scipy.stats.variation
 
 
@@ -637,7 +639,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
-                   output='counts', binary=False):
+                   output='counts', binary=False, old=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
@@ -676,13 +678,22 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
         Default: False.
+    old : bool, optional
+        If True, uses old implementation that returns `neo.AnalogSignal`.
+        If False, returns `buffalo.objects.TimeHistogramObject`.
+        Default: False.
 
     Returns
     -------
-    neo.AnalogSignal
-        A `neo.AnalogSignal` object containing the histogram values.
+    neo.AnalogSignal or buffalo.objects.TimeHistogramObject
+        If `old` is True, returns a `neo.AnalogSignal` object containing the
+        histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+
+        If `old` is False, returns a object containing the histogram and
+        allowing access to basic histogram properties
+        (`buffalo.objects.TimeHistogramObject`).
 
     Raises
     ------
@@ -700,9 +711,11 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
+    buffalo.objects.TimeHistogramObject
 
     """
     min_tstop = 0
+    warnings_raised = False
     if t_start is None:
         # Find the internal range for t_start, where all spike trains are
         # defined; cut all spike trains taking that time range only
@@ -712,6 +725,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
             warnings.warn(
                 "Spiketrains have different t_start values -- "
                 "using maximum t_start as t_start.")
+            warnings_raised = True
 
     if t_stop is None:
         # Find the internal range for t_stop
@@ -721,6 +735,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                 warnings.warn(
                     "Spiketrains have different t_stop values -- "
                     "using minimum t_stop as t_stop.")
+                warnings_raised = True
         else:
             min_tstop = conv._get_start_stop_from_input(spiketrains)[1]
             t_stop = min_tstop
@@ -728,6 +743,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                 warnings.warn(
                     "Spiketrains have different t_stop values -- "
                     "using minimum t_stop as t_stop.")
+            warnings_raised = True
 
     sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in
                spiketrains]
@@ -755,9 +771,77 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     else:
         raise ValueError('Parameter output is not valid.')
 
-    return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
-                            sampling_period=binsize, units=bin_hist.units,
-                            t_start=t_start)
+    if old:
+        return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
+                                sampling_period=binsize, units=bin_hist.units,
+                                t_start=t_start)
+
+    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
+                               units=bin_hist.units, histogram_type=output,
+                               t_start=t_start, t_stop=t_stop, binary=binary,
+                               warnings_raised=warnings_raised)
+
+
+def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
+         t_stop=None, output='counts', binary=False):
+    """
+    Peristimulus Time Histogram of a list of `neo.SpikeTrain` objects.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrain
+        `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
+    binsize : pq.Quantity
+        Width of the histogram's time bins.
+    event_time: pq.Quantity
+        Time point between spike trains `t_start` and `t_stop` attribute that
+        corresponds to the event.
+    event_label : str, optional
+        Label of the event defined at `event_time`.
+        Default: None.
+    t_start : pq.Quantity, optional
+        Start time of the histogram. Only events in `spiketrains` falling
+        between `t_start` and `t_stop` (both included) are considered in the
+        histogram.
+        If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
+        `t_start`.
+        Default: None.
+    t_stop : pq.Quantity, optional
+        Stop time of the histogram. Only events in `spiketrains` falling
+        between `t_start` and `t_stop` (both included) are considered in the
+        histogram.
+        If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
+        `t_stop`.
+        Default: None.
+    output : {'counts', 'mean', 'rate'}, optional
+        Normalization of the histogram. Can be one of:
+        * 'counts': spike counts at each bin (as integer numbers)
+        * 'mean': mean spike counts per spike train
+        * 'rate': mean spike rate per spike train. Like 'mean', but the
+          counts are additionally normalized by the bin width.
+        Default: 'counts'.
+    binary : bool, optional
+        If True, indicates whether all `neo.SpikeTrain` objects should first
+        be binned to a binary representation (using the
+        `conversion.BinnedSpikeTrain` class) and the calculation of the
+        histogram is based on this representation.
+        Note that the output is not binary, but a histogram of the converted,
+        binary representation.
+        Default: False.
+
+    Returns
+    -------
+    buffalo.objects.PSTHObject
+        Returns a object containing the histogram and event details, which
+        allows access to basic histogram properties.
+
+    """
+
+    histogram = time_histogram(spiketrains, binsize, t_start=t_start,
+                               t_stop=t_stop, output=output,
+                               binary=binary, old=False)
+    return PSTHObject.from_time_histogram(histogram, event_time,
+                                          event_label=event_label)
 
 
 def complexity_pdf(spiketrains, binsize):
