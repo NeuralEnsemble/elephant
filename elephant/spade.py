@@ -690,12 +690,13 @@ def _build_context(binary_matrix, winlen):
     # all non-empty bins are starting positions for windows
     for idx, window_idx in enumerate(unique_cols):
         # find the end of the current window in unique_cols
-        end_of_window = np.searchsorted(unique_cols, window_idx+winlen)
+        end_of_window = np.searchsorted(unique_cols, window_idx + winlen)
         # loop over all non-empty bins in the current window
         for rel_idx, col in enumerate(unique_cols[idx:end_of_window]):
             # get all occurrences of the current col in binary_matrix.col
-            spike_indices_in_window = np.arange(unique_col_idx[idx+rel_idx],
-                                                unique_col_idx[idx+rel_idx+1])
+            spike_indices_in_window = np.arange(
+                unique_col_idx[idx + rel_idx],
+                unique_col_idx[idx + rel_idx + 1])
             # get the binary_matrix.row entries matching the current col
             # prepare the row of rel_matrix matching the current window
             # spikes are indexed as (neuron_id * winlen + bin_id)
@@ -1144,9 +1145,19 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
 
 
 @deprecate_binsize
-def pvalue_spectrum(spiketrains, bin_size, winlen, dither, n_surr, min_spikes=2,
-                    min_occ=2, max_spikes=None, max_occ=None, min_neu=1,
-                    spectrum='#', surr_method='dither_spikes'):
+def pvalue_spectrum(
+        spiketrains,
+        bin_size,
+        winlen,
+        dither,
+        n_surr,
+        min_spikes=2,
+        min_occ=2,
+        max_spikes=None,
+        max_occ=None,
+        min_neu=1,
+        spectrum='#',
+        surr_method='dither_spikes'):
     """
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -1275,7 +1286,7 @@ def pvalue_spectrum(spiketrains, bin_size, winlen, dither, n_surr, min_spikes=2,
             # are sparse (min(ISI)>bin size).
             surrs = [surr.dither_spikes(
                 spiketrain, dither=dither, n=1, refractory_period=bin_size)[0]
-                     for spiketrain in spiketrains]
+                for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n=1, surr_method=surr_method,
@@ -1810,14 +1821,13 @@ def _select_random_subsets(element_1, n_subsets):
     subsets : list
         each element a subset of element_1
     """
-    subsets_indices = [set()] * (len(element_1)+1)
+    subsets_indices = [set()] * (len(element_1) + 1)
     subsets = []
 
     while len(subsets) < n_subsets:
-        num_indices = np.random.binomial(n=len(element_1), p=1/2)
-        random_indices = np.random.choice(
-            len(element_1), size=num_indices, replace=False)
-        random_indices.sort()
+        num_indices = np.random.binomial(n=len(element_1), p=1 / 2)
+        random_indices = sorted(np.random.choice(
+            len(element_1), size=num_indices, replace=False))
 
         random_tuple = tuple(random_indices)
         if random_tuple not in subsets_indices[num_indices]:

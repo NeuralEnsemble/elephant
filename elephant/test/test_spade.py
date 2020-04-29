@@ -146,10 +146,11 @@ class SpadeTestCase(unittest.TestCase):
                                              1, report='#')[0]
         # Check spectrum
         assert_array_equal(
-            spectrum_cpp,
-            [(len(self.cpp),
-              np.sum(conv.BinnedSpikeTrain(self.cpp[0],
-                                           self.bin_size).to_bool_array()), 1)])
+            spectrum_cpp, [
+                (len(
+                    self.cpp), np.sum(
+                    conv.BinnedSpikeTrain(
+                        self.cpp[0], self.bin_size).to_bool_array()), 1)])
 
     # Testing with multiple patterns input
     def test_spade_msip(self):
@@ -221,14 +222,18 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(-1, pvalue)
 
         # test min_occ parameter
-        output_msip_min_occ = spade.spade(self.msip, self.bin_size, self.winlen,
-                                          min_occ=self.min_occ,
-                                          approx_stab_pars=dict(
-                                              n_subsets=self.n_subset),
-                                          n_surr=self.n_surr, alpha=self.alpha,
-                                          psr_param=self.psr_param,
-                                          stat_corr='no',
-                                          output_format='patterns')['patterns']
+        output_msip_min_occ = spade.spade(
+            self.msip,
+            self.bin_size,
+            self.winlen,
+            min_occ=self.min_occ,
+            approx_stab_pars=dict(
+                n_subsets=self.n_subset),
+            n_surr=self.n_surr,
+            alpha=self.alpha,
+            psr_param=self.psr_param,
+            stat_corr='no',
+            output_format='patterns')['patterns']
         # collect spade output
         occ_msip_min_occ = []
         for out in output_msip_min_occ:
@@ -269,14 +274,18 @@ class SpadeTestCase(unittest.TestCase):
             [True] * len(lags_msip_max_spikes))
 
         # test max_occ parameter
-        output_msip_max_occ = spade.spade(self.msip, self.bin_size, self.winlen,
-                                          max_occ=self.max_occ,
-                                          approx_stab_pars=dict(
-                                              n_subsets=self.n_subset),
-                                          n_surr=self.n_surr, alpha=self.alpha,
-                                          psr_param=self.psr_param,
-                                          stat_corr='no',
-                                          output_format='patterns')['patterns']
+        output_msip_max_occ = spade.spade(
+            self.msip,
+            self.bin_size,
+            self.winlen,
+            max_occ=self.max_occ,
+            approx_stab_pars=dict(
+                n_subsets=self.n_subset),
+            n_surr=self.n_surr,
+            alpha=self.alpha,
+            psr_param=self.psr_param,
+            stat_corr='no',
+            output_format='patterns')['patterns']
         # collect spade output
         occ_msip_max_occ = []
         for out in output_msip_max_occ:
@@ -373,16 +382,19 @@ class SpadeTestCase(unittest.TestCase):
                 el) >= self.min_spikes])
 
         # test min_occ parameter
-        output_msip_min_occ = spade.spade(self.msip, self.bin_size, self.winlen,
-                                          min_occ=self.min_occ,
-                                          approx_stab_pars=dict(
-                                              n_subsets=self.n_subset),
-                                          n_surr=self.n_surr,
-                                          spectrum='3d#',
-                                          alpha=self.alpha,
-                                          psr_param=self.psr_param,
-                                          stat_corr='no',
-                                          output_format='patterns')['patterns']
+        output_msip_min_occ = spade.spade(
+            self.msip,
+            self.bin_size,
+            self.winlen,
+            min_occ=self.min_occ,
+            approx_stab_pars=dict(
+                n_subsets=self.n_subset),
+            n_surr=self.n_surr,
+            spectrum='3d#',
+            alpha=self.alpha,
+            psr_param=self.psr_param,
+            stat_corr='no',
+            output_format='patterns')['patterns']
         # collect spade output
         occ_msip_min_occ = []
         for out in output_msip_min_occ:
@@ -556,7 +568,6 @@ class SpadeTestCase(unittest.TestCase):
                                                ns_signatures=[],
                                                winlen=winlen, spectrum='#')
         self.assertEqual(concepts, [concept3, concept4])
-
 
     @unittest.skipUnless(HAVE_STATSMODELS,
                          "'fdr_bh' stat corr requires statsmodels")

@@ -806,14 +806,16 @@ def jointJ_window_analysis(
     winstep_bintime = _bintime(winstep, bin_size)
 
     if winsize_bintime * bin_size != winsize:
-        warnings.warn(
-            "The ratio between winsize ({winsize}) and bin_size ({bin_size}) is "
-            "not an integer".format(winsize=winsize, bin_size=bin_size))
+        warnings.warn("The ratio between the winsize ({winsize}) and the "
+                      "bin_size ({bin_size}) is not an integer".format(
+                          winsize=winsize,
+                          bin_size=bin_size))
 
     if winstep_bintime * bin_size != winstep:
-        warnings.warn(
-            "The ratio between winstep ({winstep}) and bin_size ({bin_size}) is "
-            "not an integer".format(winstep=winstep, bin_size=bin_size))
+        warnings.warn("The ratio between the winstep ({winstep}) and the "
+                      "bin_size ({bin_size}) is not an integer".format(
+                          winstep=winstep,
+                          bin_size=bin_size))
 
     num_tr, N = np.shape(data)[:2]
 
