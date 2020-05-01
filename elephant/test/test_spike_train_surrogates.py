@@ -10,7 +10,7 @@ import unittest
 import elephant.spike_train_surrogates as surr
 import elephant.spike_train_generation as stg
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_less
 import quantities as pq
 import neo
 import random
@@ -24,13 +24,14 @@ class SurrogatesTestCase(unittest.TestCase):
 
     def test_dither_spikes_output_format(self):
 
-        spiketrain = neo.SpikeTrain(
-            [90, 150, 180, 350] * pq.ms, t_stop=5 * pq.s)
+        spiketrain = neo.SpikeTrain([90, 93, 97, 100, 105,
+                                     150, 180, 350] * pq.ms, t_stop=.5 * pq.s)
         spiketrain.t_stop = .5 * pq.s
         n_surrogates = 2
         dither = 10 * pq.ms
         surrogate_trains = surr.dither_spikes(
             spiketrain, dither=dither, n=n_surrogates)
+        print(surrogate_trains)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -41,6 +42,7 @@ class SurrogatesTestCase(unittest.TestCase):
             self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
             self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
             self.assertEqual(len(surrogate_train), len(spiketrain))
+            assert_array_less(0., np.diff(surrogate_train))  # check ordering
 
     def test_dither_spikes_empty_train(self):
 
