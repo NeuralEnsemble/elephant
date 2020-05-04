@@ -443,15 +443,18 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         `spiketrain`.
         Default: None.
     trim : bool, optional
+        Accounts for the asymmetry of a kernel.
         If False, the output of the Fast Fourier Transformation being a longer
         vector than the input vector by the size of the kernel is reduced back
         to the original size of the considered time interval of the
-        `spiketrain` using the median of the kernel.
+        `spiketrain` using the median of the kernel. False (no trimming) is
+        equivalent to 'same' convolution mode for symmetrical kernels.
         If True, only the region of the convolved signal is returned, where
         there is complete overlap between kernel and spike train. This is
         achieved by reducing the length of the output of the Fast Fourier
         Transformation by a total of two times the size of the kernel, and
-        `t_start` and `t_stop` are adjusted.
+        `t_start` and `t_stop` are adjusted. True (trimming) is equivalent to
+        'valid' convolution mode for symmetrical kernels.
         Default: False.
 
     Returns
@@ -615,9 +618,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     # the size of kernel() output matches the input size
     kernel_array_size = len(t_arr)
     if not trim:
-        rate = rate[median_id: -kernel_array_size + median_id]
+        rate = rate[median_id: -kernel_array_size + median_id + 1]
     else:
-        rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
+        rate = rate[2 * median_id: -2 * (kernel_array_size - median_id) + 2]
         t_start = t_start + median_id * spiketrain.units
         t_stop = t_stop - (kernel_array_size - median_id) * spiketrain.units
 

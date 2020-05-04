@@ -260,6 +260,10 @@ class Kernel(object):
         -----
         The estimation is correct when the intervals in `t` are equidistant.
         """
+        # FIXME: the current implementation is wrong in general
+        return np.nonzero(self(t).cumsum() *
+                          (t[len(t) - 1] - t[0]) / (len(t) - 1) >= 0.5)[
+            0].min()
         kernel = self(t).magnitude
         return np.argsort(kernel)[len(kernel) // 2]
 
