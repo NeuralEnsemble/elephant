@@ -593,7 +593,7 @@ def concepts_mining(spiketrains, binsize, winlen, min_spikes=2, min_occ=2,
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # Binning the spiketrains and clipping (binary matrix)
     binary_matrix = conv.BinnedSpikeTrain(
-        spiketrains, binsize).to_sparse_bool_array().tocoo()
+        spiketrains, binsize, tolerance=None).to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
@@ -1283,6 +1283,12 @@ def pvalue_spectrum(spiketrains, binsize, winlen, dither, n_surr, min_spikes=2,
             surrs = [surr.dither_spikes(
                 spiketrain, dither=dither, n=1, refractory_period=binsize)[0]
                      for spiketrain in spiketrains]
+        elif surr_method == 'shift_spiketrain':
+            surrs = [
+                surr.spiketrain_shifting(spiketrain, trial_length=500 * pq.ms,
+                                         dt=dither,
+                                         sep=2 * winlen * binsize, n=1)[0]
+                for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n=1, surr_method=surr_method,
