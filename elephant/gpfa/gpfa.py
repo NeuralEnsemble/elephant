@@ -1,6 +1,6 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
-[1] for neural trajectory visualization of parallel spike trains. GPFA applies
+[#f1]_ for neural trajectory visualization of parallel spike trains. GPFA applies
 factor analysis (FA) to time-binned spike count data to reduce the
 dimensionality and at the same time smoothes the resulting low-dimensional
 trajectories by fitting a Gaussian process (GP) model to them.
@@ -39,9 +39,9 @@ The code was ported from the MATLAB code based on Byron Yu's implementation.
 The original MATLAB code is available at Byron Yu's website:
 https://users.ece.cmu.edu/~byronyu/software.shtml
 
-[1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
-Gaussian-process factor analysis for low-dimensional single-trial analysis of
-neural population activity. J Neurophysiol 102:614-635.
+.. [#f1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
+   Gaussian-process factor analysis for low-dimensional single-trial analysis
+   of neural population activity. J Neurophysiol 102:614-635.
 
 :copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -66,17 +66,17 @@ class GPFA(sklearn.base.BaseEstimator):
 
     In the first scenario, only one single dataset is used to fit the model and
     to extract the neural trajectories. The parameters that describe the
-    transformation are first extracted from the data using the fit() method of
-    the GPFA class. Then the same data is projected into the orthonormal basis
-    using the method transform(). The fit_transform() method can be used to
-    perform these two steps at once.
+    transformation are first extracted from the data using the `fit()` method
+    of the GPFA class. Then the same data is projected into the orthonormal
+    basis using the method `transform()`. The `fit_transform()` method can be
+    used to perform these two steps at once.
 
     In the second scenario, a single dataset is split into training and test
     datasets. Here, the parameters are estimated from the training data. Then
     the test data is projected into the low-dimensional space previously
     obtained from the training data. This analysis is performed by executing
-    first the fit() method on the training data, followed by the transform()
-    method on the test dataset.
+    first the `fit()` method on the training data, followed by the
+    `transform()` method on the test dataset.
 
     The GPFA class is compatible to the cross-validation functions of
     `sklearn.model_selection`, such that users can perform cross-validation to
@@ -162,6 +162,7 @@ class GPFA(sklearn.base.BaseEstimator):
         Corth : (#units, #latent_vars) np.ndarray
             mapping between the neuronal data space and the orthonormal
             latent variable space
+
     Methods
     -------
     fit

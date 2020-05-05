@@ -990,19 +990,19 @@ class RAUCTestCase(unittest.TestCase):
         '''Test rauc on non-AnalogSignal'''
         kwds = {'signal': np.arange(5)}
         self.assertRaises(
-            TypeError, elephant.signal_processing.rauc, **kwds)
+            ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_invalid_bin_duration(self):
         '''Test rauc on bad bin duration'''
         kwds = {'signal': self.test_signal1, 'bin_duration': 'bad'}
         self.assertRaises(
-            TypeError, elephant.signal_processing.rauc, **kwds)
+            ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_invalid_baseline(self):
         '''Test rauc on bad baseline'''
         kwds = {'signal': self.test_signal1, 'baseline': 'bad'}
         self.assertRaises(
-            TypeError, elephant.signal_processing.rauc, **kwds)
+            ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_units(self):
         '''Test rauc returns Quantity or AnalogSignal with correct units'''

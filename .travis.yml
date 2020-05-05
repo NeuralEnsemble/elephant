@@ -25,8 +25,8 @@ matrix:
       python: 3.6
       env: DISTRIB="pip"
       before_install: sudo apt install -y libopenmpi-dev openmpi-bin
-      before_script: pip install -r requirements-extras.txt
-      script: mpiexec -n 1 nosetests --with-coverage --cover-package=elephant
+      before_script: pip install -r requirements/requirements-extras.txt
+      script: mpiexec -n 1 python -m mpi4py.futures -m nose --with-coverage --cover-package=elephant
       after_success: coveralls || echo "coveralls failed"
 
     - name: "conda 3.7"
@@ -41,37 +41,22 @@ matrix:
       python: 3.8
       env: DISTRIB="pip"
 
-  exclude:
-    - name: "pip 3.6 requirements-extras min version"
-      # excluded due to unrelated unittest assertWarn bug error
-      python: 3.6
-      env: DISTRIB="pip"
-      before_install:
-        - sudo apt install -y libopenmpi-dev openmpi-bin
-        - sudo apt install -y libblas-dev liblapack-dev libatlas-base-dev gfortran
-        - sed -i 's/>=/==/g' requirements*.txt
-      before_script: pip install -r requirements-extras.txt
-
-
 install:
   - if [[ "${DISTRIB}" == "conda" ]];
     then
-      export MINICONDA_PATH=${HOME}/miniconda;
-      export PATH=${MINICONDA_PATH}/bin:${PATH};
-      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-      bash miniconda.sh -b -p ${MINICONDA_PATH};
+      py_major=${TRAVIS_PYTHON_VERSION:0:1};
+      wget https://repo.continuum.io/miniconda/Miniconda${py_major}-latest-Linux-x86_64.sh -O miniconda.sh;
+      bash miniconda.sh -b -p $HOME/miniconda;
+      source "$HOME/miniconda/etc/profile.d/conda.sh";
       conda config --set always_yes yes;
       conda update conda;
-      conda create --name elephant_env python=${TRAVIS_PYTHON_VERSION};
-      source activate elephant_env;
-      conda install mkl;
-      conda config --append channels conda-forge;
-      sed '/^neo/d' requirements.txt > requirements-conda.txt;
-      conda install --file requirements-conda.txt;
-      echo "'neo' will be installed by pip from requirements.txt later on";
+      sed -i "s/python>=[0-9]\.[0-9]/python=${TRAVIS_PYTHON_VERSION}/g" requirements/environment.yml;
+      conda env create -f requirements/environment.yml;
+      conda activate elephant;
+      conda uninstall -y mpi4py;
       pip list;
     else
-      pip install -r requirements.txt;
+      pip install -r requirements/requirements.txt;
     fi
 
   - pip -V

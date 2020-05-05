@@ -2,6 +2,52 @@
 Release Notes
 *************
 
+Elephant 0.7.0 release notes
+============================
+
+Breaking changes
+----------------
+* [gpfa] GPFA dimensionality reduction method is rewritten in easy-to-use scikit-learn class style format (https://github.com/NeuralEnsemble/elephant/pull/287):
+
+.. code-block:: python
+
+    gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
+    results = gpfa.fit_transform(spiketrains, returned_data=['xorth', 'xsm'])
+
+New tutorials
+-------------
+* GPFA dimensionality reduction method: https://elephant.readthedocs.io/en/latest/tutorials/gpfa.html
+* Unitary Event Analysis of coordinated spiking activity: https://elephant.readthedocs.io/en/latest/tutorials/unitary_event_analysis.html
+* (Introductory) statistics module: https://elephant.readthedocs.io/en/latest/tutorials/statistics.html
+
+Deprecations
+------------
+* **Python 2.7 support will be dropped on Dec 31, 2020.** Please switch to Python 3.6, 3.7, or 3.8.
+* [spike train generation] `homogeneous_poisson_process_with_refr_period()`, introduced in v0.6.4, is deprecated and will be deleted in v0.8.0. Use `homogeneous_poisson_process(refractory_period=...)` instead.
+* [pandas bridge] pandas\_bridge module is deprecated and will be deleted in v0.8.0.
+
+New features
+------------
+* New documentation style, guidelines, tutorials, and more (https://github.com/NeuralEnsemble/elephant/pull/294).
+* Python 3.8 support (https://github.com/NeuralEnsemble/elephant/pull/282).
+* [spike train generation] Added `refractory_period` flag in `homogeneous_poisson_process()` (https://github.com/NeuralEnsemble/elephant/pull/292) and `inhomogeneous_poisson_process()` (https://github.com/NeuralEnsemble/elephant/pull/295) functions. The default is `refractory_period=None`, meaning no refractoriness.
+* [spike train correlation] `cross_correlation_histogram()` supports different t_start and t_stop of input spiketrains.
+* [waveform features] `waveform_width()` function extracts the width (trough-to-peak TTP) of a waveform (https://github.com/NeuralEnsemble/elephant/pull/279).
+* [signal processing] Added `scaleopt` flag in `pairwise_cross_correlation()` to mimic the behavior of Matlab's `xcorr()` function (https://github.com/NeuralEnsemble/elephant/pull/277). The default is `scaleopt=unbiased` to be consistent with the previous versions of Elephant.
+* [spike train surrogates] Joint-ISI dithering method via `JointISI` class (https://github.com/NeuralEnsemble/elephant/pull/275).
+
+Bug fixes
+---------
+* [spike train correlation] Fix CCH Border Correction (https://github.com/NeuralEnsemble/elephant/pull/298). Now, the border correction in `cross_correlation_histogram()` correctly reflects the number of bins used for the calculation at each lag. The correction factor is now unity at full overlap.
+* [phase analysis] `spike_triggered_phase()` incorrect behavior when the spike train and the analog signal had different time units (https://github.com/NeuralEnsemble/elephant/pull/270).
+
+Performance
+-----------
+* [spade] SPADE x7 speedup (https://github.com/NeuralEnsemble/elephant/pull/280, https://github.com/NeuralEnsemble/elephant/pull/285, https://github.com/NeuralEnsemble/elephant/pull/286). Moreover, SPADE is now able to handle all surrogate types that are available in Elephant, as well as more types of statistical corrections.
+* [conversion] Fast & memory-efficient `covariance()` and Pearson `corrcoef()` (https://github.com/NeuralEnsemble/elephant/pull/274). Added flag `fast=True` by default in both functions.
+* [conversion] Use fast fftconvolve instead of np.correlate in `cross_correlation_histogram()` (https://github.com/NeuralEnsemble/elephant/pull/273).
+
+
 Elephant 0.6.4 release notes
 ============================
 
@@ -18,7 +64,7 @@ New modules
 * GPFA - Gaussian-process factor analysis - dimensionality reduction method for neural trajectory visualization (https://github.com/NeuralEnsemble/elephant/pull/233). _Note: the API could change in the future._
 
 
-Buf fixes
+Bug fixes
 ---------
 * [signal processing] Keep `array_annotations` in the output of signal processing functions (https://github.com/NeuralEnsemble/elephant/pull/258).
 * [SPADE] Fixed the calculation of the duration of a pattern in the output (https://github.com/NeuralEnsemble/elephant/pull/254).
@@ -46,7 +92,7 @@ New functions
     * Waveform signal-to-noise ratio (https://github.com/NeuralEnsemble/elephant/pull/219).
 * Added support for Butterworth `sosfiltfilt` - numerically stable (in particular, higher order) filtering (https://github.com/NeuralEnsemble/elephant/pull/234).
 
-Buf fixes
+Bug fixes
 ---------
 * Fixed neo version typo in requirements file (https://github.com/NeuralEnsemble/elephant/pull/218)
 * Fixed broken docs (https://github.com/NeuralEnsemble/elephant/pull/230, https://github.com/NeuralEnsemble/elephant/pull/232)
@@ -105,7 +151,7 @@ Other changes
 -------------
 * Switched to multiple `requirements.txt` files which are directly read into the `setup.py`
 * `instantaneous_rate()` accepts now list of spiketrains
-* Minor bug fixes  
+* Minor bug fixes
 
 
 Elephant 0.5.0 release notes
@@ -122,12 +168,12 @@ New functions
     * New function to extract spike-triggered phases of an AnalogSignal
 * `unitary_event_analysis` module:
     * Added new unit test to the UE function to verify the method based on data of a recent [Re]Science publication
-  
+
 Other changes
 -------------
 * Minor bug fixes
-  
-  
+
+
 Elephant 0.4.3 release notes
 ============================
 March 2nd 2018
@@ -137,7 +183,7 @@ Other changes
 * Bug fixes in `spade` module:
     * Fixed an incompatibility with the latest version of an external library
 
-  
+
 Elephant 0.4.2 release notes
 ============================
 March 1st 2018
@@ -162,8 +208,8 @@ Other changes
 * Fixed bug in ISI function `isi()`, `statistics.py` module
 * Fixed bug in `dither_spikes()`, `spike_train_surrogates.py`
 * Minor bug fixes
- 
- 
+
+
 Elephant 0.4.1 release notes
 ============================
 March 23rd 2017

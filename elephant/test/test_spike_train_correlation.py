@@ -269,7 +269,7 @@ class CorrCoefTestCase(unittest.TestCase):
                                   sc.corrcoef(binned_st, fast=True))
 
 
-class cross_correlation_histogram_TestCase(unittest.TestCase):
+class CrossCorrelationHistogramTest(unittest.TestCase):
 
     def setUp(self):
         # These two arrays must be such that they do not have coincidences
@@ -483,13 +483,6 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
             ValueError,
             sc.cross_correlation_histogram, self.binned_st1,
             self.st_check_binsize)
-        # Check different t_start and t_stop
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram,
-            self.st_check_t_start, self.binned_st2)
-        self.assertRaises(
-            ValueError, sc.cross_correlation_histogram,
-            self.st_check_t_stop, self.binned_st2)
         # Check input are one dimensional
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram,
@@ -503,8 +496,10 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         cch_win, bin_ids = sc.cch(
             self.binned_st1, self.binned_st2, window=[-30, 30])
         cch_win_mem, bin_ids_mem = sc.cch(
-            self.binned_st1, self.binned_st2, window=[-30, 30])
+            self.binned_st1, self.binned_st2, window=[-30, 30],
+            method='memory')
 
+        self.assertEqual(len(bin_ids), cch_win.shape[0])
         assert_array_equal(bin_ids, np.arange(-30, 31, 1))
         assert_array_equal(
             (bin_ids - 0.5) * self.binned_st1.binsize, cch_win.times)
@@ -555,23 +550,43 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
     def test_border_correction(self):
         '''Test if the border correction for bins at the edges is correctly
         performed'''
-        cch_corrected, _ = sc.cross_correlation_histogram(
+
+        # check that nothing changes for valid lags
+        cch_valid, _ = sc.cross_correlation_histogram(
             self.binned_st1, self.binned_st2, window='full',
             border_correction=True, binary=False, kernel=None)
-        cch_corrected_mem, _ = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            border_correction=True, binary=False, kernel=None, method='memory')
-        cch, _ = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            border_correction=False, binary=False, kernel=None)
-        cch_mem, _ = sc.cross_correlation_histogram(
-            self.binned_st1, self.binned_st2, window='full',
-            border_correction=False, binary=False, kernel=None,
-            method='memory')
+        valid_lags = sc._CrossCorrHist.get_valid_lags(self.binned_st1,
+                                                      self.binned_st2)
+        left_edge, right_edge = valid_lags[(0, -1), ]
+        cch_builder = sc._CrossCorrHist(self.binned_st1, self.binned_st2,
+                                        window=(left_edge, right_edge))
+        cch_valid = cch_builder.correlate_speed(cch_mode='valid')
+        cch_corrected = cch_builder.border_correction(cch_valid)
 
-        self.assertEqual(np.any(np.not_equal(cch, cch_corrected)), True)
-        self.assertEqual(np.any(np.not_equal(cch_mem, cch_corrected_mem)),
-                         True)
+        np.testing.assert_array_equal(cch_valid, cch_corrected)
+
+        # test the border correction for lags without full overlap
+        cch_full, lags_full = sc.cross_correlation_histogram(
+            self.binned_st1, self.binned_st2, window='full')
+
+        cch_full_corrected, _ = sc.cross_correlation_histogram(
+            self.binned_st1, self.binned_st2, window='full',
+            border_correction=True)
+
+        num_bins_outside_window = np.min(np.abs(
+            np.subtract.outer(lags_full, valid_lags)), axis=1)
+
+        min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
+
+        border_correction = (cch_full_corrected / cch_full).magnitude.flatten()
+
+        # exclude NaNs caused by zeros in the cch
+        mask = np.logical_not(np.isnan(border_correction))
+
+        np.testing.assert_array_almost_equal(
+            border_correction[mask],
+            (float(min_num_bins)
+             / (min_num_bins - num_bins_outside_window))[mask])
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
@@ -602,6 +617,87 @@ class cross_correlation_histogram_TestCase(unittest.TestCase):
         Test if alias cch still exists.
         '''
         self.assertEqual(sc.cross_correlation_histogram, sc.cch)
+
+
+@unittest.skipUnless(python_version_major == 3, "subTest requires 3.4")
+class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
+
+    def _run_sub_tests(self, st1, st2, lags_true):
+        for window in ('valid', 'full'):
+            for method in ('speed', 'memory'):
+                with self.subTest(window=window, method=method):
+                    binsize = 1 * pq.s
+                    st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
+                    st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
+                    left, right = lags_true[window][(0, -1), ]
+                    cch_window, lags_window = sc.cross_correlation_histogram(
+                        st1_binned, st2_binned, window=(left, right),
+                        method=method,
+                    )
+                    cch, lags = sc.cross_correlation_histogram(
+                        st1_binned, st2_binned, window=window)
+
+                    # target cross correlation
+                    cch_target = np.correlate(st1_binned.to_array()[0],
+                                              st2_binned.to_array()[0],
+                                              mode=window)
+
+                    self.assertEqual(len(lags_window), cch_window.shape[0])
+                    assert_array_almost_equal(cch.magnitude,
+                                              cch_window.magnitude)
+                    # the output is reversed since we cross-correlate
+                    # st2 with st1 rather than st1 with st2 (numpy behavior)
+                    assert_array_almost_equal(np.ravel(cch.magnitude),
+                                              cch_target[::-1])
+                    assert_array_equal(lags, lags_true[window])
+                    assert_array_equal(lags, lags_window)
+
+    def test_cross_correlation_histogram_valid_full_overlap(self):
+        # ex. 1 in the source code
+        st1 = neo.SpikeTrain([3.5, 4.5, 7.5] * pq.s, t_start=3 * pq.s,
+                             t_stop=8 * pq.s)
+        st2 = neo.SpikeTrain([1.5, 2.5, 4.5, 8.5, 9.5, 10.5]
+                             * pq.s, t_start=1 * pq.s, t_stop=13 * pq.s)
+        lags_true = {
+            'valid': np.arange(-2, 6, dtype=np.int32),
+            'full': np.arange(-6, 10, dtype=np.int32)
+        }
+        self._run_sub_tests(st1, st2, lags_true)
+
+    def test_cross_correlation_histogram_valid_partial_overlap(self):
+        # ex. 2 in the source code
+        st1 = neo.SpikeTrain([2.5, 3.5, 4.5, 6.5] * pq.s, t_start=1 * pq.s,
+                             t_stop=7 * pq.s)
+        st2 = neo.SpikeTrain([3.5, 5.5, 6.5, 7.5, 8.5] *
+                             pq.s, t_start=2 * pq.s, t_stop=9 * pq.s)
+        lags_true = {
+            'valid': np.arange(1, 3, dtype=np.int32),
+            'full': np.arange(-4, 8, dtype=np.int32)
+        }
+        self._run_sub_tests(st1, st2, lags_true)
+
+    def test_cross_correlation_histogram_valid_no_overlap(self):
+        st1 = neo.SpikeTrain([2.5, 3.5, 4.5, 6.5] * pq.s, t_start=1 * pq.s,
+                             t_stop=7 * pq.s)
+        st2 = neo.SpikeTrain([3.5, 5.5, 6.5, 7.5, 8.5] * pq.s + 6 * pq.s,
+                             t_start=8 * pq.s, t_stop=15 * pq.s)
+        lags_true = {
+            'valid': np.arange(7, 9, dtype=np.int32),
+            'full': np.arange(2, 14, dtype=np.int32)
+        }
+        self._run_sub_tests(st1, st2, lags_true)
+
+    def test_invalid_time_shift(self):
+        # time shift of 0.4 s is not multiple of binsize=1 s
+        st1 = neo.SpikeTrain([2.5, 3.5] * pq.s, t_start=1 * pq.s,
+                             t_stop=7 * pq.s)
+        st2 = neo.SpikeTrain([3.5, 5.5] * pq.s, t_start=1.4 * pq.s,
+                             t_stop=7.4 * pq.s)
+        binsize = 1 * pq.s
+        st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
+        st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
+        self.assertRaises(ValueError, sc.cross_correlation_histogram,
+                          st1_binned, st2_binned)
 
 
 class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
