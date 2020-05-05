@@ -47,7 +47,6 @@ Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 from __future__ import division, print_function, unicode_literals
 
 import random
-from functools import partial
 
 import neo
 import numpy as np
@@ -629,15 +628,9 @@ class JointISI(object):
 
     Parameters
     ----------
-<<<<<<< HEAD
-    spiketrain: neo.SpikeTrain
-        For this spiketrain the surrogates will be created
-    dither: pq.Quantity
-=======
     spiketrain : neo.SpikeTrain
         Input spiketrain to create surrogates from.
     dither : pq.Quantity, optional
->>>>>>> master
         This quantity describes the maximum displacement of a spike, when
         method is 'window'. It is also used for the uniform dithering for
         the spikes, which are outside the regime in the Joint-ISI
@@ -1171,8 +1164,6 @@ def surrogates(
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
         'bin_shuffling': bin_shuffling,
-        'shift_spiketrain': spiketrain_shifting,
-        'joint_isi_dithering': JointISI(spiketrain).dithering,
         'shift_spiketrain': spiketrain_shifting,
         'joint_isi_dithering': JointISI(spiketrain).dithering
     }
