@@ -618,9 +618,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     # the size of kernel() output matches the input size
     kernel_array_size = len(t_arr)
     if not trim:
-        rate = rate[median_id: -kernel_array_size + median_id + 1]
+        rate = rate[median_id: -kernel_array_size + median_id]
     else:
-        rate = rate[2 * median_id: -2 * (kernel_array_size - median_id) + 2]
+        rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
         t_start = t_start + median_id * spiketrain.units
         t_stop = t_stop - (kernel_array_size - median_id) * spiketrain.units
 

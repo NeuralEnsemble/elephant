@@ -592,8 +592,11 @@ class RateEstimationTestCase(unittest.TestCase):
                                                       kernel_time,
                                                       mode=mode[trim])
 
+                # n points have n-1 intervals;
+                # instantaneous rate is a list of intervals;
+                # hence, the last element is excluded
                 assert_array_almost_equal(rate_ours.magnitude.ravel(),
-                                          rate_scipy)
+                                          rate_scipy[:-1])
 
     def test_instantaneous_rate_spiketrainlist(self):
         np.random.seed(19)
