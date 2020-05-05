@@ -375,7 +375,7 @@ class SurrogatesTestCase(unittest.TestCase):
             surr_method='shuffle_isis',
             edges=False)
 
-        self.assertRaises(AttributeError, surr.surrogates, spiketrain, n=1,
+        self.assertRaises(ValueError, surr.surrogates, spiketrain, n=1,
                           surr_method='spike_shifting',
                           dt=None, decimals=None, edges=True)
         self.assertTrue(len(surrogate_trains) == n_surrogates)

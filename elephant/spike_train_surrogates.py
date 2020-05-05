@@ -1015,7 +1015,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates
     n : int, optional
         Number of surrogates to be generated.
@@ -1061,6 +1061,9 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         spike trains is the same as in `spiketrain`.
     """
 
+    if not isinstance(spiketrain, neo.SpikeTrain):
+        raise ValueError("spiketrain must be of instance neo.SpikeTrain")
+
     # Define the surrogate function to use, depending on the specified method
     surrogate_types = {
         'dither_spike_train': dither_spike_train,
@@ -1069,23 +1072,29 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
         'shift_spiketrain': spiketrain_shifting,
-        'joint_isi_dithering': None}
+        'joint_isi_dithering': JointISI(spiketrain).dithering
+    }
 
     if surr_method not in surrogate_types.keys():
-        raise AttributeError(
-            'specified surr_method (=%s) not valid' % surr_method)
+        raise ValueError("Specified surrogate method ('{}') "
+                         "is not valid".format(surr_method))
 
-    if surr_method in ('dither_spike_train', 'dither_spikes'):
-        return surrogate_types[surr_method](
-            spiketrain, dt, n=n, decimals=decimals, edges=edges)
-    if surr_method in ('randomise_spikes', 'shuffle_isis'):
-        return surrogate_types[surr_method](
-            spiketrain, n=n, decimals=decimals)
-    if surr_method == 'jitter_spikes':
-        return surrogate_types[surr_method](
-            spiketrain, dt, n=n)
-    if surr_method == 'shift_spiketrain':
-        return surrogate_types[surr_method](
+    surr_method = surrogate_types[surr_method]
+
+    # PYTHON2: replace with inspect.signature()
+    if dt is None and surr_method in (dither_spike_train, dither_spikes,
+                                      jitter_spikes):
+        raise ValueError("{}() method requires 'dt' parameter to be "
+                         "not None".format(surr_method.__name__))
+
+    if surr_method in (dither_spike_train, dither_spikes):
+        return surr_method(spiketrain, dt, n=n, decimals=decimals, edges=edges)
+    if surr_method in (randomise_spikes, shuffle_isis):
+        return surr_method(spiketrain, n=n, decimals=decimals)
+    if surr_method == jitter_spikes:
+        return surr_method(spiketrain, dt, n=n)
+    if surr_method == spiketrain_shifting:
+        return surr_method(
             spiketrain, trial_length=trial_length, dt=dt, sep=sep, n=n)
     # surr_method == 'joint_isi_dithering':
-    return JointISI(spiketrain).dithering(n)
+    return surr_method(n)
