@@ -30,6 +30,7 @@ the original data:
     calculate the Joint-ISI distribution and moves spike according to the
     probability distribution, that results from a fixed sum of ISI_before
     and the ISI_afterwards. For further details see [1].
+* bin_shuffling:
 
 References
 ----------
@@ -54,11 +55,13 @@ import quantities as pq
 from scipy.ndimage import gaussian_filter
 
 from elephant.statistics import isi
+import elephant.conversion as conv
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
-                'isi_dithering', 'dither_spikes_with_refractory_period']
+                'dither_spikes_with_refractory_period', 'bin_shuffling',
+                'isi_dithering']
 
 
 def _dither_spikes_with_refractory_period(spiketrain, dither, n,
@@ -542,6 +545,79 @@ def jitter_spikes(spiketrain, binsize, n=1):
             for s in surr]
 
 
+def bin_shuffling(spiketrain, dt, binsize=None, n=1, sliding=False):
+    """
+    Bin shuffling surrogate generation, both with and without moving window
+    Given a spiketrain, the function bins it and shuffles the binned spike
+    train entries into windows of the desired length, either in a moving
+    window fashion or with exclusive windows
+
+    Parameters
+    ----------
+    spiketrain : neo.SpikeTrain
+        as elephant.spiketrain
+    dt : quantities.Quantity
+        length of slided/not slided window. The effective window is twice
+        the range given in input, in order for it to be comparable to the
+        other surrogate methods
+    binsize : quantities.Quantity
+        Size of the time bins within which to randomise the spike times.
+        Note: the last bin arrives until `spiketrain.t_stop` and might have
+        width different from `binsize`.
+    n: int (optional)
+        Number of surrogates to be generated.
+        Default: 1
+    sliding : bool
+        flag for moving or not moving the window
+
+    Returns
+    -------
+    list of neo.SpikeTrain
+      A list of `neo.SpikeTrain`, each obtained from :attr:`spiketrain` by
+      randomly dithering its spikes. The range of the surrogate spike trains
+      is the same as :attr:`spiketrain`
+    """
+    # Define standard time unit; all time Quantities are converted to
+    # scalars after being rescaled to this unit, to use the power of numpy
+    t_start = spiketrain.t_start
+    t_stop = spiketrain.t_stop
+    # rescale dt in binsize units
+    if dt.rescale(pq.ms).magnitude % binsize.rescale(pq.ms).magnitude != 0:
+        raise ValueError('dt has to be a multiple of the binsize')
+    # real dt is twice the range given as for the other surr methods
+    dt = int(dt.rescale(pq.ms).magnitude /
+             binsize.rescale(pq.ms).magnitude) * 2
+    surr = []
+    binned_st = conv.BinnedSpikeTrain(
+        spiketrain, binsize=binsize)
+    bin_grid = binned_st.bin_centers.magnitude
+    binned_st = binned_st.to_bool_array()[0]
+    st_length = len(binned_st)
+    for n_surr in range(n):
+        surr_binned = np.copy(binned_st)
+        if sliding:
+            for window_position in range(st_length - dt):
+                # shuffling the binned spike train within the window
+                np.random.shuffle(surr_binned[window_position:window_position + dt])
+        else:
+            windows = st_length // dt
+            windows_remainder = st_length % dt
+            # TODO: reshape the matrix and avoid for loop
+            for window_position in range(windows):
+                # shuffling the binned spike train within the window
+                np.random.shuffle(surr_binned[window_position * dt:(window_position + 1) * dt])
+            if windows_remainder != 0:
+                np.random.shuffle(surr_binned[windows * dt:])
+        surr.append(bin_grid[surr_binned.astype(bool)])
+    # go back to continuous time and place spike in the middle
+    # of the bin
+    return [neo.SpikeTrain(s + t_start.magnitude,
+                           t_start=t_start,
+                           t_stop=t_stop,
+                           units=spiketrain.units)
+            for s in surr]
+
+
 class JointISI(object):
     """
     The class :class:`JointISI` is implemented for Joint-ISI dithering
@@ -552,9 +628,15 @@ class JointISI(object):
 
     Parameters
     ----------
+<<<<<<< HEAD
+    spiketrain: neo.SpikeTrain
+        For this spiketrain the surrogates will be created
+    dither: pq.Quantity
+=======
     spiketrain : neo.SpikeTrain
         Input spiketrain to create surrogates from.
     dither : pq.Quantity, optional
+>>>>>>> master
         This quantity describes the maximum displacement of a spike, when
         method is 'window'. It is also used for the uniform dithering for
         the spikes, which are outside the regime in the Joint-ISI
@@ -958,8 +1040,9 @@ class JointISI(object):
         return step
 
 
-def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
-               decimals=None, edges=True):
+def surrogates(
+        spiketrain, n=1, surr_method='dither_spike_train', dt=None,
+        binsize=None, decimals=None, edges=True):
     """
     Generates surrogates of a `spiketrain` by a desired generation
     method.
@@ -980,13 +1063,14 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         Default: 1.
     surr_method : str, optional
         The method to use to generate surrogate spike trains. Can be one of:
-        * 'dither_spike_train': see `surrogates.dither_spike_train` [dt needed]
-        * 'dither_spikes': see `surrogates.dither_spikes` [dt needed]
-        * 'jitter_spikes': see `surrogates.jitter_spikes` [dt needed]
-        * 'randomise_spikes': see `surrogates.randomise_spikes`
-        * 'shuffle_isis': see `surrogates.shuffle_isis`
-        * 'joint_isi_dithering': see `surrogates.joint_isi_dithering`
-        Default: 'dither_spike_train'.
+        * 'dither_spike_train': see surrogates.dither_spike_train() [dt needed]
+        * 'dither_spikes': see surrogates.dither_spikes() [dt needed]
+        * 'jitter_spikes': see surrogates.jitter_spikes() [dt needed]
+        * 'randomise_spikes': see surrogates.randomise_spikes()
+        * 'shuffle_isis': see surrogates.shuffle_isis()
+        * 'joint_isi_dithering': see surrogates.joint_isi_dithering()
+        * 'bin_shuffling': see surrogates.bin_shuffling()
+        Default: 'dither_spike_train'
     dt : pq.Quantity, optional
         For methods shifting spike times randomly around their original time
         (`dither_spikes`, `dither_spike_train`) or replacing them randomly
@@ -1021,6 +1105,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
+        'bin_shuffling': bin_shuffling,
         'joint_isi_dithering': JointISI(spiketrain).dithering,
     }
 
@@ -1041,5 +1126,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         return surr_method(spiketrain, n=n, decimals=decimals)
     if surr_method == jitter_spikes:
         return surr_method(spiketrain, dt, n=n)
+    if surr_method == bin_shuffling:
+        return surr_method(spiketrain, dt, binsize=binsize, n=n)
     # surr_method == 'joint_isi_dithering':
     return surr_method(n)
