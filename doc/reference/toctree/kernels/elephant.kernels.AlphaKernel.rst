@@ -5,6 +5,7 @@ elephant.kernels.AlphaKernel
 
 .. autoclass:: AlphaKernel
    :members:
+   :inherited-members:
 
    
    .. rubric:: Methods

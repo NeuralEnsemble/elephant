@@ -5,6 +5,7 @@ elephant.kernels.RectangularKernel
 
 .. autoclass:: RectangularKernel
    :members:
+   :inherited-members:
 
    
    .. rubric:: Methods

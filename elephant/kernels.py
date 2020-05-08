@@ -5,15 +5,6 @@ in convolution, e.g., for data smoothing (low pass filtering) or
 firing rate estimation.
 
 
-Base kernel classes
-~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: toctree/kernels/
-
-    Kernel
-    SymmetricKernel
-
 Symmetric kernels
 ~~~~~~~~~~~~~~~~~
 
@@ -54,6 +45,7 @@ import numpy as np
 import quantities as pq
 import scipy.optimize
 import scipy.special
+import scipy.stats
 
 __all__ = [
     'RectangularKernel', 'TriangularKernel', 'EpanechnikovLikeKernel',
@@ -150,21 +142,12 @@ class Kernel(object):
             If the dimensionality of `t` and :attr:`sigma` are different.
 
         """
-        if not isinstance(t, pq.Quantity):
-            raise TypeError("The argument 't' of the kernel callable must be "
-                            "of type Quantity")
-
-        if t.dimensionality.simplified != self.sigma.dimensionality.simplified:
-            raise TypeError("The dimensionality of sigma and the input array "
-                            "to the callable kernel object must be the same. "
-                            "Otherwise a normalization to 1 of the kernel "
-                            "cannot be performed.")
-
+        self._check_time_input(t)
         return self._evaluate(t)
 
     def _evaluate(self, t):
         """
-        Evaluates the kernel.
+        Evaluates the kernel Probability Density Function, PDF.
 
         Parameters
         ----------
@@ -215,8 +198,7 @@ class Kernel(object):
             "The Kernel class should not be used directly, "
             "instead the subclasses for the single kernels.")
 
-    @staticmethod
-    def _check_fraction(fraction):
+    def _check_fraction(self, fraction):
         """
         Checks the input variable of the method
         :attr:`boundary_enclosing_area_fraction` for validity of type and
@@ -237,13 +219,77 @@ class Kernel(object):
         """
         if not isinstance(fraction, (float, int)):
             raise TypeError("`fraction` must be float or integer")
-        if not 0 <= fraction < 1:
-            raise ValueError("`fraction` must be in the interval [0, 1)")
+        if isinstance(self, (TriangularKernel, RectangularKernel)):
+            valid = 0 <= fraction <= 1
+            bracket = ']'
+        else:
+            valid = 0 <= fraction < 1
+            bracket = ')'
+        if not valid:
+            raise ValueError("`fraction` must be in the interval "
+                             "[0, 1{}".format(bracket))
+
+    def _check_time_input(self, t):
+        if not isinstance(t, pq.Quantity):
+            raise TypeError("The argument 't' of the kernel callable must be "
+                            "of type Quantity")
+
+        if t.dimensionality.simplified != self.sigma.dimensionality.simplified:
+            raise TypeError("The dimensionality of sigma and the input array "
+                            "to the callable kernel object must be the same. "
+                            "Otherwise a normalization to 1 of the kernel "
+                            "cannot be performed.")
+
+    def cdf(self, t):
+        r"""
+        Cumulative Distribution Function, CDF.
+
+        Parameters
+        ----------
+        t : pq.Quantity
+            The input time scalar.
+
+        Returns
+        -------
+        float
+            CDF at `t`.
+
+        """
+        raise NotImplementedError
+
+    def icdf(self, fraction):
+        r"""
+        Inverse Cumulative Distribution Function, ICDF, also known as a
+        quantile.
+
+        Parameters
+        ----------
+        fraction : float
+            The fraction of CDF to compute the quantile from.
+
+        Returns
+        -------
+        pq.Quantity
+            The time scalar `t` such that `CDF(t) = fraction`.
+
+        """
+        raise NotImplementedError
 
     def median_index(self, t):
-        """
+        r"""
         Estimates the index of the Median of the kernel.
-        This parameter is not mandatory for symmetrical kernels but it is
+
+        We define the Median index :math:`i` of a kernel as:
+
+        .. math::
+            t_i = \text{ICDF}\left( \frac{\text{CDF}(t_0) +
+            \text{CDF}(t_{N-1})}{2} \right)
+
+        where :math:`t_0` and :math:`t_{N-1}` are the first and last entries of
+        the input array, CDF and ICDF stand for Cumulative Distribution
+        Function and its Inverse, respectively.
+
+        This function is not mandatory for symmetrical kernels but it is
         required when asymmetrical kernels have to be aligned at their median.
 
         Parameters
@@ -256,30 +302,54 @@ class Kernel(object):
         int
             Index of the estimated value of the kernel median.
 
-        Notes
-        -----
-        The estimation is correct when the intervals in `t` are equidistant.
+        Raises
+        ------
+        TypeError
+            If the input array is not a time pq.Quantity array.
+
+        ValueError
+            If the input array is empty.
+            If the input array is not sorted.
+
+        See Also
+        --------
+        Kernel.cdf : cumulative distribution function
+        Kernel.icdf : inverse cumulative distribution function
+
         """
-        # FIXME: the current implementation is wrong in general
-        return np.nonzero(self(t).cumsum() *
-                          (t[len(t) - 1] - t[0]) / (len(t) - 1) >= 0.5)[
-            0].min()
-        kernel = self(t).magnitude
-        return np.argsort(kernel)[len(kernel) // 2]
+        self._check_time_input(t)
+        if len(t) == 0:
+            raise ValueError("The input time array is empty.")
+        if len(t) <= 2:
+            # either left or right; choose left
+            return 0
+        is_sorted = (np.diff(t.magnitude) >= 0).all()
+        if not is_sorted:
+            raise ValueError("The input time array must be sorted (in "
+                             "ascending order).")
+        cdf_mean = 0.5 * (self.cdf(t[0]) + self.cdf(t[-1]))
+        if cdf_mean == 0.:
+            # any index of the kernel non-support is valid; choose median
+            return len(t) // 2
+        icdf = self.icdf(fraction=cdf_mean)
+        icdf = icdf.rescale(t.units).magnitude
+        # icdf is guaranteed to be in (t_start, t_end) interval
+        median_index = np.nonzero(t.magnitude >= icdf)[0][0]
+        return median_index
 
     def is_symmetric(self):
-        """
-        In the case of symmetric kernels, this method is overwritten in the
-        class `SymmetricKernel`, where it returns True, hence leaving the
-        here returned value False for the asymmetric kernels.
+        r"""
+        True for symmetric kernels and False otherwise (asymmetric kernels).
+
+        A kernel is symmetric if its PDF is symmetric w.r.t. time:
+
+        .. math::
+            \text{pdf}(-t) = \text{pdf}(t)
 
         Returns
         -------
         bool
-            True in classes `SymmetricKernel`, `RectangularKernel`,
-            `TriangularKernel`, `EpanechnikovLikeKernel`, `GaussianKernel`,
-            and `LaplacianKernel`.
-            False in classes `Kernel`, `ExponentialKernel`, and `AlphaKernel`.
+            Whether the kernels is symmetric or not.
         """
         return isinstance(self, SymmetricKernel)
 
@@ -350,6 +420,19 @@ class RectangularKernel(SymmetricKernel):
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
+    def cdf(self, t):
+        self._check_time_input(t)
+        tau = math.sqrt(3) * self.sigma.rescale(t.units).magnitude
+        t = np.clip(t.magnitude, a_min=-tau, a_max=tau)
+        cdf = (t + tau) / (2 * tau)
+        return cdf
+
+    def icdf(self, fraction):
+        self._check_fraction(fraction)
+        tau = math.sqrt(3) * self.sigma
+        icdf = tau * (2 * fraction - 1)
+        return icdf
+
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
         return np.sqrt(3.0) * self.sigma * fraction
@@ -397,12 +480,24 @@ class TriangularKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        t_units = t.units
-        t_abs = np.abs(t.magnitude)
-        tau = math.sqrt(6) * self.sigma.rescale(t_units).magnitude
-        kernel = (t_abs < tau) * 1 / tau * (1 - t_abs / tau)
-        kernel = pq.Quantity(kernel, units=1 / t_units)
+        tau = math.sqrt(6) * self.sigma.rescale(t.units).magnitude
+        kernel = scipy.stats.triang.pdf(t.magnitude, c=0.5, loc=-tau,
+                                        scale=2 * tau)
+        kernel = pq.Quantity(kernel, units=1 / t.units)
         return kernel
+
+    def cdf(self, t):
+        self._check_time_input(t)
+        tau = math.sqrt(6) * self.sigma.rescale(t.units).magnitude
+        cdf = scipy.stats.triang.cdf(t.magnitude, c=0.5, loc=-tau,
+                                     scale=2 * tau)
+        return cdf
+
+    def icdf(self, fraction):
+        self._check_fraction(fraction)
+        tau = math.sqrt(6) * self.sigma.magnitude
+        icdf = scipy.stats.triang.ppf(fraction, c=0.5, loc=-tau, scale=2 * tau)
+        return icdf * self.sigma.units
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -460,10 +555,27 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units)
-        return (3.0 / (4.0 * np.sqrt(5.0) * sigma)) * np.maximum(
-            0.0,
-            1 - (t / (np.sqrt(5.0) * sigma)).magnitude ** 2)
+        tau = math.sqrt(5) * self.sigma.rescale(t.units).magnitude
+        t_div_tau = np.clip(t.magnitude / tau, a_min=-1, a_max=1)
+        kernel = 3. / (4. * tau) * np.maximum(0., 1 - t_div_tau ** 2)
+        kernel = pq.Quantity(kernel, units=1 / t.units)
+        return kernel
+
+    def cdf(self, t):
+        self._check_time_input(t)
+        tau = math.sqrt(5) * self.sigma.rescale(t.units).magnitude
+        t_div_tau = np.clip(t.magnitude / tau, a_min=-1, a_max=1)
+        cdf = 3. / 4 * (t_div_tau - t_div_tau ** 3 / 3.) + 0.5
+        return cdf
+
+    def icdf(self, fraction):
+        self._check_fraction(fraction)
+        # CDF(t) = -1/4 t^3 + 3/4 t + 1/2
+        coefs = [-1. / 4, 0, 3. / 4, 0.5 - fraction]
+        roots = np.roots(coefs)
+        icdf = next(filter(lambda root: -1 <= root <= 1, roots))
+        tau = math.sqrt(5) * self.sigma
+        return icdf * tau
 
     def boundary_enclosing_area_fraction(self, fraction):
         r"""
@@ -547,13 +659,22 @@ class GaussianKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        t_units = t.units
-        t = t.magnitude
-        sigma = self.sigma.rescale(t_units).magnitude
-        kernel = (1.0 / (math.sqrt(2.0 * math.pi) * sigma)) * np.exp(
-            -0.5 * (t / sigma) ** 2)
-        kernel = pq.Quantity(kernel, units=1 / t_units)
+        sigma = self.sigma.rescale(t.units).magnitude
+        kernel = scipy.stats.norm.pdf(t.magnitude, loc=0, scale=sigma)
+        kernel = pq.Quantity(kernel, units=1 / t.units)
         return kernel
+
+    def cdf(self, t):
+        self._check_time_input(t)
+        sigma = self.sigma.rescale(t.units).magnitude
+        cdf = scipy.stats.norm.cdf(t, loc=0, scale=sigma)
+        return cdf
+
+    def icdf(self, fraction):
+        self._check_fraction(fraction)
+        icdf = scipy.stats.norm.ppf(fraction, loc=0,
+                                    scale=self.sigma.magnitude)
+        return icdf * self.sigma.units
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -599,12 +720,22 @@ class LaplacianKernel(SymmetricKernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        t_units = t.units
-        t = t.magnitude
-        tau = self.sigma.rescale(t_units).magnitude / math.sqrt(2)
-        kernel = 1 / (2 * tau) * np.exp(-np.abs(t / tau))
-        kernel = pq.Quantity(kernel, units=1 / t_units)
+        tau = self.sigma.rescale(t.units).magnitude / math.sqrt(2)
+        kernel = scipy.stats.laplace.pdf(t.magnitude, loc=0, scale=tau)
+        kernel = pq.Quantity(kernel, units=1 / t.units)
         return kernel
+
+    def cdf(self, t):
+        self._check_time_input(t)
+        tau = self.sigma.rescale(t.units).magnitude / math.sqrt(2)
+        cdf = scipy.stats.laplace.cdf(t.magnitude, loc=0, scale=tau)
+        return cdf
+
+    def icdf(self, fraction):
+        self._check_fraction(fraction)
+        tau = self.sigma.magnitude / math.sqrt(2)
+        icdf = scipy.stats.laplace.ppf(fraction, loc=0, scale=tau)
+        return icdf * self.sigma.units
 
     def boundary_enclosing_area_fraction(self, fraction):
         self._check_fraction(fraction)
@@ -655,19 +786,35 @@ class ExponentialKernel(Kernel):
         return min_cutoff
 
     def _evaluate(self, t):
-        t_units = t.units
-        t = t.magnitude
-        tau = self.sigma.rescale(t_units).magnitude
-        if not self.invert:
-            kernel = (t >= 0) * 1 / tau * np.exp(-t / tau)
-        else:
-            kernel = (t <= 0) * 1 / tau * np.exp(t / tau)
-        kernel = pq.Quantity(kernel, units=1 / t_units)
+        tau = self.sigma.rescale(t.units).magnitude
+        if self.invert:
+            t = -t
+        kernel = scipy.stats.expon.pdf(t.magnitude, loc=0, scale=tau)
+        kernel = pq.Quantity(kernel, units=1 / t.units)
         return kernel
 
-    def boundary_enclosing_area_fraction(self, fraction):
+    def cdf(self, t):
+        self._check_time_input(t)
+        tau = self.sigma.rescale(t.units).magnitude
+        t = t.magnitude
+        if self.invert:
+            t = np.minimum(t, 0)
+            return np.exp(t / tau)
+        t = np.maximum(t, 0)
+        return 1. - np.exp(-t / tau)
+
+    def icdf(self, fraction):
         self._check_fraction(fraction)
+        if self.invert:
+            return self.sigma * np.log(fraction)
         return -self.sigma * np.log(1.0 - fraction)
+
+    def boundary_enclosing_area_fraction(self, fraction):
+        # the boundary b, which encloses a 'fraction' of CDF in [-b, b] range,
+        # does not depend on the invert, if the kernel is cut at zero.
+        # It's easier to compute 'b' for a kernel that has not been inverted.
+        kernel = self.__class__(sigma=self.sigma, invert=False)
+        return kernel.icdf(fraction)
 
 
 class AlphaKernel(Kernel):
@@ -712,23 +859,44 @@ class AlphaKernel(Kernel):
         t_units = t.units
         tau = self.sigma.rescale(t_units).magnitude / math.sqrt(2)
         t = t.magnitude
-        if not self.invert:
-            kernel = (t >= 0) * 1 / tau ** 2 * t * np.exp(-t / tau)
-        else:
-            kernel = (t <= 0) * 1 / tau ** 2 * (-t) * np.exp(t / tau)
+        if self.invert:
+            t = -t
+        kernel = (t >= 0) * 1 / tau ** 2 * t * np.exp(-t / tau)
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
-    def boundary_enclosing_area_fraction(self, fraction):
+    def cdf(self, t):
+        self._check_time_input(t)
+        tau = self.sigma.rescale(t.units).magnitude / math.sqrt(2)
+        cdf = self._cdf_stripped(t.magnitude, tau)
+        return cdf
+
+    def _cdf_stripped(self, t, tau):
+        # CDF without time units
+        if self.invert:
+            t = np.minimum(t, 0)
+            return np.exp(t / tau) * (tau - t) / tau
+        t = np.maximum(t, 0)
+        return 1 - np.exp(-t / tau) * (t + tau) / tau
+
+    def icdf(self, fraction):
         self._check_fraction(fraction)
         tau = self.sigma.magnitude / math.sqrt(2)
 
         def cdf(x):
-            # CDF of the AlphaKernel, subtracted 'fraction'
+            # CDF fof the AlphaKernel, subtracted 'fraction'
             # evaluates the error of the root of cdf(x) = fraction
-            return 1 - fraction - np.exp(-x / tau) * (x + tau) / tau
+            return self._cdf_stripped(x, tau) - fraction
 
         # fraction is a good starting point for CDF approximation
-        x_quantile = scipy.optimize.fsolve(cdf, x0=fraction)[0]
-        x_quantile = pq.Quantity(x_quantile, units=1 / self.sigma.units)
+        x0 = fraction if not self.invert else fraction - 1
+        x_quantile = scipy.optimize.fsolve(cdf, x0=x0, xtol=1e-7)[0]
+        x_quantile = pq.Quantity(x_quantile, units=self.sigma.units)
         return x_quantile
+
+    def boundary_enclosing_area_fraction(self, fraction):
+        # the boundary b, which encloses a 'fraction' of CDF in [-b, b] range,
+        # does not depend on the invert, if the kernel is cut at zero.
+        # It's easier to compute 'b' for a kernel that has not been inverted.
+        kernel = self.__class__(sigma=self.sigma, invert=False)
+        return kernel.icdf(fraction)

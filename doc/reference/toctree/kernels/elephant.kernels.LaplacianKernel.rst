@@ -5,6 +5,7 @@ elephant.kernels.LaplacianKernel
 
 .. autoclass:: LaplacianKernel
    :members:
+   :inherited-members:
 
    
    .. rubric:: Methods

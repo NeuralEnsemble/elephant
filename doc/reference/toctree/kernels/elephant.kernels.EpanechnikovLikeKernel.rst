@@ -5,6 +5,7 @@ elephant.kernels.EpanechnikovLikeKernel
 
 .. autoclass:: EpanechnikovLikeKernel
    :members:
+   :inherited-members:
 
 
    .. rubric:: Methods

@@ -5,6 +5,7 @@ elephant.kernels.TriangularKernel
 
 .. autoclass:: TriangularKernel
    :members:
+   :inherited-members:
 
    
    .. rubric:: Methods

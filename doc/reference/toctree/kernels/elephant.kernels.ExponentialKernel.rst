@@ -5,6 +5,7 @@ elephant.kernels.ExponentialKernel
 
 .. autoclass:: ExponentialKernel
    :members:
+   :inherited-members:
 
    
    .. rubric:: Methods

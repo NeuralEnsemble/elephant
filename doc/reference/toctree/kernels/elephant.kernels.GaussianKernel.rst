@@ -5,6 +5,7 @@ elephant.kernels.GaussianKernel
 
 .. autoclass:: GaussianKernel
    :members:
+   :inherited-members:
 
    
    .. rubric:: Methods
