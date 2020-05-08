@@ -403,7 +403,8 @@ def cv2(v, with_nan=False):
 
 
 def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
-                       cutoff=5.0, t_start=None, t_stop=None, trim=False):
+                       cutoff=5.0, t_start=None, t_stop=None, trim=False,
+                       center_kernel=True):
     """
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -456,6 +457,12 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         `t_start` and `t_stop` are adjusted. True (trimming) is equivalent to
         'valid' convolution mode for symmetrical kernels.
         Default: False.
+    center_kernel : bool, optional
+        If set to True, the kernel will be translated such that its median is
+        centered on the spike, thus putting equal weight before and after the
+        spike. If False, no adjustment is performed such that the spike sits at
+        the origin of the kernel.
+        Default: True
 
     Returns
     -------
@@ -605,9 +612,15 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                       sampling_period.rescale(units).magnitude,
                       sampling_period.rescale(units).magnitude) * units
 
+    if center_kernel:
+        fft_mode = 'full'
+    elif trim:
+        fft_mode = 'valid'
+    else:
+        fft_mode = 'same'
     rate = scipy.signal.fftconvolve(time_vector,
                                     kernel(t_arr).rescale(pq.Hz).magnitude,
-                                    mode='full')
+                                    mode=fft_mode)
 
     if np.any(rate < -1e-8):  # abs tolerance in np.isclose
         warnings.warn("Instantaneous firing rate approximation contains "
@@ -617,12 +630,20 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     median_id = kernel.median_index(t_arr)
     # the size of kernel() output matches the input size
     kernel_array_size = len(t_arr)
-    if not trim:
-        rate = rate[median_id: -kernel_array_size + median_id]
+    if center_kernel:
+        if not trim:
+            rate = rate[median_id: -kernel_array_size + median_id]
+        else:
+            rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
+            t_start = t_start + median_id * spiketrain.units
+            t_stop = t_stop - (kernel_array_size - median_id
+                               ) * spiketrain.units
     else:
-        rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
-        t_start = t_start + median_id * spiketrain.units
-        t_stop = t_stop - (kernel_array_size - median_id) * spiketrain.units
+        # (to be consistent with center_kernel=True)
+        # n points have n-1 intervals;
+        # instantaneous rate is a list of intervals;
+        # hence, the last element is excluded
+        rate = rate[:-1]
 
     rate = neo.AnalogSignal(signal=np.expand_dims(rate, axis=1),
                             sampling_period=sampling_period,

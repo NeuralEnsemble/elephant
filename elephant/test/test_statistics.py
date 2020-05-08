@@ -10,8 +10,6 @@ from __future__ import division
 import math
 import sys
 import unittest
-import warnings
-import scipy.signal
 
 import neo
 import numpy as np
@@ -500,19 +498,38 @@ class RateEstimationTestCase(unittest.TestCase):
         kernels_available.append('auto')
         kernel_resolution = 0.01 * pq.s
         for kernel in kernels_available:
-            rate_estimate = statistics.instantaneous_rate(
-                self.spike_train,
-                sampling_period=kernel_resolution,
-                kernel=kernel,
-                t_start=self.st_tr[0] * pq.s,
-                t_stop=self.st_tr[1] * pq.s,
-                trim=False)
-            num_spikes = len(self.spike_train)
-            auc = spint.cumtrapz(
-                y=rate_estimate.magnitude.squeeze(),
-                x=rate_estimate.times.simplified.magnitude)[-1]
-            self.assertAlmostEqual(num_spikes, auc,
-                                   delta=0.01 * num_spikes)
+            for center_kernel in (False, True):
+                rate_estimate = statistics.instantaneous_rate(
+                    self.spike_train,
+                    sampling_period=kernel_resolution,
+                    kernel=kernel,
+                    t_start=self.st_tr[0] * pq.s,
+                    t_stop=self.st_tr[1] * pq.s,
+                    trim=False,
+                    center_kernel=center_kernel)
+                num_spikes = len(self.spike_train)
+                auc = spint.cumtrapz(
+                    y=rate_estimate.magnitude.squeeze(),
+                    x=rate_estimate.times.simplified.magnitude)[-1]
+                self.assertAlmostEqual(num_spikes, auc,
+                                       delta=0.01 * num_spikes)
+
+    def test_not_center_kernel(self):
+        # issue 107
+        t_spike = 1 * pq.s
+        st = neo.SpikeTrain([t_spike], t_start=0 * pq.s, t_stop=2 * pq.s,
+                            units=pq.s)
+        kernel = kernels.AlphaKernel(200 * pq.ms)
+        fs = 0.1 * pq.ms
+        rate = statistics.instantaneous_rate(st,
+                                             sampling_period=fs,
+                                             kernel=kernel,
+                                             center_kernel=False)
+        rate_nonzero_index = np.nonzero(rate > 1e-6)[0]
+        # where the mass is concentrated
+        rate_mass = rate.times.rescale(t_spike.units)[rate_nonzero_index]
+        all_after_response_onset = (rate_mass >= t_spike).all()
+        self.assertTrue(all_after_response_onset)
 
     def test_spikes_on_edges(self):
         # this test demonstrates that the trimming (convolve valid mode)
@@ -533,12 +550,14 @@ class RateEstimationTestCase(unittest.TestCase):
         kernels_available = [kern_cls(sigma=1 * pq.s, invert=False)
                              for kern_cls in kernel_types]
         for kernel in kernels_available:
-            rate = statistics.instantaneous_rate(
-                spiketrain,
-                sampling_period=sampling_period,
-                kernel=kernel,
-                cutoff=cutoff, trim=True)
-            assert_array_almost_equal(rate.magnitude, 0, decimal=3)
+            for center_kernel in (False, True):
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=sampling_period,
+                    kernel=kernel,
+                    cutoff=cutoff, trim=True,
+                    center_kernel=center_kernel)
+                assert_array_almost_equal(rate.magnitude, 0, decimal=3)
 
     def test_trim_as_convolve_mode(self):
         cutoff = 5
@@ -548,10 +567,6 @@ class RateEstimationTestCase(unittest.TestCase):
                                     t_stop=t_spikes[-1])
         kernel = kernels.RectangularKernel(sigma=1 * pq.s)
         assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
-        mode = {
-            False: 'same',
-            True: 'valid'
-        }
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
@@ -561,42 +576,15 @@ class RateEstimationTestCase(unittest.TestCase):
                              for kern_cls in kernel_types]
         for kernel in kernels_symmetric:
             for trim in (False, True):
-                rate_ours = statistics.instantaneous_rate(
-                    spiketrain,
-                    sampling_period=sampling_period,
+                rate_centered = statistics.instantaneous_rate(
+                    spiketrain, sampling_period=sampling_period,
                     kernel=kernel, cutoff=cutoff, trim=trim)
 
-                # compute the ground truth
-                units = pq.CompoundUnit(
-                    "{}*s".format(sampling_period.rescale('s').item()))
-                spiketrain = spiketrain.rescale(units)
-                t_start = spiketrain.t_start
-                t_stop = spiketrain.t_stop
-
-                time_vector = np.zeros(int(t_stop - t_start) + 1,
-                                       dtype=np.float64)
-                bins_active = (spiketrain.times - t_start).magnitude.astype(
-                    np.int32)
-                bins_unique, bin_counts = np.unique(bins_active,
-                                                    return_counts=True)
-                time_vector[bins_unique] = bin_counts
-
-                t_arr = np.arange(
-                    -cutoff * kernel.sigma.rescale(units).magnitude,
-                    cutoff * kernel.sigma.rescale(units).magnitude +
-                    sampling_period.rescale(units).magnitude,
-                    sampling_period.rescale(units).magnitude) * units
-
-                kernel_time = kernel(t_arr).rescale(pq.Hz).magnitude
-                rate_scipy = scipy.signal.fftconvolve(time_vector,
-                                                      kernel_time,
-                                                      mode=mode[trim])
-
-                # n points have n-1 intervals;
-                # instantaneous rate is a list of intervals;
-                # hence, the last element is excluded
-                assert_array_almost_equal(rate_ours.magnitude.ravel(),
-                                          rate_scipy[:-1])
+                rate_convolve = statistics.instantaneous_rate(
+                    spiketrain, sampling_period=sampling_period,
+                    kernel=kernel, cutoff=cutoff, trim=trim,
+                    center_kernel=False)
+                assert_array_almost_equal(rate_centered, rate_convolve)
 
     def test_instantaneous_rate_spiketrainlist(self):
         np.random.seed(19)
