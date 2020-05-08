@@ -573,7 +573,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         # CDF(t) = -1/4 t^3 + 3/4 t + 1/2
         coefs = [-1. / 4, 0, 3. / 4, 0.5 - fraction]
         roots = np.roots(coefs)
-        icdf = next(filter(lambda root: -1 <= root <= 1, roots))
+        icdf = next(root for root in roots if -1 <= root <= 1)
         tau = math.sqrt(5) * self.sigma
         return icdf * tau
 
