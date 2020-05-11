@@ -19,6 +19,7 @@ from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 
 import elephant.kernels as kernels
 from elephant import statistics
+from elephant.spike_train_generation import homogeneous_poisson_process
 
 python_version_major = sys.version_info.major
 
@@ -530,6 +531,24 @@ class RateEstimationTestCase(unittest.TestCase):
         rate_mass = rate.times.rescale(t_spike.units)[rate_nonzero_index]
         all_after_response_onset = (rate_mass >= t_spike).all()
         self.assertTrue(all_after_response_onset)
+
+    def test_regression_288(self):
+        np.random.seed(9)
+        sampling_period = 200 * pq.ms
+        spiketrain = homogeneous_poisson_process(10 * pq.Hz,
+                                                 t_start=0 * pq.s,
+                                                 t_stop=10 * pq.s)
+        kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
+        rate = statistics.instantaneous_rate(spiketrain,
+                                             sampling_period=sampling_period,
+                                             kernel=kernel)
+        self.assertEqual(
+            len(rate), (spiketrain.t_stop / sampling_period).simplified.item())
+
+        # 3 Hz is not a target - it's meant to test the non-negativity of the
+        # result rate; ideally, for smaller sampling rates, the integral
+        # should match the num. of spikes in the spiketrain
+        self.assertGreater(rate.mean(), 3 * pq.Hz)
 
     def test_spikes_on_edges(self):
         # this test demonstrates that the trimming (convolve valid mode)
