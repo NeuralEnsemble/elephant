@@ -5,3 +5,4 @@ sphinx>=2.4.3
 nbsphinx>=0.5.0
 sphinxcontrib-bibtex>=1.0.0
 sphinx-tabs>=1.1.13
+matplotlib>=3.1.0
