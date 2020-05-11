@@ -613,10 +613,14 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                       sampling_period.rescale(units).magnitude) * units
 
     if center_kernel:
+        # keep the full convolve range and do the trimming afterwards;
+        # trimming is performed according to the kernel median index
         fft_mode = 'full'
     elif trim:
+        # no median index trimming is involved
         fft_mode = 'valid'
     else:
+        # no median index trimming is involved
         fft_mode = 'same'
     rate = scipy.signal.fftconvolve(time_vector,
                                     kernel(t_arr).rescale(pq.Hz).magnitude,
@@ -631,6 +635,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     # the size of kernel() output matches the input size
     kernel_array_size = len(t_arr)
     if center_kernel:
+        # account for the kernel asymmetry
         if not trim:
             rate = rate[median_id: -kernel_array_size + median_id]
         else:
