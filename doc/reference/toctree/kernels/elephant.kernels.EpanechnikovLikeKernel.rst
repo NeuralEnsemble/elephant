@@ -14,6 +14,8 @@ elephant.kernels.EpanechnikovLikeKernel
    
       ~EpanechnikovLikeKernel.__call__
       ~EpanechnikovLikeKernel.boundary_enclosing_area_fraction
+      ~EpanechnikovLikeKernel.cdf
+      ~EpanechnikovLikeKernel.icdf
       ~EpanechnikovLikeKernel.is_symmetric
       ~EpanechnikovLikeKernel.median_index
    

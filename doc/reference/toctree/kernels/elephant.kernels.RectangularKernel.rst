@@ -14,6 +14,8 @@ elephant.kernels.RectangularKernel
    
       ~RectangularKernel.__call__
       ~RectangularKernel.boundary_enclosing_area_fraction
+      ~RectangularKernel.cdf
+      ~RectangularKernel.icdf
       ~RectangularKernel.is_symmetric
       ~RectangularKernel.median_index
    

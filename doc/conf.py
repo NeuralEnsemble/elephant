@@ -123,6 +123,9 @@ nbsphinx_allow_errors = False
 # the autosummary fields of each module.
 autosummary_generate = True
 
+# don't overwrite our custom toctree/*.rst
+autosummary_generate_overwrite = False
+
 # -- Options for HTML output ---------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

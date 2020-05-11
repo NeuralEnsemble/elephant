@@ -14,6 +14,8 @@ elephant.kernels.LaplacianKernel
    
       ~LaplacianKernel.__call__
       ~LaplacianKernel.boundary_enclosing_area_fraction
+      ~LaplacianKernel.cdf
+      ~LaplacianKernel.icdf
       ~LaplacianKernel.is_symmetric
       ~LaplacianKernel.median_index
    

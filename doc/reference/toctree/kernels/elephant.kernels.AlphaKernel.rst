@@ -14,6 +14,8 @@ elephant.kernels.AlphaKernel
    
       ~AlphaKernel.__call__
       ~AlphaKernel.boundary_enclosing_area_fraction
+      ~AlphaKernel.cdf
+      ~AlphaKernel.icdf
       ~AlphaKernel.is_symmetric
       ~AlphaKernel.median_index
    

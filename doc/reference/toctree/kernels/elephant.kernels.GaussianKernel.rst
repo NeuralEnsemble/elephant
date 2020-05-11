@@ -14,6 +14,8 @@ elephant.kernels.GaussianKernel
    
       ~GaussianKernel.__call__
       ~GaussianKernel.boundary_enclosing_area_fraction
+      ~GaussianKernel.cdf
+      ~GaussianKernel.icdf
       ~GaussianKernel.is_symmetric
       ~GaussianKernel.median_index
    
