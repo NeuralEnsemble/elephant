@@ -10,38 +10,48 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import quantities as pq
+from neo import AnalogSignal, SpikeTrain
+from scipy.interpolate import interp1d
 
 
-def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
+def spike_triggered_phase(hilbert_transform, spiketrains, interpolate, as_array=True):
     """
-    Calculate the set of spike-triggered phases of a `neo.AnalogSignal`.
+    Calculate the spike-triggered phases of hilbert-transforms (or analogsignals)
+    at spiketimes in spiketrains. The function receives n_a analog signals and n_s spiketrains.
 
     Parameters
     ----------
-    hilbert_transform : neo.AnalogSignal or list of neo.AnalogSignal
+    hilbert_transform : neo.AnalogSignal or list of neo.Analogsignal
+        # TODO: also allow non-complex signals
         `neo.AnalogSignal` of the complex analytic signal (e.g., returned by
-        the `elephant.signal_processing.hilbert` function).
-        If `hilbert_transform` is only one signal, all spike trains are
-        compared to this signal. Otherwise, length of `hilbert_transform` must
-        match the length of `spiketrains`.
+        the `elephant.signal_processing.hilbert` function). Analogsignals should
+        have shape n_samples x 1
+        # TODO: allow 2D asigs?
     spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
         Spike trains on which to trigger `hilbert_transform` extraction.
     interpolate : bool
         If True, the phases and amplitudes of `hilbert_transform` for spikes
         falling between two samples of signal is interpolated.
         If False, the closest sample of `hilbert_transform` is used.
+    as_array : bool
+        If True, the phases, amplitudes and times are returned per spiketrain
+        as a single array
+        If False, the phases, amplitdues and times are returned a set of lists per
+        entry in hilbert_transform
 
     Returns
     -------
-    phases : list of np.ndarray
-        Spike-triggered phases. Entries in the list correspond to the
-        `neo.SpikeTrain`s in `spiketrains`. Each entry contains an array with
-        the spike-triggered angles (in rad) of the signal.
-    amp : list of pq.Quantity
-        Corresponding spike-triggered amplitudes.
-    times : list of pq.Quantity
-        A list of times corresponding to the signal. They correspond to the
-        times of the `neo.SpikeTrain` referred by the list item.
+    phases : list of np.ndarray or list of lists of nd.array
+        Spike-triggered phases. If as_array is True:
+        List of length n_s (nr. spiketrains) with an np.array n_spikes (number of spikes
+        during the hilbert_transform intervals)
+        If as_array is False, list of length n_s (nr. spiketrains) containing n_a
+        (nr. of analog signals) lists with n_spike entrys, matching the number of spikes
+        during the analogsignal interval
+    amp : list of nd.array or list of lists of nd.array
+        Similar to phases. Corresponding spike-triggered amplitudes.
+    times : list of nd.array or list of lists of nd.array
+        Similar to phases. Corresponding spike-times
 
     Raises
     ------
@@ -82,107 +92,77 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
 
     # Convert inputs to lists
-    if not isinstance(spiketrains, list):
-        spiketrains = [spiketrains]
-
     if not isinstance(hilbert_transform, list):
         hilbert_transform = [hilbert_transform]
 
+    if not isinstance(spiketrains, list):
+        spiketrains = [spiketrains]
+
+    # checks on hilbert transform
+    for entry in hilbert_transform:
+        if not isinstance(entry, AnalogSignal):
+            raise ValueError("Signal must be an AnalogSignnal, "
+                             "not %s." % type(entry))
+        if np.any(np.isreal(entry)):
+            raise ValueError("Signal must be a complex signal"
+                             "(use elphant.singal_processing.hilbert")
+        if entry.shape[0] == 1 or entry.shape[1] > 1:
+            raise ValueError("Signal must be of shape N samples x 1")
+
+    # checks on spiketrains
+    for entry in spiketrains:
+        if not isinstance(entry, SpikeTrain):
+            "spiketrains must be a SpikeTrain, not %s." % type(entry)
+
     # Number of signals
     num_spiketrains = len(spiketrains)
-    num_phase = len(hilbert_transform)
-
-    if num_spiketrains != 1 and num_phase != 1 and \
-            num_spiketrains != num_phase:
-        raise ValueError(
-            "Number of spike trains and number of phase signals"
-            "must match, or either of the two must be a single signal.")
+    num_trials = len(hilbert_transform)
 
     # For each trial, select the first input
-    start = [elem.t_start for elem in hilbert_transform]
-    stop = [elem.t_stop for elem in hilbert_transform]
+    t_starts = [elem.t_start for elem in hilbert_transform]
+    t_stops = [elem.t_stop for elem in hilbert_transform]
+    phases = [np.angle(elem.magnitude.flatten()) for elem in hilbert_transform]
+    amps = [np.abs(elem.magnitude.flatten()) for elem in hilbert_transform]
+    times = [elem.times for elem in hilbert_transform]
 
-    result_phases = []
-    result_amps = []
-    result_times = []
+    # output is a list length nun_spiketrains
+    result_phases = [[] for _ in range(num_spiketrains)]
+    result_amps = [[] for _ in range(num_spiketrains)]
+    result_times = [[] for _ in range(num_spiketrains)]
 
     # Step through each signal
-    for spiketrain_i, spiketrain in enumerate(spiketrains):
-        # Check which hilbert_transform AnalogSignal to look at - if there is
-        # only one then all spike trains relate to this one, otherwise the two
-        # lists of spike trains and phases are matched up
-        if num_phase > 1:
-            phase_i = spiketrain_i
-        else:
-            phase_i = 0
+    for spiketrain_i in range(num_spiketrains):
+        full_sp = spiketrains[spiketrain_i]
+        for trial_i in range(num_trials):
+            spike_times = full_sp.time_slice(t_starts[trial_i], t_stops[trial_i]).times  # leave out last spike
+            time = times[trial_i]
+            phase = phases[trial_i]
+            amp = amps[trial_i]
 
-        # Take only spikes which lie directly within the signal segment -
-        # ignore spikes sitting on the last sample
-        sttimeind = np.where(np.logical_and(
-            spiketrain >= start[phase_i], spiketrain < stop[phase_i]))[0]
-
-        # Find index into signal for each spike
-        ind_at_spike = np.round(
-            (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
-            hilbert_transform[phase_i].sampling_period). \
-            simplified.magnitude.astype(int)
-
-        # Extract times for speed reasons
-        times = hilbert_transform[phase_i].times
-
-        # Append new list to the results for this spiketrain
-        result_phases.append([])
-        result_amps.append([])
-        result_times.append([])
-
-        # Step through all spikes
-        for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
-            # Difference vector between actual spike time and sample point,
-            # positive if spike time is later than sample point
-            dv = spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]
-
-            # Make sure ind_at_spike is to the left of the spike time
-            if dv < 0 and ind_at_spike_j > 0:
-                ind_at_spike_j = ind_at_spike_j - 1
+            # cut righthand border
+            if spike_times[-1] == time[-1]:
+                spike_times = spike_times[:-1]
 
             if interpolate:
-                # Get relative spike occurrence between the two closest signal
-                # sample points
-                # if z->0 spike is more to the left sample
-                # if z->1 more to the right sample
-                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) /\
-                    hilbert_transform[phase_i].sampling_period
-
-                # Save hilbert_transform (interpolate on circle)
-                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
-                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
-                result_phases[spiketrain_i].append(
-                    np.angle(
-                        (1 - z) * np.exp(np.complex(0, p1)) +
-                        z * np.exp(np.complex(0, p2))))
-
-                # Save amplitude
-                result_amps[spiketrain_i].append(
-                    (1 - z) * np.abs(
-                        hilbert_transform[phase_i][ind_at_spike_j]) +
-                    z * np.abs(hilbert_transform[phase_i][ind_at_spike_j + 1]))
+                # use the scipy.interp1d fits to get phases at spiketimes
+                phase_fit = interp1d(time, phase, kind='linear')
+                amp_fit = interp1d(time, amp, kind='linear')
+                result_phases[spiketrain_i].append(phase_fit(spike_times))
+                result_amps[spiketrain_i].append(amp_fit(spike_times))
+                result_times[spiketrain_i].append(spike_times)
             else:
-                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
-                result_phases[spiketrain_i].append(p1)
 
-                # Save amplitude
-                result_amps[spiketrain_i].append(
-                    np.abs(hilbert_transform[phase_i][ind_at_spike_j]))
-
-            # Save time
-            result_times[spiketrain_i].append(spiketrain[sttimeind[spike_i]])
+                # for each spike, get index in time closest to spiketime
+                spike_phase_idx = [np.argmin(np.abs(time - sptime)) for sptime in spike_times]
+                result_phases[spiketrain_i].append(phase[spike_phase_idx])
+                result_amps[spiketrain_i].append(amp[spike_phase_idx])
+                result_times[spiketrain_i].append(spike_times)
 
     # Convert outputs to arrays
-    for i, entry in enumerate(result_phases):
-        result_phases[i] = np.array(entry).flatten()
-    for i, entry in enumerate(result_amps):
-        result_amps[i] = pq.Quantity(entry, units=entry[0].units).flatten()
-    for i, entry in enumerate(result_times):
-        result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
+    if as_array:
+        for sp_i in range(num_spiketrains):
+            result_phases[sp_i] = np.hstack(result_phases[sp_i]).flatten()
+            result_amps[sp_i] = np.hstack(result_amps[sp_i]).flatten()
+            result_times[sp_i] = np.hstack(result_times[sp_i]).flatten()
 
     return result_phases, result_amps, result_times
