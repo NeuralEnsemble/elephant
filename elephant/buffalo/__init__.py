@@ -11,9 +11,8 @@ capture during the analysis workflow in Elephant.
 from .graph import BuffaloProvGraph
 from .prov import BuffaloProvDocument
 from .provenance import BuffaloProvObject, Provenance
-from . import objects
 
 __version__ = '0.0.2'
 
 __all__ = [BuffaloProvGraph, BuffaloProvDocument, BuffaloProvObject,
-           Provenance, objects]
+           Provenance]

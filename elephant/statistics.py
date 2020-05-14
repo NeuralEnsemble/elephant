@@ -72,7 +72,6 @@ import elephant.kernels as kernels
 import warnings
 
 from elephant.buffalo.provenance import Provenance
-from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
 
 cv = scipy.stats.variation
 
@@ -643,7 +642,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
-                   output='counts', binary=False, old=False):
+                   output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
@@ -682,10 +681,6 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
         Default: False.
-    old : bool, optional
-        If True, use old implementation, that does not return Buffalo's
-        AnalysisObject.
-        Default: False.
 
     Returns
     -------
@@ -713,7 +708,6 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
     """
     min_tstop = 0
-    warnings_raised = False
     if t_start is None:
         # Find the internal range for t_start, where all spike trains are
         # defined; cut all spike trains taking that time range only
@@ -723,7 +717,6 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
             warnings.warn(
                 "Spiketrains have different t_start values -- "
                 "using maximum t_start as t_start.")
-            warnings_raised = True
 
     if t_stop is None:
         # Find the internal range for t_stop
@@ -733,7 +726,6 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                 warnings.warn(
                     "Spiketrains have different t_stop values -- "
                     "using minimum t_stop as t_stop.")
-                warnings_raised = True
         else:
             min_tstop = conv._get_start_stop_from_input(spiketrains)[1]
             t_stop = min_tstop
@@ -741,7 +733,6 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                 warnings.warn(
                     "Spiketrains have different t_stop values -- "
                     "using minimum t_stop as t_stop.")
-            warnings_raised = True
 
     sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in
                spiketrains]
@@ -769,24 +760,9 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     else:
         raise ValueError('Parameter output is not valid.')
 
-    if old:
-        return neo.AnalogSignal(bin_hist.reshape(bin_hist.size, 1),
-                                sampling_period=binsize, units=bin_hist.units,
-                                t_start=t_start)
-
-    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
-                               units=bin_hist.units, histogram_type=output,
-                               t_start=t_start, t_stop=t_stop, binary=binary,
-                               warnings_raised=warnings_raised)
-
-
-def psth(spiketrains, binsize, event_time, event_label=None,
-         t_start=None, t_stop=None, output='counts', binary=False, old=False):
-    histogram = time_histogram(spiketrains, binsize, t_start=t_start,
-                               t_stop=t_stop, output=output,
-                               binary=binary, old=old)
-    return PSTHObject.from_time_histogram(histogram, event_time,
-                                          event_label=event_label)
+    return neo.AnalogSignal(bin_hist.reshape(bin_hist.size, 1),
+                            sampling_period=binsize, units=bin_hist.units,
+                            t_start=t_start)
 
 
 def complexity_pdf(spiketrains, binsize):
