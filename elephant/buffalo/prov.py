@@ -3,6 +3,7 @@ from prov.dot import prov_to_dot
 
 
 class BuffaloProvDocument(ProvDocument):
+    # FIX: refactor class and namespaces
 
     def __init__(self, records=None, namespaces=None):
         super(BuffaloProvDocument, self).__init__(records, namespaces)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This module implements a provenance object that supports provenance capture
 using the W3C PROV standard.
@@ -9,12 +8,13 @@ using the W3C PROV standard.
 
 from functools import wraps
 import inspect
-import joblib
 import ast
 from collections import namedtuple
 
+from elephant.buffalo.object_hash import BuffaloObjectHash
 from elephant.buffalo.prov import BuffaloProvDocument
-from elephant.buffalo.graph import BuffaloProvGraph
+from elephant.buffalo.graph import BuffaloProvenanceGraph
+from elephant.buffalo.ast import CallAST
 
 from pprint import pprint
 
@@ -33,50 +33,61 @@ FunctionDefinition = namedtuple('FunctionDefinition', ('name',
                                                        'version'))
 
 
-class BuffaloProvObject(object):
-
-    _id = None
-    _type = None
-    _value = None
-
-    @staticmethod
-    def _get_object_info(obj):
-        class_name = "{}.{}".format(type(obj).__module__,
-                                    type(obj).__name__)
-        return id(obj), class_name, obj
-
-    def __init__(self, obj):
-        self._id, self._type, self._value = self._get_object_info(obj)
-
-    def __hash__(self):
-        return hash((self._id, self._type, joblib.hash(self._value)))
-
-    def __eq__(self, other):
-        if isinstance(other, BuffaloProvObject):
-            return hash(self) == hash(other)
-        else:
-            object_id, class_name, value = self._get_object_info(other)
-            if value is self._value:
-                return True
-            else:
-                return (object_id, class_name, value) == (
-                    self._id, self._type, self._value
-                )
-
-    def __repr__(self):
-        return "{}: {} = {}".format(self._id, self._type, self._value)
-
-    def get_md_string(self):
-        value = "(id: {})".format(self._id)
-        return '{}["{}<br>{}"]\n'.format(hash(self), self._type, value)
-
-
 class Provenance(object):
+    """
+    Class to capture and store provenance information in analysis workflows
+    using Elephant.
+
+    The class is a callable object, to be used as a decorator to every function
+    of the workflow that will be tracked.
+
+    Parameters
+    ----------
+    inputs : list of str
+        Names of the arguments that are considered inputs to the function.
+        An input is a variable or value with which the function will perform
+        some computation or action. Arguments that only control the behavior
+        of the function are considered parameters. The names can be for both
+        positional or keyword arguments. Every argument that is not named in
+        `inputs` will be considered as a parameter.
+
+    Attributes
+    ----------
+    active : bool
+        If True, provenance tracking is active.
+        If False, provenance tracking is suspended.
+        This attribute is set using the :func:`activate`/:func:`deactivate`
+        interface functions.
+    history : list of AnalysisStep
+        All events that were tracked. Each function call is structured in a
+        named tuple that stores:
+        * 'function': `FunctionDefinition` named tuple;
+        * 'inputs': list of the `BuffaloObjectHash` objects associated with
+          every value;
+        * 'params': `dict` with the positional/keyword argument names as keys,
+          and their respective values passed to the function;
+        * 'output': `BuffaloObjectHash` object associated with the returned
+          value;
+        * 'arg_map': names of the positional arguments;
+        * 'kwarg_map': names of the keyword arguments;
+        * 'call_ast': `ast.Call` object containing the Abstract Syntax Tree
+          of the code that generated the function call.
+    objects : dict
+        Dictionary where the keys are the hash values of every input and
+        output object tracked during the workflow. The hashes are obtained
+        by the `:class:BuffaloObjectHash` class.
+
+    Raises
+    ------
+    ValueError
+        If `inputs` is not a list.
+    """
 
     active = False
     history = []
     objects = dict()
     inputs = None
+    calling_frame = None
 
     prov_document = BuffaloProvDocument()
 
@@ -84,6 +95,14 @@ class Provenance(object):
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
+
+    def _insert_static_information(self, tree, inputs, output):
+        # Use a NodeVisitor to find the Call node that corresponds to the
+        # current AnalysisStep. It will fetch static relationships between
+        # variables and attributes, and link to the inputs and outputs of the
+        # function
+        ast_visitor = CallAST(self, inputs, output)
+        ast_visitor.visit(tree)
 
     def __call__(self, function):
 
@@ -94,7 +113,8 @@ class Provenance(object):
             # If capturing provenance...
             if Provenance.active:
 
-                # 1. Capture AST of the call to the function
+                # 1. Capture Abstract Syntax Tree (AST) of the call to the
+                # function
 
                 frame = inspect.getouterframes(inspect.currentframe())[1]
                 tree = ast.parse(frame.code_context[0].strip())
@@ -130,8 +150,8 @@ class Provenance(object):
 
                 # 4. Create parameters/input descriptions for the graph
                 #    Here the inputs, but not the parameters passed to the
-                #    function are transformed in the hashable type
-                #    BuffaloProvObject. Inputs are defined as the parameter
+                #    function, are transformed in the hashable type
+                #    `BuffaloObjectHash`. Inputs are defined by the parameter
                 #    `inputs` when initializing the class, and stored as the
                 #    class attribute `inputs`
 
@@ -143,14 +163,15 @@ class Provenance(object):
                     else:
                         parameters[key] = value
 
-                # 5. Create hashable BuffaloProvObject for the output
+                # 5. Create hashable `BuffaloObjectHash` for the output
 
                 output = self.add(function_output)
 
-                # TODO: do static analysis
-                # self._insert_static_information(tree, inputs, output)
+                # 6. Analyze AST and fetch static relationships in the
+                # input/output and other variables/objects in the script
+                self._insert_static_information(tree, inputs, output)
 
-                # 6. Create tuple with the analysis step information
+                # 7. Create tuple with the analysis step information
 
                 step = AnalysisStep(function_name, inputs, parameters, output,
                                     input_args_names, input_kwargs_names,
@@ -167,32 +188,107 @@ class Provenance(object):
 
     @classmethod
     def get_prov_graph(cls, **kwargs):
+        """
+        Returns the W3C PROV graph representation of the captured provenance
+        information.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Keyword arguments forwarded to the
+            :func:`BuffaloProvDocument.get_dot_graph` function.
+
+        Returns
+        -------
+        pydot.Dot
+            Dot notation graph representing provenance information in W3C PROV
+            standard.
+
+        See Also
+        --------
+        elephant.buffalo.prov.BuffaloProvDocument
+
+        """
         return cls.prov_document.get_dot_graph(**kwargs)
 
     @classmethod
     def print_graph(cls):
-        graph = BuffaloProvGraph(cls.objects, cls.history)
+        graph = BuffaloProvenanceGraph(cls.objects, cls.history)
         graph.print_graph()
 
     @classmethod
     def add(cls, obj):
-        prov_object = BuffaloProvObject(obj)
-        if prov_object not in cls.objects:
-            cls.objects[prov_object] = prov_object
-        return cls.objects[prov_object]
+        """
+        Hashes and insert a given Python object into the internal dictionary
+        (:attr:`objects`), if the hash is new.
+
+        Parameters
+        ----------
+        obj : object
+            Python object to be added to `objects`.
+
+        Returns
+        -------
+        BuffaloObjectHash
+            Hash to the object that was added.
+
+        """
+        object_hash = BuffaloObjectHash(obj)
+        if object_hash not in cls.objects:
+            cls.objects[object_hash] = object_hash
+        return cls.objects[object_hash]
+
+    @classmethod
+    def add_script_variable(cls, name):
+        """
+        Hashes an object stored as a variable in the namespace where provenance
+        tracking was activated. Then add the hash to the internal dictionary.
+
+        Parameters
+        ----------
+        name : str
+            Name of the variable.
+
+        Returns
+        -------
+        object
+            Python object referenced by `name`.
+        object_hash
+            `BuffaloObjectHash` instance with the hash of the object.
+
+        """
+        instance = cls.calling_frame.f_locals[name]
+        object_hash = cls.add(instance)
+        return instance, object_hash
 
 
+##############################################################################
 # Interface functions
+##############################################################################
 
 def activate():
+    """
+    Activates provenance tracking within Elephant.
+    """
+    # To access variables in the same namespace where the function is called,
+    # the previous frame in the stack need to be saved
+    if Provenance.calling_frame is None:
+        Provenance.calling_frame = inspect.currentframe().f_back
+
     Provenance.active = True
 
 
 def deactivate():
+    """
+    Deactivates provenance tracking within Elephant.
+    """
     Provenance.active = False
 
 
 def print_history():
+    """
+    Print all steps in the provenance track.
+    """
     pprint(Provenance.history)
 
 
@@ -200,6 +296,18 @@ def print_graph():
     Provenance.print_graph()
 
 
-def save_prov_graph(**kwargs):
+def save_prov_graph(filename, **kwargs):
+    """
+    Saves a PNG file with the provenance track described using the W3C PROV
+    model.
+
+    Parameters
+    ----------
+    filename : str or Path
+        Destination of the PROV graph.
+    kwargs : dict
+        Keyword arguments forwarded to the
+        :func:`BuffaloProvDocument.get_dot_graph` function.
+    """
     dot = Provenance.get_prov_graph(**kwargs)
-    dot.write_png("prov_graph.png")
+    dot.write_png(filename)

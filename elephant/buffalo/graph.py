@@ -1,7 +1,6 @@
-import md_mermaid as md
 
 
-class BuffaloProvGraph(object):
+class BuffaloProvenanceGraph(object):
     _nodes = None
     _edges = None
 
@@ -17,7 +16,8 @@ class BuffaloProvGraph(object):
         for entry in self._edges:
             for key, value in entry.input.items():
                 function_name = entry.function.name
-                function_name = entry.function.module + "." + function_name
+                if entry.function.module:
+                    function_name = entry.function.module + "." + function_name
                 function_name = function_name.replace(".", ".<br>")
                 graph_definition += '{} -->|"{}<br>{}"|{};\n'.format(hash(value),
                                                              function_name,
