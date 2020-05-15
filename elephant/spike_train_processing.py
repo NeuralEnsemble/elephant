@@ -11,7 +11,6 @@ def get_index(lst, obj):
     for index, item in enumerate(lst):
         if item is obj:
             return index
-    return None
 
 
 def _check_spiketrains(spiketrains):
@@ -52,8 +51,8 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=2,
 
     sampling_rate [quantity. Default: 30000/s]:
         Sampling rate of the spike trains. The spike trains are binned with
-        bin_size dt = 1/sampling_rate and *n* spikes within *spread* consecutive
-        bins are considered synchronous.
+        bin_size dt = 1/sampling_rate and *n* spikes within *spread*
+        consecutive bins are considered synchronous.
         Groups of *n* or more synchronous spikes are deleted/annotated.
 
     invert [bool. Default: True]:

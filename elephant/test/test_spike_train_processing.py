@@ -214,6 +214,34 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             self.assertTrue(key in cleaned_array_annotations.keys())
             assert_array_almost_equal(value, cleaned_array_annotations[key])
 
+    def test_wrong_input_errors(self):
+        self.assertRaises(ValueError,
+                          spike_train_processing.detect_synchrofacts,
+                          [], 1 / pq.s)
+        self.assertRaises(TypeError,
+                          spike_train_processing.detect_synchrofacts,
+                          [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s),
+                           np.arange(2)],
+                          1 / pq.s)
+        self.assertRaises(ValueError,
+                          spike_train_processing.detect_synchrofacts,
+                          [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s)],
+                          1 / pq.s,
+                          deletion_threshold=-1)
+        self.assertRaises(ValueError,
+                          spike_train_processing.find_complexity_intervals,
+                          [], 1 / pq.s)
+        self.assertRaises(TypeError,
+                          spike_train_processing.find_complexity_intervals,
+                          [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s),
+                           np.arange(2)],
+                          1 / pq.s)
+        self.assertRaises(ValueError,
+                          spike_train_processing.find_complexity_intervals,
+                          [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s)],
+                          sampling_rate=1 / pq.s,
+                          bin_size=.5 * pq.s)
+
 
 if __name__ == '__main__':
     unittest.main()
