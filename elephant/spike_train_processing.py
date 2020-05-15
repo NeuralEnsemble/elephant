@@ -24,7 +24,7 @@ def _check_spiketrains(spiketrains):
                             'neo.SpikeTrain objects')
 
 
-def detect_synchrofacts(spiketrains, sampling_rate, spread=2,
+def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
                         invert=False, deletion_threshold=None):
     """
     Given block with spike trains, find all spikes engaged
@@ -44,10 +44,9 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=2,
     n [int. Default: 2]:
         minimum number of coincident spikes to report synchrony
 
-    spread [int. Default: 2]:
-        number of bins of size 1/sampling_rate in which to check for
-        synchronous spikes.  *n* spikes within *spread* consecutive bins are
-        considered synchronous.
+    spread [int. Default: 1]:
+        the number of bins to look ahead of each spike for more spikes to add
+        to the same synchronous event
 
     sampling_rate [quantity. Default: 30000/s]:
         Sampling rate of the spike trains. The spike trains are binned with
@@ -70,7 +69,7 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=2,
         Accepted unit types: 'sua', 'mua', 'idX'
                              (where X is the id number requested)
     """
-    # TODO: refactor docs, correct description of spread parameter
+    # TODO: refactor docs
 
     if deletion_threshold is not None and deletion_threshold <= 1:
         raise ValueError('A deletion_threshold <= 1 would result'
@@ -121,15 +120,15 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=2,
 
 
 def find_complexity_intervals(spiketrains, sampling_rate,
-                              bin_size=None, spread=1):
+                              bin_size=None, spread=0):
     """
     Calculate the complexity (i.e. number of synchronous spikes)
     for each bin.
 
-    For `spread = 1` this corresponds to a simple bincount.
+    For `spread = 0` this corresponds to a simple bincount.
 
-    For `spread > 1` spikes separated by fewer than `spread - 1`
-    empty bins are considered synchronous.
+    For `spread > 0` spikes within `spread` bins of one another are considered
+    synchronous.
 
     Parameters
     ----------
@@ -139,15 +138,14 @@ def find_complexity_intervals(spiketrains, sampling_rate,
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
         Spikes within `spread` consecutive bins are considered synchronous.
-        Default: 2.
+        Default: 0.
 
     Returns
     -------
     complexity_intervals : np.ndarray
         An array containing complexity values, left and right edges of all
         intervals with at least `min_complexity` spikes separated by fewer
-        than `spread - 1` empty bins.
-        Output shape (3, num_complexity_intervals)
+        than `spread` empty bins.
 
     Raises
     ------
@@ -187,7 +185,7 @@ def find_complexity_intervals(spiketrains, sampling_rate,
                                 binsize=bin_size)
     bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
 
-    if spread == 1:
+    if spread == 0:
         bin_indices = np.nonzero(bincount)[0]
         complexities = bincount[bin_indices]
         left_edges = bst.bin_edges[bin_indices]
@@ -204,13 +202,13 @@ def find_complexity_intervals(spiketrains, sampling_rate,
             else:
                 last_window_sum = current_bincount
                 last_nonzero_index = 0
-                current_window = bincount[i:i+spread]
+                current_window = bincount[i:i + spread + 1]
                 window_sum = current_window.sum()
                 while window_sum > last_window_sum:
                     last_nonzero_index = np.nonzero(current_window)[0][-1]
                     current_window = bincount[i:
                                               i + last_nonzero_index
-                                              + spread]
+                                              + spread + 1]
                     last_window_sum = window_sum
                     window_sum = current_window.sum()
                 complexities.append(window_sum)

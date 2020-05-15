@@ -54,7 +54,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
     def test_no_synchrofacts(self):
 
         # nothing to find here
-        # there used to be an error for spread > 1 when nothing was found
+        # there used to be an error for spread > 0 when nothing was found
 
         sampling_rate = 1 / pq.s
 
@@ -67,9 +67,9 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [1, 1, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=2, invert=False, deletion_threshold=2)
+                            spread=1, invert=False, deletion_threshold=2)
 
-    def test_spread_1(self):
+    def test_spread_0(self):
 
         # basic test with a minimum number of two spikes per synchrofact
         # only taking into account multiple spikes
@@ -86,9 +86,9 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 1, 1, 1, 2, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert=False, deletion_threshold=2)
+                            spread=0, invert=False, deletion_threshold=2)
 
-    def test_spread_2(self):
+    def test_spread_1(self):
 
         # test synchrofact search taking into account adjacent bins
         # this requires an additional loop with shifted binning
@@ -104,7 +104,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 2, 1, 3, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=2, invert=False, deletion_threshold=2)
+                            spread=1, invert=False, deletion_threshold=2)
 
     def test_n_equals_3(self):
 
@@ -122,7 +122,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [3, 2, 1, 2, 3, 3, 3, 2]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=2, invert=False, deletion_threshold=3)
+                            spread=1, invert=False, deletion_threshold=3)
 
     def test_binning_for_input_with_rounding_errors(self):
 
@@ -147,7 +147,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         second_annotations])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert=False, deletion_threshold=2)
+                            spread=0, invert=False, deletion_threshold=2)
 
     def test_correct_transfer_of_spiketrain_attributes(self):
 
@@ -191,7 +191,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         # perform a synchrofact search with delete=True
         spike_train_processing.detect_synchrofacts([spiketrain],
-                                                   spread=1,
+                                                   spread=0,
                                                    sampling_rate=sampling_rate,
                                                    invert=False,
                                                    deletion_threshold=2)
