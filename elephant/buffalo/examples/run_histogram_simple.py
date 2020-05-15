@@ -12,6 +12,7 @@ from elephant.buffalo import provenance
 SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
 
 
+@provenance.Provenance(inputs=['session_id'])
 def load_data(session_id, channels):
     """
     Loads R2G data using the custom BlackRockIO object ReachGraspIO.
@@ -60,7 +61,8 @@ def main(session_id):
     print("\n\n")
     provenance.print_history()
     provenance.print_graph()
-    provenance.save_prov_graph(show_nary=False, show_element_attributes=False)
+    provenance.save_prov_graph("prov_graph.png",
+                               show_nary=False, show_element_attributes=False)
 
 
 if __name__ == "__main__":
