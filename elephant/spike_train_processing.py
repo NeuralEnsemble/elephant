@@ -14,8 +14,19 @@ def get_index(lst, obj):
     return None
 
 
-def detect_synchrofacts(block, sampling_rate, segment='all', n=2, spread=2,
-                        invert=False, delete=False, unit_type='all'):
+def _check_spiketrains(spiketrains):
+    if len(spiketrains) == 0:
+        raise ValueError('The spiketrains should not be empty!')
+
+    # check that all list elements are spike trains
+    for spiketrain in spiketrains:
+        if not isinstance(spiketrain, neo.SpikeTrain):
+            raise TypeError('not all elements of spiketrains are'
+                            'neo.SpikeTrain objects')
+
+
+def detect_synchrofacts(spiketrains, sampling_rate, spread=2,
+                        invert=False, deletion_threshold=None):
     """
     Given block with spike trains, find all spikes engaged
     in synchronous events of size *n* or higher. Two events are considered
@@ -41,7 +52,7 @@ def detect_synchrofacts(block, sampling_rate, segment='all', n=2, spread=2,
 
     sampling_rate [quantity. Default: 30000/s]:
         Sampling rate of the spike trains. The spike trains are binned with
-        binsize dt = 1/sampling_rate and *n* spikes within *spread* consecutive
+        bin_size dt = 1/sampling_rate and *n* spikes within *spread* consecutive
         bins are considered synchronous.
         Groups of *n* or more synchronous spikes are deleted/annotated.
 
@@ -62,118 +73,64 @@ def detect_synchrofacts(block, sampling_rate, segment='all', n=2, spread=2,
     """
     # TODO: refactor docs, correct description of spread parameter
 
-    if isinstance(segment, str):
-        if 'all' in segment.lower():
-            segment = range(len(block.segments))
-        else:
-            raise ValueError('Input parameter segment not understood.')
+    if deletion_threshold is not None and deletion_threshold <= 1:
+        raise ValueError('A deletion_threshold <= 1 would result'
+                         'in deletion of all spikes.')
 
-    elif isinstance(segment, int):
-        segment = [segment]
+    _check_spiketrains(spiketrains)
 
-    # make sure all quantities have units s
-    binsize = (1 / sampling_rate).rescale(pq.s)
+    # find times of synchrony of size >=n
+    complexity_epoch = find_complexity_intervals(spiketrains,
+                                                 sampling_rate,
+                                                 spread=spread)
+    complexity = complexity_epoch.array_annotations['complexity']
+    right_edges = complexity_epoch.times + complexity_epoch.durations
 
-    for seg in segment:
-        # data check
-        if len(block.segments[seg].spiketrains) == 0:
-            warnings.warn(
-                'Segment {0} does not contain any spiketrains!'.format(seg))
-            continue
+    # j = index of pre-selected sts in spiketrains
+    # idx = index of pre-selected sts in original
+    # block.segments[seg].spiketrains
+    for idx, st in enumerate(spiketrains):
 
-        selected_sts, index = [], []
+        # all indices of spikes that are within the half-open intervals
+        # defined by the boundaries
+        # note that every second entry in boundaries is an upper boundary
+        spike_to_epoch_idx = np.searchsorted(right_edges,
+                                             st.times.rescale(
+                                                 right_edges.units))
+        complexity_per_spike = complexity[spike_to_epoch_idx]
 
-        # considering all spiketrains for unit_type == 'all'
-        if isinstance(unit_type, str):
-            if 'all' in unit_type.lower():
-                selected_sts = block.segments[seg].spiketrains
-                index = range(len(block.segments[seg].spiketrains))
+        st.array_annotate(complexity=complexity_per_spike)
 
-        else:
-            # extracting spiketrains which should be used for synchrofact
-            # extraction based on given unit type
-            # possible improvement by using masks for different conditions
-            # and adding them up
-            for i, st in enumerate(block.segments[seg].spiketrains):
-                take_it = False
-                for utype in unit_type:
-                    if (utype[:2] == 'id' and
-                        st.annotations['unit_id'] == int(
-                            utype[2:])):
-                        take_it = True
-                    elif ((utype == 'sua' or utype == 'mua')
-                          and utype in st.annotations
-                          and st.annotations[utype]):
-                        take_it = True
-                if take_it:
-                    selected_sts.append(st)
-                    index.append(i)
-
-        # if no spiketrains were selected
-        if len(selected_sts) == 0:
-            warnings.warn(
-                'No matching spike trains for given unit selection'
-                'criteria %s found' % unit_type)
-            # we can skip to the next segment immediately since there are no
-            # spiketrains to perform synchrofact detection on
-            continue
-        else:
-            # find times of synchrony of size >=n
-            bst = conv.BinnedSpikeTrain(selected_sts,
-                                        binsize=binsize)
-            # TODO: adapt everything below, find_complexity_intervals should
-            #       return a neo.Epoch instead
-            # TODO: we can probably clean up all implicit units once we use
-            #       neo.Epoch for intervals
-            # TODO: use conversion._detect_rounding_errors to ensure that
-            #       there are no rounding errors
-            complexity_intervals = find_complexity_intervals(bst,
-                                                             min_complexity=n,
-                                                             spread=spread)
-            # get a sorted flattened array of the interval edges
-            boundaries = complexity_intervals[1:].flatten(order='F')
-
-        # j = index of pre-selected sts in selected_sts
-        # idx = index of pre-selected sts in original
-        # block.segments[seg].spiketrains
-        for j, idx in enumerate(index):
-
-            # all indices of spikes that are within the half-open intervals
-            # defined by the boundaries
-            # note that every second entry in boundaries is an upper boundary
-            mask = np.array(
-                np.searchsorted(boundaries,
-                                selected_sts[j].times.rescale(pq.s).magnitude,
-                                side='right') % 2,
-                dtype=np.bool)
+        if deletion_threshold is not None:
+            mask = complexity_per_spike < deletion_threshold
             if invert:
                 mask = np.invert(mask)
+            old_st = st
+            new_st = old_st[mask]
+            spiketrains[idx] = new_st
+            unit = old_st.unit
+            segment = old_st.segment
+            if unit is not None:
+                unit.spiketrains[get_index(unit.spiketrains,
+                                           old_st)] = new_st
+            if segment is not None:
+                segment.spiketrains[get_index(segment.spiketrains,
+                                              old_st)] = new_st
+            del old_st
 
-            if delete:
-                old_st = selected_sts[j]
-                new_st = old_st[np.logical_not(mask)]
-                block.segments[seg].spiketrains[idx] = new_st
-                unit = old_st.unit
-                if unit is not None:
-                    unit.spiketrains[get_index(unit.spiketrains,
-                                               old_st)] = new_st
-                del old_st
-            else:
-                block.segments[seg].spiketrains[idx].array_annotate(
-                    synchrofacts=mask)
+    return complexity_epoch
 
 
-def find_complexity_intervals(bst, min_complexity=2, spread=1):
+def find_complexity_intervals(spiketrains, sampling_rate,
+                              bin_size=None, spread=1):
     """
     Calculate the complexity (i.e. number of synchronous spikes)
     for each bin.
 
     For `spread = 1` this corresponds to a simple bincount.
 
-    For `spread > 1` jittered synchrony is included, then spikes within
-    `spread` consecutive bins are considered to be synchronous.
-    Every bin of such a jittered synchronous event is assigned the
-    complexity of the whole event, see example below.
+    For `spread > 1` spikes separated by fewer than `spread - 1`
+    empty bins are considered synchronous.
 
     Parameters
     ----------
@@ -208,21 +165,34 @@ def find_complexity_intervals(bst, min_complexity=2, spread=1):
     >>> st2 = neo.SpikeTrain([1, 7] * pq.ms,
     ...                      t_stop=10.0 * pq.ms)
     >>> bst = conv.BinnedSpikeTrain([st1, st2], num_bins=10,
-    ...                             binsize=1 * pq.ms,
+    ...                             bin_size=1 * pq.ms,
     ...                             t_start=0 * pq.ms)
     >>> print(bst.complexity().magnitude.flatten())
     [0. 2. 0. 0. 0. 0. 1. 1. 0. 0.]
     >>> print(bst.complexity(spread=2).magnitude.flatten())
     [0. 2. 0. 0. 0. 0. 2. 2. 0. 0.]
     """
+    _check_spiketrains(spiketrains)
+
+    if bin_size is None:
+        bin_size = 1 / sampling_rate
+    elif bin_size < 1 / sampling_rate:
+        raise ValueError('The bin size should be at least'
+                         '1 / sampling_rate (which is the'
+                         'default).')
+
     # TODO: documentation, example
+    min_t_start = min([st.t_start for st in spiketrains])
+
+    bst = conv.BinnedSpikeTrain(spiketrains,
+                                binsize=bin_size)
     bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
 
     if spread == 1:
-        bin_indices = np.where(bincount >= min_complexity)[0]
+        bin_indices = np.nonzero(bincount)[0]
         complexities = bincount[bin_indices]
-        left_edges = bst.bin_edges[bin_indices].rescale(pq.s).magnitude
-        right_edges = bst.bin_edges[bin_indices + 1].rescale(pq.s).magnitude
+        left_edges = bst.bin_edges[bin_indices]
+        right_edges = bst.bin_edges[bin_indices + 1]
     else:
         i = 0
         complexities = []
@@ -244,18 +214,32 @@ def find_complexity_intervals(bst, min_complexity=2, spread=1):
                                               + spread]
                     last_window_sum = window_sum
                     window_sum = current_window.sum()
-                if window_sum >= min_complexity:
-                    complexities.append(window_sum)
-                    left_edges.append(
-                        bst.bin_edges[i].rescale(pq.s).magnitude.item())
-                    right_edges.append(
-                        bst.bin_edges[
-                            i + last_nonzero_index + 1
-                        ].rescale(pq.s).magnitude.item())
+                complexities.append(window_sum)
+                left_edges.append(
+                    bst.bin_edges[i].magnitude.item())
+                right_edges.append(
+                    bst.bin_edges[
+                        i + last_nonzero_index + 1
+                    ].magnitude.item())
                 i += last_nonzero_index + 1
 
-    # TODO: return a neo.Epoch instead
-    complexity_intervals = np.vstack((complexities, left_edges, right_edges))
+        # we dropped units above, neither concatenate nor append works with
+        # arrays of quantities
+        left_edges *= bst.bin_edges.units
+        right_edges *= bst.bin_edges.units
 
-    return complexity_intervals
+    # ensure that spikes are not on the bin edges
+    bin_shift = .5 / sampling_rate
+    left_edges -= bin_shift
+    right_edges -= bin_shift
+
+    # ensure that epoch does not start before the minimum t_start
+    left_edges[0] = min(min_t_start, left_edges[0])
+
+    complexity_epoch = neo.Epoch(times=left_edges,
+                                 durations=right_edges - left_edges,
+                                 array_annotations={'complexity':
+                                                    complexities})
+
+    return complexity_epoch
 

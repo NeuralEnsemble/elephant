@@ -14,88 +14,60 @@ import quantities as pq
 from elephant import spike_train_processing
 
 
-def generate_block(spike_times, segment_edges=[0, 10, 20]*pq.s):
-    """
-    Generate a block with segments with start and end times given by segment_edges
-    and with spike trains given by spike_times.
-    """
-    n_segments = len(segment_edges) - 1
-
-    # Create Block to contain all generated data
-    block = neo.Block()
-
-    # Create multiple Segments
-    block.segments = [neo.Segment(index=i,
-                                  t_start=segment_edges[i],
-                                  t_stop=segment_edges[i+1])
-                      for i in range(n_segments)]
-
-    # Create multiple ChannelIndexes
-    block.channel_indexes = [neo.ChannelIndex(name='C%d' % i, index=i)
-                             for i in range(len(spike_times[0]))]
-
-    # Attach multiple Units to each ChannelIndex
-    for i, channel_idx in enumerate(block.channel_indexes):
-        channel_idx.units = [neo.Unit('U1')]
-        for seg_idx, seg in enumerate(block.segments):
-            train = neo.SpikeTrain(spike_times[seg_idx][i],
-                                   t_start=segment_edges[seg_idx],
-                                   t_stop=segment_edges[seg_idx+1])
-            seg.spiketrains.append(train)
-            channel_idx.units[0].spiketrains.append(train)
-
-    block.create_many_to_one_relationship()
-    return block
-
-
 class SynchrofactDetectionTestCase(unittest.TestCase):
+
+    def _test_template(self, spiketrains, correct_complexities, sampling_rate,
+                       spread, deletion_threshold=2, invert=False):
+        # test annotation
+        spike_train_processing.detect_synchrofacts(
+            spiketrains,
+            spread=spread,
+            sampling_rate=sampling_rate,
+            invert=invert,
+            deletion_threshold=None)
+
+        annotations = [st.array_annotations['complexity']
+                       for st in spiketrains]
+
+        assert_array_equal(annotations, correct_complexities)
+
+        correct_spike_times = np.array(
+            [spikes[mask] for spikes, mask
+             in zip(spiketrains, correct_complexities < deletion_threshold)
+             ])
+
+        # test deletion
+        spike_train_processing.detect_synchrofacts(
+            spiketrains,
+            spread=spread,
+            sampling_rate=sampling_rate,
+            invert=invert,
+            deletion_threshold=deletion_threshold)
+
+        cleaned_spike_times = np.array(
+            [st.times for st in spiketrains])
+
+        for correct_st, cleaned_st in zip(correct_spike_times,
+                                          cleaned_spike_times):
+            assert_array_almost_equal(cleaned_st, correct_st)
 
     def test_no_synchrofacts(self):
 
         # nothing to find here
-        # there was an error for spread > 1 when nothing was found
-        # since boundaries is then set to [] and we later check boundaries.shape
-        # fixed by skipping the interval merge step when there are no intervals
+        # there used to be an error for spread > 1 when nothing was found
 
         sampling_rate = 1 / pq.s
 
-        spike_times = np.array([[[1, 9], [3, 7]], [[12, 19], [15, 17]]]) * pq.s
+        spiketrains = [neo.SpikeTrain([1, 9, 12, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([3, 7, 15, 17] * pq.s,
+                                      t_stop=20*pq.s)]
 
-        block = generate_block(spike_times)
+        correct_annotations = np.array([[1, 1, 1, 1],
+                                        [1, 1, 1, 1]])
 
-        # test annotation
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=2, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=False,
-                                                  unit_type='all')
-
-        correct_annotations = [[np.array([False, False]), np.array([False, False])],
-                               [np.array([False, False]), np.array([False, False])]]
-
-        annotations = [[st.array_annotations['synchrofacts'] for st in seg.spiketrains]
-                       for seg in block.segments]
-
-        assert_array_equal(annotations, correct_annotations)
-
-        # test deletion
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=2, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=True,
-                                                  unit_type='all')
-
-        correct_spike_times = np.array(
-            [[spikes[mask] for spikes, mask in zip(seg_spike_times, seg_mask)]
-             for seg_spike_times, seg_mask in zip(spike_times,
-                                                  np.logical_not(correct_annotations)
-                                                  )
-             ])
-
-        cleaned_spike_times = np.array(
-            [[st.times for st in seg.spiketrains] for seg in block.segments])
-
-        for correct_seg, cleaned_seg in zip(correct_spike_times, cleaned_spike_times):
-            for correct_st, cleaned_st in zip(correct_seg, cleaned_seg):
-                assert_array_almost_equal(cleaned_st, correct_st)
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=2, invert=False, deletion_threshold=2)
 
     def test_spread_1(self):
 
@@ -105,43 +77,16 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         sampling_rate = 1 / pq.s
 
-        spike_times = np.array([[[1, 5, 9], [1, 4, 8]],
-                                [[11, 16, 19], [12, 16, 18]]]) * pq.s
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                      t_stop=20*pq.s)]
 
-        block = generate_block(spike_times)
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
 
-        # test annotation
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=2,
-                                                  spread=1,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=False,
-                                                  unit_type='all')
-
-        correct_annotations = np.array([[[True, False, False], [True, False, False]],
-                                       [[False, True, False], [False, True, False]]])
-
-        annotations = [[st.array_annotations['synchrofacts'] for st in seg.spiketrains]
-                       for seg in block.segments]
-
-        assert_array_equal(annotations, correct_annotations)
-
-        # test deletion
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=2, spread=1,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=True,
-                                                  unit_type='all')
-
-        correct_spike_times = np.array([[spikes[mask]
-                                         for spikes, mask in zip(seg_spike_times,
-                                                                 seg_mask)]
-                                        for seg_spike_times, seg_mask
-                                        in zip(spike_times,
-                                               np.logical_not(correct_annotations))])
-
-        cleaned_spike_times = np.array([[st.times for st in seg.spiketrains]
-                                        for seg in block.segments])
-
-        assert_array_almost_equal(cleaned_spike_times, correct_spike_times)
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, invert=False, deletion_threshold=2)
 
     def test_spread_2(self):
 
@@ -150,46 +95,16 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         sampling_rate = 1 / pq.s
 
-        spike_times = np.array([[[1, 5, 9], [1, 4, 7]],
-                                [[10, 12, 19], [11, 15, 17]]]) * pq.s
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
 
-        block = generate_block(spike_times)
+        correct_annotations = np.array([[2, 2, 1, 3, 3, 1],
+                                        [2, 2, 1, 3, 1, 1]])
 
-        # test annotation
-        spike_train_processing.detect_synchrofacts(block, segment='all',
-                                                  n=2, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=False,
-                                                  unit_type='all')
-
-        correct_annotations = [[np.array([True, True, False]),
-                                np.array([True, True, False])],
-                               [np.array([True, True, False]),
-                                np.array([True, False, False])]]
-
-        annotations = [[st.array_annotations['synchrofacts'] for st in seg.spiketrains]
-                       for seg in block.segments]
-
-        assert_array_equal(annotations, correct_annotations)
-
-        # test deletion
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=2, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=True,
-                                                  unit_type='all')
-
-        correct_spike_times = np.array([[spikes[mask] for spikes, mask in
-                                         zip(seg_spike_times, seg_mask)]
-                                        for seg_spike_times, seg_mask in
-                                        zip(spike_times,
-                                            np.logical_not(correct_annotations))])
-
-        cleaned_spike_times = np.array([[st.times for st in seg.spiketrains]
-                                        for seg in block.segments])
-
-        for correct_seg, cleaned_seg in zip(correct_spike_times, cleaned_spike_times):
-            for correct_st, cleaned_st in zip(correct_seg, cleaned_seg):
-                assert_array_almost_equal(cleaned_st, correct_st)
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=2, invert=False, deletion_threshold=2)
 
     def test_n_equals_3(self):
 
@@ -198,95 +113,41 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         sampling_rate = 1 / pq.s
 
-        spike_times = np.array([[[1, 1, 5, 10], [1, 4, 7, 9]],
-                                [[12, 15, 16, 18], [11, 13, 15, 19]]]) * pq.s
+        spiketrains = [neo.SpikeTrain([1, 1, 5, 10, 13, 16, 17, 19] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 9, 12, 14, 16, 20] * pq.s,
+                                      t_stop=21*pq.s)]
 
-        block = generate_block(spike_times)
+        correct_annotations = np.array([[3, 3, 2, 2, 3, 3, 3, 2],
+                                        [3, 2, 1, 2, 3, 3, 3, 2]])
 
-        # test annotation
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=3, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=False,
-                                                  unit_type='all')
-
-        correct_annotations = [[np.array([True, True, False, False]),
-                                np.array([True, False, False, False])],
-                               [np.array([True, True, True, False]),
-                                np.array([True, True, True, False])]]
-
-        annotations = [[st.array_annotations['synchrofacts'] for st in seg.spiketrains]
-                       for seg in block.segments]
-
-        assert_array_equal(annotations, correct_annotations)
-
-        # test deletion
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=3, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=True,
-                                                  unit_type='all')
-
-        correct_spike_times = np.array([[spikes[mask] for spikes, mask in
-                                         zip(seg_spike_times, seg_mask)]
-                                        for seg_spike_times, seg_mask in
-                                        zip(spike_times,
-                                            np.logical_not(correct_annotations))])
-
-        cleaned_spike_times = np.array([[st.times for st in seg.spiketrains]
-                                        for seg in block.segments])
-
-        for correct_seg, cleaned_seg in zip(correct_spike_times, cleaned_spike_times):
-            for correct_st, cleaned_st in zip(correct_seg, cleaned_seg):
-                assert_array_almost_equal(cleaned_st, correct_st)
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=2, invert=False, deletion_threshold=3)
 
     def test_binning_for_input_with_rounding_errors(self):
 
-        # redo the test_n_equals_3 with inputs divided by 30000
-        # which leads to rounding errors
+        # a test with inputs divided by 30000 which leads to rounding errors
         # these errors have to be accounted for by proper binning;
         # check if we still get the correct result
 
-        sampling_rate = 30000. / pq.s
+        sampling_rate = 30000 / pq.s
 
-        spike_times = np.array([[[1, 1, 5, 10], [1, 4, 7, 9]],
-                                [[12, 15, 16, 18], [11, 13, 15, 19]]]) / 30000. * pq.s
+        spiketrains = [neo.SpikeTrain(np.arange(1000) * pq.s / 30000,
+                                      t_stop=.1 * pq.s),
+                       neo.SpikeTrain(np.arange(2000, step=2) * pq.s / 30000,
+                                      t_stop=.1 * pq.s)]
 
-        block = generate_block(spike_times,
-                               segment_edges=[0./30000., 10./30000., 20./30000.]*pq.s)
+        first_annotations = np.ones(1000)
+        first_annotations[::2] = 2
 
-        # test annotation
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=3, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=False,
-                                                  unit_type='all')
+        second_annotations = np.ones(1000)
+        second_annotations[:500] = 2
 
-        correct_annotations = [[np.array([True, True, False, False]),
-                                np.array([True, False, False, False])],
-                               [np.array([True, True, True, False]),
-                                np.array([True, True, True, False])]]
+        correct_annotations = np.array([first_annotations,
+                                        second_annotations])
 
-        annotations = [[st.array_annotations['synchrofacts'] for st in seg.spiketrains]
-                       for seg in block.segments]
-
-        assert_array_equal(annotations, correct_annotations)
-
-        # test deletion
-        spike_train_processing.detect_synchrofacts(block, segment='all', n=3, spread=2,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=True,
-                                                  unit_type='all')
-
-        correct_spike_times = np.array([[spikes[mask] for spikes, mask in
-                                         zip(seg_spike_times, seg_mask)]
-                                        for seg_spike_times, seg_mask in
-                                        zip(spike_times,
-                                            np.logical_not(correct_annotations))])
-
-        cleaned_spike_times = np.array([[st.times for st in seg.spiketrains]
-                                        for seg in block.segments])
-
-        for correct_seg, cleaned_seg in zip(correct_spike_times, cleaned_spike_times):
-            for correct_st, cleaned_st in zip(correct_seg, cleaned_seg):
-                assert_array_almost_equal(cleaned_st, correct_st)
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, invert=False, deletion_threshold=2)
 
     def test_correct_transfer_of_spiketrain_attributes(self):
 
@@ -295,43 +156,55 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         sampling_rate = 1 / pq.s
 
-        spike_times = np.array([[[1, 1, 5, 9]]]) * pq.s
+        spiketrain = neo.SpikeTrain([1, 1, 5, 0] * pq.s,
+                                    t_stop=10 * pq.s)
 
-        block = generate_block(spike_times, segment_edges=[0, 10]*pq.s)
+        block = neo.Block()
 
-        block.segments[0].spiketrains[0].annotate(cool_spike_train=True)
-        block.segments[0].spiketrains[0].array_annotate(
-            spike_number=np.arange(len(
-                block.segments[0].spiketrains[0].times.magnitude)))
-        block.segments[0].spiketrains[0].waveforms = np.sin(
-            np.arange(len(
-                block.segments[0].spiketrains[0].times.magnitude))[:, np.newaxis] +
-            np.arange(len(
-                block.segments[0].spiketrains[0].times.magnitude))[np.newaxis, :])
+        channel_index = neo.ChannelIndex(name='Channel 1', index=1)
+        block.channel_indexes.append(channel_index)
+
+        unit = neo.Unit('Unit 1')
+        channel_index.units.append(unit)
+        unit.spiketrains.append(spiketrain)
+        spiketrain.unit = unit
+
+        segment = neo.Segment()
+        block.segments.append(segment)
+        segment.spiketrains.append(spiketrain)
+        spiketrain.segment = segment
+
+        spiketrain.annotate(cool_spike_train=True)
+        spiketrain.array_annotate(
+            spike_number=np.arange(len(spiketrain.times.magnitude)))
+        spiketrain.waveforms = np.sin(
+            np.arange(len(spiketrain.times.magnitude))[:, np.newaxis]
+            + np.arange(len(spiketrain.times.magnitude))[np.newaxis, :])
 
         correct_mask = np.array([False, False, True, True])
 
         # store the correct attributes
-        correct_annotations = block.segments[0].spiketrains[0].annotations.copy()
-        correct_waveforms = block.segments[0].spiketrains[0].waveforms[
-            correct_mask].copy()
-        correct_array_annotations = {
-            key: value[correct_mask] for key, value in
-            block.segments[0].spiketrains[0].array_annotations.items()}
+        correct_annotations = spiketrain.annotations.copy()
+        correct_waveforms = spiketrain.waveforms[correct_mask].copy()
+        correct_array_annotations = {key: value[correct_mask] for key, value in
+                                     spiketrain.array_annotations.items()}
 
         # perform a synchrofact search with delete=True
-        spike_train_processing.detect_synchrofacts(block, segment='all',
-                                                  n=2, spread=1,
-                                                  sampling_rate=sampling_rate,
-                                                  invert=False, delete=True,
-                                                  unit_type='all')
+        spike_train_processing.detect_synchrofacts([spiketrain],
+                                                   spread=1,
+                                                   sampling_rate=sampling_rate,
+                                                   invert=False,
+                                                   deletion_threshold=2)
 
         # Ensure that the spiketrain was not duplicated
         self.assertEqual(len(block.filter(objects=neo.SpikeTrain)), 1)
 
-        cleaned_annotations = block.segments[0].spiketrains[0].annotations
-        cleaned_waveforms = block.segments[0].spiketrains[0].waveforms
-        cleaned_array_annotations = block.segments[0].spiketrains[0].array_annotations
+        cleaned_spiketrain = segment.spiketrains[0]
+
+        cleaned_annotations = cleaned_spiketrain.annotations
+        cleaned_waveforms = cleaned_spiketrain.waveforms
+        cleaned_array_annotations = cleaned_spiketrain.array_annotations
+        cleaned_array_annotations.pop('complexity')
 
         self.assertDictEqual(correct_annotations, cleaned_annotations)
         assert_array_almost_equal(cleaned_waveforms, correct_waveforms)
