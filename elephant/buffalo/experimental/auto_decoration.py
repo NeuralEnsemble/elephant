@@ -104,9 +104,6 @@ def load_data():
 
 def main():
     functions = decorate_functions()
-    print("{} were decorated automatically.\n".format(
-        ', '.join(map(str, functions)))
-    )
 
     block = load_data()
 
