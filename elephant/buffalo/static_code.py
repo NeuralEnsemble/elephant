@@ -155,9 +155,12 @@ class SubscriptStep(StaticStep):
         elif isinstance(slice_node, ast.Slice):
 
             # Slicing
-            stop = slice_node.stop
-            start = getattr(slice_node, 'start', None)
+            stop = int(slice_node.upper.n)
+            start = getattr(slice_node, 'lower', None)
             step = getattr(slice_node, 'step', None)
+
+            start = int(start.n) if start is not None else None
+            step = int(step.n) if step is not None else None
 
             params['slice'] = ":{}".format(stop)
             if start is not None:
