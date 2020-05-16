@@ -8,10 +8,10 @@ class BuffaloProvenanceGraph(object):
         self._nodes = objects
         self._edges = history
 
-    def print_graph(self):
-        graph_definition = "graph LR\n"
+    def save_graph(self, filename):
+        graph_definition = ["graph LR"]
         for key, value in self._nodes.items():
-            graph_definition += value.get_md_string()
+            graph_definition.append(value.get_md_string())
 
         for entry in self._edges:
             for key, value in entry.input.items():
@@ -19,9 +19,13 @@ class BuffaloProvenanceGraph(object):
                 if entry.function.module:
                     function_name = entry.function.module + "." + function_name
                 function_name = function_name.replace(".", ".<br>")
-                graph_definition += '{} -->|"{}<br>{}"|{};\n'.format(hash(value),
-                                                             function_name,
-                                                             "<br>".join(["{}:{}".format(key, value) for key, value in entry.params.items()]),
-                                                             hash(entry.output))
+                graph_definition.append('"{}" -->|"{}<br>{}"|"{}";'.format(
+                    hash(value), function_name,
+                    "<br>".join(["{}:{}".format(key, value) for key, value in
+                                 entry.params.items()]),
+                    hash(entry.output))
+                )
 
-        print(graph_definition)
+        # TODO: Remove duplicates
+        with open(filename, 'w') as f:
+            f.writelines("{}\n".format(line) for line in graph_definition)

@@ -67,5 +67,5 @@ class BuffaloObjectHash(object):
 
     def get_md_string(self):
         # TODO: use other solution for better plots
-        value = "(id: {})".format(self._id)
-        return '{}["{}<br>{}"]\n'.format(hash(self), self._type, value)
+        value = "id: {}".format(self._id)
+        return '"{}"["{}<br>{}"]'.format(hash(self), self._type, value)

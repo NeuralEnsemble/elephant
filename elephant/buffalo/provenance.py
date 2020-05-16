@@ -283,9 +283,18 @@ class Provenance(object):
         return cls.prov_document.get_dot_graph(**kwargs)
 
     @classmethod
-    def print_graph(cls):
+    def save_graph(cls, filename):
+        """
+        Save the graph with the provenance track in Mermaid format.
+
+        Parameters
+        ----------
+        filename : str
+            Destination of the saved graph.
+
+        """
         graph = BuffaloProvenanceGraph(cls.objects, cls.history)
-        graph.print_graph()
+        graph.save_graph(filename)
 
     @classmethod
     def add(cls, obj):
@@ -361,8 +370,16 @@ def print_history():
     pprint(Provenance.history)
 
 
-def print_graph():
-    Provenance.print_graph()
+def save_graph(filename):
+    """
+    Saves a Mermaid graph definition to a file.
+
+    Parameters
+    ----------
+    filename : str
+        Destination of the saved graph.
+    """
+    Provenance.save_graph(filename)
 
 
 def save_prov_graph(filename, **kwargs):
@@ -372,7 +389,7 @@ def save_prov_graph(filename, **kwargs):
 
     Parameters
     ----------
-    filename : str or Path
+    filename : str
         Destination of the PROV graph.
     kwargs : dict
         Keyword arguments forwarded to the
