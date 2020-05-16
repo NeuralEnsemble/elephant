@@ -9,7 +9,7 @@ class BuffaloProvenanceGraph(object):
         self._edges = history
 
     def save_graph(self, filename):
-        graph_definition = ["graph LR"]
+        graph_definition = []
         for key, value in self._nodes.items():
             graph_definition.append(value.get_md_string())
 
@@ -28,4 +28,5 @@ class BuffaloProvenanceGraph(object):
 
         # TODO: Remove duplicates
         with open(filename, 'w') as f:
-            f.writelines("{}\n".format(line) for line in graph_definition)
+            f.writelines("{}\n".format(line) for line in
+                         ["graph LR"] + list(set(graph_definition)))
