@@ -96,6 +96,7 @@ class Provenance(object):
     calling_frame = None
     source_code = None
     source_lineno = None
+    source_file = None
 
     prov_document = BuffaloProvDocument()
 
@@ -170,16 +171,27 @@ class Provenance(object):
 
         @wraps(function)
         def wrapped(*args, **kwargs):
+
+            # For functions that are used inside other functions, or
+            # recursively, check if the calling frame is the one being
+            # tracked. We do this by fetching the calling line number if
+            # this comes from the caller script. Otherwise, we use a negative
+            # value that will skip the provenance tracking loop below
+            lineno = -1
+            if Provenance.active:
+                frame = inspect.currentframe().f_back
+                if inspect.getfile(frame) == self.source_file:
+                    lineno = frame.f_lineno
+
             function_output = function(*args, **kwargs)
 
             # If capturing provenance...
-            if Provenance.active:
+            if Provenance.active and lineno > 0:
 
                 # 1. Capture Abstract Syntax Tree (AST) of the call to the
                 # function
+                source_line = self._extract_multiline_statement(lineno)
 
-                frame = inspect.getouterframes(inspect.currentframe())[1]
-                source_line = self._extract_multiline_statement(frame.lineno)
                 print(source_line, end='\n\n')
                 tree = ast.parse(source_line)
 
@@ -254,7 +266,8 @@ class Provenance(object):
     def set_calling_frame(cls, frame):
         cls.calling_frame = frame
         cls.source_lineno = frame.f_lineno
-        cls.source_code = inspect.getsourcelines(cls.calling_frame)[0]
+        cls.source_file = inspect.getfile(frame)
+        cls.source_code = inspect.getsourcelines(frame)[0]
         cls.frame_ast = ast.parse("".join(cls.source_code))
 
     @classmethod
@@ -351,7 +364,8 @@ def activate():
     Activates provenance tracking within Elephant.
     """
     # To access variables in the same namespace where the function is called,
-    # the previous frame in the stack need to be saved
+    # the previous frame in the stack need to be saved. We also extract
+    # extended information regarding the frame code.
     Provenance.set_calling_frame(inspect.currentframe().f_back)
     Provenance.active = True
 
