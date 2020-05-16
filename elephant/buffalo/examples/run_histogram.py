@@ -6,29 +6,30 @@ from reachgraspio.reachgraspio import ReachGraspIO
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
-from elephant.statistics import isi, mean_firing_rate, fanofactor, time_histogram
+from elephant.statistics import isi, mean_firing_rate, fanofactor
 from elephant.buffalo import provenance
-
-import sys
-import inspect
-import ast
 
 
 SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
 
 
-def plot_histogram(bin_values, edges):
+@provenance.Provenance(inputs=["isi_times"])
+def plot_isi_histogram(isi_times, n_bins, title=None):
     """
-    Function outside Buffalo/Elephant to visualize histogram data
-    This replicates matplotlib's `hist` function if passing the original data
-    Here we pass the bin values and the edges, as produced by `np.histogram`
+    Function outside Buffalo/Elephant to generate an ISI histogram.
+    This replicates matplotlib's `hist` function.
     """
+    # Following part is outside Elephant, not captured
+    bins, edges = np.histogram(isi_times.magnitude
+                               if isinstance(isi_times, pq.Quantity) else
+                               isi_times, bins=n_bins)
     bar_widths = np.diff(edges)
-    bar_centers = edges[:-1] + (bar_widths / 2)
-    plt.bar(bar_centers, height=bin_values, align='center', width=bar_widths)
+    plt.bar(edges[:-1], height=bins, align='edge', width=bar_widths)
+    if title is not None:
+        plt.title(title)
 
 
-#@provenance.Provenance(inputs=[])
+@provenance.Provenance(inputs=[])
 def load_data(session_id, channels):
     """
     Loads R2G data using the custom BlackRockIO object ReachGraspIO.
@@ -52,27 +53,18 @@ def load_data(session_id, channels):
     return block
 
 
-#@provenance.Provenance(inputs=["spiketrains"])
-def get_spike_train(spiketrains, order):
-    return spiketrains[order]
-
-
-def get_code():
-    return inspect.getsource(inspect.getmodule(inspect.currentframe()))
-
-
 def main(session_id):
     provenance.activate()
-    #print(inspect.getsource(inspect.getmodule(inspect.currentframe())))
 
-    # Load data using any custom function. Should track data provenance at some point
+    # Load data using any custom function.
+    # Should track data provenance at some point
     channels = [10]
     block = load_data(session_id, channels)
 
     # ISI histograms using Buffalo (first 2 spiketrains of the segment)
 
     isi_times = isi(block.segments[0].spiketrains[0], axis=0)
-    isi_times2 = isi(get_spike_train(block.segments[0].spiketrains, 0))
+    isi_times2 = isi(block.segments[0].spiketrains[1], 0)
 
     firing_rate = mean_firing_rate(block.segments[0].spiketrains[0])
     fano_factor = fanofactor(block.segments[0].spiketrains)
@@ -81,30 +73,29 @@ def main(session_id):
     generated_spike_times = np.array([1, 202, 405, 607, 904, 1100])
     isi_times3 = isi(generated_spike_times)
 
-    # Following part is outside Elephant, not captured
-    bins, edges = np.histogram(isi_times.magnitude, bins=10)
-    bins2, edges2 = np.histogram(isi_times2.magnitude, bins=10)
-    bins3, edges3 = np.histogram(isi_times3, bins=10)
-
     # Do plotting
-    # figure = plt.figure()
-    # plt.subplot(3, 1, 1)
-    # plt.title(str(block.segments[0].spiketrains[0].annotations))
-    # plot_histogram(bins, edges)
-    #
-    # plt.subplot(3, 1, 2)
-    # plt.title(str(block.segments[0].spiketrains[1].annotations))
-    # plot_histogram(bins2, edges2)
-    #
-    # plt.subplot(3, 1, 3)
-    # plt.title('Custom spike train')
-    # plot_histogram(bins3, edges3)
-    # # plt.show()
-    #
-    # figure.savefig('isi.png')
+    n_bins = 10
 
-    #provenance.print_graph()
-    #provenance.save_prov_graph(show_nary=False, show_element_attributes=False)
+    figure = plt.figure()
+    plt.subplot(3, 1, 1)
+    plot_isi_histogram(isi_times, n_bins,
+                       str(block.segments[0].spiketrains[0].annotations))
+
+    plt.subplot(3, 1, 2)
+    plot_isi_histogram(isi_times2, n_bins,
+                       str(block.segments[0].spiketrains[1].annotations))
+
+    plt.subplot(3, 1, 3)
+    plot_isi_histogram(isi_times3, n_bins, "Custom spike train")
+    plt.show()
+
+    figure.savefig('isi.png')
+
+    # provenance.print_history()
+
+    provenance.save_graph("graph_full.md")
+    provenance.save_prov_graph("prov_graph_full.png", show_nary=False,
+                                show_element_attributes=False)
 
 
 if __name__ == "__main__":
