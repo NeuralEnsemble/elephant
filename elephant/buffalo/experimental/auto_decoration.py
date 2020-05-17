@@ -1,6 +1,7 @@
 import inspect
 import ast
 import numpy as np
+from functools import wraps
 
 
 class MockContainer(object):
@@ -20,6 +21,7 @@ class MockContainer(object):
 # This is the decorator that should wrap every function in the main script
 def tag_function(tag=None):
     def wrap_function(function):
+        #@wraps(function)
         def decorated_function(*args, **kwargs):
             frame = inspect.getouterframes(inspect.currentframe())[1]
             tree = ast.parse(frame.code_context[0].strip())
