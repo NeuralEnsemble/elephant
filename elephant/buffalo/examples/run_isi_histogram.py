@@ -12,8 +12,7 @@ from elephant.buffalo import provenance
 from elephant.spike_train_generation import homogeneous_poisson_process
 
 import warnings
-import elephant.buffalo.experimental.io as buffalo_io
-import inspect
+
 
 SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
 
@@ -167,13 +166,10 @@ def main(session_id):
 
     # provenance.print_history()
 
-    buffalo_io.deactivate()
-
     provenance.save_graph("graph_full.md")
     provenance.save_prov_graph("prov_graph_full.png", show_nary=False,
                                 show_element_attributes=False)
 
-    print(input_files, output_files)
 
 if __name__ == "__main__":
     session_id = "i140703-001"
