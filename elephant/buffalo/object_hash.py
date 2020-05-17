@@ -65,7 +65,17 @@ class BuffaloObjectHash(object):
         """
         return self._value
 
+    @property
+    def type(self):
+        """
+        String representing the full type of the object.
+        """
+        return self._type
+
     def get_md_string(self):
         # TODO: use other solution for better plots
         value = "id: {}".format(self._id)
         return '"{}"["{}<br>{}"]'.format(hash(self), self._type, value)
+
+    def get_prov_entity_string(self, namespace):
+        return "{}:{}:{}".format(namespace, self._type, hash(self))

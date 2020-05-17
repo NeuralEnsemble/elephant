@@ -97,8 +97,7 @@ class Provenance(object):
     source_code = None
     source_lineno = None
     source_file = None
-
-    prov_document = BuffaloProvDocument()
+    source_name = None
 
     def __init__(self, inputs):
         if not isinstance(inputs, list):
@@ -149,13 +148,10 @@ class Provenance(object):
 
         statement = []
         cur_line = cls._get_code_line(line_number)
-        print(cur_line, end='\n')
-        previous_line = _check_previous_statement(
-            line_number - 1, statement)
+        previous_line = _check_previous_statement(line_number - 1, statement)
 
         while previous_line is not None:
-            previous_line = _check_previous_statement(
-                previous_line, statement)
+            previous_line = _check_previous_statement(previous_line, statement)
 
         return "".join(statement[::-1] + [cur_line]).strip()
 
@@ -172,28 +168,35 @@ class Provenance(object):
         @wraps(function)
         def wrapped(*args, **kwargs):
 
-            # For functions that are used inside other functions, or
+            # For functions that are used inside other decorated functions, or
             # recursively, check if the calling frame is the one being
             # tracked. We do this by fetching the calling line number if
-            # this comes from the caller script. Otherwise, we use a negative
-            # value that will skip the provenance tracking loop below
-            lineno = -1
+            # this comes from the calling frame. Otherwise, the line number
+            # will be None, and therefore the provenance tracking loop will
+            # be skipped.
+            lineno = None
             if Provenance.active:
-                frame = inspect.currentframe().f_back
-                if inspect.getfile(frame) == self.source_file:
-                    lineno = frame.f_lineno
+                try:
+                    frame = inspect.currentframe().f_back
+                    frame_info = inspect.getframeinfo(frame)
+                    if (frame_info.filename == self.source_file and
+                            frame_info.function == self.source_name):
+                        lineno = frame.f_lineno
+                finally:
+                    del frame_info
+                    del frame
 
             function_output = function(*args, **kwargs)
 
             # If capturing provenance...
-            if Provenance.active and lineno > 0:
+            if Provenance.active and lineno is not None:
 
                 # 1. Capture Abstract Syntax Tree (AST) of the call to the
-                # function
+                # function. We need to check the source code in case the
+                # call spans multiple lines. In this case, we fetch the
+                # full statement.
                 source_line = self._extract_multiline_statement(lineno)
-
-                print(source_line, end='\n\n')
-                tree = ast.parse(source_line)
+                ast_tree = ast.parse(source_line)
 
                 # 2. Extract function name and information
                 # TODO: fetch version information
@@ -240,23 +243,25 @@ class Provenance(object):
                         parameters[key] = value
 
                 # 5. Create hashable `BuffaloObjectHash` for the output
-
+                # TODO: tuples are hashed as tuple. Should hash the separate
+                # objects to follow individual returns
                 output = self.add(function_output)
 
                 # 6. Analyze AST and fetch static relationships in the
                 # input/output and other variables/objects in the script
-                self._insert_static_information(tree, inputs, output)
+                self._insert_static_information(ast_tree, inputs, output)
 
                 # 7. Create tuple with the analysis step information
 
                 step = AnalysisStep(function_name, inputs, parameters, output,
                                     input_args_names, input_kwargs_names,
-                                    tree, source_line)
+                                    ast_tree, source_line)
 
-                # 7. Add to history graph / PROV document
+                # 7. Add to history
+                # The history will be the base to generate the graph / PROV
+                # document
 
                 Provenance.history.append(step)
-                Provenance.prov_document.add_step(step)
 
             return function_output
 
@@ -265,8 +270,9 @@ class Provenance(object):
     @classmethod
     def set_calling_frame(cls, frame):
         cls.calling_frame = frame
-        cls.source_lineno = frame.f_lineno
+        cls.source_lineno = inspect.getlineno(frame)
         cls.source_file = inspect.getfile(frame)
+        cls.source_name = inspect.getframeinfo(frame).function
         cls.source_code = inspect.getsourcelines(frame)[0]
         cls.frame_ast = ast.parse("".join(cls.source_code))
 
@@ -293,7 +299,9 @@ class Provenance(object):
         elephant.buffalo.prov.BuffaloProvDocument
 
         """
-        return cls.prov_document.get_dot_graph(**kwargs)
+        prov_document = BuffaloProvDocument(history=cls.history,
+                                            objects=cls.objects)
+        return prov_document.get_dot_graph(**kwargs)
 
     @classmethod
     def save_graph(cls, filename):
