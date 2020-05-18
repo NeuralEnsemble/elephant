@@ -26,49 +26,81 @@ def _check_spiketrains(spiketrains):
 
 
 def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
-                        invert=False, deletion_threshold=None):
+                 deletion_threshold=None, invert_delete=False):
     """
-    Given block with spike trains, find all spikes engaged
-    in synchronous events of size *n* or higher. Two events are considered
-    synchronous if they occur within spread/sampling_rate of one another.
+    Given a list of neo.Spiketrain objects, calculate the number of synchronous
+    spikes found and optionally delete or extract them from the given list
+    *in-place*.
 
-    *Args*
-    ------
-    block [list]:
-        a block containing neo spike trains
+    The spike trains are binned at sampling precission
+    (i.e. bin_size = 1 / `sampling_rate`)
 
-    segment [int or iterable or str. Default: 1]:
-        indices of segments in the block. Can be an integer, an iterable object
-        or a string containing 'all'. Indicates on which segments of the block
-        the synchrofact removal should be performed.
+    Two spikes are considered synchronous if they occur separated by strictly
+    fewer than `spread - 1` empty bins from one another. See
+    `elephant.spike_train_processing.complexity_intervals` for a detailed
+    description of how synchronous events are counted.
 
-    n [int. Default: 2]:
-        minimum number of coincident spikes to report synchrony
+    Synchronous events are considered within the same spike train and across
+    different spike trains in the `spiketrains` list. Such that, synchronous
+    events can be found both in multi-unit and single-unit spike trains.
 
-    spread [int. Default: 1]:
-        the number of bins to look ahead of each spike for more spikes to add
-        to the same synchronous event
+    The spike trains in the `spiketrains` list are annotated with the
+    complexity value of each spike in their :attr:`array_annotations`.
 
-    sampling_rate [quantity. Default: 30000/s]:
+
+    Parameters
+    ----------
+    spiketrains: list of neo.SpikeTrains
+        a list of neo.SpikeTrains objects. These spike trains should have been
+        recorded simultaneously.
+
+    sampling_rate: pq.Quantity
         Sampling rate of the spike trains. The spike trains are binned with
-        bin_size dt = 1/sampling_rate and *n* spikes within *spread*
-        consecutive bins are considered synchronous.
-        Groups of *n* or more synchronous spikes are deleted/annotated.
+        bin_size = 1 / `sampling_rate`.
 
-    invert [bool. Default: True]:
-        invert the mask for annotation/deletion (Default:False).
-        False annotates synchrofacts with False and other spikes with True or
-        deletes everything except for synchrofacts for delete = True.
+    spread: int
+        Number of bins in which to check for synchronous spikes.
+        Spikes that occur separated by `spread - 1` or less empty bins are
+        considered synchronous.
+        Default: 1
 
-    delete [bool. Default: False]:
-        delete spikes engaged in synchronous activity. If set to False the
-        spiketrains are array-annotated and the spike times are kept unchanged.
+    deletion_threshold: int, optional
+        Threshold value for the deletion of spikes engaged in synchronous
+        activity.
+        `deletion_threshold = None` leads to no spikes being deleted, spike
+        trains are array-annotated and the spike times are kept unchanged.
+        `deletion_threshold >= 2` leads to all spikes with a larger or equal
+        complexity value to be deleted *in-place*.
+        `deletion_threshold` cannot be set to 1 (this would delete all spikes
+        and there are definitely more efficient ways of doing this)
+        `deletion_threshold <= 0` leads to a ValueError.
+        Default: None
 
-    unit_type [list of strings. Default 'all']:
-        selects only spiketrain of certain units / channels for synchrofact
-        extraction.  unit_type = 'all' considers all provided spiketrains
-        Accepted unit types: 'sua', 'mua', 'idX'
-                             (where X is the id number requested)
+    invert_delete: bool
+        Inversion of the mask for deletion of synchronous events.
+        `invert_delete = False` leads to the deletion of all spikes with
+        complexity >= `deletion_threshold`, i.e. deletes synchronous spikes.
+        `invert_delete = True` leads to the deletion of all spikes with
+        complexity < `deletion_threshold`, i.e. returns synchronous spikes.
+        Default: False
+
+    Returns
+    -------
+    complexity_epoch: neo.Epoch
+        An epoch object containing complexity values, left edges and durations
+        of all intervals with at least one spike.
+        Calculated with `elephant.spike_train_processing.complexity_intervals`.
+        Complexity values per spike can be accessed with:
+        >>> complexity_epoch.array_annotations['complexity']
+        The left edges of the intervals with:
+        >>> complexity_epoch.times
+        And the durations with:
+        >>> complexity_epoch.durations
+
+    See also
+    --------
+    elephant.spike_train_processing.complexity_intervals
+
     """
     # TODO: refactor docs
 
@@ -102,7 +134,7 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
 
         if deletion_threshold is not None:
             mask = complexity_per_spike < deletion_threshold
-            if invert:
+            if invert_delete:
                 mask = np.invert(mask)
             old_st = st
             new_st = old_st[mask]
