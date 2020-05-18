@@ -214,7 +214,7 @@ class sta_TestCase(unittest.TestCase):
 # =========================================================================
 
 @unittest.skipIf(not hasattr(scipy.signal, 'coherence'), "Please update scipy "
-                 "to a version >= 0.16")
+                                                         "to version >= 0.16")
 class sfc_TestCase_new_scipy(unittest.TestCase):
 
     def setUp(self):
