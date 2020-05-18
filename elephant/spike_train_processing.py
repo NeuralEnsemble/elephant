@@ -111,9 +111,9 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
     _check_spiketrains(spiketrains)
 
     # find times of synchrony of size >=n
-    complexity_epoch = find_complexity_intervals(spiketrains,
-                                                 sampling_rate,
-                                                 spread=spread)
+    complexity_epoch = complexity_intervals(spiketrains,
+                                            sampling_rate,
+                                            spread=spread)
     complexity = complexity_epoch.array_annotations['complexity']
     right_edges = complexity_epoch.times + complexity_epoch.durations
 
@@ -152,33 +152,47 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
     return complexity_epoch
 
 
-def find_complexity_intervals(spiketrains, sampling_rate,
-                              bin_size=None, spread=0):
+def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
     """
-    Calculate the complexity (i.e. number of synchronous spikes)
-    for each bin.
+    Calculate the complexity (i.e. number of synchronous spikes found)
+    for each bin interval in a list of spiketrains.
 
-    For `spread = 0` this corresponds to a simple bincount.
+    Complexity is calculated by counting the number of spikes (i.e. non-empty
+    bins) that occur separated by `spread - 1` or less empty bins, within and
+    across spike trains in the `spiketrains` list.
 
-    For `spread > 0` spikes within `spread` bins of one another are considered
-    synchronous.
 
     Parameters
     ----------
-    min_complexity : int, optional
-        Minimum complexity to report
-        Default: 2.
+    spiketrains: list of neo.SpikeTrains
+        a list of neo.SpikeTrains objects. These spike trains should have been
+        recorded simultaneously.
+
+    sampling_rate: pq.Quantity
+        Sampling rate of the spike trains.
+
+    bin_size: pq.Quantity
+        Bin size for calculating the complexity values. If `bin_size = None`
+        the spike trains are binned with `bin_size = 1 / sampling_rate`.
+        Default: None
+
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
-        Spikes within `spread` consecutive bins are considered synchronous.
-        Default: 0.
+        Spikes that occur separated by `spread - 1` or less empty bins are
+        considered synchronous.
+        `spread = 0` corresponds to a bincount accross spike trains.
+        `spread = 1` corresponds to counting consecutive spikes.
+        `spread = 2` corresponds to counting consecutive spikes and spikes
+        separated by exactly 1 empty bin.
+        `spread = n` corresponds to counting spikes separated by exactly or
+        less than `n - 1` empty bins.
+        Default: 0
 
     Returns
     -------
-    complexity_intervals : np.ndarray
-        An array containing complexity values, left and right edges of all
-        intervals with at least `min_complexity` spikes separated by fewer
-        than `spread` empty bins.
+    complexity_intervals : neo.Epoch
+        An epoch object containing complexity values, left edges and durations
+        of all intervals with at least one spike.
 
     Raises
     ------
@@ -187,20 +201,43 @@ def find_complexity_intervals(spiketrains, sampling_rate,
 
     Examples
     --------
-    >>> import elephant.conversion as conv
+    Here the behavior of
+    `elephant.spike_train_processing.complexity_intervals` is shown, by
+    applying the function to some sample spiketrains.
     >>> import neo
     >>> import quantities as pq
-    >>> st1 = neo.SpikeTrain([1, 6] * pq.ms,
-    ...                      t_stop=10.0 * pq.ms)
-    >>> st2 = neo.SpikeTrain([1, 7] * pq.ms,
-    ...                      t_stop=10.0 * pq.ms)
-    >>> bst = conv.BinnedSpikeTrain([st1, st2], num_bins=10,
-    ...                             bin_size=1 * pq.ms,
-    ...                             t_start=0 * pq.ms)
-    >>> print(bst.complexity().magnitude.flatten())
-    [0. 2. 0. 0. 0. 0. 1. 1. 0. 0.]
-    >>> print(bst.complexity(spread=2).magnitude.flatten())
-    [0. 2. 0. 0. 0. 0. 2. 2. 0. 0.]
+    ...
+    >>> sampling_rate = 1/pq.ms
+    >>> st1 = neo.SpikeTrain([1, 4, 6] * pq.ms, t_stop=10.0 * pq.ms)
+    >>> st2 = neo.SpikeTrain([1, 5, 8] * pq.ms, t_stop=10.0 * pq.ms)
+    ...
+    >>> # spread = 0, a simple bincount
+    >>> ep1 = complexity_intervals([st1, st2], sampling_rate)
+    >>> print(ep1.array_annotations['complexity'].flatten())
+    [2, 1, 1, 1, 1]
+    >>> print(ep1.times)
+    [0.  3.5 4.5 5.5 7.5] ms
+    >>> print(ep1.durations)
+    [1.5, 1. , 1. , 1. , 1. ] ms
+    ...
+    >>> # spread = 1, consecutive spikes
+    >>> ep2 = complexity_intervals([st1, st2], sampling_rate, spread=1)
+    >>> print(ep2.array_annotations['complexity'].flatten())
+    [2, 3, 1]
+    >>> print(ep2.times)
+    [0.  3.5 7.5] ms
+    >>> print(ep2.durations)
+    [1.5 3.  1. ] ms
+    ...
+    >>> # spread = 2, consecutive spikes and separated by 1 empty bin
+    >>> ep3 = complexity_intervals([st1, st2], sampling_rate, spread=2)
+    >>> print(ep3.array_annotations['complexity'].flatten())
+    [2, 4]
+    >>> print(ep3.times)
+    [0.  3.5] ms
+    >>> print(ep3.durations)
+    [1.5 5. ] ms
+
     """
     _check_spiketrains(spiketrains)
 
