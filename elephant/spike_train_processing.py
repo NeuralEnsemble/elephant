@@ -249,8 +249,6 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
                          'default).')
 
     # TODO: documentation, example
-    min_t_start = min([st.t_start for st in spiketrains])
-
     bst = conv.BinnedSpikeTrain(spiketrains,
                                 binsize=bin_size)
     bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
@@ -290,8 +288,8 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
                     ].magnitude.item())
                 i += last_nonzero_index + 1
 
-        # we dropped units above, neither concatenate nor append works with
-        # arrays of quantities
+        # we dropped units above, because neither concatenate nor append works
+        # with arrays of quantities
         left_edges *= bst.bin_edges.units
         right_edges *= bst.bin_edges.units
 
@@ -300,7 +298,8 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
     left_edges -= bin_shift
     right_edges -= bin_shift
 
-    # ensure that epoch does not start before the minimum t_start
+    # ensure that an epoch does not start before the minimum t_start
+    min_t_start = min([st.t_start for st in spiketrains])
     left_edges[0] = min(min_t_start, left_edges[0])
 
     complexity_epoch = neo.Epoch(times=left_edges,
@@ -309,4 +308,3 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
                                                     complexities})
 
     return complexity_epoch
-
