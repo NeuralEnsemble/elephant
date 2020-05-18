@@ -23,6 +23,7 @@ Function Reference by Module
    reference/spike_train_correlation
    reference/spike_train_dissimilarity
    reference/spike_train_generation
+   reference/spike_train_processing
    reference/spike_train_surrogates
    reference/sta
    reference/statistics
