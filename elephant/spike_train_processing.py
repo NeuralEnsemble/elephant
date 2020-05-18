@@ -102,8 +102,6 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
     elephant.spike_train_processing.complexity_intervals
 
     """
-    # TODO: refactor docs
-
     if deletion_threshold is not None and deletion_threshold <= 1:
         raise ValueError('A deletion_threshold <= 1 would result'
                          'in deletion of all spikes.')
@@ -248,7 +246,6 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
                          '1 / sampling_rate (which is the'
                          'default).')
 
-    # TODO: documentation, example
     bst = conv.BinnedSpikeTrain(spiketrains,
                                 binsize=bin_size)
     bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
