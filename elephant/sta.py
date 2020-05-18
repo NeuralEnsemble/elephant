@@ -15,6 +15,8 @@ import quantities as pq
 from neo.core import AnalogSignal, SpikeTrain
 import warnings
 from .conversion import BinnedSpikeTrain
+from .kernels import GaussianKernel
+from .statistics import instantaneous_rate
 
 __all__ = [
     "spike_triggered_average",
@@ -323,3 +325,57 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     return (pq.Quantity(sfc, units=pq.dimensionless),
             pq.Quantity(frequencies, units=pq.Hz))
+
+
+def stPR(spiketrains, bin_size=1*pq.ms, sigma=5*pq.ms):
+    """
+    Spike triggered population response as described in [1].
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrains
+        list of spike train objects containing a list of spiketimes. The spike
+        trains should have the same t_start and t_stop times.
+
+    bin_size : pq.Quantity
+        Time quantity for binning of the `spiketrains`.
+        Default: 1*pq.ms
+
+    sigma : pq.Quantity
+        Standard deviation of gaussian kernel for estimation of population
+        rate.
+        Default: 5*pq.ms
+
+    References
+    ----------
+    [1] Okun, M., Steinmetz, N., Cossell, L. et al. Diverse coupling of neurons
+    to populations in sensory cortex. Nature 521, 511–515 (2015).
+    https://doi.org/10.1038/nature14273
+    """
+    # TODO write docstring
+    # TODO write tests
+    # TODO implement testing of inputs
+
+    krn = GaussianKernel(sigma=sigma)
+
+    stpr_lst = []
+    for i, st in enumerate(spiketrains):
+        # 1.Take all spiketrains except the currently analyzed one
+        sts_without_st = [st for j, st in enumerate(spiketrains) if i != j]
+
+        # 2. Estimate the population rate using a gaussian kernel
+        # and subtract the mean
+        rate = instantaneous_rate(sts_without_st,
+                                  sampling_period=bin_size,
+                                  kernel=krn)
+        rate = rate - np.mean(rate)
+
+        # 3. Calculate the time lagged sta
+        stpr = spike_triggered_average(rate, st, window=(-.5*bin_size,
+                                                         .5*bin_size))
+        # 4. Normalize by the number of spikes
+        stpr = stpr / len(st.times)
+
+        stpr_lst.append(stpr)
+
+    return stpr_lst
