@@ -5,7 +5,7 @@ import elephant.conversion as conv
 import numpy as np
 
 
-def get_index(lst, obj):
+def _get_index(lst, obj):
     for index, item in enumerate(lst):
         if item is obj:
             return index
@@ -140,10 +140,10 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
             unit = old_st.unit
             segment = old_st.segment
             if unit is not None:
-                unit.spiketrains[get_index(unit.spiketrains,
+                unit.spiketrains[_get_index(unit.spiketrains,
                                            old_st)] = new_st
             if segment is not None:
-                segment.spiketrains[get_index(segment.spiketrains,
+                segment.spiketrains[_get_index(segment.spiketrains,
                                               old_st)] = new_st
             del old_st
 
