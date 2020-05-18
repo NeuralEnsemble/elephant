@@ -12,13 +12,16 @@ def get_index(lst, obj):
 
 
 def _check_spiketrains(spiketrains):
+    if not isinstance(spiketrains, list):
+        raise TypeError('spiketrains should be a list of neo.SpikeTrain')
+
     if len(spiketrains) == 0:
         raise ValueError('The spiketrains should not be empty!')
 
     # check that all list elements are spike trains
     for spiketrain in spiketrains:
         if not isinstance(spiketrain, neo.SpikeTrain):
-            raise TypeError('not all elements of spiketrains are'
+            raise TypeError('not all elements in the spiketrains list are'
                             'neo.SpikeTrain objects')
 
 
