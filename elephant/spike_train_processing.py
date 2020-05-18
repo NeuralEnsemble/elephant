@@ -2,9 +2,7 @@ from __future__ import division
 
 import neo
 import elephant.conversion as conv
-import quantities as pq
 import numpy as np
-import warnings
 
 
 def get_index(lst, obj):
