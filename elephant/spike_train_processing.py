@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Module for spike train processing
+
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:license: Modified BSD, see LICENSE.txt for details.
+"""
+
 from __future__ import division
 
 import neo
@@ -50,51 +58,67 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
 
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrains
+    spiketrains : list of neo.SpikeTrains
         a list of neo.SpikeTrains objects. These spike trains should have been
         recorded simultaneously.
 
-    sampling_rate: pq.Quantity
+    sampling_rate : pq.Quantity
         Sampling rate of the spike trains. The spike trains are binned with
         bin_size = 1 / `sampling_rate`.
 
-    spread: int
+    spread : int
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
+
         Default: 1
 
-    deletion_threshold: int, optional
+    deletion_threshold : int, optional
         Threshold value for the deletion of spikes engaged in synchronous
         activity.
+
         `deletion_threshold = None` leads to no spikes being deleted, spike
         trains are array-annotated and the spike times are kept unchanged.
+
         `deletion_threshold >= 2` leads to all spikes with a larger or equal
         complexity value to be deleted *in-place*.
+
         `deletion_threshold` cannot be set to 1 (this would delete all spikes
         and there are definitely more efficient ways of doing this)
+
         `deletion_threshold <= 0` leads to a ValueError.
+
         Default: None
 
-    invert_delete: bool
+    invert_delete : bool
         Inversion of the mask for deletion of synchronous events.
+
         `invert_delete = False` leads to the deletion of all spikes with
         complexity >= `deletion_threshold`, i.e. deletes synchronous spikes.
+
         `invert_delete = True` leads to the deletion of all spikes with
         complexity < `deletion_threshold`, i.e. returns synchronous spikes.
+
         Default: False
 
     Returns
     -------
-    complexity_epoch: neo.Epoch
+    complexity_epoch : neo.Epoch
         An epoch object containing complexity values, left edges and durations
         of all intervals with at least one spike.
+
         Calculated with `elephant.spike_train_processing.complexity_intervals`.
+
         Complexity values per spike can be accessed with:
+
         >>> complexity_epoch.array_annotations['complexity']
+
         The left edges of the intervals with:
+
         >>> complexity_epoch.times
+
         And the durations with:
+
         >>> complexity_epoch.durations
 
     See also
@@ -162,28 +186,34 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
 
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrains
+    spiketrains : list of neo.SpikeTrains
         a list of neo.SpikeTrains objects. These spike trains should have been
         recorded simultaneously.
 
-    sampling_rate: pq.Quantity
+    sampling_rate : pq.Quantity
         Sampling rate of the spike trains.
 
-    bin_size: pq.Quantity
+    bin_size : pq.Quantity
         Bin size for calculating the complexity values. If `bin_size = None`
         the spike trains are binned with `bin_size = 1 / sampling_rate`.
+
         Default: None
 
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
+
         `spread = 0` corresponds to a bincount accross spike trains.
+
         `spread = 1` corresponds to counting consecutive spikes.
+
         `spread = 2` corresponds to counting consecutive spikes and spikes
         separated by exactly 1 empty bin.
+
         `spread = n` corresponds to counting spikes separated by exactly or
         less than `n - 1` empty bins.
+
         Default: 0
 
     Returns
@@ -202,6 +232,7 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
     Here the behavior of
     `elephant.spike_train_processing.complexity_intervals` is shown, by
     applying the function to some sample spiketrains.
+
     >>> import neo
     >>> import quantities as pq
     ...
