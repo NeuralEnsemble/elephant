@@ -339,9 +339,12 @@ def spike_triggered_population_response(spiketrains,
         list of spike train objects. The spike trains should have the same
         `t_start` and `t_stop` times.
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> rename stPR function, update reference to literature, fix description of `spiketrains`
+=======
+>>>>>>> remove blank lines between parameters
     bin_size : pq.Quantity
         Time quantity for binning of the `spiketrains`.
         Default: 1*pq.ms
