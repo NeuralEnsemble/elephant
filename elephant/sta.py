@@ -327,15 +327,17 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
             pq.Quantity(frequencies, units=pq.Hz))
 
 
-def stPR(spiketrains, bin_size=1*pq.ms, sigma=5*pq.ms):
+def spike_triggered_population_response(spiketrains,
+                                        bin_size=1*pq.ms,
+                                        sigma=5*pq.ms):
     """
-    Spike triggered population response as described in [1].
+    Spike triggered population response (stPR) as described in [1]_.
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrains
-        list of spike train objects containing a list of spiketimes. The spike
-        trains should have the same t_start and t_stop times.
+    spiketrains : list of neo.SpikeTrain
+        list of spike train objects. The spike trains should have the same
+        `t_start` and `t_stop` times.
 
     bin_size : pq.Quantity
         Time quantity for binning of the `spiketrains`.
@@ -348,7 +350,7 @@ def stPR(spiketrains, bin_size=1*pq.ms, sigma=5*pq.ms):
 
     References
     ----------
-    [1] Okun, M., Steinmetz, N., Cossell, L. et al. Diverse coupling of neurons
+    .. [1] Okun, M., Steinmetz, N., Cossell, L. et al. Diverse coupling of neurons
     to populations in sensory cortex. Nature 521, 511–515 (2015).
     https://doi.org/10.1038/nature14273
     """
