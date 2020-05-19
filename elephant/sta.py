@@ -338,6 +338,10 @@ def spike_triggered_population_response(spiketrains,
     spiketrains : list of neo.SpikeTrain
         list of spike train objects. The spike trains should have the same
         `t_start` and `t_stop` times.
+<<<<<<< HEAD
+=======
+
+>>>>>>> rename stPR function, update reference to literature, fix description of `spiketrains`
     bin_size : pq.Quantity
         Time quantity for binning of the `spiketrains`.
         Default: 1*pq.ms
@@ -348,9 +352,15 @@ def spike_triggered_population_response(spiketrains,
 
     References
     ----------
+<<<<<<< HEAD
     .. [1] Okun, M., Steinmetz, N., Cossell, L. et al. Diverse coupling of
            neurons to populations in sensory cortex. Nature 521, 511–515, 2015.
            https://doi.org/10.1038/nature14273
+=======
+    .. [1] Okun, M., Steinmetz, N., Cossell, L. et al. Diverse coupling of neurons
+    to populations in sensory cortex. Nature 521, 511–515 (2015).
+    https://doi.org/10.1038/nature14273
+>>>>>>> rename stPR function, update reference to literature, fix description of `spiketrains`
     """
     # TODO write docstring
     # TODO write tests
