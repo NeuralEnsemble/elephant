@@ -338,11 +338,9 @@ def spike_triggered_population_response(spiketrains,
     spiketrains : list of neo.SpikeTrain
         list of spike train objects. The spike trains should have the same
         `t_start` and `t_stop` times.
-
     bin_size : pq.Quantity
         Time quantity for binning of the `spiketrains`.
         Default: 1*pq.ms
-
     sigma : pq.Quantity
         Standard deviation of gaussian kernel for estimation of population
         rate.
