@@ -245,6 +245,42 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             self.assertTrue(key in cleaned_array_annotations.keys())
             assert_array_almost_equal(value, cleaned_array_annotations[key])
 
+    def test_complexity_histogram_spread_0(self):
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                      t_stop=20*pq.s)]
+
+        correct_histogram = np.array([0, 8, 2])
+
+        histogram = spike_train_processing.precise_complexity_histogram(
+            spiketrains,
+            sampling_rate=sampling_rate,
+            spread=0)
+
+        assert_array_equal(histogram, correct_histogram)
+
+    def test_complexity_histogram_spread_1(self):
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_histogram = np.array([0, 5, 2, 1])
+
+        histogram = spike_train_processing.precise_complexity_histogram(
+            spiketrains,
+            sampling_rate=sampling_rate,
+            spread=1)
+
+        assert_array_equal(histogram, correct_histogram)
+
     def test_wrong_input_errors(self):
         self.assertRaises(ValueError,
                           spike_train_processing.detect_synchrofacts,

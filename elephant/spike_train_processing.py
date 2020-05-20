@@ -312,3 +312,30 @@ def precise_complexity_intervals(spiketrains, sampling_rate, spread=0):
                                                     complexities})
 
     return complexity_epoch
+
+
+def precise_complexity_histogram(spiketrains, **kwargs):
+    """
+    This is a wrapper for `precise_complexity_intervals` which calculates
+    the complexity histogram; the number of occurrences of events of
+    different complexities.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrains
+        a list of neo.SpikeTrains objects. These spike trains should have been
+        recorded simultaneously.
+    **kwargs
+        Additional keyword arguments passed to
+        `precise_complexity_intervals`.
+
+    Returns
+    -------
+    complexity_histogram : np.ndarray
+        A histogram of complexities. `complexity_histogram[i]` corresponds
+        to the number of events of complexity `i` for `i > 0`.
+    """
+    complexity_epoch = precise_complexity_intervals(spiketrains, **kwargs)
+    complexity_histogram = np.bincount(
+        complexity_epoch.array_annotations['complexity'])
+    return complexity_histogram
