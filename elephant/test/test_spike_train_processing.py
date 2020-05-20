@@ -17,13 +17,13 @@ from elephant import spike_train_processing
 class SynchrofactDetectionTestCase(unittest.TestCase):
 
     def _test_template(self, spiketrains, correct_complexities, sampling_rate,
-                       spread, deletion_threshold=2, invert=False):
+                       spread, deletion_threshold=2, invert_delete=False):
         # test annotation
         spike_train_processing.detect_synchrofacts(
             spiketrains,
             spread=spread,
             sampling_rate=sampling_rate,
-            invert=invert,
+            invert_delete=invert_delete,
             deletion_threshold=None)
 
         annotations = [st.array_annotations['complexity']
@@ -31,17 +31,24 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         assert_array_equal(annotations, correct_complexities)
 
-        correct_spike_times = np.array(
-            [spikes[mask] for spikes, mask
-             in zip(spiketrains, correct_complexities < deletion_threshold)
-             ])
+        if invert_delete:
+            correct_spike_times = np.array(
+                [spikes[mask] for spikes, mask
+                 in zip(spiketrains,
+                        correct_complexities >= deletion_threshold)
+                 ])
+        else:
+            correct_spike_times = np.array(
+                [spikes[mask] for spikes, mask
+                 in zip(spiketrains, correct_complexities < deletion_threshold)
+                 ])
 
         # test deletion
         spike_train_processing.detect_synchrofacts(
             spiketrains,
             spread=spread,
             sampling_rate=sampling_rate,
-            invert=invert,
+            invert_delete=invert_delete,
             deletion_threshold=deletion_threshold)
 
         cleaned_spike_times = np.array(
@@ -67,7 +74,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [1, 1, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert=False, deletion_threshold=2)
+                            spread=1, invert_delete=False,
+                            deletion_threshold=2)
 
     def test_spread_0(self):
 
@@ -86,7 +94,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 1, 1, 1, 2, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=0, invert=False, deletion_threshold=2)
+                            spread=0, invert_delete=False,
+                            deletion_threshold=2)
 
     def test_spread_1(self):
 
@@ -104,7 +113,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 2, 1, 3, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert=False, deletion_threshold=2)
+                            spread=1, invert_delete=False,
+                            deletion_threshold=2)
 
     def test_n_equals_3(self):
 
@@ -122,7 +132,27 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [3, 2, 1, 2, 3, 3, 3, 2]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert=False, deletion_threshold=3)
+                            spread=1, invert_delete=False,
+                            deletion_threshold=3)
+
+    def test_invert_delete(self):
+
+        # test synchrofact search taking into account adjacent bins
+        # this requires an additional loop with shifted binning
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_annotations = np.array([[2, 2, 1, 3, 3, 1],
+                                        [2, 2, 1, 3, 1, 1]])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, invert_delete=True,
+                            deletion_threshold=2)
 
     def test_binning_for_input_with_rounding_errors(self):
 
@@ -147,7 +177,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         second_annotations])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=0, invert=False, deletion_threshold=2)
+                            spread=0, invert_delete=False,
+                            deletion_threshold=2)
 
     def test_correct_transfer_of_spiketrain_attributes(self):
 
@@ -193,7 +224,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         spike_train_processing.detect_synchrofacts([spiketrain],
                                                    spread=0,
                                                    sampling_rate=sampling_rate,
-                                                   invert=False,
+                                                   invert_delete=False,
                                                    deletion_threshold=2)
 
         # Ensure that the spiketrain was not duplicated
@@ -229,18 +260,13 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                           1 / pq.s,
                           deletion_threshold=-1)
         self.assertRaises(ValueError,
-                          spike_train_processing.find_complexity_intervals,
+                          spike_train_processing.precise_complexity_intervals,
                           [], 1 / pq.s)
         self.assertRaises(TypeError,
-                          spike_train_processing.find_complexity_intervals,
+                          spike_train_processing.precise_complexity_intervals,
                           [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s),
                            np.arange(2)],
                           1 / pq.s)
-        self.assertRaises(ValueError,
-                          spike_train_processing.find_complexity_intervals,
-                          [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s)],
-                          sampling_rate=1 / pq.s,
-                          bin_size=.5 * pq.s)
 
 
 if __name__ == '__main__':

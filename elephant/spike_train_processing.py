@@ -19,22 +19,28 @@ def _get_index(lst, obj):
             return index
 
 
-def _check_spiketrains(spiketrains):
-    if not isinstance(spiketrains, list):
-        raise TypeError('spiketrains should be a list of neo.SpikeTrain')
-
+def _check_consistency_of_spiketrainlist(spiketrains, t_start=None,
+                                         t_stop=None):
     if len(spiketrains) == 0:
         raise ValueError('The spiketrains should not be empty!')
-
-    # check that all list elements are spike trains
     for spiketrain in spiketrains:
         if not isinstance(spiketrain, neo.SpikeTrain):
-            raise TypeError('not all elements in the spiketrains list are'
-                            'neo.SpikeTrain objects')
+            raise TypeError(
+                "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
+                "    Found: %s, value %s" % (
+                    type(spiketrain), str(spiketrain)))
+        if t_start is None and not spiketrain.t_start == spiketrains[
+                0].t_start:
+            raise ValueError(
+                "the spike trains must have the same t_start!")
+        if t_stop is None and not spiketrain.t_stop == spiketrains[
+                0].t_stop:
+            raise ValueError(
+                "the spike trains must have the same t_stop!")
 
 
 def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
-                 deletion_threshold=None, invert_delete=False):
+                        deletion_threshold=None, invert_delete=False):
     """
     Given a list of neo.Spiketrain objects, calculate the number of synchronous
     spikes found and optionally delete or extract them from the given list
@@ -45,8 +51,8 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
 
     Two spikes are considered synchronous if they occur separated by strictly
     fewer than `spread - 1` empty bins from one another. See
-    `elephant.spike_train_processing.complexity_intervals` for a detailed
-    description of how synchronous events are counted.
+    `elephant.statistics.complexity_intervals` for a detailed description of
+    how synchronous events are counted.
 
     Synchronous events are considered within the same spike train and across
     different spike trains in the `spiketrains` list. Such that, synchronous
@@ -61,44 +67,32 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
     spiketrains : list of neo.SpikeTrains
         a list of neo.SpikeTrains objects. These spike trains should have been
         recorded simultaneously.
-
     sampling_rate : pq.Quantity
         Sampling rate of the spike trains. The spike trains are binned with
         bin_size = 1 / `sampling_rate`.
-
     spread : int
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
-
         Default: 1
-
     deletion_threshold : int, optional
         Threshold value for the deletion of spikes engaged in synchronous
         activity.
-
-        `deletion_threshold = None` leads to no spikes being deleted, spike
-        trains are array-annotated and the spike times are kept unchanged.
-
-        `deletion_threshold >= 2` leads to all spikes with a larger or equal
-        complexity value to be deleted *in-place*.
-
-        `deletion_threshold` cannot be set to 1 (this would delete all spikes
-        and there are definitely more efficient ways of doing this)
-
-        `deletion_threshold <= 0` leads to a ValueError.
-
+          * `deletion_threshold = None` leads to no spikes being deleted, spike
+            trains are array-annotated and the spike times are kept unchanged.
+          * `deletion_threshold >= 2` leads to all spikes with a larger or
+            equal complexity value to be deleted *in-place*.
+          * `deletion_threshold` cannot be set to 1 (this would delete all
+            spikes and there are definitely more efficient ways of doing this)
+          * `deletion_threshold <= 0` leads to a ValueError.
         Default: None
-
     invert_delete : bool
         Inversion of the mask for deletion of synchronous events.
-
-        `invert_delete = False` leads to the deletion of all spikes with
-        complexity >= `deletion_threshold`, i.e. deletes synchronous spikes.
-
-        `invert_delete = True` leads to the deletion of all spikes with
-        complexity < `deletion_threshold`, i.e. returns synchronous spikes.
-
+          * `invert_delete = False` leads to the deletion of all spikes with
+            complexity >= `deletion_threshold`,
+            i.e. deletes synchronous spikes.
+          * `invert_delete = True` leads to the deletion of all spikes with
+            complexity < `deletion_threshold`, i.e. returns synchronous spikes.
         Default: False
 
     Returns
@@ -107,7 +101,8 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
         An epoch object containing complexity values, left edges and durations
         of all intervals with at least one spike.
 
-        Calculated with `elephant.spike_train_processing.complexity_intervals`.
+        Calculated with
+        `elephant.spike_train_processing.precise_complexity_intervals`.
 
         Complexity values per spike can be accessed with:
 
@@ -123,19 +118,17 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
 
     See also
     --------
-    elephant.spike_train_processing.complexity_intervals
+    elephant.statistics.precise_complexity_intervals
 
     """
     if deletion_threshold is not None and deletion_threshold <= 1:
         raise ValueError('A deletion_threshold <= 1 would result'
                          'in deletion of all spikes.')
 
-    _check_spiketrains(spiketrains)
-
     # find times of synchrony of size >=n
-    complexity_epoch = complexity_intervals(spiketrains,
-                                            sampling_rate,
-                                            spread=spread)
+    complexity_epoch = precise_complexity_intervals(spiketrains,
+                                                    sampling_rate,
+                                                    spread=spread)
     complexity = complexity_epoch.array_annotations['complexity']
     right_edges = complexity_epoch.times + complexity_epoch.durations
 
@@ -165,19 +158,19 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
             segment = old_st.segment
             if unit is not None:
                 unit.spiketrains[_get_index(unit.spiketrains,
-                                           old_st)] = new_st
+                                            old_st)] = new_st
             if segment is not None:
                 segment.spiketrains[_get_index(segment.spiketrains,
-                                              old_st)] = new_st
+                                               old_st)] = new_st
             del old_st
 
     return complexity_epoch
 
 
-def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
+def precise_complexity_intervals(spiketrains, sampling_rate, spread=0):
     """
     Calculate the complexity (i.e. number of synchronous spikes found)
-    for each bin interval in a list of spiketrains.
+    at `sampling_rate` precision in a list of spiketrains.
 
     Complexity is calculated by counting the number of spikes (i.e. non-empty
     bins) that occur separated by `spread - 1` or less empty bins, within and
@@ -189,31 +182,18 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
     spiketrains : list of neo.SpikeTrains
         a list of neo.SpikeTrains objects. These spike trains should have been
         recorded simultaneously.
-
     sampling_rate : pq.Quantity
         Sampling rate of the spike trains.
-
-    bin_size : pq.Quantity
-        Bin size for calculating the complexity values. If `bin_size = None`
-        the spike trains are binned with `bin_size = 1 / sampling_rate`.
-
-        Default: None
-
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
-
-        `spread = 0` corresponds to a bincount accross spike trains.
-
-        `spread = 1` corresponds to counting consecutive spikes.
-
-        `spread = 2` corresponds to counting consecutive spikes and spikes
-        separated by exactly 1 empty bin.
-
-        `spread = n` corresponds to counting spikes separated by exactly or
-        less than `n - 1` empty bins.
-
+          * `spread = 0` corresponds to a bincount accross spike trains.
+          * `spread = 1` corresponds to counting consecutive spikes.
+          * `spread = 2` corresponds to counting consecutive spikes and
+            spikes separated by exactly 1 empty bin.
+          * `spread = n` corresponds to counting spikes separated by exactly
+            or less than `n - 1` empty bins.
         Default: 0
 
     Returns
@@ -230,55 +210,51 @@ def complexity_intervals(spiketrains, sampling_rate, bin_size=None, spread=0):
     Examples
     --------
     Here the behavior of
-    `elephant.spike_train_processing.complexity_intervals` is shown, by
+    `elephant.spike_train_processing.precise_complexity_intervals` is shown, by
     applying the function to some sample spiketrains.
 
     >>> import neo
     >>> import quantities as pq
-    ...
+
     >>> sampling_rate = 1/pq.ms
     >>> st1 = neo.SpikeTrain([1, 4, 6] * pq.ms, t_stop=10.0 * pq.ms)
     >>> st2 = neo.SpikeTrain([1, 5, 8] * pq.ms, t_stop=10.0 * pq.ms)
-    ...
+
     >>> # spread = 0, a simple bincount
-    >>> ep1 = complexity_intervals([st1, st2], sampling_rate)
+    >>> ep1 = precise_complexity_intervals([st1, st2], sampling_rate)
     >>> print(ep1.array_annotations['complexity'].flatten())
-    [2, 1, 1, 1, 1]
+    [2 1 1 1 1]
     >>> print(ep1.times)
     [0.  3.5 4.5 5.5 7.5] ms
     >>> print(ep1.durations)
-    [1.5, 1. , 1. , 1. , 1. ] ms
-    ...
+    [1.5 1.  1.  1.  1. ] ms
+
     >>> # spread = 1, consecutive spikes
-    >>> ep2 = complexity_intervals([st1, st2], sampling_rate, spread=1)
+    >>> ep2 = precise_complexity_intervals([st1, st2], sampling_rate, spread=1)
     >>> print(ep2.array_annotations['complexity'].flatten())
-    [2, 3, 1]
+    [2 3 1]
     >>> print(ep2.times)
     [0.  3.5 7.5] ms
     >>> print(ep2.durations)
     [1.5 3.  1. ] ms
-    ...
+
     >>> # spread = 2, consecutive spikes and separated by 1 empty bin
-    >>> ep3 = complexity_intervals([st1, st2], sampling_rate, spread=2)
+    >>> ep3 = precise_complexity_intervals([st1, st2], sampling_rate, spread=2)
     >>> print(ep3.array_annotations['complexity'].flatten())
-    [2, 4]
+    [2 4]
     >>> print(ep3.times)
     [0.  3.5] ms
     >>> print(ep3.durations)
     [1.5 5. ] ms
 
     """
-    _check_spiketrains(spiketrains)
+    _check_consistency_of_spiketrainlist(spiketrains)
 
-    if bin_size is None:
-        bin_size = 1 / sampling_rate
-    elif bin_size < 1 / sampling_rate:
-        raise ValueError('The bin size should be at least'
-                         '1 / sampling_rate (which is the'
-                         'default).')
+    bin_size = 1 / sampling_rate
 
     bst = conv.BinnedSpikeTrain(spiketrains,
                                 binsize=bin_size)
+
     bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
 
     if spread == 0:
