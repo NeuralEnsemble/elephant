@@ -70,6 +70,7 @@ from neo.core import SpikeTrain
 import elephant.conversion as conv
 import elephant.kernels as kernels
 import warnings
+from .utils import _check_consistency_of_spiketrainlist
 
 cv = scipy.stats.variation
 
@@ -515,8 +516,10 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     """
     # Merge spike trains if list of spike trains given:
     if isinstance(spiketrain, list):
-        _check_consistency_of_spiketrainlist(
-            spiketrain, t_start=t_start, t_stop=t_stop)
+        _check_consistency_of_spiketrainlist(spiketrain,
+                                             same_t_start=t_start,
+                                             same_t_stop=t_stop,
+                                             same_units=True)
         if t_start is None:
             t_start = spiketrain[0].t_start
         if t_stop is None:
@@ -1071,24 +1074,3 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
             'C': C,
             'confb95': confb95,
             'yb': yb}
-
-
-def _check_consistency_of_spiketrainlist(spiketrainlist, t_start=None,
-                                         t_stop=None):
-    for spiketrain in spiketrainlist:
-        if not isinstance(spiketrain, SpikeTrain):
-            raise TypeError(
-                "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
-                "    Found: %s, value %s" % (
-                    type(spiketrain), str(spiketrain)))
-        if t_start is None and not spiketrain.t_start == spiketrainlist[
-                0].t_start:
-            raise ValueError(
-                "the spike trains must have the same t_start!")
-        if t_stop is None and not spiketrain.t_stop == spiketrainlist[
-                0].t_stop:
-            raise ValueError(
-                "the spike trains must have the same t_stop!")
-        if not spiketrain.units == spiketrainlist[0].units:
-            raise ValueError(
-                "the spike trains must have the same units!")

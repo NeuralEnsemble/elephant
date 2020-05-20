@@ -11,32 +11,13 @@ from __future__ import division
 import neo
 import elephant.conversion as conv
 import numpy as np
+from .utils import _check_consistency_of_spiketrainlist
 
 
 def _get_index(lst, obj):
     for index, item in enumerate(lst):
         if item is obj:
             return index
-
-
-def _check_consistency_of_spiketrainlist(spiketrains, t_start=None,
-                                         t_stop=None):
-    if len(spiketrains) == 0:
-        raise ValueError('The spiketrains should not be empty!')
-    for spiketrain in spiketrains:
-        if not isinstance(spiketrain, neo.SpikeTrain):
-            raise TypeError(
-                "spike train must be instance of :class:`SpikeTrain` of Neo!\n"
-                "    Found: %s, value %s" % (
-                    type(spiketrain), str(spiketrain)))
-        if t_start is None and not spiketrain.t_start == spiketrains[
-                0].t_start:
-            raise ValueError(
-                "the spike trains must have the same t_start!")
-        if t_stop is None and not spiketrain.t_stop == spiketrains[
-                0].t_stop:
-            raise ValueError(
-                "the spike trains must have the same t_stop!")
 
 
 def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
