@@ -94,8 +94,13 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
 
     """
     if deletion_threshold is not None and deletion_threshold <= 1:
-        raise ValueError('A deletion_threshold <= 1 would result'
+        raise ValueError('A deletion_threshold <= 1 would result '
                          'in deletion of all spikes.')
+
+    if isinstance(spiketrains, list):
+        _check_consistency_of_spiketrainlist(spiketrains)
+    else:
+        raise TypeError('spiketrains should be a list of neo.SpikeTrain')
 
     # find times of synchrony of size >=n
     complexity_epoch = precise_complexity_intervals(spiketrains,
