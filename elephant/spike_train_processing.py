@@ -32,8 +32,8 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
 
     Two spikes are considered synchronous if they occur separated by strictly
     fewer than `spread - 1` empty bins from one another. See
-    `elephant.statistics.complexity_intervals` for a detailed description of
-    how synchronous events are counted.
+    `elephant.statistics.precise_complexity_intervals` for a detailed
+    description of how synchronous events are counted.
 
     Synchronous events are considered within the same spike train and across
     different spike trains in the `spiketrains` list. Such that, synchronous
@@ -81,25 +81,16 @@ def detect_synchrofacts(spiketrains, sampling_rate, spread=1,
     complexity_epoch : neo.Epoch
         An epoch object containing complexity values, left edges and durations
         of all intervals with at least one spike.
-
         Calculated with
         `elephant.spike_train_processing.precise_complexity_intervals`.
-
-        Complexity values per spike can be accessed with:
-
-        >>> complexity_epoch.array_annotations['complexity']
-
-        The left edges of the intervals with:
-
-        >>> complexity_epoch.times
-
-        And the durations with:
-
-        >>> complexity_epoch.durations
+          * ``complexity_epoch.array_annotations['complexity']`` contains the
+            complexity values per spike.
+          * ``complexity_epoch.times`` contains the left edges.
+          * ``complexity_epoch.durations`` contains the durations.
 
     See also
     --------
-    elephant.statistics.precise_complexity_intervals
+    elephant.spike_train_processing.precise_complexity_intervals
 
     """
     if deletion_threshold is not None and deletion_threshold <= 1:
@@ -156,7 +147,6 @@ def precise_complexity_intervals(spiketrains, sampling_rate, spread=0):
     Complexity is calculated by counting the number of spikes (i.e. non-empty
     bins) that occur separated by `spread - 1` or less empty bins, within and
     across spike trains in the `spiketrains` list.
-
 
     Parameters
     ----------
