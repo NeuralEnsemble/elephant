@@ -18,6 +18,7 @@ import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
 from elephant.spike_train_generation import homogeneous_poisson_process,\
     homogeneous_gamma_process
+import math
 
 python_version_major = sys.version_info.major
 
@@ -784,6 +785,41 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
             timescale_num.append(timescale_i.magnitude)
         target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
         self.assertTrue(target)
+
+    def test_timescale_errors(self):
+        spikes = neo.SpikeTrain([1, 5, 7, 8]*pq.ms, t_stop=10*pq.ms)
+        binsize = 1 * pq.ms
+        spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
+
+        # Tau max with no units
+        tau_max = 1
+        self.assertRaises(ValueError,
+                          sc.spike_train_timescale, spikes_bin, tau_max)
+
+        # Tau max that is not a multiple of the binsize
+        tau_max = 1.1*pq.ms
+        self.assertRaises(ValueError,
+                          sc.spike_train_timescale, spikes_bin, tau_max)
+
+    def test_timescale_nan(self):
+        st0 = neo.SpikeTrain([]*pq.ms, t_stop=10*pq.ms)
+        st1 = neo.SpikeTrain([1]*pq.ms, t_stop=10*pq.ms)
+        st2 = neo.SpikeTrain([1, 5]*pq.ms, t_stop=10*pq.ms)
+        st3 = neo.SpikeTrain([1, 5, 6]*pq.ms, t_stop=10*pq.ms)
+        st4 = neo.SpikeTrain([1, 5, 6, 9]*pq.ms, t_stop=10*pq.ms)
+
+        binsize = 1 * pq.ms
+        tau_max = 1 * pq.ms
+
+        for st in [st0, st1, st2]:
+            bst = conv.BinnedSpikeTrain(st, binsize)
+            timescale = sc.spike_train_timescale(bst, tau_max, with_nan=True)
+            self.assertTrue(math.isnan(timescale))
+
+        for st in [st3, st4]:
+            bst = conv.BinnedSpikeTrain(st, binsize)
+            timescale = sc.spike_train_timescale(bst, tau_max, with_nan=True)
+            self.assertFalse(math.isnan(timescale))
 
 
 if __name__ == '__main__':
