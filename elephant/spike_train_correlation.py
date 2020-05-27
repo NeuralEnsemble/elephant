@@ -906,7 +906,7 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 sttc = spike_time_tiling_coefficient
 
 
-def spike_train_timescale(binned_st, tau_max):
+def spike_train_timescale(binned_st, tau_max, with_nan=False):
     r"""
     Calculates the auto-correlation time of a binned spike train.
     Uses the definition of the auto-correlation time proposed in [[1]_,
@@ -925,6 +925,9 @@ def spike_train_timescale(binned_st, tau_max):
         A binned spike train containing the spike train to be evaluated.
     tau_max : pq.Quantity
         Maximal integration time of the auto-correlation function.
+    with_nan : bool
+        If True returns NaN for spike trains with 2 or less spikes.
+        Default: False
 
     Returns
     -------
@@ -951,13 +954,16 @@ def spike_train_timescale(binned_st, tau_max):
     """
     binsize = binned_st.binsize
     if not (tau_max / binsize).simplified.units == pq.dimensionless:
-        raise AssertionError("tau_max needs units of time")
+        raise ValueError("tau_max needs units of time")
 
     # safe casting of tau_max/binsize to integer
     tau_max_bins = int(np.round((tau_max / binsize).simplified.magnitude))
     if not np.isclose(tau_max.simplified.magnitude,
                       (tau_max_bins * binsize).simplified.magnitude):
-        raise AssertionError("tau_max has to be a multiple of the binsize")
+        raise ValueError("tau_max has to be a multiple of the binsize")
+
+    if len(np.where(binned_st.to_array())[1]) <= 2 and with_nan:
+        return np.nan
 
     cch_window = [-tau_max_bins, tau_max_bins]
     corrfct, bin_ids = cross_correlation_histogram(
