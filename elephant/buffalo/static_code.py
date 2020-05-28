@@ -6,7 +6,6 @@ the child/parent relationships between the objects.
 """
 
 import ast
-import elephant.buffalo.provenance as provenance
 
 
 class StaticStep(object):
@@ -77,6 +76,8 @@ class StaticStep(object):
         Returns an `AnalysisStep` named tuple describing the relationships
         between parent and child nodes.
         """
+        import elephant.buffalo.provenance as provenance
+
         params = self._get_params()
         input_object = self.parent.object_hash if self.parent is not None \
             else None
@@ -105,7 +106,7 @@ class NameStep(StaticStep):
     _node_type = ast.Name
 
     def __init__(self, node, child=None):
-        super().__init__(node, child)
+        super(NameStep, self).__init__(node, child)
         self.object_hash = node.object_hash
 
     @property
@@ -127,7 +128,7 @@ class SubscriptStep(StaticStep):
     _node_type = ast.Subscript
 
     def __init__(self, node, child):
-        super().__init__(node, child)
+        super(SubscriptStep, self).__init__(node, child)
         self._slice, self._params = self._get_slice(node.slice)
 
     @staticmethod
@@ -191,7 +192,7 @@ class AttributeStep(StaticStep):
     _node_type = ast.Attribute
 
     def __init__(self, node, child=None):
-        super().__init__(node, child)
+        super(AttributeStep, self).__init__(node, child)
 
     def _get_params(self):
         return {'name': self._node.attr}

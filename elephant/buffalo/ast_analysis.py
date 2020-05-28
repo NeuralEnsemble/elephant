@@ -24,7 +24,7 @@ class NameAST(ast.NodeTransformer):
     provenance = None
 
     def __init__(self, provenance):
-        super().__init__()
+        super(NameAST, self).__init__()
         self.provenance = provenance
 
     def visit_Name(self, node):
@@ -41,7 +41,7 @@ class CallAST(ast.NodeVisitor):
     provenance_tracker = None
 
     def __init__(self, provenance_tracker, inputs, outputs):
-        super().__init__()
+        super(CallAST, self).__init__()
         self.provenance_tracker = provenance_tracker
         self._inputs = inputs
         self._outputs = outputs

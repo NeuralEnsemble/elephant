@@ -10,16 +10,27 @@ from functools import wraps
 import inspect
 import ast
 from collections import namedtuple
-from io import StringIO
 from tokenize import (generate_tokens, STRING, NEWLINE, OP, COMMENT, RBRACE,
                       RPAR, RSQB, COLON, INDENT, TokenError)
 
 from elephant.buffalo.object_hash import BuffaloObjectHash
-from elephant.buffalo.prov import BuffaloProvDocument
+from elephant.buffalo.prov_document import BuffaloProvDocument
 from elephant.buffalo.graph import BuffaloProvenanceGraph
-from elephant.buffalo.ast import CallAST
+from elephant.buffalo.ast_analysis import CallAST
 
 from pprint import pprint
+
+# Python 2.7 compatibility
+try:
+    from StringIO import StringIO
+except ModuleNotFoundError:
+    from io import StringIO
+
+if 'signature' in dir(inspect):
+    signature = inspect.signature
+else:
+    import funcsigs
+    signature = funcsigs.signature
 
 
 AnalysisStep = namedtuple('AnalysisStep', ('function',
@@ -35,6 +46,14 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
 FunctionDefinition = namedtuple('FunctionDefinition', ('name',
                                                        'module',
                                                        'version'))
+
+
+EXACT_TOKEN_TYPES = {
+    ')': RPAR,
+    ']': RSQB,
+    ':': COLON,
+    '}': RBRACE,
+}
 
 
 class Provenance(object):
@@ -131,13 +150,16 @@ class Provenance(object):
                 tokens = generate_tokens(string_io.readline)
                 last_token = None
                 for token in tokens:
-                    if token.type == NEWLINE:
+                    if token[0] == NEWLINE:
                         break
-                    if token.type == COMMENT or token.type == INDENT:
+                    if token[0] == COMMENT or token[0] == INDENT:
                         continue
                     last_token = token
-                if last_token.type == OP:
-                    if last_token.exact_type in [RBRACE, RPAR, RSQB, COLON]:
+                if last_token[0] == OP:
+                    exact_type = last_token.exact_type \
+                        if hasattr(last_token, 'exact_type') \
+                        else EXACT_TOKEN_TYPES[last_token[1]]
+                    if exact_type in [RBRACE, RPAR, RSQB, COLON]:
                         return None
                     statement.append(line)
                     return previous_line - 1
@@ -214,7 +236,7 @@ class Provenance(object):
 
                 input_data = {}
                 input_args_names = []
-                params = tuple(inspect.signature(function).parameters.keys())
+                params = tuple(signature(function).parameters.keys())
                 for arg_id, arg_val in enumerate(args):
                     arg_name = params[arg_id]
                     input_data[arg_name] = arg_val

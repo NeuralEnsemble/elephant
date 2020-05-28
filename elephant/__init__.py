@@ -25,7 +25,8 @@ from . import (statistics,
                cell_assembly_detection,
                spade,
                waveform_features,
-               gpfa)
+               gpfa,
+               buffalo)
 
 # not included modules on purpose:
 #   parallel: avoid warns when elephant is imported

@@ -8,6 +8,6 @@ during the analysis workflow in Elephant.
 :license: BSD, see LICENSE.txt for details.
 """
 
-import elephant.buffalo.provenance as provenance
+from . import provenance
 
 __version__ = '0.0.2'
