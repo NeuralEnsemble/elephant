@@ -12,6 +12,7 @@ import ast
 from collections import namedtuple
 from tokenize import (generate_tokens, STRING, NEWLINE, OP, COMMENT, RBRACE,
                       RPAR, RSQB, COLON, INDENT, TokenError)
+from six import StringIO
 
 from elephant.buffalo.object_hash import BuffaloObjectHash
 from elephant.buffalo.prov_document import BuffaloProvDocument
@@ -21,11 +22,6 @@ from elephant.buffalo.ast_analysis import CallAST
 from pprint import pprint
 
 # Python 2.7 compatibility
-try:
-    from StringIO import StringIO
-except ModuleNotFoundError:
-    from io import StringIO
-
 if 'signature' in dir(inspect):
     signature = inspect.signature
 else:
