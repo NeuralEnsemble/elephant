@@ -5,6 +5,7 @@ the analysis, and how this would benefit a histogram plotting function.
 
 import matplotlib.pyplot as plt
 import quantities as pq
+import elephant.buffalo
 
 from elephant.statistics import time_histogram
 
@@ -16,8 +17,8 @@ from elephant.buffalo.examples.utils import (get_spike_trains,
 DEFAULT_TIME_UNIT = pq.s
 
 
-def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms,
-         bin_size=50*pq.ms, time_unit=DEFAULT_TIME_UNIT):
+def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
+         time_unit=DEFAULT_TIME_UNIT, show_plot=False):
 
     # Generates spike data
     spiketrains = get_spike_trains(firing_rate, n_spiketrains, t_stop)
@@ -28,17 +29,18 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms,
     print(f"Maximum spike time is {t_stop}\n\n")
 
     # Using old `elephant.time_histogram` function, that returns
-    # `neo.AnalogSignal`. `old` keyword parameter was added to the function
-    # implementation to control the behavior
+    # `neo.AnalogSignal`.
 
-    time_hist_count = time_histogram(spiketrains, bin_size, output='counts',
-                                     old=True)
-    time_hist_mean = time_histogram(spiketrains, bin_size, output='mean',
-                                    old=True)
+    time_hist_count = time_histogram(spiketrains, bin_size, output='counts')
+    time_hist_mean = time_histogram(spiketrains, bin_size, output='mean')
 
     # Using new `elephant.statistics.time_histogram` function, that returns
     # `AnalysisObject` classes (`TimeHistogramObject` in the case of
-    # `elephant.statistics.time_histogram`)
+    # `elephant.statistics.time_histogram`).
+    # The `elephant.buffalo.USE_ANALYSIS_OBJECTS` flag is used to control
+    # if Elephant functions output `AnalysisObject`s.
+
+    elephant.buffalo.USE_ANALYSIS_OBJECTS = True
 
     time_hist_obj_count = time_histogram(spiketrains, bin_size,
                                          output='counts')
@@ -75,10 +77,13 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms,
 
     figure_new_code.savefig('time_histogram_new_code.png')
 
-    plt.show()
+    if show_plot:
+        plt.show()
 
 
 if __name__ == "__main__":
     firing_rate = 10 * pq.Hz
     n_spiketrains = 100
-    main(firing_rate, n_spiketrains)
+    bin_size = 5 * pq.ms
+    show_plot = True
+    main(firing_rate, n_spiketrains, bin_size=bin_size, show_plot=show_plot)

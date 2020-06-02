@@ -5,6 +5,7 @@ specific objects can be implemented building on more generic objects.
 
 import matplotlib.pyplot as plt
 import quantities as pq
+import elephant.buffalo
 
 from elephant.statistics import time_histogram, psth
 from elephant.statistics import PSTHObject
@@ -17,8 +18,8 @@ from elephant.buffalo.examples.utils import (get_spike_trains,
 DEFAULT_TIME_UNIT = pq.s
 
 
-def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms,
-         bin_size=50*pq.ms, event_time=150*pq.ms, time_unit=DEFAULT_TIME_UNIT):
+def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
+         event_time=150*pq.ms, time_unit=DEFAULT_TIME_UNIT, show_plot=False):
 
     # Generates spike data
     spiketrains = get_spike_trains(firing_rate, n_spiketrains, t_stop)
@@ -31,6 +32,8 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms,
 
     # Use new `elephant.statistics.time_histogram` function, that returns
     # `AnalysisObject` classes, to obtain a time histogram of the `spiketrains`
+
+    elephant.buffalo.USE_ANALYSIS_OBJECTS = True
 
     time_hist_obj_count = time_histogram(spiketrains, bin_size,
                                          output='counts')
@@ -84,10 +87,13 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms,
 
     figure_psth.savefig('psth.png')
 
-    plt.show()
+    if show_plot:
+        plt.show()
 
 
 if __name__ == "__main__":
     firing_rate = 10 * pq.Hz
     n_spiketrains = 100
-    main(firing_rate, n_spiketrains)
+    bin_size = 5 * pq.ms
+    show_plot = True
+    main(firing_rate, n_spiketrains, bin_size=bin_size, show_plot=show_plot)

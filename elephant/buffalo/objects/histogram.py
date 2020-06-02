@@ -61,7 +61,7 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
     t_stop : pq.Quantity, optional
         End time of the histogram.
         Default: None.
-    binary : boolean, optional
+    binary : bool, optional
         If source spike trains were binned.
         Default: None.
     warnings_raised : bool, optional
@@ -188,7 +188,7 @@ class PSTHObject(TimeHistogramObject):
     t_stop : pq.Quantity, optional
         End time of the histogram.
         Default: None.
-    binary : boolean, optional
+    binary : bool, optional
         If source spike trains were binned.
         Default: None.
     warnings_raised : bool, optional

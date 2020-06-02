@@ -10,4 +10,8 @@ capture during the analysis workflow in Elephant.
 
 from . import objects
 
+
 __version__ = '0.0.2'
+
+
+USE_ANALYSIS_OBJECTS = False

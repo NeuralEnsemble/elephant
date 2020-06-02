@@ -72,6 +72,7 @@ import elephant.kernels as kernels
 import warnings
 
 from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
+import elephant.buffalo
 
 cv = scipy.stats.variation
 
@@ -639,7 +640,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 
 
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
-                   output='counts', binary=False, old=False):
+                   output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
@@ -678,22 +679,18 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
         Default: False.
-    old : bool, optional
-        If True, uses old implementation that returns `neo.AnalogSignal`.
-        If False, returns `buffalo.objects.TimeHistogramObject`.
-        Default: False.
 
     Returns
     -------
     neo.AnalogSignal or buffalo.objects.TimeHistogramObject
-        If `old` is True, returns a `neo.AnalogSignal` object containing the
-        histogram values.
+        If `elephant.buffalo.USE_ANALYSIS_OBJECTS` flag is False, returns a
+        `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
-        If `old` is False, returns a object containing the histogram and
-        allowing access to basic histogram properties
-        (`buffalo.objects.TimeHistogramObject`).
+        If `elephant.buffalo.USE_ANALYSIS_OBJECTS` is True, returns a
+        `buffalo.objects.TimeHistogramObject`, that contains the histogram and
+        allows access to basic histogram properties.
 
     Raises
     ------
@@ -707,6 +704,11 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         `t_start` values.
         If `t_stop` is None and the objects in `spiketrains` have different
         `t_stop` values.
+
+    Notes
+    -----
+    If the output is `neo.AnalogSignal`, an annotation `warnings_raised` is
+    added to the object to record if any warning was raised.
 
     See also
     --------
@@ -771,10 +773,11 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     else:
         raise ValueError('Parameter output is not valid.')
 
-    if old:
+    if not elephant.buffalo.USE_ANALYSIS_OBJECTS:
         return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
                                 sampling_period=binsize, units=bin_hist.units,
-                                t_start=t_start)
+                                t_start=t_start,
+                                warnings_raised=warnings_raised)
 
     return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
                                units=bin_hist.units, histogram_type=output,
@@ -835,11 +838,20 @@ def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
         Returns a object containing the histogram and event details, which
         allows access to basic histogram properties.
 
+    Raises
+    ------
+    ValueError
+        If `elephant.buffalo.USE_ANALYSIS_OBJECTS` is not True.
+
     """
+    if not elephant.buffalo.USE_ANALYSIS_OBJECTS:
+        raise ValueError("This function works with `AnalysisObject` classes. "
+                         "Please set the flag"
+                         "`elephant.buffalo.USE_ANALYSIS_OBJECTS` to True.")
 
     histogram = time_histogram(spiketrains, binsize, t_start=t_start,
                                t_stop=t_stop, output=output,
-                               binary=binary, old=False)
+                               binary=binary)
     return PSTHObject.from_time_histogram(histogram, event_time,
                                           event_label=event_label)
 
