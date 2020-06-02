@@ -100,8 +100,9 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
 
         # Constructs the original `neo.AnalogSignal` that the `time_histogram`
         # function returns
-        super().__init__(signal=bins, sampling_period=bin_size, units=units,
-                         t_start=t_start)
+        super(TimeHistogramObject, self).__init__(signal=bins,
+                                                  sampling_period=bin_size,
+                                                  units=units, t_start=t_start)
 
     # Properties that depend on the function parameters/execution
 
@@ -201,7 +202,7 @@ class PSTHObject(TimeHistogramObject):
                 t_start=None, t_stop=None, binary=None,
                 warnings_raised=False, **kwargs):
 
-        return super().__new__(cls, bins, bin_size, units=units,
+        return super(PSTHObject, cls).__new__(cls, bins, bin_size, units=units,
                                histogram_type=histogram_type,
                                t_start=t_start, t_stop=t_stop, binary=binary,
                                warnings_raised=warnings_raised)
@@ -214,7 +215,7 @@ class PSTHObject(TimeHistogramObject):
         self._event_time = event_time
         self._event_label = event_label
 
-        super().__init__(bins, bin_size, units=units,
+        super(PSTHObject, self).__init__(bins, bin_size, units=units,
                          histogram_type=histogram_type, t_start=t_start,
                          t_stop=t_stop, binary=binary,
                          warnings_raised=warnings_raised)

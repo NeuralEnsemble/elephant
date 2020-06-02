@@ -25,10 +25,11 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     spiketrains = get_spike_trains(firing_rate, n_spiketrains, t_stop)
 
     # PSTH parameters output
-    print(f"Generating PSTH with bin size = {bin_size}")
-    print(f"Event occurs at time = {event_time}")
-    print(f"Data is {n_spiketrains} spike trains with rate {firing_rate}")
-    print(f"Maximum spike time is {t_stop}\n\n")
+    print("Generating PSTH with bin size = {}".format(bin_size))
+    print("Event occurs at time = {}".format(event_time))
+    print("Data is {} spike trains with rate {}".format(n_spiketrains,
+                                                        firing_rate))
+    print("Maximum spike time is {}\n\n".format(t_stop))
 
     # Use new `elephant.statistics.time_histogram` function, that returns
     # `AnalysisObject` classes, to obtain a time histogram of the `spiketrains`
