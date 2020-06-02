@@ -82,3 +82,5 @@ Thumbs.db
 ignored/
 
 .ipynb_checkpoints/
+
+/elephant/buffalo/examples/*.png
