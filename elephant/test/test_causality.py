@@ -169,11 +169,6 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         """
         Test the output of _optimal_vector_arm against the output of R vars
         VAR(t(signal), lag.max=10, ic='AIC').
-        ########################################
-        [[[ 0.88910761  0.00447063]
-          [ 0.90127369 -0.80889893]]
-         [[-0.48687682 -0.00102631]
-          [-0.20162766 -0.50098493]]]
         """
         # First equation coefficients from R vars
         first_y1_l1 = 0.889066507
