@@ -56,7 +56,8 @@ class BuffaloObjectHash(object):
                 )
 
     def __repr__(self):
-        return "{}: {} = {}".format(self._id, self._type, self._value)
+        #return "{}: {} = {}".format(self._id, self._type, self._value)
+        return "{}: {}".format(self._id, self._type)
 
     @property
     def value(self):
@@ -72,10 +73,8 @@ class BuffaloObjectHash(object):
         """
         return self._type
 
-    def get_md_string(self):
-        # TODO: use other solution for better plots
-        value = "id: {}".format(self._id)
-        return '"{}"["{}<br>{}"]'.format(hash(self), self._type, value)
+    def get_label(self):
+        return self.type
 
     def get_prov_entity_string(self, namespace):
         return "{}:{}:{}".format(namespace, self._type, hash(self))

@@ -84,4 +84,4 @@ ignored/
 .ipynb_checkpoints/
 
 /elephant/buffalo/examples/*.png
-/elephant/buffalo/examples/*.md
+/elephant/buffalo/examples/*.htm*

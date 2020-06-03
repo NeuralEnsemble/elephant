@@ -10,7 +10,7 @@ from functools import wraps
 import inspect
 import ast
 from collections import namedtuple
-from tokenize import (generate_tokens, STRING, NEWLINE, OP, COMMENT, RBRACE,
+from tokenize import (generate_tokens, NEWLINE, OP, COMMENT, RBRACE,
                       RPAR, RSQB, COLON, INDENT, TokenError)
 from six import StringIO
 
@@ -18,6 +18,8 @@ from elephant.buffalo.object_hash import BuffaloObjectHash
 from elephant.buffalo.prov_document import BuffaloProvDocument
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import CallAST
+
+from os.path import splitext
 
 from pprint import pprint
 
@@ -27,13 +29,6 @@ if 'signature' in dir(inspect):
 else:
     import funcsigs
     signature = funcsigs.signature
-
-import logging
-logging.basicConfig()
-logging.root.setLevel(logging.NOTSET)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
 
 
 AnalysisStep = namedtuple('AnalysisStep', ('function',
@@ -204,17 +199,12 @@ class Provenance(object):
                 try:
                     frame = inspect.currentframe().f_back
                     frame_info = inspect.getframeinfo(frame)
-                    logger.debug(f"{frame_info.filename}-{frame_info.function}"
-                                 f"{self.source_file}-{self.source_name}")
-                    if ((frame_info.filename == self.source_file and
-                            frame_info.function == self.source_name) or
-                        frame_info.function == "<listcomp>"):
+                    if (frame_info.filename == self.source_file and
+                            frame_info.function == self.source_name):
                         lineno = frame.f_lineno
                 finally:
                     del frame_info
                     del frame
-
-            #logger.debug("/".join(map(str, *args)))
 
             function_output = function(*args, **kwargs)
 
@@ -290,7 +280,6 @@ class Provenance(object):
                 # 7. Add to history
                 # The history will be the base to generate the graph / PROV
                 # document
-
                 Provenance.history.append(step)
 
             return function_output
@@ -334,18 +323,30 @@ class Provenance(object):
         return prov_document.get_dot_graph(**kwargs)
 
     @classmethod
-    def save_graph(cls, filename):
+    def save_graph(cls, filename, show=False):
         """
-        Save the graph with the provenance track in Mermaid format.
+        Save an interactive graph with the provenance track.
 
         Parameters
         ----------
         filename : str
-            Destination of the saved graph.
+            HTML file to save the graph.
+
+        Raises
+        ------
+        ValueError
+            If `filename` is not an HTML file.
 
         """
-        graph = BuffaloProvenanceGraph(cls.objects, cls.history)
-        graph.save_graph(filename)
+        name, ext = splitext(filename)
+        if not ext.lower() in ['.html', '.htm']:
+            raise ValueError("Filename must have HTML extension (.html, "
+                             ".htm)!")
+
+        graph = BuffaloProvenanceGraph()
+        for step in Provenance.history:
+            graph.add_step(step)
+        graph.to_pyvis(filename, show=show)
 
     @classmethod
     def add(cls, obj):
@@ -422,16 +423,19 @@ def print_history():
     pprint(Provenance.history)
 
 
-def save_graph(filename):
+def save_graph(filename, show=False):
     """
-    Saves a Mermaid graph definition to a file.
+    Saves an interactive graph to disk.
 
     Parameters
     ----------
     filename : str
-        Destination of the saved graph.
+        Destination of the saved graph (HTML file).
+    show : bool
+        If True, displays the graph in the browser after saving.
+        Default: False.
     """
-    Provenance.save_graph(filename)
+    Provenance.save_graph(filename, show=show)
 
 
 def save_prov_graph(filename, **kwargs):

@@ -164,11 +164,11 @@ def main(session_id):
 
     figure.savefig('isi.png')
 
-    # provenance.print_history()
+    provenance.print_history()
 
-    provenance.save_graph("graph_full.md")
-    provenance.save_prov_graph("prov_graph_full.png", show_nary=False,
-                                show_element_attributes=False)
+    provenance.save_graph("isi_histogram.html")
+    # provenance.save_prov_graph("prov_graph_full.png", show_nary=False,
+    #                             show_element_attributes=False)
 
 
 if __name__ == "__main__":
