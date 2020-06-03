@@ -75,7 +75,7 @@ import warnings
 from elephant.buffalo.provenance import Provenance
 from elephant.utils import is_time_quantity
 
-cv = scipy.stats.variation
+cv = Provenance(inputs=["a"])(scipy.stats.variation)
 
 
 @Provenance(inputs=['spiketrain'])
@@ -274,6 +274,7 @@ def __variation_check(v, with_nan):
     return None
 
 
+@Provenance(inputs=["v"])
 def lv(v, with_nan=False):
     r"""
     Calculate the measure of local variation LV for a sequence of time
@@ -339,6 +340,7 @@ def lv(v, with_nan=False):
     return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
 
 
+@Provenance(inputs=["v"])
 def cv2(v, with_nan=False):
     r"""
     Calculate the measure of CV2 for a sequence of time intervals between
@@ -406,6 +408,7 @@ def cv2(v, with_nan=False):
     return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
 
 
+@Provenance(inputs=["spiketrain"])
 def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True):
@@ -661,6 +664,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     return rate
 
 
+@Provenance(inputs=["spiketrains"])
 def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
@@ -779,6 +783,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                             t_start=t_start)
 
 
+@Provenance(inputs=["spiketrains"])
 def complexity_pdf(spiketrains, binsize):
     """
     Complexity Distribution of a list of `neo.SpikeTrain` objects.
