@@ -187,9 +187,9 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         second_y1_l2 = -0.201594953
         second_y2_l2 = -0.501035369
 
-        coefficients, _ = elephant.causality.granger._optimal_vector_arm(
-            self.ground_truth, max_order=10, information_criterion='bic'
-        )
+        coefficients, _, _ = elephant.causality.granger._optimal_vector_arm(
+            self.ground_truth, dimension=2, max_order=10,
+            information_criterion='bic')
 
         # Arrange the ground truth values in the same shape as coefficients
         ground_truth_coefficients = np.asarray(
@@ -200,7 +200,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         )
 
         assert_array_almost_equal(coefficients, ground_truth_coefficients,
-                                  decimal=5)
+                                  decimal=4)
 
     def tearDown(self) -> None:
         pass
