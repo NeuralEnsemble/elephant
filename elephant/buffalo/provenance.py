@@ -28,6 +28,13 @@ else:
     import funcsigs
     signature = funcsigs.signature
 
+import logging
+logging.basicConfig()
+logging.root.setLevel(logging.NOTSET)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
 
 AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'input',
@@ -197,12 +204,17 @@ class Provenance(object):
                 try:
                     frame = inspect.currentframe().f_back
                     frame_info = inspect.getframeinfo(frame)
-                    if (frame_info.filename == self.source_file and
-                            frame_info.function == self.source_name):
+                    logger.debug(f"{frame_info.filename}-{frame_info.function}"
+                                 f"{self.source_file}-{self.source_name}")
+                    if ((frame_info.filename == self.source_file and
+                            frame_info.function == self.source_name) or
+                        frame_info.function == "<listcomp>"):
                         lineno = frame.f_lineno
                 finally:
                     del frame_info
                     del frame
+
+            #logger.debug("/".join(map(str, *args)))
 
             function_output = function(*args, **kwargs)
 
@@ -292,7 +304,7 @@ class Provenance(object):
         cls.source_file = inspect.getfile(frame)
         cls.source_name = inspect.getframeinfo(frame).function
         cls.source_code = inspect.getsourcelines(frame)[0]
-        cls.frame_ast = ast.parse("".join(cls.source_code))
+        cls.frame_ast = ast.parse("".join(cls.source_code).strip())
 
     @classmethod
     def get_prov_graph(cls, **kwargs):

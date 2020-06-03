@@ -7,6 +7,7 @@ class or function.
 
 from functools import wraps
 import inspect
+import builtins
 
 
 def savefig_callback(function):
@@ -30,7 +31,7 @@ def open_decorator(function):
         mode = kwargs['mode'] if 'mode' in kwargs else args[1]
         filename = kwargs['file'] if 'file' in kwargs else args[0]
         result = function(*args, **kwargs)
-
+        print(inspect.getsourcefile(inspect.currentframe().f_back))
         if 'r' in mode:
             monitor.input(filename)
         if any(x in mode for x in ['w', 'x', 'a']):
@@ -77,14 +78,14 @@ def activate():
     """
     Activates IO tracking.
     """
-    __builtins__['open'] = open_decorator(__builtins__['open'])
+    builtins.open = open_decorator(builtins.open)
 
 
 def deactivate():
     """
     Deactivates IO tracking.
     """
-    __builtins__['open'] = inspect.unwrap(__builtins__['open'])
+    builtins.open = inspect.unwrap(builtins.open)
 
 
 monitor = IOMonitor()

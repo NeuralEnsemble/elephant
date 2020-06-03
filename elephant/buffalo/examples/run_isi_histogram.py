@@ -132,7 +132,7 @@ def load_data(session_id, channels):
 
 
 def main(session_id):
-    # provenance.activate()
+    provenance.activate()
 
     # Load data using any custom function.
     # Should track data provenance at some point
