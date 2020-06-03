@@ -261,9 +261,6 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     causality.instantaneous_causality : float
     causality.total_interdependence : float
     """
-    # TODO: remove order parameter
-    # if order <= 0:
-    #     raise ValueError(f"The order parameter should be positive. Not {order}!")
 
     if isinstance(signals, AnalogSignal):
         signals = np.asarray(signals)
