@@ -262,8 +262,8 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     causality.total_interdependence : float
     """
     # TODO: remove order parameter
-    if order <= 0:
-        raise ValueError(f"The order parameter should be positive. Not {order}!")
+    # if order <= 0:
+    #     raise ValueError(f"The order parameter should be positive. Not {order}!")
 
     if isinstance(signals, AnalogSignal):
         signals = np.asarray(signals)
@@ -336,7 +336,7 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
 if __name__ == "__main__":
 
     np.random.seed(1)
-    length_2d = 300000
+    length_2d = 300
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -355,6 +355,7 @@ if __name__ == "__main__":
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
+    np.save('/home/jurkus/granger_data', signal)
     causality = pairwise_granger(signal, 10, 'bic')
 
     print(causality)

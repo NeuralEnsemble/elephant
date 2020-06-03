@@ -23,6 +23,8 @@ from numpy.ma.testutils import assert_array_equal, assert_allclose
 
 class PairwiseGrangerTestCase(unittest.TestCase):
     def setUp(self):
+        # Load ground truth
+        self.ground_truth = np.load('/home/jurkus/granger_ground_truth.npy')
         # Set up that is equivalent to the one in POC granger repository
         np.random.seed(1)
         # length_2d = 10000
@@ -44,7 +46,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
             self.signal[0, i] += rnd_var[0]
             self.signal[1, i] += rnd_var[1]
 
-        self.causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+        self.causality = elephant.causality.granger.pairwise_granger(
+            self.signal, max_order=10, information_criterion='bic')
 
     def test_analog_signal_input(self):
         """
@@ -161,6 +164,43 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         self.assertIsInstance(self.causality.instantaneous_causality,
                               np.ndarray)
         self.assertIsInstance(self.causality.total_interdependence, np.ndarray)
+
+    def test_ground_truth_vector_autoregressive_model(self):
+        """
+        Test the output of _optimal_vector_arm against the output of R vars
+        VAR(t(signal), lag.max=10, ic='AIC').
+        ########################################
+        [[[ 0.88910761  0.00447063]
+          [ 0.90127369 -0.80889893]]
+         [[-0.48687682 -0.00102631]
+          [-0.20162766 -0.50098493]]]
+        """
+        # First equation coefficients from R vars
+        first_y1_l1 = 0.889066507
+        first_y2_l1 = 0.004496849
+        first_y1_l2 = -0.486847496
+        first_y2_l2 = -0.001032864
+
+        # Second equation coefficients from R vars
+        second_y1_l1 = 0.901263822
+        second_y2_l1 = -0.808942530
+        second_y1_l2 = -0.201594953
+        second_y2_l2 = -0.501035369
+
+        coefficients, _ = elephant.causality.granger._optimal_vector_arm(
+            self.ground_truth, max_order=10, information_criterion='bic'
+        )
+
+        # Arrange the ground truth values in the same shape as coefficients
+        ground_truth_coefficients = np.asarray(
+            [[[first_y1_l1, first_y2_l1],
+              [second_y1_l1, second_y2_l1]],
+             [[first_y1_l2, first_y2_l2],
+              [second_y1_l2, second_y2_l2]]]
+        )
+
+        assert_array_almost_equal(coefficients, ground_truth_coefficients,
+                                  decimal=5)
 
     def tearDown(self) -> None:
         pass
