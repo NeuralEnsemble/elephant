@@ -84,11 +84,14 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/tests/test_stattools.py
         pass
 
+    @unittest.skip("This hardcoded test has been superseded by the "
+                   "ground truth")
     def test_basic_pairwise_granger(self):
         """
         Test the results of pairwise granger against hardcoded values produced
         by the Granger proof-of-concept script.
         """
+        # TODO: Remove test as ground truth has been implemented
         hc_x_y = np.asarray([-0.5461382])
         hc_y_x = np.asarray([-0.25516382])
         hc_instantaneous_causality = 0.11647517002016418
@@ -110,8 +113,10 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         assert_array_almost_equal(self.causality.directional_causality_y_x, 0, decimal=15)
         assert_array_almost_equal(self.causality.directional_causality_x_y, 0, decimal=15)
 
-    @unittest.skipUnless(sys.version_info >= (3, 1), "requires Python 3.1 or above")
+    # @unittest.skipUnless(sys.version_info >= (3, 1), "requires Python 3.1 or above")
+    @unittest.skip("Order parameter has been removed from pairwise_granger")
     def test_negative_order_parameter(self):
+        # TODO: Order parameter removed from granger.py so this should also go
         """
         Use assertRaises as a context manager to catch the ValueError.
         Order parameter should always be a positive integer.
@@ -154,21 +159,22 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         causality_sum = self.causality.directional_causality_x_y \
                         + self.causality.directional_causality_y_x \
                         + self.causality.instantaneous_causality
-        assert_array_almost_equal(self.causality.total_interdependence, causality_sum, decimal=8)
+        assert_array_almost_equal(self.causality.total_interdependence,
+                                  causality_sum, decimal=8)
 
-    def test_all_four_result_values_are_numpy_arrays(self):
+    def test_all_four_result_values_are_floats(self):
         self.assertIsInstance(self.causality.directional_causality_x_y,
-                              np.ndarray)
+                              float)
         self.assertIsInstance(self.causality.directional_causality_y_x,
-                              np.ndarray)
+                              float)
         self.assertIsInstance(self.causality.instantaneous_causality,
-                              np.ndarray)
-        self.assertIsInstance(self.causality.total_interdependence, np.ndarray)
+                              float)
+        self.assertIsInstance(self.causality.total_interdependence, float)
 
     def test_ground_truth_vector_autoregressive_model(self):
         """
         Test the output of _optimal_vector_arm against the output of R vars
-        VAR(t(signal), lag.max=10, ic='AIC').
+        generated using VAR(t(signal), lag.max=10, ic='AIC').
         """
         # First equation coefficients from R vars
         first_y1_l1 = 0.889066507
