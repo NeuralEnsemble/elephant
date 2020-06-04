@@ -11,14 +11,10 @@ import unittest
 import elephant.causality.granger
 
 import sys
-import neo
 import numpy as np
-import scipy.signal as spsig
-import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
 from neo.core import AnalogSignal
 import quantities as pq
-from numpy.ma.testutils import assert_array_equal, assert_allclose
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
