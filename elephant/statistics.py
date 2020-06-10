@@ -344,7 +344,7 @@ def cv2(v, with_nan=False):
     as:
 
     .. math::
-        CV2 := \frac{1}{N} \sum{i=1}^{N-1}
+        CV2 := \frac{1}{N} \sum_{i=1}^{N-1}
                            \frac{2|isi_{i+1}-isi_i|}
                           {|isi_{i+1}+isi_i|}
 
