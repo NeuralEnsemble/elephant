@@ -163,6 +163,15 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         If the input spiketrain is empty.
 
     """
+    if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
+            and t_stop is None and axis is None:
+        # a faster approach for a typical use case
+        n_spikes = len(spiketrain)
+        time_interval = spiketrain.t_stop - spiketrain.t_start
+        time_interval = time_interval.rescale(spiketrain.units)
+        rate = n_spikes / time_interval
+        return rate
+
     if isinstance(spiketrain, pq.Quantity):
         # Quantity or neo.SpikeTrain
         if not is_time_quantity(t_start, allow_none=True):
