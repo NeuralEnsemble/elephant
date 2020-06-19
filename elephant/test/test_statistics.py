@@ -353,7 +353,7 @@ class LVTestCase(unittest.TestCase):
             an input with more than 1 entry.
             """
             self.assertTrue(math.isnan(es.lv(seq, with_nan=True)))
-        
+
 
 class CV2TestCase(unittest.TestCase):
     def setUp(self):
