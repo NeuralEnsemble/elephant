@@ -11,18 +11,16 @@ import unittest
 import elephant.causality.granger
 
 import sys
-import neo
 import numpy as np
-import scipy.signal as spsig
-import scipy.stats
 from numpy.testing.utils import assert_array_almost_equal
 from neo.core import AnalogSignal
 import quantities as pq
-from numpy.ma.testutils import assert_array_equal, assert_allclose
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
     def setUp(self):
+        # Load ground truth
+        self.ground_truth = np.load('/home/jurkus/granger_ground_truth.npy')
         # Set up that is equivalent to the one in POC granger repository
         np.random.seed(1)
         # length_2d = 10000
@@ -44,7 +42,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
             self.signal[0, i] += rnd_var[0]
             self.signal[1, i] += rnd_var[1]
 
-        self.causality = elephant.causality.granger.pairwise_granger(self.signal, 2)
+        self.causality = elephant.causality.granger.pairwise_granger(
+            self.signal, max_order=10, information_criterion='bic')
 
     def test_analog_signal_input(self):
         """
@@ -63,40 +62,6 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         self.assertEqual(analog_signal_causality.total_interdependence,
                          self.causality.total_interdependence)
 
-    def test_lag_covariances(self):
-        # Not essential
-        # Passing a signal with variance of 0, should equal 0
-        pass
-
-    def test_vector_arm(self):
-        # Not essential
-        # Test a static signal that could not possibly predict itself
-        # Test white noise?
-        pass
-
-    def test_yule_walker(self):
-        # Not essential
-        # Some unit tests from statsmodels for inspiration
-        # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/tests/test_tsa_tools.py
-        # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/tests/test_stattools.py
-        pass
-
-    def test_basic_pairwise_granger(self):
-        """
-        Test the results of pairwise granger against hardcoded values produced
-        by the Granger proof-of-concept script.
-        """
-        hc_x_y = np.asarray([-0.5461382])
-        hc_y_x = np.asarray([-0.25516382])
-        hc_instantaneous_causality = 0.11647517002016418
-        hc_total_interdependence = np.asarray([-0.68482685])
-        assert_array_almost_equal(self.causality.directional_causality_x_y, hc_x_y, decimal=8)
-        assert_array_almost_equal(self.causality.directional_causality_y_x, hc_y_x, decimal=8)
-        assert_array_almost_equal(self.causality.instantaneous_causality,
-                         hc_instantaneous_causality, decimal=8)
-        assert_array_almost_equal(self.causality.total_interdependence,
-                         hc_total_interdependence, decimal=8)
-
     def same_signal_pairwise_granger(self):
         """
         Pass two identical signals to pairwise granger. This should yield zero
@@ -106,16 +71,6 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         same_signal = np.vstack([self.signal[0], self.signal[0]])
         assert_array_almost_equal(self.causality.directional_causality_y_x, 0, decimal=15)
         assert_array_almost_equal(self.causality.directional_causality_x_y, 0, decimal=15)
-
-    @unittest.skipUnless(sys.version_info >= (3, 1), "requires Python 3.1 or above")
-    def test_negative_order_parameter(self):
-        """
-        Use assertRaises as a context manager to catch the ValueError.
-        Order parameter should always be a positive integer.
-
-        """
-        with self.assertRaises(ValueError):
-            causality = elephant.causality.granger.pairwise_granger(self.signal, -1)
 
     @unittest.skipUnless(sys.version_info >= (3, 1), "requires Python 3.1 or above")
     def test_result_namedtuple(self):
@@ -151,16 +106,49 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         causality_sum = self.causality.directional_causality_x_y \
                         + self.causality.directional_causality_y_x \
                         + self.causality.instantaneous_causality
-        assert_array_almost_equal(self.causality.total_interdependence, causality_sum, decimal=8)
+        assert_array_almost_equal(self.causality.total_interdependence,
+                                  causality_sum, decimal=8)
 
-    def test_all_four_result_values_are_numpy_arrays(self):
+    def test_all_four_result_values_are_floats(self):
         self.assertIsInstance(self.causality.directional_causality_x_y,
-                              np.ndarray)
+                              float)
         self.assertIsInstance(self.causality.directional_causality_y_x,
-                              np.ndarray)
+                              float)
         self.assertIsInstance(self.causality.instantaneous_causality,
-                              np.ndarray)
-        self.assertIsInstance(self.causality.total_interdependence, np.ndarray)
+                              float)
+        self.assertIsInstance(self.causality.total_interdependence, float)
+
+    def test_ground_truth_vector_autoregressive_model(self):
+        """
+        Test the output of _optimal_vector_arm against the output of R vars
+        generated using VAR(t(signal), lag.max=10, ic='AIC').
+        """
+        # First equation coefficients from R vars
+        first_y1_l1 = 0.889066507
+        first_y2_l1 = 0.004496849
+        first_y1_l2 = -0.486847496
+        first_y2_l2 = -0.001032864
+
+        # Second equation coefficients from R vars
+        second_y1_l1 = 0.901263822
+        second_y2_l1 = -0.808942530
+        second_y1_l2 = -0.201594953
+        second_y2_l2 = -0.501035369
+
+        coefficients, _, _ = elephant.causality.granger._optimal_vector_arm(
+            self.ground_truth, dimension=2, max_order=10,
+            information_criterion='bic')
+
+        # Arrange the ground truth values in the same shape as coefficients
+        ground_truth_coefficients = np.asarray(
+            [[[first_y1_l1, first_y2_l1],
+              [second_y1_l1, second_y2_l1]],
+             [[first_y1_l2, first_y2_l2],
+              [second_y1_l2, second_y2_l2]]]
+        )
+
+        assert_array_almost_equal(coefficients, ground_truth_coefficients,
+                                  decimal=4)
 
     def tearDown(self) -> None:
         pass
