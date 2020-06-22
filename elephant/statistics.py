@@ -114,14 +114,16 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     """
     Return the firing rate of the spike train.
 
+    The firing rate is calculated as the number of spikes in the spike train
+    in the range `[t_start, t_stop]` divided by the time interval
+    `t_stop - t_start`. See the description below for cases when `t_start` or
+    `t_stop` is None.
+
     Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
     `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` array is
     provided, the return value will be a `pq.Quantity` array, otherwise a
     plain `np.ndarray`. The units of the `pq.Quantity` array will be the
     inverse of the `spiketrain`.
-
-    The interval over which the firing rate is calculated can be optionally
-    controlled with `t_start` and `t_stop`.
 
     Parameters
     ----------
