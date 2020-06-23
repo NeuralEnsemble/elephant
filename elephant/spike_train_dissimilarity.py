@@ -131,7 +131,8 @@ def victor_purpura_dist(
             kernel = kernels.TriangularKernel(2.0 / (np.sqrt(6.0) * q))
 
     if sort:
-        spiketrains = [np.sort(st.view(type=pq.Quantity)) for st in spiketrains]
+        spiketrains = [np.sort(st.view(type=pq.Quantity))
+                       for st in spiketrains]
 
     def compute(i, j):
         if i == j:

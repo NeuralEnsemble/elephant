@@ -737,22 +737,21 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
         if _assert_same_pattern(item_candidate=item_candidate,
                                 existing_patterns=existing_patterns,
                                 max_lag=max_lag):
-                en_neurons = copy.copy(ensemble['neurons'])
-                en_neurons.append(n2)
-                en_lags = copy.copy(ensemble['lags'])
-                en_lags.append(np.inf)
-                en_pvalue = copy.copy(ensemble['pvalue'])
-                en_pvalue.append(1)
-                en_n_occ = copy.copy(ensemble['signature'])
-                en_n_occ.append([0, 0])
-                item_candidate = []
-                assembly = {'neurons': en_neurons,
-                            'lags': en_lags,
-                            'pvalue': en_pvalue,
-                            'times': [],
-                            'signature': en_n_occ}
-                return assembly, item_candidate
-
+            en_neurons = copy.copy(ensemble['neurons'])
+            en_neurons.append(n2)
+            en_lags = copy.copy(ensemble['lags'])
+            en_lags.append(np.inf)
+            en_pvalue = copy.copy(ensemble['pvalue'])
+            en_pvalue.append(1)
+            en_n_occ = copy.copy(ensemble['signature'])
+            en_n_occ.append([0, 0])
+            item_candidate = []
+            assembly = {'neurons': en_neurons,
+                        'lags': en_lags,
+                        'pvalue': en_pvalue,
+                        'times': [],
+                        'signature': en_n_occ}
+            return assembly, item_candidate
     else:
         # I go on with the testing
 

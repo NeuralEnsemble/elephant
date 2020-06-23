@@ -20,7 +20,7 @@ class CadTestCase(unittest.TestCase):
         self.bin_size = 1*pq.ms
         self.alpha = 0.05
         self.size_chunks = 100
-        self.maxlag = 10
+        self.max_lag = 10
         self.reference_lag = 2
         self.min_occ = 1
         self.max_spikes = np.inf
@@ -105,8 +105,8 @@ class CadTestCase(unittest.TestCase):
     # test for single pattern injection input
     def test_cad_single_sip(self):
         # collecting cad output
-        output_single = cad.\
-            cell_assembly_detection(binned_spiketrain=self.bin_patt1, max_lag=self.maxlag)
+        output_single = cad.cell_assembly_detection(
+            binned_spiketrain=self.bin_patt1, max_lag=self.max_lag)
         # check neurons in the pattern
         assert_array_equal(sorted(output_single[0]['neurons']),
                            self.elements1)
@@ -120,8 +120,8 @@ class CadTestCase(unittest.TestCase):
     # test with multiple (3) patterns injected in the data
     def test_cad_msip(self):
         # collecting cad output
-        output_msip = cad.\
-            cell_assembly_detection(binned_spiketrain=self.msip, max_lag=self.maxlag)
+        output_msip = cad.cell_assembly_detection(
+            binned_spiketrain=self.msip, max_lag=self.max_lag)
 
         elements_msip = []
         occ_msip = []
@@ -149,14 +149,14 @@ class CadTestCase(unittest.TestCase):
         # test error data input format
         self.assertRaises(TypeError, cad.cell_assembly_detection,
                           data=[[1, 2, 3], [3, 4, 5]],
-                          maxlag=self.maxlag)
+                          maxlag=self.max_lag)
         # test error significance level
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
                                neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.maxlag,
+                          maxlag=self.max_lag,
                           alpha=-3)
         # test error minimum number of occurrences
         self.assertRaises(ValueError, cad.cell_assembly_detection,
@@ -164,7 +164,7 @@ class CadTestCase(unittest.TestCase):
                               [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
                                neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.maxlag,
+                          maxlag=self.max_lag,
                           min_occ=-1)
         # test error minimum number of spikes in a pattern
         self.assertRaises(ValueError, cad.cell_assembly_detection,
@@ -172,7 +172,7 @@ class CadTestCase(unittest.TestCase):
                               [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
                                neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.maxlag,
+                          maxlag=self.max_lag,
                           max_spikes=1)
         # test error chunk size for variance computation
         self.assertRaises(ValueError, cad.cell_assembly_detection,
@@ -180,7 +180,7 @@ class CadTestCase(unittest.TestCase):
                               [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
                                neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.maxlag,
+                          maxlag=self.max_lag,
                           size_chunks=1)
         # test error maximum lag
         self.assertRaises(ValueError, cad.cell_assembly_detection,
@@ -196,7 +196,7 @@ class CadTestCase(unittest.TestCase):
                                neo.SpikeTrain([3, 4, 5]*pq.ms,
                                               t_stop=6*pq.ms)],
                               bin_size=1*pq.ms),
-                          maxlag=self.maxlag)
+                          maxlag=self.max_lag)
 
 
 def suite():

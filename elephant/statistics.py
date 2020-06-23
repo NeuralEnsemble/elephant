@@ -346,8 +346,8 @@ def lv(time_intervals, with_nan=False):
     if np_nan is not None:
         return np_nan
 
-    # calculate LV and return result
-    return 3. * np.mean(np.power(np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:]), 2))
+    cv_i = np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:])
+    return 3. * np.mean(np.power(cv_i, 2))
 
 
 @deprecated_alias(v='time_intervals')
@@ -415,7 +415,8 @@ def cv2(time_intervals, with_nan=False):
         return np_nan
 
     # calculate CV2 and return result
-    return 2. * np.mean(np.absolute(np.diff(time_intervals)) / (time_intervals[:-1] + time_intervals[1:]))
+    cv_i = np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:])
+    return 2. * np.mean(np.abs(cv_i))
 
 
 def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
