@@ -19,8 +19,33 @@ import quantities as pq
 
 class PairwiseGrangerTestCase(unittest.TestCase):
     def setUp(self):
+        """
+        The ground truth dataset was generated using the following script:
+        >>>np.random.seed(1)
+        >>>length_2d = 30000
+        >>>signal = np.zeros((2, length_2d))
+
+        >>>order = 2
+        >>>weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+        >>>weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+
+        >>>weights = np.stack((weights_1, weights_2))
+
+        >>>noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+
+        >>>for i in range(length_2d):
+        >>>    for lag in range(order):
+        >>>        signal[:, i] += np.dot(weights[lag],
+        >>>                               signal[:, i - lag - 1])
+        >>>    rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+        >>>    signal[0, i] += rnd_var[0]
+        >>>    signal[1, i] += rnd_var[1]
+
+        >>>np.save('/home/jurkus/granger_timeseries_groundtruth_data', signal)
+        """
         # Load ground truth
-        self.ground_truth = np.load('/home/jurkus/granger_ground_truth.npy')
+        self.ground_truth = \
+            np.load('/home/jurkus/granger_timeseries_groundtruth_data.npy')
         # Set up that is equivalent to the one in POC granger repository
         np.random.seed(1)
         # length_2d = 10000

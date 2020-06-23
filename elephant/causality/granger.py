@@ -409,7 +409,7 @@ if __name__ == "__main__":
 
     weights = np.stack((weights_1, weights_2))
 
-    noise_covariance = np.array([[1., 0.2], [0.2, 1.]])
+    noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
 
     for i in range(length_2d):
         for lag in range(order):
@@ -419,7 +419,7 @@ if __name__ == "__main__":
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    np.save('/home/jurkus/granger_timeseries_unittest_data', signal)
+    # np.save('/home/jurkus/granger_timeseries_groundtruth_data', signal)
     causality = pairwise_granger(signal, 10, 'bic')
 
     print(causality)
