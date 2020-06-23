@@ -113,15 +113,15 @@ def _lag_covariances(signals, dimension, max_lag):
     assert (length >= max_lag), 'maximum lag larger than size of data'
 
     # centralize time series
-    signals_mean = (signals - np.mean(signals, keepdims = True)).T
+    signals_mean = (signals - np.mean(signals, keepdims=True)).T
 
     lag_covariances = np.zeros((max_lag+1, dimension, dimension))
 
     # determine lagged covariance for different time lags
-    for lag in range(0,max_lag+1):
+    for lag in range(0, max_lag+1):
         lag_covariances[lag] = \
-                np.mean(np.einsum('ij,ik -> ijk',signals_mean[:length-lag],
-                                  signals_mean[lag:]), axis = 0)
+                np.mean(np.einsum('ij,ik -> ijk', signals_mean[:length-lag],
+                                  signals_mean[lag:]), axis=0)
 
     return lag_covariances
 
@@ -242,7 +242,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
     Information Criterion
     Parameters
     ----------
-    signal : np.ndarray
+    signals : np.ndarray
         time series data
     dimension : int
         dimensionality of the data
@@ -262,13 +262,11 @@ def _optimal_vector_arm(signals, dimension, max_order,
         optimal order
     """
 
-    current_optimal_order = 1
-
     length = np.size(signals[0])
 
     optimal_ic = np.infty
     optimal_order = 1
-    optimal_coeffs = np.zeros((dimension,dimension, optimal_order))
+    optimal_coeffs = np.zeros((dimension, dimension, optimal_order))
     optimal_cov_matrix = np.zeros((dimension, dimension))
 
     if information_criterion == 'bic':
@@ -276,7 +274,8 @@ def _optimal_vector_arm(signals, dimension, max_order,
     elif information_criterion == 'aic':
         evaluate_ic = aic
     else:
-        raise ValueError(f"Information criterion {information_criterion} not valid")
+        raise ValueError(
+            f"Information criterion {information_criterion} not valid")
 
     for order in range(1, max_order + 1):
         coeffs, cov_matrix = _vector_arm(signals, dimension, order)
@@ -292,7 +291,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
     return optimal_coeffs, optimal_cov_matrix, optimal_order
 
 
-def pairwise_granger(signals, max_order, information_criterion = 'bic'):
+def pairwise_granger(signals, max_order, information_criterion='bic'):
     r"""
     Determine Granger Causality of two time series
     Note: order parameter should be removed
@@ -300,8 +299,8 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     ----------
     signals : np.ndarray or neo.AnalogSignal
         time series data
-    order : int
-        order of autoregressive model (should be removed)
+    max_order : int
+        maximal order of autoregressive model
     information_criterion : string
         bic for Bayesian information_criterion,
         aic for Akaike information criterion
@@ -345,7 +344,7 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     coeffs_y, var_y, p_2 = _optimal_vector_arm(signal_y, 1, max_order,
                                                information_criterion)
     coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
-                                                information_criterion)
+                                                 information_criterion)
     print('########################################')
     print(p_1)
     print(p_2)
@@ -389,8 +388,8 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     instantaneous_causality_round = np.around(instantaneous_causality,
                                               est_sig_figures)
     total_interdependence_round = directional_causality_x_y_round \
-                            + directional_causality_y_x_round \
-                            + instantaneous_causality_round
+        + directional_causality_y_x_round \
+        + instantaneous_causality_round
 
     return Causality(
         directional_causality_x_y=directional_causality_x_y_round.item(),
@@ -425,4 +424,3 @@ if __name__ == "__main__":
     causality = pairwise_granger(signal, 10, 'bic')
 
     print(causality)
-
