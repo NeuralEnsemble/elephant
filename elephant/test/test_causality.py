@@ -62,7 +62,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
         for i in range(length_2d):
             for lag in range(order):
-                self.signal[:, i] += np.dot(weights[lag], self.signal[:, i - lag - 1])
+                self.signal[:, i] += np.dot(weights[lag],
+                                            self.signal[:, i - lag - 1])
             rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
             self.signal[0, i] += rnd_var[0]
             self.signal[1, i] += rnd_var[1]
@@ -77,7 +78,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         """
         analog_signal = AnalogSignal(self.signal.T, units='V',
                                      sampling_rate=1*pq.Hz)
-        analog_signal_causality = elephant.causality.granger.pairwise_granger(analog_signal, 2)
+        analog_signal_causality = \
+            elephant.causality.granger.pairwise_granger(analog_signal, 2)
         self.assertEqual(analog_signal_causality.directional_causality_x_y,
                          self.causality.directional_causality_x_y)
         self.assertEqual(analog_signal_causality.directional_causality_y_x,
@@ -94,10 +96,13 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         Here the (almost) equality is asserted to 15 decimal places.
         """
         same_signal = np.vstack([self.signal[0], self.signal[0]])
-        assert_array_almost_equal(self.causality.directional_causality_y_x, 0, decimal=15)
-        assert_array_almost_equal(self.causality.directional_causality_x_y, 0, decimal=15)
+        assert_array_almost_equal(self.causality.directional_causality_y_x, 0,
+                                  decimal=15)
+        assert_array_almost_equal(self.causality.directional_causality_x_y, 0,
+                                  decimal=15)
 
-    @unittest.skipUnless(sys.version_info >= (3, 1), "requires Python 3.1 or above")
+    @unittest.skipUnless(sys.version_info >= (3, 1),
+                         "requires Python 3.1 or above")
     def test_result_namedtuple(self):
         """
         Check if the result of pairwise_granger is in the form of namedtuple.
