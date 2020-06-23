@@ -26,12 +26,15 @@ import scipy.special
 import math
 import warnings
 
+from elephant.utils import deprecated_alias
+
 
 # Based on matlab code by Benjamin Staude
 # Adaptation to python by Pietro Quaglio and Emiliano Torre
 
 
-def cubic(data, ximax=100, alpha=0.05):
+@deprecated_alias(data='signal')
+def cubic(signal, ximax=100, alpha=0.05):
     """
     Performs the CuBIC analysis [1]_ on a population histogram, calculated
     from a population of spiking neurons.
@@ -49,7 +52,7 @@ def cubic(data, ximax=100, alpha=0.05):
 
     Parameters
     ----------
-    data : neo.AnalogSignal
+    signal : neo.AnalogSignal
         The population histogram (count of spikes per time bin) of the entire
         population of neurons.
     ximax : int, optional
@@ -93,13 +96,13 @@ def cubic(data, ximax=100, alpha=0.05):
 
     # dict of all possible rate functions
     try:
-        data = data.magnitude
+        signal = signal.magnitude
     except AttributeError:
         pass
-    L = len(data)
+    L = len(signal)
 
     # compute first three cumulants
-    kappa = _kstat(data)
+    kappa = _kstat(signal)
     xi_hat = 1
     xi = 1
     pval = 0.

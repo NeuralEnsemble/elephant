@@ -106,7 +106,7 @@ class CadTestCase(unittest.TestCase):
     def test_cad_single_sip(self):
         # collecting cad output
         output_single = cad.\
-            cell_assembly_detection(data=self.bin_patt1, maxlag=self.maxlag)
+            cell_assembly_detection(binned_spiketrain=self.bin_patt1, max_lag=self.maxlag)
         # check neurons in the pattern
         assert_array_equal(sorted(output_single[0]['neurons']),
                            self.elements1)
@@ -121,7 +121,7 @@ class CadTestCase(unittest.TestCase):
     def test_cad_msip(self):
         # collecting cad output
         output_msip = cad.\
-            cell_assembly_detection(data=self.msip, maxlag=self.maxlag)
+            cell_assembly_detection(binned_spiketrain=self.msip, max_lag=self.maxlag)
 
         elements_msip = []
         occ_msip = []

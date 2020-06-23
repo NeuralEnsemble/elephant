@@ -14,6 +14,8 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
+from elephant.utils import deprecated_alias
+
 
 def zscore(signal, inplace=True):
     r"""
@@ -644,7 +646,8 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     return signal_wt
 
 
-def hilbert(signal, N='nextpow'):
+@deprecated_alias(N='pad')
+def hilbert(signal, pad='nextpow'):
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
     obtain its (complex) analytic signal.
@@ -663,7 +666,7 @@ def hilbert(signal, N='nextpow'):
     ----------
     signal : neo.AnalogSignal
         Signal(s) to transform.
-    N : int or {'none', 'nextpow'}, optional
+    pad : int or {'none', 'nextpow'}, optional
         Defines whether the signal is zero-padded.
         If 'none', no padding.
         If 'nextpow', zero-pad to the next length that is a power of 2.
@@ -708,7 +711,7 @@ def hilbert(signal, N='nextpow'):
     ...       t_start=0*pq.s,
     ...       sampling_rate=1000*pq.Hz)
     ...
-    >>> analytic_signal = hilbert(a, N='nextpow')
+    >>> analytic_signal = hilbert(a, pad='nextpow')
     >>> angles = np.angle(analytic_signal)
     >>> amplitudes = np.abs(analytic_signal)
     >>> print(angles)
@@ -726,10 +729,10 @@ def hilbert(signal, N='nextpow'):
     n_org = signal.shape[0]
 
     # Right-pad signal to desired length using the signal itself
-    if isinstance(N, int):
+    if isinstance(pad, int):
         # User defined padding
-        n = N
-    elif N == 'nextpow':
+        n = pad
+    elif pad == 'nextpow':
         # To speed up calculation of the Hilbert transform, make sure we change
         # the signal to be of a length that is a power of two. Failure to do so
         # results in computations of certain signal lengths to not finish (or
@@ -746,11 +749,11 @@ def hilbert(signal, N='nextpow'):
         # For this reason, nextpow is the default setting for now.
 
         n = 2 ** (int(np.log2(n_org - 1)) + 1)
-    elif N == 'none':
+    elif pad == 'none':
         # No padding
         n = n_org
     else:
-        raise ValueError("'{}' is an unknown N.".format(N))
+        raise ValueError("'{}' is an unknown N.".format(pad))
 
     output = signal.duplicate_with_new_data(
         scipy.signal.hilbert(signal.magnitude, N=n, axis=0)[:n_org])

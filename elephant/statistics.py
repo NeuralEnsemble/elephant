@@ -284,7 +284,8 @@ def __variation_check(v, with_nan):
     return None
 
 
-def lv(v, with_nan=False):
+@deprecated_alias(v='time_intervals')
+def lv(time_intervals, with_nan=False):
     r"""
     Calculate the measure of local variation LV for a sequence of time
     intervals between events.
@@ -303,7 +304,7 @@ def lv(v, with_nan=False):
 
     Parameters
     ----------
-    v : pq.Quantity or np.ndarray or list
+    time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
         If True, `lv` of a spike train with less than two spikes results in a
@@ -340,16 +341,17 @@ def lv(v, with_nan=False):
 
     """
     # convert to array, cast to float
-    v = np.asarray(v)
-    np_nan = __variation_check(v, with_nan)
+    time_intervals = np.asarray(time_intervals)
+    np_nan = __variation_check(time_intervals, with_nan)
     if np_nan is not None:
         return np_nan
 
     # calculate LV and return result
-    return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
+    return 3. * np.mean(np.power(np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:]), 2))
 
 
-def cv2(v, with_nan=False):
+@deprecated_alias(v='time_intervals')
+def cv2(time_intervals, with_nan=False):
     r"""
     Calculate the measure of CV2 for a sequence of time intervals between
     events.
@@ -369,7 +371,7 @@ def cv2(v, with_nan=False):
 
     Parameters
     ----------
-    v : pq.Quantity or np.ndarray or list
+    time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
         If True, `cv2` of a spike train with less than two spikes results in a
@@ -407,13 +409,13 @@ def cv2(v, with_nan=False):
 
     """
     # convert to array, cast to float
-    v = np.asarray(v)
-    np_nan = __variation_check(v, with_nan)
+    time_intervals = np.asarray(time_intervals)
+    np_nan = __variation_check(time_intervals, with_nan)
     if np_nan is not None:
         return np_nan
 
     # calculate CV2 and return result
-    return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
+    return 2. * np.mean(np.absolute(np.diff(time_intervals)) / (time_intervals[:-1] + time_intervals[1:]))
 
 
 def instantaneous_rate(spiketrain, sampling_period, kernel='auto',

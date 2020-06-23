@@ -220,13 +220,13 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         ele_zz : np.array
             Positions of the z coordinates of the electrodes
             Defaults ot None, use in 3D case only
-        x_lims : [start, end]
+        xlims : [start, end]
             The starting spatial coordinate and the ending for integration
             Defaults to [0.,1.]
-        y_lims : [start, end]
+        ylims : [start, end]
             The starting spatial coordinate and the ending for integration
             Defaults to [0.,1.], use only in 2D and 3D case
-        z_lims : [start, end]
+        zlims : [start, end]
             The starting spatial coordinate and the ending for integration
             Defaults to [0.,1.], use only in 3D case
         res : int

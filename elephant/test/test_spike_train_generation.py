@@ -459,10 +459,10 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         a = 3.
         b = 10 * Hz
         np.random.seed(27)
-        spiketrain = stgen.homogeneous_gamma_process(a=a, b=b)
+        spiketrain = stgen.homogeneous_gamma_process(shape=a, rate=b)
         self.assertIsInstance(spiketrain, neo.SpikeTrain)
         np.random.seed(27)
-        spiketrain_array = stgen.homogeneous_gamma_process(a=a, b=b,
+        spiketrain_array = stgen.homogeneous_gamma_process(shape=a, rate=b,
                                                            as_array=True)
         # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
         self.assertTrue(type(spiketrain_array) is np.ndarray)

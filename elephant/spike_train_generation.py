@@ -19,6 +19,8 @@ import neo
 import numpy as np
 import quantities as pq
 
+from elephant.utils import deprecated_alias
+
 from elephant.spike_train_surrogates import dither_spike_train
 
 
@@ -376,7 +378,8 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
         raise ValueError("rate must be of type pq.Quantity")
     if not isinstance(refractory_period, pq.Quantity) and \
             refractory_period is not None:
-        raise ValueError("refr_period must be of type pq.Quantity or None")
+        raise ValueError("refractory_period must be of type pq.Quantity or"
+                         "None")
 
     rate = rate.simplified
 
@@ -471,7 +474,8 @@ def inhomogeneous_poisson_process(rate, as_array=False,
             'rate at time t')
     if not isinstance(refractory_period, pq.Quantity) and \
             refractory_period is not None:
-        raise ValueError("refr_period must be of type pq.Quantity or None")
+        raise ValueError("refractory_period must be of type pq.Quantity or"
+                         "None")
 
     rate_max = np.max(rate)
     if refractory_period is not None:
@@ -594,8 +598,9 @@ def _analog_signal_linear_interp(signal, times):
             + slope * (times - times_extended[time_ids])) * signal.units
 
 
-def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
-                              as_array=False):
+@deprecated_alias(a='shape', b='rate')
+def homogeneous_gamma_process(shape, rate, t_start=0.0 * pq.ms,
+                              t_stop=1000.0 * pq.ms, as_array=False):
     """
     Returns a spike train whose spikes are a realization of a gamma process
     with the given parameters, starting at time `t_start` and stopping time
@@ -604,9 +609,9 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
 
     Parameters
     ----------
-    a : int or float
+    shape : int or float
         The shape parameter of the gamma distribution.
-    b : pq.Quantity
+    rate : pq.Quantity
         The rate parameter of the gamma distribution.
     t_start : pq.Quantity, optional
         The beginning of the spike train.
@@ -642,10 +647,10 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
     if not (isinstance(t_start, pq.Quantity) and
             isinstance(t_stop, pq.Quantity)):
         raise ValueError("t_start and t_stop must be of type pq.pq.Quantity")
-    b = b.rescale(1 / t_start.units).simplified
-    rate = b / a
-    theta = 1. / b.magnitude
-    interval_generator = partial(np.random.gamma, shape=a, scale=theta)
+    rate = rate.rescale(1 / t_start.units).simplified
+    rate = rate / shape
+    theta = 1. / rate.magnitude
+    interval_generator = partial(np.random.gamma, shape=shape, scale=theta)
     return _homogeneous_process(interval_generator, rate, t_start,
                                 t_stop, as_array)
 
