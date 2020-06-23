@@ -82,3 +82,6 @@ Thumbs.db
 ignored/
 
 .ipynb_checkpoints/
+
+# data
+*.nix

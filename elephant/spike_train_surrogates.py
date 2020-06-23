@@ -196,7 +196,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
             spiketrain.magnitude.reshape((1, len(spiketrain))) \
             + 2 * dither * np.random.random_sample((n, len(spiketrain)))\
             - dither
-        dithered_spiketrains.sort(axis=0)
+        dithered_spiketrains.sort(axis=1)
 
         if edges:
             # Leave out all spikes outside
