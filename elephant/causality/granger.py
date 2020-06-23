@@ -345,20 +345,6 @@ def pairwise_granger(signals, max_order, information_criterion='bic'):
                                                information_criterion)
     coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
                                                  information_criterion)
-    print('########################################')
-    print(p_1)
-    print(p_2)
-    print(p_3)
-    print('########################################')
-    print(coeffs_xy)
-    print(cov_xy)
-    print('########################################')
-    print(coeffs_x)
-    print(var_x)
-    print('########################################')
-    print(coeffs_y)
-    print(var_y)
-    print('########################################')
 
     directional_causality_y_x = np.log(var_x[0]/cov_xy[0, 0])
     directional_causality_x_y = np.log(var_y[0]/cov_xy[1, 1])
@@ -379,7 +365,6 @@ def pairwise_granger(signals, max_order, information_criterion='bic'):
     length = np.size(signal_x)
     asymptotic_std_error = 1/np.sqrt(length)
     est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
-    print(est_sig_figures)
 
     directional_causality_x_y_round = np.around(directional_causality_x_y,
                                                 est_sig_figures)
