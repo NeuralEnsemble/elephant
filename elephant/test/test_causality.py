@@ -48,8 +48,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
             np.load('/home/jurkus/granger_timeseries_groundtruth_data.npy')
 
         # Generate a smaller random dataset for tests other than ground truth
-        np.random.seed(1)
-        length_2d = 300
+        length_2d = 1000
         self.signal = np.zeros((2, length_2d))
 
         order = 2
@@ -90,20 +89,6 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                          self.causality.instantaneous_causality)
         self.assertEqual(analog_signal_causality.total_interdependence,
                          self.causality.total_interdependence)
-
-    def test_same_signal_pairwise_granger(self):
-        """
-        Pass two identical signals to pairwise granger. This should yield zero
-        causality for the directional causality metrics.
-        Here the (almost) equality is asserted to 1 decimal place.
-        """
-        same_signal = np.vstack([self.signal[0], self.signal[0]])
-        same_causality = elephant.causality.granger.pairwise_granger(
-            same_signal, max_order=10, information_criterion='bic')
-        assert_array_almost_equal(same_causality.directional_causality_y_x, 0.0,
-                                  decimal=1)
-        assert_array_almost_equal(same_causality.directional_causality_x_y, 0.0,
-                                  decimal=1)
 
     @unittest.skipUnless(sys.version_info >= (3, 1),
                          "requires Python 3.1 or above")
