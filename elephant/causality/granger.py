@@ -414,7 +414,7 @@ if __name__ == "__main__":
     for i in range(length_2d):
         for lag in range(order):
             signal[:, i] += np.dot(weights[lag],
-                                        signal[:, i - lag - 1])
+                                   signal[:, i - lag - 1])
         rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
