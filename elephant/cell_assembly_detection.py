@@ -670,20 +670,22 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     fwd_coinc_count = np.array([0 for _ in range(max_lag + 1)])
     bwd_coinc_count = np.array([0 for _ in range(max_lag + 1)])
 
-    for l in range(max_lag + 1):
+    for lag in range(max_lag + 1):
         time_fwd_cc = np.array([binned_pair[0][
                                 0:len(binned_pair[0]) - max_lag],
                                 binned_pair[1][
-                                l:len(binned_pair[1]) - max_lag + l]])
+                                lag:len(binned_pair[1]) - max_lag + lag]])
 
         time_bwd_cc = np.array([binned_pair[0][
-                                l:len(binned_pair[0]) - max_lag + l],
+                                lag:len(binned_pair[0]) - max_lag + lag],
                                 binned_pair[1][
                                 0:len(binned_pair[1]) - max_lag]])
 
         # taking the minimum, place by place for the coincidences
-        fwd_coinc_count[l] = np.sum(np.minimum(time_fwd_cc[0], time_fwd_cc[1]))
-        bwd_coinc_count[l] = np.sum(np.minimum(time_bwd_cc[0], time_bwd_cc[1]))
+        fwd_coinc_count[lag] = np.sum(np.minimum(time_fwd_cc[0],
+                                                 time_fwd_cc[1]))
+        bwd_coinc_count[lag] = np.sum(np.minimum(time_bwd_cc[0],
+                                                 time_bwd_cc[1]))
 
     # choice of the best lag, taking into account the reference lag
     if reference_lag <= 0:
