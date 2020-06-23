@@ -786,7 +786,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
-                            sampling_period=binsize, units=bin_hist.units,
+                            sampling_period=bin_size, units=bin_hist.units,
                             t_start=t_start)
 
 

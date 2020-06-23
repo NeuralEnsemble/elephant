@@ -24,10 +24,34 @@ def is_binary(array):
 
 
 def deprecated_alias(**aliases):
+    """
+    A deprecation decorator constructor.
+
+    Parameters
+    ----------
+    aliases: dict
+        The key-value pairs of mapping old --> new argument names of a
+        function.
+
+    Returns
+    -------
+    callable
+        A decorator for the specific mapping of deprecated argument names.
+
+    Examples
+    --------
+    In the example below, `my_function(binsize)` signature is marked as
+    deprecated (but still usable) and changed to `my_function(bin_size)`.
+
+    >>> @deprecated_alias(binsize='bin_size')
+    ... def my_function(bin_size):
+    ...     pass
+
+    """
     def deco(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            rename_kwargs(func.__name__, kwargs, aliases)
+            _rename_kwargs(func.__name__, kwargs, aliases)
             return func(*args, **kwargs)
 
         return wrapper
@@ -35,7 +59,7 @@ def deprecated_alias(**aliases):
     return deco
 
 
-def rename_kwargs(func_name, kwargs, aliases):
+def _rename_kwargs(func_name, kwargs, aliases):
     for old, new in aliases.items():
         if old in kwargs:
             if new in kwargs:
@@ -44,20 +68,6 @@ def rename_kwargs(func_name, kwargs, aliases):
             warnings.warn("'{}' is deprecated; use '{}'".format(old, new),
                           DeprecationWarning)
             kwargs[new] = kwargs.pop(old)
-
-
-def deprecate_binsize2(func):
-    @wraps(func)
-    def deprecated_func(*args, **kwargs):
-        if 'binsize' in kwargs:
-            warnings.warn("'binsize' is deprecated and renamed to 'bin_size'; "
-                          "'binsize' will be removed in v0.10.0 release. "
-                          "Please use 'bin_size'.", DeprecationWarning)
-            bin_size = kwargs.pop('binsize')
-            kwargs['bin_size'] = bin_size
-        return func(*args, **kwargs)
-
-    return deprecated_func
 
 
 def is_time_quantity(x, allow_none=False):

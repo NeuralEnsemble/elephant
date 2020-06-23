@@ -695,19 +695,19 @@ class TimeHistogramTestCase(unittest.TestCase):
 
     def test_time_histogram(self):
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s)
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_binary(self):
         targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               binary=True)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_tstart_tstop(self):
         # Start, stop short range
         targ = np.array([2, 1])
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               t_start=5 * pq.s,
                                               t_stop=7 * pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
@@ -715,25 +715,25 @@ class TimeHistogramTestCase(unittest.TestCase):
         # Test without t_stop
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = statistics.time_histogram(self.spiketrains,
-                                              binsize=1 * pq.s,
+                                              bin_size=1 * pq.s,
                                               t_start=0 * pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
         # Test without t_start
         histogram = statistics.time_histogram(self.spiketrains,
-                                              binsize=1 * pq.s,
+                                              bin_size=1 * pq.s,
                                               t_stop=10 * pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_output(self):
         # Normalization mean
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               output='mean')
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0], dtype=float) / 2
         assert_array_equal(targ.reshape(targ.size, 1), histogram.magnitude)
 
         # Normalization rate
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               output='rate')
         assert_array_equal(histogram.view(pq.Quantity),
                            targ.reshape(targ.size, 1) * 1 / pq.s)
@@ -741,7 +741,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         # Normalization unspecified, raises error
         self.assertRaises(ValueError, statistics.time_histogram,
                           self.spiketrains,
-                          binsize=pq.s, output=' ')
+                          bin_size=pq.s, output=' ')
 
 
 class ComplexityPdfTestCase(unittest.TestCase):
@@ -764,7 +764,7 @@ class ComplexityPdfTestCase(unittest.TestCase):
     def test_complexity_pdf(self):
         targ = np.array([0.92, 0.01, 0.01, 0.06])
         complexity = statistics.complexity_pdf(self.spiketrains,
-                                               binsize=0.1 * pq.s)
+                                               bin_size=0.1 * pq.s)
         assert_array_equal(targ, complexity.magnitude[:, 0])
         self.assertEqual(1, complexity.magnitude[:, 0].sum())
         self.assertEqual(len(self.spiketrains) + 1, len(complexity))
