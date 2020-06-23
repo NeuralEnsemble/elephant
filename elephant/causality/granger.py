@@ -52,7 +52,7 @@ def bic(cov, order, dimension, length):
         information criterion
     """
     bic = 2 * np.log(np.linalg.det(cov)) \
-            + 2*(dimension**2)*order*np.log(length)/length
+        + 2*(dimension**2)*order*np.log(length)/length
 
     return bic
 
@@ -77,7 +77,7 @@ def aic(cov, order, dimension, length):
         information criterion
     """
     aic = 2 * np.log(np.linalg.det(cov)) \
-            + 2*(dimension**2)*order/length
+        + 2*(dimension**2)*order/length
 
     return aic
 
@@ -167,11 +167,14 @@ def _yule_walker_matrix(data, dimension, order):
         for block_column in range(block_row, order):
             yule_walker_matrix[block_row*dimension: (block_row+1)*dimension,
                                block_column*dimension:
-                               (block_column+1)*dimension] = lag_covariances[block_column-block_row].T
+                               (block_column+1)*dimension] = \
+                lag_covariances[block_column-block_row].T
 
-            yule_walker_matrix[block_column*dimension: (block_column+1)*dimension,
+            yule_walker_matrix[block_column*dimension:
+                               (block_column+1)*dimension,
                                block_row*dimension:
-                               (block_row+1)*dimension] = lag_covariances[block_column-block_row]
+                               (block_row+1)*dimension] = \
+                lag_covariances[block_column-block_row]
     return yule_walker_matrix, lag_covariances
 
 
@@ -210,19 +213,20 @@ def _vector_arm(signals, dimension, order):
 
     """
 
-    yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals, dimension, order)
+    yule_walker_matrix, lag_covariances = \
+        _yule_walker_matrix(signals, dimension, order)
 
-    positive_lag_covariances = np.reshape(lag_covariances[1:], (dimension*order, dimension))
+    positive_lag_covariances = np.reshape(lag_covariances[1:],
+                                          (dimension*order, dimension))
 
-    lstsq_coeffs = np.linalg.lstsq(yule_walker_matrix, positive_lag_covariances)[0]
+    lstsq_coeffs = \
+        np.linalg.lstsq(yule_walker_matrix, positive_lag_covariances)[0]
 
     coeffs = []
     for index in range(order):
         coeffs.append(lstsq_coeffs[index*dimension:(index+1)*dimension, ].T)
 
     coeffs = np.stack(coeffs)
-
-    #cov_matrix = np.zeros((dimension, dimension))
 
     cov_matrix = np.copy(lag_covariances[0])
     for i in range(order):
@@ -232,7 +236,7 @@ def _vector_arm(signals, dimension, order):
 
 
 def _optimal_vector_arm(signals, dimension, max_order,
-                        information_criterion = 'bic'):
+                        information_criterion='bic'):
     """
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
@@ -358,13 +362,12 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     print('########################################')
 
     directional_causality_y_x = np.log(var_x[0]/cov_xy[0, 0])
-    # print(f'directional_y_x is {var_x[0]/cov_xy[0, 0]}. The variance of x is {var_x[0]}, the covariance_xy is {cov_xy[0, 0]}')
     directional_causality_x_y = np.log(var_y[0]/cov_xy[1, 1])
-    # print(f'directional_x_y is {var_y[0]/cov_xy[0, 0]}. The variance of x is {var_y[0]}, the covariance_xy is {cov_xy[0, 0]}')
 
     cov_determinant = np.linalg.det(cov_xy)
 
-    instantaneous_causality = np.log((cov_xy[0, 0]*cov_xy[1, 1])/cov_determinant)
+    instantaneous_causality = \
+        np.log((cov_xy[0, 0]*cov_xy[1, 1])/cov_determinant)
     instantaneous_causality = np.asarray(instantaneous_causality)
 
     total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
@@ -380,19 +383,20 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     print(est_sig_figures)
 
     directional_causality_x_y_round = np.around(directional_causality_x_y,
-                                          est_sig_figures)
+                                                est_sig_figures)
     directional_causality_y_x_round = np.around(directional_causality_y_x,
-                                          est_sig_figures)
+                                                est_sig_figures)
     instantaneous_causality_round = np.around(instantaneous_causality,
-                                        est_sig_figures)
+                                              est_sig_figures)
     total_interdependence_round = directional_causality_x_y_round \
                             + directional_causality_y_x_round \
                             + instantaneous_causality_round
 
-    return Causality(directional_causality_x_y=directional_causality_x_y_round.item(),
-                     directional_causality_y_x=directional_causality_y_x_round.item(),
-                     instantaneous_causality=instantaneous_causality_round.item(),
-                     total_interdependence=total_interdependence_round.item())
+    return Causality(
+        directional_causality_x_y=directional_causality_x_y_round.item(),
+        directional_causality_y_x=directional_causality_y_x_round.item(),
+        instantaneous_causality=instantaneous_causality_round.item(),
+        total_interdependence=total_interdependence_round.item())
 
 
 if __name__ == "__main__":
