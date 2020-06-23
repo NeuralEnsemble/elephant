@@ -33,7 +33,7 @@ Causality = namedtuple('causality',
 
 
 def bic(cov, order, dimension, length):
-    '''
+    """
     Calculate Bayesian Information Criterion
     Parameters
     ----------
@@ -50,14 +50,14 @@ def bic(cov, order, dimension, length):
     -------
     bic : float
         information criterion
-    '''
+    """
     bic = 2 * np.log(np.linalg.det(cov)) \
             + 2*(dimension**2)*order*np.log(length)/length
 
     return bic
 
 def aic(cov, order, dimension, length):
-    '''
+    """
     Calculate Akaike Information Criterion
     Parameters
     ----------
@@ -74,7 +74,7 @@ def aic(cov, order, dimension, length):
     -------
     aic : float
         information criterion
-    '''
+    """
     aic = 2 * np.log(np.linalg.det(cov)) \
             + 2*(dimension**2)*order/length
 
@@ -229,7 +229,7 @@ def _vector_arm(signals, dimension, order):
 
 def _optimal_vector_arm(signals, dimension, max_order,
                         information_criterion = 'bic'):
-    '''
+    """
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
     Parameters
@@ -252,7 +252,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
         covariance matrix of
     optimal_order : int
         optimal order
-    '''
+    """
 
     current_optimal_order = 1
 
