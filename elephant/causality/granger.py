@@ -387,9 +387,8 @@ def pairwise_granger(signals, max_order, information_criterion='bic'):
                                                 est_sig_figures)
     instantaneous_causality_round = np.around(instantaneous_causality,
                                               est_sig_figures)
-    total_interdependence_round = directional_causality_x_y_round \
-        + directional_causality_y_x_round \
-        + instantaneous_causality_round
+    total_interdependence_round = np.around(total_interdependence,
+                                            est_sig_figures)
 
     return Causality(
         directional_causality_x_y=directional_causality_x_y_round.item(),
@@ -401,7 +400,7 @@ def pairwise_granger(signals, max_order, information_criterion='bic'):
 if __name__ == "__main__":
 
     np.random.seed(1)
-    length_2d = 300
+    length_2d = 30000
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -420,7 +419,7 @@ if __name__ == "__main__":
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    np.save('/home/jurkus/granger_data', signal)
+    np.save('/home/jurkus/granger_timeseries_unittest_data', signal)
     causality = pairwise_granger(signal, 10, 'bic')
 
     print(causality)
