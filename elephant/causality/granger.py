@@ -56,6 +56,7 @@ def bic(cov, order, dimension, length):
 
     return bic
 
+
 def aic(cov, order, dimension, length):
     """
     Calculate Akaike Information Criterion
@@ -79,6 +80,7 @@ def aic(cov, order, dimension, length):
             + 2*(dimension**2)*order/length
 
     return aic
+
 
 def _lag_covariances(signals, dimension, max_lag):
     """
@@ -122,6 +124,7 @@ def _lag_covariances(signals, dimension, max_lag):
                                   signals_mean[lag:]), axis = 0)
 
     return lag_covariances
+
 
 def _yule_walker_matrix(data, dimension, order):
     """
@@ -227,6 +230,7 @@ def _vector_arm(signals, dimension, order):
 
     return coeffs, cov_matrix
 
+
 def _optimal_vector_arm(signals, dimension, max_order,
                         information_criterion = 'bic'):
     """
@@ -270,7 +274,6 @@ def _optimal_vector_arm(signals, dimension, max_order,
     else:
         raise ValueError(f"Information criterion {information_criterion} not valid")
 
-
     for order in range(1, max_order + 1):
         coeffs, cov_matrix = _vector_arm(signals, dimension, order)
 
@@ -283,6 +286,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
             optimal_cov_matrix = cov_matrix
 
     return optimal_coeffs, optimal_cov_matrix, optimal_order
+
 
 def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     """
