@@ -143,20 +143,20 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         generated using VAR(t(signal), lag.max=10, ic='AIC').
         """
         # First equation coefficients from R vars
-        first_y1_l1 = 0.889066507
-        first_y2_l1 = 0.004496849
-        first_y1_l2 = -0.486847496
-        first_y2_l2 = -0.001032864
+        first_y1_l1 = 0.8947573989
+        first_y2_l1 = -0.0003449514
+        first_y1_l2 = -0.4934377020
+        first_y2_l2 = -0.0018548490
 
         # Second equation coefficients from R vars
-        second_y1_l1 = 0.901263822
-        second_y2_l1 = -0.808942530
-        second_y1_l2 = -0.201594953
-        second_y2_l2 = -0.501035369
+        second_y1_l1 = 9.009503e-01
+        second_y2_l1 = -8.124731e-01
+        second_y1_l2 = -1.871460e-01
+        second_y2_l2 = -5.012730e-01
 
         coefficients, _, _ = elephant.causality.granger._optimal_vector_arm(
             self.ground_truth, dimension=2, max_order=10,
-            information_criterion='bic')
+            information_criterion='aic')
 
         # Arrange the ground truth values in the same shape as coefficients
         ground_truth_coefficients = np.asarray(
