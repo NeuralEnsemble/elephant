@@ -54,7 +54,7 @@ import quantities as pq
 from scipy.ndimage import gaussian_filter
 
 from elephant.statistics import isi
-from elephant.utils import deprecate_binsize
+from elephant.utils import deprecated_alias
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
@@ -454,7 +454,7 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
             for s in surr]
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def jitter_spikes(spiketrain, bin_size, n=1):
     """
     Generates surrogates of a spike train by spike jittering.

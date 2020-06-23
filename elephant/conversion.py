@@ -20,7 +20,7 @@ import numpy as np
 import quantities as pq
 import scipy.sparse as sps
 
-from elephant.utils import is_binary, deprecate_binsize
+from elephant.utils import is_binary, deprecated_alias
 
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
@@ -445,7 +445,7 @@ class BinnedSpikeTrain(object):
 
     """
 
-    @deprecate_binsize
+    @deprecated_alias(binsize='bin_size')
     def __init__(self, spiketrains, bin_size=None, num_bins=None, t_start=None,
                  t_stop=None, tolerance=1e-8):
         """

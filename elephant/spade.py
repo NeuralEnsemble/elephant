@@ -72,7 +72,7 @@ from scipy import sparse
 import elephant.conversion as conv
 import elephant.spike_train_surrogates as surr
 from elephant.spade_src import fast_fca
-from elephant.utils import deprecate_binsize
+from elephant.utils import deprecated_alias
 
 warnings.simplefilter('once', UserWarning)
 
@@ -91,7 +91,7 @@ except ImportError:  # pragma: no cover
     HAVE_FIM = False
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
           max_spikes=None, max_occ=None, min_neu=1, approx_stab_pars=None,
           n_surr=0, dither=15 * pq.ms, spectrum='#',
@@ -495,7 +495,7 @@ def _check_input(
     return compute_stability
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
                     max_spikes=None, max_occ=None, min_neu=1, report='a'):
     """
@@ -1148,7 +1148,7 @@ def _fca_filter(concept, winlen, min_c, min_z, max_c, max_z, min_neu):
     return keep_concepts
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def pvalue_spectrum(
         spiketrains,
         bin_size,
@@ -2157,7 +2157,7 @@ def _covered_spikes_criterion(occ_superset,
     return reject_superset, reject_subset
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
                                spectrum='#', t_start=0 * pq.ms):
     """

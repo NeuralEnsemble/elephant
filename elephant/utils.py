@@ -23,12 +23,35 @@ def is_binary(array):
     return ((array == 0) | (array == 1)).all()
 
 
-def deprecate_binsize(func):
+def deprecated_alias(**aliases):
+    def deco(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            rename_kwargs(func.__name__, kwargs, aliases)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return deco
+
+
+def rename_kwargs(func_name, kwargs, aliases):
+    for old, new in aliases.items():
+        if old in kwargs:
+            if new in kwargs:
+                raise TypeError("{} received both '{}' and '{}'".format(
+                    func_name, old, new))
+            warnings.warn("'{}' is deprecated; use '{}'".format(old, new),
+                          DeprecationWarning)
+            kwargs[new] = kwargs.pop(old)
+
+
+def deprecate_binsize2(func):
     @wraps(func)
     def deprecated_func(*args, **kwargs):
         if 'binsize' in kwargs:
             warnings.warn("'binsize' is deprecated and renamed to 'bin_size'; "
-                          "'binsize' will be removed in v0.9.0 release. "
+                          "'binsize' will be removed in v0.10.0 release. "
                           "Please use 'bin_size'.", DeprecationWarning)
             bin_size = kwargs.pop('binsize')
             kwargs['bin_size'] = bin_size

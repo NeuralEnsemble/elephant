@@ -73,7 +73,7 @@ from neo.core import SpikeTrain
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
-from elephant.utils import deprecate_binsize
+from elephant.utils import deprecated_alias
 
 from elephant.utils import is_time_quantity
 
@@ -671,7 +671,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     return rate
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
@@ -790,7 +790,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                             t_start=t_start)
 
 
-@deprecate_binsize
+@deprecated_alias(binsize='bin_size')
 def complexity_pdf(spiketrains, bin_size):
     """
     Complexity Distribution of a list of `neo.SpikeTrain` objects.
