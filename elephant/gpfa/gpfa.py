@@ -53,6 +53,7 @@ import neo
 import numpy as np
 import quantities as pq
 import sklearn
+import warnings
 
 from elephant.gpfa import gpfa_core, gpfa_util
 from elephant.utils import deprecated_alias
@@ -230,6 +231,11 @@ class GPFA(sklearn.base.BaseEstimator):
         self.params_estimated = dict()
         self.fit_info = dict()
         self.transform_info = dict()
+
+    @property
+    def binsize(self):
+        warnings.warn("'binsize' is deprecated; use 'bin_size'")
+        return self.bin_size
 
     def fit(self, spiketrains):
         """

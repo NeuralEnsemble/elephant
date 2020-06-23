@@ -502,6 +502,11 @@ class BinnedSpikeTrain(object):
     def matrix_columns(self):
         return self._sparse_mat_u.shape[1]
 
+    @property
+    def binsize(self):
+        warnings.warn("'binsize' is deprecated; use 'bin_size'")
+        return self.bin_size
+
     # =========================================================================
     # There are four cases the given parameters must fulfill, or a `ValueError`
     # will be raised:

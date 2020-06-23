@@ -774,6 +774,7 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         T = 15 * pq.min
         bin_size = 1 * pq.ms
         timescale = 1 / (4 * nu)
+        np.random.seed(35)
 
         timescale_num = []
         for _ in range(10):
@@ -782,8 +783,8 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
             timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
             timescale_i.units = timescale.units
             timescale_num.append(timescale_i.magnitude)
-        target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
-        self.assertTrue(target)
+        assert_array_almost_equal(timescale.magnitude, timescale_num,
+                                  decimal=3)
 
 
 if __name__ == '__main__':
