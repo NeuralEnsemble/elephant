@@ -46,10 +46,10 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         # Load ground truth
         self.ground_truth = \
             np.load('/home/jurkus/granger_timeseries_groundtruth_data.npy')
-        # Set up that is equivalent to the one in POC granger repository
+
+        # Generate a smaller random dataset for tests other than ground truth
         np.random.seed(1)
-        # length_2d = 10000
-        length_2d = 100
+        length_2d = 300
         self.signal = np.zeros((2, length_2d))
 
         order = 2
@@ -68,6 +68,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
             self.signal[0, i] += rnd_var[0]
             self.signal[1, i] += rnd_var[1]
 
+        # Estimate Granger causality
         self.causality = elephant.causality.granger.pairwise_granger(
             self.signal, max_order=10, information_criterion='bic')
 
@@ -79,7 +80,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         analog_signal = AnalogSignal(self.signal.T, units='V',
                                      sampling_rate=1*pq.Hz)
         analog_signal_causality = \
-            elephant.causality.granger.pairwise_granger(analog_signal, 2)
+            elephant.causality.granger.pairwise_granger(
+                analog_signal, max_order=10, information_criterion='bic')
         self.assertEqual(analog_signal_causality.directional_causality_x_y,
                          self.causality.directional_causality_x_y)
         self.assertEqual(analog_signal_causality.directional_causality_y_x,
@@ -139,7 +141,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                         + self.causality.directional_causality_y_x \
                         + self.causality.instantaneous_causality
         assert_array_almost_equal(self.causality.total_interdependence,
-                                  causality_sum, decimal=8)
+                                  causality_sum, decimal=2)
 
     def test_all_four_result_values_are_floats(self):
         self.assertIsInstance(self.causality.directional_causality_x_y,
