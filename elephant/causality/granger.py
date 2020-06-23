@@ -380,4 +380,3 @@ def pairwise_granger(signals, max_order, information_criterion='bic'):
         directional_causality_y_x=directional_causality_y_x_round.item(),
         instantaneous_causality=instantaneous_causality_round.item(),
         total_interdependence=total_interdependence_round.item())
-
