@@ -26,7 +26,10 @@ from collections import namedtuple
 from neo.core import AnalogSignal
 
 Causality = namedtuple('causality',
-                       'directional_causality_x_y directional_causality_y_x instantaneous_causality total_interdependence')
+                       ['directional_causality_x_y',
+                        'directional_causality_y_x',
+                        'instantaneous_causality',
+                        'total_interdependence'])
 
 
 # TODO: The result of pairwise granger outputs three arrays and one float.
