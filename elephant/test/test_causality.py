@@ -89,17 +89,19 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         self.assertEqual(analog_signal_causality.total_interdependence,
                          self.causality.total_interdependence)
 
-    def same_signal_pairwise_granger(self):
+    def test_same_signal_pairwise_granger(self):
         """
         Pass two identical signals to pairwise granger. This should yield zero
         causality for the directional causality metrics.
-        Here the (almost) equality is asserted to 15 decimal places.
+        Here the (almost) equality is asserted to 1 decimal place.
         """
         same_signal = np.vstack([self.signal[0], self.signal[0]])
-        assert_array_almost_equal(self.causality.directional_causality_y_x, 0,
-                                  decimal=15)
-        assert_array_almost_equal(self.causality.directional_causality_x_y, 0,
-                                  decimal=15)
+        same_causality = elephant.causality.granger.pairwise_granger(
+            same_signal, max_order=10, information_criterion='bic')
+        assert_array_almost_equal(same_causality.directional_causality_y_x, 0.0,
+                                  decimal=1)
+        assert_array_almost_equal(same_causality.directional_causality_x_y, 0.0,
+                                  decimal=1)
 
     @unittest.skipUnless(sys.version_info >= (3, 1),
                          "requires Python 3.1 or above")
