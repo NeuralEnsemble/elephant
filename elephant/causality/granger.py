@@ -48,13 +48,13 @@ def bic(cov, order, dimension, length):
 
     Returns
     -------
-    bic : float
-        information criterion
+    criterion : float
+       Bayesian Information Criterion
     """
-    bic = 2 * np.log(np.linalg.det(cov)) \
+    criterion = 2 * np.log(np.linalg.det(cov)) \
         + 2*(dimension**2)*order*np.log(length)/length
 
-    return bic
+    return criterion
 
 
 def aic(cov, order, dimension, length):
@@ -73,13 +73,13 @@ def aic(cov, order, dimension, length):
 
     Returns
     -------
-    aic : float
-        information criterion
+    criterion : float
+        Akaike Information Criterion
     """
-    aic = 2 * np.log(np.linalg.det(cov)) \
+    criterion = 2 * np.log(np.linalg.det(cov)) \
         + 2*(dimension**2)*order/length
 
-    return aic
+    return criterion
 
 
 def _lag_covariances(signals, dimension, max_lag):
