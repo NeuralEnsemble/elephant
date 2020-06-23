@@ -660,7 +660,8 @@ def cross_correlation_histogram(
 
     # Check that the spike trains are binned with the same temporal
     # resolution
-    if binned_spiketrain1.matrix_rows != 1 or binned_spiketrain2.matrix_rows != 1:
+    if binned_spiketrain1.matrix_rows != 1 or \
+            binned_spiketrain2.matrix_rows != 1:
         raise ValueError("Spike trains must be one dimensional")
     if not np.isclose(binned_spiketrain1.bin_size.simplified.item(),
                       binned_spiketrain2.bin_size.simplified.item()):
@@ -670,7 +671,8 @@ def cross_correlation_histogram(
     left_edge_min = -binned_spiketrain1.num_bins + 1
     right_edge_max = binned_spiketrain2.num_bins - 1
 
-    t_lags_shift = (binned_spiketrain2.t_start - binned_spiketrain1.t_start) / bin_size
+    t_lags_shift = (binned_spiketrain2.t_start -
+                    binned_spiketrain1.t_start) / bin_size
     t_lags_shift = t_lags_shift.simplified.item()
     if not np.isclose(t_lags_shift, round(t_lags_shift)):
         # For example, if bin_size=1 ms, binned_spiketrain1.t_start=0 ms, and
@@ -720,7 +722,8 @@ def cross_correlation_histogram(
                          right_edge + 1 + t_lags_shift, dtype=np.int32)
         cch_mode = window
     elif window == 'valid':
-        lags = _CrossCorrHist.get_valid_lags(binned_spiketrain1, binned_spiketrain2)
+        lags = _CrossCorrHist.get_valid_lags(binned_spiketrain1,
+                                             binned_spiketrain2)
         left_edge, right_edge = lags[(0, -1), ]
         cch_mode = window
     else:
@@ -978,7 +981,8 @@ def spike_train_timescale(binned_spiketrain, tau_max):
 
     cch_window = [-tau_max_bins, tau_max_bins]
     corrfct, bin_ids = cross_correlation_histogram(
-        binned_spiketrain, binned_spiketrain, window=cch_window, cross_corr_coef=True
+        binned_spiketrain, binned_spiketrain, window=cch_window,
+        cross_corr_coef=True
     )
     # Take only t > 0 values, in particular neglecting the delta peak.
     corrfct_pos = corrfct.time_slice(bin_size / 2, corrfct.t_stop).flatten()
