@@ -83,7 +83,7 @@ def aic(cov, order, dimension, length):
 
 
 def _lag_covariances(signals, dimension, max_lag):
-    """
+    r"""
     Determine covariances of time series and time shift of itself up to a
     maximal lag
     Parameters
@@ -127,7 +127,7 @@ def _lag_covariances(signals, dimension, max_lag):
 
 
 def _yule_walker_matrix(data, dimension, order):
-    """
+    r"""
     Generate matrix for Yule-Walker equation
     Parameters
     ----------
@@ -179,7 +179,7 @@ def _yule_walker_matrix(data, dimension, order):
 
 
 def _vector_arm(signals, dimension, order):
-    """
+    r"""
     Determine coefficients of autoregressive model from time series data
     Parameters
     ----------
@@ -293,7 +293,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
 
 
 def pairwise_granger(signals, max_order, information_criterion = 'bic'):
-    """
+    r"""
     Determine Granger Causality of two time series
     Note: order parameter should be removed
     Parameters
