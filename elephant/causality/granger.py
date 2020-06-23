@@ -32,8 +32,6 @@ Causality = namedtuple('causality',
                         'total_interdependence'])
 
 
-# TODO: The result of pairwise granger outputs three arrays and one float.
-
 def bic(cov, order, dimension, length):
     '''
     Calculate Bayesian Information Criterion
