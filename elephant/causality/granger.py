@@ -95,6 +95,16 @@ def _lag_covariances(signals, dimension, max_lag):
     -------
     lag_corr : np.ndarray
         correlations matrices of lagged signals
+
+    Covariance of shifted signals calculated according to the following formula:
+
+        x: d-dimensional signal
+        x^T: transpose of d-dimensional signal
+        N: number of time points
+        \tau: lag
+
+        C(\tau) = \sum_{i=0}^{N-\tau} x[i]*x^T[\tau+i]
+
     """
     length = np.size(signals[0])
     assert (length >= max_lag), 'maximum lag larger than size of data'
@@ -127,6 +137,22 @@ def _yule_walker_matrix(data, dimension, order):
     -------
     yule_walker_matrix : np.ndarray
         matrix in Yule-Walker equation
+
+
+    Yule-Walker Matrix M is a block-structured symmetric matrix with
+    dimension (d \cdot p)\times(d \cdot p)
+
+    where
+    d: dimension of signal
+    p: order of autoregressive model
+    C(\tau): time-shifted covariances \tau -> d \times d matrix
+
+    The blocks of size (d \times d) are set as follows:
+
+    M_ij = C(j-i)^T
+
+    where 1 \leq i \leq j \leq p. The other entries are determined by symmetry.
+
     """
 
     lag_covariances = _lag_covariances(data, dimension, order)
@@ -161,6 +187,23 @@ def _vector_arm(signals, dimension, order):
         ry
     covar_mat : np.ndarray
         covariance matrix of
+
+    Coefficients of autoregressive model calculated via solving the linear
+    equation
+
+    M A = C
+
+    where
+    M: Yule-Waler Matrix
+    A: Coefficients of autoregressive model
+    C: Time-shifted covariances with positive lags
+
+    Covariance matrix C_0 is then given by
+
+    C_0 = C[0] - \sum_{i=0}^{p-1} A[i]C[i+1]
+
+    where p is the orde of the autoregressive model.
+
     """
 
     yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals, dimension, order)
@@ -260,6 +303,23 @@ def pairwise_granger(signals, max_order, information_criterion = 'bic'):
     causality.directional_causality_y_x : float
     causality.instantaneous_causality : float
     causality.total_interdependence : float
+
+    Denote covariance matrix of signals
+        X by C|X  - a real number
+        Y by C|Y - a real number
+        (X,Y) by C|XY - a (2 \times 2) matrix
+
+    directional causality X -> Y given by
+        log(C|X / C|XY_00)
+    directional causality Y -> X given by
+        log(C|Y / C|XY_11)
+    instantaneous causality of X,Y given by
+        log(C|XY_00 / C|XY_11)
+    total interdependence of X,Y given by
+        log( {C|X \cdot C|Y} / det{C|XY} )
+
+
+
     """
 
     if isinstance(signals, AnalogSignal):
