@@ -922,6 +922,7 @@ class complexity:
         self.bin_size = bin_size
         self.binary = binary
         self.spread = spread
+        self.tolerance = tolerance
 
         if bin_size is None and sampling_rate is None:
             raise ValueError('No bin_size or sampling_rate was speficied!')
@@ -1029,13 +1030,25 @@ class complexity:
                           'You can set tolerance=None to disable this '
                           'behaviour.')
             num_bins += 1
+        num_bins = int(num_bins)
         time_histogram = np.zeros((num_bins, ), dtype=int)
 
         start_bins = ((self.epoch.times - self.t_start).rescale(
-            self.binsize.units) / self.binsize).magnitude.flatten()
+            self.bin_size.units) / self.bin_size).magnitude.flatten()
         stop_bins = ((self.epoch.times + self.epoch.durations
                       - self.t_start).rescale(
-            self.binsize.units) / self.binsize).magnitude.flatten()
+            self.bin_size.units) / self.bin_size).magnitude.flatten()
+
+        if self.sampling_rate is not None:
+            shift = (.5 / self.sampling_rate / self.bin_size
+                     ).simplified.magnitude.item()
+            # account for the first bin not being shifted in the epoch creation
+            # if the shift would move it past t_start
+            if self.epoch.times[0] == self.t_start:
+                start_bins[1:] += shift
+            else:
+                start_bins += shift
+            stop_bins += shift
 
         rounding_error_indices = conv._detect_rounding_errors(start_bins,
                                                               self.tolerance)
@@ -1065,12 +1078,34 @@ class complexity:
 
         for idx, (start, stop) in enumerate(zip(start_bins, stop_bins)):
             time_histogram[start:stop] = \
-                    self.epoch.array_annotations[idx]['compexity']
+                    self.epoch.array_annotations['complexity'][idx]
+
+        time_histogram = neo.AnalogSignal(
+            signal=time_histogram.reshape(time_histogram.size, 1),
+            sampling_period=self.bin_size, units=pq.dimensionless,
+            t_start=self.t_start)
+
+        empty_bins = (self.t_stop - self.t_start - self.epoch.durations.sum())
+        empty_bins = empty_bins.rescale(self.bin_size.units) / self.bin_size
+        if conv._detect_rounding_errors(empty_bins, tolerance=self.tolerance):
+            warnings.warn('Correcting a rounding error in the histogram '
+                          'calculation by increasing num_bins by 1. '
+                          'You can set tolerance=None to disable this '
+                          'behaviour.')
+            empty_bins += 1
+        empty_bins = int(empty_bins)
+
+        complexity_histogram[0] = empty_bins
 
         return time_histogram, complexity_histogram
 
     def _epoch_no_spread(self):
-        # TODO
+        epoch = neo.Epoch(self.time_histogram.times,
+                          durations=self.bin_size
+                          * np.ones(self.time_histogram.shape),
+                          array_annotations={
+                              'complexity':
+                              self.time_histogram.magnitude.flatten()})
         return epoch
 
     def get_epoch(self):
@@ -1129,7 +1164,7 @@ class complexity:
 
         # ensure that an epoch does not start before the minimum t_start
         min_t_start = min([st.t_start for st in self.input_spiketrains])
-        left_edges[0] = min(min_t_start, left_edges[0])
+        left_edges[0] = max(min_t_start, left_edges[0])
 
         complexity_epoch = neo.Epoch(times=left_edges,
                                      durations=right_edges - left_edges,
