@@ -913,10 +913,8 @@ class complexity:
                  spread=0,
                  tolerance=1e-8):
 
-        if isinstance(spiketrains, list):
-            _check_consistency_of_spiketrainlist(spiketrains)
-        else:
-            raise TypeError('spiketrains should be a list of neo.SpikeTrain')
+        _check_consistency_of_spiketrainlist(spiketrains)
+
         self.input_spiketrains = spiketrains
         self.t_start = spiketrains[0].t_start
         self.t_stop = spiketrains[0].t_stop

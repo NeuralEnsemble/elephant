@@ -16,15 +16,18 @@ class checkSpiketrainTestCase(unittest.TestCase):
 
     def test_wrong_input_errors(self):
         self.assertRaises(ValueError,
-                          utils._check_consistency_of_spiketrains,
+                          utils._check_consistency_of_spiketrainlist,
                           [], 1 / pq.s)
         self.assertRaises(TypeError,
-                          utils._check_consistency_of_spiketrains,
+                          utils._check_consistency_of_spiketrainlist,
+                          neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s))
+        self.assertRaises(TypeError,
+                          utils._check_consistency_of_spiketrainlist,
                           [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s),
                            np.arange(2)],
                           1 / pq.s)
         self.assertRaises(ValueError,
-                          utils._check_consistency_of_spiketrains,
+                          utils._check_consistency_of_spiketrainlist,
                           [neo.SpikeTrain([1]*pq.s,
                                           t_start=1*pq.s,
                                           t_stop=2*pq.s),
@@ -33,13 +36,13 @@ class checkSpiketrainTestCase(unittest.TestCase):
                                           t_stop=2*pq.s)],
                           same_t_start=True)
         self.assertRaises(ValueError,
-                          utils._check_consistency_of_spiketrains,
+                          utils._check_consistency_of_spiketrainlist,
                           [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s),
                            neo.SpikeTrain([1]*pq.s, t_stop=3*pq.s)],
                           same_t_stop=True)
         self.assertRaises(ValueError,
-                          utils._check_consistency_of_spiketrains,
-                          [neo.SpikeTrain([1]*pq.ms, t_stop=2*pq.s),
+                          utils._check_consistency_of_spiketrainlist,
+                          [neo.SpikeTrain([1]*pq.ms, t_stop=2000*pq.ms),
                            neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s)],
                           same_units=True)
 

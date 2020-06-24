@@ -22,12 +22,14 @@ def is_binary(array):
 
 
 def _check_consistency_of_spiketrainlist(spiketrains,
-                                         same_t_start=None,
-                                         same_t_stop=None,
+                                         same_t_start=False,
+                                         same_t_stop=False,
                                          same_units=False):
     """
     Private function to check lists of spiketrains.
     """
+    if not isinstance(spiketrains, list):
+        raise TypeError('spiketrains should be a list of neo.SpikeTrain')
     if len(spiketrains) == 0:
         raise ValueError('The spiketrains list is empty!')
     for st in spiketrains:
@@ -42,5 +44,5 @@ def _check_consistency_of_spiketrainlist(spiketrains,
         if same_t_stop and not st.t_stop == spiketrains[0].t_stop:
             raise ValueError(
                 "the spike trains must have the same t_stop!")
-        if same_units and not st.units == st[0].units:
+        if same_units and not st.units == spiketrains[0].units:
             raise ValueError('The spike trains must have the same units!')
