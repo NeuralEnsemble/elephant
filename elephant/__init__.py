@@ -22,15 +22,21 @@ from . import (statistics,
                sta,
                conversion,
                neo_tools,
-               spade,
                cell_assembly_detection,
-               waveform_features)
+               spade,
+               waveform_features,
+               gpfa)
+
+# not included modules on purpose:
+#   parallel: avoid warns when elephant is imported
 
 try:
     from . import pandas_bridge
     from . import asset
+    from . import spade
 except ImportError:
     # requirements-extras are missing
+    # please install Elephant with `pip install elephant[extras]`
     pass
 
 

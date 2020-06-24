@@ -1,6 +1,5 @@
-=====================================
-`statistics` - Spike train statistics
-=====================================
+==========================
+Statistics of spike trains
+==========================
 
 .. automodule:: elephant.statistics
-   :members:

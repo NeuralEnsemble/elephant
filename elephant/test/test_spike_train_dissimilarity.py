@@ -210,17 +210,17 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.assertAlmostEqual(
               stds.victor_purpura_dist([self.st16, self.st14], self.q3)[0, 1],
               stds.victor_purpura_dist([self.st16, self.st15], self.q3)[0, 1])
-        self.assertEqual(
+        self.assertAlmostEqual(
               stds.victor_purpura_dist([self.st01, self.st05], self.q3)[0, 1],
               stds.victor_purpura_dist([self.st01, self.st05], self.q7)[0, 1])
         # Tests on algorithmic behaviour for equal spike times
-        self.assertEqual(
+        self.assertAlmostEqual(
               stds.victor_purpura_dist([self.st31, self.st34], self.q3)[0, 1],
               0.8 + 1.0)
-        self.assertEqual(
+        self.assertAlmostEqual(
               stds.victor_purpura_dist([self.st31, self.st34], self.q3)[0, 1],
               stds.victor_purpura_dist([self.st32, self.st33], self.q3)[0, 1])
-        self.assertEqual(
+        self.assertAlmostEqual(
               stds.victor_purpura_dist(
                   [self.st31, self.st33], self.q3)[0, 1] * 2.0,
               stds.victor_purpura_dist(

@@ -10,10 +10,16 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import pandas as pd
+import warnings
 import quantities as pq
 
 from elephant.neo_tools import (extract_neo_attrs, get_all_epochs,
                                 get_all_events, get_all_spiketrains)
+
+
+warnings.simplefilter('once', DeprecationWarning)
+warnings.warn("pandas_bridge module will be removed in Elephant v0.8.x",
+              DeprecationWarning)
 
 
 def _multiindex_from_dict(inds):
@@ -576,8 +582,8 @@ def slice_spiketrain(pdobj, t_start=None, t_stop=None):
     pdobj : scalar, pandas Series, DataFrame, or Panel
             The returned data type is the same as the type of `pdobj`
 
-    Note
-    ----
+    Notes
+    -----
 
     The order of the index and/or column levels of the returned object may
     differ  from the order of the original.

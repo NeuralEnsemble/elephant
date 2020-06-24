@@ -1,6 +1,6 @@
-===============================================================================
-`spike_train_dissimilarity` - Spike train dissimilarity / spike train synchrony
-===============================================================================
+=======================================
+Spike train dissimilarity and synchrony
+=======================================
 
 
 .. automodule:: elephant.spike_train_dissimilarity

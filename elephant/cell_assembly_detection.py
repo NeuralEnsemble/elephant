@@ -6,7 +6,7 @@ between spikes in a pattern), and at multiple time scales,
 e.g. from synchronous patterns to firing rate co-modulations.
 
 CAD consists of a statistical parametric testing done on the level of pairs
-of neurons, followed by an agglomerative recursive algorithm, in order to 
+of neurons, followed by an agglomerative recursive algorithm, in order to
 detect and test statistically precise repetitions of spikes in the data.
 In particular, pairs of neurons are tested for significance under the null
 hypothesis of independence, and then the significant pairs are agglomerated
@@ -20,8 +20,8 @@ scale (binsize), assumed to be recorded in parallel, the CAD analysis can be
 applied as demonstrated in this short toy example of 5 parallel spike trains
 that exhibit fully synchronous events of order 5.
 
-Example
--------
+Examples
+--------
 >>> import matplotlib.pyplot as plt
 >>> import elephant.conversion as conv
 >>> import elephant.spike_train_generation
@@ -68,6 +68,8 @@ Elife, 6.
 
 """
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import copy
 import math
@@ -86,7 +88,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     The function performs the CAD analysis for the binned (discretized) spike
     trains given in input. The method looks for candidate
     significant patterns with lags (number of bins between successive spikes
-    in the pattern) going from `-maxlag` and `maxlag` (second parameter of the
+    in the pattern) going from `-maxlag` to `maxlag` (second parameter of the
     function). Thus, between two successive spikes in the pattern there can
     be at most `maxlag`*`binsize` units of time.
 
@@ -95,7 +97,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     and stops when the detected assemblies reach their maximal dimension
     (parameter `max_spikes`).
 
-    At every agglomeration size step (ex. from triplets to quadruplets), the
+    At every agglomeration size step (e.g. from triplets to quadruplets), the
     method filters patterns having the same neurons involved, and keeps only
     the most significant one. This pruning is optional and the choice is
     identified by the parameter 'significance_pruning'.
@@ -105,109 +107,120 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
 
     Parameters
     ----------
-    data : BinnedSpikeTrain object
-        binned spike trains containing data to be analysed
-    maxlag: int
-        maximal lag to be tested. For a binning dimension of binsize the
+    data : elephant.conversion.BinnedSpikeTrain
+        Binned spike trains containing data to be analyzed.
+    maxlag : int
+        Maximal lag to be tested. For a binning dimension of binsize the
         method will test all pairs configurations with a time
-        shift between '-maxlag' and 'maxlag'
-    reference_lag : int
-        reference lag (in bins) for the non-stationarity correction in the
-        statistical test
-        Default value : 2
-    alpha : float
-        significance level for the statistical test
-        Default : 0.05
-    min_occ : int
-        minimal number of occurrences required for an assembly
+        shift between '-maxlag' and 'maxlag'.
+    reference_lag : int, optional
+        Reference lag (in bins) for the non-stationarity correction in the
+        statistical test.
+        Default: 2.
+    alpha : float, optional
+        Significance level for the statistical test.
+        Default: 0.05.
+    min_occ : int, optional
+        Minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
-        Default : 0.
-    size_chunks : int
-        size (in bins) of chunks in which the spike trains is divided
+        Default: 0.
+    size_chunks : int, optional
+        Size (in bins) of chunks in which the spike trains are divided
         to compute the variance (to reduce non stationarity effects
-        on variance estimation)
-        Default : 100.
-    max_spikes : int
-        maximal assembly order (the algorithm will return assemblies of
-        composed by maximum max_spikes elements).
-        Default : numpy.inf
-    significance_pruning : bool
-        if True the method performs significance pruning among
-        the detected assemblies
-        Default: True
-    subgroup_pruning : bool
-        if True the method performs subgroup pruning among
-        the detected assemblies
-        Default: True
-    same_config_cut: bool
-        if True performs pruning (not present in the original code and more
+        on variance estimation).
+        Default: 100.
+    max_spikes : int, optional
+        Maximal assembly order (the algorithm will return assemblies
+        composed of maximum `max_spikes` elements).
+        Default: `np.inf`.
+    significance_pruning : bool, optional
+        If True, the method performs significance pruning among
+        the detected assemblies.
+        Default: True.
+    subgroup_pruning : bool, optional
+        If True, the method performs subgroup pruning among
+        the detected assemblies.
+        Default: True.
+    same_config_cut : bool, optional
+        If True, performs pruning (not present in the original code and more
         efficient), not testing assemblies already formed
-        if they appear in the very same configuration
-        Default: False
-    bool_times_format: bool
-        if True the activation time series is a list of 0/1 elements, where
-        1 indicates the first spike of the pattern
+        if they appear in the very same configuration.
+        Default: False.
+    bool_times_format : bool, optional
+        If True, the activation time series is a list of 0/1 elements, where
+        1 indicates the first spike of the pattern.
         Otherwise, the activation times of the assemblies are indicated by the
         indices of the bins in which the first spike of the pattern
-        is happening
-        Default: False
-    verbose: bool
+        is happening.
+        Default: False.
+    verbose : bool, optional
         Regulates the number of prints given by the method. If true all prints
         are given, otherwise the method does give any prints.
-        Default: False
+        Default: False.
 
     Returns
     -------
-    assembly_bin : list
-        contains the assemblies detected for the binsize chosen
-        each assembly is a dictionary with attributes:
-        'neurons' : vector of units taking part to the assembly
-                    (unit order correspond to the agglomeration order)
-        'lag' : vector of time lags `lag[z]` is the activation delay between
-                `neurons[1]` and `neurons[z+1]`
-        'pvalue' : vector of pvalues. `pvalue[z]` is the p-value of the
-                   statistical test between performed adding
-                   `neurons[z+1]` to the `neurons[1:z]`
-        'times' : assembly activation time. It reports how many times the
-                  complete assembly activates in that bin.
-                  time always refers to the activation of the first listed
-                  assembly element (`neurons[1]`), that doesn't necessarily
-                  corresponds to the first unit firing.
-                  The format is  identified by the variable bool_times_format.
-        'signature' : array of two entries `(z,c)`. The first is the number of
-                      neurons participating in the assembly (size),
-                      the second is number of assembly occurrences.
+    assembly : list of dict
+        Contains the assemblies detected for the bin size chosen. Each
+        assembly is a dictionary with attributes:
+
+        'neurons' : list
+            Vector of units taking part to the assembly (unit order correspond
+            to the agglomeration order).
+        'lag' : list
+            Vector of time lags.
+            `lag[z]` is the activation delay between `neurons[1]` and
+            `neurons[z+1]`.
+        'pvalue' : list
+            Vector containing p-values.
+            `pvalue[z]` is the p-value of the statistical test between
+            performed adding `neurons[z+1]` to the `neurons[1:z]`.
+        'times' : list
+            Assembly activation time. It reports how many times the
+            complete assembly activates in that bin. Time always refers to the
+            activation of the first listed assembly element (`neurons[1]`),
+            that doesn't necessarily corresponds to the first unit firing.
+            The format is  identified by the variable `bool_times_format`.
+        'signature' : list of list
+            Array of two entries `(z,c)`. The first is the number of neurons
+            participating in the assembly (size), and the second is number of
+            assembly occurrences.
 
     Raises
     ------
     TypeError
-        if the data is not an elephant.conv.BinnedSpikeTrain object
+        If `data` is not an `elephant.conv.BinnedSpikeTrain` object.
     ValueError
-        if the parameters are out of bounds
+        If the parameters are out of bounds.
+
+    Notes
+    -----
+    Alias: cad
+
+    References
+    ----------
+    [1] Russo, E., & Durstewitz, D. (2017). Cell assemblies at multiple time
+    scales with arbitrary lag constellations. Elife, 6.
 
     Examples
-    -------
+    --------
     >>> import elephant.conversion as conv
     >>> import elephant.spike_train_generation
     >>> import quantities as pq
     >>> import numpy as np
     >>> import elephant.cell_assembly_detection as cad
+    ...
     >>> np.random.seed(30)
+    ...
     >>> # Generate correlated data and bin it with a binsize of 10ms
     >>> sts = elephant.spike_train_generation.cpp(
     >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
     >>> binsize = 10*pq.ms
     >>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
+    ...
     >>> # Call of the method
     >>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
-
-
-    References
-    ----------
-    [1] Russo, E., & Durstewitz, D. (2017).
-    Cell assemblies at multiple time scales with arbitrary lag constellations.
-    Elife, 6.
 
     """
     initial_time = time.time()
@@ -618,7 +631,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     # For large binsizes, the binned spike counts may potentially fluctuate
     # around a high mean level and never fall below some minimum count
     # considerably larger than zero for the whole time series.
-    # Entries up to this minimum count would contribute 
+    # Entries up to this minimum count would contribute
     # to the coincidence count although they are completely
     # uninformative, so we subtract the minima.
 
@@ -1010,9 +1023,9 @@ def _significance_pruning_step(pre_pruning_assembly):
     Between two assemblies with the same unit set arranged into different
     configurations the most significant one is chosen.
 
-    Parameters:
+    Parameters
     ----------
-    assembly : list
+    pre_pruning_assembly : list
         contains the whole set of significant assemblies (unfiltered)
 
     Returns
@@ -1145,7 +1158,7 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
         if the significance level is not in [0,1]
         if the minimal number of occurrences for an assembly is less than 1
         if the length of the chunks for the variance computation is 1 or less
-        if the maximal assembly order is not between 2 
+        if the maximal assembly order is not between 2
         and the number of neurons
         if the time series is too short (less than 100 bins)
 
