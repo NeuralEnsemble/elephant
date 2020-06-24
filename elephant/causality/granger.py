@@ -25,7 +25,7 @@ import numpy as np
 from collections import namedtuple
 from neo.core import AnalogSignal
 
-Causality = namedtuple('causality',
+Causality = namedtuple('Causality',
                        ['directional_causality_x_y',
                         'directional_causality_y_x',
                         'instantaneous_causality',
