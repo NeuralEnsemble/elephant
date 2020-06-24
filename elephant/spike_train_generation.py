@@ -19,8 +19,6 @@ import neo
 import numpy as np
 import quantities as pq
 
-from elephant.utils import deprecated_alias
-
 from elephant.spike_train_surrogates import dither_spike_train
 
 
@@ -598,9 +596,8 @@ def _analog_signal_linear_interp(signal, times):
             + slope * (times - times_extended[time_ids])) * signal.units
 
 
-@deprecated_alias(a='shape', b='rate')
-def homogeneous_gamma_process(shape, rate, t_start=0.0 * pq.ms,
-                              t_stop=1000.0 * pq.ms, as_array=False):
+def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
+                              as_array=False):
     """
     Returns a spike train whose spikes are a realization of a gamma process
     with the given parameters, starting at time `t_start` and stopping time
@@ -609,9 +606,9 @@ def homogeneous_gamma_process(shape, rate, t_start=0.0 * pq.ms,
 
     Parameters
     ----------
-    shape : int or float
+    a : int or float
         The shape parameter of the gamma distribution.
-    rate : pq.Quantity
+    b : pq.Quantity
         The rate parameter of the gamma distribution.
     t_start : pq.Quantity, optional
         The beginning of the spike train.
@@ -644,13 +641,16 @@ def homogeneous_gamma_process(shape, rate, t_start=0.0 * pq.ms,
     ...        5.0, 20*pq.Hz, 5000*pq.ms, 10000*pq.ms, as_array=True)
 
     """
+    # note that the rate of the gamma distribution is called 'b' and not 'rate'
+    # to avoid false thoughts that 'rate' could be the mean firing rate, which
+    # equals to b / a
     if not (isinstance(t_start, pq.Quantity) and
             isinstance(t_stop, pq.Quantity)):
         raise ValueError("t_start and t_stop must be of type pq.pq.Quantity")
-    rate = rate.rescale(1 / t_start.units).simplified
-    rate = rate / shape
-    theta = 1. / rate.magnitude
-    interval_generator = partial(np.random.gamma, shape=shape, scale=theta)
+    b = b.rescale(1 / t_start.units).simplified
+    rate = b / a
+    theta = 1. / b.magnitude
+    interval_generator = partial(np.random.gamma, shape=a, scale=theta)
     return _homogeneous_process(interval_generator, rate, t_start,
                                 t_stop, as_array)
 
