@@ -543,7 +543,7 @@ def _jsf_uniform_orderstat_3d(u, n, verbose=False):
     return P_total
 
 
-def _pmat_neighbors(mat, filter_shape, n_largest, verbose):
+def _pmat_neighbors(mat, filter_shape, n_largest):
     """
     Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
     `mat`.
@@ -565,8 +565,6 @@ def _pmat_neighbors(mat, filter_shape, n_largest, verbose):
         A pair of integers representing the kernel shape `(l, w)`.
     n_largest : int
         The number of largest neighbors to collect for each entry in `mat`.
-    verbose : bool
-        Show the progress bar or not.
 
     Returns
     -------
@@ -617,16 +615,16 @@ def _pmat_neighbors(mat, filter_shape, n_largest, verbose):
     # if the matrix is symmetric do not use kernel positions intersected
     # by the diagonal
     if symmetric:
-        bin_range_y = trange(l, N_bin_y - l + 1, disable=not verbose)
+        bin_range_y = range(l, N_bin_y - l + 1)
     else:
-        bin_range_y = trange(N_bin_y - l + 1, disable=not verbose)
-        bin_range_x = trange(N_bin_x - l + 1, disable=not verbose)
+        bin_range_y = range(N_bin_y - l + 1)
+        bin_range_x = range(N_bin_x - l + 1)
 
     # compute matrix of largest values
     for y in bin_range_y:
         if symmetric:
             # x range depends on y position
-            bin_range_x = trange(y - l + 1, disable=not verbose)
+            bin_range_x = range(y - l + 1)
         for x in bin_range_x:
             patch = mat[y: y + l, x: x + l]
             mskd = np.multiply(filt, patch)
@@ -1574,8 +1572,7 @@ class ASSET(object):
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat_neighb = _pmat_neighbors(
-            pmat, filter_shape=filter_shape, n_largest=n_largest,
-            verbose=self.verbose)
+            pmat, filter_shape=filter_shape, n_largest=n_largest)
 
         pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value)
 
