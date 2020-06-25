@@ -1506,17 +1506,7 @@ class ASSET(object):
 
         # Compute the probability matrix obtained from imat using the Poisson
         # pdfs
-        pmat = np.zeros(imat.shape, dtype=np.float32)
-
-        for i in range(imat.shape[0]):
-            if mpi_accelerated and i % size != rank:
-                continue
-            for j in range(imat.shape[1]):
-                pmat[i, j] = scipy.stats.poisson.cdf(imat[i, j] - 1, Mu[i, j])
-
-        if mpi_accelerated:
-            for i in range(imat.shape[0]):
-                pmat[i] = comm.bcast(pmat[i], root=i % size)
+        pmat = scipy.stats.poisson.cdf(imat - 1, Mu)
 
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
