@@ -110,7 +110,9 @@ def _lag_covariances(signals, dimension, max_lag):
 
     """
     length = np.size(signals[0])
-    assert (length >= max_lag), 'maximum lag larger than size of data'
+
+    if length < max_lag:
+        raise ValueError("Maximum lag larger than size of data")
 
     # centralize time series
     signals_mean = (signals - np.mean(signals, keepdims=True)).T
@@ -236,7 +238,7 @@ def _vector_arm(signals, dimension, order):
 
 
 def _optimal_vector_arm(signals, dimension, max_order,
-                        information_criterion='bic'):
+                        information_criterion=aic):
     """
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
@@ -269,18 +271,10 @@ def _optimal_vector_arm(signals, dimension, max_order,
     optimal_coeffs = np.zeros((dimension, dimension, optimal_order))
     optimal_cov_matrix = np.zeros((dimension, dimension))
 
-    if information_criterion == 'bic':
-        evaluate_ic = bic
-    elif information_criterion == 'aic':
-        evaluate_ic = aic
-    else:
-        raise ValueError(
-            f"Information criterion {information_criterion} not valid")
-
     for order in range(1, max_order + 1):
         coeffs, cov_matrix = _vector_arm(signals, dimension, order)
 
-        temp_ic = evaluate_ic(cov_matrix, order, dimension, length)
+        temp_ic = information_criterion(cov_matrix, order, dimension, length)
 
         if temp_ic < optimal_ic:
             optimal_ic = temp_ic
@@ -291,7 +285,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
     return optimal_coeffs, optimal_cov_matrix, optimal_order
 
 
-def pairwise_granger(signals, max_order, information_criterion='bic'):
+def pairwise_granger(signals, max_order, information_criterion=aic):
     r"""
     Determine Granger Causality of two time series
     Note: order parameter should be removed
