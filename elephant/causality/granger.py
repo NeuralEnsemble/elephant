@@ -288,7 +288,6 @@ def _optimal_vector_arm(signals, dimension, max_order,
 def pairwise_granger(signals, max_order, information_criterion=aic):
     r"""
     Determine Granger Causality of two time series
-    Note: order parameter should be removed
     Parameters
     ----------
     signals : np.ndarray or neo.AnalogSignal
