@@ -6,7 +6,9 @@
 
 Overview of Functions
 ---------------------
-Various formulations of Granger causality have been developed. In this module you will find function for time-series data to test pairwise Granger causality (`pairwise_granger`).
+Various formulations of Granger causality have been developed. In this module
+you will find function for time-series data to test pairwise Granger causality
+(`pairwise_granger`).
 
 Time-series Granger causality
 ~~~~~~~~~~~~~~~
@@ -103,7 +105,8 @@ def _lag_covariances(signals, dimension, max_lag):
     lag_corr : np.ndarray
         correlations matrices of lagged signals
 
-    Covariance of shifted signals calculated according to the following formula:
+    Covariance of shifted signals calculated according to the following
+    formula:
 
         x: d-dimensional signal
         x^T: transpose of d-dimensional signal
@@ -355,11 +358,11 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
     if sign <= 0:
 
         raise ValueError(
-            "Determinant of covariance matrix must be always positive: " \
+            "Determinant of covariance matrix must be always positive: "
             "In this case its sign is {}".format(sign))
 
     directional_causality_y_x = np.log(var_x[0]) - np.log(cov_xy[0, 0])
-    directional_causality_x_y = np.log(var_y[0]) -np.log(cov_xy[1, 1])
+    directional_causality_x_y = np.log(var_y[0]) - np.log(cov_xy[1, 1])
 
     instantaneous_causality = \
         np.log(cov_xy[0, 0]) + np.log(cov_xy[1, 1]) - log_det_cov

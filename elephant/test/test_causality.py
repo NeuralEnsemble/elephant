@@ -37,7 +37,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         >>>    for lag in range(order):
         >>>        signal[:, i] += np.dot(weights[lag],
         >>>                               signal[:, i - lag - 1])
-        >>>    rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+        >>>    rnd_var = np.random.multivariate_normal([0, 0],
+        >>>    noise_covariance)
         >>>    signal[0, i] += rnd_var[0]
         >>>    signal[1, i] += rnd_var[1]
 
@@ -125,8 +126,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         is asserted due to a loss of significance with larger datasets.
         """
         causality_sum = self.causality.directional_causality_x_y \
-                        + self.causality.directional_causality_y_x \
-                        + self.causality.instantaneous_causality
+            + self.causality.directional_causality_y_x \
+            + self.causality.instantaneous_causality
         assert_array_almost_equal(self.causality.total_interdependence,
                                   causality_sum, decimal=2)
 
