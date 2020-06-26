@@ -35,6 +35,7 @@ Causality = namedtuple('Causality',
 def bic(cov, order, dimension, length):
     """
     Calculate Bayesian Information Criterion
+
     Parameters
     ----------
     cov : np.ndarray
@@ -60,6 +61,7 @@ def bic(cov, order, dimension, length):
 def aic(cov, order, dimension, length):
     """
     Calculate Akaike Information Criterion
+
     Parameters
     ----------
     cov : np.ndarray
@@ -86,6 +88,7 @@ def _lag_covariances(signals, dimension, max_lag):
     r"""
     Determine covariances of time series and time shift of itself up to a
     maximal lag
+
     Parameters
     ----------
     signals: np.ndarray
@@ -94,6 +97,7 @@ def _lag_covariances(signals, dimension, max_lag):
         number of time series
     max_lag: int
         maximal time lag to be considered
+
     Returns
     -------
     lag_corr : np.ndarray
@@ -131,6 +135,7 @@ def _lag_covariances(signals, dimension, max_lag):
 def _yule_walker_matrix(data, dimension, order):
     r"""
     Generate matrix for Yule-Walker equation
+
     Parameters
     ----------
     data : np.ndarray
@@ -139,6 +144,7 @@ def _yule_walker_matrix(data, dimension, order):
         dimensionality of data (e.g. number of channels)
     order : int
         order of the autoregressive model
+
     Returns
     -------
     yule_walker_matrix : np.ndarray
@@ -183,12 +189,14 @@ def _yule_walker_matrix(data, dimension, order):
 def _vector_arm(signals, dimension, order):
     r"""
     Determine coefficients of autoregressive model from time series data
+
     Parameters
     ----------
     signals : np.ndarray
         time series data
     order : int
         order of the autoregressive model
+
     Returns
     -------
     coeffs: np.ndarray
@@ -242,6 +250,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
     """
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
+
     Parameters
     ----------
     signals : np.ndarray
@@ -288,6 +297,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
 def pairwise_granger(signals, max_order, information_criterion=aic):
     r"""
     Determine Granger Causality of two time series
+
     Parameters
     ----------
     signals : np.ndarray or neo.AnalogSignal
@@ -297,6 +307,7 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
     information_criterion : string
         bic for Bayesian information_criterion,
         aic for Akaike information criterion
+
     Returns
     -------
     causality : namedTuple, where:
