@@ -93,6 +93,18 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         self.assertEqual(analog_signal_causality.total_interdependence,
                          self.causality.total_interdependence)
 
+    def test_aic(self):
+        identity_matrix = np.eye(2, 2)
+        self.assertEqual(elephant.causality.granger.aic(
+            identity_matrix, order=2, dimension=2, length=2
+        ), 8.0)
+
+    def test_bic(self):
+        identity_matrix = np.eye(2, 2)
+        assert_array_almost_equal(elephant.causality.granger.bic(
+            identity_matrix, order=2, dimension=2, length=2
+        ), 5.545177444479562, decimal=15)
+
     @unittest.skipUnless(sys.version_info >= (2, 7),
                          "requires Python 2.7 or above")
     def test_lag_covariances_error(self):
