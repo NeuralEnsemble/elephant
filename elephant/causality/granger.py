@@ -51,7 +51,7 @@ def bic(cov, order, dimension, length):
     criterion : float
        Bayesian Information Criterion
     """
-    criterion = 2 * np.log(np.linalg.det(cov)) \
+    criterion = 2 * np.linalg.slogdet(cov)[1] \
         + 2*(dimension**2)*order*np.log(length)/length
 
     return criterion
@@ -76,7 +76,7 @@ def aic(cov, order, dimension, length):
     criterion : float
         Akaike Information Criterion
     """
-    criterion = 2 * np.log(np.linalg.det(cov)) \
+    criterion = 2 * np.linalg.slogdet(cov)[1] \
         + 2*(dimension**2)*order/length
 
     return criterion
@@ -346,16 +346,22 @@ def pairwise_granger(signals, max_order, information_criterion='bic'):
     coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
                                                  information_criterion)
 
-    directional_causality_y_x = np.log(var_x[0]/cov_xy[0, 0])
-    directional_causality_x_y = np.log(var_y[0]/cov_xy[1, 1])
+    sign, log_det_cov = np.linalg.slogdet(cov_xy)
 
-    cov_determinant = np.linalg.det(cov_xy)
+    if sign <= 0:
+
+        raise ValueError(
+            "Determinant of covariance matrix must be always positive: " \
+            "In this case its sign is {}".format(sign))
+
+    directional_causality_y_x = np.log(var_x[0]) - np.log(cov_xy[0, 0])
+    directional_causality_x_y = np.log(var_y[0]) -np.log(cov_xy[1, 1])
 
     instantaneous_causality = \
-        np.log((cov_xy[0, 0]*cov_xy[1, 1])/cov_determinant)
+        np.log(cov_xy[0, 0]) + np.log(cov_xy[1, 1]) - log_det_cov
     instantaneous_causality = np.asarray(instantaneous_causality)
 
-    total_interdependence = np.log(var_x[0]*var_y[0]/cov_determinant)
+    total_interdependence = np.log(var_x[0]) + np.log(var_y[0]) - log_det_cov
 
     '''
     Round GC according to following scheme:
