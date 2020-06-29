@@ -14,6 +14,8 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
+from elephant.utils import deprecated_alias
+
 
 def zscore(signal, inplace=True):
     r"""
@@ -151,7 +153,8 @@ def zscore(signal, inplace=True):
     return signal_ztransofrmed
 
 
-def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
+@deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags')
+def cross_correlation_function(signal, channel_pairs, env=False, n_lags=None,
                                scaleopt='unbiased'):
     r"""
     Computes unbiased estimator of the cross-correlation function.
@@ -165,9 +168,9 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     where :math:`R'(\tau) = \left<x(t)y(t+\tau)\right>` in a pairwise
     manner, i.e.:
 
-    `signal[ch_pairs[0,0]]` vs `signal[ch_pairs[0,1]]`,
+    `signal[channel_pairs[0,0]]` vs `signal[channel_pairs[0,1]]`,
 
-    `signal[ch_pairs[1,0]]` vs `signal[ch_pairs[1,1]]`,
+    `signal[channel_pairs[1,0]]` vs `signal[channel_pairs[1,1]]`,
 
     and so on.
 
@@ -180,17 +183,17 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     ----------
     signal : (nt, nch) neo.AnalogSignal
         Signal with `nt` number of samples that contains `nch` LFP channels.
-    ch_pairs : list or (n, 2) np.ndarray
+    channel_pairs : list or (n, 2) np.ndarray
         List with `n` channel pairs for which to compute cross-correlation.
         Each element of the list must contain 2 channel indices.
         If `np.ndarray`, the second axis must have dimension 2.
     env : bool, optional
         If True, returns the Hilbert envelope of cross-correlation function.
         Default: False.
-    nlags : int, optional
+    n_lags : int, optional
         Defines the number of lags for cross-correlation function. If a `float`
         is passed, it will be rounded to the nearest integer. Number of
-        samples of output is `2*nlags+1`.
+        samples of output is `2*n_lags+1`.
         If None, the number of samples of the output is equal to the number of
         samples of the input signal (namely `nt`).
         Default: None.
@@ -225,10 +228,10 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     Returns
     -------
     cross_corr : neo.AnalogSignal
-        Shape: `[2*nlags+1, n]`
+        Shape: `[2*n_lags+1, n]`
         Pairwise cross-correlation functions for channel pairs given by
-        `ch_pairs`. If `env` is True, the output is the Hilbert envelope of
-        the pairwise cross-correlation function. This is helpful to compute
+        `channel_pairs`. If `env` is True, the output is the Hilbert envelope
+        of the pairwise cross-correlation function. This is helpful to compute
         the correlation length for oscillating cross-correlation functions.
 
     Raises
@@ -236,11 +239,12 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     ValueError
         If input `signal` is not a `neo.AnalogSignal`.
 
-        If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
+        If `channel_pairs` is not a list of channel pair indices with shape
+        `(n,2)`.
 
         If `env` is not a boolean.
 
-        If `nlags` is not a positive integer.
+        If `n_lags` is not a positive integer.
 
         If `scaleopt` is not one of the predefined above keywords.
 
@@ -267,8 +271,8 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     >>> # Generate neo.AnalogSignals from x and find cross-correlation
     >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
     >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
-    >>> rho = cross_correlation_function(signal, [0,1], nlags=150)
-    >>> env = cross_correlation_function(signal, [0,1], nlags=150,
+    >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
+    >>> env = cross_correlation_function(signal, [0,1], n_lags=150,
     ...     env=True)
     ...
     >>> plt.plot(rho.times, rho)
@@ -277,8 +281,8 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
 
     """
 
-    # Make ch_pairs a 2D array
-    pairs = np.asarray(ch_pairs)
+    # Make channel_pairs a 2D array
+    pairs = np.asarray(channel_pairs)
     if pairs.ndim == 1:
         pairs = np.expand_dims(pairs, axis=0)
 
@@ -286,13 +290,13 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     if not isinstance(signal, neo.AnalogSignal):
         raise ValueError('Input signal must be of type neo.AnalogSignal')
     if pairs.shape[1] != 2:
-        raise ValueError('`ch_pairs` is not a list of channel pair indices. '
-                         'Cannot define pairs for cross-correlation.')
+        raise ValueError("'channel_pairs' is not a list of channel pair "
+                         "indices. Cannot define pairs for cross-correlation.")
     if not isinstance(env, bool):
-        raise ValueError('`env` must be a boolean value')
-    if nlags is not None:
-        if not isinstance(nlags, int) or nlags <= 0:
-            raise ValueError('nlags must be a non-negative integer')
+        raise ValueError("'env' must be a boolean value")
+    if n_lags is not None:
+        if not isinstance(n_lags, int) or n_lags <= 0:
+            raise ValueError('n_lags must be a non-negative integer')
 
     # z-score analog signal and store channel time series in different arrays
     # Cross-correlation will be calculated between xsig and ysig
@@ -325,9 +329,9 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
         xcorr = np.abs(scipy.signal.hilbert(xcorr, axis=0))
 
     # Cut off lags outside the desired range
-    if nlags is not None:
+    if n_lags is not None:
         tau0 = np.argwhere(tau == 0).item()
-        xcorr = xcorr[tau0 - nlags: tau0 + nlags + 1, :]
+        xcorr = xcorr[tau0 - n_lags: tau0 + n_lags + 1, :]
 
     # Return neo.AnalogSignal
     cross_corr = neo.AnalogSignal(xcorr,
@@ -644,7 +648,8 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     return signal_wt
 
 
-def hilbert(signal, N='nextpow'):
+@deprecated_alias(N='padding')
+def hilbert(signal, padding='nextpow'):
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
     obtain its (complex) analytic signal.
@@ -663,9 +668,11 @@ def hilbert(signal, N='nextpow'):
     ----------
     signal : neo.AnalogSignal
         Signal(s) to transform.
-    N : int or {'none', 'nextpow'}, optional
+    padding : int, {'none', 'nextpow'}, or None, optional
         Defines whether the signal is zero-padded.
-        If 'none', no padding.
+        The `padding` argument corresponds to `N` in
+        `scipy.signal.hilbert(signal, N=padding)` function.
+        If 'none' or None, no padding.
         If 'nextpow', zero-pad to the next length that is a power of 2.
         If it is an `int`, directly specify the length to zero-pad to
         (indicates the number of Fourier components).
@@ -681,12 +688,7 @@ def hilbert(signal, N='nextpow'):
     Raises
     ------
     ValueError:
-        If `N` is not an integer or neither 'nextpow' nor 'none'.
-
-    Notes
-    -----
-    If `N` is an integer, this is passed as the parameter `N` of
-    `scipy.signal.hilbert` function.
+        If `padding` is not an integer or neither 'nextpow' nor 'none' (None).
 
     Examples
     --------
@@ -708,7 +710,7 @@ def hilbert(signal, N='nextpow'):
     ...       t_start=0*pq.s,
     ...       sampling_rate=1000*pq.Hz)
     ...
-    >>> analytic_signal = hilbert(a, N='nextpow')
+    >>> analytic_signal = hilbert(a, padding='nextpow')
     >>> angles = np.angle(analytic_signal)
     >>> amplitudes = np.abs(analytic_signal)
     >>> print(angles)
@@ -726,10 +728,10 @@ def hilbert(signal, N='nextpow'):
     n_org = signal.shape[0]
 
     # Right-pad signal to desired length using the signal itself
-    if isinstance(N, int):
+    if isinstance(padding, int):
         # User defined padding
-        n = N
-    elif N == 'nextpow':
+        n = padding
+    elif padding == 'nextpow':
         # To speed up calculation of the Hilbert transform, make sure we change
         # the signal to be of a length that is a power of two. Failure to do so
         # results in computations of certain signal lengths to not finish (or
@@ -746,11 +748,11 @@ def hilbert(signal, N='nextpow'):
         # For this reason, nextpow is the default setting for now.
 
         n = 2 ** (int(np.log2(n_org - 1)) + 1)
-    elif N == 'none':
+    elif padding == 'none' or padding is None:
         # No padding
         n = n_org
     else:
-        raise ValueError("'{}' is an unknown N.".format(N))
+        raise ValueError("Invalid padding '{}'.".format(padding))
 
     output = signal.duplicate_with_new_data(
         scipy.signal.hilbert(signal.magnitude, N=n, axis=0)[:n_org])

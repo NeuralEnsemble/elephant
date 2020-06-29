@@ -71,7 +71,7 @@ class KCSD2D_TestCase(unittest.TestCase):
                                                    ylims=[0.05, 0.95])
         self.ele_pos = np.vstack((xx_ele, yy_ele)).T
         self.csd_profile = utils.large_source_2D
-        pots = CSD.generate_lfp(self.csd_profile, xx_ele, yy_ele, res=100)
+        pots = CSD.generate_lfp(self.csd_profile, xx_ele, yy_ele, resolution=100)
         self.pots = np.reshape(pots, (-1, 1))
         self.test_method = 'KCSD2D'
         self.test_params = {'gdx': 0.25, 'gdy': 0.25, 'R_init': 0.08,

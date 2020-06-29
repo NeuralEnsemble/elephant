@@ -464,7 +464,7 @@ class BinnedSpikeTrain(object):
             spiketrains = [spiketrains]
 
         # Link to input
-        self.lst_input = spiketrains
+        self.spiketrains_input = spiketrains
         # Set given parameters
         self.t_start = t_start
         self.t_stop = t_stop
@@ -504,8 +504,13 @@ class BinnedSpikeTrain(object):
 
     @property
     def binsize(self):
-        warnings.warn("'binsize' is deprecated; use 'bin_size'")
+        warnings.warn("'.binsize' is deprecated; use '.bin_size'")
         return self.bin_size
+
+    @property
+    def lst_input(self):
+        warnings.warn("'.lst_input' is deprecated; use '.spiketrains_input'")
+        return self.spiketrains_input
 
     # =========================================================================
     # There are four cases the given parameters must fulfill, or a `ValueError`
@@ -803,7 +808,7 @@ class BinnedSpikeTrain(object):
             True for binary input, False otherwise.
         """
 
-        return is_binary(self.lst_input)
+        return is_binary(self.spiketrains_input)
 
     def to_bool_array(self):
         """

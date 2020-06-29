@@ -66,7 +66,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
         rho = elephant.signal_processing.cross_correlation_function(
-            signal, [0, 1], nlags=nlags)
+            signal, [0, 1], n_lags=nlags)
         # Test if vector of lags tau has correct length
         assert len(rho.times) == 2*int(nlags)+1
 
@@ -103,7 +103,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
         envelope = elephant.signal_processing.cross_correlation_function(
-            signal, [0, 1], nlags=nlags, env=True)
+            signal, [0, 1], n_lags=nlags, env=True)
         # Envelope should be one for sinusoidal function
         assert_array_almost_equal(envelope, np.ones_like(envelope), decimal=2)
 
@@ -617,17 +617,17 @@ class HilbertTestCase(unittest.TestCase):
         """
         true_shape = np.shape(self.long_signals)
         output = elephant.signal_processing.hilbert(
-            self.long_signals, N='nextpow')
+            self.long_signals, padding='nextpow')
         self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
         output = elephant.signal_processing.hilbert(
-            self.long_signals, N=16384)
+            self.long_signals, padding=16384)
         self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
 
     def test_hilbert_array_annotations(self):
         output = elephant.signal_processing.hilbert(self.long_signals,
-                                                    N='nextpow')
+                                                    padding='nextpow')
         # Test if array_annotations are preserved
         self.assertSetEqual(set(output.array_annotations.keys()), {"my_list"})
         assert_array_equal(output.array_annotations['my_list'],
@@ -642,7 +642,7 @@ class HilbertTestCase(unittest.TestCase):
         for padding in ['nextpow', 'none', 16384]:
 
             h = elephant.signal_processing.hilbert(
-                self.long_signals, N=padding)
+                self.long_signals, padding=padding)
 
             phase = np.angle(h.magnitude)
             amplitude = np.abs(h.magnitude)
@@ -688,7 +688,7 @@ class HilbertTestCase(unittest.TestCase):
         for padding in ['nextpow', 'none', 512]:
 
             h = elephant.signal_processing.hilbert(
-                self.one_period, N=padding)
+                self.one_period, padding=padding)
 
             amplitude = np.abs(h.magnitude)
             phase = np.angle(h.magnitude)

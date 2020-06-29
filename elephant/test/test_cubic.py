@@ -114,7 +114,7 @@ class CubicTestCase(unittest.TestCase):
         # Test exceeding ximax
         with self.assertWarns(UserWarning):
             xi_ximax, p_vals_ximax, k_ximax, test_aborted = cubic.cubic(
-                self.data_signal, alpha=1, ximax=self.ximax)
+                self.data_signal, alpha=1, max_iterations=self.ximax)
 
         self.assertEqual(test_aborted, True)
         self.assertEqual(xi_ximax - 1, self.ximax)

@@ -38,14 +38,14 @@ CC and EH developed the interface to elephant.
 from __future__ import division, print_function, unicode_literals
 
 import neo
-import quantities as pq
 import numpy as np
-from scipy import io
+import quantities as pq
 from scipy.integrate import simps
 
+import elephant.current_source_density_src.utility_functions as utils
 from elephant.current_source_density_src import KCSD
 from elephant.current_source_density_src import icsd
-import elephant.current_source_density_src.utility_functions as utils
+from elephant.utils import deprecated_alias
 
 utils.patch_quantities()
 
@@ -201,43 +201,52 @@ def estimate_csd(lfp, coords=None, method=None,
     return output
 
 
+@deprecated_alias(xlims='x_lims', ylims='y_lims', zlims='z_lims',
+                  res='resolution')
 def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
-                 xlims=[0., 1.], ylims=[0., 1.], zlims=[0., 1.], res=50):
-    """Forward modelling for the getting the potentials for testing CSD
+                 x_lims=[0., 1.], y_lims=[0., 1.], z_lims=[0., 1.],
+                 resolution=50):
+    """
+    Forward modelling for getting the potentials for testing Current Source
+    Density (CSD).
 
-        Parameters
-        ----------
-        csd_profile : fuction that computes True CSD profile
-            Available options are (see ./csd/utility_functions.py)
-            1D : gauss_1d_dipole
-            2D : large_source_2D and small_source_2D
-            3D : gauss_3d_dipole
-        ele_xx : np.array
-            Positions of the x coordinates of the electrodes
-        ele_yy : np.array
-            Positions of the y coordinates of the electrodes
-            Defaults ot None, use in 2D or 3D cases only
-        ele_zz : np.array
-            Positions of the z coordinates of the electrodes
-            Defaults ot None, use in 3D case only
-        xlims : [start, end]
-            The starting spatial coordinate and the ending for integration
-            Defaults to [0.,1.]
-        ylims : [start, end]
-            The starting spatial coordinate and the ending for integration
-            Defaults to [0.,1.], use only in 2D and 3D case
-        zlims : [start, end]
-            The starting spatial coordinate and the ending for integration
-            Defaults to [0.,1.], use only in 3D case
-        res : int
-            The resolution of the integration
-            Defaults to 50
+    Parameters
+    ----------
+    csd_profile : callable
+        A function that computes true CSD profile.
+        Available options are (see ./csd/utility_functions.py)
+        1D : gauss_1d_dipole
+        2D : large_source_2D and small_source_2D
+        3D : gauss_3d_dipole
+    ele_xx : np.ndarray
+        Positions of the x coordinates of the electrodes
+    ele_yy : np.ndarray, optional
+        Positions of the y coordinates of the electrodes
+        Defaults ot None, use in 2D or 3D cases only
+    ele_zz : np.ndarray, optional
+        Positions of the z coordinates of the electrodes
+        Defaults ot None, use in 3D case only
+    x_lims : list, optional
+        A list of [start, end].
+        The starting spatial coordinate and the ending for integration
+        Defaults to [0.,1.]
+    y_lims : list, optional
+        A list of [start, end].
+        The starting spatial coordinate and the ending for integration
+        Defaults to [0.,1.], use only in 2D and 3D case
+    z_lims : list, optional
+        A list of [start, end].
+        The starting spatial coordinate and the ending for integration
+        Defaults to [0.,1.], use only in 3D case
+    resolution : int, optional
+        The resolution of the integration
+        Defaults to 50
 
-        Returns
-        -------
-        LFP : neo.AnalogSignal object
-           The potentials created by the csd profile at the electrode positions
-           The electrode postions are attached as RecordingChannel's coordinate
+    Returns
+    -------
+    LFP : neo.AnalogSignal
+       The potentials created by the csd profile at the electrode positions.
+       The electrode positions are attached as RecordingChannel's coordinate.
     """
     def integrate_1D(x0, csd_x, csd, h):
         m = np.sqrt((csd_x - x0)**2 + h**2) - abs(csd_x - x0)
@@ -276,24 +285,24 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         dim = 3
     elif ele_yy is not None:
         dim = 2
-    x = np.linspace(xlims[0], xlims[1], res)
+    x = np.linspace(x_lims[0], x_lims[1], resolution)
     if dim >= 2:
-        y = np.linspace(ylims[0], ylims[1], res)
+        y = np.linspace(y_lims[0], y_lims[1], resolution)
     if dim == 3:
-        z = np.linspace(zlims[0], zlims[1], res)
+        z = np.linspace(z_lims[0], z_lims[1], resolution)
     sigma = 1.0
     h = 50.
     pots = np.zeros(len(ele_xx))
     if dim == 1:
-        chrg_x = np.linspace(xlims[0], xlims[1], res)
+        chrg_x = np.linspace(x_lims[0], x_lims[1], resolution)
         csd = csd_profile(chrg_x)
         for ii in range(len(ele_xx)):
             pots[ii] = integrate_1D(ele_xx[ii], chrg_x, csd, h)
         pots /= 2. * sigma  # eq.: 26 from Potworowski et al
         ele_pos = ele_xx
     elif dim == 2:
-        chrg_x, chrg_y = np.mgrid[xlims[0]:xlims[1]:np.complex(0, res),
-                                  ylims[0]:ylims[1]:np.complex(0, res)]
+        chrg_x, chrg_y = np.mgrid[x_lims[0]:x_lims[1]:np.complex(0, resolution),
+                         y_lims[0]:y_lims[1]:np.complex(0, resolution)]
         csd = csd_profile(chrg_x, chrg_y)
         for ii in range(len(ele_xx)):
             pots[ii] = integrate_2D(ele_xx[ii], ele_yy[ii],
@@ -301,16 +310,16 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         pots /= 2 * np.pi * sigma
         ele_pos = np.vstack((ele_xx, ele_yy)).T
     elif dim == 3:
-        chrg_x, chrg_y, chrg_z = np.mgrid[xlims[0]:xlims[1]:np.complex(0, res),
-                                          ylims[0]:ylims[1]:np.complex(0, res),
-                                          zlims[0]:zlims[1]:np.complex(0, res)]
+        chrg_x, chrg_y, chrg_z = np.mgrid[x_lims[0]:x_lims[1]:np.complex(0, resolution),
+                                 y_lims[0]:y_lims[1]:np.complex(0, resolution),
+                                 z_lims[0]:z_lims[1]:np.complex(0, resolution)]
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
         xlin = chrg_x[:, 0, 0]
         ylin = chrg_y[0, :, 0]
         zlin = chrg_z[0, 0, :]
         for ii in range(len(ele_xx)):
             pots[ii] = integrate_3D(ele_xx[ii], ele_yy[ii], ele_zz[ii],
-                                    xlims, ylims, zlims, csd,
+                                    x_lims, y_lims, z_lims, csd,
                                     xlin, ylin, zlin,
                                     chrg_x, chrg_y, chrg_z)
         pots /= 4 * np.pi * sigma
