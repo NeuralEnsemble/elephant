@@ -952,7 +952,7 @@ def spike_train_timescale(binned_st, tau_max):
         Physical Review E, 92(4), 040901.
     """
     if binned_st.get_num_of_spikes() < 2:
-        warnings.warn("Spike train contains less than 2 spikes! ",
+        warnings.warn("Spike train contains less than 2 spikes! "
                       "np.nan will be returned.")
         return np.nan
 
