@@ -801,6 +801,8 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         self.assertRaises(ValueError,
                           sc.spike_train_timescale, spikes_bin, tau_max)
 
+    @unittest.skipUnless(python_version_major == 3,
+                         "assertWarns requires python 3.2")
     def test_timescale_nan(self):
         st0 = neo.SpikeTrain([]*pq.ms, t_stop=10*pq.ms)
         st1 = neo.SpikeTrain([1]*pq.ms, t_stop=10*pq.ms)
@@ -820,6 +822,9 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
             bst = conv.BinnedSpikeTrain(st, binsize)
             timescale = sc.spike_train_timescale(bst, tau_max)
             self.assertFalse(math.isnan(timescale))
+
+        with self.assertWarns(UserWarning):
+            timescale = sc.spike_train_timescale(bst, tau_max)
 
 
 if __name__ == '__main__':
