@@ -815,16 +815,14 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
 
         for st in [st0, st1]:
             bst = conv.BinnedSpikeTrain(st, binsize)
-            timescale = sc.spike_train_timescale(bst, tau_max)
+            with self.assertWarns(UserWarning):
+                timescale = sc.spike_train_timescale(bst, tau_max)
             self.assertTrue(math.isnan(timescale))
 
         for st in [st2, st3, st4]:
             bst = conv.BinnedSpikeTrain(st, binsize)
             timescale = sc.spike_train_timescale(bst, tau_max)
             self.assertFalse(math.isnan(timescale))
-
-        with self.assertWarns(UserWarning):
-            timescale = sc.spike_train_timescale(bst, tau_max)
 
 
 if __name__ == '__main__':
