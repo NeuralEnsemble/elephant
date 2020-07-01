@@ -1026,9 +1026,9 @@ class complexity:
         """
         # Computing the population histogram with parameter binary=True to
         # clip the spike trains before summing
-        pophist = time_histogram(self.input_spiketrains,
-                                 self.bin_size,
-                                 binary=self.binary)
+        time_hist = time_histogram(self.input_spiketrains,
+                                   self.bin_size,
+                                   binary=self.binary)
 
         # Computing the histogram of the entries of pophist
         complexity_hist = np.histogram(
