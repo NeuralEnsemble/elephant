@@ -1032,16 +1032,16 @@ class complexity:
 
         # Computing the histogram of the entries of pophist
         complexity_hist = np.histogram(
-            pophist.magnitude,
+            time_hist.magnitude,
             bins=range(0, len(self.input_spiketrains) + 2))[0]
 
-        return pophist, complexity_hist
+        return time_hist, complexity_hist
 
     def _histogram_with_spread(self):
         """
         Calculate the complexity histogram and time histogram for `spread` > 0
         """
-        complexity_histogram = np.bincount(
+        complexity_hist = np.bincount(
             self.epoch.array_annotations['complexity'])
         num_bins = ((self.t_stop - self.t_start).rescale(
                         self.bin_size.units) / self.bin_size.magnitude).item()
@@ -1052,7 +1052,7 @@ class complexity:
                           'behaviour.')
             num_bins += 1
         num_bins = int(num_bins)
-        time_histogram = np.zeros((num_bins, ), dtype=int)
+        time_hist = np.zeros((num_bins, ), dtype=int)
 
         start_bins = ((self.epoch.times - self.t_start).rescale(
             self.bin_size.units) / self.bin_size).magnitude.flatten()
@@ -1098,11 +1098,11 @@ class complexity:
         stop_bins = stop_bins.astype(int)
 
         for idx, (start, stop) in enumerate(zip(start_bins, stop_bins)):
-            time_histogram[start:stop] = \
+            time_hist[start:stop] = \
                     self.epoch.array_annotations['complexity'][idx]
 
-        time_histogram = neo.AnalogSignal(
-            signal=time_histogram.reshape(time_histogram.size, 1),
+        time_hist = neo.AnalogSignal(
+            signal=time_hist.reshape(time_hist.size, 1),
             sampling_period=self.bin_size, units=pq.dimensionless,
             t_start=self.t_start)
 
@@ -1116,9 +1116,9 @@ class complexity:
             empty_bins += 1
         empty_bins = int(empty_bins)
 
-        complexity_histogram[0] = empty_bins
+        complexity_hist[0] = empty_bins
 
-        return time_histogram, complexity_histogram
+        return time_hist, complexity_hist
 
     def _epoch_no_spread(self):
         """
