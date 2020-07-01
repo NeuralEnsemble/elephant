@@ -748,18 +748,21 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     # Renormalise the histogram
     if output == 'counts':
         # Raw
-        bin_hist = bin_hist * pq.dimensionless
+        bin_hist = bin_hist
+        units = pq.dimensionless
     elif output == 'mean':
         # Divide by number of input spike trains
-        bin_hist = bin_hist * 1. / len(spiketrains) * pq.dimensionless
+        bin_hist = bin_hist * 1. / len(spiketrains)
+        units = pq.dimensionless
     elif output == 'rate':
         # Divide by number of input spike trains and bin width
         bin_hist = bin_hist * 1. / len(spiketrains) / binsize
+        units = bin_hist.units
     else:
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=bin_hist.reshape(bin_hist.size, 1),
-                            sampling_period=binsize, units=bin_hist.units,
+                            sampling_period=binsize, units=units,
                             t_start=t_start)
 
 
