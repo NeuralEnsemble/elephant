@@ -26,7 +26,25 @@ def _check_consistency_of_spiketrainlist(spiketrains,
                                          same_t_stop=False,
                                          same_units=False):
     """
-    Private function to check lists of spiketrains.
+    Private function to check the consistency of a list of neo.SpikeTrain
+
+    Raises
+    ------
+    TypeError
+        When `spiketrains` is not a list.
+    ValueError
+        When `spiketrains` is an empty list.
+    TypeError
+        When the elements in `spiketrains` are not instances of neo.SpikeTrain
+    ValueError
+        When `t_start` is not the same for all spiketrains,
+        if same_t_start=True
+    ValueError
+        When `t_stop` is not the same for all spiketrains,
+        if same_t_stop=True
+    ValueError
+        When `units` are not the same for all spiketrains,
+        if same_units=True
     """
     if not isinstance(spiketrains, list):
         raise TypeError('spiketrains should be a list of neo.SpikeTrain')
