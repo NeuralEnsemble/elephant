@@ -816,47 +816,108 @@ def complexity_pdf(spiketrains, binsize):
 
 class complexity:
     """
-    Complexity Distribution of a list of `neo.SpikeTrain` objects.
-    docstring TODO
-
-    COPIED FROM PREVIOUS GET EPOCHS AS IS:
-    Calculate the complexity (i.e. number of synchronous spikes found)
-    at `sampling_rate` precision in a list of spiketrains.
+    Class for complexity distribution (i.e. number of synchronous spikes found)
+    of a list of `neo.SpikeTrain` objects.
 
     Complexity is calculated by counting the number of spikes (i.e. non-empty
     bins) that occur separated by `spread - 1` or less empty bins, within and
     across spike trains in the `spiketrains` list.
 
-    Implementation is based on [1]_.
+    Implementation (without spread) is based on [1]_.
 
     Parameters
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains with a common time axis (same `t_start` and `t_stop`)
-    bin_size : pq.Quantity
-        Width of the histogram's time bins.
-    sampling_rate : pq.Quantity
-        Sampling rate of the spike trains.
+    sampling_rate : pq.Quantity, optional
+        Sampling rate of the spike trains with units of 1/time.
+        Default: None
+    bin_size : pq.Quantity, optional
+        Width of the histogram's time bins with units of time.
+        The user must specify the `bin_size` or the `sampling_rate`.
+        * If no `bin_size` is specified and the `sampling_rate` is available
+        1/`sampling_rate` is used.
+        * If both are given then `bin_size` is used.
+        Default: None
+    binary : bool, optional
+        * If `True` then the time histograms will be binary.
+        * If `False` the total number of synchronous spikes is counted in the
+          time histogram.
+        Default: True
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
-          * `spread = 0` corresponds to a bincount accross spike trains.
-          * `spread = 1` corresponds to counting consecutive spikes.
-          * `spread = 2` corresponds to counting consecutive spikes and
+          * ``spread = 0`` corresponds to a bincount accross spike trains.
+          * ``spread = 1`` corresponds to counting consecutive spikes.
+          * ``spread = 2`` corresponds to counting consecutive spikes and
             spikes separated by exactly 1 empty bin.
-          * `spread = n` corresponds to counting spikes separated by exactly
+          * ``spread = n`` corresponds to counting spikes separated by exactly
             or less than `n - 1` empty bins.
         Default: 0
+    tolerance : float, optional
+        Tolerance for rounding errors in the binning process and in the input
+        data
+        Default: 1e-8
+
+    Attributes
+    ----------
+    epoch : neo.Epoch
+        An epoch object containing complexity values, left edges and durations
+        of all intervals with at least one spike.
+          * ``epoch.array_annotations['complexity']`` contains the
+            complexity values per spike.
+          * ``epoch.times`` contains the left edges.
+          * ``epoch.durations`` contains the durations.
+    time_histogram : neo.Analogsignal
+        A `neo.AnalogSignal` object containing the histogram values.
+        `neo.AnalogSignal[j]` is the histogram computed between
+        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+        * If ``binary = True`` : Number of neurons that spiked in each bin,
+        regardless of the number of spikes.
+        * If ``binary = False`` : Number of neurons and spikes per neurons
+        in each bin.
+    complexity_histogram : np.ndarray
+        The number of occurrences of events of different complexities.
+        `complexity_hist[i]` corresponds to the number of events of
+        complexity `i` for `i > 0`.
+    pdf : neo.AnalogSignal
+        The normalization of `self.complexityhistogram` to 1.
+        A `neo.AnalogSignal` object containing the pdf values.
+        `neo.AnalogSignal[j]` is the histogram computed between
+        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
     Raises
     ------
     ValueError
         When `t_stop` is smaller than `t_start`.
+    ValueError
+        When both `sampling_rate` and `bin_size` are not specified.
+    ValueError
+        When `spread` is not a positive integer.
+    TypeError
+        When `spiketrains` is not a list.
+    ValueError
+        When `spiketrains` is an empty list.
+    TypeError
+        When the elements in `spiketrains` are not instances of neo.SpikeTrain
+    ValueError
+        When `t_start` is not the same for all spiketrains
+    ValueError
+        When `t_stop` is not the same for all spiketrains
+
+    Notes
+    -----
+    * Note that with most common parameter combinations spike times can end up
+      on bin edges. This makes the binning susceptible to rounding errors which
+      is accounted for by moving spikes which are within tolerance of the next
+      bin edge into the following bin. This can be adjusted using the tolerance
+      parameter and turned off by setting `tolerance=None`.
 
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
+    elephant.spike_train_processing.synchotool
 
     References
     ----------
@@ -873,37 +934,39 @@ class complexity:
 
     >>> import neo
     >>> import quantities as pq
+    >>> from elephant.statistics import complexity
 
-    >>> sampling_rate = 1/pq.ms
+    >>> sr = 1/pq.ms
+
     >>> st1 = neo.SpikeTrain([1, 4, 6] * pq.ms, t_stop=10.0 * pq.ms)
     >>> st2 = neo.SpikeTrain([1, 5, 8] * pq.ms, t_stop=10.0 * pq.ms)
+    >>> sts = [st1, st2]
 
     >>> # spread = 0, a simple bincount
-    >>> ep1 = precise_complexity_intervals([st1, st2], sampling_rate)
-    >>> print(ep1.array_annotations['complexity'].flatten())
-    [2 1 1 1 1]
-    >>> print(ep1.times)
-    [0.  3.5 4.5 5.5 7.5] ms
-    >>> print(ep1.durations)
-    [1.5 1.  1.  1.  1. ] ms
+    >>> cpx = complexity(sts, sampling_rate=sr)
+    Complexity calculated at sampling rate precision
+    >>> print(cpx.histogram)
+    [5 4 1]
+    >>> print(cpx.time_histogram.flatten())
+    [0 2 0 0 1 1 1 0 1 0] dimensionless
+    >>> print(cpx.time_histogram.times)
+    [0. 1. 2. 3. 4. 5. 6. 7. 8. 9.] ms
 
     >>> # spread = 1, consecutive spikes
-    >>> ep2 = precise_complexity_intervals([st1, st2], sampling_rate, spread=1)
-    >>> print(ep2.array_annotations['complexity'].flatten())
-    [2 3 1]
-    >>> print(ep2.times)
-    [0.  3.5 7.5] ms
-    >>> print(ep2.durations)
-    [1.5 3.  1. ] ms
+    >>> cpx = complexity(sts, sampling_rate=sr, spread=1)
+    Complexity calculated at sampling rate precision
+    >>> print(cpx.histogram)
+    [5 4 1]
+    >>> print(cpx.time_histogram.flatten())
+    [0 2 0 0 3 3 3 0 1 0] dimensionless
 
     >>> # spread = 2, consecutive spikes and separated by 1 empty bin
-    >>> ep3 = precise_complexity_intervals([st1, st2], sampling_rate, spread=2)
-    >>> print(ep3.array_annotations['complexity'].flatten())
-    [2 4]
-    >>> print(ep3.times)
-    [0.  3.5] ms
-    >>> print(ep3.durations)
-    [1.5 5. ] ms
+    >>> cpx = complexity(sts, sampling_rate=sr, spread=2)
+    Complexity calculated at sampling rate precision
+    >>> print(cpx.histogram)
+    [4 0 1 0 1]
+    >>> print(cpx.time_histogram.flatten())
+    [0 2 0 0 4 4 4 4 4 0] dimensionless
     """
 
     def __init__(self, spiketrains,
@@ -936,25 +999,13 @@ class complexity:
             self.epoch = self._epoch_no_spread()
         else:
             print('Complexity calculated at sampling rate precision')
-            self.epoch = self.get_epoch()
+            self.epoch = self._epoch_with_spread()
             self.time_histogram, self.histogram = self._histogram_with_spread()
 
     @property
     def pdf(self):
         """
-        Probability density computed from the complexity histogram which is the
-        histogram of the entries of the population histogram of
-        spike trains computed with a bin width of `complexity.bin_size`.
-        It provides for each complexity (== number of active neurons per bin)
-        the number of occurrences. The normalization of that histogram to 1 is
-        the probability density.
-
-        Returns
-        -------
-        complexity_distribution : neo.AnalogSignal
-            A `neo.AnalogSignal` object containing the histogram values.
-            `neo.AnalogSignal[j]` is the histogram computed between
-            `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+        Probability density computed from the complexity histogram.
         """
         norm_hist = self.histogram / self.histogram.sum()
         # Convert the Complexity pdf to an neo.AnalogSignal
@@ -966,35 +1017,7 @@ class complexity:
 
     def _histogram_no_spread(self):
         """
-        Complexity Distribution of a list of `neo.SpikeTrain` objects.
-
-        Probability density computed from the complexity histogram which is the
-        histogram of the entries of the population histogram of clipped
-        (binary) spike trains computed with a bin width of `binsize`.
-        It provides for each complexity (== number of active neurons per bin)
-        the number of occurrences. The normalization of that histogram to 1 is
-        the probability density.
-
-        Implementation is based on [1]_.
-
-        Returns
-        -------
-        complexity_distribution : neo.AnalogSignal
-            A `neo.AnalogSignal` object containing the histogram values.
-            `neo.AnalogSignal[j]` is the histogram computed between
-            `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
-
-        See also
-        --------
-        elephant.conversion.BinnedSpikeTrain
-
-        References
-        ----------
-        .. [1] S. Gruen, M. Abeles, & M. Diesmann, "Impact of higher-order
-               correlations on coincidence distributions of massively parallel
-               data," In "Dynamic Brain - from Neural Spikes to Behaviors",
-               pp. 96-114, Springer Berlin Heidelberg, 2008.
-
+        Calculate the complexity histogram and time histogram for `spread` = 0
         """
         # Computing the population histogram with parameter binary=True to
         # clip the spike trains before summing
@@ -1011,14 +1034,7 @@ class complexity:
 
     def _histogram_with_spread(self):
         """
-        Calculate the complexity histogram;
-        the number of occurrences of events of different complexities.
-
-        Returns
-        -------
-        complexity_histogram : np.ndarray
-            A histogram of complexities. `complexity_histogram[i]` corresponds
-            to the number of events of complexity `i` for `i > 0`.
+        Calculate the complexity histogram and time histogram for `spread` > 0
         """
         complexity_histogram = np.bincount(
             self.epoch.array_annotations['complexity'])
@@ -1100,6 +1116,9 @@ class complexity:
         return time_histogram, complexity_histogram
 
     def _epoch_no_spread(self):
+        """
+        Get an epoch object of the complexity distribution with `spread` = 0
+        """
         epoch = neo.Epoch(self.time_histogram.times,
                           durations=self.bin_size
                           * np.ones(self.time_histogram.shape),
@@ -1108,7 +1127,10 @@ class complexity:
                               self.time_histogram.magnitude.flatten()})
         return epoch
 
-    def get_epoch(self):
+    def _epoch_with_spread(self):
+        """
+        Get an epoch object of the complexity distribution with `spread` > 0
+        """
         bst = conv.BinnedSpikeTrain(self.input_spiketrains,
                                     binsize=self.bin_size)
 
