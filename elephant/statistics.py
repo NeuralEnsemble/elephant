@@ -1137,7 +1137,8 @@ class complexity:
         Get an epoch object of the complexity distribution with `spread` > 0
         """
         bst = conv.BinnedSpikeTrain(self.input_spiketrains,
-                                    binsize=self.bin_size)
+                                    binsize=self.bin_size,
+                                    tolerance=self.tolerance)
 
         if self.binary:
             binarized = bst.to_sparse_bool_array()
