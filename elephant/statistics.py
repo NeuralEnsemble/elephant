@@ -979,7 +979,9 @@ class complexity:
                  spread=0,
                  tolerance=1e-8):
 
-        _check_consistency_of_spiketrainlist(spiketrains)
+        _check_consistency_of_spiketrainlist(spiketrains,
+                                             same_t_start=True,
+                                             same_t_stop=True)
 
         self.input_spiketrains = spiketrains
         self.t_start = spiketrains[0].t_start
