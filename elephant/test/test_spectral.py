@@ -59,23 +59,23 @@ class WelchPSDTestCase(unittest.TestCase):
                                       units='mV')
 
         # consistency between different ways of specifying segment length
-        freqs1, psd1 = elephant.spectral.welch_psd(data, len_seg=data_length//5, overlap=0)
-        freqs2, psd2 = elephant.spectral.welch_psd(data, num_seg=5, overlap=0)
+        freqs1, psd1 = elephant.spectral.welch_psd(data, len_segment=data_length // 5, overlap=0)
+        freqs2, psd2 = elephant.spectral.welch_psd(data, n_segments=5, overlap=0)
         self.assertTrue((psd1==psd2).all() and (freqs1==freqs2).all())
 
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
-        freqs, psd = elephant.spectral.welch_psd(data, freq_res=freq_res)
+        freqs, psd = elephant.spectral.welch_psd(data, freq_resolution=freq_res)
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertEqual(freqs[psd.argmax()], signal_freq)
-        freqs_np, psd_np = elephant.spectral.welch_psd(data.magnitude.flatten(), fs=1/sampling_period, freq_res=freq_res)
+        freqs_np, psd_np = elephant.spectral.welch_psd(data.magnitude.flatten(), fs=1/sampling_period, freq_resolution=freq_res)
         self.assertTrue((freqs==freqs_np).all() and (psd==psd_np).all())
 
         # check of scipy.signal.welch() parameters
         params = {'window': 'hamming', 'nfft': 1024, 'detrend': 'linear',
                   'return_onesided': False, 'scaling': 'spectrum'}
         for key, val in params.items():
-            freqs, psd = elephant.spectral.welch_psd(data, len_seg=1000, overlap=0, **{key: val})
+            freqs, psd = elephant.spectral.welch_psd(data, len_segment=1000, overlap=0, **{key: val})
             freqs_spsig, psd_spsig = spsig.welch(np.rollaxis(data, 0, len(data.shape)),
                                                  fs=1/sampling_period, nperseg=1000, noverlap=0, **{key: val})
             self.assertTrue((freqs==freqs_spsig).all() and (psd==psd_spsig).all())
@@ -192,9 +192,9 @@ class WelchCohereTestCase(unittest.TestCase):
 
         # consistency between different ways of specifying segment length
         freqs1, coherency1, phase_lag1 = elephant.spectral.welch_cohere(x, y,
-            len_seg=data_length//5, overlap=0)
+                                                                        len_segment=data_length // 5, overlap=0)
         freqs2, coherency2, phase_lag2 = elephant.spectral.welch_cohere(x, y,
-            num_seg=5, overlap=0)
+                                                                        n_segments=5, overlap=0)
         self.assertTrue((coherency1==coherency2).all() and
                         (phase_lag1==phase_lag2).all() and
                         (freqs1==freqs2).all())
@@ -202,7 +202,7 @@ class WelchCohereTestCase(unittest.TestCase):
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
         freqs, coherency, phase_lag = elephant.spectral.welch_cohere(x, y,
-            freq_res=freq_res)
+                                                                     freq_resolution=freq_res)
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertAlmostEqual(freqs[coherency.argmax()], signal_freq,
             places=2)
@@ -210,7 +210,7 @@ class WelchCohereTestCase(unittest.TestCase):
             places=2)
         freqs_np, coherency_np, phase_lag_np =\
             elephant.spectral.welch_cohere(x.magnitude.flatten(), y.magnitude.flatten(),
-                fs=1/sampling_period, freq_res=freq_res)
+                                           fs=1/sampling_period, freq_resolution=freq_res)
         assert_array_equal(freqs.simplified.magnitude, freqs_np)
         assert_array_equal(coherency[:, 0], coherency_np)
         assert_array_equal(phase_lag[:, 0], phase_lag_np)

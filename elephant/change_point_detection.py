@@ -34,9 +34,10 @@ The following applies multiple_filter_test to a spike trains.
 
 References
 ----------
-Messer, M., Kirchner, M., Schiemann, J., Roeper, J., Neininger, R., & Schneider,
-G. (2014). A multiple filter test for the detection of rate changes in renewal
-processes with varying variance. The Annals of Applied Statistics, 8(4),2027-2067.
+Messer, M., Kirchner, M., Schiemann, J., Roeper, J., Neininger, R., &
+Schneider, G. (2014). A multiple filter test for the detection of rate changes
+in renewal processes with varying variance. The Annals of Applied Statistics,
+8(4),2027-2067.
 
 Original code
 -------------

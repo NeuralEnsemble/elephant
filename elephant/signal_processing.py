@@ -495,7 +495,8 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
-def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
+@deprecated_alias(nco='n_cycles')
+def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
     wavelet.
@@ -513,13 +514,14 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
         Center frequency of the Morlet wavelet in Hz. Multiple center
         frequencies can be given as a list, in which case the function
         computes the wavelet transforms for all the given frequencies at once.
-    nco : float, optional
+    n_cycles : float, optional
         Size of the mother wavelet (approximate number of oscillation cycles
-        within a wavelet). A larger `nco` value leads to a higher frequency
-        resolution and a lower temporal resolution, and vice versa. Typically
-        used values are in a range of 3–8, but one should be cautious when
-        using a value smaller than ~ 6, in which case the admissibility of the
-        wavelet is not ensured (cf. [2]_).
+        within a wavelet). Corresponds to :math:`nco` in the paper [1]_.
+        A larger `n_cycles` value leads to a higher frequency resolution and a
+        lower temporal resolution, and vice versa.
+        Typically used values are in a range of 3–8, but one should be cautious
+        when using a value smaller than ~ 6, in which case the admissibility of
+        the wavelet is not ensured (cf. [2]_).
         Default: 6.0.
     fs : float, optional
         Sampling rate of the input data in Hz.
@@ -561,12 +563,12 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
         If `freq` (or one of the values in `freq` when it is a list) is
         greater than the half of `fs`.
 
-        If `nco` is not positive.
+        If `n_cycles` is not positive.
 
     Notes
     -----
-    `nco` is related to the wavelet number :math:`w` as
-    :math:`w \sim 2 \pi \frac{'nco'}{6}`, as defined in [1]_.
+    `n_cycles` is related to the wavelet number :math:`w` as
+    :math:`w \sim 2 \pi \frac{n_{\text{cycles}}}{6}`, as defined in [1]_.
 
     References
     ----------
@@ -578,10 +580,10 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
            Turbulence," Annu Rev Fluid Mech, vol. 24, pp. 395–458, 1992.
 
     """
-    def _morlet_wavelet_ft(freq, nco, fs, n):
+    def _morlet_wavelet_ft(freq, n_cycles, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
         # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
-        sigma = nco / (6. * freq)
+        sigma = n_cycles / (6. * freq)
         freqs = np.fft.fftfreq(n, 1.0 / fs)
         heaviside = np.array(freqs > 0., dtype=np.float)
         ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
@@ -615,9 +617,9 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
         raise ValueError("`freq` must be less than the half of " +
                          "the sampling rate `fs` = {} Hz".format(fs))
 
-    # check if nco is positive
-    if nco <= 0:
-        raise ValueError("`nco` must be positive")
+    # check if n_cycles is positive
+    if n_cycles <= 0:
+        raise ValueError("`n_cycles` must be positive")
 
     n_orig = data.shape[-1]
     if zero_padding:
@@ -628,7 +630,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # generate Morlet wavelets (in the frequency domain)
     wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
     for i, f in enumerate(freqs):
-        wavelet_fts[i] = _morlet_wavelet_ft(f, nco, fs, n)
+        wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, fs, n)
 
     # perform wavelet transform by convoluting the signal with the wavelets
     if data.ndim == 1:

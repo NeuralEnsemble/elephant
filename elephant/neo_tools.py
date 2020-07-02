@@ -87,7 +87,7 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
     return attrs
 
 
-def _get_all_objs(container, classname):
+def _get_all_objs(container, class_name):
     """
     Get all Neo objects of a given type from a container.
 
@@ -101,7 +101,7 @@ def _get_all_objs(container, classname):
     ----------
     container : list, tuple, iterable, dict, neo.Container
                 The container for the Neo objects.
-    classname : str
+    class_name : str
                 The name of the class, with proper capitalization
                 (i.e., 'SpikeTrain', not 'Spiketrain' or 'spiketrain').
 
@@ -116,20 +116,20 @@ def _get_all_objs(container, classname):
         If can not handle containers of the type passed in `container`.
 
     """
-    if container.__class__.__name__ == classname:
+    if container.__class__.__name__ == class_name:
         return [container]
-    classholder = classname.lower() + 's'
+    classholder = class_name.lower() + 's'
     if hasattr(container, classholder):
         vals = getattr(container, classholder)
     elif hasattr(container, 'list_children_by_class'):
-        vals = container.list_children_by_class(classname)
+        vals = container.list_children_by_class(class_name)
     elif hasattr(container, 'values') and not hasattr(container, 'ndim'):
         vals = container.values()
     elif hasattr(container, '__iter__') and not hasattr(container, 'ndim'):
         vals = container
     else:
         raise ValueError('Cannot handle object of type %s' % type(container))
-    res = list(chain.from_iterable(_get_all_objs(obj, classname)
+    res = list(chain.from_iterable(_get_all_objs(obj, class_name)
                                    for obj in vals))
     return unique_objs(res)
 

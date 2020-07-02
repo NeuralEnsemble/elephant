@@ -14,10 +14,15 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
+from elephant.utils import deprecated_alias
 
-def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
-              fs=1.0, window='hanning', nfft=None, detrend='constant',
-              return_onesided=True, scaling='density', axis=-1):
+
+@deprecated_alias(num_seg='n_segments', len_seg='len_segment',
+                  freq_res='freq_resolution')
+def welch_psd(signal, n_segments=8, len_segment=None, freq_resolution=None,
+              overlap=0.5, fs=1.0, window='hanning', nfft=None,
+              detrend='constant', return_onesided=True, scaling='density',
+              axis=-1):
     """
     Estimates power spectrum density (PSD) of a given `neo.AnalogSignal`
     using Welch's method.
@@ -28,8 +33,8 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
        overlap can be specified by parameter `overlap` (default is 0.5,
        i.e. segments are overlapped by the half of their length).
        The number and the length of the segments are determined according
-       to the parameters `num_seg`, `len_seg` or `freq_res`. By default, the
-       data is cut into 8 segments;
+       to the parameters `n_segments`, `len_segment` or `freq_resolution`.
+       By default, the data is cut into 8 segments;
 
     2. Apply a window function to each segment. Hanning window is used by
        default. This can be changed by giving a window function or an
@@ -46,16 +51,16 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         `pq.Quantity` or `np.ndarray`, sampling frequency should be given
         through the keyword argument `fs`. Otherwise, the default value is
         used (`fs` = 1.0).
-    num_seg : int, optional
+    n_segments : int, optional
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
-        parameter is ignored if `len_seg` or `freq_res` is given.
+        parameter is ignored if `len_segment` or `freq_resolution` is given.
         Default: 8.
-    len_seg : int, optional
-        Length of segments. This parameter is ignored if `freq_res` is given.
+    len_segment : int, optional
+        Length of segments. This parameter is ignored if `freq_resolution` is given.
         If None, it will be determined from other parameters.
         Default: None.
-    freq_res : pq.Quantity or float, optional
+    freq_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained PSD estimate in terms of
         the interval between adjacent frequency bins. When given as a `float`,
         it is taken as frequency in Hz.
@@ -116,22 +121,23 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     Raises
     ------
     ValueError
-        If `overlap` is not in the interval [0, 1).
+        If `overlap` is not in the interval `[0, 1)`.
 
-        If `freq_res` is not positive.
+        If `freq_resolution` is not positive.
 
-        If `freq_res` is too high for the given data size.
+        If `freq_resolution` is too high for the given data size.
 
-        If `freq_res` is None and `len_seg` is not a positive number.
+        If `freq_resolution` is None and `len_segment` is not a positive
+        number.
 
-        If `freq_res` is None and `len_seg` is greater than the length of data
-        on `axis`.
+        If `freq_resolution` is None and `len_segment` is greater than the
+        length of data at `axis`.
 
-        If both `freq_res` and `len_seg` are None and `num_seg` is not a
-        positive number.
+        If both `freq_resolution` and `len_segment` are None and `n_segments`
+        is not a positive number.
 
-        If both `freq_res` and `len_seg` are None and `num_seg` is greater
-        than the length of data on `axis`.
+        If both `freq_resolution` and `len_segment` are None and `n_segments`
+        is greater than the length of data at `axis`.
 
     Notes
     -----
@@ -142,16 +148,17 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
        `scaling`, and `axis` are directly passed to the `scipy.signal.welch`
        function. See the respective descriptions in the docstring of
        `scipy.signal.welch` for usage.
-    3. When only `num_seg` is given, parameter `nperseg` of
+    3. When only `n_segments` is given, parameter `nperseg` of
        `scipy.signal.welch` function is determined according to the expression
 
-       `signal.shape[axis]` / (`num_seg` - `overlap` * (`num_seg` - 1))
+       `signal.shape[axis] / (n_segments - overlap * (n_segments - 1))`
 
        converted to integer.
 
     See Also
     --------
     scipy.signal.welch
+    welch_cohere
 
     """
 
@@ -182,31 +189,36 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     # determine the length of segments (i.e. *nperseg*) according to given
     # parameters
-    if freq_res is not None:
-        if freq_res <= 0:
-            raise ValueError("freq_res must be positive")
-        dF = freq_res.rescale('Hz').magnitude \
-            if isinstance(freq_res, pq.quantity.Quantity) else freq_res
+    if freq_resolution is not None:
+        if freq_resolution <= 0:
+            raise ValueError("freq_resolution must be positive")
+        if isinstance(freq_resolution, pq.quantity.Quantity):
+            dF = freq_resolution.rescale('Hz').magnitude
+        else:
+            dF = freq_resolution
         nperseg = int(params['fs'] / dF)
         if nperseg > data.shape[axis]:
-            raise ValueError("freq_res is too high for the given data size")
-    elif len_seg is not None:
-        if len_seg <= 0:
+            raise ValueError("freq_resolution is too high for the given data"
+                             "size")
+    elif len_segment is not None:
+        if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
-        elif data.shape[axis] < len_seg:
+        elif data.shape[axis] < len_segment:
             raise ValueError("len_seg must be shorter than the data length")
-        nperseg = len_seg
+        nperseg = len_segment
     else:
-        if num_seg <= 0:
-            raise ValueError("num_seg must be a positive number")
-        elif data.shape[axis] < num_seg:
-            raise ValueError("num_seg must be smaller than the data length")
-        # when only *num_seg* is given, *nperseg* is determined by solving the
-        # following equation:
-        #  num_seg * nperseg - (num_seg-1) * overlap * nperseg = data.shape[-1]
-        #  -----------------   ===============================   ^^^^^^^^^^^
-        # summed segment lengths        total overlap            data length
-        nperseg = int(data.shape[axis] / (num_seg - overlap * (num_seg - 1)))
+        if n_segments <= 0:
+            raise ValueError("n_segments must be a positive number")
+        elif data.shape[axis] < n_segments:
+            raise ValueError("n_segments must be smaller than the data length")
+        # when only *n_segments* is given, *nperseg* is determined by solving
+        # the following equation:
+        #  n_segments * nperseg - (n_segments-1) * overlap * nperseg =
+        #     data.shape[-1]
+        #  --------------------   ===============================  ^^^^^^^^^^^
+        # summed segment lengths        total overlap              data length
+        nperseg = int(data.shape[axis] / (n_segments - overlap * (
+                n_segments - 1)))
     params['nperseg'] = nperseg
     params['noverlap'] = int(nperseg * overlap)
 
@@ -223,9 +235,11 @@ def welch_psd(signal, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     return freqs, psd
 
 
-def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
-                 fs=1.0, window='hanning', nfft=None, detrend='constant',
-                 scaling='density', axis=-1):
+@deprecated_alias(num_seg='n_segments', len_seg='len_segment',
+                  freq_res='freq_resolution')
+def welch_cohere(x, y, n_segments=8, len_segment=None, freq_resolution=None,
+                 overlap=0.5, fs=1.0, window='hanning', nfft=None,
+                 detrend='constant', scaling='density', axis=-1):
     r"""
     Estimates coherence between a given pair of analog signals.
 
@@ -250,16 +264,16 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
         identical. When `x` and `y` are not `neo.AnalogSignal`, sampling
         frequency should be specified through the keyword argument `fs`.
         Otherwise, the default value is used (`fs` = 1.0).
-    num_seg : int, optional
+    n_segments : int, optional
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_seg` or `freq_res` is given.
         Default: 8.
-    len_seg : int, optional
+    len_segment : int, optional
         Length of segments. This parameter is ignored if `freq_res` is given.
         If None, it is determined from other parameters.
         Default: None.
-    freq_res : pq.Quantity or float, optional
+    freq_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained coherence estimate in
         terms of the interval between adjacent frequency bins. When given as a
         `float`, it is taken as frequency in Hz.
@@ -328,40 +342,31 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
     Raises
     ------
     ValueError
-        If `overlap` is not in the interval [0, 1).
-
-        If `freq_res` is not positive.
-
-        If `freq_res` is too high for the given data size.
-
-        If `freq_res` is None and `len_seg` is not a positive number.
-
-        If `freq_res` is None and `len_seg` is greater than the length of data
-        on `axis`.
-
-        If both `freq_res` and `len_seg` are None and `num_seg` is not a
-        positive number.
-
-        If both `freq_res` and `len_seg` are None and `num_seg` is greater
-        than the length of data on `axis`.
+        Same as in :func:`welch_psd`.
 
     Notes
     -----
-    1. The parameters `window`, `nfft`, `detrend`, `scaling`, and `axis` are
-       directly passed to the helper function `_welch`. See the
-       respective descriptions in the docstring of `_welch` for usage.
-    2. When only `num_seg` is given, parameter `nperseg` for `_welch` function
-       is determined according to the expression
+    1. The computation steps used in this function are implemented in
+       `scipy.signal` module, and this function is a wrapper which provides
+       a proper set of parameters to `scipy.signal.welch` function.
+    2. The parameters `window`, `nfft`, `detrend`, `return_onesided`,
+       `scaling`, and `axis` are directly passed to the `scipy.signal.welch`
+       function. See the respective descriptions in the docstring of
+       `scipy.signal.welch` for usage.
+    3. When only `n_segments` is given, parameter `nperseg` of
+       `scipy.signal.welch` function is determined according to the expression
 
-       `x.shape[axis]` / (`num_seg` - `overlap` * (`num_seg` - 1))
+       `signal.shape[axis] / (n_segments - overlap * (n_segments - 1))`
 
        converted to integer.
 
     See Also
     --------
-    spectral._welch
+    welch_psd
 
     """
+
+    # TODO: code duplication with welch_psd()
 
     # initialize a parameter dict for scipy.signal.csd()
     params = {'window': window, 'nfft': nfft,
@@ -389,31 +394,33 @@ def welch_cohere(x, y, num_seg=8, len_seg=None, freq_res=None, overlap=0.5,
 
     # determine the length of segments (i.e. *nperseg*) according to given
     # parameters
-    if freq_res is not None:
-        if freq_res <= 0:
-            raise ValueError("freq_res must be positive")
-        dF = freq_res.rescale('Hz').magnitude \
-            if isinstance(freq_res, pq.quantity.Quantity) else freq_res
+    if freq_resolution is not None:
+        if isinstance(freq_resolution, pq.quantity.Quantity):
+            dF = freq_resolution.rescale('Hz').magnitude
+        else:
+            dF = freq_resolution
         nperseg = int(params['fs'] / dF)
         if nperseg > xdata.shape[axis]:
             raise ValueError("freq_res is too high for the given data size")
-    elif len_seg is not None:
-        if len_seg <= 0:
+    elif len_segment is not None:
+        if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
-        elif xdata.shape[axis] < len_seg:
+        elif xdata.shape[axis] < len_segment:
             raise ValueError("len_seg must be shorter than the data length")
-        nperseg = len_seg
+        nperseg = len_segment
     else:
-        if num_seg <= 0:
-            raise ValueError("num_seg must be a positive number")
-        elif xdata.shape[axis] < num_seg:
-            raise ValueError("num_seg must be smaller than the data length")
-        # when only *num_seg* is given, *nperseg* is determined by solving the
-        # following equation:
-        #  num_seg * nperseg - (num_seg-1) * overlap * nperseg = data.shape[-1]
-        #  -----------------   ===============================   ^^^^^^^^^^^
-        # summed segment lengths        total overlap            data length
-        nperseg = int(xdata.shape[axis] / (num_seg - overlap * (num_seg - 1)))
+        if n_segments <= 0:
+            raise ValueError("n_segments must be a positive number")
+        elif xdata.shape[axis] < n_segments:
+            raise ValueError("n_segments must be smaller than the data length")
+        # when only *n_segments* is given, *nperseg* is determined by solving
+        # the following equation:
+        #  n_segments * nperseg - (n_segments-1) * overlap * nperseg =
+        #      data.shape[-1]
+        #  -------------------    ===============================  ^^^^^^^^^^^
+        # summed segment lengths        total overlap              data length
+        nperseg = int(xdata.shape[axis] / (n_segments - overlap * (
+                n_segments - 1)))
     params['nperseg'] = nperseg
     params['noverlap'] = int(nperseg * overlap)
 

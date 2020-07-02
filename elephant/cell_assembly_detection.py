@@ -81,9 +81,10 @@ import elephant.conversion as conv
 from elephant.utils import deprecated_alias
 
 
-@deprecated_alias(data='binned_spiketrain', maxlag='max_lag')
+@deprecated_alias(data='binned_spiketrain', maxlag='max_lag',
+                  min_occ='min_occurrences')
 def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
-                            alpha=0.05, min_occ=1, size_chunks=100,
+                            alpha=0.05, min_occurrences=1, size_chunks=100,
                             max_spikes=np.inf, significance_pruning=True,
                             subgroup_pruning=True, same_config_cut=False,
                             bool_times_format=False, verbose=False):
@@ -124,7 +125,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     alpha : float, optional
         Significance level for the statistical test.
         Default: 0.05.
-    min_occ : int, optional
+    min_occurrences : int, optional
         Minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
@@ -234,7 +235,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     _raise_errors(binned_spiketrain=binned_spiketrain,
                   max_lag=max_lag,
                   alpha=alpha,
-                  min_occ=min_occ,
+                  min_occurrences=min_occurrences,
                   size_chunks=size_chunks,
                   max_spikes=max_spikes)
 
@@ -310,7 +311,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
             # if the assembly given in output is significant and the number
             # of occurrences is higher than the minimum requested number
             if assem_tp['pvalue'][-1] < alpha and \
-                    assem_tp['signature'][-1][1] > min_occ:
+                    assem_tp['signature'][-1][1] > min_occurrences:
                 # save the assembly in the output
                 assembly.append(assem_tp)
                 sign_pairs_matrix[w1][w2] = 1
@@ -404,7 +405,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                 # the number of occurrences is sufficient and
                 # the length of the assembly is less than the input limit
                 if assem_tp['pvalue'][-1] < alpha and \
-                        assem_tp['signature'][-1][1] > min_occ and \
+                        assem_tp['signature'][-1][1] > min_occurrences and \
                         assem_tp['signature'][-1][0] <= max_spikes:
                     # the assembly is saved in the output list of
                     # assemblies
@@ -1129,8 +1130,8 @@ def _subgroup_pruning_step(pre_pruning_assembly):
     return assembly
 
 
-def _raise_errors(binned_spiketrain, max_lag, alpha, min_occ, size_chunks,
-                  max_spikes):
+def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
+                  size_chunks, max_spikes):
     """
     Returns errors if the parameters given in input are not correct.
 
@@ -1144,7 +1145,7 @@ def _raise_errors(binned_spiketrain, max_lag, alpha, min_occ, size_chunks,
         shift between -max_lag and max_lag
     alpha : float
         alpha level.
-    min_occ : int
+    min_occurrences : int
         minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
@@ -1181,7 +1182,7 @@ def _raise_errors(binned_spiketrain, max_lag, alpha, min_occ, size_chunks,
     if alpha < 0 or alpha > 1:
         raise ValueError('significance level has to be in interval [0,1]')
 
-    if min_occ < 1:
+    if min_occurrences < 1:
         raise ValueError('minimal number of occurrences for an assembly '
                          'must be at least 1')
 
