@@ -138,7 +138,7 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
 
     def test_spike_extraction_waveform(self):
         spike_train = stgen.spike_extraction(self.vm.reshape(-1),
-                                             extr_interval=(-1 * ms, 2 * ms))
+                                             interval=(-1 * ms, 2 * ms))
         try:
             assert_array_almost_equal(
                 spike_train.waveforms[0][0].magnitude.reshape(-1),
@@ -480,7 +480,7 @@ class _n_poisson_TestCase(unittest.TestCase):
     def test_poisson(self):
 
         # Check the output types for input rate + n number of neurons
-        pp = stgen._n_poisson(rate=self.rate, t_stop=self.t_stop, n=self.n)
+        pp = stgen._n_poisson(rate=self.rate, t_stop=self.t_stop, n_spiketrains=self.n)
         self.assertIsInstance(pp, list)
         self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
         self.assertEqual(pp[0].simplified.units, 1000 * ms)
@@ -528,7 +528,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         # Generate an example SIP mode
         sip, coinc = stgen.single_interaction_process(
             n=self.n, t_stop=self.t_stop, rate=self.rate,
-            rate_c=self.rate_c, return_coinc=True)
+            rate_coincidence=self.rate_c, return_coincidence=True)
 
         # Check the output types
         self.assertEqual(type(sip), list)
@@ -547,7 +547,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
             # Generate an example SIP mode giving a list of rates as imput
             sip, coinc = stgen.single_interaction_process(
                 t_stop=self.t_stop, rate=self.rates,
-                rate_c=self.rate_c, return_coinc=True)
+                rate_coincidence=self.rate_c, return_coincidence=True)
 
         # Check the output types
         self.assertEqual(type(sip), list)
@@ -564,7 +564,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         # Generate an example SIP mode stochastic number of coincidences
         sip = stgen.single_interaction_process(
             n=self.n, t_stop=self.t_stop, rate=self.rate,
-            rate_c=self.rate_c, coincidences='stochastic', return_coinc=False)
+            rate_coincidence=self.rate_c, coincidences='stochastic', return_coincidence=False)
 
         # Check the output types
         self.assertEqual(type(sip), list)

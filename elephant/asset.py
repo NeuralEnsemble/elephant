@@ -1338,7 +1338,7 @@ class ASSET(object):
                 continue
             surrogates = [spike_train_surrogates.surrogates(
                 st, n=1,
-                surr_method=surrogate_method,
+                method=surrogate_method,
                 dt=surrogate_dt,
                 decimals=None,
                 edges=True)[0]
@@ -1348,7 +1348,7 @@ class ASSET(object):
                 surrogates_y = surrogates
             else:
                 surrogates_y = [spike_train_surrogates.surrogates(
-                    st, n=1, surr_method=surrogate_method, dt=surrogate_dt,
+                    st, n=1, method=surrogate_method, dt=surrogate_dt,
                     decimals=None, edges=True)[0]
                                 for st in self.spiketrains_y]
 

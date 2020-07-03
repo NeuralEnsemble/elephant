@@ -661,7 +661,7 @@ class RateEstimationTestCase(unittest.TestCase):
         # kernel in terms of its standard deviation sigma, then uses this value
         # directly in the function for creating the Gaussian kernel
         kernel_width_sigma = statistics.sskernel(
-            spiketrain.magnitude, tin=None, bootstrap=False)['optw']
+            spiketrain.magnitude, time_points=None, bootstrap=False)['optw']
         kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
         result_target = statistics.instantaneous_rate(
             spiketrain, 10 * pq.ms, kernel=kernel)

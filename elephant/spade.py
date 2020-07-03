@@ -1293,7 +1293,7 @@ def pvalue_spectrum(
                 for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
-                spiketrain, n=1, surr_method=surr_method,
+                spiketrain, n=1, method=surr_method,
                 dt=dither)[0] for spiketrain in spiketrains]
 
         # Find all pattern signatures in the current surrogate data set

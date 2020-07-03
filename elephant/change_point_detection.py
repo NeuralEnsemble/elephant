@@ -65,28 +65,28 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
 
     Parameters
     ----------
-        window_sizes : list of quantity objects
-                    list that contains windows sizes
-        spiketrain : neo.SpikeTrain, numpy array or list
-            spiketrain objects to analyze
-        t_final : quantity
-            final time of the spike train which is to be analysed
-        alpha : float
-            alpha-quantile in range [0, 100] for the set of maxima of the limit
-            processes
-        n_surrogates : integer
-            numbers of simulated limit processes
-        test_quantile : float
-            threshold for the maxima of the filter derivative processes, if any
-            of these maxima is larger than this value, it is assumed the
-            presence of a cp at the time corresponding to that maximum
-        dt : quantity
-          resolution, time step at which the windows are slided
-        test_param : np.array of shape (3, num of window),
-            first row: list of `h`, second and third rows: empirical means and
-            variances of the limit process correspodning to `h`. This will be
-            used to normalize the `filter_process` in order to give to the
-            every maximum the same impact on the global statistic.
+    window_sizes : list of quantity objects
+                list that contains windows sizes
+    spiketrain : neo.SpikeTrain, numpy array or list
+        spiketrain objects to analyze
+    t_final : quantity
+        final time of the spike train which is to be analysed
+    alpha : float
+        alpha-quantile in range [0, 100] for the set of maxima of the limit
+        processes
+    n_surrogates : integer
+        numbers of simulated limit processes
+    test_quantile : float
+        threshold for the maxima of the filter derivative processes, if any
+        of these maxima is larger than this value, it is assumed the
+        presence of a cp at the time corresponding to that maximum
+    dt : quantity
+      resolution, time step at which the windows are slided
+    test_param : np.array of shape (3, num of window),
+        first row: list of `h`, second and third rows: empirical means and
+        variances of the limit process correspodning to `h`. This will be
+        used to normalize the `filter_process` in order to give to the
+        every maximum the same impact on the global statistic.
 
     Returns
     -------
@@ -158,14 +158,14 @@ def _brownian_motion(t_in, t_fin, x_in, dt):
 
     Parameters
     ----------
-        t_in : quantities,
-            initial time
-        t_fin : quantities,
-             final time
-        x_in : float,
-            initial point of the process: _brownian_motio(0) = x_in
-        dt : quantities,
-          resolution, time step at which brownian increments are summed
+    t_in : quantities,
+        initial time
+    t_fin : quantities,
+         final time
+    x_in : float,
+        initial point of the process: _brownian_motio(0) = x_in
+    dt : quantities,
+      resolution, time step at which brownian increments are summed
     Returns
     -------
     Brownian motion on [t_in, t_fin], with resolution dt and initial state x_in
@@ -257,29 +257,29 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt=None):
 
     Parameters
     ----------
-        window_sizes : list of quantity objects
-            set of windows' size
-        t_final : quantity object
-            final time of the spike
-        alpha : float
-            alpha-quantile in range [0, 100]
-        n_surrogates : integer
-            numbers of simulated limit processes
-        dt : quantity object
-            resolution, time step at which the windows are slided
+    window_sizes : list of quantity objects
+        set of windows' size
+    t_final : quantity object
+        final time of the spike
+    alpha : float
+        alpha-quantile in range [0, 100]
+    n_surrogates : integer
+        numbers of simulated limit processes
+    dt : quantity object
+        resolution, time step at which the windows are slided
 
     Returns
     -------
-        test_quantile : float
-            threshold for the maxima of the filter derivative processes, if any
-            of these maxima is larger than this value, it is assumed the
-            presence of a cp at the time corresponding to that maximum
+    test_quantile : float
+        threshold for the maxima of the filter derivative processes, if any
+        of these maxima is larger than this value, it is assumed the
+        presence of a cp at the time corresponding to that maximum
 
-        test_param : np.array 3 * num of window,
-            first row: list of `h`, second and third rows: empirical means and
-            variances of the limit process correspodning to `h`. This will be
-            used to normalize the `filter_process` in order to give to the every
-            maximum the same impact on the global statistic.
+    test_param : np.array 3 * num of window,
+        first row: list of `h`, second and third rows: empirical means and
+        variances of the limit process correspodning to `h`. This will be
+        used to normalize the `filter_process` in order to give to the every
+        maximum the same impact on the global statistic.
     """
 
     # try:
@@ -352,7 +352,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates, dt=None):
     return test_quantile, test_param
 
 
-def _filter(t, h, spk):
+def _filter(t_center, window, spiketrain):
     """
     This function calculates the difference of spike counts in the left and right
     side of a window of size h centered in t and normalized by its variance.
@@ -361,32 +361,32 @@ def _filter(t, h, spk):
 
     Parameters
     ----------
-        h : quantity
-            window's size
-        t : quantity
-            time on which the window is centered
-        spk : list, numpy array or SpikeTrain
-            spike train to analyze
+    t_center : quantity
+        time on which the window is centered
+    window : quantity
+        window's size
+    spiketrain : list, numpy array or SpikeTrain
+        spike train to analyze
 
     Returns
     -------
-        difference : float,
-          difference of spike count normalized by its variance
+    difference : float,
+        difference of spike count normalized by its variance
     """
 
     u = 1 * pq.s
     try:
-        t_sec = t.rescale(u).magnitude
+        t_sec = t_center.rescale(u).magnitude
     except AttributeError:
         raise ValueError("t must be a quantities object")
     # tm = t_sec.magnitude
     try:
-        h_sec = h.rescale(u).magnitude
+        h_sec = window.rescale(u).magnitude
     except AttributeError:
         raise ValueError("h must be a time quantity")
     # hm = h_sec.magnitude
     try:
-        spk_sec = spk.rescale(u).magnitude
+        spk_sec = spiketrain.rescale(u).magnitude
     except AttributeError:
         raise ValueError(
             "spiketrain must be a list (array) of times or a neo spiketrain")

@@ -574,7 +574,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         kernel_width_sigma = None
         if len(spiketrain) > 0:
             kernel_width_sigma = sskernel(
-                spiketrain.magnitude, tin=None, bootstrap=False)['optw']
+                spiketrain.magnitude, time_points=None, bootstrap=False)['optw']
         if kernel_width_sigma is None:
             raise ValueError(
                 "Unable to calculate optimal kernel width for "
@@ -946,7 +946,8 @@ def cost_function(x, N, w, dt):
     return C, yh
 
 
-def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
+@deprecated_alias(tin='time_points', w='bandwidth')
+def sskernel(spiketimes, time_points=None, bandwidth=None, bootstrap=False):
     """
     Calculates optimal fixed kernel bandwidth, given as the standard deviation
     sigma.
@@ -955,14 +956,14 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     ----------
     spiketimes : np.ndarray
         Sequence of spike times (sorted to be ascending).
-    tin : np.ndarray, optional
+    time_points : np.ndarray, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
         Default: None.
-    w : np.ndarray, optional
+    bandwidth : np.ndarray, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
-        If None, `w` is obtained through a golden-section search on a log-exp
+        If None, `bandwidth` is obtained through a golden-section search on a log-exp
         scale.
         Default: None.
     bootstrap : bool, optional
@@ -981,7 +982,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         'w' : np.ndarray
             Kernel bandwidths examined (standard deviation sigma).
         'C' : np.ndarray
-            Cost functions of `w`.
+            Cost functions of `bandwidth`.
         'confb95' : tuple of np.ndarray
             Bootstrap 95% confidence interval: (lower level, upper level).
             If `bootstrap` is False, `confb95` is None.
@@ -1000,38 +1001,38 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
 
     """
 
-    if tin is None:
+    if time_points is None:
         time = np.max(spiketimes) - np.min(spiketimes)
         isi = np.diff(spiketimes)
         isi = isi[isi > 0].copy()
         dt = np.min(isi)
-        tin = np.linspace(np.min(spiketimes),
-                          np.max(spiketimes),
-                          min(int(time / dt + 0.5),
+        time_points = np.linspace(np.min(spiketimes),
+                                  np.max(spiketimes),
+                                  min(int(time / dt + 0.5),
                               1000))  # The 1000 seems somewhat arbitrary
-        t = tin
+        t = time_points
     else:
-        time = np.max(tin) - np.min(tin)
-        spiketimes = spiketimes[(spiketimes >= np.min(tin)) &
-                                (spiketimes <= np.max(tin))].copy()
+        time = np.max(time_points) - np.min(time_points)
+        spiketimes = spiketimes[(spiketimes >= np.min(time_points)) &
+                                (spiketimes <= np.max(time_points))].copy()
         isi = np.diff(spiketimes)
         isi = isi[isi > 0].copy()
         dt = np.min(isi)
-        if dt > np.min(np.diff(tin)):
-            t = np.linspace(np.min(tin), np.max(tin),
+        if dt > np.min(np.diff(time_points)):
+            t = np.linspace(np.min(time_points), np.max(time_points),
                             min(int(time / dt + 0.5), 1000))
         else:
-            t = tin
-    dt = np.min(np.diff(tin))
+            t = time_points
+    dt = np.min(np.diff(time_points))
     yhist, bins = np.histogram(spiketimes, np.r_[t - dt / 2, t[-1] + dt / 2])
     N = np.sum(yhist)
     yhist = yhist / (N * dt)  # density
     optw = None
     y = None
-    if w is not None:
-        C = np.zeros(len(w))
+    if bandwidth is not None:
+        C = np.zeros(len(bandwidth))
         Cmin = np.inf
-        for k, w_ in enumerate(w):
+        for k, w_ in enumerate(bandwidth):
             C[k], yh = cost_function(yhist, N, w_, dt)
             if C[k] < Cmin:
                 Cmin = C[k]
@@ -1042,7 +1043,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         wmin = 2 * dt
         wmax = max(spiketimes) - min(spiketimes)
         imax = 20  # max iterations
-        w = np.zeros(imax)
+        bandwidth = np.zeros(imax)
         C = np.zeros(imax)
         tolerance = 1e-5
         phi = 0.5 * (np.sqrt(5) + 1)  # The Golden ratio
@@ -1061,7 +1062,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
                 c1 = (phi - 1) * a + (2 - phi) * b
                 f2 = f1
                 f1, y1 = cost_function(yhist, N, logexp(c1), dt)
-                w[k] = logexp(c1)
+                bandwidth[k] = logexp(c1)
                 C[k] = f1
                 optw = logexp(c1)
                 y = y1 / (np.sum(y1 * dt))
@@ -1071,7 +1072,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
                 c2 = (2 - phi) * a + (phi - 1) * b
                 f1 = f2
                 f2, y2 = cost_function(yhist, N, logexp(c2), dt)
-                w[k] = logexp(c2)
+                bandwidth[k] = logexp(c2)
                 C[k] = f2
                 optw = logexp(c2)
                 y = y2 / np.sum(y2 * dt)
@@ -1082,7 +1083,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     # If bootstrap is requested, and an optimal kernel was found
     if bootstrap and optw:
         nbs = 1000
-        yb = np.zeros((nbs, len(tin)))
+        yb = np.zeros((nbs, len(time_points)))
         for ii in range(nbs):
             idx = np.floor(np.random.rand(N) * N).astype(int)
             xb = spiketimes[idx]
@@ -1090,18 +1091,18 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
                 xb, np.r_[t - dt / 2, t[-1] + dt / 2]) / dt / N
             yb_buf = fftkernel(y_histb, optw / dt).real
             yb_buf = yb_buf / np.sum(yb_buf * dt)
-            yb[ii, :] = np.interp(tin, t, yb_buf)
+            yb[ii, :] = np.interp(time_points, t, yb_buf)
         ybsort = np.sort(yb, axis=0)
         y95b = ybsort[np.floor(0.05 * nbs).astype(int), :]
         y95u = ybsort[np.floor(0.95 * nbs).astype(int), :]
         confb95 = (y95b, y95u)
     # Only perform interpolation if y could be calculated
     if y is not None:
-        y = np.interp(tin, t, y)
+        y = np.interp(time_points, t, y)
     return {'y': y,
-            't': tin,
+            't': time_points,
             'optw': optw,
-            'w': w,
+            'w': bandwidth,
             'C': C,
             'confb95': confb95,
             'yb': yb}

@@ -374,7 +374,7 @@ class SurrogatesTestCase(unittest.TestCase):
             spiketrain,
             dt=3 * pq.ms,
             n=n_surrogates,
-            surr_method='shuffle_isis',
+            method='shuffle_isis',
             edges=False)
 
         self.assertRaises(ValueError, surr.surrogates, spiketrain, n=1,
@@ -387,7 +387,7 @@ class SurrogatesTestCase(unittest.TestCase):
             spiketrain,
             dt=5 * pq.ms,
             n=n_surrogates2,
-            surr_method='dither_spike_train',
+            method='dither_spike_train',
             edges=True)
 
         for surrogate_train in surrogate_trains:
@@ -451,7 +451,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         # Test surrogate methods wrapper
         surrogate_trains = surr.surrogates(
-            spiketrain, n=n_surrogates, surr_method='joint_isi_dithering')
+            spiketrain, n=n_surrogates, method='joint_isi_dithering')
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
 

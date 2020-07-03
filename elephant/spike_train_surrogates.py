@@ -46,7 +46,7 @@ Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 from __future__ import division, print_function, unicode_literals
 
 import random
-from functools import partial
+import warnings
 
 import neo
 import numpy as np
@@ -598,7 +598,7 @@ class JointISI(object):
         period, which will be destroyed by the convolution with the
         2d-Gaussian function.
         Default: True.
-    refr_period : pq.Quantity, optional
+    refractory_period : pq.Quantity, optional
         Defines the refractory period of the dithered `spiketrain` unless
         the smallest ISI of the `spiketrain` is lower than this value.
         Default: 4. * pq.ms.
@@ -616,6 +616,7 @@ class JointISI(object):
     # Otherwise, the original spiketrain is copied N times.
     MIN_SPIKES = 3
 
+    @deprecated_alias(refr_period='refractory_period')
     def __init__(self,
                  spiketrain,
                  dither=15. * pq.ms,
@@ -626,7 +627,7 @@ class JointISI(object):
                  use_sqrt=False,
                  method='fast',
                  cutoff=True,
-                 refr_period=4. * pq.ms
+                 refractory_period=4. * pq.ms
                  ):
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
@@ -642,11 +643,11 @@ class JointISI(object):
                              "but not '{}'".format(method))
         self.method = method
 
-        refr_period = self.get_magnitude(refr_period)
+        refractory_period = self.get_magnitude(refractory_period)
         if not self.too_less_spikes:
             minimal_isi = np.min(self.isi)
-            refr_period = min(refr_period, minimal_isi)
-        self.refr_period = refr_period
+            refractory_period = min(refractory_period, minimal_isi)
+        self.refractory_period = refractory_period
 
         self.cutoff = cutoff
         self.use_sqrt = use_sqrt
@@ -654,6 +655,12 @@ class JointISI(object):
 
         self.max_change_index = self.isi_to_index(self.dither)
         self.max_change_isi = self.index_to_isi(self.max_change_index)
+
+    @property
+    def refr_period(self):
+        warnings.warn(".refr_period is deprecated; use .refractory_period",
+                      DeprecationWarning)
+        return self.refractory_period
 
     def get_magnitude(self, quantity):
         """
@@ -753,7 +760,7 @@ class JointISI(object):
 
         if self.sigma:
             if self.cutoff:
-                start_index = self.isi_to_index(self.refr_period)
+                start_index = self.isi_to_index(self.refractory_period)
                 joint_isi_histogram[
                     start_index:, start_index:] = gaussian_filter(
                         joint_isi_histogram[start_index:, start_index:],
@@ -939,13 +946,14 @@ class JointISI(object):
     def _uniform_dither_not_jisi_movable_spikes(self,
                                                 curr_isi,
                                                 next_isi):
-        left_dither = min(curr_isi - self.refr_period, self.dither)
-        right_dither = min(next_isi - self.refr_period, self.dither)
+        left_dither = min(curr_isi - self.refractory_period, self.dither)
+        right_dither = min(next_isi - self.refractory_period, self.dither)
         step = random.random() * (right_dither + left_dither) - left_dither
         return step
 
 
-def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
+@deprecated_alias(surr_method='method')
+def surrogates(spiketrain, n=1, method='dither_spike_train', dt=None,
                decimals=None, edges=True):
     """
     Generates surrogates of a `spiketrain` by a desired generation
@@ -965,7 +973,7 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
     n : int, optional
         Number of surrogates to be generated.
         Default: 1.
-    surr_method : str, optional
+    method : str, optional
         The method to use to generate surrogate spike trains. Can be one of:
         * 'dither_spike_train': see `surrogates.dither_spike_train` [dt needed]
         * 'dither_spikes': see `surrogates.dither_spikes` [dt needed]
@@ -1011,22 +1019,22 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'joint_isi_dithering': JointISI(spiketrain).dithering,
     }
 
-    if surr_method not in surrogate_types.keys():
+    if method not in surrogate_types.keys():
         raise ValueError("Specified surrogate method ('{}') "
-                         "is not valid".format(surr_method))
-    surr_method = surrogate_types[surr_method]
+                         "is not valid".format(method))
+    method = surrogate_types[method]
 
     # PYTHON2: replace with inspect.signature()
-    if dt is None and surr_method in (dither_spike_train, dither_spikes,
-                                      jitter_spikes):
+    if dt is None and method in (dither_spike_train, dither_spikes,
+                                 jitter_spikes):
         raise ValueError("{}() method requires 'dt' parameter to be "
-                         "not None".format(surr_method.__name__))
+                         "not None".format(method.__name__))
 
-    if surr_method in (dither_spike_train, dither_spikes):
-        return surr_method(spiketrain, dt, n=n, decimals=decimals, edges=edges)
-    if surr_method in (randomise_spikes, shuffle_isis):
-        return surr_method(spiketrain, n=n, decimals=decimals)
-    if surr_method == jitter_spikes:
-        return surr_method(spiketrain, dt, n=n)
-    # surr_method == 'joint_isi_dithering':
-    return surr_method(n)
+    if method in (dither_spike_train, dither_spikes):
+        return method(spiketrain, dt, n=n, decimals=decimals, edges=edges)
+    if method in (randomise_spikes, shuffle_isis):
+        return method(spiketrain, n=n, decimals=decimals)
+    if method == jitter_spikes:
+        return method(spiketrain, dt, n=n)
+    # method == 'joint_isi_dithering':
+    return method(n)
