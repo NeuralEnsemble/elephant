@@ -54,7 +54,8 @@ def bic(cov, order, dimension, length):
     criterion : float
        Bayesian Information Criterion
     """
-    criterion = 2 * np.linalg.slogdet(cov)[1] \
+    sign, log_det_cov = np.linalg.slogdet(cov)
+    criterion = 2 * log_det_cov \
         + 2*(dimension**2)*order*np.log(length)/length
 
     return criterion
@@ -80,7 +81,8 @@ def aic(cov, order, dimension, length):
     criterion : float
         Akaike Information Criterion
     """
-    criterion = 2 * np.linalg.slogdet(cov)[1] \
+    sign, log_det_cov = np.linalg.slogdet(cov)
+    criterion = 2 * log_det_cov \
         + 2*(dimension**2)*order/length
 
     return criterion
