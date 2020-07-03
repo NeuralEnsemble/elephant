@@ -11,6 +11,10 @@ Limitations
 """""""""""
 The user must be mindful of the method's limitations, which are assumptions of covariance stationary data, linearity imposed by the underlying autoregressive modelling as well as the fact that the variables not included in the model will not be accounted for [2].
 
+Implementation
+""""""""""""""
+The mathematical implementation of Granger causality methods in this module closely follows [3].
+
 References
 """"""""""
 [1] Granger CWJ (1969) Investigating causal relations by econometric models and cross-spectral methods. Econometrica 37:424-438.
