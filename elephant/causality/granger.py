@@ -264,9 +264,9 @@ def _optimal_vector_arm(signals, dimension, max_order,
         dimensionality of the data
     max_order : int
         maximal order to consider
-    information_criterion : string
-        bic for Bayesian information_criterion,
-        aic for Akaike information criterion
+    information_criterion : callable
+        'bic' for Bayesian information_criterion,
+        'aic' for Akaike information criterion
 
     Returns
     -------
@@ -309,9 +309,9 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
         time series data
     max_order : int
         maximal order of autoregressive model
-    information_criterion : string
-        bic for Bayesian information_criterion,
-        aic for Akaike information criterion
+    information_criterion : callable
+        'bic' for Bayesian information_criterion,
+        'aic' for Akaike information criterion
 
     Returns
     -------
