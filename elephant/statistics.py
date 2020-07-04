@@ -52,6 +52,7 @@ Statistics across spike trains
 
     fanofactor
     complexity_pdf
+    complexity
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -860,7 +861,7 @@ class complexity:
         Default: 0
     tolerance : float, optional
         Tolerance for rounding errors in the binning process and in the input
-        data
+        data.
         Default: 1e-8
 
     Attributes
@@ -894,20 +895,21 @@ class complexity:
     ------
     ValueError
         When `t_stop` is smaller than `t_start`.
-    ValueError
+
         When both `sampling_rate` and `bin_size` are not specified.
-    ValueError
+
         When `spread` is not a positive integer.
+
+        When `spiketrains` is an empty list.
+
+        When `t_start` is not the same for all spiketrains
+
+        When `t_stop` is not the same for all spiketrains
+
     TypeError
         When `spiketrains` is not a list.
-    ValueError
-        When `spiketrains` is an empty list.
-    TypeError
+
         When the elements in `spiketrains` are not instances of neo.SpikeTrain
-    ValueError
-        When `t_start` is not the same for all spiketrains
-    ValueError
-        When `t_stop` is not the same for all spiketrains
 
     Notes
     -----
@@ -920,7 +922,7 @@ class complexity:
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
-    elephant.spike_train_processing.synchotool
+    elephant.spike_train_processing.synchrotool
 
     References
     ----------
@@ -1026,9 +1028,9 @@ class complexity:
         """
         # Computing the population histogram with parameter binary=True to
         # clip the spike trains before summing
-        pophist = time_histogram(self.input_spiketrains,
-                                 self.bin_size,
-                                 binary=self.binary)
+        time_hist = time_histogram(self.input_spiketrains,
+                                   self.bin_size,
+                                   binary=self.binary)
 
         # Computing the histogram of the entries of pophist
         complexity_hist = np.histogram(
