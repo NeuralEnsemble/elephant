@@ -7,54 +7,73 @@ Module for spike train processing
 """
 
 from __future__ import division
-
+from elephant.statistics import complexity
+from copy import deepcopy
 import numpy as np
 
 
 class synchrotool(complexity):
-    complexity.__doc_
+    # complexity.__doc_
 
     def __init__(self, spiketrains,
-                 sampling_rate=None,
-                 spread=1):
-        self.spiketrains = spiketrains
-        self.sampling_rate = sampling_rate
-        self.spread = spread
+                 sampling_rate,
+                 binary=True,
+                 spread=0,
+                 tolerance=1e-8):
 
-        # self.super(...).__init__()
+        self.annotated = False
 
-        # find times of synchrony of size >=n
-        # complexity_epoch =
+        super().__init__(spiketrains=spiketrains,
+                         sampling_rate=sampling_rate,
+                         binary=binary,
+                         spread=spread,
+                         tolerance=tolerance)
 
-        # ...
-        return self
+    def delete_synchrofacts(self, threshold,
+                            in_place=False, invert=False):
+
+        if not self.annotated:
+            self.annotate_synchrofacts()
+
+        if threshold <= 1:
+            raise ValueError('A deletion threshold <= 1 would result '
+                             'in the deletion of all spikes.')
+
+        if in_place:
+            spiketrain_list = self.input_spiketrains
+        else:
+            spiketrain_list = deepcopy(self.input_spiketrains)
+
+        for idx, st in enumerate(spiketrain_list):
+            mask = st.array_annotations['complexity'] < threshold
+            if invert:
+                mask = np.invert(mask)
+            new_st = st[mask]
+            spiketrain_list[idx] = new_st
+            if in_place:
+                unit = st.unit
+                segment = st.segment
+                if unit is not None:
+                    unit.spiketrains[
+                        self._get_index(unit.spiketrains, st)
+                                     ] = new_st
+                if segment is not None:
+                    segment.spiketrains[
+                        self._get_index(segment.spiketrains, st)
+                                        ] = new_st
+
+        return spiketrain_list
+
+    def extract_synchrofacts(self, threshold, in_place=False):
+        return self.delete_synchrofacts(threshold=threshold,
+                                        in_place=in_place,
+                                        invert=True)
 
     def annotate_synchrofacts(self):
-        return None
-
-    def delete_synchrofacts(self):
-        return None
-
-    def extract_synchrofacts(self):
-        return None
-
-    # def delete_synchrofacts(self, in_place=False):
-    #
-    #     if not in_place:
-    #         # return clean_spiketrains
-    #
-    # @property
-    # def synchrofacts(self):
-    #     self.synchrofacts = self.detect_synchrofacts(deletion_threshold=1,
-    #                                                  invert_delete=True)
-
-    def detect_synchrofacts(self,
-                            deletion_threshold=None,
-                            invert_delete=False):
         """
-        Given a list of neo.Spiketrain objects, calculate the number of synchronous
-        spikes found and optionally delete or extract them from the given list
-        *in-place*.
+        Given a list of neo.Spiketrain objects, calculate the number of
+        synchronous spikes found and optionally delete or extract them from
+        the given list *in-place*.
 
         The spike trains are binned at sampling precission
         (i.e. bin_size = 1 / `sampling_rate`)
@@ -122,48 +141,26 @@ class synchrotool(complexity):
         elephant.spike_train_processing.precise_complexity_intervals
 
         """
-        if deletion_threshold is not None and deletion_threshold <= 1:
-            raise ValueError('A deletion_threshold <= 1 would result '
-                             'in deletion of all spikes.')
+        epoch_complexities = self.epoch.array_annotations['complexity']
+        right_edges = self.epoch.times.magnitude.flatten() + self.epoch.durations.rescale(self.epoch.times.units).magnitude.flatten()
+        print(self.epoch.times)
+        print(self.epoch.array_annotations['complexity'])
 
-        complexity = complexity_epoch.array_annotations['complexity']
-        right_edges = complexity_epoch.times + complexity_epoch.durations
-
-        # j = index of pre-selected sts in spiketrains
-        # idx = index of pre-selected sts in original
-        # block.segments[seg].spiketrains
-        for idx, st in enumerate(spiketrains):
+        for idx, st in enumerate(self.input_spiketrains):
 
             # all indices of spikes that are within the half-open intervals
             # defined by the boundaries
             # note that every second entry in boundaries is an upper boundary
-            spike_to_epoch_idx = np.searchsorted(right_edges,
-                                                 st.times.rescale(
-                                                     right_edges.units))
-            complexity_per_spike = complexity[spike_to_epoch_idx]
+            spike_to_epoch_idx = np.searchsorted(
+                right_edges,
+                st.times.rescale(self.epoch.times.units).magnitude.flatten())
+            complexity_per_spike = epoch_complexities[spike_to_epoch_idx]
 
             st.array_annotate(complexity=complexity_per_spike)
 
-            if deletion_threshold is not None:
-                mask = complexity_per_spike < deletion_threshold
-                if invert_delete:
-                    mask = np.invert(mask)
-                old_st = st
-                new_st = old_st[mask]
-                spiketrains[idx] = new_st
-                unit = old_st.unit
-                segment = old_st.segment
-                if unit is not None:
-                    unit.spiketrains[self._get_index(unit.spiketrains,
-                                                old_st)] = new_st
-                if segment is not None:
-                    segment.spiketrains[self._get_index(segment.spiketrains,
-                                                   old_st)] = new_st
-                del old_st
+        self.annotated = True
 
-        return complexity_epoch
-
-    def _get_index(lst, obj):
+    def _get_index(self, lst, obj):
         for index, item in enumerate(lst):
             if item is obj:
                 return index
