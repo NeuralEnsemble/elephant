@@ -154,8 +154,8 @@ def zscore(signal, inplace=True):
 
 
 @deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
-                  env='hilbert_envelop')
-def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
+                  env='hilbert_envelope')
+def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
                                n_lags=None, scaleopt='unbiased'):
     r"""
     Computes unbiased estimator of the cross-correlation function.
@@ -188,7 +188,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
         List with `n` channel pairs for which to compute cross-correlation.
         Each element of the list must contain 2 channel indices.
         If `np.ndarray`, the second axis must have dimension 2.
-    hilbert_envelop : bool, optional
+    hilbert_envelope : bool, optional
         If True, returns the Hilbert envelope of cross-correlation function
         result.
         Default: False.
@@ -232,7 +232,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
     cross_corr : neo.AnalogSignal
         Shape: `[2*n_lags+1, n]`
         Pairwise cross-correlation functions for channel pairs given by
-        `channel_pairs`. If `hilbert_envelop` is True, the output is the
+        `channel_pairs`. If `hilbert_envelope` is True, the output is the
         Hilbert envelope of the pairwise cross-correlation function. This is
         helpful to compute the correlation length for oscillating
         cross-correlation functions.
@@ -245,7 +245,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
         If `channel_pairs` is not a list of channel pair indices with shape
         `(n,2)`.
 
-        If `hilbert_envelop` is not a boolean.
+        If `hilbert_envelope` is not a boolean.
 
         If `n_lags` is not a positive integer.
 
@@ -276,7 +276,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
     >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
     >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
     >>> env = cross_correlation_function(signal, [0,1], n_lags=150,
-    ...     hilbert_envelop=True)
+    ...     hilbert_envelope=True)
     ...
     >>> plt.plot(rho.times, rho)
     >>> plt.plot(env.times, env) # should be equal to one
@@ -295,8 +295,8 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
     if pairs.shape[1] != 2:
         raise ValueError("'channel_pairs' is not a list of channel pair "
                          "indices. Cannot define pairs for cross-correlation.")
-    if not isinstance(hilbert_envelop, bool):
-        raise ValueError("'hilbert_envelop' must be a boolean value")
+    if not isinstance(hilbert_envelope, bool):
+        raise ValueError("'hilbert_envelope' must be a boolean value")
     if n_lags is not None:
         if not isinstance(n_lags, int) or n_lags <= 0:
             raise ValueError('n_lags must be a non-negative integer')
@@ -328,7 +328,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelop=False,
 
     # Calculate envelope of cross-correlation function with Hilbert transform.
     # This is useful for transient oscillatory signals.
-    if hilbert_envelop:
+    if hilbert_envelope:
         xcorr = np.abs(scipy.signal.hilbert(xcorr, axis=0))
 
     # Cut off lags outside the desired range

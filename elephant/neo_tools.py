@@ -7,20 +7,23 @@ Tools to manipulate Neo objects.
 """
 
 from __future__ import division, print_function, unicode_literals
+import warnings
 
 from itertools import chain
 
 from neo.core.container import unique_objs
+from elephant.utils import deprecated_alias
 
 
-def extract_neo_attrs(obj, parents=True, child_first=True,
-                      skip_array=False, skip_none=False):
+@deprecated_alias(obj='neo_object')
+def extract_neo_attributes(neo_object, parents=True, child_first=True,
+                           skip_array=False, skip_none=False):
     """
     Given a Neo object, return a dictionary of attributes and annotations.
 
     Parameters
     ----------
-    obj : neo.BaseNeo
+    neo_object : neo.BaseNeo
         Object to get attributes and annotations.
     parents : bool, optional
         If True, also include attributes and annotations from parent Neo
@@ -46,22 +49,22 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
         the values are the corresponding annotation or attribute value.
 
     """
-    attrs = obj.annotations.copy()
-    if not skip_array and hasattr(obj, "array_annotations"):
+    attrs = neo_object.annotations.copy()
+    if not skip_array and hasattr(neo_object, "array_annotations"):
         # Exclude labels and durations, and any other fields that should not
         # be a part of array_annotation.
-        required_keys = set(obj.array_annotations).difference(dir(obj))
+        required_keys = set(neo_object.array_annotations).difference(dir(neo_object))
         for a in required_keys:
             if "array_annotations" not in attrs:
                 attrs["array_annotations"] = {}
-            attrs["array_annotations"][a] = obj.array_annotations[a].copy()
-    for attr in obj._necessary_attrs + obj._recommended_attrs:
+            attrs["array_annotations"][a] = neo_object.array_annotations[a].copy()
+    for attr in neo_object._necessary_attrs + neo_object._recommended_attrs:
         if skip_array and len(attr) >= 3 and attr[2]:
             continue
         attr = attr[0]
-        if attr == getattr(obj, '_quantity_attr', None):
+        if attr == getattr(neo_object, '_quantity_attr', None):
             continue
-        attrs[attr] = getattr(obj, attr, None)
+        attrs[attr] = getattr(neo_object, attr, None)
 
     if skip_none:
         for attr, value in attrs.copy().items():
@@ -71,13 +74,13 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
     if not parents:
         return attrs
 
-    for parent in getattr(obj, 'parents', []):
+    for parent in getattr(neo_object, 'parents', []):
         if parent is None:
             continue
-        newattr = extract_neo_attrs(parent, parents=True,
-                                    child_first=child_first,
-                                    skip_array=skip_array,
-                                    skip_none=skip_none)
+        newattr = extract_neo_attributes(parent, parents=True,
+                                         child_first=child_first,
+                                         skip_array=skip_array,
+                                         skip_none=skip_none)
         if child_first:
             newattr.update(attrs)
             attrs = newattr
@@ -85,6 +88,12 @@ def extract_neo_attrs(obj, parents=True, child_first=True,
             attrs.update(newattr)
 
     return attrs
+
+
+def extract_neo_attrs(*args, **kwargs):
+    warnings.warn("'extract_neo_attrs' function is deprecated; "
+                  "use 'extract_neo_attributes'", DeprecationWarning)
+    return extract_neo_attributes(*args, **kwargs)
 
 
 def _get_all_objs(container, class_name):

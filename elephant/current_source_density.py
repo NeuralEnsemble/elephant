@@ -59,7 +59,8 @@ icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 
 
-def estimate_csd(lfp, coords=None, method=None,
+@deprecated_alias(coords='coordinates')
+def estimate_csd(lfp, coordinates=None, method=None,
                  process_estimate=True, **kwargs):
     """
     Fuction call to compute the current source density (CSD) from extracellular
@@ -71,7 +72,7 @@ def estimate_csd(lfp, coords=None, method=None,
     lfp : neo.AnalogSignal
         positions of electrodes can be added as neo.RecordingChannel
         coordinate or sent externally as a func argument (See coords)
-    coords : [Optional] corresponding spatial coordinates of the electrodes
+    coordinates : [Optional] corresponding spatial coordinates of the electrodes
         Defaults to None
         Otherwise looks for RecordingChannels coordinate
     method : string
@@ -110,25 +111,25 @@ def estimate_csd(lfp, coords=None, method=None,
     """
     if not isinstance(lfp, neo.AnalogSignal):
         raise TypeError('Parameter `lfp` must be a neo.AnalogSignal object')
-    if coords is None:
-        coords = lfp.channel_index.coordinates
+    if coordinates is None:
+        coordinates = lfp.channel_index.coordinates
     else:
         scaled_coords = []
-        for coord in coords:
+        for coord in coordinates:
             try:
                 scaled_coords.append(coord.rescale(pq.mm))
             except AttributeError:
                 raise AttributeError('No units given for electrode spatial \
                 coordinates')
-        coords = scaled_coords
+        coordinates = scaled_coords
     if method is None:
         raise ValueError('Must specify a method of CSD implementation')
-    if len(coords) != lfp.shape[1]:
+    if len(coordinates) != lfp.shape[1]:
         raise ValueError('Number of signals and coords is not same')
-    for ii in coords:  # CHECK for Dimensionality of electrodes
+    for ii in coordinates:  # CHECK for Dimensionality of electrodes
         if len(ii) > 3:
             raise ValueError('Invalid number of coordinate positions')
-    dim = len(coords[0])  # TODO : Generic co-ordinates!
+    dim = len(coordinates[0])  # TODO : Generic co-ordinates!
     if dim == 1 and (method not in available_1d):
         raise ValueError('Invalid method, Available options are:',
                          available_1d)
@@ -145,7 +146,7 @@ def estimate_csd(lfp, coords=None, method=None,
         kernel_method = getattr(KCSD, method)  # fetch the class 'KCSD1D'
         lambdas = kwargs.pop('lambdas', None)
         Rs = kwargs.pop('Rs', None)
-        k = kernel_method(np.array(coords), input_array.T, **kwargs)
+        k = kernel_method(np.array(coordinates), input_array.T, **kwargs)
         if process_estimate:
             k.cross_validate(lambdas, Rs)
         estm_csd = k.values()
@@ -163,11 +164,11 @@ def estimate_csd(lfp, coords=None, method=None,
                             z_coords=k.estm_z)
     elif method in py_iCSD_toolbox:
 
-        coords = np.array(coords) * coords[0].units
+        coordinates = np.array(coordinates) * coordinates[0].units
 
         if method in icsd_methods:
             try:
-                coords = coords.rescale(kwargs['diam'].units)
+                coordinates = coordinates.rescale(kwargs['diam'].units)
             except KeyError:  # Then why specify as a default in icsd?
                               # All iCSD methods explicitly assume a source
                               # diameter in contrast to the stdCSD  that
@@ -185,7 +186,7 @@ def estimate_csd(lfp, coords=None, method=None,
                                     sampling_rate=lfp.sampling_rate)
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
         csd_estimator = csd_method(lfp=lfp.magnitude * lfp.units,
-                                   coord_electrode=coords.flatten(),
+                                   coord_electrode=coordinates.flatten(),
                                    **kwargs)
         csd_pqarr = csd_estimator.get_csd()
 
@@ -197,14 +198,15 @@ def estimate_csd(lfp, coords=None, method=None,
         else:
             output = neo.AnalogSignal(csd_pqarr.T, t_start=lfp.t_start,
                                            sampling_rate=lfp.sampling_rate)
-        output.annotate(x_coords=coords)
+        output.annotate(x_coords=coordinates)
     return output
 
 
-@deprecated_alias(xlims='x_lims', ylims='y_lims', zlims='z_lims',
-                  res='resolution')
-def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
-                 x_lims=[0., 1.], y_lims=[0., 1.], z_lims=[0., 1.],
+@deprecated_alias(ele_xx='x_positions', ele_yy='y_positions',
+                  ele_zz='z_positions', xlims='x_limits', ylims='y_limits',
+                  zlims='z_limits', res='resolution')
+def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
+                 x_limits=[0., 1.], y_limits=[0., 1.], z_limits=[0., 1.],
                  resolution=50):
     """
     Forward modelling for getting the potentials for testing Current Source
@@ -218,23 +220,23 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         1D : gauss_1d_dipole
         2D : large_source_2D and small_source_2D
         3D : gauss_3d_dipole
-    ele_xx : np.ndarray
+    x_positions : np.ndarray
         Positions of the x coordinates of the electrodes
-    ele_yy : np.ndarray, optional
+    y_positions : np.ndarray, optional
         Positions of the y coordinates of the electrodes
         Defaults ot None, use in 2D or 3D cases only
-    ele_zz : np.ndarray, optional
+    z_positions : np.ndarray, optional
         Positions of the z coordinates of the electrodes
         Defaults ot None, use in 3D case only
-    x_lims : list, optional
+    x_limits : list, optional
         A list of [start, end].
         The starting spatial coordinate and the ending for integration
         Defaults to [0.,1.]
-    y_lims : list, optional
+    y_limits : list, optional
         A list of [start, end].
         The starting spatial coordinate and the ending for integration
         Defaults to [0.,1.], use only in 2D and 3D case
-    z_lims : list, optional
+    z_limits : list, optional
         A list of [start, end].
         The starting spatial coordinate and the ending for integration
         Defaults to [0.,1.], use only in 3D case
@@ -281,49 +283,49 @@ def generate_lfp(csd_profile, ele_xx, ele_yy=None, ele_zz=None,
         F = simps(Iy, xlin)
         return F
     dim = 1
-    if ele_zz is not None:
+    if z_positions is not None:
         dim = 3
-    elif ele_yy is not None:
+    elif y_positions is not None:
         dim = 2
-    x = np.linspace(x_lims[0], x_lims[1], resolution)
+    x = np.linspace(x_limits[0], x_limits[1], resolution)
     if dim >= 2:
-        y = np.linspace(y_lims[0], y_lims[1], resolution)
+        y = np.linspace(y_limits[0], y_limits[1], resolution)
     if dim == 3:
-        z = np.linspace(z_lims[0], z_lims[1], resolution)
+        z = np.linspace(z_limits[0], z_limits[1], resolution)
     sigma = 1.0
     h = 50.
-    pots = np.zeros(len(ele_xx))
+    pots = np.zeros(len(x_positions))
     if dim == 1:
-        chrg_x = np.linspace(x_lims[0], x_lims[1], resolution)
+        chrg_x = np.linspace(x_limits[0], x_limits[1], resolution)
         csd = csd_profile(chrg_x)
-        for ii in range(len(ele_xx)):
-            pots[ii] = integrate_1D(ele_xx[ii], chrg_x, csd, h)
+        for ii in range(len(x_positions)):
+            pots[ii] = integrate_1D(x_positions[ii], chrg_x, csd, h)
         pots /= 2. * sigma  # eq.: 26 from Potworowski et al
-        ele_pos = ele_xx
+        ele_pos = x_positions
     elif dim == 2:
-        chrg_x, chrg_y = np.mgrid[x_lims[0]:x_lims[1]:np.complex(0, resolution),
-                         y_lims[0]:y_lims[1]:np.complex(0, resolution)]
+        chrg_x, chrg_y = np.mgrid[x_limits[0]:x_limits[1]:np.complex(0, resolution),
+                         y_limits[0]:y_limits[1]:np.complex(0, resolution)]
         csd = csd_profile(chrg_x, chrg_y)
-        for ii in range(len(ele_xx)):
-            pots[ii] = integrate_2D(ele_xx[ii], ele_yy[ii],
+        for ii in range(len(x_positions)):
+            pots[ii] = integrate_2D(x_positions[ii], y_positions[ii],
                                     x, y, csd, h, chrg_x, chrg_y)
         pots /= 2 * np.pi * sigma
-        ele_pos = np.vstack((ele_xx, ele_yy)).T
+        ele_pos = np.vstack((x_positions, y_positions)).T
     elif dim == 3:
-        chrg_x, chrg_y, chrg_z = np.mgrid[x_lims[0]:x_lims[1]:np.complex(0, resolution),
-                                 y_lims[0]:y_lims[1]:np.complex(0, resolution),
-                                 z_lims[0]:z_lims[1]:np.complex(0, resolution)]
+        chrg_x, chrg_y, chrg_z = np.mgrid[x_limits[0]:x_limits[1]:np.complex(0, resolution),
+                                 y_limits[0]:y_limits[1]:np.complex(0, resolution),
+                                 z_limits[0]:z_limits[1]:np.complex(0, resolution)]
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
         xlin = chrg_x[:, 0, 0]
         ylin = chrg_y[0, :, 0]
         zlin = chrg_z[0, 0, :]
-        for ii in range(len(ele_xx)):
-            pots[ii] = integrate_3D(ele_xx[ii], ele_yy[ii], ele_zz[ii],
-                                    x_lims, y_lims, z_lims, csd,
+        for ii in range(len(x_positions)):
+            pots[ii] = integrate_3D(x_positions[ii], y_positions[ii], z_positions[ii],
+                                    x_limits, y_limits, z_limits, csd,
                                     xlin, ylin, zlin,
                                     chrg_x, chrg_y, chrg_z)
         pots /= 4 * np.pi * sigma
-        ele_pos = np.vstack((ele_xx, ele_yy, ele_zz)).T
+        ele_pos = np.vstack((x_positions, y_positions, z_positions)).T
     pots = np.reshape(pots, (-1, 1)) * pq.mV
     ele_pos = ele_pos * pq.mm
     lfp = []

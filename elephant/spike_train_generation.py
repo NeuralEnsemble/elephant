@@ -205,7 +205,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
         below the threshold.
         Default: 'above'.
     as_array : bool, optional
-        If True, a NumPy array of the resulted peak times is returned instead
+        If True, a NumPy array of the resulting peak times is returned instead
         of a (default) `neo.SpikeTrain` object.
         Default: False.
     format : {None, 'raw'}, optional
@@ -732,11 +732,12 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
             for rate in rates]
 
 
-@deprecated_alias(rate_c='rate_coincidence', return_coinc='return_coincidence')
+@deprecated_alias(rate_c='coincidence_rate',
+                  return_coinc='return_coincidences')
 def single_interaction_process(
-        rate, rate_coincidence, t_stop, n=2, jitter=0 * pq.ms,
+        rate, coincidence_rate, t_stop, n=2, jitter=0 * pq.ms,
         coincidences='deterministic', t_start=0 * pq.ms, min_delay=0 * pq.ms,
-        return_coincidence=False):
+        return_coincidences=False):
     """
     Generates a multidimensional Poisson SIP (single interaction process)
     plus independent Poisson processes
@@ -754,15 +755,15 @@ def single_interaction_process(
         0 and `t_stop`.
     rate : pq.Quantity
         Overall mean rate of the time series to be generated (coincidence
-        rate `rate_coincidence` is subtracted to determine the background rate). Can be:
+        rate `coincidence_rate` is subtracted to determine the background rate). Can be:
         * a float, representing the overall mean rate of each process. If
-          so, it must be higher than `rate_coincidence`.
+          so, it must be higher than `coincidence_rate`.
         * an iterable of floats (one float per process), each float
           representing the overall mean rate of a process. If so, all the
-          entries must be larger than `rate_coincidence`.
-    rate_coincidence : pq.Quantity
+          entries must be larger than `coincidence_rate`.
+    coincidence_rate : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP).
-        The SIP spike trains will have coincident events with rate `rate_coincidence`
+        The SIP spike trains will have coincident events with rate `coincidence_rate`
         plus independent 'background' events with rate `rate-rate_coincidence`.
     n : int, optional
         If `rate` is a single pq.Quantity value, `n` specifies the number of
@@ -790,7 +791,7 @@ def single_interaction_process(
     min_delay : pq.Quantity, optional
         Minimum delay between consecutive coincidence times.
         Default: 0 * pq.ms
-    return_coincidence : bool, optional
+    return_coincidences : bool, optional
         Whether to return the coincidence times for the SIP process
         Default: False
 
@@ -812,9 +813,9 @@ def single_interaction_process(
     >>> import quantities as pq
     >>> import elephant.spike_train_generation as stg
     # TODO: check if rate_coincidence=4 is correct.
-    >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  rate_coincidence=4,
+    >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  coincidence_rate=4,
     ...                                             t_stop=1*pq.s,
-    ...                                             n=10, return_coincidence = True)
+    ...                                             n=10, return_coincidences = True)
 
     """
 
@@ -842,19 +843,19 @@ def single_interaction_process(
             raise ValueError('*rate* must have non-negative elements')
 
     # Check: rate>=rate_coincidence
-    if np.any(rates_b < rate_coincidence):
+    if np.any(rates_b < coincidence_rate):
         raise ValueError('all elements of *rate* must be >= *rate_coincidence*')
 
     # Check min_delay < 1./rate_coincidence
-    if not (rate_coincidence == 0 * pq.Hz or min_delay < 1. / rate_coincidence):
+    if not (coincidence_rate == 0 * pq.Hz or min_delay < 1. / coincidence_rate):
         raise ValueError(
             "'*min_delay* (%s) must be lower than 1/*rate_coincidence* (%s)." %
-            (str(min_delay), str((1. / rate_coincidence).rescale(min_delay.units))))
+            (str(min_delay), str((1. / coincidence_rate).rescale(min_delay.units))))
 
     # Generate the n Poisson processes there are the basis for the SIP
     # (coincidences still lacking)
     embedded_poisson_trains = _n_poisson(
-        rate=rates_b - rate_coincidence, t_stop=t_stop, t_start=t_start)
+        rate=rates_b - coincidence_rate, t_stop=t_stop, t_start=t_start)
     # Convert the trains from neo SpikeTrain objects to simpler pq.Quantity
     # objects
     embedded_poisson_trains = [
@@ -865,7 +866,7 @@ def single_interaction_process(
     if coincidences == 'deterministic':
         # P. Bouss: we want the closest approximation to the average
         # coincidence count.
-        n_coincidences = (t_stop - t_start) * rate_coincidence
+        n_coincidences = (t_stop - t_start) * coincidence_rate
         # Conversion to integer necessary for python 2
         n_coincidences = int(round(n_coincidences.simplified.item()))
         while True:
@@ -877,7 +878,7 @@ def single_interaction_process(
     else:  # coincidences == 'stochastic'
         while True:
             coinc_times = homogeneous_poisson_process(
-                rate=rate_coincidence, t_stop=t_stop, t_start=t_start)
+                rate=coincidence_rate, t_stop=t_stop, t_start=t_start)
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
         coinc_times = coinc_times.simplified
@@ -916,7 +917,7 @@ def single_interaction_process(
         for t in embedded_coinc]
 
     # Return the processes in the specified output_format
-    if not return_coincidence:
+    if not return_coincidences:
         output = sip_process
     else:
         output = sip_process, coinc_times

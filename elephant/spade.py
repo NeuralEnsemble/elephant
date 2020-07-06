@@ -1289,11 +1289,11 @@ def pvalue_spectrum(
             # prevent that spikes fall into the same bin, if the spike trains
             # are sparse (min(ISI)>bin size).
             surrs = [surr.dither_spikes(
-                spiketrain, dither=dither, n=1, refractory_period=bin_size)[0]
+                spiketrain, dither=dither, n_surrogates=1, refractory_period=bin_size)[0]
                 for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
-                spiketrain, n=1, method=surr_method,
+                spiketrain, n_surrogates=1, method=surr_method,
                 dt=dither)[0] for spiketrain in spiketrains]
 
         # Find all pattern signatures in the current surrogate data set

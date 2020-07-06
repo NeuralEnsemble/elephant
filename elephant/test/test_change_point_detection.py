@@ -129,21 +129,21 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         st = neo.SpikeTrain(self.test_array, units='s', t_stop=2.1)
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st, 2.1 * pq.s, 5, 100,
-                                       dt=0.1 * pq.s)
+                                       time_step=0.1 * pq.s)
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_MultipleFilterAlgorithm_with_quantities_h05(self):
         st = pq.Quantity(self.test_array, units='s')
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st, 2.1 * pq.s, 5, 100,
-                                       dt=0.5 * pq.s)
+                                       time_step=0.5 * pq.s)
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_MultipleFilterAlgorithm_with_plain_array_h05(self):
         st = self.test_array
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st * pq.s, 2.1 * pq.s, 5,
-                                       100, dt=0.5 * pq.s)
+                                       100, time_step=0.5 * pq.s)
         self.assertNotIsInstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
 	 
@@ -173,8 +173,8 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         target = self.target_points
                         
         result = mft.multiple_filter_test(window_size, st * pq.s, 700 * pq.s, 5,
-        10000, test_quantile=self.test_quantile, test_param=self.test_param, 
-                                                                   dt=1 * pq.s)
+                                          10000, test_quantile=self.test_quantile, test_param=self.test_param,
+                                          time_step=1 * pq.s)
         self.assertNotIsInstance(result, pq.Quantity)
 
         result_concatenated = []

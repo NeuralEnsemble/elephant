@@ -103,7 +103,7 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
         envelope = elephant.signal_processing.cross_correlation_function(
-            signal, [0, 1], n_lags=nlags, hilbert_envelop=True)
+            signal, [0, 1], n_lags=nlags, hilbert_envelope=True)
         # Envelope should be one for sinusoidal function
         assert_array_almost_equal(envelope, np.ones_like(envelope), decimal=2)
 

@@ -33,8 +33,8 @@ from elephant.utils import deprecated_alias
 # Adaptation to python by Pietro Quaglio and Emiliano Torre
 
 
-@deprecated_alias(data='signal', ximax='max_iterations')
-def cubic(signal, max_iterations=100, alpha=0.05):
+@deprecated_alias(data='histogram', ximax='max_iterations')
+def cubic(histogram, max_iterations=100, alpha=0.05):
     r"""
     Performs the CuBIC analysis [1]_ on a population histogram, calculated
     from a population of spiking neurons.
@@ -51,7 +51,7 @@ def cubic(signal, max_iterations=100, alpha=0.05):
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
+    histogram : neo.AnalogSignal
         The population histogram (count of spikes per time bin) of the entire
         population of neurons.
     max_iterations : int, optional
@@ -95,13 +95,13 @@ def cubic(signal, max_iterations=100, alpha=0.05):
 
     # dict of all possible rate functions
     try:
-        signal = signal.magnitude
+        histogram = histogram.magnitude
     except AttributeError:
         pass
-    L = len(signal)
+    L = len(histogram)
 
     # compute first three cumulants
-    kappa = _kstat(signal)
+    kappa = _kstat(histogram)
     xi_hat = 1
     xi = 1
     pval = 0.

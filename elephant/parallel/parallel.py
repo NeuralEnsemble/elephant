@@ -40,7 +40,7 @@ class SingleProcess(object):
         -------
         results : list
             The result of applying the `handler` for each `arg` in the
-            `args_iterate`. The `i`-th item of the resulted list corresponds to
+            `args_iterate`. The `i`-th item of the resulting list corresponds to
             `args_iterate[i]` (the order is preserved).
         """
         handler = self._update_handler(handler, **kwargs)
@@ -94,7 +94,7 @@ class ProcessPoolExecutor(SingleProcess):
         -------
         results : list
             The result of applying the `handler` for each `arg` in the
-            `args_iterate`. The `i`-th item of the resulted list corresponds to
+            `args_iterate`. The `i`-th item of the resulting list corresponds to
             `args_iterate[i]` (the order is preserved).
         """
         handler = self._update_handler(handler, **kwargs)

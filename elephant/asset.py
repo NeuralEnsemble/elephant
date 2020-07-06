@@ -1337,7 +1337,7 @@ class ASSET(object):
             if mpi_accelerated and surr_id % size != rank:
                 continue
             surrogates = [spike_train_surrogates.surrogates(
-                st, n=1,
+                st, n_surrogates=1,
                 method=surrogate_method,
                 dt=surrogate_dt,
                 decimals=None,
@@ -1348,7 +1348,7 @@ class ASSET(object):
                 surrogates_y = surrogates
             else:
                 surrogates_y = [spike_train_surrogates.surrogates(
-                    st, n=1, method=surrogate_method, dt=surrogate_dt,
+                    st, n_surrogates=1, method=surrogate_method, dt=surrogate_dt,
                     decimals=None, edges=True)[0]
                                 for st in self.spiketrains_y]
 
