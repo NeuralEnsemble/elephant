@@ -574,9 +574,9 @@ class JointISI(object):
         The Joint-ISI histogram is calculated for
         :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
         Default: 100 * pq.ms.
-    num_bins : int, optional
+    n_bins : int, optional
         The size of the joint-ISI-distribution will be
-        `num_bins*num_bins/2`.
+        `n_bins*n_bins/2`.
         Default: 100.
     sigma : pq.Quantity, optional
         The standard deviation of the Gaussian kernel, with which
@@ -621,12 +621,12 @@ class JointISI(object):
     # Otherwise, the original spiketrain is copied N times.
     MIN_SPIKES = 3
 
-    @deprecated_alias(refr_period='refractory_period')
+    @deprecated_alias(num_bins='n_bins', refr_period='refractory_period')
     def __init__(self,
                  spiketrain,
                  dither=15. * pq.ms,
                  truncation_limit=100. * pq.ms,
-                 num_bins=100,
+                 n_bins=100,
                  sigma=2. * pq.ms,
                  alternate=True,
                  use_sqrt=False,
@@ -636,7 +636,7 @@ class JointISI(object):
                  ):
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
-        self.num_bins = num_bins
+        self.n_bins = n_bins
 
         self.dither = self.get_magnitude(dither)
 
@@ -663,9 +663,15 @@ class JointISI(object):
 
     @property
     def refr_period(self):
-        warnings.warn(".refr_period is deprecated; use .refractory_period",
+        warnings.warn("'.refr_period' is deprecated; use '.refractory_period'",
                       DeprecationWarning)
         return self.refractory_period
+
+    @property
+    def num_bins(self):
+        warnings.warn("'.num_bins' is deprecated; use '.n_bins'",
+                      DeprecationWarning)
+        return self.n_bins
 
     def get_magnitude(self, quantity):
         """
@@ -707,7 +713,7 @@ class JointISI(object):
 
     @property
     def bin_width(self):
-        return self.truncation_limit / self.num_bins
+        return self.truncation_limit / self.n_bins
 
     def isi_to_index(self, inter_spike_interval):
         """
@@ -756,7 +762,7 @@ class JointISI(object):
         isis = self.isi
         joint_isi_histogram = np.histogram2d(
             isis[:-1], isis[1:],
-            bins=[self.num_bins, self.num_bins],
+            bins=[self.n_bins, self.n_bins],
             range=[[0., self.truncation_limit],
                    [0., self.truncation_limit]])[0]
 
@@ -842,10 +848,10 @@ class JointISI(object):
 
         if self.method == 'fast':
             self._jisih_cumulatives = []
-            for double_index in range(self.num_bins):
+            for double_index in range(self.n_bins):
                 # Taking anti-diagonals of the original joint-ISI histogram
                 diagonal = np.diagonal(
-                    rotated_jisih, offset=-self.num_bins + double_index + 1)
+                    rotated_jisih, offset=-self.n_bins + double_index + 1)
                 jisih_cum = self.normalize_cumulative_distribution(
                     np.cumsum(diagonal))
                 self._jisih_cumulatives.append(jisih_cum)
@@ -856,10 +862,10 @@ class JointISI(object):
     def _window_cumulatives(self, rotated_jisih):
         jisih_diag_cums = self._window_diagonal_cumulatives(rotated_jisih)
         jisih_cumulatives = np.zeros(
-            (self.num_bins, self.num_bins,
+            (self.n_bins, self.n_bins,
              2 * self.max_change_index + 1))
-        for curr_isi_id in range(self.num_bins):
-            for next_isi_id in range(self.num_bins - curr_isi_id):
+        for curr_isi_id in range(self.n_bins):
+            for next_isi_id in range(self.n_bins - curr_isi_id):
                 double_index = next_isi_id + curr_isi_id
                 cum_slice = jisih_diag_cums[
                     double_index,
@@ -874,15 +880,15 @@ class JointISI(object):
         # An element of the first axis is defined as the sum of indices
         # for previous and subsequent ISI.
 
-        jisih_diag_cums = np.zeros((self.num_bins,
-                                    self.num_bins
+        jisih_diag_cums = np.zeros((self.n_bins,
+                                    self.n_bins
                                     + 2 * self.max_change_index))
 
         # double_index corresponds to the sum of the indices for the previous
         # and the subsequent ISI.
-        for double_index in range(self.num_bins):
+        for double_index in range(self.n_bins):
             cum_diag = np.cumsum(np.diagonal(rotated_jisih,
-                                             - self.num_bins
+                                             - self.n_bins
                                              + double_index + 1))
 
             right_padding = jisih_diag_cums.shape[1] - \
@@ -927,7 +933,7 @@ class JointISI(object):
         curr_isi_id = dithered_isi_indices[i]
         next_isi_id = dithered_isi_indices[i + 1]
         double_index = curr_isi_id + next_isi_id
-        if double_index < self.num_bins:
+        if double_index < self.n_bins:
             if self.method == 'fast':
                 cum_dist_func = self._jisih_cumulatives[
                     double_index]

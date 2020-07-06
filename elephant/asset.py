@@ -267,7 +267,7 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
 
     # Compute and return the transaction list
     return [[train_id for train_id, b in zip(ids, filled_bins)
-             if bin_id in b] for bin_id in range(binned.num_bins)]
+             if bin_id in b] for bin_id in range(binned.n_bins)]
 
 
 def _analog_signal_step_interp(signal, times):

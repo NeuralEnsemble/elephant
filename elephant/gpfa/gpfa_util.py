@@ -67,7 +67,7 @@ def get_seqs(data, bin_size, use_sqrt=True):
         else:
             binned = binned_spiketrain.to_array()
         seqs.append(
-            (binned_spiketrain.num_bins, binned))
+            (binned_spiketrain.n_bins, binned))
     seqs = np.array(seqs, dtype=[('T', np.int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width

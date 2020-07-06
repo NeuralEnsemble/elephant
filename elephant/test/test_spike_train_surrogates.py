@@ -434,7 +434,7 @@ class SurrogatesTestCase(unittest.TestCase):
         joint_isi_instance = surr.JointISI(spiketrain,
                                            method='window',
                                            dither=2 * dither,
-                                           num_bins=50)
+                                           n_bins=50)
         surrogate_trains = joint_isi_instance.dithering(
             n_surrogates=n_surrogates)
 

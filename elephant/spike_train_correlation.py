@@ -69,7 +69,7 @@ class _CrossCorrHist(object):
         bin_size = binned_spiketrain1.bin_size
 
         # see cross_correlation_histogram for the examples
-        if binned_spiketrain1.num_bins < binned_spiketrain2.num_bins:
+        if binned_spiketrain1.n_bins < binned_spiketrain2.n_bins:
             # ex. 1) lags range: [-2, 5] ms
             # ex. 2) lags range: [1, 2] ms
             left_edge = (binned_spiketrain2.t_start -
@@ -112,7 +112,7 @@ class _CrossCorrHist(object):
         # 'valid' mode requires bins correction due to the shift in t_starts
         # 'full' and 'pad' modes don't need this correction
         if cch_mode == "valid":
-            if binned_spiketrain1.num_bins > binned_spiketrain2.num_bins:
+            if binned_spiketrain1.n_bins > binned_spiketrain2.n_bins:
                 st2_bin_idx_unique += right_edge
             else:
                 st2_bin_idx_unique += left_edge
@@ -185,8 +185,8 @@ class _CrossCorrHist(object):
         np.ndarray
             Cross-correlation array with the border correction applied.
         """
-        min_num_bins = min(self.binned_spiketrain1.num_bins,
-                           self.binned_spiketrain2.num_bins)
+        min_num_bins = min(self.binned_spiketrain1.n_bins,
+                           self.binned_spiketrain2.n_bins)
         left_edge, right_edge = self.window
         valid_lags = _CrossCorrHist.get_valid_lags(self.binned_spiketrain1,
                                                    self.binned_spiketrain2)
@@ -217,8 +217,8 @@ class _CrossCorrHist(object):
         np.ndarray
             Normalized cross-correlation array in range `[-1, 1]`.
         """
-        max_num_bins = max(self.binned_spiketrain1.num_bins,
-                           self.binned_spiketrain2.num_bins)
+        max_num_bins = max(self.binned_spiketrain1.n_bins,
+                           self.binned_spiketrain2.n_bins)
         n_spikes1 = self.binned_spiketrain1.get_num_of_spikes()
         n_spikes2 = self.binned_spiketrain2.get_num_of_spikes()
         data1 = self.binned_spiketrain1._sparse_mat_u.data
@@ -494,7 +494,7 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
         Pearson correlation or covariance matrix.
     """
     spmat = binned_spiketrain._sparse_mat_u
-    n_bins = binned_spiketrain.num_bins
+    n_bins = binned_spiketrain.n_bins
 
     # Check for empty spike trains
     n_spikes_per_row = spmat.sum(axis=1)
@@ -668,8 +668,8 @@ def cross_correlation_histogram(
         raise ValueError("Bin sizes must be equal")
 
     bin_size = binned_spiketrain1.bin_size
-    left_edge_min = -binned_spiketrain1.num_bins + 1
-    right_edge_max = binned_spiketrain2.num_bins - 1
+    left_edge_min = -binned_spiketrain1.n_bins + 1
+    right_edge_max = binned_spiketrain2.n_bins - 1
 
     t_lags_shift = (binned_spiketrain2.t_start -
                     binned_spiketrain1.t_start) / bin_size

@@ -129,7 +129,7 @@ class CovarianceTestCase(unittest.TestCase):
     def test_covariance_fast_mode(self):
         np.random.seed(27)
         st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
-        binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
+        binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(sc.covariance(binned_st, fast=False),
                                   sc.covariance(binned_st, fast=True))
 
@@ -264,7 +264,7 @@ class CorrCoefTestCase(unittest.TestCase):
     def test_corrcoef_fast_mode(self):
         np.random.seed(27)
         st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
-        binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
+        binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(sc.corrcoef(binned_st, fast=False),
                                   sc.corrcoef(binned_st, fast=True))
 
@@ -390,7 +390,7 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
             # calculate CCHcoef and take value at t=tau
             CCHcoef, _ = sc.cch(binned_st1, binned_st2,
                                 cross_corr_coef=True)
-            left_edge = - binned_st1.num_bins + 1
+            left_edge = - binned_st1.n_bins + 1
             tau_bin = int(t / float(binned_st1.bin_size.magnitude))
             assert_array_almost_equal(
                 corrcoef, CCHcoef[tau_bin - left_edge].magnitude)
@@ -573,10 +573,10 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
             self.binned_st1, self.binned_st2, window='full',
             border_correction=True)
 
-        num_bins_outside_window = np.min(np.abs(
+        n_bins_outside_window = np.min(np.abs(
             np.subtract.outer(lags_full, valid_lags)), axis=1)
 
-        min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
+        min_n_bins = min(self.binned_st1.n_bins, self.binned_st2.n_bins)
 
         border_correction = (cch_full_corrected / cch_full).magnitude.flatten()
 
@@ -585,8 +585,8 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             border_correction[mask],
-            (float(min_num_bins)
-             / (min_num_bins - num_bins_outside_window))[mask])
+            (float(min_n_bins)
+             / (min_n_bins - n_bins_outside_window))[mask])
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is

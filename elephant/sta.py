@@ -299,7 +299,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
         left_edge = int((delta_t / spiketrain.bin_size).magnitude)
     else:
         raise ValueError("Incompatible binning of spike train and LFP")
-    right_edge = int(left_edge + spiketrain.num_bins)
+    right_edge = int(left_edge + spiketrain.n_bins)
 
     # duplicate spike trains
     spiketrain_array = np.zeros((1, len_signals))
