@@ -1,6 +1,6 @@
-=========================================
-`causality` - Granger causality measures
-=========================================
+==========================
+Granger causality measures
+==========================
 
 .. automodule:: elephant.causality.granger
    :members:
