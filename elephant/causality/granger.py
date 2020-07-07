@@ -26,6 +26,7 @@ Time-series Granger causality
 import numpy as np
 from collections import namedtuple
 from neo.core import AnalogSignal
+import warnings
 
 Causality = namedtuple('Causality',
                        ['directional_causality_x_y',
@@ -360,12 +361,17 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
                                                  information_criterion)
 
     sign, log_det_cov = np.linalg.slogdet(cov_xy)
+    tolerance = 1e-7
 
     if sign <= 0:
-
         raise ValueError(
             "Determinant of covariance matrix must be always positive: "
             "In this case its sign is {}".format(sign))
+
+    if log_det_cov <= tolerance:
+        warnings.warn("The value of the log determinant is at or below the "
+                      "tolerance level. Proceeding with computation.",
+                      UserWarning)
 
     directional_causality_y_x = np.log(var_x[0]) - np.log(cov_xy[0, 0])
     directional_causality_x_y = np.log(var_y[0]) - np.log(cov_xy[1, 1])
