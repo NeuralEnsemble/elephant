@@ -8,6 +8,7 @@ the call to a tracked function.
 from tokenize import (generate_tokens, NEWLINE, OP, COMMENT, RBRACE, LBRACE,
                       RPAR, LPAR, RSQB, LSQB, COLON, INDENT, TokenError)
 from six import StringIO
+import re
 
 
 EXACT_TOKEN_TYPES = {
@@ -32,16 +33,20 @@ class SourceCodeAnalyzer(object):
         Extracted source code from the frame that activated provenance.
     start_line : int
         Line from the source file where the code starts.
+    source_name : str
+        Name of the frame to which the source code corresponds.
     """
 
-    def __init__(self, source_code, start_line):
+    def __init__(self, source_code, start_line, source_name):
         self.source_code = source_code
         self.start_line = start_line
+        self._offset = 0 if source_name == '<module>' else 1
 
-    def _check_line(self, line_number):
+    def _check_line(self, line_number, cur_line):
         # Verifies if a given line is part of a multiline statement
         try:
-            if line_number < (self.start_line + 1):
+            cur_is_multiline = cur_line is None
+            if line_number < self.start_line:
                 return None
             line = self._get_code_line(line_number)
             string_io = StringIO(line)
@@ -76,11 +81,12 @@ class SourceCodeAnalyzer(object):
 
             # If number of any L brackets are greater than R brackets, then
             # this is part of a multiline.
-            for right_bracket, left_bracket in zip([RSQB, RBRACE, RPAR],
-                                                   [LSQB, LBRACE, LPAR]):
-                if operator_count[left_bracket] < \
-                        operator_count[right_bracket]:
-                    return line
+            if cur_is_multiline:
+                for right_bracket, left_bracket in zip([RSQB, RBRACE, RPAR],
+                                                       [LSQB, LBRACE, LPAR]):
+                    if operator_count[left_bracket] < \
+                            operator_count[right_bracket]:
+                        return line
 
             # Check for ending operators in multilines
             if last_token[0] == OP:
@@ -97,7 +103,7 @@ class SourceCodeAnalyzer(object):
             return line
 
     def _get_code_line(self, line_number):
-        return self.source_code[line_number - self.start_line]
+        return self.source_code[line_number - self.start_line + self._offset]
 
     def extract_multiline_statement(self, line_number):
         """
@@ -118,7 +124,7 @@ class SourceCodeAnalyzer(object):
         """
 
         statement = []
-        cur_line = self._check_line(line_number)
+        cur_line = self._check_line(line_number, False)
         if cur_line is not None:
             # We know this is already a multiline statement. Add the line
             # above and start checking the previous lines
@@ -128,10 +134,11 @@ class SourceCodeAnalyzer(object):
             cur_line = self._get_code_line(line_number)
             previous_line_number = line_number - 1
 
-        previous_line = self._check_line(previous_line_number)
+        previous_line = self._check_line(previous_line_number, cur_line)
         while previous_line is not None:
             statement.append(previous_line)
             previous_line_number -= 1
-            previous_line = self._check_line(previous_line_number)
+            previous_line = self._check_line(previous_line_number,
+                                             previous_line)
 
         return "".join(statement[::-1] + [cur_line]).strip()

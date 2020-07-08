@@ -114,7 +114,8 @@ class Provenance(object):
     @classmethod
     def _create_code_analyzer(cls):
         cls.code_analyzer = SourceCodeAnalyzer(cls.source_code,
-                                               cls.source_lineno)
+                                               cls.source_lineno,
+                                               cls.source_name)
 
     def _insert_static_information(self, tree, inputs, output):
         # Use a NodeVisitor to find the Call node that corresponds to the
