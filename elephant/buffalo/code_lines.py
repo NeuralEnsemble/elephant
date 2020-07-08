@@ -1,3 +1,10 @@
+"""
+This module implements a class to store and fetch information from the source
+code of the frame that activated provenance tracking.
+The main purpose is to retrieve the full multiline statements that generated
+the call to a tracked function.
+"""
+
 from tokenize import (generate_tokens, NEWLINE, OP, COMMENT, RBRACE, LBRACE,
                       RPAR, LPAR, RSQB, LSQB, COLON, INDENT, TokenError)
 from six import StringIO
