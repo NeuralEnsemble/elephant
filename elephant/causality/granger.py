@@ -161,20 +161,21 @@ def _yule_walker_matrix(data, dimension, order):
     yule_walker_matrix : np.ndarray
         matrix in Yule-Walker equation
 
+        Yule-Walker Matrix M is a block-structured symmetric matrix with
+        dimension (d \cdot p)\times(d \cdot p)
 
-    Yule-Walker Matrix M is a block-structured symmetric matrix with
-    dimension (d \cdot p)\times(d \cdot p)
+        where
+        d: dimension of signal
+        p: order of autoregressive model
+        C(\tau): time-shifted covariances \tau -> d \times d matrix
 
-    where
-    d: dimension of signal
-    p: order of autoregressive model
-    C(\tau): time-shifted covariances \tau -> d \times d matrix
+        The blocks of size (d \times d) are set as follows:
 
-    The blocks of size (d \times d) are set as follows:
+        M_ij = C(j-i)^T
 
-    M_ij = C(j-i)^T
-
-    where 1 \leq i \leq j \leq p. The other entries are determined by symmetry.
+        where 1 \leq i \leq j \leq p. The other entries are determined by
+        symmetry.
+    lag_covariances : np.ndarray
 
     """
 
@@ -199,22 +200,7 @@ def _yule_walker_matrix(data, dimension, order):
 
 def _vector_arm(signals, dimension, order):
     r"""
-    Determine coefficients of autoregressive model from time series data
-
-    Parameters
-    ----------
-    signals : np.ndarray
-        time series data
-    order : int
-        order of the autoregressive model
-
-    Returns
-    -------
-    coeffs: np.ndarray
-        coefficients of the autoregressive model
-        ry
-    covar_mat : np.ndarray
-        covariance matrix of
+    Determine coefficients of autoregressive model from time series data.
 
     Coefficients of autoregressive model calculated via solving the linear
     equation
@@ -231,6 +217,21 @@ def _vector_arm(signals, dimension, order):
     C_0 = C[0] - \sum_{i=0}^{p-1} A[i]C[i+1]
 
     where p is the orde of the autoregressive model.
+
+    Parameters
+    ----------
+    signals : np.ndarray
+        time series data
+    order : int
+        order of the autoregressive model
+
+    Returns
+    -------
+    coeffs: np.ndarray
+        coefficients of the autoregressive model
+        ry
+    covar_mat : np.ndarray
+        covariance matrix of
 
     """
 
@@ -350,12 +351,11 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
             log( {C|X \cdot C|Y} / det{C|XY} )
 
     """
+    signals = np.asarray(signals)
 
     if isinstance(signals, AnalogSignal):
-        signals = np.asarray(signals)
-        signals = np.rollaxis(signals, 0, len(signals.shape))
-    else:
-        signals = np.asarray(signals)
+        # transpose (N,2) -> (2, N)
+        signals = signals.T
 
     signal_x = np.asarray([signals[0, :]])
     signal_y = np.asarray([signals[1, :]])
@@ -389,11 +389,9 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
 
     total_interdependence = np.log(var_x[0]) + np.log(var_y[0]) - log_det_cov
 
-    '''
-    Round GC according to following scheme:
-        Note that standard error scales as 1/sqrt(sample_size)
-        Calculate  significant figures according to standard error
-    '''
+    # Round GC according to following scheme:
+    #     Note that standard error scales as 1/sqrt(sample_size)
+    #     Calculate  significant figures according to standard error
     length = np.size(signal_x)
     asymptotic_std_error = 1/np.sqrt(length)
     est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
