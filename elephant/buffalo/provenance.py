@@ -10,14 +10,12 @@ from functools import wraps
 import inspect
 import ast
 from collections import namedtuple
-from tokenize import (generate_tokens, NEWLINE, OP, COMMENT, RBRACE,
-                      RPAR, RSQB, COLON, INDENT, TokenError)
-from six import StringIO
 
 from elephant.buffalo.object_hash import BuffaloObjectHash
 from elephant.buffalo.prov_document import BuffaloProvDocument
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import CallAST
+from elephant.buffalo.code_lines import SourceCodeAnalyzer
 
 from os.path import splitext
 
@@ -44,14 +42,6 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
 FunctionDefinition = namedtuple('FunctionDefinition', ('name',
                                                        'module',
                                                        'version'))
-
-
-EXACT_TOKEN_TYPES = {
-    ')': RPAR,
-    ']': RSQB,
-    ':': COLON,
-    '}': RBRACE,
-}
 
 
 class Provenance(object):
@@ -87,8 +77,8 @@ class Provenance(object):
           every value;
         * 'params': `dict` with the positional/keyword argument names as keys,
           and their respective values passed to the function;
-        * 'output': `BuffaloObjectHash` object associated with the returned
-          value;
+        * 'output': list of the `BuffaloObjectHash` objects associated with
+          the returned values;
         * 'arg_map': names of the positional arguments;
         * 'kwarg_map': names of the keyword arguments;
         * 'call_ast': `ast.AST` object containing the Abstract Syntax Tree
@@ -115,6 +105,7 @@ class Provenance(object):
     source_lineno = None
     source_file = None
     source_name = None
+    code_analyzer = None
 
     def __init__(self, inputs):
         if not isinstance(inputs, list):
@@ -122,58 +113,9 @@ class Provenance(object):
         self.inputs = inputs
 
     @classmethod
-    def _get_code_line(cls, line_number):
-        return cls.source_code[line_number - cls.source_lineno + 1]
-
-    @classmethod
-    def _extract_multiline_statement(cls, line_number):
-        # When retrieving the function call statement, fetch all code lines
-        # in case it is a multiline statement
-
-        def _check_previous_statement(previous_line, statement):
-
-            if previous_line < (cls.source_lineno + 1):  # Out of range
-                return None
-
-            # Check if line above terminates in a multiline character, such
-            # as \ + ( [ { , "
-            # Ignore any comments and indentations
-            line = cls._get_code_line(previous_line)
-            string_io = StringIO(line)
-
-            try:
-                # If TokenError is raised, this is part of a multiline
-                # statement. If no error is raised, then check if the line
-                # is a different statement, and stops the iteration if True
-                tokens = generate_tokens(string_io.readline)
-                last_token = None
-                for token in tokens:
-                    if token[0] == NEWLINE:
-                        break
-                    if token[0] == COMMENT or token[0] == INDENT:
-                        continue
-                    last_token = token
-                if last_token[0] == OP:
-                    exact_type = last_token.exact_type \
-                        if hasattr(last_token, 'exact_type') \
-                        else EXACT_TOKEN_TYPES[last_token[1]]
-                    if exact_type in [RBRACE, RPAR, RSQB, COLON]:
-                        return None
-                    statement.append(line)
-                    return previous_line - 1
-                return None
-            except TokenError:
-                statement.append(line)
-                return previous_line - 1
-
-        statement = []
-        cur_line = cls._get_code_line(line_number)
-        previous_line = _check_previous_statement(line_number - 1, statement)
-
-        while previous_line is not None:
-            previous_line = _check_previous_statement(previous_line, statement)
-
-        return "".join(statement[::-1] + [cur_line]).strip()
+    def _create_code_analyzer(cls):
+        cls.code_analyzer = SourceCodeAnalyzer(cls.source_code,
+                                               cls.source_lineno)
 
     def _insert_static_information(self, tree, inputs, output):
         # Use a NodeVisitor to find the Call node that corresponds to the
@@ -194,11 +136,20 @@ class Provenance(object):
             # this comes from the calling frame. Otherwise, the line number
             # will be None, and therefore the provenance tracking loop will
             # be skipped.
+            # For list comprehensions, we need to check the frame above, as
+            # this creates a frame named <listcomp>
             lineno = None
             if Provenance.active:
                 try:
                     frame = inspect.currentframe().f_back
                     frame_info = inspect.getframeinfo(frame)
+                    function_name = frame_info.function
+                    if function_name == '<listcomp>':
+                        while function_name == '<listcomp>':
+                            frame = frame.f_back
+                            frame_info = inspect.getframeinfo(frame)
+                            function_name = frame_info.function
+
                     if (frame_info.filename == self.source_file and
                             frame_info.function == self.source_name):
                         lineno = frame.f_lineno
@@ -215,7 +166,8 @@ class Provenance(object):
                 # function. We need to check the source code in case the
                 # call spans multiple lines. In this case, we fetch the
                 # full statement.
-                source_line = self._extract_multiline_statement(lineno)
+                source_line = self.code_analyzer.extract_multiline_statement(
+                    lineno)
                 ast_tree = ast.parse(source_line)
 
                 # 2. Extract function name and information
@@ -263,17 +215,21 @@ class Provenance(object):
                         parameters[key] = value
 
                 # 5. Create hashable `BuffaloObjectHash` for the output
-                # TODO: tuples are hashed as tuple. Should hash the separate
                 # objects to follow individual returns
-                output = self.add(function_output)
+                outputs = {}
+                if isinstance(function_output, tuple):
+                    for index, item in enumerate(function_output):
+                        outputs[index] = self.add(item)
+                else:
+                    outputs[0] = self.add(function_output)
 
                 # 6. Analyze AST and fetch static relationships in the
                 # input/output and other variables/objects in the script
-                self._insert_static_information(ast_tree, inputs, output)
+                self._insert_static_information(ast_tree, inputs, outputs)
 
                 # 7. Create tuple with the analysis step information
 
-                step = AnalysisStep(function_name, inputs, parameters, output,
+                step = AnalysisStep(function_name, inputs, parameters, outputs,
                                     input_args_names, input_kwargs_names,
                                     ast_tree, source_line)
 
@@ -289,11 +245,19 @@ class Provenance(object):
     @classmethod
     def set_calling_frame(cls, frame):
         cls.calling_frame = frame
-        cls.source_lineno = inspect.getlineno(frame)
+
         cls.source_file = inspect.getfile(frame)
         cls.source_name = inspect.getframeinfo(frame).function
+
+        if cls.source_name == '<module>':
+            cls.source_lineno = 1
+        else:
+            cls.source_lineno = inspect.getlineno(frame)
+
         cls.source_code = inspect.getsourcelines(frame)[0]
         cls.frame_ast = ast.parse("".join(cls.source_code).strip())
+
+        cls._create_code_analyzer()
 
     @classmethod
     def get_prov_graph(cls, **kwargs):
