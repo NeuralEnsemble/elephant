@@ -12,7 +12,6 @@ import ast
 from collections import namedtuple
 
 from elephant.buffalo.object_hash import BuffaloObjectHash
-from elephant.buffalo.prov_document import BuffaloProvDocument
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import CallAST
 from elephant.buffalo.code_lines import SourceCodeAnalyzer
@@ -264,27 +263,8 @@ class Provenance(object):
         """
         Returns the W3C PROV graph representation of the captured provenance
         information.
-
-        Parameters
-        ----------
-        kwargs : dict
-            Keyword arguments forwarded to the
-            :func:`BuffaloProvDocument.get_dot_graph` function.
-
-        Returns
-        -------
-        pydot.Dot
-            Dot notation graph representing provenance information in W3C PROV
-            standard.
-
-        See Also
-        --------
-        elephant.buffalo.prov.BuffaloProvDocument
-
         """
-        prov_document = BuffaloProvDocument(history=cls.history,
-                                            objects=cls.objects)
-        return prov_document.get_dot_graph(**kwargs)
+        raise NotImplementedError
 
     @classmethod
     def save_graph(cls, filename, show=False):
@@ -400,20 +380,3 @@ def save_graph(filename, show=False):
         Default: False.
     """
     Provenance.save_graph(filename, show=show)
-
-
-def save_prov_graph(filename, **kwargs):
-    """
-    Saves a PNG file with the provenance track described using the W3C PROV
-    model.
-
-    Parameters
-    ----------
-    filename : str
-        Destination of the PROV graph.
-    kwargs : dict
-        Keyword arguments forwarded to the
-        :func:`BuffaloProvDocument.get_dot_graph` function.
-    """
-    dot = Provenance.get_prov_graph(**kwargs)
-    dot.write_png(filename)

@@ -167,8 +167,6 @@ def main(session_id):
     provenance.print_history()
 
     provenance.save_graph("isi_histogram.html")
-    # provenance.save_prov_graph("prov_graph_full.png", show_nary=False,
-    #                             show_element_attributes=False)
 
 
 if __name__ == "__main__":

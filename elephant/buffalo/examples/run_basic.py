@@ -61,8 +61,6 @@ def main(session_id):
     print("\n\n")
     provenance.print_history()
     provenance.save_graph("basic.html", show=True)
-    # provenance.save_prov_graph("prov_graph.png",
-    #                            show_nary=False, show_element_attributes=False)
 
 
 if __name__ == "__main__":
