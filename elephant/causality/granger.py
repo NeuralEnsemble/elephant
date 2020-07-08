@@ -23,11 +23,16 @@ Time-series Granger causality
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import numpy as np
-from collections import namedtuple
-from neo.core import AnalogSignal
-import warnings
+from __future__ import division, print_function, unicode_literals
 
+import warnings
+from collections import namedtuple
+
+import numpy as np
+from neo.core import AnalogSignal
+
+
+# the return type of pairwise_granger() function
 Causality = namedtuple('Causality',
                        ['directional_causality_x_y',
                         'directional_causality_y_x',
@@ -320,27 +325,29 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
 
     Returns
     -------
-    causality : namedTuple, where:
-    causality.directional_causality_x_y : float
-    causality.directional_causality_y_x : float
-    causality.instantaneous_causality : float
-    causality.total_interdependence : float
+    Causality
+        A `namedtuple` with the following attributes:
+            directional_causality_x_y : float
 
-    Denote covariance matrix of signals
-        X by C|X  - a real number
-        Y by C|Y - a real number
-        (X,Y) by C|XY - a (2 \times 2) matrix
+            directional_causality_y_x : float
 
-    directional causality X -> Y given by
-        log(C|X / C|XY_00)
-    directional causality Y -> X given by
-        log(C|Y / C|XY_11)
-    instantaneous causality of X,Y given by
-        log(C|XY_00 / C|XY_11)
-    total interdependence of X,Y given by
-        log( {C|X \cdot C|Y} / det{C|XY} )
+            instantaneous_causality : float
 
+            total_interdependence : float
 
+        Denote covariance matrix of signals
+            X by C|X  - a real number
+            Y by C|Y - a real number
+            (X,Y) by C|XY - a (2 \times 2) matrix
+
+        directional causality X -> Y given by
+            log(C|X / C|XY_00)
+        directional causality Y -> X given by
+            log(C|Y / C|XY_11)
+        instantaneous causality of X,Y given by
+            log(C|XY_00 / C|XY_11)
+        total interdependence of X,Y given by
+            log( {C|X \cdot C|Y} / det{C|XY} )
 
     """
 

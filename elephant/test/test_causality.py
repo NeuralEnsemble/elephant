@@ -7,47 +7,49 @@ Unit tests for the causality module.
 """
 from __future__ import division, print_function
 
-import unittest
-import elephant.causality.granger
-
 import sys
+import unittest
+
 import numpy as np
-from numpy.testing.utils import assert_array_almost_equal
-from neo.core import AnalogSignal
 import quantities as pq
+from neo.core import AnalogSignal
+from numpy.testing import assert_array_almost_equal
+
+import elephant.causality.granger
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ground_truth = cls._generate_ground_truth()
+
+    @staticmethod
+    def _generate_ground_truth():
+        np.random.seed(1)
+        length_2d = 30000
+        signal = np.zeros((2, length_2d))
+
+        order = 2
+        weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+
+        weights = np.stack((weights_1, weights_2))
+
+        noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+
+        for i in range(length_2d):
+            for lag in range(order):
+                signal[:, i] += np.dot(weights[lag],
+                                       signal[:, i - lag - 1])
+            rnd_var = np.random.multivariate_normal([0, 0],
+                                                    noise_covariance)
+            signal[0, i] += rnd_var[0]
+            signal[1, i] += rnd_var[1]
+
+        return signal
+
     def setUp(self):
-        """
-        The ground truth dataset was generated using the following script:
-        >>>np.random.seed(1)
-        >>>length_2d = 30000
-        >>>signal = np.zeros((2, length_2d))
-
-        >>>order = 2
-        >>>weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
-        >>>weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
-        >>>weights = np.stack((weights_1, weights_2))
-
-        >>>noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
-
-        >>>for i in range(length_2d):
-        >>>    for lag in range(order):
-        >>>        signal[:, i] += np.dot(weights[lag],
-        >>>                               signal[:, i - lag - 1])
-        >>>    rnd_var = np.random.multivariate_normal([0, 0],
-        >>>    noise_covariance)
-        >>>    signal[0, i] += rnd_var[0]
-        >>>    signal[1, i] += rnd_var[1]
-
-        >>>np.save('/home/jurkus/granger_timeseries_groundtruth_data', signal)
-        """
-        # Load ground truth
-        self.ground_truth = \
-            np.load('/home/jurkus/granger_timeseries_groundtruth_data.npy')
-
         # Generate a smaller random dataset for tests other than ground truth
         length_2d = 1000
         self.signal = np.zeros((2, length_2d))
@@ -103,7 +105,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         identity_matrix = np.eye(2, 2)
         assert_array_almost_equal(elephant.causality.granger.bic(
             identity_matrix, order=2, dimension=2, length=2
-        ), 5.545177444479562, decimal=15)
+        ), 5.54517744, decimal=8)
 
     @unittest.skipUnless(sys.version_info >= (2, 7),
                          "requires Python 2.7 or above")
@@ -119,7 +121,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
     @unittest.skipUnless(sys.version_info >= (2, 7),
                          "requires Python 2.7 or above")
-    def test_pairwise_granger_error(self):
+    def test_pairwise_granger_error_null_signals(self):
         null_signals = np.array([[0, 0], [0, 0]])
         with self.assertRaises(ValueError):
             elephant.causality.granger.pairwise_granger(
@@ -141,15 +143,15 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         """
         The directional causalities should never be negative.
         """
-        self.assertFalse(self.causality.directional_causality_x_y < 0)
-        self.assertFalse(self.causality.directional_causality_y_x < 0)
+        self.assertTrue(self.causality.directional_causality_x_y >= 0)
+        self.assertTrue(self.causality.directional_causality_y_x >= 0)
 
     def test_result_instantaneous_causality_not_negative(self):
         """
         The time-series granger instantaneous causality should never assume
         negative values.
         """
-        self.assertFalse(self.causality.instantaneous_causality < 0)
+        self.assertTrue(self.causality.instantaneous_causality >= 0)
 
     def test_total_channel_interdependence_equals_sum_of_other_three(self):
         """
@@ -203,9 +205,6 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
         assert_array_almost_equal(coefficients, ground_truth_coefficients,
                                   decimal=4)
-
-    def tearDown(self) -> None:
-        pass
 
 
 if __name__ == '__main__':
