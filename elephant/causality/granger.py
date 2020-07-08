@@ -18,6 +18,14 @@ Time-series Granger causality
 
     pairwise_granger
 
+Information Criterion
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: toctree/causality/
+
+    bic
+    aic
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -30,6 +38,14 @@ from collections import namedtuple
 
 import numpy as np
 from neo.core import AnalogSignal
+
+
+__all__ = (
+    "Causality",
+    "bic",
+    "aic",
+    "pairwise_granger"
+)
 
 
 # the return type of pairwise_granger() function
