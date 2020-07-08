@@ -367,14 +367,17 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
             log( {C|X \cdot C|Y} / det{C|XY} )
 
     """
-    signals = np.asarray(signals)
-
     if isinstance(signals, AnalogSignal):
         # transpose (N,2) -> (2, N)
-        signals = signals.T
+        signals = signals.magnitude.T
+    else:
+        signals = np.asarray(signals)
 
-    signal_x = np.asarray([signals[0, :]])
-    signal_y = np.asarray([signals[1, :]])
+    if not (signals.ndim == 2 and signals.shape[0] == 2):
+        raise ValueError("Required 2 x N input 'signals' array.")
+
+    # signal_x and signal_y are (1, N) arrays
+    signal_x, signal_y = np.expand_dims(signals, axis=1)
 
     coeffs_x, var_x, p_1 = _optimal_vector_arm(signal_x, 1, max_order,
                                                information_criterion)

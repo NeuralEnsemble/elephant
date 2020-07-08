@@ -107,25 +107,27 @@ class PairwiseGrangerTestCase(unittest.TestCase):
             identity_matrix, order=2, dimension=2, length=2
         ), 5.54517744, decimal=8)
 
-    @unittest.skipUnless(sys.version_info >= (2, 7),
-                         "requires Python 2.7 or above")
     def test_lag_covariances_error(self):
         """
         Check that if a signal length is shorter than the set max_lag, a
         ValueError is raised.
         """
         short_signals = np.array([[1, 2], [3, 4]])
-        with self.assertRaises(ValueError):
-            elephant.causality.granger._lag_covariances(
-                short_signals, dimension=2, max_lag=3)
+        self.assertRaises(ValueError,
+                          elephant.causality.granger._lag_covariances,
+                          short_signals, dimension=2, max_lag=3)
 
-    @unittest.skipUnless(sys.version_info >= (2, 7),
-                         "requires Python 2.7 or above")
     def test_pairwise_granger_error_null_signals(self):
         null_signals = np.array([[0, 0], [0, 0]])
-        with self.assertRaises(ValueError):
-            elephant.causality.granger.pairwise_granger(
-                null_signals, max_order=2)
+        self.assertRaises(ValueError,
+                          elephant.causality.granger.pairwise_granger,
+                          null_signals, max_order=2)
+
+    def test_pairwise_granger_error_1d_array(self):
+        array_1d = np.ones(10, dtype=np.float32)
+        self.assertRaises(ValueError,
+                          elephant.causality.granger.pairwise_granger,
+                          array_1d, max_order=2)
 
     @unittest.skipUnless(sys.version_info >= (3, 1),
                          "requires Python 3.1 or above")
