@@ -74,7 +74,7 @@ def estimate_csd(lfp, coordinates=None, method=None,
         coordinate or sent externally as a func argument (See coords)
     coordinates : [Optional] corresponding spatial coordinates of the electrodes
         Defaults to None
-        Otherwise looks for RecordingChannels coordinate
+        Otherwise looks for ChannelIndex coordinate
     method : string
         Pick a method corresonding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
@@ -224,10 +224,10 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         Positions of the x coordinates of the electrodes
     y_positions : np.ndarray, optional
         Positions of the y coordinates of the electrodes
-        Defaults ot None, use in 2D or 3D cases only
+        Defaults to None, use in 2D or 3D cases only
     z_positions : np.ndarray, optional
         Positions of the z coordinates of the electrodes
-        Defaults ot None, use in 3D case only
+        Defaults to None, use in 3D case only
     x_limits : list, optional
         A list of [start, end].
         The starting spatial coordinate and the ending for integration
