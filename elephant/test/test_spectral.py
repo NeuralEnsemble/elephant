@@ -152,25 +152,25 @@ class WelchCohereTestCase(unittest.TestCase):
 
         # check for invalid parameter values
         # - length of segments
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            len_seg=0)
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            len_seg=x.shape[0] * 2)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          len_seg=0)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          len_seg=x.shape[0] * 2)
         # - number of segments
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            num_seg=0)
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            num_seg=x.shape[0] * 2)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          num_seg=0)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          num_seg=x.shape[0] * 2)
         # - frequency resolution
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            freq_res=-1)
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            freq_res=x.sampling_rate/(x.shape[0]+1))
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          freq_res=-1)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          freq_res=x.sampling_rate/(x.shape[0]+1))
         # - overlap
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            overlap=-1.0)
-        self.assertRaises(ValueError, elephant.spectral.welch_cohere, x, y,
-            overlap=1.1)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          overlap=-1.0)
+        self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
+                          overlap=1.1)
 
     def test_welch_cohere_behavior(self):
         # generate data by adding white noise and a sinusoid
@@ -191,26 +191,26 @@ class WelchCohereTestCase(unittest.TestCase):
             sampling_period=sampling_period*pq.s)
 
         # consistency between different ways of specifying segment length
-        freqs1, coherency1, phase_lag1 = elephant.spectral.welch_cohere(x, y,
-                                                                        len_segment=data_length // 5, overlap=0)
-        freqs2, coherency2, phase_lag2 = elephant.spectral.welch_cohere(x, y,
-                                                                        n_segments=5, overlap=0)
+        freqs1, coherency1, phase_lag1 = elephant.spectral.welch_coherence(x, y,
+                                                                           len_segment=data_length // 5, overlap=0)
+        freqs2, coherency2, phase_lag2 = elephant.spectral.welch_coherence(x, y,
+                                                                           n_segments=5, overlap=0)
         self.assertTrue((coherency1==coherency2).all() and
                         (phase_lag1==phase_lag2).all() and
                         (freqs1==freqs2).all())
 
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
-        freqs, coherency, phase_lag = elephant.spectral.welch_cohere(x, y,
-                                                                     freq_resolution=freq_res)
+        freqs, coherency, phase_lag = elephant.spectral.welch_coherence(x, y,
+                                                                        freq_resolution=freq_res)
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertAlmostEqual(freqs[coherency.argmax()], signal_freq,
             places=2)
         self.assertAlmostEqual(phase_lag[coherency.argmax()], -np.pi/2,
             places=2)
         freqs_np, coherency_np, phase_lag_np =\
-            elephant.spectral.welch_cohere(x.magnitude.flatten(), y.magnitude.flatten(),
-                                           fs=1/sampling_period, freq_resolution=freq_res)
+            elephant.spectral.welch_coherence(x.magnitude.flatten(), y.magnitude.flatten(),
+                                              fs=1/sampling_period, freq_resolution=freq_res)
         assert_array_equal(freqs.simplified.magnitude, freqs_np)
         assert_array_equal(coherency[:, 0], coherency_np)
         assert_array_equal(phase_lag[:, 0], phase_lag_np)
@@ -221,9 +221,9 @@ class WelchCohereTestCase(unittest.TestCase):
         x_multidim = np.random.normal(size=(num_channel, data_length))
         y_multidim = np.random.normal(size=(num_channel, data_length))
         freqs, coherency, phase_lag =\
-            elephant.spectral.welch_cohere(x_multidim, y_multidim)
+            elephant.spectral.welch_coherence(x_multidim, y_multidim)
         freqs_T, coherency_T, phase_lag_T =\
-            elephant.spectral.welch_cohere(x_multidim.T, y_multidim.T, axis=0)
+            elephant.spectral.welch_coherence(x_multidim.T, y_multidim.T, axis=0)
         assert_array_equal(freqs, freqs_T)
         assert_array_equal(coherency, coherency_T.T)
         assert_array_equal(phase_lag, phase_lag_T.T)
@@ -241,21 +241,21 @@ class WelchCohereTestCase(unittest.TestCase):
         # outputs from AnalogSignal input are of Quantity type
         # (standard usage)
         freqs_neo, coherency_neo, phase_lag_neo =\
-            elephant.spectral.welch_cohere(x, y)
+            elephant.spectral.welch_coherence(x, y)
         self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
         self.assertTrue(isinstance(phase_lag_neo, pq.quantity.Quantity))
 
         # outputs from Quantity array input are of Quantity type
         freqs_pq, coherency_pq, phase_lag_pq =\
-            elephant.spectral.welch_cohere(x.magnitude.flatten()*x.units,
-                y.magnitude.flatten()*y.units, fs=1/sampling_period)
+            elephant.spectral.welch_coherence(x.magnitude.flatten() * x.units,
+                                              y.magnitude.flatten() * y.units, fs=1/sampling_period)
         self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
         self.assertTrue(isinstance(phase_lag_pq, pq.quantity.Quantity))
 
         # outputs from Numpy ndarray input are NOT of Quantity type
         freqs_np, coherency_np, phase_lag_np =\
-            elephant.spectral.welch_cohere(x.magnitude.flatten(), y.magnitude.flatten(),
-                fs=1/sampling_period)
+            elephant.spectral.welch_coherence(x.magnitude.flatten(), y.magnitude.flatten(),
+                                              fs=1/sampling_period)
         self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(phase_lag_np, pq.quantity.Quantity))
 
@@ -288,11 +288,11 @@ class WelchCohereTestCase(unittest.TestCase):
 
         # check if the results from different input types are identical
         freqs_np, coherency_np, phase_lag_np =\
-            elephant.spectral.welch_cohere(x_np, y_np, fs=1/sampling_period)
+            elephant.spectral.welch_coherence(x_np, y_np, fs=1 / sampling_period)
         freqs_neo, coherency_neo, phase_lag_neo =\
-            elephant.spectral.welch_cohere(x_neo, y_neo)
+            elephant.spectral.welch_coherence(x_neo, y_neo)
         freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim =\
-            elephant.spectral.welch_cohere(x_neo_1dim, y_neo_1dim)
+            elephant.spectral.welch_coherence(x_neo_1dim, y_neo_1dim)
         self.assertTrue(np.all(freqs_np==freqs_neo))
         self.assertTrue(np.all(coherency_np.T==coherency_neo))
         self.assertTrue(np.all(phase_lag_np.T==phase_lag_neo))

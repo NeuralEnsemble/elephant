@@ -10,6 +10,7 @@ spectrum).
 from __future__ import division, print_function, unicode_literals
 
 import neo
+import warnings
 import numpy as np
 import quantities as pq
 import scipy.signal
@@ -237,9 +238,9 @@ def welch_psd(signal, n_segments=8, len_segment=None, freq_resolution=None,
 
 @deprecated_alias(num_seg='n_segments', len_seg='len_segment',
                   freq_res='freq_resolution')
-def welch_cohere(x, y, n_segments=8, len_segment=None, freq_resolution=None,
-                 overlap=0.5, fs=1.0, window='hanning', nfft=None,
-                 detrend='constant', scaling='density', axis=-1):
+def welch_coherence(x, y, n_segments=8, len_segment=None, freq_resolution=None,
+                    overlap=0.5, fs=1.0, window='hanning', nfft=None,
+                    detrend='constant', scaling='density', axis=-1):
     r"""
     Estimates coherence between a given pair of analog signals.
 
@@ -443,3 +444,8 @@ def welch_cohere(x, y, n_segments=8, len_segment=None, freq_resolution=None,
         phase_lag = np.rollaxis(phase_lag, -1)
 
     return freqs, coherency, phase_lag
+
+
+def welch_cohere(*args, **kwargs):
+    warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
+                  DeprecationWarning)
