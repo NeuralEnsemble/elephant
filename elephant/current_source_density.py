@@ -63,7 +63,7 @@ py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 def estimate_csd(lfp, coordinates=None, method=None,
                  process_estimate=True, **kwargs):
     """
-    Fuction call to compute the current source density (CSD) from extracellular
+    Function call to compute the current source density (CSD) from extracellular
     potential recordings(local-field potentials - LFP) using laminar electrodes
     or multi-contact electrodes with 2D or 3D geometries.
 
@@ -76,7 +76,7 @@ def estimate_csd(lfp, coordinates=None, method=None,
         Defaults to None
         Otherwise looks for ChannelIndex coordinate
     method : string
-        Pick a method corresonding to the setup, in this implementation
+        Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
          or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
         For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
