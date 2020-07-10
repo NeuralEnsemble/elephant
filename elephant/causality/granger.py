@@ -345,12 +345,19 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
     Causality
         A `namedtuple` with the following attributes:
             directional_causality_x_y : float
+                The Granger causality value for X influence onto Y.
 
             directional_causality_y_x : float
+                The Granger causality value for Y influence onto X.
 
             instantaneous_causality : float
+                The remaining channel interdependence not accounted for by
+                the directional causalities (e.g. shared input to X and Y).
 
             total_interdependence : float
+                The sum of the former three metrics. It measures the dependence
+                of X and Y. If the total interdependence is positive, X and Y
+                are not independent.
 
         Denote covariance matrix of signals
             X by C|X  - a real number
