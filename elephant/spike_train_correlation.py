@@ -924,12 +924,14 @@ def spike_train_timescale(binned_st, tau_max):
     binned_st : elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike train to be evaluated.
     tau_max : pq.Quantity
-        Maximal integration time of the auto-correlation function.
+        Maximal integration time of the auto-correlation function. It needs to
+        be a multiple of the binsize of `binned_st`.
 
     Returns
     -------
     timescale : pq.Quantity
-        The auto-correlation time of the binned spiketrain.
+        The auto-correlation time of the binned spiketrain. If `binned_st` has
+        less than 2 spikes `np.nan` is returned.
 
     Notes
     -----
@@ -949,15 +951,20 @@ def spike_train_timescale(binned_st, tau_max):
         Slow fluctuations in recurrent networks of spiking neurons.
         Physical Review E, 92(4), 040901.
     """
+    if binned_st.get_num_of_spikes() < 2:
+        warnings.warn("Spike train contains less than 2 spikes! "
+                      "np.nan will be returned.")
+        return np.nan
+
     binsize = binned_st.binsize
     if not (tau_max / binsize).simplified.units == pq.dimensionless:
-        raise AssertionError("tau_max needs units of time")
+        raise ValueError("tau_max needs units of time")
 
     # safe casting of tau_max/binsize to integer
     tau_max_bins = int(np.round((tau_max / binsize).simplified.magnitude))
     if not np.isclose(tau_max.simplified.magnitude,
                       (tau_max_bins * binsize).simplified.magnitude):
-        raise AssertionError("tau_max has to be a multiple of the binsize")
+        raise ValueError("tau_max has to be a multiple of the binsize")
 
     cch_window = [-tau_max_bins, tau_max_bins]
     corrfct, bin_ids = cross_correlation_histogram(
