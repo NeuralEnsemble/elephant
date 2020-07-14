@@ -43,9 +43,13 @@ import quantities as pq
 from scipy.integrate import simps
 
 import elephant.current_source_density_src.utility_functions as utils
-from elephant.current_source_density_src import KCSD
-from elephant.current_source_density_src import icsd
+from elephant.current_source_density_src import KCSD, icsd
 from elephant.utils import deprecated_alias
+
+__all__ = [
+    "estimate_csd",
+    "generate_lfp"
+]
 
 utils.patch_quantities()
 

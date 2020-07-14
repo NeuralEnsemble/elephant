@@ -25,6 +25,11 @@ from neo.core import SpikeTrain
 import elephant.kernels as kernels
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "victor_purpura_distance",
+    "van_rossum_distance"
+]
+
 
 def _create_matrix_from_indexed_function(
         shape, func, symmetric_2d=False, **func_params):

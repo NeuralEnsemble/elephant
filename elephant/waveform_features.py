@@ -12,6 +12,11 @@ import warnings
 
 import numpy as np
 
+__all__ = [
+    "waveform_width",
+    "waveform_snr"
+]
+
 
 def waveform_width(waveform, cutoff=0.75):
     """
