@@ -641,7 +641,7 @@ class TimeHistogramTestCase(unittest.TestCase):
 
 
 class ComplexityPdfTestCase(unittest.TestCase):
-    def test_complexity_pdf_old(self):
+    def test_complexity_pdf_deprecated(self):
         spiketrain_a = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
         spiketrain_b = neo.SpikeTrain(

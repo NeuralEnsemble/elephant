@@ -29,8 +29,7 @@ class synchrotool(complexity):
                          spread=spread,
                          tolerance=tolerance)
 
-    def delete_synchrofacts(self, threshold,
-                            in_place=False, invert=False):
+    def delete_synchrofacts(self, threshold, in_place=False, invert=False):
 
         if not self.annotated:
             self.annotate_synchrofacts()
@@ -63,11 +62,6 @@ class synchrotool(complexity):
                                         ] = new_st
 
         return spiketrain_list
-
-    def extract_synchrofacts(self, threshold, in_place=False):
-        return self.delete_synchrofacts(threshold=threshold,
-                                        in_place=in_place,
-                                        invert=True)
 
     def annotate_synchrofacts(self):
         """
