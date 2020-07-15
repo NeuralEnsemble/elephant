@@ -785,6 +785,18 @@ class ComplexityPdfTestCase(unittest.TestCase):
                           sampling_rate=1*pq.s,
                           spread=-7)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_sampling_rate_warning(self):
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        with self.assertWarns(UserWarning):
+            es.complexity(spiketrains,
+                          bin_size=1*pq.s,
+                          spread=1)
+
     def test_binning_for_input_with_rounding_errors(self):
 
         # a test with inputs divided by 30000 which leads to rounding errors
