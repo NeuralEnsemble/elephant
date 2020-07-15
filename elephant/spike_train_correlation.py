@@ -197,7 +197,7 @@ class _CrossCorrHist(object):
         correction = float(min_num_bins) / n_values_fall_in_window
         return cross_corr * correction
 
-    def cross_corr_coef(self, cross_corr):
+    def cross_correlation_coefficient(self, cross_corr):
         """
         Normalizes the CCH to obtain the cross-correlation coefficient
         function, ranging from -1 to 1.
@@ -231,13 +231,13 @@ class _CrossCorrHist(object):
         cross_corr_normalized = (cross_corr - cov_mean) / std_xy
         return cross_corr_normalized
 
-    def kernel_smoothing(self, cross_corr, kernel):
+    def kernel_smoothing(self, cross_corr_array, kernel):
         """
         Performs 1-d convolution with the `kernel`.
 
         Parameters
         ----------
-        cross_corr : np.ndarray
+        cross_corr_array : np.ndarray
             Cross-correlation array. The output of `self.correlate_speed()`
             or `self.correlate_memory()`.
         kernel : list
@@ -258,7 +258,7 @@ class _CrossCorrHist(object):
                                                          kern_len_max))
         kernel = np.divide(kernel, kernel.sum())
         # Smooth the cross-correlation histogram with the kern
-        return np.convolve(cross_corr, kernel, mode='same')
+        return np.convolve(cross_corr_array, kernel, mode='same')
 
 
 @deprecated_alias(binned_sts='binned_spiketrain')
@@ -750,7 +750,7 @@ def cross_correlation_histogram(
     if kernel is not None:
         cross_corr = cch_builder.kernel_smoothing(cross_corr, kernel=kernel)
     if cross_corr_coef:
-        cross_corr = cch_builder.cross_corr_coef(cross_corr)
+        cross_corr = cch_builder.cross_correlation_coefficient(cross_corr)
 
     # Transform the array count into an AnalogSignal
     cch_result = neo.AnalogSignal(
