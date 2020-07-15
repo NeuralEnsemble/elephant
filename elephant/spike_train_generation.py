@@ -735,7 +735,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
 @deprecated_alias(rate_c='coincidence_rate',
                   return_coinc='return_coincidences')
 def single_interaction_process(
-        rate, coincidence_rate, t_stop, n=2, jitter=0 * pq.ms,
+        rate, coincidence_rate, t_stop, n_spiketrains=2, jitter=0 * pq.ms,
         coincidences='deterministic', t_start=0 * pq.ms, min_delay=0 * pq.ms,
         return_coincidences=False):
     """
@@ -765,9 +765,9 @@ def single_interaction_process(
         Coincidence rate (rate of coincidences for the n-dimensional SIP).
         The SIP spike trains will have coincident events with rate `coincidence_rate`
         plus independent 'background' events with rate `rate-rate_coincidence`.
-    n : int, optional
-        If `rate` is a single pq.Quantity value, `n` specifies the number of
-        SpikeTrains to be generated. If rate is an array, `n` is ignored and
+    n_spiketrains : int, optional
+        If `rate` is a single pq.Quantity value, `n_spiketrains` specifies the number of
+        SpikeTrains to be generated. If rate is an array, `n_spiketrains` is ignored and
         the number of SpikeTrains is equal to `len(rate)`.
         Default: 2
     jitter : pq.Quantity, optional
@@ -815,13 +815,13 @@ def single_interaction_process(
     # TODO: check if rate_coincidence=4 is correct.
     >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  coincidence_rate=4,
     ...                                             t_stop=1*pq.s,
-    ...                                             n=10, return_coincidences = True)
+    ...                                             n_spiketrains=10, return_coincidences = True)
 
     """
 
     # Check if n is a positive integer
-    if not (isinstance(n, int) and n > 0):
-        raise ValueError('n (={}) must be a positive integer'.format(n))
+    if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
+        raise ValueError('n (={}) must be a positive integer'.format(n_spiketrains))
     if coincidences not in ('deterministic', 'stochastic'):
         raise ValueError(
             "coincidences must be 'deterministic' or 'stochastic'")
@@ -836,7 +836,7 @@ def single_interaction_process(
         if rate < 0 * pq.Hz:
             raise ValueError(
                 'rate (={}) must be non-negative.'.format(rate))
-        rates_b = np.repeat(rate, n)
+        rates_b = np.repeat(rate, n_spiketrains)
     else:
         rates_b = rate.flatten()
         if not all(rates_b >= 0. * pq.Hz):

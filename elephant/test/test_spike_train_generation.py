@@ -527,7 +527,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
 
         # Generate an example SIP mode
         sip, coinc = stgen.single_interaction_process(
-            n=self.n, t_stop=self.t_stop, rate=self.rate,
+            n_spiketrains=self.n, t_stop=self.t_stop, rate=self.rate,
             coincidence_rate=self.rate_c, return_coincidences=True)
 
         # Check the output types
@@ -563,7 +563,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
 
         # Generate an example SIP mode stochastic number of coincidences
         sip = stgen.single_interaction_process(
-            n=self.n, t_stop=self.t_stop, rate=self.rate,
+            n_spiketrains=self.n, t_stop=self.t_stop, rate=self.rate,
             coincidence_rate=self.rate_c, coincidences='stochastic', return_coincidences=False)
 
         # Check the output types
