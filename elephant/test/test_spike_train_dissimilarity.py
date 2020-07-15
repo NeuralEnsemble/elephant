@@ -67,135 +67,135 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.t = np.linspace(0, 200, 20000001) * ms
 
     def test_wrong_input(self):
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.array1, self.array2], self.q3)
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.qarray1, self.qarray2], self.q3)
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.qarray1, self.qarray2], 5.0 * ms)
 
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.array1, self.array2], self.q3,
                           algorithm='intuitive')
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.qarray1, self.qarray2], self.q3,
                           algorithm='intuitive')
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.qarray1, self.qarray2], 5.0 * ms,
                           algorithm='intuitive')
 
-        self.assertRaises(TypeError, stds.van_rossum_dist,
+        self.assertRaises(TypeError, stds.van_rossum_distance,
                           [self.array1, self.array2], self.tau3)
-        self.assertRaises(TypeError, stds.van_rossum_dist,
+        self.assertRaises(TypeError, stds.van_rossum_distance,
                           [self.qarray1, self.qarray2], self.tau3)
-        self.assertRaises(TypeError, stds.van_rossum_dist,
+        self.assertRaises(TypeError, stds.van_rossum_distance,
                           [self.qarray1, self.qarray2], 5.0 * Hz)
 
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.st11, self.st13], self.tau2)
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.st11, self.st13], 5.0)
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.st11, self.st13], self.tau2,
                           algorithm='intuitive')
-        self.assertRaises(TypeError, stds.victor_purpura_dist,
+        self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.st11, self.st13], 5.0,
                           algorithm='intuitive')
-        self.assertRaises(TypeError, stds.van_rossum_dist,
+        self.assertRaises(TypeError, stds.van_rossum_distance,
                           [self.st11, self.st13], self.q4)
-        self.assertRaises(TypeError, stds.van_rossum_dist,
+        self.assertRaises(TypeError, stds.van_rossum_distance,
                           [self.st11, self.st13], 5.0)
 
-        self.assertRaises(NotImplementedError, stds.victor_purpura_dist,
+        self.assertRaises(NotImplementedError, stds.victor_purpura_distance,
                           [self.st01, self.st02], self.q3,
                           kernel=kernels.Kernel(2.0 / self.q3))
-        self.assertRaises(NotImplementedError, stds.victor_purpura_dist,
+        self.assertRaises(NotImplementedError, stds.victor_purpura_distance,
                           [self.st01, self.st02], self.q3,
                           kernel=kernels.SymmetricKernel(2.0 / self.q3))
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st02], self.q1,
                              kernel=kernels.TriangularKernel(
                                  2.0 / (np.sqrt(6.0) * self.q2)))[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st01, self.st02], self.q3,
                              kernel=kernels.TriangularKernel(
                                  2.0 / (np.sqrt(6.0) * self.q2)))[0, 1])
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st02],
                              kernel=kernels.TriangularKernel(
                                  2.0 / (np.sqrt(6.0) * self.q2)))[0, 1], 1.0)
-        self.assertNotEqual(stds.victor_purpura_dist(
+        self.assertNotEqual(stds.victor_purpura_distance(
                                 [self.st01, self.st02],
                                 kernel=kernels.AlphaKernel(
                                    2.0 / (np.sqrt(6.0) * self.q2)))[0, 1], 1.0)
 
-        self.assertRaises(NameError, stds.victor_purpura_dist,
+        self.assertRaises(NameError, stds.victor_purpura_distance,
                           [self.st11, self.st13], self.q2, algorithm='slow')
 
     def test_victor_purpura_distance_fast(self):
         # Tests of distances of simplest spike trains:
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st00, self.st00], self.q2)[0, 1], 0.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st00, self.st01], self.q2)[0, 1], 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st00], self.q2)[0, 1], 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st01], self.q2)[0, 1], 0.0)
         # Tests of distances under elementary spike operations
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st02], self.q2)[0, 1], 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st03], self.q2)[0, 1], 1.9)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st04], self.q2)[0, 1], 2.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st05], self.q2)[0, 1], 2.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st00, self.st07], self.q2)[0, 1], 2.0)
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                              [self.st07, self.st08], self.q4)[0, 1], 0.4)
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                              [self.st07, self.st10], self.q3)[0, 1], 0.6 + 2)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st11, self.st14], self.q2)[0, 1], 1)
         # Tests on timescales
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st11, self.st14], self.q1)[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st11, self.st14], self.q5)[0, 1])
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q0)[0, 1], 6.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q1)[0, 1], 6.0)
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q5)[0, 1], 2.0, 5)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q6)[0, 1], 2.0)
         # Tests on unordered spiketrains
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st11, self.st13], self.q4)[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st12, self.st13], self.q4)[0, 1])
-        self.assertNotEqual(stds.victor_purpura_dist(
+        self.assertNotEqual(stds.victor_purpura_distance(
                                 [self.st11, self.st13], self.q4,
                                 sort=False)[0, 1],
-                            stds.victor_purpura_dist(
+                            stds.victor_purpura_distance(
                                 [self.st12, self.st13], self.q4,
                                 sort=False)[0, 1])
         # Tests on metric properties with random spiketrains
         # (explicit calculation of second metric axiom in particular case,
         # because from dist_matrix it is trivial)
-        dist_matrix = stds.victor_purpura_dist(
+        dist_matrix = stds.victor_purpura_distance(
                               [self.st21, self.st22, self.st23], self.q3)
         for i in range(3):
             for j in range(3):
                 self.assertGreaterEqual(dist_matrix[i, j], 0)
                 if dist_matrix[i, j] == 0:
                     assert_array_equal(self.rd_st_list[i], self.rd_st_list[j])
-        assert_array_equal(stds.victor_purpura_dist(
+        assert_array_equal(stds.victor_purpura_distance(
                                [self.st21, self.st22], self.q3), 
-                           stds.victor_purpura_dist(
+                           stds.victor_purpura_distance(
                                [self.st22, self.st21], self.q3))
         self.assertLessEqual(dist_matrix[0, 1],
                              dist_matrix[0, 2] + dist_matrix[1, 2])
@@ -205,106 +205,106 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                              dist_matrix[0, 1] + dist_matrix[0, 2])
         # Tests on proper unit conversion
         self.assertAlmostEqual(
-              stds.victor_purpura_dist([self.st14, self.st16], self.q3)[0, 1],
-              stds.victor_purpura_dist([self.st15, self.st16], self.q3)[0, 1])
+              stds.victor_purpura_distance([self.st14, self.st16], self.q3)[0, 1],
+              stds.victor_purpura_distance([self.st15, self.st16], self.q3)[0, 1])
         self.assertAlmostEqual(
-              stds.victor_purpura_dist([self.st16, self.st14], self.q3)[0, 1],
-              stds.victor_purpura_dist([self.st16, self.st15], self.q3)[0, 1])
+              stds.victor_purpura_distance([self.st16, self.st14], self.q3)[0, 1],
+              stds.victor_purpura_distance([self.st16, self.st15], self.q3)[0, 1])
         self.assertAlmostEqual(
-              stds.victor_purpura_dist([self.st01, self.st05], self.q3)[0, 1],
-              stds.victor_purpura_dist([self.st01, self.st05], self.q7)[0, 1])
+              stds.victor_purpura_distance([self.st01, self.st05], self.q3)[0, 1],
+              stds.victor_purpura_distance([self.st01, self.st05], self.q7)[0, 1])
         # Tests on algorithmic behaviour for equal spike times
         self.assertAlmostEqual(
-              stds.victor_purpura_dist([self.st31, self.st34], self.q3)[0, 1],
+              stds.victor_purpura_distance([self.st31, self.st34], self.q3)[0, 1],
               0.8 + 1.0)
         self.assertAlmostEqual(
-              stds.victor_purpura_dist([self.st31, self.st34], self.q3)[0, 1],
-              stds.victor_purpura_dist([self.st32, self.st33], self.q3)[0, 1])
+              stds.victor_purpura_distance([self.st31, self.st34], self.q3)[0, 1],
+              stds.victor_purpura_distance([self.st32, self.st33], self.q3)[0, 1])
         self.assertAlmostEqual(
-              stds.victor_purpura_dist(
+              stds.victor_purpura_distance(
                   [self.st31, self.st33], self.q3)[0, 1] * 2.0,
-              stds.victor_purpura_dist(
+              stds.victor_purpura_distance(
                   [self.st32, self.st34], self.q3)[0, 1])
         # Tests on spike train list lengthes smaller than 2
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st21], self.q3)[0, 0], 0)
-        self.assertEqual(len(stds.victor_purpura_dist([], self.q3)), 0)
+        self.assertEqual(len(stds.victor_purpura_distance([], self.q3)), 0)
 
     def test_victor_purpura_distance_intuitive(self):
         # Tests of distances of simplest spike trains
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st00, self.st00], self.q2,
                              algorithm='intuitive')[0, 1], 0.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st00, self.st01], self.q2,
                              algorithm='intuitive')[0, 1], 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st00], self.q2,
                              algorithm='intuitive')[0, 1], 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st01], self.q2,
                              algorithm='intuitive')[0, 1], 0.0)
         # Tests of distances under elementary spike operations
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st02], self.q2,
                              algorithm='intuitive')[0, 1], 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st03], self.q2,
                              algorithm='intuitive')[0, 1], 1.9)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st04], self.q2,
                              algorithm='intuitive')[0, 1], 2.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st05], self.q2,
                              algorithm='intuitive')[0, 1], 2.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st00, self.st07], self.q2,
                              algorithm='intuitive')[0, 1], 2.0)
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                              [self.st07, self.st08], self.q4,
                              algorithm='intuitive')[0, 1], 0.4)
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                              [self.st07, self.st10], self.q3,
                              algorithm='intuitive')[0, 1], 2.6)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st11, self.st14], self.q2,
                              algorithm='intuitive')[0, 1], 1)
         # Tests on timescales
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st11, self.st14], self.q1,
                              algorithm='intuitive')[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st11, self.st14], self.q5,
                              algorithm='intuitive')[0, 1])
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q0,
                              algorithm='intuitive')[0, 1], 6.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q1,
                              algorithm='intuitive')[0, 1], 6.0)
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q5,
                              algorithm='intuitive')[0, 1], 2.0, 5)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st07, self.st11], self.q6,
                              algorithm='intuitive')[0, 1], 2.0)
         # Tests on unordered spiketrains
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st11, self.st13], self.q4,
                              algorithm='intuitive')[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st12, self.st13], self.q4,
                              algorithm='intuitive')[0, 1])
-        self.assertNotEqual(stds.victor_purpura_dist(
+        self.assertNotEqual(stds.victor_purpura_distance(
                                 [self.st11, self.st13], self.q4,
                                 sort=False, algorithm='intuitive')[0, 1],
-                            stds.victor_purpura_dist(
+                            stds.victor_purpura_distance(
                                 [self.st12, self.st13], self.q4,
                                 sort=False, algorithm='intuitive')[0, 1])
         # Tests on metric properties with random spiketrains
         # (explicit calculation of second metric axiom in particular case,
         # because from dist_matrix it is trivial)
-        dist_matrix = stds.victor_purpura_dist(
+        dist_matrix = stds.victor_purpura_distance(
                           [self.st21, self.st22, self.st23],
                           self.q3, algorithm='intuitive')
         for i in range(3):
@@ -312,10 +312,10 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                 self.assertGreaterEqual(dist_matrix[i, j], 0)
                 if dist_matrix[i, j] == 0:
                     assert_array_equal(self.rd_st_list[i], self.rd_st_list[j])
-        assert_array_equal(stds.victor_purpura_dist(
+        assert_array_equal(stds.victor_purpura_distance(
                                [self.st21, self.st22], self.q3,
                                algorithm='intuitive'),
-                           stds.victor_purpura_dist(
+                           stds.victor_purpura_distance(
                                [self.st22, self.st21], self.q3,
                                algorithm='intuitive'))
         self.assertLessEqual(dist_matrix[0, 1],
@@ -325,86 +325,86 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.assertLessEqual(dist_matrix[1, 2],
                              dist_matrix[0, 1] + dist_matrix[0, 2])
         # Tests on proper unit conversion
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                                    [self.st14, self.st16], self.q3,
                                    algorithm='intuitive')[0, 1],
-                               stds.victor_purpura_dist(
+                               stds.victor_purpura_distance(
                                    [self.st15, self.st16], self.q3,
                                    algorithm='intuitive')[0, 1])
-        self.assertAlmostEqual(stds.victor_purpura_dist(
+        self.assertAlmostEqual(stds.victor_purpura_distance(
                                    [self.st16, self.st14], self.q3,
                                    algorithm='intuitive')[0, 1],
-                               stds.victor_purpura_dist(
+                               stds.victor_purpura_distance(
                                    [self.st16, self.st15], self.q3,
                                    algorithm='intuitive')[0, 1])
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st01, self.st05], self.q3,
                              algorithm='intuitive')[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st01, self.st05], self.q7,
                              algorithm='intuitive')[0, 1])
         # Tests on algorithmic behaviour for equal spike times
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st31, self.st34], self.q3,
                              algorithm='intuitive')[0, 1],
                          0.8 + 1.0)
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st31, self.st34], self.q3,
                              algorithm='intuitive')[0, 1],
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st32, self.st33], self.q3,
                              algorithm='intuitive')[0, 1])
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st31, self.st33], self.q3,
                              algorithm='intuitive')[0, 1] * 2.0,
-                         stds.victor_purpura_dist(
+                         stds.victor_purpura_distance(
                              [self.st32, self.st34], self.q3,
                              algorithm='intuitive')[0, 1])
         # Tests on spike train list lengthes smaller than 2
-        self.assertEqual(stds.victor_purpura_dist(
+        self.assertEqual(stds.victor_purpura_distance(
                              [self.st21], self.q3,
                              algorithm='intuitive')[0, 0], 0)
-        self.assertEqual(len(stds.victor_purpura_dist(
+        self.assertEqual(len(stds.victor_purpura_distance(
                              [], self.q3, algorithm='intuitive')), 0)
 
     def test_victor_purpura_algorithm_comparison(self):
         assert_array_almost_equal(
-                    stds.victor_purpura_dist([self.st21, self.st22, self.st23],
-                                             self.q3), 
-                    stds.victor_purpura_dist([self.st21, self.st22, self.st23],
-                                             self.q3, algorithm='intuitive'))
+                    stds.victor_purpura_distance([self.st21, self.st22, self.st23],
+                                                 self.q3),
+                    stds.victor_purpura_distance([self.st21, self.st22, self.st23],
+                                                 self.q3, algorithm='intuitive'))
 
     def test_van_rossum_distance(self):
         # Tests of distances of simplest spike trains
-        self.assertEqual(stds.van_rossum_dist(
+        self.assertEqual(stds.van_rossum_distance(
                              [self.st00, self.st00], self.tau2)[0, 1], 0.0)
-        self.assertEqual(stds.van_rossum_dist(
+        self.assertEqual(stds.van_rossum_distance(
                              [self.st00, self.st01], self.tau2)[0, 1], 1.0)
-        self.assertEqual(stds.van_rossum_dist(
+        self.assertEqual(stds.van_rossum_distance(
                              [self.st01, self.st00], self.tau2)[0, 1], 1.0)
-        self.assertEqual(stds.van_rossum_dist(
+        self.assertEqual(stds.van_rossum_distance(
                              [self.st01, self.st01], self.tau2)[0, 1], 0.0)
         # Tests of distances under elementary spike operations
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                                    [self.st01, self.st02], self.tau2)[0, 1],
                                float(np.sqrt(2*(1.0-np.exp(-np.absolute(
                                          ((self.st01[0]-self.st02[0]) /
                                              self.tau2).simplified))))))
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                                    [self.st01, self.st05], self.tau2)[0, 1],
                                float(np.sqrt(2*(1.0-np.exp(-np.absolute(
                                          ((self.st01[0]-self.st05[0]) /
                                              self.tau2).simplified))))))
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                                    [self.st01, self.st05], self.tau2)[0, 1],
                                np.sqrt(2.0), 1)
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                                    [self.st01, self.st06], self.tau2)[0, 1],
                                np.sqrt(2.0), 20)
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                                    [self.st00, self.st07], self.tau1)[0, 1],
                                np.sqrt(0 + 2))
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                                    [self.st07, self.st08], self.tau4)[0, 1],
                                float(np.sqrt(2*(1.0-np.exp(-np.absolute(
                                          ((self.st07[0]-self.st08[-1]) /
@@ -419,52 +419,52 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         distance = np.sqrt(2.0 * spint.cumtrapz(
                            y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                        [self.st08, self.st09], self.tau3)[0, 1], distance, 5)
-        self.assertAlmostEqual(stds.van_rossum_dist(
+        self.assertAlmostEqual(stds.van_rossum_distance(
                              [self.st11, self.st14], self.tau2)[0, 1], 1)
         # Tests on timescales
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st11, self.st14], self.tau1)[0, 1],
-                stds.van_rossum_dist([self.st11, self.st14], self.tau5)[0, 1])
+                stds.van_rossum_distance([self.st11, self.st14], self.tau1)[0, 1],
+                stds.van_rossum_distance([self.st11, self.st14], self.tau5)[0, 1])
 
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st11], self.tau0)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st11], self.tau0)[0, 1],
                 np.sqrt(len(self.st07) + len(self.st11)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st14], self.tau0)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st14], self.tau0)[0, 1],
                 np.sqrt(len(self.st07) + len(self.st14)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st11], self.tau1)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st11], self.tau1)[0, 1],
                 np.sqrt(len(self.st07) + len(self.st11)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st14], self.tau1)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st14], self.tau1)[0, 1],
                 np.sqrt(len(self.st07) + len(self.st14)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st11], self.tau5)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st11], self.tau5)[0, 1],
                 np.absolute(len(self.st07) - len(self.st11)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st14], self.tau5)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st14], self.tau5)[0, 1],
                 np.absolute(len(self.st07) - len(self.st14)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st11], self.tau6)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st11], self.tau6)[0, 1],
                 np.absolute(len(self.st07) - len(self.st11)))
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st07, self.st14], self.tau6)[0, 1],
+                stds.van_rossum_distance([self.st07, self.st14], self.tau6)[0, 1],
                 np.absolute(len(self.st07) - len(self.st14)))
         # Tests on unordered spiketrains
         self.assertEqual(
-                stds.van_rossum_dist([self.st11, self.st13], self.tau4)[0, 1],
-                stds.van_rossum_dist([self.st12, self.st13], self.tau4)[0, 1])
+                stds.van_rossum_distance([self.st11, self.st13], self.tau4)[0, 1],
+                stds.van_rossum_distance([self.st12, self.st13], self.tau4)[0, 1])
         self.assertNotEqual(
-                stds.van_rossum_dist([self.st11, self.st13],
-                                     self.tau4, sort=False)[0, 1],
-                stds.van_rossum_dist([self.st12, self.st13],
-                                     self.tau4, sort=False)[0, 1])
+                stds.van_rossum_distance([self.st11, self.st13],
+                                         self.tau4, sort=False)[0, 1],
+                stds.van_rossum_distance([self.st12, self.st13],
+                                         self.tau4, sort=False)[0, 1])
         # Tests on metric properties with random spiketrains 
         # (explicit calculation of second metric axiom in particular case,
         # because from dist_matrix it is trivial)
-        dist_matrix = stds.van_rossum_dist(
+        dist_matrix = stds.van_rossum_distance(
                           [self.st21, self.st22, self.st23], self.tau3)
         for i in range(3):
             for j in range(3):
@@ -472,8 +472,8 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                 if dist_matrix[i, j] == 0:
                     assert_array_equal(self.rd_st_list[i], self.rd_st_list[j])
         assert_array_equal(
-                stds.van_rossum_dist([self.st21, self.st22], self.tau3),
-                stds.van_rossum_dist([self.st22, self.st21], self.tau3))
+                stds.van_rossum_distance([self.st21, self.st22], self.tau3),
+                stds.van_rossum_distance([self.st22, self.st21], self.tau3))
         self.assertLessEqual(dist_matrix[0, 1],
                              dist_matrix[0, 2] + dist_matrix[1, 2])
         self.assertLessEqual(dist_matrix[0, 2],
@@ -482,14 +482,14 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                              dist_matrix[0, 1] + dist_matrix[0, 2])
         # Tests on proper unit conversion
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st14, self.st16], self.tau3)[0, 1],
-                stds.van_rossum_dist([self.st15, self.st16], self.tau3)[0, 1])
+                stds.van_rossum_distance([self.st14, self.st16], self.tau3)[0, 1],
+                stds.van_rossum_distance([self.st15, self.st16], self.tau3)[0, 1])
         self.assertAlmostEqual(
-                stds.van_rossum_dist([self.st16, self.st14], self.tau3)[0, 1],
-                stds.van_rossum_dist([self.st16, self.st15], self.tau3)[0, 1])
+                stds.van_rossum_distance([self.st16, self.st14], self.tau3)[0, 1],
+                stds.van_rossum_distance([self.st16, self.st15], self.tau3)[0, 1])
         self.assertEqual(
-                stds.van_rossum_dist([self.st01, self.st05], self.tau3)[0, 1],
-                stds.van_rossum_dist([self.st01, self.st05], self.tau7)[0, 1])
+                stds.van_rossum_distance([self.st01, self.st05], self.tau3)[0, 1],
+                stds.van_rossum_distance([self.st01, self.st05], self.tau7)[0, 1])
         # Tests on algorithmic behaviour for equal spike times
         f_minus_g_squared = (
                (self.t > self.st31[0]) * np.exp(
@@ -501,20 +501,20 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         distance = np.sqrt(2.0 * spint.cumtrapz(
                            y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
-        self.assertAlmostEqual(stds.van_rossum_dist([self.st31, self.st34],
-                                                    self.tau3)[0, 1],
+        self.assertAlmostEqual(stds.van_rossum_distance([self.st31, self.st34],
+                                                        self.tau3)[0, 1],
                                distance, 5)
-        self.assertEqual(stds.van_rossum_dist([self.st31, self.st34],
-                                              self.tau3)[0, 1],
-                         stds.van_rossum_dist([self.st32, self.st33],
-                                              self.tau3)[0, 1])
-        self.assertEqual(stds.van_rossum_dist([self.st31, self.st33],
-                                              self.tau3)[0, 1] * 2.0,
-                         stds.van_rossum_dist([self.st32, self.st34],
-                                              self.tau3)[0, 1])
+        self.assertEqual(stds.van_rossum_distance([self.st31, self.st34],
+                                                  self.tau3)[0, 1],
+                         stds.van_rossum_distance([self.st32, self.st33],
+                                                  self.tau3)[0, 1])
+        self.assertEqual(stds.van_rossum_distance([self.st31, self.st33],
+                                                  self.tau3)[0, 1] * 2.0,
+                         stds.van_rossum_distance([self.st32, self.st34],
+                                                  self.tau3)[0, 1])
         # Tests on spike train list lengthes smaller than 2
-        self.assertEqual(stds.van_rossum_dist([self.st21], self.tau3)[0, 0], 0)
-        self.assertEqual(len(stds.van_rossum_dist([], self.tau3)), 0)
+        self.assertEqual(stds.van_rossum_distance([self.st21], self.tau3)[0, 0], 0)
+        self.assertEqual(len(stds.van_rossum_distance([], self.tau3)), 0)
 
 if __name__ == '__main__':
     unittest.main()
