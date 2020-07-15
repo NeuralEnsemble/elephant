@@ -803,14 +803,14 @@ class ComplexityPdfTestCase(unittest.TestCase):
         # these errors have to be accounted for by proper binning;
         # check if we still get the correct result
 
-        sampling_rate = 30000 / pq.s
+        sampling_rate = 333 / pq.s
 
-        spiketrains = [neo.SpikeTrain(np.arange(1000, step=2) * pq.s / 30000,
-                                      t_stop=.1 * pq.s),
-                       neo.SpikeTrain(np.arange(2000, step=4) * pq.s / 30000,
-                                      t_stop=.1 * pq.s)]
+        spiketrains = [neo.SpikeTrain(np.arange(1000, step=2) * pq.s / 333,
+                                      t_stop=30.33333333333 * pq.s),
+                       neo.SpikeTrain(np.arange(2000, step=4) * pq.s / 333,
+                                      t_stop=30.33333333333 * pq.s)]
 
-        correct_time_histogram = np.zeros(3000)
+        correct_time_histogram = np.zeros(10101)
         correct_time_histogram[:1000:2] = 1
         correct_time_histogram[:2000:4] += 1
 
