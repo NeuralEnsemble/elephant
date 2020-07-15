@@ -985,6 +985,12 @@ class complexity:
                                              same_t_start=True,
                                              same_t_stop=True)
 
+        if bin_size is None and sampling_rate is None:
+            raise ValueError('No bin_size or sampling_rate was specified!')
+
+        if spread < 0:
+            raise ValueError('Spread must be >=0')
+
         self.input_spiketrains = spiketrains
         self.t_start = spiketrains[0].t_start
         self.t_stop = spiketrains[0].t_stop
@@ -994,18 +1000,13 @@ class complexity:
         self.spread = spread
         self.tolerance = tolerance
 
-        if bin_size is None and sampling_rate is None:
-            raise ValueError('No bin_size or sampling_rate was speficied!')
-        elif bin_size is None and sampling_rate is not None:
+        if bin_size is None and sampling_rate is not None:
             self.bin_size = 1 / self.sampling_rate
 
-        if spread < 0:
-            raise ValueError('Spread must be >=0')
-        elif spread == 0:
+        if spread == 0:
             self.time_histogram, self.histogram = self._histogram_no_spread()
             self.epoch = self._epoch_no_spread()
         else:
-            print('Complexity calculated at sampling rate precision')
             self.epoch = self._epoch_with_spread()
             self.time_histogram, self.histogram = self._histogram_with_spread()
 
