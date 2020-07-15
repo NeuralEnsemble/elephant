@@ -381,7 +381,7 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
         signals = np.asarray(signals)
 
     if not (signals.ndim == 2 and signals.shape[0] == 2):
-        raise ValueError("Required 2 x N input 'signals' array.")
+        raise ValueError("The input 'signals' must be of dimensions 2xN.")
 
     # signal_x and signal_y are (1, N) arrays
     signal_x, signal_y = np.expand_dims(signals, axis=1)
