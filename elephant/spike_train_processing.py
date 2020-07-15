@@ -136,9 +136,11 @@ class synchrotool(complexity):
 
         """
         epoch_complexities = self.epoch.array_annotations['complexity']
-        right_edges = self.epoch.times.magnitude.flatten() + self.epoch.durations.rescale(self.epoch.times.units).magnitude.flatten()
-        print(self.epoch.times)
-        print(self.epoch.array_annotations['complexity'])
+        right_edges = (
+            self.epoch.times.magnitude.flatten()
+            + self.epoch.durations.rescale(
+                self.epoch.times.units).magnitude.flatten()
+        )
 
         for idx, st in enumerate(self.input_spiketrains):
 
