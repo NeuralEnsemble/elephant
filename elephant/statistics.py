@@ -839,14 +839,14 @@ class complexity:
     bin_size : pq.Quantity, optional
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
-        * If no `bin_size` is specified and the `sampling_rate` is available
-        1/`sampling_rate` is used.
-        * If both are given then `bin_size` is used.
+          * If no `bin_size` is specified and the `sampling_rate` is available
+            1/`sampling_rate` is used.
+          * If both are given then `bin_size` is used.
         Default: None
     binary : bool, optional
-        * If `True` then the time histograms will be binary.
-        * If `False` the total number of synchronous spikes is counted in the
-          time histogram.
+          * If `True` then the time histograms will be binary.
+          * If `False` the total number of synchronous spikes is counted in the
+            time histogram.
         Default: True
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
@@ -877,10 +877,10 @@ class complexity:
         A `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
-        * If ``binary = True`` : Number of neurons that spiked in each bin,
-        regardless of the number of spikes.
-        * If ``binary = False`` : Number of neurons and spikes per neurons
-        in each bin.
+          * If ``binary = True`` : Number of neurons that spiked in each bin,
+            regardless of the number of spikes.
+          * If ``binary = False`` : Number of neurons and spikes per neurons
+            in each bin.
     complexity_histogram : np.ndarray
         The number of occurrences of events of different complexities.
         `complexity_hist[i]` corresponds to the number of events of

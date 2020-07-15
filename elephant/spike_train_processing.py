@@ -13,7 +13,117 @@ import numpy as np
 
 
 class synchrotool(complexity):
-    # complexity.__doc_
+    """
+    Tool class to find, remove and/or annotate the presence of synchronous
+    spiking events across multiple spike trains.
+
+    The complexity is used to characterize synchronous events within the same
+    spike train and across different spike trains in the `spiketrains` list.
+    Such that, synchronous events can be found both in multi-unit and
+    single-unit spike trains.
+
+    This class inherits from ``elephant.statistics.complexity``, see its
+    documentation for more details.
+
+    *The rest of this documentation is copied from
+    ``elephant.statistics.complexity`` !!!
+    TODO: Figure out a better way to merge the docstrings.*
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrain
+        Spike trains with a common time axis (same `t_start` and `t_stop`)
+    sampling_rate : pq.Quantity, optional
+        Sampling rate of the spike trains with units of 1/time.
+        Default: None
+    bin_size : pq.Quantity, optional
+        Width of the histogram's time bins with units of time.
+        The user must specify the `bin_size` or the `sampling_rate`.
+          * If no `bin_size` is specified and the `sampling_rate` is available
+            1/`sampling_rate` is used.
+          * If both are given then `bin_size` is used.
+        Default: None
+    binary : bool, optional
+          * If `True` then the time histograms will be binary.
+          * If `False` the total number of synchronous spikes is counted in the
+            time histogram.
+        Default: True
+    spread : int, optional
+        Number of bins in which to check for synchronous spikes.
+        Spikes that occur separated by `spread - 1` or less empty bins are
+        considered synchronous.
+          * ``spread = 0`` corresponds to a bincount accross spike trains.
+          * ``spread = 1`` corresponds to counting consecutive spikes.
+          * ``spread = 2`` corresponds to counting consecutive spikes and
+            spikes separated by exactly 1 empty bin.
+          * ``spread = n`` corresponds to counting spikes separated by exactly
+            or less than `n - 1` empty bins.
+        Default: 0
+    tolerance : float, optional
+        Tolerance for rounding errors in the binning process and in the input
+        data.
+        Default: 1e-8
+
+    Attributes
+    ----------
+    epoch : neo.Epoch
+        An epoch object containing complexity values, left edges and durations
+        of all intervals with at least one spike.
+          * ``epoch.array_annotations['complexity']`` contains the
+            complexity values per spike.
+          * ``epoch.times`` contains the left edges.
+          * ``epoch.durations`` contains the durations.
+    time_histogram : neo.Analogsignal
+        A `neo.AnalogSignal` object containing the histogram values.
+        `neo.AnalogSignal[j]` is the histogram computed between
+        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+          * If ``binary = True`` : Number of neurons that spiked in each bin,
+            regardless of the number of spikes.
+          * If ``binary = False`` : Number of neurons and spikes per neurons
+            in each bin.
+    complexity_histogram : np.ndarray
+        The number of occurrences of events of different complexities.
+        `complexity_hist[i]` corresponds to the number of events of
+        complexity `i` for `i > 0`.
+    pdf : neo.AnalogSignal
+        The normalization of `self.complexityhistogram` to 1.
+        A `neo.AnalogSignal` object containing the pdf values.
+        `neo.AnalogSignal[j]` is the histogram computed between
+        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+
+    Raises
+    ------
+    ValueError
+        When `t_stop` is smaller than `t_start`.
+
+        When both `sampling_rate` and `bin_size` are not specified.
+
+        When `spread` is not a positive integer.
+
+        When `spiketrains` is an empty list.
+
+        When `t_start` is not the same for all spiketrains
+
+        When `t_stop` is not the same for all spiketrains
+
+    TypeError
+        When `spiketrains` is not a list.
+
+        When the elements in `spiketrains` are not instances of neo.SpikeTrain
+
+    Notes
+    -----
+    * Note that with most common parameter combinations spike times can end up
+      on bin edges. This makes the binning susceptible to rounding errors which
+      is accounted for by moving spikes which are within tolerance of the next
+      bin edge into the following bin. This can be adjusted using the tolerance
+      parameter and turned off by setting `tolerance=None`.
+
+    See also
+    --------
+    elephant.statistics.complexity
+
+    """
 
     def __init__(self, spiketrains,
                  sampling_rate,
@@ -29,10 +139,51 @@ class synchrotool(complexity):
                          spread=spread,
                          tolerance=tolerance)
 
-    def delete_synchrofacts(self, threshold, in_place=False, invert=False):
+    def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
+        """
+        Delete or extract synchronous spiking events.
+
+        Parameters
+        ----------
+        threshold : int
+            Threshold value for the deletion of spikes engaged in synchronous
+            activity.
+              * `deletion_threshold >= 2` leads to all spikes with a larger or
+                equal complexity value to be deleted/extracted.
+              * `deletion_threshold <= 1` leads to a ValueError, since this
+              would delete/extract all spikes and there are definitely more
+              efficient ways of doing so.
+        in_place : bool
+            Determines whether the modification are made in place
+            on ``self.input_spiketrains``.
+            Default: False
+        mode : bool
+            Inversion of the mask for deletion of synchronous events.
+              * ``'delete'`` leads to the deletion of all spikes with
+                complexity >= `threshold`,
+                i.e. deletes synchronous spikes.
+              * ``'extract'`` leads to the deletion of all spikes with
+                complexity < `threshold`, i.e. extracts synchronous spikes.
+            Default: 'delete'
+
+        Returns
+        -------
+        list of neo.SpikeTrain
+            List of spiketrains where the spikes with
+            ``complexity >= threshold`` have been deleted/extracted.
+              * If ``in_place`` is True, the returned list is the same as
+                ``self.input_spiketrains``.
+              * If ``in_place`` is False, the returned list is a deepcopy of
+                ``self.input_spiketrains``.
+
+        """
 
         if not self.annotated:
             self.annotate_synchrofacts()
+
+        if mode not in ['delete', 'extract']:
+            raise ValueError(str(mode) + ' is not a valid mode. '
+                             "valid modes are ['delete', 'extract']")
 
         if threshold <= 1:
             raise ValueError('A deletion threshold <= 1 would result '
@@ -45,7 +196,7 @@ class synchrotool(complexity):
 
         for idx, st in enumerate(spiketrain_list):
             mask = st.array_annotations['complexity'] < threshold
-            if invert:
+            if mode == 'extract':
                 mask = np.invert(mask)
             new_st = st[mask]
             spiketrain_list[idx] = new_st
@@ -65,75 +216,8 @@ class synchrotool(complexity):
 
     def annotate_synchrofacts(self):
         """
-        Given a list of neo.Spiketrain objects, calculate the number of
-        synchronous spikes found and optionally delete or extract them from
-        the given list *in-place*.
-
-        The spike trains are binned at sampling precission
-        (i.e. bin_size = 1 / `sampling_rate`)
-
-        Two spikes are considered synchronous if they occur separated by strictly
-        fewer than `spread - 1` empty bins from one another. See
-        `elephant.statistics.precise_complexity_intervals` for a detailed
-        description of how synchronous events are counted.
-
-        Synchronous events are considered within the same spike train and across
-        different spike trains in the `spiketrains` list. Such that, synchronous
-        events can be found both in multi-unit and single-unit spike trains.
-
-        The spike trains in the `spiketrains` list are annotated with the
-        complexity value of each spike in their :attr:`array_annotations`.
-
-
-        Parameters
-        ----------
-        spiketrains : list of neo.SpikeTrains
-            a list of neo.SpikeTrains objects. These spike trains should have been
-            recorded simultaneously.
-        sampling_rate : pq.Quantity
-            Sampling rate of the spike trains. The spike trains are binned with
-            bin_size = 1 / `sampling_rate`.
-        spread : int
-            Number of bins in which to check for synchronous spikes.
-            Spikes that occur separated by `spread - 1` or less empty bins are
-            considered synchronous.
-            Default: 1
-        deletion_threshold : int, optional
-            Threshold value for the deletion of spikes engaged in synchronous
-            activity.
-              * `deletion_threshold = None` leads to no spikes being deleted, spike
-                trains are array-annotated and the spike times are kept unchanged.
-              * `deletion_threshold >= 2` leads to all spikes with a larger or
-                equal complexity value to be deleted *in-place*.
-              * `deletion_threshold` cannot be set to 1 (this would delete all
-                spikes and there are definitely more efficient ways of doing this)
-              * `deletion_threshold <= 0` leads to a ValueError.
-            Default: None
-        invert_delete : bool
-            Inversion of the mask for deletion of synchronous events.
-              * `invert_delete = False` leads to the deletion of all spikes with
-                complexity >= `deletion_threshold`,
-                i.e. deletes synchronous spikes.
-              * `invert_delete = True` leads to the deletion of all spikes with
-                complexity < `deletion_threshold`, i.e. returns synchronous spikes.
-            Default: False
-
-        Returns
-        -------
-        complexity_epoch : neo.Epoch
-            An epoch object containing complexity values, left edges and durations
-            of all intervals with at least one spike.
-            Calculated with
-            `elephant.spike_train_processing.precise_complexity_intervals`.
-              * ``complexity_epoch.array_annotations['complexity']`` contains the
-                complexity values per spike.
-              * ``complexity_epoch.times`` contains the left edges.
-              * ``complexity_epoch.durations`` contains the durations.
-
-        See also
-        --------
-        elephant.spike_train_processing.precise_complexity_intervals
-
+        Annotate the complexity of each spike in the array_annotations
+        *in-place*.
         """
         epoch_complexities = self.epoch.array_annotations['complexity']
         right_edges = (
