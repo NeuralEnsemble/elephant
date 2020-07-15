@@ -574,25 +574,25 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
     def test_sip_error(self):
         # Negative rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n=self.n,
+            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
             rate=-5 * Hz,
-            rate_c=self.rate_c, t_stop=self.t_stop)
+            coincidence_rate=self.rate_c, t_stop=self.t_stop)
         # Negative coincidence rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n=self.n,
-            rate=self.rate, rate_c=-3 * Hz, t_stop=self.t_stop)
+            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
+            rate=self.rate, coincidence_rate=-3 * Hz, t_stop=self.t_stop)
         # Negative value when rate is a list
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n=self.n,
-            rate=[-5, 3, 4, 2] * Hz, rate_c=self.rate_c, t_stop=self.t_stop)
+            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
+            rate=[-5, 3, 4, 2] * Hz, coincidence_rate=self.rate_c, t_stop=self.t_stop)
         # Negative n
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n=-1,
-            rate=self.rate, rate_c=self.rate_c, t_stop=self.t_stop)
+            ValueError, stgen.single_interaction_process, n_spiketrains=-1,
+            rate=self.rate, coincidence_rate=self.rate_c, t_stop=self.t_stop)
         # Rate_c < rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n=self.n,
-            rate=self.rate, rate_c=self.rate + 1 * Hz, t_stop=self.t_stop)
+            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
+            rate=self.rate, coincidence_rate=self.rate + 1 * Hz, t_stop=self.t_stop)
 
 
 class cppTestCase(unittest.TestCase):

@@ -732,7 +732,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
             for rate in rates]
 
 
-@deprecated_alias(rate_c='coincidence_rate',
+@deprecated_alias(rate_c='coincidence_rate', n='n_spiketrains',
                   return_coinc='return_coincidences')
 def single_interaction_process(
         rate, coincidence_rate, t_stop, n_spiketrains=2, jitter=0 * pq.ms,
