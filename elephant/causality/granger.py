@@ -39,7 +39,7 @@ you will find function for time-series data to test pairwise Granger causality
 (`pairwise_granger`).
 
 Time-series Granger causality
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: toctree/causality/
@@ -359,7 +359,7 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
 
     Parameters
     ----------
-    signals : np.ndarray or neo.AnalogSignal
+    signals : array-like or neo.AnalogSignal
         time series data
     max_order : int
         maximal order of autoregressive model
@@ -401,6 +401,37 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
             log(C|XY_00 / C|XY_11)
         total interdependence of X,Y given by
             log( {C|X \cdot C|Y} / det{C|XY} )
+
+    Examples
+    --------
+    Example 1. Independent variables.
+
+    >>> import numpy as np
+    >>> from elephant.causality.granger import pairwise_granger
+    >>> pairwise_granger(np.random.uniform(size=(2, 1000)), max_order=2)
+    Causality(directional_causality_x_y=0.0,
+             directional_causality_y_x=-0.0,
+             instantaneous_causality=0.0,
+             total_interdependence=0.0)
+
+    Example 2. Dependent variables. Y depends on X but not vice versa.
+
+    .. math::
+        \begin{array}{ll}
+            X_t \sim \mathcal{N}(0, 1) \\
+            Y_t = 3.5 \cdot X_{t-1} + \epsilon, \;
+                  \epsilon \sim\mathcal{N}(0, 1)
+        \end{array}
+
+    In this case, the directional causality is non-zero.
+
+    >>> x = np.random.randn(size=1001)
+    >>> y = 3.5 * x[:-1] + np.random.randn(size=1000)
+    >>> pairwise_granger([x[1:], y], max_order=1)
+    Causality(directional_causality_x_y=2.64,
+              directional_causality_y_x=0.0,
+              instantaneous_causality=0.0,
+              total_interdependence=2.64)
 
     """
     if isinstance(signals, AnalogSignal):
