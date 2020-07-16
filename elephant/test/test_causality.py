@@ -22,12 +22,11 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        np.random.seed(1)
         cls.ground_truth = cls._generate_ground_truth()
 
     @staticmethod
-    def _generate_ground_truth():
-        np.random.seed(1)
-        length_2d = 30000
+    def _generate_ground_truth(length_2d=30000):
         signal = np.zeros((2, length_2d))
 
         order = 2
@@ -44,31 +43,16 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                                        signal[:, i - lag - 1])
             rnd_var = np.random.multivariate_normal([0, 0],
                                                     noise_covariance)
-            signal[0, i] += rnd_var[0]
-            signal[1, i] += rnd_var[1]
+            signal[:, i] += rnd_var
 
         return signal
 
     def setUp(self):
-        # Generate a smaller random dataset for tests other than ground truth
-        length_2d = 1000
-        self.signal = np.zeros((2, length_2d))
-
-        order = 2
-        weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
-        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
-        weights = np.stack((weights_1, weights_2))
-
-        noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
-
-        for i in range(length_2d):
-            for lag in range(order):
-                self.signal[:, i] += np.dot(weights[lag],
-                                            self.signal[:, i - lag - 1])
-            rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
-            self.signal[0, i] += rnd_var[0]
-            self.signal[1, i] += rnd_var[1]
+        # Generate a smaller random dataset for tests other than ground truth,
+        # using a different seed than in the ground truth - the convergence
+        # should not depend on the seed.
+        np.random.seed(10)
+        self.signal = self._generate_ground_truth(length_2d=1000)
 
         # Estimate Granger causality
         self.causality = elephant.causality.granger.pairwise_granger(
