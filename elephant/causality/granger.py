@@ -402,6 +402,20 @@ def pairwise_granger(signals, max_order, information_criterion=aic):
         total interdependence of X,Y given by
             log( {C|X \cdot C|Y} / det{C|XY} )
 
+    Raises
+    ------
+    ValueError
+        If the provided signal does not have a shape of 2xN.
+
+        If the determinant of the prediction error covariance matrix is not
+        positive.
+
+    Warns
+    -----
+    UserWarning
+        If the log determinant of the prediction error covariance matrix is
+        below the tolerance level of 1e-7.
+
     Examples
     --------
     Example 1. Independent variables.
