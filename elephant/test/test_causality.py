@@ -27,9 +27,9 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
     @staticmethod
     def _generate_ground_truth(length_2d=30000):
-        signal = np.zeros((2, length_2d))
-
         order = 2
+        signal = np.zeros((2, length_2d + order))
+
         weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
         weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
 
@@ -39,11 +39,13 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
         for i in range(length_2d):
             for lag in range(order):
-                signal[:, i] += np.dot(weights[lag],
-                                       signal[:, i - lag - 1])
+                signal[:, i + order] += np.dot(weights[lag],
+                                               signal[:, i + 1 - lag])
             rnd_var = np.random.multivariate_normal([0, 0],
                                                     noise_covariance)
-            signal[:, i] += rnd_var
+            signal[:, i+order] += rnd_var
+
+        signal = signal[:, 2:]
 
         return signal
 
