@@ -57,7 +57,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         # Estimate Granger causality
         self.causality = elephant.causality.granger.pairwise_granger(
             self.signal, max_order=10,
-            information_criterion=elephant.causality.granger.bic)
+            information_criterion='bic')
 
     def test_analog_signal_input(self):
         """
@@ -69,7 +69,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         analog_signal_causality = \
             elephant.causality.granger.pairwise_granger(
                 analog_signal, max_order=10,
-                information_criterion=elephant.causality.granger.bic)
+                information_criterion='bic')
         self.assertEqual(analog_signal_causality.directional_causality_x_y,
                          self.causality.directional_causality_x_y)
         self.assertEqual(analog_signal_causality.directional_causality_y_x,
@@ -81,13 +81,13 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
     def test_aic(self):
         identity_matrix = np.eye(2, 2)
-        self.assertEqual(elephant.causality.granger.aic(
+        self.assertEqual(elephant.causality.granger._aic(
             identity_matrix, order=2, dimension=2, length=2
         ), 8.0)
 
     def test_bic(self):
         identity_matrix = np.eye(2, 2)
-        assert_array_almost_equal(elephant.causality.granger.bic(
+        assert_array_almost_equal(elephant.causality.granger._bic(
             identity_matrix, order=2, dimension=2, length=2
         ), 5.54517744, decimal=8)
 
@@ -179,7 +179,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
         coefficients, _, _ = elephant.causality.granger._optimal_vector_arm(
             self.ground_truth, dimension=2, max_order=10,
-            information_criterion=elephant.causality.granger.aic)
+            information_criterion='aic')
 
         # Arrange the ground truth values in the same shape as coefficients
         ground_truth_coefficients = np.asarray(

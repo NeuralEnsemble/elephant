@@ -303,7 +303,7 @@ def _vector_arm(signals, dimension, order):
 
 
 def _optimal_vector_arm(signals, dimension, max_order,
-                        information_criterion=aic):
+                        information_criterion='aic'):
     """
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
@@ -342,7 +342,14 @@ def _optimal_vector_arm(signals, dimension, max_order,
     for order in range(1, max_order + 1):
         coeffs, cov_matrix = _vector_arm(signals, dimension, order)
 
-        temp_ic = information_criterion(cov_matrix, order, dimension, length)
+        if information_criterion == 'aic':
+            temp_ic = _aic(cov_matrix, order, dimension, length)
+        elif information_criterion == 'bic':
+            temp_ic = _bic(cov_matrix, order, dimension, length)
+        else:
+            raise ValueError("The specified information criterion is not"
+                             "available. Please use 'aic' or 'bic'.")
+
 
         if temp_ic < optimal_ic:
             optimal_ic = temp_ic
@@ -353,7 +360,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
     return optimal_coeffs, optimal_cov_matrix, optimal_order
 
 
-def pairwise_granger(signals, max_order, information_criterion=aic):
+def pairwise_granger(signals, max_order, information_criterion='aic'):
     r"""
     Determine Granger Causality of two time series
 
