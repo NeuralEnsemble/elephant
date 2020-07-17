@@ -85,7 +85,7 @@ Causality = namedtuple('Causality',
                         'total_interdependence'])
 
 
-def bic(cov, order, dimension, length):
+def _bic(cov, order, dimension, length):
     """
     Calculate Bayesian Information Criterion
 
@@ -112,7 +112,7 @@ def bic(cov, order, dimension, length):
     return criterion
 
 
-def aic(cov, order, dimension, length):
+def _aic(cov, order, dimension, length):
     """
     Calculate Akaike Information Criterion
 
