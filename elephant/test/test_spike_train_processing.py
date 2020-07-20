@@ -17,7 +17,7 @@ from elephant import spike_train_processing
 class SynchrofactDetectionTestCase(unittest.TestCase):
 
     def _test_template(self, spiketrains, correct_complexities, sampling_rate,
-                       spread, deletion_threshold=2, invert_delete=False,
+                       spread, deletion_threshold=2, mode='delete',
                        in_place=False, binary=True):
 
         synchrofact_obj = spike_train_processing.synchrotool(
@@ -34,7 +34,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         assert_array_equal(annotations, correct_complexities)
 
-        if invert_delete:
+        if mode == 'extract':
             correct_spike_times = np.array(
                 [spikes[mask] for spikes, mask
                  in zip(spiketrains,
@@ -49,7 +49,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         # test deletion
         synchrofact_obj.delete_synchrofacts(threshold=deletion_threshold,
                                             in_place=in_place,
-                                            invert=invert_delete)
+                                            mode=mode)
 
         cleaned_spike_times = np.array(
             [st.times for st in spiketrains])
@@ -74,7 +74,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [1, 1, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert_delete=False,
+                            spread=1, mode='delete',
                             deletion_threshold=2)
 
     def test_spread_0(self):
@@ -94,7 +94,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 1, 1, 1, 2, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=0, invert_delete=False, in_place=True,
+                            spread=0, mode='delete', in_place=True,
                             deletion_threshold=2)
 
     def test_spread_1(self):
@@ -113,7 +113,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 2, 1, 3, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert_delete=False, in_place=True,
+                            spread=1, mode='delete', in_place=True,
                             deletion_threshold=2)
 
     def test_n_equals_3(self):
@@ -132,10 +132,10 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [3, 2, 1, 2, 3, 3, 3, 2]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert_delete=False, binary=False,
+                            spread=1, mode='delete', binary=False,
                             in_place=True, deletion_threshold=3)
 
-    def test_invert_delete(self):
+    def test_extract(self):
 
         # test synchrofact search taking into account adjacent bins
         # this requires an additional loop with shifted binning
@@ -151,7 +151,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         [2, 2, 1, 3, 1, 1]])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=1, invert_delete=True, in_place=True,
+                            spread=1, mode='extract', in_place=True,
                             deletion_threshold=2)
 
     def test_binning_for_input_with_rounding_errors(self):
@@ -177,7 +177,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                         second_annotations])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
-                            spread=0, invert_delete=False, in_place=True,
+                            spread=0, mode='delete', in_place=True,
                             deletion_threshold=2)
 
     def test_correct_transfer_of_spiketrain_attributes(self):
@@ -227,7 +227,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             sampling_rate=sampling_rate,
             binary=False)
         synchrofact_obj.delete_synchrofacts(
-            invert=False,
+            mode='delete',
             in_place=True,
             threshold=2)
 
