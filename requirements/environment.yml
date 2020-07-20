@@ -1,4 +1,4 @@
-name: elephant-test
+name: elephant
 
 channels:
   - conda-forge  # required by mpi4py

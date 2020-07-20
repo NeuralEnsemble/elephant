@@ -12,6 +12,7 @@ matrix:
     - name: "conda 2.7"
       python: 2.7
       env: DISTRIB="conda"
+      before_install: sed -i 's/conda-forge/conda/g' requirements/environment.yml
 
     - name: "pip 2.7"
       python: 2.7
