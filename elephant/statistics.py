@@ -1129,20 +1129,22 @@ class complexity:
         """
         left_edges = self.time_histogram.times
         durations = self.bin_size * np.ones(self.time_histogram.shape)
+
         if self.sampling_rate:
             # ensure that spikes are not on the bin edges
             bin_shift = .5 / self.sampling_rate
             left_edges -= bin_shift
+
+            # ensure that an epoch does not start before the minimum t_start
+            min_t_start = min([st.t_start for st in self.input_spiketrains])
+            if left_edges[0] < min_t_start:
+                left_edges[0] = min_t_start
+                durations[0] -= bin_shift
+
         else:
             warnings.warn('No sampling rate specified. '
                           'Note that using the complexity epoch to get '
                           'precise spike times can lead to rounding errors.')
-
-        # ensure that an epoch does not start before the minimum t_start
-        min_t_start = min([st.t_start for st in self.input_spiketrains])
-        if left_edges[0] < min_t_start:
-            left_edges[0] = min_t_start
-            durations[0] -= bin_shift
 
         epoch = neo.Epoch(left_edges,
                           durations=durations,
