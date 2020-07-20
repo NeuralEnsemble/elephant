@@ -1,4 +1,7 @@
-name: elephant
+name: elephant-test
+
+channels:
+  - conda-forge  # required by mpi4py
 
 dependencies:
   - python>=3.6
@@ -10,3 +13,5 @@ dependencies:
   - pandas
   - scikit-learn
   - statsmodels
+  - pip:
+     - -r file:requirements.txt
