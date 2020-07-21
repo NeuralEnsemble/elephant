@@ -46,7 +46,7 @@ matrix:
       python: 3.6
       env: DISTRIB="conda"
       before_script:
-        - conda install -c conda-forge mpi4py
+        - conda install -c conda-forge mpi4py pandoc
         - pip install -r requirements/requirements-docs.txt
         - pip install -r requirements/requirements-tutorials.txt
         - pip install -r requirements/requirements-extras.txt
