@@ -9,6 +9,38 @@ addons:
 
 matrix:
   include:
+    - name: "conda 2.7"
+      python: 2.7
+      env: DISTRIB="conda"
+      before_install: sed -i 's/conda-forge/conda/g' requirements/environment.yml
+
+    - name: "pip 2.7"
+      python: 2.7
+      env: DISTRIB="pip"
+
+    - name: "pip 3.5"
+      python: 3.5
+      env: DISTRIB="pip"
+
+    - name: "pip 3.6 requirements-extras"
+      python: 3.6
+      env: DISTRIB="pip"
+      before_install: sudo apt install -y libopenmpi-dev openmpi-bin
+      before_script: pip install -r requirements/requirements-extras.txt
+      script: mpiexec -n 1 python -m mpi4py.futures -m nose --with-coverage --cover-package=elephant
+      after_success: coveralls || echo "coveralls failed"
+
+    - name: "conda 3.7"
+      python: 3.7
+      env: DISTRIB="conda"
+
+    - name: "conda 3.8"
+      python: 3.8
+      env: DISTRIB="conda"
+
+    - name: "pip 3.8"
+      python: 3.8
+      env: DISTRIB="pip"
 
     - name: "docs"
       python: 3.6
