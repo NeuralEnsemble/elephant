@@ -85,8 +85,8 @@ class StaticStep(object):
 
         return provenance.AnalysisStep(
             provenance.FunctionDefinition(self._operation, '', ''),
-            {0: input_object}, params, output_object, None, None, self._node,
-            None)
+            {0: input_object}, params, {0:output_object}, None, None,
+            self._node, None)
 
 
 class NameStep(StaticStep):

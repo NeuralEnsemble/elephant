@@ -40,11 +40,9 @@ class CallAST(ast.NodeVisitor):
 
     provenance_tracker = None
 
-    def __init__(self, provenance_tracker, inputs, outputs):
+    def __init__(self, provenance_tracker):
         super(CallAST, self).__init__()
         self.provenance_tracker = provenance_tracker
-        self._inputs = inputs
-        self._outputs = outputs
 
     def _fetch_object_tree(self, node):
         # Iterate recursively the syntax tree of `node`, to fetch the actual
@@ -90,9 +88,6 @@ class CallAST(ast.NodeVisitor):
         _hash_and_store(self, object_tree)
 
     def visit_Call(self, node):
-
-        args_tree = {}
-        kwargs_tree = {}
 
         # Fetch static information of Attribute and Subscript nodes that
         # were inputs. This should capture provenance hierarchical information
