@@ -101,6 +101,7 @@ class Provenance(object):
 
     calling_frame = None
     source_code = None
+    frame_ast = None
     source_lineno = None
     source_file = None
     source_name = None
@@ -114,6 +115,7 @@ class Provenance(object):
     @classmethod
     def _create_code_analyzer(cls):
         cls.code_analyzer = SourceCodeAnalyzer(cls.source_code,
+                                               cls.frame_ast,
                                                cls.source_lineno,
                                                cls.source_name)
 
@@ -122,7 +124,7 @@ class Provenance(object):
         # current AnalysisStep. It will fetch static relationships between
         # variables and attributes, and link to the inputs and outputs of the
         # function
-        ast_visitor = CallAST(self, inputs, output)
+        ast_visitor = CallAST(self)
         ast_visitor.visit(tree)
 
     def __call__(self, function):
@@ -168,6 +170,7 @@ class Provenance(object):
                 # full statement.
                 source_line = self.code_analyzer.extract_multiline_statement(
                     lineno)
+                print(source_line)
                 ast_tree = ast.parse(source_line)
 
                 # 2. Extract function name and information

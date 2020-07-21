@@ -4,22 +4,8 @@ code of the frame that activated provenance tracking.
 The main purpose is to retrieve the full multiline statements that generated
 the call to a tracked function.
 """
-
-from tokenize import (generate_tokens, NEWLINE, OP, COMMENT, RBRACE, LBRACE,
-                      RPAR, LPAR, RSQB, LSQB, COLON, INDENT, TokenError)
-from six import StringIO
-import re
-
-
-EXACT_TOKEN_TYPES = {
-    ')': RPAR,
-    '(': LPAR,
-    ']': RSQB,
-    '[': LSQB,
-    ':': COLON,
-    '}': RBRACE,
-    '{': LBRACE,
-}
+import numpy as np
+import ast
 
 
 class SourceCodeAnalyzer(object):
@@ -31,79 +17,50 @@ class SourceCodeAnalyzer(object):
     ----------
     source_code : list
         Extracted source code from the frame that activated provenance.
+    ast_tree : ast.Module
+        Abstract Syntax Tree of the source code.
     start_line : int
         Line from the source file where the code starts.
     source_name : str
         Name of the frame to which the source code corresponds.
     """
 
-    def __init__(self, source_code, start_line, source_name):
+    def __init__(self, source_code, ast_tree, start_line, source_name):
         self.source_code = source_code
+        self.ast_tree = ast_tree
         self.start_line = start_line
         self._offset = 0 if source_name == '<module>' else 1
+        self.line_map = self._build_line_map(ast_tree)
 
-    def _check_line(self, line_number, cur_line):
-        # Verifies if a given line is part of a multiline statement
-        try:
-            cur_is_multiline = cur_line is None
-            if line_number < self.start_line:
-                return None
-            line = self._get_code_line(line_number)
-            string_io = StringIO(line)
+    def _build_line_map(self, ast_tree):
+        is_function = False
+        if (len(ast_tree.body) == 1 and
+                isinstance(ast_tree.body[0], ast.FunctionDef)):
+            # We are tracking inside a function (e.g., `def main():`)
+            code_nodes = ast_tree.body[0].body
+            is_function = True
+        else:
+            # We are tracking from the script root
+            code_nodes = ast_tree.body
 
-            # If TokenError is raised, this is part of a multiline
-            # statement.
-            tokens = generate_tokens(string_io.readline)
+        # Add the line number of each node in the script/function body
+        statement_lines = list()
+        for node in code_nodes:
+            statement_lines.append(node.lineno)
+        line_map = np.sort(np.array(statement_lines))
 
-            # If no error is raised, then check if there are open brackets.
-            # If not, check if the line terminates in a multiline
-            # character, such as \ + ( [ { , ".
+        # If in a function, the lines will be relative to the function `def`
+        # line. We need to correct. The `def` line is line number 1, therefore,
+        # codes start on line 2 of the function body.
+        if is_function:
+            line_map += self.start_line - 2
 
-            # Iterate over tokens and accumulate counts
-            last_token = None
-            operator_count = {RBRACE: 0, RPAR: 0, RSQB: 0,
-                              LBRACE: 0, LPAR: 0, LSQB: 0}
-            for token in tokens:
-                # Ignore any comments and indentations
-                if token[0] == NEWLINE:
-                    break
-                if token[0] == COMMENT or token[0] == INDENT:
-                    continue
+        return line_map
 
-                if token[0] == OP:
-                    exact_type = token.exact_type \
-                        if hasattr(token, 'exact_type') else \
-                        EXACT_TOKEN_TYPES[token[1]]
-                    if exact_type in [RBRACE, RPAR, RSQB, LBRACE, LPAR,
-                                      LSQB]:
-                        operator_count[exact_type] += 1
-                last_token = token
-
-            # If number of any L brackets are greater than R brackets, then
-            # this is part of a multiline.
-            if cur_is_multiline:
-                for right_bracket, left_bracket in zip([RSQB, RBRACE, RPAR],
-                                                       [LSQB, LBRACE, LPAR]):
-                    if operator_count[left_bracket] < \
-                            operator_count[right_bracket]:
-                        return line
-
-            # Check for ending operators in multilines
-            if last_token[0] == OP:
-                exact_type = last_token.exact_type \
-                    if hasattr(last_token, 'exact_type') \
-                    else EXACT_TOKEN_TYPES[last_token[1]]
-                if exact_type in [RBRACE, RPAR, RSQB, COLON]:
-                    return None
-                return line
-
-            return None
-
-        except TokenError:
-            return line
-
-    def _get_code_line(self, line_number):
-        return self.source_code[line_number - self.start_line + self._offset]
+    def _get_start_line(self, line_number):
+        line_diff = self.line_map - line_number
+        nearest_number_index = np.argmax(line_diff[line_diff <= 0])
+        return self.line_map[nearest_number_index]
 
     def extract_multiline_statement(self, line_number):
         """
@@ -122,23 +79,8 @@ class SourceCodeAnalyzer(object):
             multiline.
 
         """
-
-        statement = []
-        cur_line = self._check_line(line_number, False)
-        if cur_line is not None:
-            # We know this is already a multiline statement. Add the line
-            # above and start checking the previous lines
-            statement.append(self._get_code_line(line_number - 1))
-            previous_line_number = line_number - 2
-        else:
-            cur_line = self._get_code_line(line_number)
-            previous_line_number = line_number - 1
-
-        previous_line = self._check_line(previous_line_number, cur_line)
-        while previous_line is not None:
-            statement.append(previous_line)
-            previous_line_number -= 1
-            previous_line = self._check_line(previous_line_number,
-                                             previous_line)
-
-        return "".join(statement[::-1] + [cur_line]).strip()
+        statement_start_line = self._get_start_line(line_number)
+        position_offset = -self.start_line + self._offset
+        return "".join(
+            self.source_code[statement_start_line + position_offset:
+                             line_number + position_offset + 1]).strip()
