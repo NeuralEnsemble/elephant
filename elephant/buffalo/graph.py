@@ -7,8 +7,8 @@ class BuffaloProvenanceGraph(nx.DiGraph):
     def _add_input_to_output(self, analysis_step, input_obj, edge_label,
                              edge_title, multi_output, **attrs):
         obj_type = input_obj.type
-        self.add_node(input_obj, label=obj_type,
-                      title=obj_type.split(".")[-1])
+        obj_label = obj_type.split(".")[-1]
+        self.add_node(input_obj, label=obj_label, title=obj_type)
 
         if multi_output:
             for output_key, output_obj in analysis_step.output.items():
@@ -44,8 +44,8 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         for key, obj in analysis_step.output.items():
             obj_type = obj.type
-            self.add_node(obj, label=obj_type.split(".")[-1],
-                          title=obj_type)
+            obj_label = obj_type.split(".")[-1]
+            self.add_node(obj, label=obj_label, title=obj_type)
         multi_output = len(list(analysis_step.output.keys())) > 1
 
         edge_attr, edge_label, edge_title = \
