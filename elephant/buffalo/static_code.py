@@ -6,6 +6,7 @@ the child/parent relationships between the objects.
 """
 
 import ast
+import datetime
 
 
 class StaticStep(object):
@@ -86,7 +87,7 @@ class StaticStep(object):
         return provenance.AnalysisStep(
             provenance.FunctionDefinition(self._operation, '', ''),
             {0: input_object}, params, {0:output_object}, None, None,
-            self._node, None)
+            self._node, None, datetime.datetime.utcnow().isoformat())
 
 
 class NameStep(StaticStep):

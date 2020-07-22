@@ -10,6 +10,7 @@ from functools import wraps
 import inspect
 import ast
 from collections import namedtuple
+import datetime
 
 from elephant.buffalo.object_hash import BuffaloObjectHash
 from elephant.buffalo.graph import BuffaloProvenanceGraph
@@ -35,7 +36,8 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'arg_map',
                                            'kwarg_map',
                                            'call_ast',
-                                           'code_statement'))
+                                           'code_statement',
+                                           'time_stamp'))
 
 
 FunctionDefinition = namedtuple('FunctionDefinition', ('name',
@@ -160,6 +162,7 @@ class Provenance(object):
                     del frame
 
             function_output = function(*args, **kwargs)
+            time_stamp = datetime.datetime.utcnow().isoformat()
 
             # If capturing provenance...
             if Provenance.active and lineno is not None:
@@ -234,7 +237,7 @@ class Provenance(object):
 
                 step = AnalysisStep(function_name, inputs, parameters, outputs,
                                     input_args_names, input_kwargs_names,
-                                    ast_tree, source_line)
+                                    ast_tree, source_line, time_stamp)
 
                 # 7. Add to history
                 # The history will be the base to generate the graph / PROV
