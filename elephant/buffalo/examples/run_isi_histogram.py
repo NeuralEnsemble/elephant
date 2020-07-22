@@ -164,9 +164,9 @@ def main(session_id):
 
     figure.savefig('isi.png')
 
-    provenance.print_history()
+    # provenance.print_history()
 
-    provenance.save_graph("isi_histogram.html")
+    provenance.save_graph("isi_histogram.html", show=True)
 
 
 if __name__ == "__main__":

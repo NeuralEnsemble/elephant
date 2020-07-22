@@ -45,6 +45,10 @@ FunctionDefinition = namedtuple('FunctionDefinition', ('name',
                                                        'version'))
 
 
+VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
+VarArgs = namedtuple('VarArgs', 'value')
+
+
 class Provenance(object):
     """
     Class to capture and store provenance information in analysis workflows
@@ -98,7 +102,7 @@ class Provenance(object):
 
     active = False
     history = []
-    objects = dict()
+    objects = set()
     inputs = None
 
     calling_frame = None
@@ -188,22 +192,23 @@ class Provenance(object):
                 #    arg/kwarg order are also constructed, to map to the
                 #    `args` and `keywords` fields of AST nodes
 
-                # 3.1 Positional arguments
-
                 input_data = {}
                 input_args_names = []
-                params = tuple(signature(function).parameters.keys())
-                for arg_id, arg_val in enumerate(args):
-                    arg_name = params[arg_id]
-                    input_data[arg_name] = arg_val
-                    input_args_names.append(arg_name)
-
-                # 3.2 Add keyword arguments
-
                 input_kwargs_names = []
-                for kwarg_id, kwarg_name in enumerate(kwargs.keys()):
-                    input_data[kwarg_name] = kwargs[kwarg_name]
-                    input_kwargs_names.append(kwarg_name)
+
+                func_parameters = inspect.signature(function).bind(*args,
+                                                                   **kwargs)
+                for arg_name, arg_value in func_parameters.arguments.items():
+                    cur_parameter = func_parameters.signature.parameters[
+                        arg_name]
+                    if cur_parameter.kind != VAR_POSITIONAL:
+                        input_data[arg_name] = arg_value
+                    else:
+                        input_data[arg_name] = VarArgs(arg_value)
+                    if arg_name in kwargs:
+                        input_kwargs_names.append(arg_name)
+                    else:
+                        input_args_names.append(arg_name)
 
                 # 4. Create parameters/input descriptions for the graph
                 #    Here the inputs, but not the parameters passed to the
@@ -216,7 +221,13 @@ class Provenance(object):
                 inputs = {}
                 for key, value in input_data.items():
                     if key in self.inputs:
-                        inputs[key] = self.add(value)
+                        if isinstance(value, VarArgs):
+                            var_input_list = []
+                            for var_arg in value.value:
+                                var_input_list.append(self.add(var_arg))
+                            inputs[key] = VarArgs(tuple(var_input_list))
+                        else:
+                            inputs[key] = self.add(value)
                     else:
                         parameters[key] = value
 
@@ -318,8 +329,8 @@ class Provenance(object):
         """
         object_hash = BuffaloObjectHash(obj)
         if object_hash not in cls.objects:
-            cls.objects[object_hash] = object_hash
-        return cls.objects[object_hash]
+            cls.objects.add(object_hash)
+        return object_hash
 
     @classmethod
     def add_script_variable(cls, name):
