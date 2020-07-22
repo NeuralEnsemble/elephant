@@ -30,7 +30,7 @@ class SourceCodeAnalyzer(object):
         self.ast_tree = ast_tree
         self.start_line = start_line
         self._offset = 0 if source_name == '<module>' else 1
-        self.line_map = self._build_line_map(ast_tree)
+        self.start_line_map, self.end_line_map = self._build_line_map(ast_tree)
 
     def _build_line_map(self, ast_tree):
         is_function = False
@@ -44,23 +44,31 @@ class SourceCodeAnalyzer(object):
             code_nodes = ast_tree.body
 
         # Add the line number of each node in the script/function body
-        statement_lines = list()
+        statement_start_lines = list()
+        statement_end_lines = list()
         for node in code_nodes:
-            statement_lines.append(node.lineno)
-        line_map = np.sort(np.array(statement_lines))
+            statement_start_lines.append(node.lineno)
+            end_lines = [child.lineno for child in ast.walk(node) if
+                         'lineno' in child._attributes]
+            statement_end_lines.append(max(end_lines))
+
+        start_line_map = np.sort(np.array(statement_start_lines))
+        end_line_map = np.sort(np.array(statement_end_lines))
 
         # If in a function, the lines will be relative to the function `def`
         # line. We need to correct. The `def` line is line number 1, therefore,
         # codes start on line 2 of the function body.
         if is_function:
-            line_map += self.start_line - 2
+            start_line_map += self.start_line - 2
+            end_line_map += self.start_line - 2
 
-        return line_map
+        return start_line_map, end_line_map
 
-    def _get_start_line(self, line_number):
-        line_diff = self.line_map - line_number
+    def _get_statement_lines(self, line_number):
+        line_diff = self.start_line_map - line_number
         nearest_number_index = np.argmax(line_diff[line_diff <= 0])
-        return self.line_map[nearest_number_index]
+        return (self.start_line_map[nearest_number_index],
+                self.end_line_map[nearest_number_index])
 
     def extract_multiline_statement(self, line_number):
         """
@@ -79,8 +87,8 @@ class SourceCodeAnalyzer(object):
             multiline.
 
         """
-        statement_start_line = self._get_start_line(line_number)
+        statement_start, statement_end = self._get_statement_lines(line_number)
         position_offset = -self.start_line + self._offset
         return "".join(
-            self.source_code[statement_start_line + position_offset:
-                             line_number + position_offset + 1]).strip()
+            self.source_code[statement_start + position_offset:
+                             statement_end + position_offset + 1]).strip()
