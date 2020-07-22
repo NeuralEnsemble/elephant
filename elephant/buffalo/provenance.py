@@ -177,7 +177,6 @@ class Provenance(object):
                 # full statement.
                 source_line = self.code_analyzer.extract_multiline_statement(
                     lineno)
-                print(source_line)
                 ast_tree = ast.parse(source_line)
 
                 # 2. Extract function name and information

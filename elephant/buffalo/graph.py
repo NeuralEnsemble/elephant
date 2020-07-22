@@ -83,11 +83,6 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                 level += 1
                 children = next_children
 
-        print(roots)
-        # for node, degree in self.in_degree:
-        #     if degree == 0:
-        #         nodes[node]['level'] = 0
-
         net = Network(height="960px", width="1280px", directed=True, layout=layout)
         for v, u, edge_attr in edges:
             add_node(v)
