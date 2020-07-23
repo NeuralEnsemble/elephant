@@ -118,13 +118,6 @@ class Provenance(object):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
 
-    @classmethod
-    def _create_code_analyzer(cls):
-        cls.code_analyzer = SourceCodeAnalyzer(cls.source_code,
-                                               cls.frame_ast,
-                                               cls.source_lineno,
-                                               cls.source_name)
-
     def _insert_static_information(self, tree, inputs, output):
         # Use a NodeVisitor to find the Call node that corresponds to the
         # current AnalysisStep. It will fetch static relationships between
@@ -270,10 +263,21 @@ class Provenance(object):
         else:
             cls.source_lineno = inspect.getlineno(frame)
 
-        cls.source_code = inspect.getsourcelines(frame)[0]
+        code_lines = inspect.getsourcelines(frame)[0]
+
+        # Clean decorators
+        cur_line = 0
+        while code_lines[cur_line].strip().startswith('@'):
+            cur_line += 1
+
+        cls.source_code = code_lines[cur_line:]
+
         cls.frame_ast = ast.parse("".join(cls.source_code).strip())
 
-        cls._create_code_analyzer()
+        cls.code_analyzer = SourceCodeAnalyzer(cls.source_code,
+                                               cls.frame_ast,
+                                               cls.source_lineno,
+                                               cls.source_name)
 
     @classmethod
     def get_prov_graph(cls, **kwargs):

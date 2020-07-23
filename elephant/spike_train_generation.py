@@ -20,6 +20,7 @@ import numpy as np
 import quantities as pq
 
 from elephant.spike_train_surrogates import dither_spike_train
+from elephant.buffalo import provenance
 
 
 def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
@@ -313,7 +314,7 @@ def _homogeneous_process(interval_generator, mean_rate, t_start, t_stop,
 
     return spikes
 
-
+@provenance.Provenance(inputs=[])
 def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
                                 t_stop=1000.0 * pq.ms, as_array=False,
                                 refractory_period=None):
