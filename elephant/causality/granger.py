@@ -71,8 +71,6 @@ from neo.core import AnalogSignal
 
 __all__ = (
     "Causality",
-    "bic",
-    "aic",
     "pairwise_granger"
 )
 
@@ -367,14 +365,14 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     Parameters
     ----------
     signals : array-like or neo.AnalogSignal
-        time series data
+        Time series data
     max_order : int
-        maximal order of autoregressive model
-    information_criterion : callable
+        Maximal order of autoregressive model
+    information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion
-        Default: aic
+        Default: 'aic'.
 
     Returns
     -------
