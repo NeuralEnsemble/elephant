@@ -421,6 +421,15 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         If the log determinant of the prediction error covariance matrix is
         below the tolerance level of 1e-7.
 
+    Notes
+    -----
+    The formulas used in this implementation follows
+    :cite:`granger-Ding06_0608035`. The only difference being that we change
+    the equation 47 in the following way:
+    -R(k) - A(1)R(k - 1) - ... - A(m)R(k - m) = 0.
+    This forumlation allows for the usage of R values without transposition
+    (i.e. directly) in equation 48.
+
     Examples
     --------
     Example 1. Independent variables.
