@@ -83,5 +83,8 @@ ignored/
 
 .ipynb_checkpoints/
 
+# data
+*.nix
+
 /elephant/buffalo/examples/*.png
 /elephant/buffalo/examples/*.htm*

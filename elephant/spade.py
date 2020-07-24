@@ -957,6 +957,10 @@ def _filter_for_moving_window_subsets(concepts, winlen):
     if len(concepts) == 0:
         return concepts
 
+    # don't do anything if winlen is one
+    if winlen == 1:
+        return concepts
+
     if hasattr(concepts[0], 'intent'):
         # fca format
         # sort the concepts by (decreasing) support
