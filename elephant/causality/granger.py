@@ -365,13 +365,13 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     Parameters
     ----------
     signals : array-like or neo.AnalogSignal
-        Time series data
+        Time series data (2xN in case of array-like).
     max_order : int
-        Maximal order of autoregressive model
+        Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion
+            `aic` for Akaike information criterion,
         Default: 'aic'.
 
     Returns
