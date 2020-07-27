@@ -578,7 +578,7 @@ def _jsf_uniform_orderstat_3d(u, n, verbose=False):
             continue
 
         # we only need the differences of the indices:
-        di = -np.diff(matrix_entries, prepend=n, append=0)
+        di = -np.diff((n,) + matrix_entries + (0,))
 
         # reshape the matrix to be compatible with du
         di_scratch[:, range(len(di))] = di
