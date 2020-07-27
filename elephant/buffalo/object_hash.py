@@ -4,6 +4,11 @@ class decorator to track unique objects during the script execution.
 """
 
 import joblib
+from dill._dill import save_function
+
+# Need to use `dill` pickling function to support lambdas
+# The dispatch table of the `joblib.Hasher` object is updated
+joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
 
 class BuffaloObjectHash(object):
