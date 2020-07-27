@@ -1,5 +1,8 @@
 name: elephant
 
+channels:
+  - conda-forge  # required by mpi4py
+
 dependencies:
   - python>=3.6
   - pip
@@ -10,3 +13,5 @@ dependencies:
   - pandas
   - scikit-learn
   - statsmodels
+  - pip:
+     - -r file:requirements.txt
