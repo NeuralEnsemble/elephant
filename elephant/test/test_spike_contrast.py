@@ -85,8 +85,11 @@ class TestUM(unittest.TestCase):
 
     def test_binning_half_overlap(self):
         spiketrain = np.array([1, 2, 3, 9])
-        histogram = spc._binning_half_overlap(spiketrain,
-                                              t_start=0, t_stop=10, bin_size=5)
+        bin_step = 5 / 2
+        t_start = 0
+        t_stop = 10
+        edges = np.arange(t_start, t_stop + bin_step, bin_step)
+        histogram = spc._binning_half_overlap(spiketrain, edges=edges)
         assert_array_equal(histogram, [3, 1, 1])
 
 

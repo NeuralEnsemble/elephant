@@ -21,6 +21,7 @@ Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
+from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 
@@ -30,10 +31,11 @@ def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
     Calculates theta (amount of spikes per bin) and the amount of active spike
     trains per bin of one spike train.
     """
+    bin_step = bin_size / 2
+    edges = np.arange(t_start, t_stop + bin_step, bin_step)
     # Calculate histogram for every spike train
     histogram = np.vstack([
-        _binning_half_overlap(st, t_start=t_start, t_stop=t_stop,
-                              bin_size=bin_size)
+        _binning_half_overlap(st, edges=edges)
         for st in spiketrains
     ])
     # Amount of spikes per bin
@@ -44,13 +46,11 @@ def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
     return theta, n_active_per_bin
 
 
-def _binning_half_overlap(spiketrain, t_start, t_stop, bin_size):
+def _binning_half_overlap(spiketrain, edges):
     """
     Referring to [1] overlapping the bins creates a better result.
     """
-    bin_step = bin_size / 2
-    edges = np.arange(t_start, t_stop + bin_step, bin_step)
-    histogram, bin_edges = np.histogram(spiketrain, edges)
+    histogram, bin_edges = np.histogram(spiketrain, bins=edges)
     histogram = histogram[:-1] + histogram[1:]
     return histogram
 
@@ -112,13 +112,13 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
     synchrony_curve = []
     bin_size = bin_max
     while bin_size >= bin_min:
-        # Set the new boundaries for the time
-        time_start = -isi_min
-        time_end = duration + isi_min
+        # Set new time boundaries
+        t_start = -isi_min
+        t_stop = duration + isi_min
         # Calculate Theta and n
         theta_k, n_k = _get_theta_and_n_per_bin(spiketrains,
-                                                t_start=time_start,
-                                                t_stop=time_end,
+                                                t_start=t_start,
+                                                t_stop=t_stop,
                                                 bin_size=bin_size)
 
         # calculate synchrony_curve = contrast * active_st
@@ -131,6 +131,6 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
         # New bin size
         bin_size *= bin_shrink_factor
 
-    # Sync value is maximum of cost function C
+    # Sync value is maximum of the cost function C
     synchrony = max(synchrony_curve)
     return synchrony
