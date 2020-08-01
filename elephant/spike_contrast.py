@@ -27,8 +27,8 @@ import numpy as np
 
 def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
     """
-    Calculates theta (amount of spikes per bin) and n (amount of active spike
-    trains per bin) of one spike train.
+    Calculates theta (amount of spikes per bin) and the amount of active spike
+    trains per bin of one spike train.
     """
     # Calculate histogram for every spike train
     histogram = np.vstack([
@@ -39,9 +39,9 @@ def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
     # Amount of spikes per bin
     theta = histogram.sum(axis=0)
     # Amount of active spike trains per bin
-    n = np.count_nonzero(histogram, axis=0)
+    n_active_per_bin = np.count_nonzero(histogram, axis=0)
 
-    return theta, n
+    return theta, n_active_per_bin
 
 
 def _binning_half_overlap(spiketrain, t_start, t_stop, bin_size):
@@ -55,10 +55,11 @@ def _binning_half_overlap(spiketrain, t_start, t_stop, bin_size):
     return histogram
 
 
-def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01):
+def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
+                   bin_shrink_factor=0.9):
     """
-    Calculates the synchrony of several spike trains. The spikes trains do not have to have the same length, the
-    algorithm takes care of that.
+    Calculates the synchrony of spike trains. The spike trains can have
+    different lengths.
 
     Parameters
     ----------
@@ -68,10 +69,15 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01):
         The beginning of the spike train.
     t_stop : float
         The end of the spike train.
-    min_bin : float
-        The variable bin_min gets calculated by the algorithm, but if the calculated
-        value is smaller than max_bin_min it takes max_bin_min to not get smaller than it.
+    min_bin : float, optional
+        Sets the minimum value for the `bin_min` that is calculated by the
+        algorithm and defines the smallest bin size to compute the histogram
+        of the input `spiketrains`.
         Default: 0.01
+    bin_shrink_factor : float, optional
+        A multiplier to shrink the bin size on each iteration. The value must
+        be in range `(0, 1)`.
+        Default: 0.9
 
     Returns
     -------
@@ -81,38 +87,31 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01):
     Examples
     --------
     >>> import quantities as pq
-    >>> import elephant.spike_train_generation
-    >>> import elephant.spike_contrast
-    >>> spike_train_1 = homogeneous_poisson_process(
-    ...     20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms, as_array=True)
-    >>> spikes_train_2 = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms, refractory_period = 3*pq.ms)
-    >>> spike_trains = np.array([spike_train_1, spike_train_2])
-    >>> print(spike_contrast(spiketrains_padded, 0, 10000))
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_contrast import spike_contrast
+    >>> spiketrain_1 = homogeneous_poisson_process(rate=20*pq.Hz,
+    ...     t_start=5000*pq.ms, t_stop=10000*pq.ms, as_array=True)
+    >>> spiketrain_2 = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
+    ...     t_stop=1000*pq.ms, refractory_period=3*pq.ms, as_array=True)
+    >>> spike_contrast([spiketrain_1, spiketrain_2], t_start=0, t_stop=10000)
+    0.0
 
     """
+    if not 0. < bin_shrink_factor < 1.:
+        raise ValueError("'bin_shrink_factor' ({}) must be in range (0, 1)."
+                         .format(bin_shrink_factor))
+
     n_spiketrains = len(spiketrains)
     n_spikes_total = sum(map(len, spiketrains))
 
-    # Get the transposed matrix for the algorithm
     duration = t_stop - t_start
-
-    # parameter
-    bin_shrink_factor = 0.9  # bin size decreases by factor 0.9 for each iteration
     bin_max = duration / 2
-    isi_min = min(min(np.diff(st)) for st in spiketrains)
+    isi_min = min(np.min(np.diff(st)) for st in spiketrains)
     bin_min = max(isi_min / 2, min_bin)
 
-    # initialization
-    num_iterations = np.ceil(
-        np.log(bin_min / bin_max) / np.log(bin_shrink_factor))
-    num_iterations = int(num_iterations)
-    active_st = np.zeros(num_iterations)
-    contrast = np.zeros(num_iterations)
-    synchrony_curve = np.zeros(num_iterations)
-
+    synchrony_curve = []
     bin_size = bin_max
-    for iter_id in range(num_iterations):
+    while bin_size >= bin_min:
         # Set the new boundaries for the time
         time_start = -isi_min
         time_end = duration + isi_min
@@ -123,13 +122,15 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01):
                                                 bin_size=bin_size)
 
         # calculate synchrony_curve = contrast * active_st
-        active_st[iter_id] = ((np.sum(n_k * theta_k)) / (np.sum(theta_k)) - 1) / (
+        active_st = (np.sum(n_k * theta_k) / np.sum(theta_k) - 1) / (
                     n_spiketrains - 1)
-        contrast[iter_id] = (np.sum(np.abs(np.diff(theta_k))) / (n_spikes_total * 2))
+        contrast = np.sum(np.abs(np.diff(theta_k))) / (2 * n_spikes_total)
         # Contrast: sum(|derivation|) / (2*#Spikes)
-        synchrony_curve[iter_id] = contrast[iter_id] * active_st[iter_id]  # synchrony_curve
+        synchrony_curve_i = contrast * active_st
+        synchrony_curve.append(synchrony_curve_i)
         # New bin size
         bin_size *= bin_shrink_factor
+
     # Sync value is maximum of cost function C
-    synchrony = np.max(synchrony_curve)
+    synchrony = max(synchrony_curve)
     return synchrony
