@@ -32,7 +32,7 @@ def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
     """
     # Calculate histogram for every spike train
     histogram = np.vstack([
-        _binning_half_overlap(st[st.nonzero()], t_start=t_start, t_stop=t_stop,
+        _binning_half_overlap(st, t_start=t_start, t_stop=t_stop,
                               bin_size=bin_size)
         for st in spiketrains
     ])
@@ -94,14 +94,6 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01):
     n_spiketrains = len(spiketrains)
     n_spikes_total = sum(map(len, spiketrains))
 
-    # Detect the longest array
-    biggest_array_count = max(map(len, spiketrains))
-    # pad the spiketrains with NaN
-    spiketrains_padded = np.vstack([
-        np.pad(st, pad_width=(0, biggest_array_count - len(st)),
-               constant_values=np.nan)
-        for st in spiketrains
-    ])
     # Get the transposed matrix for the algorithm
     duration = t_stop - t_start
 
@@ -125,7 +117,7 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01):
         time_start = -isi_min
         time_end = duration + isi_min
         # Calculate Theta and n
-        theta_k, n_k = _get_theta_and_n_per_bin(spiketrains_padded,
+        theta_k, n_k = _get_theta_and_n_per_bin(spiketrains,
                                                 t_start=time_start,
                                                 t_stop=time_end,
                                                 bin_size=bin_size)

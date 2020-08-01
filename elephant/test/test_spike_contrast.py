@@ -71,10 +71,11 @@ class TestUM(unittest.TestCase):
         self.assertEqual(synchrony, 0.5)
 
     def test_get_theta_and_n_per_bin(self):
-        spike_trains = np.array([[1, 1, 1],
-                                 [2, 2, 2],
-                                 [3, 3, 2.5],
-                                 [9, 9, 0]]).T
+        spike_trains = [
+            [1, 2, 3, 9],
+            [1, 2, 3, 9],
+            [1, 2, 2.5]
+        ]
         theta, n = spc._get_theta_and_n_per_bin(spike_trains,
                                                 t_start=0,
                                                 t_stop=10,
