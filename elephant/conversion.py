@@ -651,17 +651,22 @@ class BinnedSpikeTrain(object):
                 raise ValueError(
                     'too many / too large time bins. Some spike trains are '
                     'not defined in the ending time')
-        if n_bins != int((
+
+        # account for rounding errors in the reference num_bins
+        n_bins_test = ((
             (t_stop - t_start).rescale(
-                bin_size.units) / bin_size).magnitude):
+                bin_size.units) / bin_size).magnitude)
+        if _detect_rounding_errors(n_bins_test, tolerance=self.tolerance):
+            n_bins_test += 1
+        n_bins_test = int(n_bins_test)
+        if n_bins != n_bins_test:
             raise ValueError(
                 "Inconsistent arguments t_start (%s), " % t_start +
-                "t_stop (%s), bin_size (%d) " % (t_stop, bin_size) +
+                "t_stop (%s), bin_size (%s) " % (t_stop, bin_size) +
                 "and n_bins (%d)" % n_bins)
         if n_bins - int(n_bins) != 0 or n_bins < 0:
             raise TypeError(
-                "Number of bins (n_bins) is not an integer or < 0: " + str(
-                    n_bins))
+                "Number of bins ({}) is not an integer or < 0".format(n_bins))
 
     @property
     def bin_edges(self):
