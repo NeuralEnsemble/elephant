@@ -650,6 +650,67 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
                                 t_stop, as_array)
 
 
+def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
+    """
+    Returns a spike train whose spikes are a realization of an inhomogeneous
+    Gamma process with the given rate profile and the given shape factor.
+
+    Parameters
+    ----------
+    rate : neo.AnalogSignal
+        A `neo.AnalogSignal` representing the rate profile evolving over time.
+        Its values have all to be `>=0`. The output spiketrain will have
+        `t_start = rate.t_start` and `t_stop = rate.t_stop`
+    shape_factor : float
+        The shape factor of the Gamma process
+    as_array : bool, optional
+        If True, a NumPy array of sorted spikes is returned,
+        rather than a SpikeTrain object.
+        Default: False.
+
+    Returns
+    -------
+    spiketrain : neo.SpikeTrain or np.ndarray
+        Inhomogeneous Poisson process realization, of type `neo.SpikeTrain`
+        if `as_array` is False (default) and `np.ndarray` otherwise.
+
+    Raises
+    ------
+    ValueError
+        If `rate` contains a negative value.
+    """
+
+    # Check rate contains only positive values
+    if np.any(rate < 0) or rate.size == 0:
+        raise ValueError(
+            'rate must be a positive non empty signal, representing the'
+            'rate at time t')
+
+    operational_time = np.cumsum(
+        (rate*rate.sampling_period).simplified.magnitude)
+    operational_time = np.hstack((0., operational_time))
+    rate_times = np.hstack((rate.times.simplified.magnitude,
+                            rate.t_stop.simplified.magnitude))
+
+    spiketrain_operational_time = homogeneous_gamma_process(
+        a=shape_factor, b=shape_factor*1.*pq.Hz,
+        t_start=0.*pq.s, t_stop=operational_time[-1]*pq.s, as_array=True)
+
+    indices = np.searchsorted(operational_time, spiketrain_operational_time)
+
+    spiketimes = \
+        rate_times[indices - 1] \
+        + rate.sampling_period.simplified.magnitude / (
+            operational_time[indices]-operational_time[indices-1]) * (
+            spiketrain_operational_time - operational_time[indices-1])
+
+    if as_array:
+        return spiketimes
+
+    else:
+        return neo.SpikeTrain(spiketimes, units=pq.s, t_stop=rate.t_stop)
+
+
 def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
     """
     Generates one or more independent Poisson spike trains.
