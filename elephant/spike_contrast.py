@@ -23,7 +23,13 @@ Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 """
 from __future__ import division, print_function, unicode_literals
 
+from collections import namedtuple
+
 import numpy as np
+
+
+SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
+    "contrast", "active_spiketrains", "synchrony"))
 
 
 def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
@@ -56,7 +62,7 @@ def _binning_half_overlap(spiketrain, edges):
 
 
 def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
-                   bin_shrink_factor=0.9):
+                   bin_shrink_factor=0.9, return_trace=False):
     """
     Calculates the synchrony of spike trains. The spike trains can have
     different lengths.
@@ -78,6 +84,21 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
         A multiplier to shrink the bin size on each iteration. The value must
         be in range `(0, 1)`.
         Default: 0.9
+    return_trace : bool, optional
+        If set to True, returns a history of spike-contrast synchrony, computed
+        for a range of different bin sizes, alongside with the maximum value of
+        the synchrony. A trace is stored in `SpikeContrastTrace` namedtuple
+        with the following attributes:
+          `.contrast` - the average sum of differences of the number of spikes
+          in subsuequent bins;
+
+          `.active_spiketrains` - the average number of spikes per bin,
+          weighted by the number of spike trains containing at least one spike
+          inside the bin;
+
+          `.synchrony` - the product of `contrast` and `active_spiketrains`.
+
+        Default: False
 
     Returns
     -------
@@ -113,7 +134,10 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
         raise ValueError("All input spiketrains contain no more than 1 spike.")
     bin_min = max(isi_min / 2, min_bin)
 
+    contrast_list = []
+    active_spiketrains = []
     synchrony_curve = []
+
     bin_size = bin_max
     while bin_size >= bin_min:
         # Set new time boundaries
@@ -130,11 +154,24 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
                     n_spiketrains - 1)
         contrast = np.sum(np.abs(np.diff(theta_k))) / (2 * n_spikes_total)
         # Contrast: sum(|derivation|) / (2*#Spikes)
-        synchrony_curve_i = contrast * active_st
-        synchrony_curve.append(synchrony_curve_i)
+        synchrony = contrast * active_st
+
+        contrast_list.append(contrast)
+        active_spiketrains.append(active_st)
+        synchrony_curve.append(synchrony)
+
         # New bin size
         bin_size *= bin_shrink_factor
 
     # Sync value is maximum of the cost function C
     synchrony = max(synchrony_curve)
+
+    if return_trace:
+        spike_contrast_trace = SpikeContrastTrace(
+            contrast=contrast_list,
+            active_spiketrains=active_spiketrains,
+            synchrony=synchrony_curve
+        )
+        return synchrony, spike_contrast_trace
+
     return synchrony
