@@ -308,6 +308,58 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         self.assertAlmostEqual(spiketrain_depr.t_stop, spiketrain.t_stop)
 
 
+class InhomogeneousGammaTestCase(unittest.TestCase):
+    def setUp(self):
+        rate_list = [[20]] * 1000 + [[200]] * 1000
+        self.rate_profile = neo.AnalogSignal(
+            rate_list * Hz, sampling_period=0.001 * s)
+        rate_0 = [[0]] * 1000
+        self.rate_profile_0 = neo.AnalogSignal(
+            rate_0 * Hz, sampling_period=0.001 * s)
+        rate_negative = [[-1]] * 1000
+        self.rate_profile_negative = neo.AnalogSignal(
+            rate_negative * Hz, sampling_period=0.001 * s)
+        pass
+
+    def test_statistics(self):
+        # This is a statistical test that has a non-zero chance of failure
+        # during normal operation. Thus, we set the random seed to a value that
+        # creates a realization passing the test.
+        np.random.seed(seed=12345)
+
+        shape_factor = 2.5
+
+        for rate in [self.rate_profile, self.rate_profile.rescale(kHz)]:
+            for refractory_period in [3 * ms, None]:
+                spiketrain = stgen.inhomogeneous_gamma_process(
+                    rate, shape_factor=shape_factor)
+                intervals = isi(spiketrain)
+
+                # Computing expected statistics and percentiles
+                expected_spike_count = (np.sum(
+                    rate) * rate.sampling_period).simplified
+                percentile_count = poisson.ppf(.999, expected_spike_count)
+                expected_min_isi = (1 / np.min(rate))
+                expected_max_isi = (1 / np.max(rate))
+                percentile_min_isi = expon.ppf(.999, expected_min_isi)
+                percentile_max_isi = expon.ppf(.999, expected_max_isi)
+
+                # Testing (each should fail 1 every 1000 times)
+                self.assertLess(spiketrain.size, percentile_count)
+                self.assertLess(np.min(intervals), percentile_min_isi)
+                self.assertLess(np.max(intervals), percentile_max_isi)
+
+                # Testing t_start t_stop
+                self.assertEqual(rate.t_stop, spiketrain.t_stop)
+                self.assertEqual(rate.t_start, spiketrain.t_start)
+
+        # Testing type
+        spiketrain_as_array = stgen.inhomogeneous_gamma_process(
+            rate, shape_factor=shape_factor ,as_array=True)
+        self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
+        self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
+
+
 class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
     def setUp(self):
         rate_list = [[20]] * 1000 + [[200]] * 1000
