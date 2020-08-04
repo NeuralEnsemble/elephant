@@ -925,8 +925,8 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 sttc = spike_time_tiling_coefficient
 
 
-@deprecated_alias(binned_st='binned_spiketrain')
-def spike_train_timescale(binned_spiketrain, tau_max):
+@deprecated_alias(binned_st='binned_spiketrain', tau_max='max_tau')
+def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
     Calculates the auto-correlation time of a binned spike train.
     Uses the definition of the auto-correlation time proposed in [[1]_,
@@ -943,9 +943,10 @@ def spike_train_timescale(binned_spiketrain, tau_max):
     ----------
     binned_spiketrain : elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike train to be evaluated.
-    tau_max : pq.Quantity
-        Maximal integration time of the auto-correlation function. It needs to
-        be a multiple of the `bin_size` of `binned_spiketrain`.
+    max_tau : pq.Quantity
+        Maximal integration time :math:`\tau_{max}` of the auto-correlation
+        function. It needs to be a multiple of the `bin_size` of
+        `binned_spiketrain`.
 
     Returns
     -------
@@ -978,16 +979,16 @@ def spike_train_timescale(binned_spiketrain, tau_max):
         return np.nan
 
     bin_size = binned_spiketrain.bin_size
-    if not (tau_max / bin_size).simplified.units == pq.dimensionless:
-        raise ValueError("tau_max needs units of time")
+    if not (max_tau / bin_size).simplified.units == pq.dimensionless:
+        raise ValueError("max_tau needs units of time")
 
-    # safe casting of tau_max/bin_size to integer
-    tau_max_bins = int(np.round((tau_max / bin_size).simplified.magnitude))
-    if not np.isclose(tau_max.simplified.magnitude,
-                      (tau_max_bins * bin_size).simplified.magnitude):
-        raise ValueError("tau_max has to be a multiple of the bin_size")
+    # safe casting of max_tau/bin_size to integer
+    max_tau_bins = int(np.round((max_tau / bin_size).simplified.magnitude))
+    if not np.isclose(max_tau.simplified.magnitude,
+                      (max_tau_bins * bin_size).simplified.magnitude):
+        raise ValueError("max_tau has to be a multiple of the bin_size")
 
-    cch_window = [-tau_max_bins, tau_max_bins]
+    cch_window = [-max_tau_bins, max_tau_bins]
     corrfct, bin_ids = cross_correlation_histogram(
         binned_spiketrain, binned_spiketrain, window=cch_window,
         cross_corr_coef=True
