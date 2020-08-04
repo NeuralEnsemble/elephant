@@ -65,10 +65,10 @@ class WelchPSDTestCase(unittest.TestCase):
 
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
-        freqs, psd = elephant.spectral.welch_psd(data, freq_resolution=freq_res)
+        freqs, psd = elephant.spectral.welch_psd(data, frequency_resolution=freq_res)
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertEqual(freqs[psd.argmax()], signal_freq)
-        freqs_np, psd_np = elephant.spectral.welch_psd(data.magnitude.flatten(), fs=1/sampling_period, freq_resolution=freq_res)
+        freqs_np, psd_np = elephant.spectral.welch_psd(data.magnitude.flatten(), fs=1/sampling_period, frequency_resolution=freq_res)
         self.assertTrue((freqs==freqs_np).all() and (psd==psd_np).all())
 
         # check of scipy.signal.welch() parameters
@@ -202,7 +202,7 @@ class WelchCohereTestCase(unittest.TestCase):
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
         freqs, coherency, phase_lag = elephant.spectral.welch_coherence(x, y,
-                                                                        freq_resolution=freq_res)
+                                                                        frequency_resolution=freq_res)
         self.assertAlmostEqual(freq_res, freqs[1]-freqs[0])
         self.assertAlmostEqual(freqs[coherency.argmax()], signal_freq,
             places=2)
@@ -210,7 +210,7 @@ class WelchCohereTestCase(unittest.TestCase):
             places=2)
         freqs_np, coherency_np, phase_lag_np =\
             elephant.spectral.welch_coherence(x.magnitude.flatten(), y.magnitude.flatten(),
-                                              fs=1/sampling_period, freq_resolution=freq_res)
+                                              fs=1/sampling_period, frequency_resolution=freq_res)
         assert_array_equal(freqs.simplified.magnitude, freqs_np)
         assert_array_equal(coherency[:, 0], coherency_np)
         assert_array_equal(phase_lag[:, 0], phase_lag_np)

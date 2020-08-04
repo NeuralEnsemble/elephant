@@ -29,7 +29,7 @@ def deprecated_alias(**aliases):
 
     Parameters
     ----------
-    aliases: dict
+    aliases: str
         The key-value pairs of mapping old --> new argument names of a
         function.
 

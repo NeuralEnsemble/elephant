@@ -346,13 +346,16 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     return cross_corr
 
 
-def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
-           filter_function='filtfilt', fs=1.0, axis=-1):
+@deprecated_alias(highpass_freq='highpass_frequency',
+                  lowpass_freq='lowpass_frequency',
+                  fs='sampling_frequency')
+def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
+           filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
     """
     Butterworth filtering function for `neo.AnalogSignal`.
 
-    Filter type is determined according to how values of `highpass_freq` and
-    `lowpass_freq` are given (see "Parameters" section for details).
+    Filter type is determined according to how values of `highpass_frequency`
+    and `lowpass_frequency` are given (see "Parameters" section for details).
 
     Parameters
     ----------
@@ -360,23 +363,25 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         Time series data to be filtered.
         If `pq.Quantity` or `np.ndarray`, the sampling frequency should be
         given through the keyword argument `fs`.
-    highpass_freq : pq.Quantity of float, optional
+    highpass_frequency : pq.Quantity of float, optional
         High-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
         Default: None.
-    lowpass_freq : pq.Quantity or float, optional
+    lowpass_frequency : pq.Quantity or float, optional
         Low-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
-        Filter type is determined depending on the values of `lowpass_freq`
-        and `highpass_freq`:
+        Filter type is determined depending on the values of
+        `lowpass_frequency` and `highpass_frequency`:
 
-        * `highpass_freq` only (`lowpass_freq` is None): highpass filter
+        * `highpass_frequency` only (`lowpass_frequency` is None):
+        highpass filter
 
-        * `lowpass_freq` only (`highpass_freq` is None): lowpass filter
+        * `lowpass_frequency` only (`highpass_frequency` is None):
+        lowpass filter
 
-        * `highpass_freq` < `lowpass_freq`: bandpass filter
+        * `highpass_frequency` < `lowpass_frequency`: bandpass filter
 
-        * `highpass_freq` > `lowpass_freq`: bandstop filter
+        * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
         Default: None.
     order : int, optional
@@ -396,7 +401,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         filtering, in particular higher order filters, use 'sosfiltfilt'
         (see [1]_).
         Default: 'filtfilt'.
-    fs : pq.Quantity or float, optional
+    sampling_frequency : pq.Quantity or float, optional
         The sampling frequency of the input time series. When given as
         `float`, its value is taken as frequency in Hz. When `signal` is given
         as `neo.AnalogSignal`, its attribute is used to specify the sampling
@@ -418,7 +423,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         If `filter_function` is not one of 'lfilter', 'filtfilt',
         or 'sosfiltfilt'.
 
-        If both `highpass_freq` and `lowpass_freq` are None.
+        If both `highpass_frequency` and `lowpass_frequency` are None.
 
     References
     ----------
@@ -433,30 +438,30 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
                              available_filters=available_filters))
     # design filter
     if hasattr(signal, 'sampling_rate'):
-        fs = signal.sampling_rate.rescale(pq.Hz).magnitude
-    if isinstance(highpass_freq, pq.quantity.Quantity):
-        highpass_freq = highpass_freq.rescale(pq.Hz).magnitude
-    if isinstance(lowpass_freq, pq.quantity.Quantity):
-        lowpass_freq = lowpass_freq.rescale(pq.Hz).magnitude
-    Fn = fs / 2.
+        sampling_frequency = signal.sampling_rate.rescale(pq.Hz).magnitude
+    if isinstance(highpass_frequency, pq.quantity.Quantity):
+        highpass_frequency = highpass_frequency.rescale(pq.Hz).magnitude
+    if isinstance(lowpass_frequency, pq.quantity.Quantity):
+        lowpass_frequency = lowpass_frequency.rescale(pq.Hz).magnitude
+    Fn = sampling_frequency / 2.
     # filter type is determined according to the values of cut-off
     # frequencies
-    if lowpass_freq and highpass_freq:
-        if highpass_freq < lowpass_freq:
-            Wn = (highpass_freq / Fn, lowpass_freq / Fn)
+    if lowpass_frequency and highpass_frequency:
+        if highpass_frequency < lowpass_frequency:
+            Wn = (highpass_frequency / Fn, lowpass_frequency / Fn)
             btype = 'bandpass'
         else:
-            Wn = (lowpass_freq / Fn, highpass_freq / Fn)
+            Wn = (lowpass_frequency / Fn, highpass_frequency / Fn)
             btype = 'bandstop'
-    elif lowpass_freq:
-        Wn = lowpass_freq / Fn
+    elif lowpass_frequency:
+        Wn = lowpass_frequency / Fn
         btype = 'lowpass'
-    elif highpass_freq:
-        Wn = highpass_freq / Fn
+    elif highpass_frequency:
+        Wn = highpass_frequency / Fn
         btype = 'highpass'
     else:
         raise ValueError(
-            "Either highpass_freq or lowpass_freq must be given"
+            "Either highpass_frequency or lowpass_frequency must be given"
         )
     if filter_function == 'sosfiltfilt':
         output = 'sos'
@@ -495,8 +500,9 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
-@deprecated_alias(nco='n_cycles')
-def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
+@deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
+def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
+                      zero_padding=True):
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
     wavelet.
@@ -510,7 +516,7 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
         `np.ndarray` or list is given, the time axis must be the last
         dimension. If `neo.AnalogSignal`, `Nt` is the number of time points
         and `Nch` is the number of channels.
-    freq : float or list of float
+    frequency : float or list of float
         Center frequency of the Morlet wavelet in Hz. Multiple center
         frequencies can be given as a list, in which case the function
         computes the wavelet transforms for all the given frequencies at once.
@@ -523,7 +529,7 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
         when using a value smaller than ~ 6, in which case the admissibility of
         the wavelet is not ensured (cf. [2]_).
         Default: 6.0.
-    fs : float, optional
+    sampling_frequency : float, optional
         Sampling rate of the input data in Hz.
         When `signal` is given as a `neo.AnalogSignal`, the sampling frequency
         is taken from its attribute and this parameter is ignored.
@@ -539,8 +545,8 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
     Returns
     -------
     signal_wt : np.ndarray
-        Wavelet transform of the input data. When `freq` was given as a list,
-        the way how the wavelet transforms for different frequencies are
+        Wavelet transform of the input data. When `frequency` was given as a
+        list, the way how the wavelet transforms for different frequencies are
         returned depends on the input type:
 
         * when the input was a `neo.AnalogSignal`, the returned array has
@@ -560,8 +566,8 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
     Raises
     ------
     ValueError
-        If `freq` (or one of the values in `freq` when it is a list) is
-        greater than the half of `fs`.
+        If `frequency` (or one of the values in `frequency` when it is a list)
+        is greater than the half of `sampling_frequency`.
 
         If `n_cycles` is not positive.
 
@@ -600,22 +606,23 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
     # When the input is AnalogSignal, use its attribute to specify the
     # sampling frequency
     if hasattr(signal, 'sampling_rate'):
-        fs = signal.sampling_rate
-    if isinstance(fs, pq.quantity.Quantity):
-        fs = fs.rescale('Hz').magnitude
+        sampling_frequency = signal.sampling_rate
+    if isinstance(sampling_frequency, pq.quantity.Quantity):
+        sampling_frequency = sampling_frequency.rescale('Hz').magnitude
 
-    if isinstance(freq, (list, tuple, np.ndarray)):
-        freqs = np.asarray(freq)
+    if isinstance(frequency, (list, tuple, np.ndarray)):
+        freqs = np.asarray(frequency)
     else:
-        freqs = np.array([freq, ])
+        freqs = np.array([frequency, ])
     if isinstance(freqs[0], pq.quantity.Quantity):
         freqs = [f.rescale('Hz').magnitude for f in freqs]
 
     # check whether the given central frequencies are less than the
     # Nyquist frequency of the signal
-    if np.any(freqs >= fs / 2):
-        raise ValueError("`freq` must be less than the half of " +
-                         "the sampling rate `fs` = {} Hz".format(fs))
+    if np.any(freqs >= sampling_frequency / 2):
+        raise ValueError("'frequency' elements must be less than the half of "
+                         "the 'sampling_frequency' ({}) Hz"
+                         .format(sampling_frequency))
 
     # check if n_cycles is positive
     if n_cycles <= 0:
@@ -630,7 +637,7 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
     # generate Morlet wavelets (in the frequency domain)
     wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
     for i, f in enumerate(freqs):
-        wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, fs, n)
+        wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, sampling_frequency, n)
 
     # perform wavelet transform by convoluting the signal with the wavelets
     if data.ndim == 1:
@@ -642,12 +649,12 @@ def wavelet_transform(signal, freq, n_cycles=6.0, fs=1.0, zero_padding=True):
     # reshape the result array according to the input
     if isinstance(signal, neo.AnalogSignal):
         signal_wt = np.rollaxis(signal_wt, -1)
-        if not isinstance(freq, (list, tuple, np.ndarray)):
+        if not isinstance(frequency, (list, tuple, np.ndarray)):
             signal_wt = signal_wt[..., 0]
     else:
         if signal.ndim == 1:
             signal_wt = signal_wt[0]
-        if not isinstance(freq, (list, tuple, np.ndarray)):
+        if not isinstance(frequency, (list, tuple, np.ndarray)):
             signal_wt = signal_wt[..., 0, :]
 
     return signal_wt

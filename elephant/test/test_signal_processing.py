@@ -499,7 +499,7 @@ class ButterTestCase(unittest.TestCase):
 
         # check input as NumPy ndarray
         filtered_noise_np = elephant.signal_processing.butter(
-            noise_np, 400.0, 100.0, fs=1000.0)
+            noise_np, 400.0, 100.0, sampling_frequency=1000.0)
         self.assertTrue(isinstance(filtered_noise_np, np.ndarray))
         self.assertFalse(isinstance(filtered_noise_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(filtered_noise_np, neo.AnalogSignal))
@@ -507,7 +507,7 @@ class ButterTestCase(unittest.TestCase):
 
         # check input as Quantity array
         filtered_noise_pq = elephant.signal_processing.butter(
-            noise_pq, 400.0 * pq.Hz, 100.0 * pq.Hz, fs=1000.0)
+            noise_pq, 400.0 * pq.Hz, 100.0 * pq.Hz, sampling_frequency=1000.0)
         self.assertTrue(isinstance(filtered_noise_pq, pq.quantity.Quantity))
         self.assertFalse(isinstance(filtered_noise_pq, neo.AnalogSignal))
         self.assertEqual(filtered_noise_pq.shape, noise_pq.shape)
@@ -528,9 +528,9 @@ class ButterTestCase(unittest.TestCase):
     def test_butter_axis(self):
         noise = np.random.normal(size=(4, 5000))
         filtered_noise = elephant.signal_processing.butter(
-            noise, 250.0, fs=1000.0)
+            noise, 250.0, sampling_frequency=1000.0)
         filtered_noise_transposed = elephant.signal_processing.butter(
-            noise.T, 250.0, fs=1000.0, axis=0)
+            noise.T, 250.0, sampling_frequency=1000.0, axis=0)
         self.assertTrue(np.all(filtered_noise == filtered_noise_transposed.T))
 
     def test_butter_multidim_input(self):
@@ -540,7 +540,7 @@ class ButterTestCase(unittest.TestCase):
         noise_neo1d = neo.AnalogSignal(
             noise_pq[0], sampling_rate=1000.0 * pq.Hz)
         filtered_noise_pq = elephant.signal_processing.butter(
-            noise_pq, 250.0, fs=1000.0)
+            noise_pq, 250.0, sampling_frequency=1000.0)
         filtered_noise_neo = elephant.signal_processing.butter(
             noise_neo, 250.0)
         filtered_noise_neo1d = elephant.signal_processing.butter(
@@ -792,7 +792,7 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(wt.shape[1] == self.test_data.shape[1])  # channel axis
 
         wt_arr = elephant.signal_processing.wavelet_transform(
-            self.test_data_arr, self.fs/10, fs=self.fs)
+            self.test_data_arr, self.fs/10, sampling_frequency=self.fs)
         self.assertTrue(wt_arr.ndim == self.test_data.ndim)
         # channel axis
         self.assertTrue(wt_arr.shape[0] == self.test_data_arr.shape[0])
@@ -800,7 +800,7 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(wt_arr.shape[1] == self.test_data_arr.shape[1])
 
         wt_arr1d = elephant.signal_processing.wavelet_transform(
-            self.test_data1, self.fs/10, fs=self.fs)
+            self.test_data1, self.fs/10, sampling_frequency=self.fs)
         self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim)
         # time axis
         self.assertTrue(wt_arr1d.shape[0] == self.test_data1.shape[0])
@@ -814,7 +814,7 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(wt.shape[2] == len(self.wt_freqs))  # frequency axis
 
         wt_arr = elephant.signal_processing.wavelet_transform(
-            self.test_data_arr, self.wt_freqs, fs=self.fs)
+            self.test_data_arr, self.wt_freqs, sampling_frequency=self.fs)
         self.assertTrue(wt_arr.ndim == self.test_data_arr.ndim+1)
         # channel axis
         self.assertTrue(wt_arr.shape[0] == self.test_data_arr.shape[0])
@@ -824,7 +824,7 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(wt_arr.shape[2] == self.test_data_arr.shape[1])
 
         wt_arr1d = elephant.signal_processing.wavelet_transform(
-            self.test_data1, self.wt_freqs, fs=self.fs)
+            self.test_data1, self.wt_freqs, sampling_frequency=self.fs)
         self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim+1)
         # frequency axis
         self.assertTrue(wt_arr1d.shape[0] == len(self.wt_freqs))
