@@ -48,7 +48,7 @@ class SpadeTestCase(unittest.TestCase):
         # CPP parameters
         self.n_neu = 100
         self.amplitude = [0] * self.n_neu + [1]
-        self.cpp = stg.cpp(rate=3 * pq.Hz, A=self.amplitude,
+        self.cpp = stg.cpp(rate=3 * pq.Hz, amplitude_distribution=self.amplitude,
                            t_stop=5 * pq.s)
         # Number of patterns' occurrences
         self.n_occ1 = 10
