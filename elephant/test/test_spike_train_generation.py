@@ -355,7 +355,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
 
         # Testing type
         spiketrain_as_array = stgen.inhomogeneous_gamma_process(
-            rate, shape_factor=shape_factor ,as_array=True)
+            rate, shape_factor=shape_factor, as_array=True)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
