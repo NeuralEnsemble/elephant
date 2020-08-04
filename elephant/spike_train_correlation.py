@@ -357,7 +357,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
 
 @deprecated_alias(binned_sts='binned_spiketrain')
-def corrcoef(binned_spiketrain, binary=False, fast=True):
+def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
@@ -439,7 +439,7 @@ def corrcoef(binned_spiketrain, binary=False, fast=True):
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
+    >>> cc_matrix = correlation_coefficient(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
     >>> print(cc_matrix[0, 1])
     0.015477320222075359
 
@@ -453,6 +453,12 @@ def corrcoef(binned_spiketrain, binary=False, fast=True):
 
     return _covariance_sparse(
         binned_spiketrain, corrcoef_norm=True)
+
+
+def corrcoef(*args, **kwargs):
+    warnings.warn("'corrcoef' is deprecated; use 'correlation_coefficient'",
+                  DeprecationWarning)
+    return correlation_coefficient(*args, **kwargs)
 
 
 def _covariance_sparse(binned_spiketrain, corrcoef_norm):
@@ -515,11 +521,12 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
 
 
 @deprecated_alias(binned_st1='binned_spiketrain1',
-                  binned_st2='binned_spiketrain2')
+                  binned_st2='binned_spiketrain2',
+                  cross_corr_coef='cross_correlation_coefficient')
 def cross_correlation_histogram(
         binned_spiketrain1, binned_spiketrain2, window='full',
         border_correction=False, binary=False, kernel=None, method='speed',
-        cross_corr_coef=False):
+        cross_correlation_coefficient=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains `binned_spiketrain1` and `binned_spiketrain2`.
@@ -578,7 +585,7 @@ def cross_correlation_histogram(
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
         Default: "speed".
-    cross_corr_coef : bool, optional
+    cross_correlation_coefficient : bool, optional
         If True, a normalization is applied to the CCH to obtain the
         cross-correlation  coefficient function ranging from -1 to 1 according
         to Equation (5.10) in [1]_. See Notes.
@@ -749,7 +756,7 @@ def cross_correlation_histogram(
             cross_corr = cch_builder.border_correction(cross_corr)
     if kernel is not None:
         cross_corr = cch_builder.kernel_smoothing(cross_corr, kernel=kernel)
-    if cross_corr_coef:
+    if cross_correlation_coefficient:
         cross_corr = cch_builder.cross_correlation_coefficient(cross_corr)
 
     # Transform the array count into an AnalogSignal
@@ -991,7 +998,7 @@ def spike_train_timescale(binned_spiketrain, max_tau):
     cch_window = [-max_tau_bins, max_tau_bins]
     corrfct, bin_ids = cross_correlation_histogram(
         binned_spiketrain, binned_spiketrain, window=cch_window,
-        cross_corr_coef=True
+        cross_correlation_coefficient=True
     )
     # Take only t > 0 values, in particular neglecting the delta peak.
     corrfct_pos = corrfct.time_slice(bin_size / 2, corrfct.t_stop).flatten()

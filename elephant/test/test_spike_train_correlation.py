@@ -165,9 +165,9 @@ class CorrCoefTestCase(unittest.TestCase):
         '''
 
         # Calculate clipped and unclipped
-        res_clipped = sc.corrcoef(
+        res_clipped = sc.correlation_coefficient(
             self.binned_st, binary=True)
-        res_unclipped = sc.corrcoef(
+        res_unclipped = sc.correlation_coefficient(
             self.binned_st, binary=False)
 
         # Check dimensions
@@ -219,14 +219,14 @@ class CorrCoefTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_0], t_start=0 * pq.ms, t_stop=50. * pq.ms,
             bin_size=1 * pq.ms)
-        result = sc.corrcoef(binned_st, fast=False)
+        result = sc.correlation_coefficient(binned_st, fast=False)
         target = np.ones((2, 2))
 
         # Check dimensions
         self.assertEqual(len(result), 2)
         # Check result
         assert_array_almost_equal(result, target)
-        assert_array_almost_equal(result, sc.corrcoef(binned_st, fast=True))
+        assert_array_almost_equal(result, sc.correlation_coefficient(binned_st, fast=True))
 
     def test_corrcoef_binned_short_input(self):
         '''
@@ -236,13 +236,13 @@ class CorrCoefTestCase(unittest.TestCase):
         binned_st = conv.BinnedSpikeTrain(
             self.st_0, t_start=0 * pq.ms, t_stop=50. * pq.ms,
             bin_size=1 * pq.ms)
-        result = sc.corrcoef(binned_st, fast=False)
+        result = sc.correlation_coefficient(binned_st, fast=False)
         target = np.array(1.)
 
         # Check result and dimensionality of result
         self.assertEqual(result.ndim, 0)
         assert_array_almost_equal(result, target)
-        assert_array_almost_equal(result, sc.corrcoef(binned_st, fast=True))
+        assert_array_almost_equal(result, sc.correlation_coefficient(binned_st, fast=True))
 
     @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
@@ -255,7 +255,7 @@ class CorrCoefTestCase(unittest.TestCase):
                                           bin_size=1 * pq.ms)
 
         with self.assertWarns(UserWarning):
-            result = sc.corrcoef(binned_12, fast=False)
+            result = sc.correlation_coefficient(binned_12, fast=False)
 
         # test for NaNs in the output array
         target = np.zeros((2, 2)) * np.NaN
@@ -266,8 +266,8 @@ class CorrCoefTestCase(unittest.TestCase):
         np.random.seed(27)
         st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
         binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
-        assert_array_almost_equal(sc.corrcoef(binned_st, fast=False),
-                                  sc.corrcoef(binned_st, fast=True))
+        assert_array_almost_equal(sc.correlation_coefficient(binned_st, fast=False),
+                                  sc.correlation_coefficient(binned_st, fast=True))
 
 
 class CrossCorrelationHistogramTest(unittest.TestCase):
@@ -372,7 +372,7 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
                                                t_start=t0 * pq.ms,
                                                t_stop=t1 * pq.ms)
             # caluclate corrcoef
-            corrcoef = sc.corrcoef(binned_sts)[1, 0]
+            corrcoef = sc.correlation_coefficient(binned_sts)[1, 0]
 
             # expand t_stop to have two spike trains with same length as st1,
             # st2
@@ -390,7 +390,7 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
                 bin_size=1 * pq.ms)
             # calculate CCHcoef and take value at t=tau
             CCHcoef, _ = sc.cch(binned_st1, binned_st2,
-                                cross_corr_coef=True)
+                                cross_correlation_coefficient=True)
             left_edge = - binned_st1.n_bins + 1
             tau_bin = int(t / float(binned_st1.bin_size.magnitude))
             assert_array_almost_equal(
