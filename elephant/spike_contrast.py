@@ -106,7 +106,11 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
 
     duration = t_stop - t_start
     bin_max = duration / 2
-    isi_min = min(np.min(np.diff(st)) for st in spiketrains)
+
+    try:
+        isi_min = min(np.min(np.diff(st)) for st in spiketrains if len(st) > 1)
+    except TypeError:
+        raise ValueError("All input spiketrains contain no more than 1 spike.")
     bin_min = max(isi_min / 2, min_bin)
 
     synchrony_curve = []
