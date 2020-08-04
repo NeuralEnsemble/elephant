@@ -82,11 +82,13 @@ from elephant.utils import deprecated_alias
 
 
 @deprecated_alias(data='binned_spiketrain', maxlag='max_lag',
-                  min_occ='min_occurrences')
+                  min_occ='min_occurrences',
+                  same_config_cut='same_configuration_pruning')
 def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             alpha=0.05, min_occurrences=1, size_chunks=100,
                             max_spikes=np.inf, significance_pruning=True,
-                            subgroup_pruning=True, same_config_cut=False,
+                            subgroup_pruning=True,
+                            same_configuration_pruning=False,
                             bool_times_format=False, verbose=False):
 
     """
@@ -147,7 +149,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         If True, the method performs subgroup pruning among
         the detected assemblies.
         Default: True.
-    same_config_cut : bool, optional
+    same_configuration_pruning : bool, optional
         If True, performs pruning (not present in the original code and more
         efficient), not testing assemblies already formed
         if they appear in the very same configuration.
@@ -295,15 +297,16 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
             assembly_flag = 0
 
             # call of the function that does the pairwise testing
-            call_tp = _test_pair(ensemble=assembly_in[w1],
-                                 spiketrain2=spiketrain2,
-                                 n2=n2,
-                                 max_lag=max_lag,
-                                 size_chunks=size_chunks,
-                                 reference_lag=reference_lag,
-                                 existing_patterns=existing_patterns,
-                                 same_config_cut=same_config_cut)
-            if same_config_cut:
+            call_tp = _test_pair(
+                ensemble=assembly_in[w1],
+                spiketrain2=spiketrain2,
+                n2=n2,
+                max_lag=max_lag,
+                size_chunks=size_chunks,
+                reference_lag=reference_lag,
+                existing_patterns=existing_patterns,
+                same_configuration_pruning=same_configuration_pruning)
+            if same_configuration_pruning:
                 assem_tp = call_tp[0]
             else:
                 assem_tp = call_tp
@@ -317,7 +320,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                 sign_pairs_matrix[w1][w2] = 1
                 assembly_flag = 1  # flag : it is indeed an assembly
                 # put the item_candidate into the existing_patterns list
-                if same_config_cut:
+                if same_configuration_pruning:
                     item_candidate = call_tp[1]
                     if not existing_patterns:
                         existing_patterns = [item_candidate]
@@ -388,15 +391,16 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                 pop_flag = max(assembly_flag, 0)
                 # testing for the assembly and the new neuron
 
-                call_tp = _test_pair(ensemble=assembly[w1],
-                                     spiketrain2=spiketrain2,
-                                     n2=w2,
-                                     max_lag=max_lag,
-                                     size_chunks=size_chunks,
-                                     reference_lag=reference_lag,
-                                     existing_patterns=existing_patterns,
-                                     same_config_cut=same_config_cut)
-                if same_config_cut:
+                call_tp = _test_pair(
+                    ensemble=assembly[w1],
+                    spiketrain2=spiketrain2,
+                    n2=w2,
+                    max_lag=max_lag,
+                    size_chunks=size_chunks,
+                    reference_lag=reference_lag,
+                    existing_patterns=existing_patterns,
+                    same_configuration_pruning=same_configuration_pruning)
+                if same_configuration_pruning:
                     assem_tp = call_tp[0]
                 else:
                     assem_tp = call_tp
@@ -424,7 +428,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             assembly, n_filtered_assemblies = \
                                 _significance_pruning_step(
                                     pre_pruning_assembly=assembly)
-                    if same_config_cut:
+                    if same_configuration_pruning:
                         item_candidate = call_tp[1]
                         existing_patterns.append(item_candidate)
                 if assembly_flag:
@@ -577,7 +581,7 @@ def _assert_same_pattern(item_candidate, existing_patterns, max_lag):
 
 
 def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
-               existing_patterns, same_config_cut):
+               existing_patterns, same_configuration_pruning):
     """
     Tests if two spike trains have repetitive patterns occurring more
     frequently than chance.
@@ -601,7 +605,7 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
         lag of reference; if zero or negative reference lag=-l
     existing_patterns: list
         list of the already significant patterns
-    same_config_cut: bool
+    same_configuration_pruning: bool
         if True (not present in the original code and more
         efficient), does not test assemblies already formed
         if they appear in the very same configuration
@@ -736,7 +740,7 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     lags_candidate = list(lags_candidate)
     item_candidate = [[pattern_candidate], [lags_candidate]]
 
-    if same_config_cut:
+    if same_configuration_pruning:
         if _assert_same_pattern(item_candidate=item_candidate,
                                 existing_patterns=existing_patterns,
                                 max_lag=max_lag):
@@ -777,7 +781,7 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                         'pvalue': en_pvalue,
                         'times': [],
                         'signature': en_n_occ}
-            if same_config_cut:
+            if same_configuration_pruning:
                 item_candidate = []
                 return assembly, item_candidate
             else:
@@ -1019,7 +1023,7 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                     'pvalue': en_pvalue,
                     'times': activation_series,
                     'signature': en_n_occ}
-        if same_config_cut:
+        if same_configuration_pruning:
             return assembly, item_candidate
         else:
             return assembly
