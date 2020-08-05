@@ -677,8 +677,12 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     Raises
     ------
     ValueError
+        If `rate` is not a neo AnalogSignal
         If `rate` contains a negative value.
     """
+
+    if not isinstance(rate, neo.AnalogSignal):
+        raise ValueError('rate must be a neo AnalogSignal')
 
     # Check rate contains only positive values
     if np.any(rate < 0) or rate.size == 0:

@@ -357,6 +357,24 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
+        # check error if rate has wrong format
+        self.assertRaises(
+            ValueError, stgen.inhomogeneous_gamma_process,
+            rate=[0.1, 2.],
+            shape_factor=shape_factor)
+
+        # check error if negative values in rate
+        self.assertRaises(
+            ValueError, stgen.inhomogeneous_gamma_process,
+            rate=neo.AnalogSignal([-0.1, 10.] * Hz, sampling_period=0.001 * s),
+            shape_factor=shape_factor)
+
+        # check error if rate is empty
+        self.assertRaises(
+            ValueError, stgen.inhomogeneous_gamma_process,
+            rate=neo.AnalogSignal([] * Hz, sampling_period=0.001 * s),
+            shape_factor=shape_factor)
+
 
 class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
     def setUp(self):
