@@ -8,6 +8,7 @@ Unit tests for the ASSET analysis.
 
 import random
 import unittest
+import itertools
 
 import neo
 import numpy as np
@@ -267,6 +268,33 @@ class AssetTestCase(unittest.TestCase):
         self.assertRaises(ValueError, asset.ASSET,
                           spiketrains=[st1, st2], bin_size=bin_size,
                           t_stop_x=5 * pq.ms)
+
+    def test_combinations_with_replacement(self):
+        # Test that _combinations_with_replacement yields the same tuples
+        # as in the original implementation with itertools.product(*lists)
+        # and filtering by _wrong_order.
+
+        def _wrong_order(a):
+            if a[-1] > a[0]:
+                return True
+            for i in range(len(a) - 1):
+                if a[i] < a[i + 1]:
+                    return True
+            return False
+
+        for n in range(1, 15):
+            for d in range(1, 6):
+                lists = [range(j, n + 1) for j in range(d, 0, -1)]
+                matrix_entries = list(
+                    asset._combinations_with_replacement(n=n, d=d)
+                )
+                matrix_entries_correct = [
+                    indices for indices in itertools.product(*lists)
+                    if not _wrong_order(indices)
+                ]
+                it_todo = asset._num_iterations(n=n, d=d)
+                self.assertEqual(matrix_entries, matrix_entries_correct)
+                self.assertEqual(it_todo, len(matrix_entries_correct))
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')

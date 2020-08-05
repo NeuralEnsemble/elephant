@@ -99,7 +99,6 @@ The ASSET found 2 sequences of synchronous events:
 """
 from __future__ import division, print_function, unicode_literals
 
-import itertools
 import warnings
 
 import neo
@@ -400,13 +399,98 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
     return interpolated_signal
 
 
-def _wrong_order(a):
-    if a[-1] > a[0]:
-        return True
-    for i in range(len(a) - 1):
-        if a[i] < a[i + 1]:
-            return True
-    return False
+def _num_iterations(n, d):
+    if d > n:
+        return 0
+    if d == 1:
+        return n
+    if d == 2:
+        # equivalent to np.sum(count_matrix)
+        return n * (n + 1) // 2 - 1
+
+    # Create square matrix with diagonal values equal to 2 to `n`.
+    # Start from row/column with index == 2 to facilitate indexing.
+    count_matrix = np.zeros((n + 1, n + 1), dtype=int)
+    np.fill_diagonal(count_matrix, np.arange(n + 1))
+    count_matrix[1, 1] = 0
+
+    # Accumulate counts of all the iterations where the first index
+    # is in the interval `d` to `n`.
+    #
+    # The counts for every level is obtained by accumulating the
+    # `count_matrix`, which is the count of iterations with the first
+    # index between `d` and `n`, when `d` == 2.
+    #
+    # For every value from 3 to `d`...
+    # 1. Define each row `n` in the count matrix as the sum of all rows
+    #    equal or above.
+    # 2. Set all rows above the current value of `d` with zeros.
+    #
+    # Example for `n` = 6 and `d` = 4:
+    #
+    #  d = 2 (start)                d = 3
+    #        count                        count
+    #  n                            n
+    #  2     2  0  0  0  0
+    #  3     0  3  0  0  0    ==>   3     2  3  0  0  0    ==>
+    #  4     0  0  4  0  0          4     2  3  4  0  0
+    #  5     0  0  0  5  0          5     2  3  4  5  0
+    #  6     0  0  0  0  6          6     2  3  4  5  6
+    #
+    #  d = 4
+    #        count
+    #  n
+    #
+    #  4     4  6  4  0  0
+    #  5     6  9  8  5  0
+    #  6     8  12 12 10 6
+    #
+    #  The total number is the sum of the `count_matrix` when `d` has
+    #  the value passed to the function.
+    #
+
+    for cur_d in range(3, d + 1):
+        for cur_n in range(n, 2, -1):
+            count_matrix[cur_n, :] = np.sum(count_matrix[:cur_n + 1, :],
+                                            axis=0)
+        # Set previous `d` level to zeros
+        count_matrix[cur_d - 1, :] = 0
+    return np.sum(count_matrix)
+
+
+def _combinations_with_replacement(n, d):
+    # Generate sequences of {a_i} such that
+    #   a_0 >= a_1 >= ... >= a_(d-1) and
+    #   d-i <= a_i <= n, for each i in [0, d-1].
+    #
+    # Almost equivalent to
+    # list(itertools.combinations_with_replacement(range(n, 0, -1), r=d))[::-1]
+    #
+    # Example:
+    #   _combinations_with_replacement(n=13, d=3) -->
+    #   (3, 2, 1), (3, 2, 2), (3, 3, 1), ... , (13, 13, 12), (13, 13, 13).
+    #
+    # The implementation follows the insertion sort algorithm:
+    #   insert a new element a_i from right to left to keep the reverse sorted
+    #   order. Now substitute increment operation for insert.
+    if d > n:
+        return
+    if d == 1:
+        for matrix_entry in range(1, n + 1):
+            yield (matrix_entry,)
+        return
+    sequence_sorted = list(range(d, 0, -1))
+    input_order = tuple(sequence_sorted)  # fixed
+    while sequence_sorted[0] != n + 1:
+        for last_element in range(1, sequence_sorted[-2] + 1):
+            sequence_sorted[-1] = last_element
+            yield tuple(sequence_sorted)
+        increment_id = d - 2
+        while increment_id > 0 and sequence_sorted[increment_id - 1] == \
+                sequence_sorted[increment_id]:
+            increment_id -= 1
+        sequence_sorted[increment_id + 1:] = input_order[increment_id + 1:]
+        sequence_sorted[increment_id] += 1
 
 
 def _jsf_uniform_orderstat_3d(u, n, verbose=False):
@@ -452,8 +536,7 @@ def _jsf_uniform_orderstat_3d(u, n, verbose=False):
 
     # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
     # used to compute the integral as a sum over all possibilities
-    lists = [range(j, n + 1) for j in range(d, 0, -1)]
-    it_todo = np.prod([n + 1 - j for j in range(d, 0, -1)])
+    it_todo = _num_iterations(n, d)
 
     log_1 = np.log(1.)
     # Compute the log of the integral's coefficient
@@ -485,24 +568,17 @@ def _jsf_uniform_orderstat_3d(u, n, verbose=False):
     # using matrix algebra
     # initialise probabilities to 0
     P_total = np.zeros(du.shape[0], dtype=np.float32)
-    iter_id = 0
-    for matrix_entries in tqdm(itertools.product(*lists),
-                               total=it_todo,
-                               desc="Joint survival function",
-                               disable=not verbose):
+    for iter_id, matrix_entries in enumerate(
+            tqdm(_combinations_with_replacement(n, d=d),
+                 total=it_todo,
+                 desc="Joint survival function",
+                 disable=not verbose)):
         # if we are running with MPI
         if mpi_accelerated and iter_id % size != rank:
-            iter_id += 1
-            continue
-
-        iter_id += 1
-
-        # test for valid pyramid and exit loop early
-        if _wrong_order(matrix_entries):
             continue
 
         # we only need the differences of the indices:
-        di = -np.diff(matrix_entries, prepend=n, append=0)
+        di = -np.diff((n,) + matrix_entries + (0,))
 
         # reshape the matrix to be compatible with du
         di_scratch[:, range(len(di))] = di
@@ -543,7 +619,7 @@ def _jsf_uniform_orderstat_3d(u, n, verbose=False):
     return P_total
 
 
-def _pmat_neighbors(mat, filter_shape, n_largest, verbose):
+def _pmat_neighbors(mat, filter_shape, n_largest):
     """
     Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
     `mat`.
@@ -565,8 +641,6 @@ def _pmat_neighbors(mat, filter_shape, n_largest, verbose):
         A pair of integers representing the kernel shape `(l, w)`.
     n_largest : int
         The number of largest neighbors to collect for each entry in `mat`.
-    verbose : bool
-        Show the progress bar or not.
 
     Returns
     -------
@@ -617,16 +691,16 @@ def _pmat_neighbors(mat, filter_shape, n_largest, verbose):
     # if the matrix is symmetric do not use kernel positions intersected
     # by the diagonal
     if symmetric:
-        bin_range_y = trange(l, N_bin_y - l + 1, disable=not verbose)
+        bin_range_y = range(l, N_bin_y - l + 1)
     else:
-        bin_range_y = trange(N_bin_y - l + 1, disable=not verbose)
-        bin_range_x = trange(N_bin_x - l + 1, disable=not verbose)
+        bin_range_y = range(N_bin_y - l + 1)
+        bin_range_x = range(N_bin_x - l + 1)
 
     # compute matrix of largest values
     for y in bin_range_y:
         if symmetric:
             # x range depends on y position
-            bin_range_x = trange(y - l + 1, disable=not verbose)
+            bin_range_x = range(y - l + 1)
         for x in bin_range_x:
             patch = mat[y: y + l, x: x + l]
             mskd = np.multiply(filt, patch)
@@ -1508,17 +1582,7 @@ class ASSET(object):
 
         # Compute the probability matrix obtained from imat using the Poisson
         # pdfs
-        pmat = np.zeros(imat.shape, dtype=np.float32)
-
-        for i in range(imat.shape[0]):
-            if mpi_accelerated and i % size != rank:
-                continue
-            for j in range(imat.shape[1]):
-                pmat[i, j] = scipy.stats.poisson.cdf(imat[i, j] - 1, Mu[i, j])
-
-        if mpi_accelerated:
-            for i in range(imat.shape[0]):
-                pmat[i] = comm.bcast(pmat[i], root=i % size)
+        pmat = scipy.stats.poisson.cdf(imat - 1, Mu)
 
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
@@ -1574,8 +1638,7 @@ class ASSET(object):
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat_neighb = _pmat_neighbors(
-            pmat, filter_shape=filter_shape, n_largest=n_largest,
-            verbose=self.verbose)
+            pmat, filter_shape=filter_shape, n_largest=n_largest)
 
         pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value)
 
