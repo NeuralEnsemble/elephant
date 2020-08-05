@@ -44,7 +44,7 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
             curr_dir, 'spike_extraction_test_data.txt')
         raw_data = []
         with open(raw_data_file_loc, 'r') as f:
-            for x in (f.readlines()):
+            for x in f.readlines():
                 raw_data.append(float(x))
         self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1 * ms)
         self.true_time_stamps = [0.0123, 0.0354, 0.0712, 0.1191, 0.1694,
@@ -91,7 +91,7 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
             curr_dir, 'spike_extraction_test_data.txt')
         raw_data = []
         with open(raw_data_file_loc, 'r') as f:
-            for x in (f.readlines()):
+            for x in f.readlines():
                 raw_data.append(float(x))
         self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1 * ms)
         self.true_time_stamps = [0.0124, 0.0354, 0.0713, 0.1192, 0.1695,
@@ -122,7 +122,7 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
             curr_dir, 'spike_extraction_test_data.txt')
         raw_data = []
         with open(raw_data_file_loc, 'r') as f:
-            for x in (f.readlines()):
+            for x in f.readlines():
                 raw_data.append(float(x))
         self.vm = neo.AnalogSignal(raw_data, units=V, sampling_period=0.1 * ms)
         self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
@@ -182,12 +182,12 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                                     spiketrain[-1], 7 * expected_mean_isi)
 
                     # Kolmogorov-Smirnov test
-                    D, p = kstest(intervals.rescale(t_stop.units),
-                                  "expon",
-                                  # args are (loc, scale)
-                                  args=(
-                        0, expected_mean_isi.rescale(
-                            t_stop.units)),
+                    D, p = kstest(
+                        intervals.rescale(t_stop.units),
+                        "expon",
+                        # args are (loc, scale)
+                        args=(0,
+                              expected_mean_isi.rescale(t_stop.units)),
                         alternative='two-sided')
                     self.assertGreater(p, 0.001)
                     self.assertLess(D, 0.12)
@@ -250,7 +250,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 rate=rate, t_stop=t_stop, refractory_period=refractory_period,
                 as_array=True)
             # don't check with isinstance: Quantity is a subclass of np.ndarray
-            self.assertTrue(type(spiketrain_array) is np.ndarray)
+            self.assertTrue(isinstance(spiketrain_array, np.ndarray))
             assert_array_almost_equal(spiketrain.times.magnitude,
                                       spiketrain_array)
 
@@ -296,8 +296,8 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         refractory_period = 3 * ms
         np.random.seed(28)
         spiketrain = stgen.homogeneous_poisson_process(
-                rate=rate, t_start=t_start, t_stop=t_stop,
-                refractory_period=refractory_period)
+            rate=rate, t_start=t_start, t_stop=t_stop,
+            refractory_period=refractory_period)
         np.random.seed(28)
         spiketrain_depr = stgen.homogeneous_poisson_process_with_refr_period(
             rate=rate, refr_period=refractory_period, t_start=t_start,
@@ -319,7 +319,6 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
         rate_negative = [[-1]] * 1000
         self.rate_profile_negative = neo.AnalogSignal(
             rate_negative * Hz, sampling_period=0.001 * s)
-        pass
 
     def test_statistics(self):
         # This is a statistical test that has a non-zero chance of failure
@@ -330,28 +329,27 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
         shape_factor = 2.5
 
         for rate in [self.rate_profile, self.rate_profile.rescale(kHz)]:
-            for refractory_period in [3 * ms, None]:
-                spiketrain = stgen.inhomogeneous_gamma_process(
-                    rate, shape_factor=shape_factor)
-                intervals = isi(spiketrain)
+            spiketrain = stgen.inhomogeneous_gamma_process(
+                rate, shape_factor=shape_factor)
+            intervals = isi(spiketrain)
 
-                # Computing expected statistics and percentiles
-                expected_spike_count = (np.sum(
-                    rate) * rate.sampling_period).simplified
-                percentile_count = poisson.ppf(.999, expected_spike_count)
-                expected_min_isi = (1 / np.min(rate))
-                expected_max_isi = (1 / np.max(rate))
-                percentile_min_isi = expon.ppf(.999, expected_min_isi)
-                percentile_max_isi = expon.ppf(.999, expected_max_isi)
+            # Computing expected statistics and percentiles
+            expected_spike_count = (np.sum(
+                rate) * rate.sampling_period).simplified
+            percentile_count = poisson.ppf(.999, expected_spike_count)
+            expected_min_isi = (1 / np.min(rate))
+            expected_max_isi = (1 / np.max(rate))
+            percentile_min_isi = expon.ppf(.999, expected_min_isi)
+            percentile_max_isi = expon.ppf(.999, expected_max_isi)
 
-                # Testing (each should fail 1 every 1000 times)
-                self.assertLess(spiketrain.size, percentile_count)
-                self.assertLess(np.min(intervals), percentile_min_isi)
-                self.assertLess(np.max(intervals), percentile_max_isi)
+            # Testing (each should fail 1 every 1000 times)
+            self.assertLess(spiketrain.size, percentile_count)
+            self.assertLess(np.min(intervals), percentile_min_isi)
+            self.assertLess(np.max(intervals), percentile_max_isi)
 
-                # Testing t_start t_stop
-                self.assertEqual(rate.t_stop, spiketrain.t_stop)
-                self.assertEqual(rate.t_start, spiketrain.t_start)
+            # Testing t_start t_stop
+            self.assertEqual(rate.t_stop, spiketrain.t_stop)
+            self.assertEqual(rate.t_start, spiketrain.t_start)
 
         # Testing type
         spiketrain_as_array = stgen.inhomogeneous_gamma_process(
@@ -371,7 +369,6 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         rate_negative = [[-1]] * 1000
         self.rate_profile_negative = neo.AnalogSignal(
             rate_negative * Hz, sampling_period=0.001 * s)
-        pass
 
     def test_statistics(self):
         # This is a statistical test that has a non-zero chance of failure
@@ -517,7 +514,7 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         spiketrain_array = stgen.homogeneous_gamma_process(a=a, b=b,
                                                            as_array=True)
         # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
-        self.assertTrue(type(spiketrain_array) is np.ndarray)
+        self.assertTrue(isinstance(spiketrain_array, np.ndarray))
         assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
 
 

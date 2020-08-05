@@ -686,9 +686,12 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
             'rate must be a positive non empty signal, representing the'
             'rate at time t')
 
+    # Operational time corresponds to the integral of the firing rate over time
     operational_time = np.cumsum(
         (rate*rate.sampling_period).simplified.magnitude)
     operational_time = np.hstack((0., operational_time))
+
+    # The time points at which the firing rates are given
     rate_times = np.hstack((rate.times.simplified.magnitude,
                             rate.t_stop.simplified.magnitude))
 
@@ -696,19 +699,23 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
         a=shape_factor, b=shape_factor*1.*pq.Hz,
         t_start=0.*pq.s, t_stop=operational_time[-1]*pq.s, as_array=True)
 
+    # indices where between which points in operational time the spikes lie
     indices = np.searchsorted(operational_time, spiketrain_operational_time)
 
-    spiketimes = \
-        rate_times[indices - 1] \
-        + rate.sampling_period.simplified.magnitude / (
-            operational_time[indices]-operational_time[indices-1]) * (
-            spiketrain_operational_time - operational_time[indices-1])
+    # In real time the spikes are first aligned to the lower end of their time
+    # bin.
+    spiketrain = rate_times[indices - 1]
+    # the relative position of the spikes in the operational time bins
+    positions_in_bins = \
+        (spiketrain_operational_time - operational_time[indices-1]) / (
+            operational_time[indices]-operational_time[indices-1])
+    # add the positions in the bin times the sampling period in real time
+    spiketrain += rate.sampling_period.simplified.magnitude * positions_in_bins
 
     if as_array:
-        return spiketimes
+        return spiketrain
 
-    else:
-        return neo.SpikeTrain(spiketimes, units=pq.s, t_stop=rate.t_stop)
+    return neo.SpikeTrain(spiketrain, units=pq.s, t_stop=rate.t_stop)
 
 
 def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
