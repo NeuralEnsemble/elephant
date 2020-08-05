@@ -114,14 +114,16 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     """
     Return the firing rate of the spike train.
 
+    The firing rate is calculated as the number of spikes in the spike train
+    in the range `[t_start, t_stop]` divided by the time interval
+    `t_stop - t_start`. See the description below for cases when `t_start` or
+    `t_stop` is None.
+
     Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
     `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` array is
     provided, the return value will be a `pq.Quantity` array, otherwise a
     plain `np.ndarray`. The units of the `pq.Quantity` array will be the
     inverse of the `spiketrain`.
-
-    The interval over which the firing rate is calculated can be optionally
-    controlled with `t_start` and `t_stop`.
 
     Parameters
     ----------
@@ -163,6 +165,15 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         If the input spiketrain is empty.
 
     """
+    if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
+            and t_stop is None and axis is None:
+        # a faster approach for a typical use case
+        n_spikes = len(spiketrain)
+        time_interval = spiketrain.t_stop - spiketrain.t_start
+        time_interval = time_interval.rescale(spiketrain.units)
+        rate = n_spikes / time_interval
+        return rate
+
     if isinstance(spiketrain, pq.Quantity):
         # Quantity or neo.SpikeTrain
         if not is_time_quantity(t_start, allow_none=True):
@@ -344,7 +355,7 @@ def cv2(v, with_nan=False):
     as:
 
     .. math::
-        CV2 := \frac{1}{N} \sum{i=1}^{N-1}
+        CV2 := \frac{1}{N} \sum_{i=1}^{N-1}
                            \frac{2|isi_{i+1}-isi_i|}
                           {|isi_{i+1}+isi_i|}
 

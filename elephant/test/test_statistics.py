@@ -132,6 +132,15 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         res = statistics.mean_firing_rate(st)
         assert_array_almost_equal(res, target, decimal=9)
 
+    def test_mean_firing_rate_typical_use_case(self):
+        np.random.seed(92)
+        st = homogeneous_poisson_process(rate=100*pq.Hz, t_stop=100*pq.s)
+        rate1 = statistics.mean_firing_rate(st)
+        rate2 = statistics.mean_firing_rate(st, t_start=st.t_start,
+                                            t_stop=st.t_stop)
+        self.assertEqual(rate1.units, rate2.units)
+        self.assertAlmostEqual(rate1.item(), rate2.item())
+
     def test_mean_firing_rate_with_spiketrain_set_ends(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
         target = pq.Quantity(2 / 0.5, '1/ms')

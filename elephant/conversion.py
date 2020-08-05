@@ -633,12 +633,17 @@ class BinnedSpikeTrain(object):
                 raise ValueError(
                     'too many / too large time bins. Some spike trains are '
                     'not defined in the ending time')
-        if num_bins != int((
+        # account for rounding errors in the reference num_bins
+        num_bins_test = ((
             (t_stop - t_start).rescale(
-                binsize.units) / binsize).magnitude):
+                binsize.units) / binsize).magnitude)
+        if _detect_rounding_errors(num_bins_test, tolerance=self.tolerance):
+            num_bins_test += 1
+        num_bins_test = int(num_bins_test)
+        if num_bins != num_bins_test:
             raise ValueError(
                 "Inconsistent arguments t_start (%s), " % t_start +
-                "t_stop (%s), binsize (%d) " % (t_stop, binsize) +
+                "t_stop (%s), binsize (%s) " % (t_stop, binsize) +
                 "and num_bins (%d)" % num_bins)
         if num_bins - int(num_bins) != 0 or num_bins < 0:
             raise TypeError(

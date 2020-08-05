@@ -5,7 +5,7 @@ repeating sequences of synchronous spiking events in parallel spike trains.
 
 
 ASSET analysis class object of finding patterns
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------------------
 
 .. autosummary::
     :toctree: toctree/asset/
@@ -14,7 +14,7 @@ ASSET analysis class object of finding patterns
 
 
 Patterns post-exploration
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 .. autosummary::
     :toctree: toctree/asset/
@@ -26,6 +26,18 @@ Patterns post-exploration
     synchronous_events_contained_in
     synchronous_events_contains_all
     synchronous_events_overlap
+
+
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/asset>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/asset.ipynb
 
 
 Examples

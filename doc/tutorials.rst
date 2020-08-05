@@ -47,6 +47,13 @@ Advanced
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/gpfa.ipynb
 
+* Analysis of Sequences of Synchronous EvenTs (ASSET)
+
+  :doc:`View the notebook <../tutorials/asset>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/asset.ipynb
+
 
 Additional
 ----------
