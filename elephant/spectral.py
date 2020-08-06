@@ -237,9 +237,9 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     return freqs, psd
 
 
-@deprecated_alias(num_seg='n_segments', len_seg='len_segment',
-                  freq_res='frequency_resolution')
-def welch_coherence(x, y, n_segments=8, len_segment=None,
+@deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
+                  len_seg='len_segment', freq_res='frequency_resolution')
+def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
                     frequency_resolution=None, overlap=0.5, fs=1.0,
                     window='hanning', nfft=None, detrend='constant',
                     scaling='density', axis=-1):
@@ -257,14 +257,14 @@ def welch_coherence(x, y, n_segments=8, len_segment=None,
 
     Parameters
     ----------
-    x : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
         First time series data of the pair between which coherence is
         computed.
-    y : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
         Second time series data of the pair between which coherence is
         computed.
-        The shapes and the sampling frequencies of `x` and `y` must be
-        identical. When `x` and `y` are not `neo.AnalogSignal`, sampling
+        The shapes and the sampling frequencies of `signal_i` and `signal_j` must be
+        identical. When `signal_i` and `signal_j` are not `neo.AnalogSignal`, sampling
         frequency should be specified through the keyword argument `fs`.
         Otherwise, the default value is used (`fs` = 1.0).
     n_segments : int, optional
@@ -320,14 +320,14 @@ def welch_coherence(x, y, n_segments=8, len_segment=None,
     freqs : pq.Quantity or np.ndarray
         Frequencies associated with the estimates of coherency and phase lag.
         `freqs` is always a vector irrespective of the shape of the input
-        data. If `x` and `y` are `neo.AnalogSignal` or `pq.Quantity`, a
+        data. If `signal_i` and `signal_j` are `neo.AnalogSignal` or `pq.Quantity`, a
         `pq.Quantity` array is returned. Otherwise, a `np.ndarray` containing
         frequency in Hz is returned.
     coherency : np.ndarray
         Estimate of coherency between the input time series. For each
         frequency, coherency takes a value between 0 and 1, with 0 or 1
         representing no or perfect coherence, respectively.
-        When the input arrays `x` and `y` are multi-dimensional, `coherency`
+        When the input arrays `signal_i` and `signal_j` are multi-dimensional, `coherency`
         is of the same shape as the inputs, and the frequency is indexed
         depending on the type of the input. If the input is
         `neo.AnalogSignal`, the first axis indexes frequency. Otherwise,
@@ -335,8 +335,8 @@ def welch_coherence(x, y, n_segments=8, len_segment=None,
     phase_lag : pq.Quantity or np.ndarray
         Estimate of phase lag in radian between the input time series. For
         each frequency, phase lag takes a value between :math:`-\pi` and
-        :math:`\pi`, with positive values meaning phase precession of `x`
-        ahead of `y`, and vice versa. If `x` and `y` are `neo.AnalogSignal` or
+        :math:`\pi`, with positive values meaning phase precession of `signal_i`
+        ahead of `signal_j`, and vice versa. If `signal_i` and `signal_j` are `neo.AnalogSignal` or
         `pq.Quantity`, a `pq.Quantity` array is returned. Otherwise, a
         `np.ndarray` containing phase lag in radian is returned.
         The axis for frequency index is determined in the same way as for
@@ -377,16 +377,16 @@ def welch_coherence(x, y, n_segments=8, len_segment=None,
 
     # When the input is AnalogSignal, the axis for time index is rolled to
     # the last
-    xdata = np.asarray(x)
-    ydata = np.asarray(y)
-    if isinstance(x, neo.AnalogSignal):
+    xdata = np.asarray(signal_i)
+    ydata = np.asarray(signal_j)
+    if isinstance(signal_i, neo.AnalogSignal):
         xdata = np.rollaxis(xdata, 0, len(xdata.shape))
         ydata = np.rollaxis(ydata, 0, len(ydata.shape))
 
     # if the data is given as AnalogSignal, use its attribute to specify
     # the sampling frequency
-    if hasattr(x, 'sampling_rate'):
-        params['fs'] = x.sampling_rate.rescale('Hz').magnitude
+    if hasattr(signal_i, 'sampling_rate'):
+        params['fs'] = signal_i.sampling_rate.rescale('Hz').magnitude
     else:
         params['fs'] = fs
 
@@ -436,13 +436,13 @@ def welch_coherence(x, y, n_segments=8, len_segment=None,
     phase_lag = np.angle(Pxy)
 
     # attach proper units to return values
-    if isinstance(x, pq.quantity.Quantity):
+    if isinstance(signal_i, pq.quantity.Quantity):
         freqs = freqs * pq.Hz
         phase_lag = phase_lag * pq.rad
 
     # When the input is AnalogSignal, the axis for frequency index is
     # rolled to the first to comply with the Neo convention about time axis
-    if isinstance(x, neo.AnalogSignal):
+    if isinstance(signal_i, neo.AnalogSignal):
         coherency = np.rollaxis(coherency, -1)
         phase_lag = np.rollaxis(phase_lag, -1)
 

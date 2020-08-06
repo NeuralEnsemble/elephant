@@ -197,8 +197,8 @@ class AssetTestCase(unittest.TestCase):
         bin_size = 1 * pq.ms
 
         asset_obj_same_t_start_stop = asset.ASSET(
-            [st1, st2], bin_size=bin_size, t_stop_x=5 * pq.ms,
-            t_stop_y=5 * pq.ms)
+            [st1, st2], bin_size=bin_size, t_stop_i=5 * pq.ms,
+            t_stop_j=5 * pq.ms)
 
         # Check that the routine works for correct input...
         # ...same t_start, t_stop on both time axes
@@ -215,9 +215,9 @@ class AssetTestCase(unittest.TestCase):
         assert_array_equal(imat_1_2, trueimat_1_2)  # correct matrix
         # ...different t_start, t_stop on the two time axes
         asset_obj_different_t_start_stop = asset.ASSET(
-            [st1, st2], spiketrains_y=[st + 6 * pq.ms for st in [st1, st2]],
-            bin_size=bin_size, t_start_y=6 * pq.ms, t_stop_x=5 * pq.ms,
-            t_stop_y=11 * pq.ms)
+            [st1, st2], spiketrains_j=[st + 6 * pq.ms for st in [st1, st2]],
+            bin_size=bin_size, t_start_j=6 * pq.ms, t_stop_i=5 * pq.ms,
+            t_stop_j=11 * pq.ms)
         imat_1_2 = asset_obj_different_t_start_stop.intersection_matrix()
         assert_array_equal(asset_obj_different_t_start_stop.x_edges,
                            np.arange(6) * pq.ms)  # correct bins
@@ -259,15 +259,15 @@ class AssetTestCase(unittest.TestCase):
         # Check that errors are raised correctly...
         # ...for partially overlapping time intervals
         self.assertRaises(ValueError, asset.ASSET,
-                          spiketrains=[st1, st2], bin_size=bin_size,
-                          t_start_y=1 * pq.ms)
+                          spiketrains_i=[st1, st2], bin_size=bin_size,
+                          t_start_j=1 * pq.ms)
         # ...for different SpikeTrain's t_starts
         self.assertRaises(ValueError, asset.ASSET,
-                          spiketrains=[st1, st3], bin_size=bin_size)
+                          spiketrains_i=[st1, st3], bin_size=bin_size)
         # ...for different SpikeTrain's t_stops
         self.assertRaises(ValueError, asset.ASSET,
-                          spiketrains=[st1, st2], bin_size=bin_size,
-                          t_stop_x=5 * pq.ms)
+                          spiketrains_i=[st1, st2], bin_size=bin_size,
+                          t_stop_j=5 * pq.ms)
 
     def test_combinations_with_replacement(self):
         # Test that _combinations_with_replacement yields the same tuples
@@ -317,7 +317,7 @@ class AssetTestIntegration(unittest.TestCase):
 
         asset_obj = asset.ASSET(spiketrains, bin_size=self.bin_size)
         asset_obj_symmetric = asset.ASSET(spiketrains,
-                                          spiketrains_y=spiketrains_copy,
+                                          spiketrains_j=spiketrains_copy,
                                           bin_size=self.bin_size)
 
         imat = asset_obj.intersection_matrix()

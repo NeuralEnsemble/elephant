@@ -42,6 +42,10 @@ throughout Elephant.
 
 .. code-block:: python
 
+    def pair_of_signals_example(spiketrain_i, spiketrain_j):
+        # Add '_i' and '_j' suffixes to a pair of signals, spiketrains or any
+        # other variables that come in pairs.
+
     def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
                          target_spiketrain, signal, signals, max_iterations,
                          min_threshold, n_bins, n_surrogates, bin_size, max_size,
