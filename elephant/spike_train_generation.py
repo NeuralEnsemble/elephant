@@ -654,6 +654,8 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     """
     Returns a spike train whose spikes are a realization of an inhomogeneous
     Gamma process with the given rate profile and the given shape factor.
+    The implementation using operational time is inspired by Nawrot et al.
+    (2018)[1].
 
     Parameters
     ----------
@@ -679,6 +681,13 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     ValueError
         If `rate` is not a neo AnalogSignal
         If `rate` contains a negative value.
+
+    References
+    ----------
+    [1] Nawrot, M., Boucsein, C., Denker, M., Rodriguez Molina, V., Riehle A.,
+     Aertsen A., & Rotter, S. (2008)
+     Measurement of variability dynamics in cortical spike trains.
+     Journal of Neuroscience Methods, 169, 374–390.
     """
 
     if not isinstance(rate, neo.AnalogSignal):
@@ -696,8 +705,8 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     operational_time = np.hstack((0., operational_time))
 
     # The time points at which the firing rates are given
-    rate_times = np.hstack((rate.times.simplified.magnitude,
-                            rate.t_stop.simplified.magnitude))
+    real_time = np.hstack((rate.times.simplified.magnitude,
+                           rate.t_stop.simplified.magnitude))
 
     spiketrain_operational_time = homogeneous_gamma_process(
         a=shape_factor, b=shape_factor*1.*pq.Hz,
@@ -706,9 +715,8 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     # indices where between which points in operational time the spikes lie
     indices = np.searchsorted(operational_time, spiketrain_operational_time)
 
-    # In real time the spikes are first aligned to the lower end of their time
-    # bin.
-    spiketrain = rate_times[indices - 1]
+    # In real time the spikes are first aligned to the left border of the bin.
+    spiketrain = real_time[indices - 1]
     # the relative position of the spikes in the operational time bins
     positions_in_bins = \
         (spiketrain_operational_time - operational_time[indices-1]) / (
