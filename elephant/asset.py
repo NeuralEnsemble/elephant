@@ -261,12 +261,12 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
 
     # Bin the spike trains and take for each of them the ids of filled bins
     binned = conv.BinnedSpikeTrain(
-        trains, binsize=bin_size, t_start=t_start, t_stop=t_stop)
+        trains, bin_size=bin_size, t_start=t_start, t_stop=t_stop)
     filled_bins = binned.spike_indices
 
     # Compute and return the transaction list
     return [[train_id for train_id, b in zip(ids, filled_bins)
-             if bin_id in b] for bin_id in range(binned.num_bins)]
+             if bin_id in b] for bin_id in range(binned.n_bins)]
 
 
 def _analog_signal_step_interp(signal, times):
@@ -1110,10 +1110,10 @@ def _intersection_matrix(spiketrains, spiketrains_y, bin_size, t_start_x,
 
     # Compute the binned spike train matrices, along both time axes
     spiketrains_binned = conv.BinnedSpikeTrain(
-        spiketrains, binsize=bin_size,
+        spiketrains, bin_size=bin_size,
         t_start=t_start_x, t_stop=t_stop_x)
     spiketrains_binned_y = conv.BinnedSpikeTrain(
-        spiketrains_y, binsize=bin_size,
+        spiketrains_y, bin_size=bin_size,
         t_start=t_start_y, t_stop=t_stop_y)
 
     # Compute imat by matrix multiplication
@@ -1166,19 +1166,19 @@ class ASSET(object):
 
     Parameters
     ----------
-    spiketrains, spiketrains_y : list of neo.SpikeTrain
+    spiketrains_i, spiketrains_j : list of neo.SpikeTrain
         Input spike trains for the first and second time dimensions,
         respectively, to compute the p-values from.
         If `spiketrains_y` is None, it's set to `spiketrains`.
-    bin_size : pq.Quantity
+    bin_size : pq.Quantity, optional
         The width of the time bins used to compute the probability matrix.
-    t_start_x, t_start_y : pq.Quantity, optional
+    t_start_i, t_start_j : pq.Quantity, optional
         The start time of the binning for the first and second axes,
         respectively.
         If None, the attribute `t_start` of the spike trains is used
         (if the same for all spike trains).
         Default: None.
-    t_stop_x, t_stop_y : pq.Quantity, optional
+    t_stop_i, t_stop_j : pq.Quantity, optional
         The stop time of the binning for the first and second axes,
         respectively.
         If None, the attribute `t_stop` of the spike trains is used
@@ -1199,47 +1199,47 @@ class ASSET(object):
 
     """
 
-    def __init__(self, spiketrains, spiketrains_y=None, bin_size=3 * pq.ms,
-                 t_start_x=None, t_start_y=None, t_stop_x=None, t_stop_y=None,
+    def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
+                 t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
                  verbose=True):
-        self.spiketrains = spiketrains
-        if spiketrains_y is None:
-            spiketrains_y = spiketrains
-        self.spiketrains_y = spiketrains_y
+        self.spiketrains_i = spiketrains_i
+        if spiketrains_j is None:
+            spiketrains_j = spiketrains_i
+        self.spiketrains_j = spiketrains_j
         self.bin_size = bin_size
-        self.t_start_x, self.t_stop_x = _signals_t_start_stop(
-            spiketrains,
-            t_start=t_start_x,
-            t_stop=t_stop_x)
-        self.t_start_y, self.t_stop_y = _signals_t_start_stop(
-            spiketrains_y,
-            t_start=t_start_y,
-            t_stop=t_stop_y)
+        self.t_start_i, self.t_stop_i = _signals_t_start_stop(
+            spiketrains_i,
+            t_start=t_start_i,
+            t_stop=t_stop_i)
+        self.t_start_j, self.t_stop_j = _signals_t_start_stop(
+            spiketrains_j,
+            t_start=t_start_j,
+            t_stop=t_stop_j)
         self.verbose = verbose
 
         msg = 'The time intervals for x and y need to be either identical ' \
               'or fully disjoint, but they are:\n' \
-              'x: ({}, {}) and y: ({}, {}).'.format(self.t_start_x,
-                                                    self.t_stop_x,
-                                                    self.t_start_y,
-                                                    self.t_stop_y)
+              'x: ({}, {}) and y: ({}, {}).'.format(self.t_start_i,
+                                                    self.t_stop_i,
+                                                    self.t_start_j,
+                                                    self.t_stop_j)
 
         # the starts have to be perfectly aligned for the binning to work
         # the stops can differ without impacting the binning
-        if self.t_start_x == self.t_start_y:
-            if not _quantities_almost_equal(self.t_stop_x, self.t_stop_y):
+        if self.t_start_i == self.t_start_j:
+            if not _quantities_almost_equal(self.t_stop_i, self.t_stop_j):
                 raise ValueError(msg)
-        elif ((self.t_start_x < self.t_start_y < self.t_stop_x)
-              or (self.t_start_x < self.t_stop_y < self.t_stop_x)):
+        elif (self.t_start_i < self.t_start_j < self.t_stop_i) \
+                or (self.t_start_i < self.t_stop_j < self.t_stop_i):
             raise ValueError(msg)
 
         # Compute the binned spike train matrices, along both time axes
-        self.spiketrains_binned = conv.BinnedSpikeTrain(
-            self.spiketrains, binsize=self.bin_size,
-            t_start=self.t_start_x, t_stop=self.t_stop_x)
-        self.spiketrains_binned_y = conv.BinnedSpikeTrain(
-            self.spiketrains_y, binsize=self.bin_size,
-            t_start=self.t_start_y, t_stop=self.t_stop_y)
+        self.spiketrains_binned_i = conv.BinnedSpikeTrain(
+            self.spiketrains_i, bin_size=self.bin_size,
+            t_start=self.t_start_i, t_stop=self.t_stop_i)
+        self.spiketrains_binned_j = conv.BinnedSpikeTrain(
+            self.spiketrains_j, bin_size=self.bin_size,
+            t_start=self.t_start_j, t_stop=self.t_stop_j)
 
     @property
     def x_edges(self):
@@ -1248,7 +1248,7 @@ class ASSET(object):
         axis of the intersection matrix, where `n` is the number of bins that
         time was discretized in.
         """
-        return self.spiketrains_binned.bin_edges.rescale(self.bin_size.units)
+        return self.spiketrains_binned_i.bin_edges.rescale(self.bin_size.units)
 
     @property
     def y_edges(self):
@@ -1257,7 +1257,7 @@ class ASSET(object):
         of the intersection matrix, where `n` is the number of bins that
         time was discretized in.
         """
-        return self.spiketrains_binned_y.bin_edges.rescale(self.bin_size.units)
+        return self.spiketrains_binned_j.bin_edges.rescale(self.bin_size.units)
 
     def is_symmetric(self):
         """
@@ -1311,10 +1311,10 @@ class ASSET(object):
             time was discretized in.
 
         """
-        imat = _intersection_matrix(self.spiketrains, self.spiketrains_y,
+        imat = _intersection_matrix(self.spiketrains_i, self.spiketrains_j,
                                     self.bin_size,
-                                    self.t_start_x, self.t_start_y,
-                                    self.t_stop_x, self.t_stop_y,
+                                    self.t_start_i, self.t_start_j,
+                                    self.t_stop_i, self.t_stop_j,
                                     normalization=normalization)
         return imat
 
@@ -1411,25 +1411,25 @@ class ASSET(object):
             if mpi_accelerated and surr_id % size != rank:
                 continue
             surrogates = [spike_train_surrogates.surrogates(
-                st, n=1,
-                surr_method=surrogate_method,
+                st, n_surrogates=1,
+                method=surrogate_method,
                 dt=surrogate_dt,
                 decimals=None,
                 edges=True)[0]
-                          for st in self.spiketrains]
+                          for st in self.spiketrains_i]
 
             if symmetric:
                 surrogates_y = surrogates
             else:
                 surrogates_y = [spike_train_surrogates.surrogates(
-                    st, n=1, surr_method=surrogate_method, dt=surrogate_dt,
-                    decimals=None, edges=True)[0]
-                                for st in self.spiketrains_y]
+                    st, n_surrogates=1, method=surrogate_method,
+                    dt=surrogate_dt, decimals=None, edges=True)[0]
+                                for st in self.spiketrains_j]
 
             imat_surr = _intersection_matrix(surrogates, surrogates_y,
                                              self.bin_size,
-                                             self.t_start_x, self.t_start_y,
-                                             self.t_stop_x, self.t_stop_y)
+                                             self.t_start_i, self.t_start_j,
+                                             self.t_stop_i, self.t_stop_j)
 
             pmat += (imat_surr <= (imat - 1))
 
@@ -1505,12 +1505,12 @@ class ASSET(object):
 
         symmetric = self.is_symmetric()
 
-        bsts_x_matrix = self.spiketrains_binned.to_bool_array()
+        bsts_x_matrix = self.spiketrains_binned_i.to_bool_array()
 
         if symmetric:
             bsts_y_matrix = bsts_x_matrix
         else:
-            bsts_y_matrix = self.spiketrains_binned_y.to_bool_array()
+            bsts_y_matrix = self.spiketrains_binned_j.to_bool_array()
 
             # Check that the nr. neurons is identical between the two axes
             if bsts_x_matrix.shape[0] != bsts_y_matrix.shape[0]:
@@ -1528,7 +1528,7 @@ class ASSET(object):
             # for both axes, interpolate in the time bins of interest and
             # convert to Quantity
             fir_rate_x = _interpolate_signals(
-                firing_rates_x, self.spiketrains_binned.bin_edges[:-1],
+                firing_rates_x, self.spiketrains_binned_i.bin_edges[:-1],
                 self.verbose)
         else:
             raise ValueError(
@@ -1544,7 +1544,7 @@ class ASSET(object):
             # for both axes, interpolate in the time bins of interest and
             # convert to Quantity
             fir_rate_y = _interpolate_signals(
-                firing_rates_y, self.spiketrains_binned_y.bin_edges[:-1],
+                firing_rates_y, self.spiketrains_binned_j.bin_edges[:-1],
                 self.verbose)
         else:
             raise ValueError(
@@ -1858,11 +1858,11 @@ class ASSET(object):
 
         # Compute the transactions associated to the two binnings
         tracts_x = _transactions(
-            self.spiketrains, bin_size=self.bin_size, t_start=self.t_start_x,
-            t_stop=self.t_stop_x,
+            self.spiketrains_i, bin_size=self.bin_size, t_start=self.t_start_i,
+            t_stop=self.t_stop_i,
             ids=ids)
 
-        if self.spiketrains_y is self.spiketrains:
+        if self.spiketrains_j is self.spiketrains_i:
             diag_id = 0
             tracts_y = tracts_x
         else:
@@ -1872,8 +1872,8 @@ class ASSET(object):
             else:
                 diag_id = None
                 tracts_y = _transactions(
-                    self.spiketrains_y, bin_size=self.bin_size,
-                    t_start=self.t_start_y, t_stop=self.t_stop_y, ids=ids)
+                    self.spiketrains_j, bin_size=self.bin_size,
+                    t_start=self.t_start_j, t_stop=self.t_stop_j, ids=ids)
 
         # Reconstruct each worm, link by link
         sse_dict = {}
@@ -1884,12 +1884,15 @@ class ASSET(object):
                 np.where(cmat == k)).T  # position of all links
             # if no link lies on the reference diagonal
             if all([y - x != diag_id for (x, y) in pos_worm_k]):
-                for l, (bin_x, bin_y) in enumerate(
-                        pos_worm_k):  # for each link
+                for bin_x, bin_y in pos_worm_k:  # for each link
+
+                    # reconstruct the link
                     link_l = set(tracts_x[bin_x]).intersection(
-                        tracts_y[bin_y])  # reconstruct the link
-                    worm_k[
-                        (bin_x, bin_y)] = link_l  # and assign it to its pixel
+                        tracts_y[bin_y])
+
+                    # and assign it to its pixel
+                    worm_k[(bin_x, bin_y)] = link_l
+
                 sse_dict[k] = worm_k
 
         return sse_dict
