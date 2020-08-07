@@ -684,6 +684,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
 @deprecated_alias(binsize='bin_size')
 @Provenance(inputs=["spiketrains"])
 def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
+                   output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
