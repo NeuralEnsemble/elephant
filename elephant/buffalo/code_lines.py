@@ -30,7 +30,7 @@ class SourceCodeAnalyzer(object):
         self.ast_tree = ast_tree
         self.start_line = start_line
         self._offset = 0 if source_name == '<module>' else 1
-        self.start_line_map, self.end_line_map = self._build_line_map(ast_tree)
+        self.statement_lines = self._build_line_map(ast_tree)
 
     def _build_line_map(self, ast_tree):
         is_function = False
@@ -44,31 +44,36 @@ class SourceCodeAnalyzer(object):
             code_nodes = ast_tree.body
 
         # Add the line number of each node in the script/function body
+        statement_lines = list()
         statement_start_lines = list()
         statement_end_lines = list()
-        for node in code_nodes:
-            statement_start_lines.append(node.lineno)
-            end_lines = [child.lineno for child in ast.walk(node) if
-                         'lineno' in child._attributes]
-            statement_end_lines.append(max(end_lines))
+        while len(code_nodes):
+            node = code_nodes.pop(0)
+            if hasattr(node, 'body'):
+                # Another code block (e.g., if, for, while)
+                # Just add the nodes in the body for further processing
+                code_nodes.extend(node.body)
+            else:
+                # A statement. Find the maximum line number
+                end_lines = [child.lineno for child in ast.walk(node) if
+                             'lineno' in child._attributes]
+                statement_lines.append((node.lineno, max(end_lines)))
 
-        start_line_map = np.sort(np.array(statement_start_lines))
-        end_line_map = np.sort(np.array(statement_end_lines))
+        statement_lines = sorted(statement_lines, key=lambda x: x[0])
+        statement_lines = np.asarray(statement_lines)
 
         # If in a function, the lines will be relative to the function `def`
         # line. We need to correct. The `def` line is line number 1, therefore,
         # codes start on line 2 of the function body.
         if is_function:
-            start_line_map += self.start_line - 2
-            end_line_map += self.start_line - 2
+            statement_lines += self.start_line - 2
 
-        return start_line_map, end_line_map
+        return statement_lines
 
     def _get_statement_lines(self, line_number):
-        line_diff = self.start_line_map - line_number
+        line_diff = self.statement_lines[:, 0] - line_number
         nearest_number_index = np.argmax(line_diff[line_diff <= 0])
-        return (self.start_line_map[nearest_number_index],
-                self.end_line_map[nearest_number_index])
+        return self.statement_lines[nearest_number_index, :]
 
     def extract_multiline_statement(self, line_number):
         """
