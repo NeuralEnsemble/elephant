@@ -202,7 +202,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     signal : neo AnalogSignal object
         'signal' contains n analog signals.
     spiketrain : SpikeTrain or BinnedSpikeTrain
-        Single spike train to perform the analysis on. The binsize of the
+        Single spike train to perform the analysis on. The bin_size of the
         binned spike train must match the sampling_rate of signal.
     **kwargs:
         All kwargs are passed to `scipy.signal.coherence()`.
@@ -277,7 +277,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     # bin spiketrain if necessary
     if isinstance(spiketrain, SpikeTrain):
         spiketrain = BinnedSpikeTrain(
-            spiketrain, binsize=signal.sampling_period)
+            spiketrain, bin_size=signal.sampling_period)
 
     # check the start and stop times of signal and spike trains
     if spiketrain.t_start < signal.t_start:
@@ -288,18 +288,18 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
             "The spiketrain stops later than the analog signal.")
 
     # check equal time resolution for both signals
-    if spiketrain.binsize != signal.sampling_period:
+    if spiketrain.bin_size != signal.sampling_period:
         raise ValueError(
             "The spiketrain and signal must have a "
-            "common sampling frequency / binsize")
+            "common sampling frequency / bin_size")
 
     # calculate how many bins to add on the left of the binned spike train
     delta_t = spiketrain.t_start - signal.t_start
-    if delta_t % spiketrain.binsize == 0:
-        left_edge = int((delta_t / spiketrain.binsize).magnitude)
+    if delta_t % spiketrain.bin_size == 0:
+        left_edge = int((delta_t / spiketrain.bin_size).magnitude)
     else:
         raise ValueError("Incompatible binning of spike train and LFP")
-    right_edge = int(left_edge + spiketrain.num_bins)
+    right_edge = int(left_edge + spiketrain.n_bins)
 
     # duplicate spike trains
     spiketrain_array = np.zeros((1, len_signals))

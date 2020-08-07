@@ -4,7 +4,7 @@
 ![](https://coveralls.io/repos/NeuralEnsemble/elephant/badge.png "Unit Test Coverage")
 ![](https://readthedocs.org/projects/elephant/badge/?version=latest "Documentation Status")
 ![](https://img.shields.io/pypi/v/elephant)
-![](https://img.shields.io/pypi/dd/elephant)
+![](https://img.shields.io/pypi/dm/elephant)
 [![Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 *Elephant* package analyses all sorts of neurophysiological data:
