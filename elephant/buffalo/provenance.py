@@ -37,7 +37,8 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'kwarg_map',
                                            'call_ast',
                                            'code_statement',
-                                           'time_stamp'))
+                                           'time_stamp',
+                                           'return_targets'))
 
 
 FunctionDefinition = namedtuple('FunctionDefinition', ('name',
@@ -158,6 +159,7 @@ class Provenance(object):
                     del frame_info
                     del frame
 
+            # Call the function
             function_output = function(*args, **kwargs)
             time_stamp = datetime.datetime.utcnow().isoformat()
 
@@ -172,13 +174,29 @@ class Provenance(object):
                     lineno)
                 ast_tree = ast.parse(source_line)
 
-                # 2. Extract function name and information
+                # 2. Check if there is an assignment to one or more variables
+                # This will be used to identify if there are multiple output
+                # nodes. This is needed because just checking if
+                # `function_output` is tuple does not work if the function is
+                # actually returning a tuple
+                return_targets = []
+                if isinstance(ast_tree.body[0], ast.Assign):
+                    assign_target = ast_tree.body[0].targets[0]
+                    if isinstance(assign_target, ast.Tuple):
+                        return_targets = [target.id for target in
+                                          assign_target.elts]
+                    elif isinstance(assign_target, ast.Name):
+                        return_targets = [assign_target.id]
+                    else:
+                        raise ValueError("Unknown assign target!")
+
+                # 3. Extract function name and information
                 # TODO: fetch version information
 
                 function_name = FunctionDefinition(
                     function.__name__, function.__module__, None)
 
-                # 3. Extract parameters passed to function and store in
+                # 4. Extract parameters passed to function and store in
                 #    `input_data` dictionary
                 #    Two separate lists with the names according to the
                 #    arg/kwarg order are also constructed, to map to the
@@ -202,7 +220,7 @@ class Provenance(object):
                     else:
                         input_args_names.append(arg_name)
 
-                # 4. Create parameters/input descriptions for the graph
+                # 5. Create parameters/input descriptions for the graph
                 #    Here the inputs, but not the parameters passed to the
                 #    function, are transformed in the hashable type
                 #    `BuffaloObjectHash`. Inputs are defined by the parameter
@@ -223,24 +241,25 @@ class Provenance(object):
                     else:
                         parameters[key] = value
 
-                # 5. Create hashable `BuffaloObjectHash` for the output
+                # 6. Create hashable `BuffaloObjectHash` for the output
                 # objects to follow individual returns
                 outputs = {}
-                if isinstance(function_output, tuple):
+                if len(return_targets) > 1:
                     for index, item in enumerate(function_output):
                         outputs[index] = self.add(item)
                 else:
                     outputs[0] = self.add(function_output)
 
-                # 6. Analyze AST and fetch static relationships in the
+                # 7. Analyze AST and fetch static relationships in the
                 # input/output and other variables/objects in the script
                 self._insert_static_information(ast_tree, inputs, outputs)
 
-                # 7. Create tuple with the analysis step information
+                # 8. Create tuple with the analysis step information
 
                 step = AnalysisStep(function_name, inputs, parameters, outputs,
                                     input_args_names, input_kwargs_names,
-                                    ast_tree, source_line, time_stamp)
+                                    ast_tree, source_line, time_stamp,
+                                    return_targets)
 
                 # 7. Add to history
                 # The history will be the base to generate the graph / PROV
