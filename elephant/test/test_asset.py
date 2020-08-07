@@ -326,7 +326,7 @@ class AssetTestIntegration(unittest.TestCase):
 
         imat_symm = asset_obj_symmetric.intersection_matrix()
         pmat_symm = asset_obj_symmetric.probability_matrix_analytical(
-                kernel_width=kernel_width)
+            kernel_width=kernel_width)
 
         assert_array_almost_equal(pmat, pmat_symm)
         assert_array_almost_equal(imat, imat_symm)
@@ -379,10 +379,10 @@ class AssetTestIntegration(unittest.TestCase):
 
         # calculate probability matrix montecarlo
         pmat_montecarlo = asset_obj.probability_matrix_montecarlo(
-                n_surrogates=n_surr,
-                imat=imat,
-                surrogate_dt=surrogate_dt,
-                surrogate_method='dither_spikes')
+            n_surrogates=n_surr,
+            imat=imat,
+            surrogate_dt=surrogate_dt,
+            surrogate_method='dither_spikes')
 
         # test probability matrices
         assert_array_equal(np.where(pmat > alpha), indices_pmat)

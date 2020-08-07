@@ -439,7 +439,8 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cc_matrix = correlation_coefficient(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
+    >>> cc_matrix = correlation_coefficient(BinnedSpikeTrain([st1, st2],
+    ... bin_size=5*ms))
     >>> print(cc_matrix[0, 1])
     0.015477320222075359
 
@@ -594,8 +595,8 @@ def cross_correlation_histogram(
     Returns
     -------
     cch_result : neo.AnalogSignal
-        Containing the cross-correlation histogram between `binned_spiketrain_i`
-        and `binned_spiketrain_j`.
+        Containing the cross-correlation histogram between
+        `binned_spiketrain_i` and `binned_spiketrain_j`.
 
         Offset bins correspond to correlations at delays equivalent
         to the differences between the spike times of `binned_spiketrain_i` and
@@ -683,8 +684,8 @@ def cross_correlation_histogram(
     t_lags_shift = t_lags_shift.simplified.item()
     if not np.isclose(t_lags_shift, round(t_lags_shift)):
         # For example, if bin_size=1 ms, binned_spiketrain_i.t_start=0 ms, and
-        # binned_spiketrain_j.t_start=0.5 ms then there is a global shift in the
-        # binning of the spike trains.
+        # binned_spiketrain_j.t_start=0.5 ms then there is a global shift in
+        # the binning of the spike trains.
         raise ValueError(
             "Binned spiketrains time shift is not multiple of bin_size")
     t_lags_shift = int(round(t_lags_shift))
@@ -801,7 +802,8 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
 
     This is a Python implementation compatible with the elephant library of
     the original code by C. Cutts written in C and avaiable at:
-    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/blob/master/spike_time_tiling_coefficient.c)
+    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/
+    blob/master/spike_time_tiling_coefficient.c)
 
     Parameters
     ----------

@@ -63,16 +63,17 @@ py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 def estimate_csd(lfp, coordinates=None, method=None,
                  process_estimate=True, **kwargs):
     """
-    Function call to compute the current source density (CSD) from extracellular
-    potential recordings(local-field potentials - LFP) using laminar electrodes
-    or multi-contact electrodes with 2D or 3D geometries.
+    Function call to compute the current source density (CSD) from
+    extracellular potential recordings(local-field potentials - LFP) using
+    laminar electrodes or multi-contact electrodes with 2D or 3D geometries.
 
     Parameters
     ----------
     lfp : neo.AnalogSignal
         positions of electrodes can be added as neo.RecordingChannel
         coordinate or sent externally as a func argument (See coords)
-    coordinates : [Optional] corresponding spatial coordinates of the electrodes
+    coordinates : [Optional] corresponding spatial coordinates of the
+        electrodes.
         Defaults to None
         Otherwise looks for ChannelIndex coordinate
     method : string
@@ -170,9 +171,9 @@ def estimate_csd(lfp, coordinates=None, method=None,
             try:
                 coordinates = coordinates.rescale(kwargs['diam'].units)
             except KeyError:  # Then why specify as a default in icsd?
-                              # All iCSD methods explicitly assume a source
-                              # diameter in contrast to the stdCSD  that
-                              # implicitly assume infinite source radius
+                # All iCSD methods explicitly assume a source
+                # diameter in contrast to the stdCSD  that
+                # implicitly assume infinite source radius
                 raise ValueError("Parameter diam must be specified for iCSD \
                                   methods: {}".format(", ".join(icsd_methods)))
 
@@ -183,7 +184,7 @@ def estimate_csd(lfp, coordinates=None, method=None,
                                   specified".format(kwargs['f_type']))
 
         lfp = neo.AnalogSignal(np.asarray(lfp).T, units=lfp.units,
-                                    sampling_rate=lfp.sampling_rate)
+                               sampling_rate=lfp.sampling_rate)
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
         csd_estimator = csd_method(lfp=lfp.magnitude * lfp.units,
                                    coord_electrode=coordinates.flatten(),
@@ -193,11 +194,11 @@ def estimate_csd(lfp, coordinates=None, method=None,
         if process_estimate:
             csd_pqarr_filtered = csd_estimator.filter_csd(csd_pqarr)
             output = neo.AnalogSignal(csd_pqarr_filtered.T,
-                                           t_start=lfp.t_start,
-                                           sampling_rate=lfp.sampling_rate)
+                                      t_start=lfp.t_start,
+                                      sampling_rate=lfp.sampling_rate)
         else:
             output = neo.AnalogSignal(csd_pqarr.T, t_start=lfp.t_start,
-                                           sampling_rate=lfp.sampling_rate)
+                                      sampling_rate=lfp.sampling_rate)
         output.annotate(x_coords=coordinates)
     return output
 
@@ -303,7 +304,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         pots /= 2. * sigma  # eq.: 26 from Potworowski et al
         ele_pos = x_positions
     elif dim == 2:
-        chrg_x, chrg_y = np.mgrid[x_limits[0]:x_limits[1]:np.complex(0, resolution),
+        chrg_x, chrg_y = np.mgrid[
+                         x_limits[0]:x_limits[1]:np.complex(0, resolution),
                          y_limits[0]:y_limits[1]:np.complex(0, resolution)]
         csd = csd_profile(chrg_x, chrg_y)
         for ii in range(len(x_positions)):
@@ -312,15 +314,18 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         pots /= 2 * np.pi * sigma
         ele_pos = np.vstack((x_positions, y_positions)).T
     elif dim == 3:
-        chrg_x, chrg_y, chrg_z = np.mgrid[x_limits[0]:x_limits[1]:np.complex(0, resolution),
-                                 y_limits[0]:y_limits[1]:np.complex(0, resolution),
-                                 z_limits[0]:z_limits[1]:np.complex(0, resolution)]
+        chrg_x, chrg_y, chrg_z = np.mgrid[
+            x_limits[0]:x_limits[1]:np.complex(0, resolution),
+            y_limits[0]:y_limits[1]:np.complex(0, resolution),
+            z_limits[0]:z_limits[1]:np.complex(0, resolution)
+        ]
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
         xlin = chrg_x[:, 0, 0]
         ylin = chrg_y[0, :, 0]
         zlin = chrg_z[0, 0, :]
         for ii in range(len(x_positions)):
-            pots[ii] = integrate_3D(x_positions[ii], y_positions[ii], z_positions[ii],
+            pots[ii] = integrate_3D(x_positions[ii], y_positions[ii],
+                                    z_positions[ii],
                                     x_limits, y_limits, z_limits, csd,
                                     xlin, ylin, zlin,
                                     chrg_x, chrg_y, chrg_z)

@@ -12,7 +12,8 @@ steps:
 
 2) apply CuBIC to the population count
        >>> alpha = 0.05  # significance level of the tests used
-       >>> xi, p_val, k = cubic(data, max_iterations=100, alpha=0.05, errorval=4.):
+       >>> xi, p_val, k = cubic(data, max_iterations=100, alpha=0.05,
+       ... errorval=4.):
 
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.

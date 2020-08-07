@@ -49,7 +49,8 @@ class SurrogatesTestCase(unittest.TestCase):
         st = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
 
         dither = 10 * pq.ms
-        surrogate_train = surr.dither_spikes(st, dither=dither, n_surrogates=1)[0]
+        surrogate_train = surr.dither_spikes(
+            st, dither=dither, n_surrogates=1)[0]
         self.assertEqual(len(surrogate_train), 0)
 
     def test_dither_spikes_output_decimals(self):
@@ -96,7 +97,7 @@ class SurrogatesTestCase(unittest.TestCase):
         dither = 10 * pq.ms
         surrogate_trains = surr.dither_spikes(
             spiketrain, dither=dither, n_surrogates=n_surrogates,
-            refractory_period=4*pq.ms)
+            refractory_period=4 * pq.ms)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -123,7 +124,7 @@ class SurrogatesTestCase(unittest.TestCase):
         dither = 10 * pq.ms
         surrogate_train = surr.dither_spikes(
             spiketrain, dither=dither, n_surrogates=1,
-            refractory_period=4*pq.ms)[0]
+            refractory_period=4 * pq.ms)[0]
         self.assertEqual(len(surrogate_train), 0)
 
     def test_randomise_spikes_output_format(self):
@@ -132,7 +133,8 @@ class SurrogatesTestCase(unittest.TestCase):
             [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
         n_surrogates = 2
-        surrogate_trains = surr.randomise_spikes(spiketrain, n_surrogates=n_surrogates)
+        surrogate_trains = surr.randomise_spikes(
+            spiketrain, n_surrogates=n_surrogates)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -172,7 +174,8 @@ class SurrogatesTestCase(unittest.TestCase):
             [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
         n_surrogates = 2
-        surrogate_trains = surr.shuffle_isis(spiketrain, n_surrogates=n_surrogates)
+        surrogate_trains = surr.shuffle_isis(
+            spiketrain, n_surrogates=n_surrogates)
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
@@ -214,7 +217,8 @@ class SurrogatesTestCase(unittest.TestCase):
         spiketrain = neo.SpikeTrain(
             [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
 
-        surrogate_train = surr.shuffle_isis(spiketrain, n_surrogates=1, decimals=95)[0]
+        surrogate_train = surr.shuffle_isis(
+            spiketrain, n_surrogates=1, decimals=95)[0]
 
         st_pq = spiketrain.view(pq.Quantity)
         surr_pq = surrogate_train.view(pq.Quantity)
@@ -451,7 +455,9 @@ class SurrogatesTestCase(unittest.TestCase):
 
         # Test surrogate methods wrapper
         surrogate_trains = surr.surrogates(
-            spiketrain, n_surrogates=n_surrogates, method='joint_isi_dithering')
+            spiketrain,
+            n_surrogates=n_surrogates,
+            method='joint_isi_dithering')
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
 

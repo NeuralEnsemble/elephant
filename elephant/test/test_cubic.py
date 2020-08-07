@@ -33,13 +33,14 @@ class CubicTestCase(unittest.TestCase):
     ----------
     [1]Staude, Rotter, Gruen, (2009) J. Comp. Neurosci
     '''
+
     def setUp(self):
         n2 = 300
-        n0 = 100000-n2
+        n0 = 100000 - n2
         self.xi = 10
         self.data_signal = neo.AnalogSignal(
             numpy.array([self.xi] * n2 + [0] * n0).reshape(n0 + n2, 1) *
-            pq.dimensionless, sampling_period=1*pq.s)
+            pq.dimensionless, sampling_period=1 * pq.s)
         self.data_array = numpy.array([self.xi] * n2 + [0] * n0)
         self.alpha = 0.05
         self.ximax = 10
@@ -126,7 +127,7 @@ class CubicTestCase(unittest.TestCase):
         # Empty signal
         self.assertRaises(
             ValueError, cubic.cubic, neo.AnalogSignal(
-                []*pq.dimensionless, sampling_period=10*pq.ms))
+                [] * pq.dimensionless, sampling_period=10 * pq.ms))
 
         dummy_data = numpy.tile([1, 2, 3], reps=3)
         # Multidimensional array
@@ -144,8 +145,8 @@ class CubicTestCase(unittest.TestCase):
         # Checking case in which the second cumulant of the signal is smaller
         # than the first cumulant (analitycal constrain of the method)
         self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
-            numpy.array([1]*1000).reshape(1000, 1), units=pq.dimensionless,
-            sampling_period=10*pq.ms), alpha=self.alpha)
+            numpy.array([1] * 1000).reshape(1000, 1), units=pq.dimensionless,
+            sampling_period=10 * pq.ms), alpha=self.alpha)
 
 
 def suite():

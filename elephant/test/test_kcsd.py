@@ -31,7 +31,7 @@ class KCSD1D_TestCase(unittest.TestCase):
         for ii in range(len(self.pots)):
             temp_signals.append(self.pots[ii])
         self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
-                                       sampling_rate=1000 * pq.Hz)
+                                        sampling_rate=1000 * pq.Hz)
         chidx = neo.ChannelIndex(range(len(self.pots)))
         chidx.analogsignals.append(self.an_sigs)
         chidx.coordinates = self.ele_pos * pq.mm
@@ -71,7 +71,11 @@ class KCSD2D_TestCase(unittest.TestCase):
                                                    ylims=[0.05, 0.95])
         self.ele_pos = np.vstack((xx_ele, yy_ele)).T
         self.csd_profile = utils.large_source_2D
-        pots = CSD.generate_lfp(self.csd_profile, xx_ele, yy_ele, resolution=100)
+        pots = CSD.generate_lfp(
+            self.csd_profile,
+            xx_ele,
+            yy_ele,
+            resolution=100)
         self.pots = np.reshape(pots, (-1, 1))
         self.test_method = 'KCSD2D'
         self.test_params = {'gdx': 0.25, 'gdy': 0.25, 'R_init': 0.08,
@@ -81,13 +85,12 @@ class KCSD2D_TestCase(unittest.TestCase):
         for ii in range(len(self.pots)):
             temp_signals.append(self.pots[ii])
         self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
-                                       sampling_rate=1000 * pq.Hz)
+                                        sampling_rate=1000 * pq.Hz)
         chidx = neo.ChannelIndex(range(len(self.pots)))
         chidx.analogsignals.append(self.an_sigs)
         chidx.coordinates = self.ele_pos * pq.mm
 
         chidx.create_relationship()
-
 
     def test_kcsd2d_estimate(self, cv_params={}):
         self.test_params.update(cv_params)
@@ -145,7 +148,7 @@ class KCSD3D_TestCase(unittest.TestCase):
         for ii in range(len(self.pots)):
             temp_signals.append(self.pots[ii])
         self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
-                                       sampling_rate=1000 * pq.Hz)
+                                        sampling_rate=1000 * pq.Hz)
         chidx = neo.ChannelIndex(range(len(self.pots)))
         chidx.analogsignals.append(self.an_sigs)
         chidx.coordinates = self.ele_pos * pq.mm
@@ -178,6 +181,7 @@ class KCSD3D_TestCase(unittest.TestCase):
         self.assertRaises(TypeError, self.test_kcsd3d_estimate)
         cv_params = {'InvalidCVArg': np.array((0.1, 0.25, 0.5))}
         self.assertRaises(TypeError, self.test_kcsd3d_estimate, cv_params)
+
 
 if __name__ == '__main__':
     unittest.main()

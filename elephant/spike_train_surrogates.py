@@ -171,7 +171,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     >>> print(dither_spikes(st, dither = 20 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))  # doctest: +SKIP
+    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))
     [<SpikeTrain(array([ 104.24942044,  246.0317873 ,  584.55938657,
         818.84446913]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
@@ -195,8 +195,8 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
         dither = dither.rescale(units).magnitude
         dithered_spiketrains = \
             spiketrain.magnitude.reshape((1, len(spiketrain))) \
-            + 2 * dither * np.random.random_sample((n_surrogates, len(spiketrain)))\
-            - dither
+            + 2 * dither * np.random.random_sample(
+                (n_surrogates, len(spiketrain))) - dither
         dithered_spiketrains.sort(axis=1)
 
         if edges:
@@ -418,7 +418,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
     >>> print(dither_spike_train(st, shift = 20*pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))  # doctest: +SKIP
+    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))
     [<SpikeTrain(array([  92.89084054,  242.89084054,  592.89084054,
         792.89084054]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
@@ -434,7 +434,8 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     # Main: generate the surrogates by spike train shifting
     surr = data.reshape(
-        (1, len(data))) + 2 * shift * np.random.random_sample((n_surrogates, 1)) - shift
+        (1, len(data))) + 2 * shift * np.random.random_sample(
+        (n_surrogates, 1)) - shift
 
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
@@ -501,7 +502,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  98.82898293,  178.45805954,  346.93993867,
         461.34268507]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))
     [<SpikeTrain(array([  97.15720041,  199.06945744,  397.51928207,
         402.40065162]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  80.74513157,  173.69371317,  338.05860962,
@@ -1042,7 +1043,8 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
                          "not None".format(method.__name__))
 
     if method in (dither_spike_train, dither_spikes):
-        return method(spiketrain, dt, n=n_surrogates, decimals=decimals, edges=edges)
+        return method(spiketrain, dt, n=n_surrogates, decimals=decimals,
+                      edges=edges)
     if method in (randomise_spikes, shuffle_isis):
         return method(spiketrain, n=n_surrogates, decimals=decimals)
     if method == jitter_spikes:

@@ -17,7 +17,7 @@ class CadTestCase(unittest.TestCase):
     def setUp(self):
 
         # Parameters
-        self.bin_size = 1*pq.ms
+        self.bin_size = 1 * pq.ms
         self.alpha = 0.05
         self.size_chunks = 100
         self.max_lag = 10
@@ -53,23 +53,23 @@ class CadTestCase(unittest.TestCase):
         np.random.seed(1)
         self.patt1_times = neo.SpikeTrain(
             np.random.uniform(0, 1 - max(self.lags1), self.n_occ1) * pq.s,
-            t_start=0*pq.s, t_stop=1*pq.s)
+            t_start=0 * pq.s, t_stop=1 * pq.s)
         self.patt2_times = neo.SpikeTrain(
             np.random.uniform(0, 1 - max(self.lags2), self.n_occ2) * pq.s,
-            t_start=0*pq.s, t_stop=1*pq.s)
+            t_start=0 * pq.s, t_stop=1 * pq.s)
         self.patt3_times = neo.SpikeTrain(
             np.random.uniform(0, 1 - max(self.lags3), self.n_occ3) * pq.s,
-            t_start=0*pq.s, t_stop=1*pq.s)
+            t_start=0 * pq.s, t_stop=1 * pq.s)
 
         # Patterns
         self.patt1 = [self.patt1_times] + [neo.SpikeTrain(
-            self.patt1_times+l * pq.s, t_start=self.t_start * pq.s,
+            self.patt1_times + l * pq.s, t_start=self.t_start * pq.s,
             t_stop=self.t_stop * pq.s) for l in self.lags1]
         self.patt2 = [self.patt2_times] + [neo.SpikeTrain(
-            self.patt2_times+l * pq.s,  t_start=self.t_start * pq.s,
+            self.patt2_times + l * pq.s, t_start=self.t_start * pq.s,
             t_stop=self.t_stop * pq.s) for l in self.lags2]
         self.patt3 = [self.patt3_times] + [neo.SpikeTrain(
-            self.patt3_times+l * pq.s,  t_start=self.t_start * pq.s,
+            self.patt3_times + l * pq.s, t_start=self.t_start * pq.s,
             t_stop=self.t_stop * pq.s) for l in self.lags3]
 
         # Binning spiketrains
@@ -153,49 +153,60 @@ class CadTestCase(unittest.TestCase):
         # test error significance level
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
-                              [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
-                               neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
+                              [neo.SpikeTrain([1, 2, 3] * pq.s,
+                                              t_stop=5 * pq.s),
+                               neo.SpikeTrain([3, 4, 5] * pq.s,
+                                              t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
                           maxlag=self.max_lag,
                           alpha=-3)
         # test error minimum number of occurrences
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
-                              [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
-                               neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
+                              [neo.SpikeTrain([1, 2, 3] * pq.s,
+                                              t_stop=5 * pq.s),
+                               neo.SpikeTrain([3, 4, 5] * pq.s,
+                                              t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
                           maxlag=self.max_lag,
                           min_occ=-1)
         # test error minimum number of spikes in a pattern
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
-                              [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
-                               neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
+                              [neo.SpikeTrain([1, 2, 3] * pq.s,
+                                              t_stop=5 * pq.s),
+                               neo.SpikeTrain([3, 4, 5] * pq.s,
+                                              t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
                           maxlag=self.max_lag,
                           max_spikes=1)
         # test error chunk size for variance computation
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
-                              [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
-                               neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
+                              [neo.SpikeTrain([1, 2, 3] * pq.s,
+                                              t_stop=5 * pq.s),
+                               neo.SpikeTrain([3, 4, 5] * pq.s,
+                                              t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
                           maxlag=self.max_lag,
                           size_chunks=1)
         # test error maximum lag
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
-                              [neo.SpikeTrain([1, 2, 3]*pq.s, t_stop=5*pq.s),
-                               neo.SpikeTrain([3, 4, 5]*pq.s, t_stop=5*pq.s)],
+                              [neo.SpikeTrain([1, 2, 3] * pq.s,
+                                              t_stop=5 * pq.s),
+                               neo.SpikeTrain([3, 4, 5] * pq.s,
+                                              t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
                           maxlag=1)
         # test error minimum length spike train
         self.assertRaises(ValueError, cad.cell_assembly_detection,
                           data=conv.BinnedSpikeTrain(
-                              [neo.SpikeTrain([1, 2, 3]*pq.ms, t_stop=6*pq.ms),
-                               neo.SpikeTrain([3, 4, 5]*pq.ms,
-                                              t_stop=6*pq.ms)],
-                              bin_size=1*pq.ms),
+                              [neo.SpikeTrain([1, 2, 3] * pq.ms,
+                                              t_stop=6 * pq.ms),
+                               neo.SpikeTrain([3, 4, 5] * pq.ms,
+                                              t_stop=6 * pq.ms)],
+                              bin_size=1 * pq.ms),
                           maxlag=self.max_lag)
 
 

@@ -53,11 +53,13 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
     if not skip_array and hasattr(neo_object, "array_annotations"):
         # Exclude labels and durations, and any other fields that should not
         # be a part of array_annotation.
-        required_keys = set(neo_object.array_annotations).difference(dir(neo_object))
+        required_keys = set(neo_object.array_annotations).difference(
+            dir(neo_object))
         for a in required_keys:
             if "array_annotations" not in attrs:
                 attrs["array_annotations"] = {}
-            attrs["array_annotations"][a] = neo_object.array_annotations[a].copy()
+            attrs["array_annotations"][a] = \
+                neo_object.array_annotations[a].copy()
     for attr in neo_object._necessary_attrs + neo_object._recommended_attrs:
         if skip_array and len(attr) >= 3 and attr[2]:
             continue
@@ -156,8 +158,9 @@ def get_all_spiketrains(container):
 
     Parameters
     ----------
-    container : list, tuple, iterable, dict, neo.Block, neo.Segment, neo.Unit, neo.ChannelIndex
-                The container for the spiketrains.
+    container : list, tuple, iterable, dict, neo.Block, neo.Segment, neo.Unit,
+        neo.ChannelIndex
+        The container for the spiketrains.
 
     Returns
     -------

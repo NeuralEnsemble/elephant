@@ -415,16 +415,20 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
-        res100 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
-        res200 = nt.extract_neo_attributes(obj, parents=False, child_first=False)
-        res010 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
-        res110 = nt.extract_neo_attributes(obj, parents=False, skip_array=False,
-                                           child_first=True)
-        res210 = nt.extract_neo_attributes(obj, parents=False, skip_array=False,
-                                           child_first=False)
+        res100 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=True)
+        res200 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=False)
+        res010 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False)
+        res110 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False, child_first=True)
+        res210 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False, child_first=False)
         res001 = nt.extract_neo_attributes(obj, parents=True)
         res101 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
-        res201 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
+        res201 = nt.extract_neo_attributes(
+            obj, parents=True, child_first=False)
         res011 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
         res111 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                            child_first=True)
@@ -461,16 +465,20 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
-        res100 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
-        res200 = nt.extract_neo_attributes(obj, parents=False, child_first=False)
-        res010 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
-        res110 = nt.extract_neo_attributes(obj, parents=False, skip_array=False,
-                                           child_first=True)
-        res210 = nt.extract_neo_attributes(obj, parents=False, skip_array=False,
-                                           child_first=False)
+        res100 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=True)
+        res200 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=False)
+        res010 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False)
+        res110 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False, child_first=True)
+        res210 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False, child_first=False)
         res001 = nt.extract_neo_attributes(obj, parents=True)
         res101 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
-        res201 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
+        res201 = nt.extract_neo_attributes(
+            obj, parents=True, child_first=False)
         res011 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
         res111 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                            child_first=True)
@@ -496,16 +504,20 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
-        res100 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
-        res200 = nt.extract_neo_attributes(obj, parents=False, child_first=False)
-        res010 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
-        res110 = nt.extract_neo_attributes(obj, parents=False, skip_array=False,
-                                           child_first=True)
-        res210 = nt.extract_neo_attributes(obj, parents=False, skip_array=False,
-                                           child_first=False)
+        res100 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=True)
+        res200 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=False)
+        res010 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False)
+        res110 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False, child_first=True)
+        res210 = nt.extract_neo_attributes(
+            obj, parents=False, skip_array=False, child_first=False)
         res001 = nt.extract_neo_attributes(obj, parents=True)
         res101 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
-        res201 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
+        res201 = nt.extract_neo_attributes(
+            obj, parents=True, child_first=False)
         res011 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
         res111 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                            child_first=True)
@@ -603,7 +615,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                           child_first=False)
         res01 = nt.extract_neo_attributes(obj, parents=False)
         res11 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
-        res21 = nt.extract_neo_attributes(obj, parents=False, child_first=False)
+        res21 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=False)
 
         del res00['i']
         del res10['i']
@@ -640,7 +653,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                           child_first=False)
         res01 = nt.extract_neo_attributes(obj, parents=False)
         res11 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
-        res21 = nt.extract_neo_attributes(obj, parents=False, child_first=False)
+        res21 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=False)
 
         del res00['i']
         del res10['i']
@@ -674,7 +688,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                           child_first=False)
         res01 = nt.extract_neo_attributes(obj, parents=False)
         res11 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
-        res21 = nt.extract_neo_attributes(obj, parents=False, child_first=False)
+        res21 = nt.extract_neo_attributes(
+            obj, parents=False, child_first=False)
 
         del res00['i']
         del res10['i']
@@ -720,7 +735,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
-        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        # name clash between Block.index and ChannelIndex.index
+        del res0['index']
         del res1['index']
 
         self.assertEqual(targ, res0)
@@ -744,7 +760,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
-        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        # name clash between Block.index and ChannelIndex.index
+        del res0['index']
         del res1['index']
 
         self.assertEqual(targ, res0)
@@ -768,7 +785,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         del res1['i']
         del res0['j']
         del res1['j']
-        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        # name clash between Block.index and ChannelIndex.index
+        del res0['index']
         del res1['index']
 
         self.assertEqual(targ, res0)
@@ -794,7 +812,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         del res0['i']
         del res0['j']
-        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        # name clash between Block.index and ChannelIndex.index
+        del res0['index']
 
         self.assertEqual(targ, res0)
 
@@ -813,7 +832,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         del res0['i']
         del res0['j']
-        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        # name clash between Block.index and ChannelIndex.index
+        del res0['index']
 
         self.assertEqual(targ, res0)
 
@@ -832,7 +852,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         del res0['i']
         del res0['j']
-        del res0['index']  # name clash between Block.index and ChannelIndex.index
+        # name clash between Block.index and ChannelIndex.index
+        del res0['index']
 
         self.assertEqual(targ, res0)
 

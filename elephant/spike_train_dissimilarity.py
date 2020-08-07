@@ -130,7 +130,8 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
             num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return num_spikes.T + num_spikes
         else:
-            kernel = kernels.TriangularKernel(2.0 / (np.sqrt(6.0) * cost_factor))
+            kernel = kernels.TriangularKernel(
+                sigma=2.0 / (np.sqrt(6.0) * cost_factor))
 
     if sort:
         spiketrains = [np.sort(st.view(type=pq.Quantity))
@@ -287,8 +288,11 @@ def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
         for i in range(1, nspk_a+1):
             for j in range(1, nspk_b+1):
                 scr[i, j] = min(scr[i-1, j]+1, scr[i, j-1]+1)
-                scr[i, j] = min(scr[i, j], scr[i-1, j-1] + np.float64((
-                                                                              cost_factor * abs(spiketrain_a[i - 1] - spiketrain_b[j - 1])).simplified))
+                scr[i, j] = min(scr[i, j], scr[i-1, j-1] +
+                                np.float64((
+                                    cost_factor * abs(
+                                        spiketrain_a[i - 1] -
+                                        spiketrain_b[j - 1])).simplified))
     return scr[nspk_a, nspk_b]
 
 
@@ -362,7 +366,8 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
         return np.absolute(spike_counts - np.atleast_2d(spike_counts).T)
 
     k_dist = _summed_dist_matrix(
-        [st.view(type=pq.Quantity) for st in spiketrains], time_constant, not sort)
+        [st.view(type=pq.Quantity)
+         for st in spiketrains], time_constant, not sort)
     vr_dist = np.empty_like(k_dist)
     for i, j in np.ndindex(k_dist.shape):
         vr_dist[i, j] = (

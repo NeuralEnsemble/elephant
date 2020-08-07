@@ -134,7 +134,7 @@ class mean_firing_rate_TestCase(unittest.TestCase):
 
     def test_mean_firing_rate_typical_use_case(self):
         np.random.seed(92)
-        st = homogeneous_poisson_process(rate=100*pq.Hz, t_stop=100*pq.s)
+        st = homogeneous_poisson_process(rate=100 * pq.Hz, t_stop=100 * pq.s)
         rate1 = statistics.mean_firing_rate(st)
         rate2 = statistics.mean_firing_rate(st, t_start=st.t_start,
                                             t_stop=st.t_stop)
@@ -425,9 +425,10 @@ class RateEstimationTestCase(unittest.TestCase):
         np.random.seed(19)
         duration_effective = self.st_dur - 2 * self.st_margin
         st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
-        spike_train = np.random.rand(st_num_spikes) * duration_effective + \
-            self.st_margin
-        spike_train.sort()
+        spike_train = sorted(
+            np.random.rand(st_num_spikes) *
+            duration_effective +
+            self.st_margin)
 
         # convert spike train into neo objects
         self.spike_train = neo.SpikeTrain(spike_train * pq.s,
@@ -618,9 +619,10 @@ class RateEstimationTestCase(unittest.TestCase):
         np.random.seed(19)
         duration_effective = self.st_dur - 2 * self.st_margin
         st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
-        spike_train2 = np.random.rand(st_num_spikes) * duration_effective + \
-            self.st_margin
-        spike_train2.sort()
+        spike_train2 = sorted(
+            np.random.rand(st_num_spikes) *
+            duration_effective +
+            self.st_margin)
         spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
                                       t_start=self.st_tr[0] * pq.s,
                                       t_stop=self.st_tr[1] * pq.s)

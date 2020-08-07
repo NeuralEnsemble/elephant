@@ -964,8 +964,8 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
     bandwidth : np.ndarray, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
-        If None, `bandwidth` is obtained through a golden-section search on a log-exp
-        scale.
+        If None, `bandwidth` is obtained through a golden-section search on a
+        log-exp scale.
         Default: None.
     bootstrap : bool, optional
         If True, calculates the 95% confidence interval using Bootstrap.
@@ -1010,7 +1010,7 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
         times = np.linspace(np.min(spiketimes),
                             np.max(spiketimes),
                             min(int(time / dt + 0.5),
-                              1000))  # The 1000 seems somewhat arbitrary
+                                1000))  # The 1000 seems somewhat arbitrary
         t = times
     else:
         time = np.max(times) - np.min(times)

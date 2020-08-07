@@ -250,7 +250,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 rate=rate, t_stop=t_stop, refractory_period=refractory_period,
                 as_array=True)
             # don't check with isinstance: Quantity is a subclass of np.ndarray
-            self.assertTrue(type(spiketrain_array) is np.ndarray)
+            self.assertTrue(isinstance(spiketrain_array, np.ndarray))
             assert_array_almost_equal(spiketrain.times.magnitude,
                                       spiketrain_array)
 
@@ -446,7 +446,7 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         spiketrain_array = stgen.homogeneous_gamma_process(a=a, b=b,
                                                            as_array=True)
         # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
-        self.assertTrue(type(spiketrain_array) is np.ndarray)
+        self.assertTrue(isinstance(spiketrain_array, np.ndarray))
         assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
 
 
@@ -461,7 +461,10 @@ class _n_poisson_TestCase(unittest.TestCase):
     def test_poisson(self):
 
         # Check the output types for input rate + n number of neurons
-        pp = stgen._n_poisson(rate=self.rate, t_stop=self.t_stop, n_spiketrains=self.n)
+        pp = stgen._n_poisson(
+            rate=self.rate,
+            t_stop=self.t_stop,
+            n_spiketrains=self.n)
         self.assertIsInstance(pp, list)
         self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
         self.assertEqual(pp[0].simplified.units, 1000 * ms)
@@ -544,8 +547,12 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
 
         # Generate an example SIP mode stochastic number of coincidences
         sip = stgen.single_interaction_process(
-            n_spiketrains=self.n, t_stop=self.t_stop, rate=self.rate,
-            coincidence_rate=self.rate_c, coincidences='stochastic', return_coincidences=False)
+            n_spiketrains=self.n,
+            t_stop=self.t_stop,
+            rate=self.rate,
+            coincidence_rate=self.rate_c,
+            coincidences='stochastic',
+            return_coincidences=False)
 
         # Check the output types
         self.assertEqual(type(sip), list)
@@ -565,15 +572,20 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         # Negative value when rate is a list
         self.assertRaises(
             ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
-            rate=[-5, 3, 4, 2] * Hz, coincidence_rate=self.rate_c, t_stop=self.t_stop)
+            rate=[-5, 3, 4, 2] * Hz, coincidence_rate=self.rate_c,
+            t_stop=self.t_stop)
         # Negative n
         self.assertRaises(
             ValueError, stgen.single_interaction_process, n_spiketrains=-1,
             rate=self.rate, coincidence_rate=self.rate_c, t_stop=self.t_stop)
         # Rate_c < rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
-            rate=self.rate, coincidence_rate=self.rate + 1 * Hz, t_stop=self.t_stop)
+            ValueError,
+            stgen.single_interaction_process,
+            n_spiketrains=self.n,
+            rate=self.rate,
+            coincidence_rate=self.rate + 1 * Hz,
+            t_stop=self.t_stop)
 
 
 class cppTestCase(unittest.TestCase):

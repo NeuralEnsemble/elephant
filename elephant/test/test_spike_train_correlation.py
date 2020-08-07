@@ -226,7 +226,9 @@ class CorrCoefTestCase(unittest.TestCase):
         self.assertEqual(len(result), 2)
         # Check result
         assert_array_almost_equal(result, target)
-        assert_array_almost_equal(result, sc.correlation_coefficient(binned_st, fast=True))
+        assert_array_almost_equal(
+            result, sc.correlation_coefficient(
+                binned_st, fast=True))
 
     def test_corrcoef_binned_short_input(self):
         '''
@@ -242,7 +244,9 @@ class CorrCoefTestCase(unittest.TestCase):
         # Check result and dimensionality of result
         self.assertEqual(result.ndim, 0)
         assert_array_almost_equal(result, target)
-        assert_array_almost_equal(result, sc.correlation_coefficient(binned_st, fast=True))
+        assert_array_almost_equal(
+            result, sc.correlation_coefficient(
+                binned_st, fast=True))
 
     @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
@@ -266,8 +270,10 @@ class CorrCoefTestCase(unittest.TestCase):
         np.random.seed(27)
         st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
         binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
-        assert_array_almost_equal(sc.correlation_coefficient(binned_st, fast=False),
-                                  sc.correlation_coefficient(binned_st, fast=True))
+        assert_array_almost_equal(
+            sc.correlation_coefficient(
+                binned_st, fast=False), sc.correlation_coefficient(
+                binned_st, fast=True))
 
 
 class CrossCorrelationHistogramTest(unittest.TestCase):
@@ -788,7 +794,7 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
                                   decimal=3)
 
     def test_timescale_errors(self):
-        spikes = neo.SpikeTrain([1, 5, 7, 8]*pq.ms, t_stop=10*pq.ms)
+        spikes = neo.SpikeTrain([1, 5, 7, 8] * pq.ms, t_stop=10 * pq.ms)
         binsize = 1 * pq.ms
         spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
 
@@ -798,18 +804,18 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
                           sc.spike_train_timescale, spikes_bin, tau_max)
 
         # Tau max that is not a multiple of the binsize
-        tau_max = 1.1*pq.ms
+        tau_max = 1.1 * pq.ms
         self.assertRaises(ValueError,
                           sc.spike_train_timescale, spikes_bin, tau_max)
 
     @unittest.skipUnless(python_version_major == 3,
                          "assertWarns requires python 3.2")
     def test_timescale_nan(self):
-        st0 = neo.SpikeTrain([]*pq.ms, t_stop=10*pq.ms)
-        st1 = neo.SpikeTrain([1]*pq.ms, t_stop=10*pq.ms)
-        st2 = neo.SpikeTrain([1, 5]*pq.ms, t_stop=10*pq.ms)
-        st3 = neo.SpikeTrain([1, 5, 6]*pq.ms, t_stop=10*pq.ms)
-        st4 = neo.SpikeTrain([1, 5, 6, 9]*pq.ms, t_stop=10*pq.ms)
+        st0 = neo.SpikeTrain([] * pq.ms, t_stop=10 * pq.ms)
+        st1 = neo.SpikeTrain([1] * pq.ms, t_stop=10 * pq.ms)
+        st2 = neo.SpikeTrain([1, 5] * pq.ms, t_stop=10 * pq.ms)
+        st3 = neo.SpikeTrain([1, 5, 6] * pq.ms, t_stop=10 * pq.ms)
+        st4 = neo.SpikeTrain([1, 5, 6, 9] * pq.ms, t_stop=10 * pq.ms)
 
         binsize = 1 * pq.ms
         tau_max = 1 * pq.ms

@@ -1422,8 +1422,8 @@ class ASSET(object):
                 surrogates_y = surrogates
             else:
                 surrogates_y = [spike_train_surrogates.surrogates(
-                    st, n_surrogates=1, method=surrogate_method, dt=surrogate_dt,
-                    decimals=None, edges=True)[0]
+                    st, n_surrogates=1, method=surrogate_method,
+                    dt=surrogate_dt, decimals=None, edges=True)[0]
                                 for st in self.spiketrains_j]
 
             imat_surr = _intersection_matrix(surrogates, surrogates_y,
@@ -1884,12 +1884,15 @@ class ASSET(object):
                 np.where(cmat == k)).T  # position of all links
             # if no link lies on the reference diagonal
             if all([y - x != diag_id for (x, y) in pos_worm_k]):
-                for l, (bin_x, bin_y) in enumerate(
-                        pos_worm_k):  # for each link
+                for bin_x, bin_y in pos_worm_k:  # for each link
+
+                    # reconstruct the link
                     link_l = set(tracts_x[bin_x]).intersection(
-                        tracts_y[bin_y])  # reconstruct the link
-                    worm_k[
-                        (bin_x, bin_y)] = link_l  # and assign it to its pixel
+                        tracts_y[bin_y])
+
+                    # and assign it to its pixel
+                    worm_k[(bin_x, bin_y)] = link_l
+
                 sse_dict[k] = worm_k
 
         return sse_dict

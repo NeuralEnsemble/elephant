@@ -248,8 +248,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
         # This avoids empty slices
         border_start = np.where(np.diff(cutout) > 1)[0]
         border_end = border_start + 1
-        borders = np.r_[0, border_start, border_end, len(cutout) - 1]
-        borders.sort()
+        borders = sorted(np.r_[0, border_start, border_end, len(cutout) - 1])
         true_borders = cutout[borders]
         right_borders = true_borders[1::2] + 1
         true_borders = np.sort(np.append(true_borders[0::2], right_borders))
@@ -741,7 +740,8 @@ def single_interaction_process(
         0 and `t_stop`.
     rate : pq.Quantity
         Overall mean rate of the time series to be generated (coincidence
-        rate `coincidence_rate` is subtracted to determine the background rate). Can be:
+        rate `coincidence_rate` is subtracted to determine the background
+        rate). Can be:
         * a float, representing the overall mean rate of each process. If
           so, it must be higher than `coincidence_rate`.
         * an iterable of floats (one float per process), each float
@@ -749,12 +749,14 @@ def single_interaction_process(
           entries must be larger than `coincidence_rate`.
     coincidence_rate : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP).
-        The SIP spike trains will have coincident events with rate `coincidence_rate`
-        plus independent 'background' events with rate `rate-rate_coincidence`.
+        The SIP spike trains will have coincident events with rate
+        `coincidence_rate` plus independent 'background' events with rate
+        `rate-rate_coincidence`.
     n_spiketrains : int, optional
-        If `rate` is a single pq.Quantity value, `n_spiketrains` specifies the number of
-        SpikeTrains to be generated. If rate is an array, `n_spiketrains` is ignored and
-        the number of SpikeTrains is equal to `len(rate)`.
+        If `rate` is a single pq.Quantity value, `n_spiketrains` specifies the
+        number of SpikeTrains to be generated. If rate is an array,
+        `n_spiketrains` is ignored and the number of SpikeTrains is equal to
+        `len(rate)`.
         Default: 2
     jitter : pq.Quantity, optional
         Jitter for the coincident events. If `jitter == 0`, the events of all
@@ -763,9 +765,9 @@ def single_interaction_process(
         Default: 0 * pq.ms
     coincidences : {'deterministic', 'stochastic'}, optional
         Whether the total number of injected coincidences must be determin-
-        istic (i.e. rate_coincidence is the actual rate with which coincidences are
-        generated) or stochastic (i.e. rate_coincidence is the mean rate of coincid-
-        ences):
+        istic (i.e. rate_coincidence is the actual rate with which coincidences
+        are generated) or stochastic (i.e. rate_coincidence is the mean rate of
+        coincidences):
           * 'deterministic': deterministic rate
 
           * 'stochastic': stochastic rate
@@ -799,15 +801,16 @@ def single_interaction_process(
     >>> import quantities as pq
     >>> import elephant.spike_train_generation as stg
     # TODO: check if rate_coincidence=4 is correct.
-    >>> sip, coinc = stg.single_interaction_process(rate=20*pq.Hz,  coincidence_rate=4,
-    ...                                             t_stop=1*pq.s,
-    ...                                             n_spiketrains=10, return_coincidences = True)
+    >>> sip, coinc = stg.single_interaction_process(
+    ... rate=20*pq.Hz, coincidence_rate=4,
+    ... t_stop=1*pq.s, n_spiketrains=10, return_coincidences = True)
 
     """
 
     # Check if n is a positive integer
     if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
-        raise ValueError('n (={}) must be a positive integer'.format(n_spiketrains))
+        raise ValueError(
+            'n (={}) must be a positive integer'.format(n_spiketrains))
     if coincidences not in ('deterministic', 'stochastic'):
         raise ValueError(
             "coincidences must be 'deterministic' or 'stochastic'")
@@ -830,13 +833,16 @@ def single_interaction_process(
 
     # Check: rate>=rate_coincidence
     if np.any(rates_b < coincidence_rate):
-        raise ValueError('all elements of *rate* must be >= *rate_coincidence*')
+        raise ValueError(
+            'all elements of *rate* must be >= *rate_coincidence*')
 
     # Check min_delay < 1./rate_coincidence
-    if not (coincidence_rate == 0 * pq.Hz or min_delay < 1. / coincidence_rate):
+    if not (coincidence_rate == 0 * pq.Hz
+            or min_delay < 1. / coincidence_rate):
         raise ValueError(
             "'*min_delay* (%s) must be lower than 1/*rate_coincidence* (%s)." %
-            (str(min_delay), str((1. / coincidence_rate).rescale(min_delay.units))))
+            (str(min_delay), str((1. / coincidence_rate).rescale(
+                min_delay.units))))
 
     # Generate the n Poisson processes there are the basis for the SIP
     # (coincidences still lacking)
@@ -1245,17 +1251,21 @@ def compound_poisson_process(
         raise ValueError('Rate is an empty pq.Quantity array')
     # Return empty spike trains for specific parameters
     if amplitude_distribution[0] == 1 or np.sum(np.abs(rate.magnitude)) == 0:
-        return [neo.SpikeTrain([] * t_stop.units, t_stop=t_stop,
-                               t_start=t_start)] * (len(amplitude_distribution) - 1)
+        return [neo.SpikeTrain([] * t_stop.units,
+                               t_stop=t_stop,
+                               t_start=t_start)] * (
+                len(amplitude_distribution) - 1)
 
     # Homogeneous rates
     if rate.ndim == 0:
         compound_poisson_spiketrains = _cpp_hom_stat(
-            A=amplitude_distribution, t_stop=t_stop, rate=rate, t_start=t_start)
+            A=amplitude_distribution, t_stop=t_stop, rate=rate,
+            t_start=t_start)
     # Heterogeneous rates
     else:
         compound_poisson_spiketrains = _cpp_het_stat(
-            A=amplitude_distribution, t_stop=t_stop, rates=rate, t_start=t_start)
+            A=amplitude_distribution, t_stop=t_stop, rates=rate,
+            t_start=t_start)
 
     if shift is not None:
         # Dither the output spiketrains

@@ -220,7 +220,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         #  --------------------   ===============================  ^^^^^^^^^^^
         # summed segment lengths        total overlap              data length
         nperseg = int(data.shape[axis] / (n_segments - overlap * (
-                n_segments - 1)))
+            n_segments - 1)))
     params['nperseg'] = nperseg
     params['noverlap'] = int(nperseg * overlap)
 
@@ -263,18 +263,19 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
         Second time series data of the pair between which coherence is
         computed.
-        The shapes and the sampling frequencies of `signal_i` and `signal_j` must be
-        identical. When `signal_i` and `signal_j` are not `neo.AnalogSignal`, sampling
-        frequency should be specified through the keyword argument `fs`.
-        Otherwise, the default value is used (`fs` = 1.0).
+        The shapes and the sampling frequencies of `signal_i` and `signal_j`
+        must be identical. When `signal_i` and `signal_j` are not
+        `neo.AnalogSignal`, sampling frequency should be specified through the
+        keyword argument `fs`. Otherwise, the default value is used
+        (`fs` = 1.0).
     n_segments : int, optional
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_seg` or `frequency_resolution` is given.
         Default: 8.
     len_segment : int, optional
-        Length of segments. This parameter is ignored if `frequency_resolution` is given.
-        If None, it is determined from other parameters.
+        Length of segments. This parameter is ignored if `frequency_resolution`
+        is given. If None, it is determined from other parameters.
         Default: None.
     frequency_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained coherence estimate in
@@ -320,27 +321,27 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     freqs : pq.Quantity or np.ndarray
         Frequencies associated with the estimates of coherency and phase lag.
         `freqs` is always a vector irrespective of the shape of the input
-        data. If `signal_i` and `signal_j` are `neo.AnalogSignal` or `pq.Quantity`, a
-        `pq.Quantity` array is returned. Otherwise, a `np.ndarray` containing
-        frequency in Hz is returned.
+        data. If `signal_i` and `signal_j` are `neo.AnalogSignal` or
+        `pq.Quantity`, a `pq.Quantity` array is returned. Otherwise, a
+        `np.ndarray` containing frequency in Hz is returned.
     coherency : np.ndarray
         Estimate of coherency between the input time series. For each
         frequency, coherency takes a value between 0 and 1, with 0 or 1
         representing no or perfect coherence, respectively.
-        When the input arrays `signal_i` and `signal_j` are multi-dimensional, `coherency`
-        is of the same shape as the inputs, and the frequency is indexed
-        depending on the type of the input. If the input is
+        When the input arrays `signal_i` and `signal_j` are multi-dimensional,
+        `coherency` is of the same shape as the inputs, and the frequency is
+        indexed depending on the type of the input. If the input is
         `neo.AnalogSignal`, the first axis indexes frequency. Otherwise,
         frequency is indexed by the last axis.
     phase_lag : pq.Quantity or np.ndarray
         Estimate of phase lag in radian between the input time series. For
         each frequency, phase lag takes a value between :math:`-\pi` and
-        :math:`\pi`, with positive values meaning phase precession of `signal_i`
-        ahead of `signal_j`, and vice versa. If `signal_i` and `signal_j` are `neo.AnalogSignal` or
-        `pq.Quantity`, a `pq.Quantity` array is returned. Otherwise, a
-        `np.ndarray` containing phase lag in radian is returned.
-        The axis for frequency index is determined in the same way as for
-        `coherency`.
+        :math:`\pi`, with positive values meaning phase precession of
+        `signal_i` ahead of `signal_j`, and vice versa. If `signal_i` and
+        `signal_j` are `neo.AnalogSignal` or `pq.Quantity`, a `pq.Quantity`
+        array is returned. Otherwise, a `np.ndarray` containing phase lag in
+        radian is returned. The axis for frequency index is determined in the
+        same way as for `coherency`.
 
     Raises
     ------
@@ -424,7 +425,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         #  -------------------    ===============================  ^^^^^^^^^^^
         # summed segment lengths        total overlap              data length
         nperseg = int(xdata.shape[axis] / (n_segments - overlap * (
-                n_segments - 1)))
+            n_segments - 1)))
     params['nperseg'] = nperseg
     params['noverlap'] = int(nperseg * overlap)
 
