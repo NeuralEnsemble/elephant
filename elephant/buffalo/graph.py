@@ -1,22 +1,39 @@
 import networkx as nx
 from pyvis.network import Network
+import uuid
 
 
 class BuffaloProvenanceGraph(nx.DiGraph):
 
     def _add_input_to_output(self, analysis_step, input_obj, edge_label,
-                             edge_title, multi_output, **attrs):
-        obj_type = input_obj.type
-        obj_label = obj_type.split(".")[-1]
-        self.add_node(input_obj, label=obj_label, title=obj_type)
+                             edge_title, multi_output, function_edge, **attrs):
+
+        def _connect_edge(input_obj, output_obj, function_edge):
+            if function_edge:
+                self.add_node(function_edge, label=edge_label,
+                              title=edge_title, type='function',
+                              params=analysis_step.params)
+                if input_obj is not None:
+                    self.add_edge(input_obj, function_edge, type='input',
+                                  **attrs)
+                self.add_edge(function_edge, output_obj, type='output',
+                              **attrs)
+            else:
+                self.add_edge(input_obj, output_obj, label=edge_label,
+                              title=edge_title, params=analysis_step.params,
+                              type='static', **attrs)
+
+        if input_obj is not None:
+            obj_type = input_obj.type
+            obj_label = obj_type.split(".")[-1]
+            self.add_node(input_obj, label=obj_label, title=obj_type,
+                          type='data')
 
         if multi_output:
             for output_key, output_obj in analysis_step.output.items():
-                self.add_edge(input_obj, output_obj, label=edge_label,
-                              title=edge_title, **attrs)
+                _connect_edge(input_obj, output_obj, function_edge)
         else:
-            self.add_edge(input_obj, analysis_step.output[0], label=edge_label,
-                          title=edge_title, **attrs)
+            _connect_edge(input_obj, analysis_step.output[0], function_edge)
 
     @staticmethod
     def _get_edge_attrs_and_labels(analysis_step):
@@ -24,6 +41,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         edge_label = analysis_step.function.name
         edge_title = edge_label
 
+        function_edge = None
         if edge_label in ['attribute', 'subscript']:
             if edge_label == 'attribute':
                 edge_label = ".{}".format(edge_attr['name'])
@@ -36,8 +54,9 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             if analysis_step.function.module:
                 edge_title = analysis_step.function.module + "." + edge_title
             edge_label = edge_title.split(".")[-1]
+            function_edge = uuid.uuid4()
 
-        return edge_attr, edge_label, edge_title
+        return edge_label, edge_title, function_edge
 
     def add_step(self, analysis_step, **attr):
         from elephant.buffalo.provenance import VarArgs
@@ -45,23 +64,29 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         for key, obj in analysis_step.output.items():
             obj_type = obj.type
             obj_label = obj_type.split(".")[-1]
-            self.add_node(obj, label=obj_label, title=obj_type)
+            self.add_node(obj, label=obj_label, title=obj_type, type='data')
         multi_output = len(list(analysis_step.output.keys())) > 1
 
-        edge_attr, edge_label, edge_title = \
+        edge_label, edge_title, function_edge = \
             self._get_edge_attrs_and_labels(analysis_step)
 
-        for key, obj in analysis_step.input.items():
-            if isinstance(obj, VarArgs):
-                for var_arg in obj.value:
-                    self._add_input_to_output(analysis_step, var_arg,
-                                              edge_label, edge_title,
-                                              multi_output, **edge_attr,
-                                              **attr)
-            else:
-                self._add_input_to_output(analysis_step, obj, edge_label,
-                                          edge_title, multi_output,
-                                          **edge_attr, **attr)
+        if len(analysis_step.input.keys()):
+            for key, obj in analysis_step.input.items():
+                if isinstance(obj, VarArgs):
+                    for var_arg in obj.value:
+                        self._add_input_to_output(analysis_step, var_arg,
+                                                  edge_label, edge_title,
+                                                  multi_output, function_edge,
+                                                  **attr)
+                else:
+                    self._add_input_to_output(analysis_step, obj, edge_label,
+                                              edge_title, multi_output,
+                                              function_edge, **attr)
+        else:
+            # Function without input
+            self._add_input_to_output(analysis_step, None, edge_label,
+                                      edge_title, multi_output,
+                                      function_edge, **attr)
 
     def to_pyvis(self, filename, show=False, layout=True):
         """
@@ -85,8 +110,15 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         def add_node(node_id):
             attr = nodes[node_id]
             level = attr.get('level', None)
-            net.add_node(hash(node_id), title=attr['title'],
-                         label=attr['label'], level=level)
+            node_type = attr.get('type', 'unknown')
+            shape = shape_types[node_type]
+            color = color_types[node_type]
+            net.add_node(hash(node_id), level=level, shape=shape,
+                         color=color, label=attr['label'], title=attr['title'])
+
+        shape_types = {'data': 'dot', 'function': 'square',
+                       'unknown': 'triangle'}
+        color_types = {'data': 'blue', 'function': 'red', 'unknown': 'green'}
 
         edges = self.edges.data()
         nodes = self.nodes
@@ -108,11 +140,14 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         net = Network(height="960px", width="1280px", directed=True,
                       layout=layout)
+
         for v, u, edge_attr in edges:
             add_node(v)
             add_node(u)
-            net.add_edge(hash(v), hash(u), title=edge_attr['title'],
-                         label=edge_attr['label'])
+            labels = {key: edge_attr[key] for key in ('label', 'title')
+                      if key in edge_attr}
+            net.add_edge(hash(v), hash(u), **labels)
+
         net.save_graph(filename)
         if show:
             net.show(name=filename)
