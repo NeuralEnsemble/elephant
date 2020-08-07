@@ -2,6 +2,34 @@
 Release Notes
 *************
 
+Elephant 0.8.0 release notes
+============================
+
+New features
+------------
+* The `parallel` module is a new experimental module (https://github.com/NeuralEnsemble/elephant/pull/307) to run python functions concurrently. Supports native (pythonic) ProcessPollExecutor and MPI. Not limited to Elephant functional.
+* Added an optional `refractory_period` argument, set to None by default, to `dither_spikes` function (https://github.com/NeuralEnsemble/elephant/pull/297).
+* Added `cdf` and `icdf` functions in Kernel class to correctly estimate the median index, needed for `instantaneous_rate` function in statistics.py (https://github.com/NeuralEnsemble/elephant/pull/313).
+* Added an optional `center_kernel` argument, set to True by default (to behave as in Elephant <0.8.0 versions) to `instantaneous_rate` function in statistics.py (https://github.com/NeuralEnsemble/elephant/pull/313).
+
+New tutorials
+-------------
+* Analysis of Sequences of Synchronous EvenTs (ASSET) tutorial: https://elephant.readthedocs.io/en/latest/tutorials/asset.html
+* Parallel module tutorial: https://elephant.readthedocs.io/en/latest/tutorials/parallel.html
+
+Optimization
+------------
+* Optimized ASSET runtime by a factor of 10 and more (https://github.com/NeuralEnsemble/elephant/pull/259, https://github.com/NeuralEnsemble/elephant/pull/333).
+
+Python 2.7 and 3.5 deprecation
+------------------------------
+Python 2.7 and 3.5 are deprecated and will not be maintained by the end of 2020. Switch to Python 3.6+.
+
+Breaking changes
+----------------
+* Naming convention changes (`binsize` -> `bin_size`, etc.) in almost all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
+
+
 Elephant 0.7.0 release notes
 ============================
 
