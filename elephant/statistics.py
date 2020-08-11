@@ -847,7 +847,7 @@ def complexity_pdf(spiketrains, bin_size):
 
     complexity_obj = complexity(spiketrains, bin_size=bin_size)
 
-    return complexity_obj.pdf
+    return complexity_obj.pdf()
 
 
 class complexity:
@@ -917,11 +917,6 @@ class complexity:
         The number of occurrences of events of different complexities.
         `complexity_hist[i]` corresponds to the number of events of
         complexity `i` for `i > 0`.
-    pdf : neo.AnalogSignal
-        The normalization of `self.complexityhistogram` to 1.
-        A `neo.AnalogSignal` object containing the pdf values.
-        `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
     Raises
     ------
@@ -982,7 +977,7 @@ class complexity:
     >>> # spread = 0, a simple bincount
     >>> cpx = complexity(sts, sampling_rate=sr)
     Complexity calculated at sampling rate precision
-    >>> print(cpx.histogram)
+    >>> print(cpx.complexity_histogram)
     [5 4 1]
     >>> print(cpx.time_histogram.flatten())
     [0 2 0 0 1 1 1 0 1 0] dimensionless
@@ -992,7 +987,7 @@ class complexity:
     >>> # spread = 1, consecutive spikes
     >>> cpx = complexity(sts, sampling_rate=sr, spread=1)
     Complexity calculated at sampling rate precision
-    >>> print(cpx.histogram)
+    >>> print(cpx.complexity_histogram)
     [5 4 1]
     >>> print(cpx.time_histogram.flatten())
     [0 2 0 0 3 3 3 0 1 0] dimensionless
@@ -1000,7 +995,7 @@ class complexity:
     >>> # spread = 2, consecutive spikes and separated by 1 empty bin
     >>> cpx = complexity(sts, sampling_rate=sr, spread=2)
     Complexity calculated at sampling rate precision
-    >>> print(cpx.histogram)
+    >>> print(cpx.complexity_histogram)
     [4 0 1 0 1]
     >>> print(cpx.time_histogram.flatten())
     [0 2 0 0 4 4 4 4 4 0] dimensionless
@@ -1036,18 +1031,26 @@ class complexity:
             self.bin_size = 1 / self.sampling_rate
 
         if spread == 0:
-            self.time_histogram, self.histogram = self._histogram_no_spread()
+            self.time_histogram, self.complexity_histogram = \
+                self._histogram_no_spread()
             self.epoch = self._epoch_no_spread()
         else:
             self.epoch = self._epoch_with_spread()
-            self.time_histogram, self.histogram = self._histogram_with_spread()
+            self.time_histogram, self.complexity_histogram = \
+                self._histogram_with_spread()
 
-    @property
     def pdf(self):
         """
         Probability density computed from the complexity histogram.
+
+        Returns
+        -------
+        pdf : neo.AnalogSignal
+            A `neo.AnalogSignal` object containing the pdf values.
+            `neo.AnalogSignal[j]` is the histogram computed between
+            `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
         """
-        norm_hist = self.histogram / self.histogram.sum()
+        norm_hist = self.complexity_histogram / self.complexity_histogram.sum()
         # Convert the Complexity pdf to an neo.AnalogSignal
         pdf = neo.AnalogSignal(
             np.array(norm_hist).reshape(len(norm_hist), 1) *
@@ -1137,7 +1140,7 @@ class complexity:
                     self.epoch.array_annotations['complexity'][idx]
 
         time_hist = neo.AnalogSignal(
-            signal=time_hist.reshape(time_hist.size, 1),
+            signal=np.expand_dims(time_hist, axis=1),
             sampling_period=self.bin_size, units=pq.dimensionless,
             t_start=self.t_start)
 
@@ -1168,7 +1171,7 @@ class complexity:
             left_edges -= bin_shift
 
             # ensure that an epoch does not start before the minimum t_start
-            min_t_start = min([st.t_start for st in self.input_spiketrains])
+            min_t_start = min(st.t_start for st in self.input_spiketrains)
             if left_edges[0] < min_t_start:
                 left_edges[0] = min_t_start
                 durations[0] -= bin_shift
@@ -1244,7 +1247,7 @@ class complexity:
                           'precise spike times can lead to rounding errors.')
 
         # ensure that an epoch does not start before the minimum t_start
-        min_t_start = min([st.t_start for st in self.input_spiketrains])
+        min_t_start = min(st.t_start for st in self.input_spiketrains)
         left_edges[0] = max(min_t_start, left_edges[0])
 
         complexity_epoch = neo.Epoch(times=left_edges,

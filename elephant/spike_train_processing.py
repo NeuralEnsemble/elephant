@@ -1,15 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Module for spike train processing
+Module for spike train processing.
+
+
+.. autosummary::
+    :toctree: toctree/spike_train_processing/
+
+    synchrotool
+
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division
-from elephant.statistics import complexity
+from __future__ import division, print_function, unicode_literals
+
 from copy import deepcopy
+
 import numpy as np
+
+from elephant.statistics import complexity
 
 
 class synchrotool(complexity):
@@ -37,6 +47,7 @@ class synchrotool(complexity):
         Sampling rate of the spike trains with units of 1/time.
         Default: None
     bin_size : pq.Quantity, optional
+        FIXME: no bin_size detected
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
           * If no `bin_size` is specified and the `sampling_rate` is available
@@ -85,11 +96,6 @@ class synchrotool(complexity):
         The number of occurrences of events of different complexities.
         `complexity_hist[i]` corresponds to the number of events of
         complexity `i` for `i > 0`.
-    pdf : neo.AnalogSignal
-        The normalization of `self.complexityhistogram` to 1.
-        A `neo.AnalogSignal` object containing the pdf values.
-        `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
 
     Raises
     ------
@@ -113,11 +119,11 @@ class synchrotool(complexity):
 
     Notes
     -----
-    * Note that with most common parameter combinations spike times can end up
-      on bin edges. This makes the binning susceptible to rounding errors which
-      is accounted for by moving spikes which are within tolerance of the next
-      bin edge into the following bin. This can be adjusted using the tolerance
-      parameter and turned off by setting `tolerance=None`.
+    Note that with most common parameter combinations spike times can end up
+    on bin edges. This makes the binning susceptible to rounding errors which
+    is accounted for by moving spikes which are within tolerance of the next
+    bin edge into the following bin. This can be adjusted using the tolerance
+    parameter and turned off by setting `tolerance=None`.
 
     See also
     --------
@@ -133,11 +139,11 @@ class synchrotool(complexity):
 
         self.annotated = False
 
-        super().__init__(spiketrains=spiketrains,
-                         sampling_rate=sampling_rate,
-                         binary=binary,
-                         spread=spread,
-                         tolerance=tolerance)
+        super(synchrotool, self).__init__(spiketrains=spiketrains,
+                                          sampling_rate=sampling_rate,
+                                          binary=binary,
+                                          spread=spread,
+                                          tolerance=tolerance)
 
     def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
         """
@@ -204,13 +210,13 @@ class synchrotool(complexity):
                 unit = st.unit
                 segment = st.segment
                 if unit is not None:
-                    unit.spiketrains[
-                        self._get_index(unit.spiketrains, st)
-                                     ] = new_st
+                    new_index = self._get_spiketrain_index(
+                        unit.spiketrains, st)
+                    unit.spiketrains[new_index] = new_st
                 if segment is not None:
-                    segment.spiketrains[
-                        self._get_index(segment.spiketrains, st)
-                                        ] = new_st
+                    new_index = self._get_spiketrain_index(
+                        segment.spiketrains, st)
+                    segment.spiketrains[new_index] = new_st
 
         return spiketrain_list
 
@@ -240,7 +246,8 @@ class synchrotool(complexity):
 
         self.annotated = True
 
-    def _get_index(self, lst, obj):
-        for index, item in enumerate(lst):
-            if item is obj:
+    def _get_spiketrain_index(self, spiketrain_list, spiketrain):
+        for index, item in enumerate(spiketrain_list):
+            if item is spiketrain:
                 return index
+        raise ValueError("Spiketrain is not found in the list")

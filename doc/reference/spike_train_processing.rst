@@ -9,4 +9,3 @@ Spike train processing
 
 
 .. automodule:: elephant.spike_train_processing
-   :members:
