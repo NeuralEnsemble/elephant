@@ -15,8 +15,10 @@ import quantities as pq
 import scipy as sp
 
 from elephant.conversion import BinnedSpikeTrain
+from elephant.utils import deprecated_alias
 
 
+@deprecated_alias(binsize='bin_size')
 def get_seqs(data, bin_size, use_sqrt=True):
     """
     Converts the data into a rec array using internally BinnedSpikeTrain.
@@ -59,13 +61,13 @@ def get_seqs(data, bin_size, use_sqrt=True):
     seqs = []
     for dat in data:
         sts = dat
-        binned_sts = BinnedSpikeTrain(sts, binsize=bin_size)
+        binned_spiketrain = BinnedSpikeTrain(sts, bin_size=bin_size)
         if use_sqrt:
-            binned = np.sqrt(binned_sts.to_array())
+            binned = np.sqrt(binned_spiketrain.to_array())
         else:
-            binned = binned_sts.to_array()
+            binned = binned_spiketrain.to_array()
         seqs.append(
-            (binned_sts.num_bins, binned))
+            (binned_spiketrain.n_bins, binned))
     seqs = np.array(seqs, dtype=[('T', np.int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width

@@ -8,6 +8,7 @@ Unit tests for the ASSET analysis.
 
 import random
 import unittest
+import itertools
 
 import neo
 import numpy as np
@@ -196,8 +197,8 @@ class AssetTestCase(unittest.TestCase):
         bin_size = 1 * pq.ms
 
         asset_obj_same_t_start_stop = asset.ASSET(
-            [st1, st2], bin_size=bin_size, t_stop_x=5 * pq.ms,
-            t_stop_y=5 * pq.ms)
+            [st1, st2], bin_size=bin_size, t_stop_i=5 * pq.ms,
+            t_stop_j=5 * pq.ms)
 
         # Check that the routine works for correct input...
         # ...same t_start, t_stop on both time axes
@@ -214,9 +215,9 @@ class AssetTestCase(unittest.TestCase):
         assert_array_equal(imat_1_2, trueimat_1_2)  # correct matrix
         # ...different t_start, t_stop on the two time axes
         asset_obj_different_t_start_stop = asset.ASSET(
-            [st1, st2], spiketrains_y=[st + 6 * pq.ms for st in [st1, st2]],
-            bin_size=bin_size, t_start_y=6 * pq.ms, t_stop_x=5 * pq.ms,
-            t_stop_y=11 * pq.ms)
+            [st1, st2], spiketrains_j=[st + 6 * pq.ms for st in [st1, st2]],
+            bin_size=bin_size, t_start_j=6 * pq.ms, t_stop_i=5 * pq.ms,
+            t_stop_j=11 * pq.ms)
         imat_1_2 = asset_obj_different_t_start_stop.intersection_matrix()
         assert_array_equal(asset_obj_different_t_start_stop.x_edges,
                            np.arange(6) * pq.ms)  # correct bins
@@ -258,15 +259,42 @@ class AssetTestCase(unittest.TestCase):
         # Check that errors are raised correctly...
         # ...for partially overlapping time intervals
         self.assertRaises(ValueError, asset.ASSET,
-                          spiketrains=[st1, st2], bin_size=bin_size,
-                          t_start_y=1 * pq.ms)
+                          spiketrains_i=[st1, st2], bin_size=bin_size,
+                          t_start_j=1 * pq.ms)
         # ...for different SpikeTrain's t_starts
         self.assertRaises(ValueError, asset.ASSET,
-                          spiketrains=[st1, st3], bin_size=bin_size)
+                          spiketrains_i=[st1, st3], bin_size=bin_size)
         # ...for different SpikeTrain's t_stops
         self.assertRaises(ValueError, asset.ASSET,
-                          spiketrains=[st1, st2], bin_size=bin_size,
-                          t_stop_x=5 * pq.ms)
+                          spiketrains_i=[st1, st2], bin_size=bin_size,
+                          t_stop_j=5 * pq.ms)
+
+    def test_combinations_with_replacement(self):
+        # Test that _combinations_with_replacement yields the same tuples
+        # as in the original implementation with itertools.product(*lists)
+        # and filtering by _wrong_order.
+
+        def _wrong_order(a):
+            if a[-1] > a[0]:
+                return True
+            for i in range(len(a) - 1):
+                if a[i] < a[i + 1]:
+                    return True
+            return False
+
+        for n in range(1, 15):
+            for d in range(1, 6):
+                lists = [range(j, n + 1) for j in range(d, 0, -1)]
+                matrix_entries = list(
+                    asset._combinations_with_replacement(n=n, d=d)
+                )
+                matrix_entries_correct = [
+                    indices for indices in itertools.product(*lists)
+                    if not _wrong_order(indices)
+                ]
+                it_todo = asset._num_iterations(n=n, d=d)
+                self.assertEqual(matrix_entries, matrix_entries_correct)
+                self.assertEqual(it_todo, len(matrix_entries_correct))
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
@@ -289,7 +317,7 @@ class AssetTestIntegration(unittest.TestCase):
 
         asset_obj = asset.ASSET(spiketrains, bin_size=self.bin_size)
         asset_obj_symmetric = asset.ASSET(spiketrains,
-                                          spiketrains_y=spiketrains_copy,
+                                          spiketrains_j=spiketrains_copy,
                                           bin_size=self.bin_size)
 
         imat = asset_obj.intersection_matrix()
@@ -298,7 +326,7 @@ class AssetTestIntegration(unittest.TestCase):
 
         imat_symm = asset_obj_symmetric.intersection_matrix()
         pmat_symm = asset_obj_symmetric.probability_matrix_analytical(
-                kernel_width=kernel_width)
+            kernel_width=kernel_width)
 
         assert_array_almost_equal(pmat, pmat_symm)
         assert_array_almost_equal(imat, imat_symm)
@@ -351,10 +379,10 @@ class AssetTestIntegration(unittest.TestCase):
 
         # calculate probability matrix montecarlo
         pmat_montecarlo = asset_obj.probability_matrix_montecarlo(
-                n_surrogates=n_surr,
-                imat=imat,
-                surrogate_dt=surrogate_dt,
-                surrogate_method='dither_spikes')
+            n_surrogates=n_surr,
+            imat=imat,
+            surrogate_dt=surrogate_dt,
+            surrogate_method='dither_spikes')
 
         # test probability matrices
         assert_array_equal(np.where(pmat > alpha), indices_pmat)
