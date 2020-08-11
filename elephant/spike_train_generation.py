@@ -718,6 +718,8 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     indices = np.searchsorted(operational_time, spiketrain_operational_time)
 
     # In real time the spikes are first aligned to the left border of the bin.
+    # Note that indices are greater than 0 because 'operational_time' was
+    # padded with zeros.
     spiketrain = real_time[indices - 1]
     # the relative position of the spikes in the operational time bins
     positions_in_bins = \
