@@ -657,7 +657,7 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     Returns a spike train whose spikes are a realization of an inhomogeneous
     Gamma process with the given rate profile and the given shape factor.
     The implementation using operational time is inspired by Nawrot et al.
-    (2018)[1].
+    (2018) [1]_.
 
     Parameters
     ----------
@@ -686,10 +686,10 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
 
     References
     ----------
-    [1] Nawrot, M., Boucsein, C., Denker, M., Rodriguez Molina, V., Riehle A.,
-     Aertsen A., & Rotter, S. (2008)
-     Measurement of variability dynamics in cortical spike trains.
-     Journal of Neuroscience Methods, 169, 374–390.
+    .. [1] Nawrot, M., Boucsein, C., Denker, M., Rodriguez Molina, V.,
+           Riehle A., Aertsen A., & Rotter, S. (2008). Measurement of
+           variability dynamics in cortical spike trains. Journal of
+           Neuroscience Methods, 169, 374–390.
     """
 
     if not isinstance(rate, neo.AnalogSignal):
