@@ -47,6 +47,8 @@ import scipy.optimize
 import scipy.special
 import scipy.stats
 
+from elephant.utils import deprecated_alias
+
 __all__ = [
     'RectangularKernel', 'TriangularKernel', 'EpanechnikovLikeKernel',
     'GaussianKernel', 'LaplacianKernel', 'ExponentialKernel', 'AlphaKernel'
@@ -119,15 +121,15 @@ class Kernel(object):
         return "{cls}(sigma={sigma}, invert={invert})".format(
             cls=self.__class__.__name__, sigma=self.sigma, invert=self.invert)
 
-    def __call__(self, t):
+    @deprecated_alias(t='times')
+    def __call__(self, times):
         """
-        Evaluates the kernel at all points in the array `t`.
+        Evaluates the kernel at all points in the array `times`.
 
         Parameters
         ----------
-        t : pq.Quantity
-            Vector with the interval on which the kernel is evaluated,
-            not necessarily a time interval.
+        times : pq.Quantity
+            A vector with time intervals on which the kernel is evaluated.
 
         Returns
         -------
@@ -137,21 +139,21 @@ class Kernel(object):
         Raises
         ------
         TypeError
-            If `t` is not `pq.Quantity`.
+            If `times` is not `pq.Quantity`.
 
-            If the dimensionality of `t` and :attr:`sigma` are different.
+            If the dimensionality of `times` and :attr:`sigma` are different.
 
         """
-        self._check_time_input(t)
-        return self._evaluate(t)
+        self._check_time_input(times)
+        return self._evaluate(times)
 
-    def _evaluate(self, t):
+    def _evaluate(self, times):
         """
         Evaluates the kernel Probability Density Function, PDF.
 
         Parameters
         ----------
-        t : pq.Quantity
+        times : pq.Quantity
             Vector with the interval on which the kernel is evaluated, not
             necessarily a time interval.
 
@@ -240,19 +242,20 @@ class Kernel(object):
                             "Otherwise a normalization to 1 of the kernel "
                             "cannot be performed.")
 
-    def cdf(self, t):
+    @deprecated_alias(t='time')
+    def cdf(self, time):
         r"""
         Cumulative Distribution Function, CDF.
 
         Parameters
         ----------
-        t : pq.Quantity
+        time : pq.Quantity
             The input time scalar.
 
         Returns
         -------
         float
-            CDF at `t`.
+            CDF at `time`.
 
         """
         raise NotImplementedError
@@ -270,12 +273,13 @@ class Kernel(object):
         Returns
         -------
         pq.Quantity
-            The time scalar `t` such that `CDF(t) = fraction`.
+            The time scalar `times` such that `CDF(t) = fraction`.
 
         """
         raise NotImplementedError
 
-    def median_index(self, t):
+    @deprecated_alias(t='times')
+    def median_index(self, times):
         r"""
         Estimates the index of the Median of the kernel.
 
@@ -294,7 +298,7 @@ class Kernel(object):
 
         Parameters
         ----------
-        t : pq.Quantity
+        times : pq.Quantity
             Vector with the interval on which the kernel is evaluated.
 
         Returns
@@ -317,24 +321,24 @@ class Kernel(object):
         Kernel.icdf : inverse cumulative distribution function
 
         """
-        self._check_time_input(t)
-        if len(t) == 0:
+        self._check_time_input(times)
+        if len(times) == 0:
             raise ValueError("The input time array is empty.")
-        if len(t) <= 2:
+        if len(times) <= 2:
             # either left or right; choose left
             return 0
-        is_sorted = (np.diff(t.magnitude) >= 0).all()
+        is_sorted = (np.diff(times.magnitude) >= 0).all()
         if not is_sorted:
             raise ValueError("The input time array must be sorted (in "
                              "ascending order).")
-        cdf_mean = 0.5 * (self.cdf(t[0]) + self.cdf(t[-1]))
+        cdf_mean = 0.5 * (self.cdf(times[0]) + self.cdf(times[-1]))
         if cdf_mean == 0.:
             # any index of the kernel non-support is valid; choose median
-            return len(t) // 2
+            return len(times) // 2
         icdf = self.icdf(fraction=cdf_mean)
-        icdf = icdf.rescale(t.units).magnitude
+        icdf = icdf.rescale(times.units).magnitude
         # icdf is guaranteed to be in (t_start, t_end) interval
-        median_index = np.nonzero(t.magnitude >= icdf)[0][0]
+        median_index = np.nonzero(times.magnitude >= icdf)[0][0]
         return median_index
 
     def is_symmetric(self):
@@ -412,19 +416,20 @@ class RectangularKernel(SymmetricKernel):
         min_cutoff = np.sqrt(3.0)
         return min_cutoff
 
-    def _evaluate(self, t):
-        t_units = t.units
-        t_abs = np.abs(t.magnitude)
+    def _evaluate(self, times):
+        t_units = times.units
+        t_abs = np.abs(times.magnitude)
         tau = math.sqrt(3) * self.sigma.rescale(t_units).magnitude
         kernel = (t_abs < tau) * 1 / (2 * tau)
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        tau = math.sqrt(3) * self.sigma.rescale(t.units).magnitude
-        t = np.clip(t.magnitude, a_min=-tau, a_max=tau)
-        cdf = (t + tau) / (2 * tau)
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        tau = math.sqrt(3) * self.sigma.rescale(time.units).magnitude
+        time = np.clip(time.magnitude, a_min=-tau, a_max=tau)
+        cdf = (time + tau) / (2 * tau)
         return cdf
 
     def icdf(self, fraction):
@@ -479,17 +484,18 @@ class TriangularKernel(SymmetricKernel):
         min_cutoff = np.sqrt(6.0)
         return min_cutoff
 
-    def _evaluate(self, t):
-        tau = math.sqrt(6) * self.sigma.rescale(t.units).magnitude
-        kernel = scipy.stats.triang.pdf(t.magnitude, c=0.5, loc=-tau,
+    def _evaluate(self, times):
+        tau = math.sqrt(6) * self.sigma.rescale(times.units).magnitude
+        kernel = scipy.stats.triang.pdf(times.magnitude, c=0.5, loc=-tau,
                                         scale=2 * tau)
-        kernel = pq.Quantity(kernel, units=1 / t.units)
+        kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        tau = math.sqrt(6) * self.sigma.rescale(t.units).magnitude
-        cdf = scipy.stats.triang.cdf(t.magnitude, c=0.5, loc=-tau,
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        tau = math.sqrt(6) * self.sigma.rescale(time.units).magnitude
+        cdf = scipy.stats.triang.cdf(time.magnitude, c=0.5, loc=-tau,
                                      scale=2 * tau)
         return cdf
 
@@ -554,17 +560,18 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         min_cutoff = np.sqrt(5.0)
         return min_cutoff
 
-    def _evaluate(self, t):
-        tau = math.sqrt(5) * self.sigma.rescale(t.units).magnitude
-        t_div_tau = np.clip(t.magnitude / tau, a_min=-1, a_max=1)
+    def _evaluate(self, times):
+        tau = math.sqrt(5) * self.sigma.rescale(times.units).magnitude
+        t_div_tau = np.clip(times.magnitude / tau, a_min=-1, a_max=1)
         kernel = 3. / (4. * tau) * np.maximum(0., 1 - t_div_tau ** 2)
-        kernel = pq.Quantity(kernel, units=1 / t.units)
+        kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        tau = math.sqrt(5) * self.sigma.rescale(t.units).magnitude
-        t_div_tau = np.clip(t.magnitude / tau, a_min=-1, a_max=1)
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        tau = math.sqrt(5) * self.sigma.rescale(time.units).magnitude
+        t_div_tau = np.clip(time.magnitude / tau, a_min=-1, a_max=1)
         cdf = 3. / 4 * (t_div_tau - t_div_tau ** 3 / 3.) + 0.5
         return cdf
 
@@ -658,16 +665,17 @@ class GaussianKernel(SymmetricKernel):
         min_cutoff = 3.0
         return min_cutoff
 
-    def _evaluate(self, t):
-        sigma = self.sigma.rescale(t.units).magnitude
-        kernel = scipy.stats.norm.pdf(t.magnitude, loc=0, scale=sigma)
-        kernel = pq.Quantity(kernel, units=1 / t.units)
+    def _evaluate(self, times):
+        sigma = self.sigma.rescale(times.units).magnitude
+        kernel = scipy.stats.norm.pdf(times.magnitude, loc=0, scale=sigma)
+        kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        sigma = self.sigma.rescale(t.units).magnitude
-        cdf = scipy.stats.norm.cdf(t, loc=0, scale=sigma)
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        sigma = self.sigma.rescale(time.units).magnitude
+        cdf = scipy.stats.norm.cdf(time, loc=0, scale=sigma)
         return cdf
 
     def icdf(self, fraction):
@@ -719,16 +727,17 @@ class LaplacianKernel(SymmetricKernel):
         min_cutoff = 3.0
         return min_cutoff
 
-    def _evaluate(self, t):
-        tau = self.sigma.rescale(t.units).magnitude / math.sqrt(2)
-        kernel = scipy.stats.laplace.pdf(t.magnitude, loc=0, scale=tau)
-        kernel = pq.Quantity(kernel, units=1 / t.units)
+    def _evaluate(self, times):
+        tau = self.sigma.rescale(times.units).magnitude / math.sqrt(2)
+        kernel = scipy.stats.laplace.pdf(times.magnitude, loc=0, scale=tau)
+        kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        tau = self.sigma.rescale(t.units).magnitude / math.sqrt(2)
-        cdf = scipy.stats.laplace.cdf(t.magnitude, loc=0, scale=tau)
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        tau = self.sigma.rescale(time.units).magnitude / math.sqrt(2)
+        cdf = scipy.stats.laplace.cdf(time.magnitude, loc=0, scale=tau)
         return cdf
 
     def icdf(self, fraction):
@@ -785,23 +794,24 @@ class ExponentialKernel(Kernel):
         min_cutoff = 3.0
         return min_cutoff
 
-    def _evaluate(self, t):
-        tau = self.sigma.rescale(t.units).magnitude
+    def _evaluate(self, times):
+        tau = self.sigma.rescale(times.units).magnitude
         if self.invert:
-            t = -t
-        kernel = scipy.stats.expon.pdf(t.magnitude, loc=0, scale=tau)
-        kernel = pq.Quantity(kernel, units=1 / t.units)
+            times = -times
+        kernel = scipy.stats.expon.pdf(times.magnitude, loc=0, scale=tau)
+        kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        tau = self.sigma.rescale(t.units).magnitude
-        t = t.magnitude
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        tau = self.sigma.rescale(time.units).magnitude
+        time = time.magnitude
         if self.invert:
-            t = np.minimum(t, 0)
-            return np.exp(t / tau)
-        t = np.maximum(t, 0)
-        return 1. - np.exp(-t / tau)
+            time = np.minimum(time, 0)
+            return np.exp(time / tau)
+        time = np.maximum(time, 0)
+        return 1. - np.exp(-time / tau)
 
     def icdf(self, fraction):
         self._check_fraction(fraction)
@@ -855,20 +865,21 @@ class AlphaKernel(Kernel):
         min_cutoff = 3.0
         return min_cutoff
 
-    def _evaluate(self, t):
-        t_units = t.units
+    def _evaluate(self, times):
+        t_units = times.units
         tau = self.sigma.rescale(t_units).magnitude / math.sqrt(2)
-        t = t.magnitude
+        times = times.magnitude
         if self.invert:
-            t = -t
-        kernel = (t >= 0) * 1 / tau ** 2 * t * np.exp(-t / tau)
+            times = -times
+        kernel = (times >= 0) * 1 / tau ** 2 * times * np.exp(-times / tau)
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
-    def cdf(self, t):
-        self._check_time_input(t)
-        tau = self.sigma.rescale(t.units).magnitude / math.sqrt(2)
-        cdf = self._cdf_stripped(t.magnitude, tau)
+    @deprecated_alias(t='time')
+    def cdf(self, time):
+        self._check_time_input(time)
+        tau = self.sigma.rescale(time.units).magnitude / math.sqrt(2)
+        cdf = self._cdf_stripped(time.magnitude, tau)
         return cdf
 
     def _cdf_stripped(self, t, tau):

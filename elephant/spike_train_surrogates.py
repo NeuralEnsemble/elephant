@@ -46,7 +46,7 @@ Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 from __future__ import division, print_function, unicode_literals
 
 import random
-from functools import partial
+import warnings
 
 import neo
 import numpy as np
@@ -54,6 +54,7 @@ import quantities as pq
 from scipy.ndimage import gaussian_filter
 
 from elephant.statistics import isi
+from elephant.utils import deprecated_alias
 
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
@@ -61,7 +62,7 @@ SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'dither_spikes_with_refractory_period']
 
 
-def _dither_spikes_with_refractory_period(spiketrain, dither, n,
+def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
                                           refractory_period):
     units = spiketrain.units
     t_start = spiketrain.t_start.rescale(units).magnitude
@@ -75,7 +76,7 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n,
                                initial=refractory_period)
 
     dithered_spiketrains = []
-    for _ in range(n):
+    for _ in range(n_surrogates):
         dithered_st = np.copy(spiketrain.magnitude)
         random_ordered_ids = np.arange(len(spiketrain))
         np.random.shuffle(random_ordered_ids)
@@ -108,8 +109,9 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n,
     return dithered_spiketrains
 
 
-def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
-                  refractory_period=None):
+@deprecated_alias(n='n_surrogates')
+def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
+                  edges=True, refractory_period=None):
     """
     Generates surrogates of a spike train by spike dithering.
 
@@ -128,7 +130,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
     dither : pq.Quantity
         Amount of dithering. A spike at time `t` is placed randomly within
         `]t-dither, t+dither[`.
-    n : int, optional
+    n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
     decimals : int or None, optional
@@ -169,7 +171,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
     >>> print(dither_spikes(st, dither = 20 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spikes(st, dither = 20 * pq.ms, n=2))  # doctest: +SKIP
+    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))
     [<SpikeTrain(array([ 104.24942044,  246.0317873 ,  584.55938657,
         818.84446913]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
@@ -181,8 +183,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
 
     """
     if len(spiketrain) == 0:
-        # return the empty spiketrain `n` times
-        return [spiketrain.copy() for _ in range(n)]
+        # return the empty spiketrain n times
+        return [spiketrain.copy() for _ in range(n_surrogates)]
 
     units = spiketrain.units
     t_start = spiketrain.t_start.rescale(units).magnitude
@@ -193,8 +195,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
         dither = dither.rescale(units).magnitude
         dithered_spiketrains = \
             spiketrain.magnitude.reshape((1, len(spiketrain))) \
-            + 2 * dither * np.random.random_sample((n, len(spiketrain)))\
-            - dither
+            + 2 * dither * np.random.random_sample(
+                (n_surrogates, len(spiketrain))) - dither
         dithered_spiketrains.sort(axis=1)
 
         if edges:
@@ -215,7 +217,7 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
 
     elif isinstance(refractory_period, pq.Quantity):
         dithered_spiketrains = _dither_spikes_with_refractory_period(
-            spiketrain, dither, n, refractory_period)
+            spiketrain, dither, n_surrogates, refractory_period)
     else:
         raise ValueError("refractory_period must be of type pq.Quantity")
 
@@ -230,7 +232,8 @@ def dither_spikes(spiketrain, dither, n=1, decimals=None, edges=True,
             for train in dithered_spiketrains]
 
 
-def randomise_spikes(spiketrain, n=1, decimals=None):
+@deprecated_alias(n='n_surrogates')
+def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
     """
     Generates surrogates of a spike train by spike time randomization.
 
@@ -244,7 +247,7 @@ def randomise_spikes(spiketrain, n=1, decimals=None):
     ----------
     spiketrain :  neo.SpikeTrain
         The spike train from which to generate the surrogates.
-    n : int, optional
+    n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
     decimals : int or None, optional
@@ -268,7 +271,7 @@ def randomise_spikes(spiketrain, n=1, decimals=None):
     >>> print(randomise_spikes(st))  # doctest: +SKIP
         [<SpikeTrain(array([ 131.23574603,  262.05062963,  549.84371387,
                             940.80503832]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(randomise_spikes(st, n=2))  # doctest: +SKIP
+    >>> print(randomise_spikes(st, n_surrogates=2))  # doctest: +SKIP
         [<SpikeTrain(array([  84.53274955,  431.54011743,  733.09605806,
               852.32426583]) * ms, [0.0 ms, 1000.0 ms])>,
          <SpikeTrain(array([ 197.74596726,  528.93517359,  567.44599968,
@@ -280,7 +283,7 @@ def randomise_spikes(spiketrain, n=1, decimals=None):
     """
     # Create surrogate spike trains as rows of a Quantity array
     sts = ((spiketrain.t_stop - spiketrain.t_start) *
-           np.random.random(size=(n, len(spiketrain))) +
+           np.random.random(size=(n_surrogates, len(spiketrain))) +
            spiketrain.t_start).rescale(spiketrain.units)
 
     # Round the surrogate data to decimal position, if requested
@@ -293,7 +296,8 @@ def randomise_spikes(spiketrain, n=1, decimals=None):
             for st in sts]
 
 
-def shuffle_isis(spiketrain, n=1, decimals=None):
+@deprecated_alias(n='n_surrogates')
+def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
     """
     Generates surrogates of a spike train by inter-spike-interval (ISI)
     shuffling.
@@ -307,7 +311,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
     ----------
     spiketrain :  neo.SpikeTrain
         The spike train from which to generate the surrogates.
-    n : int, optional
+    n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
     decimals : int or None, optional
@@ -331,7 +335,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
     >>> print(shuffle_isis(st))  # doctest: +SKIP
         [<SpikeTrain(array([ 200.,  350.,  700.,  800.]) * ms,
                  [0.0 ms, 1000.0 ms])>]
-    >>> print(shuffle_isis(st, n=2))  # doctest: +SKIP
+    >>> print(shuffle_isis(st, n_surrogates=2))  # doctest: +SKIP
         [<SpikeTrain(array([ 100.,  300.,  450.,  800.]) * ms,
               [0.0 ms, 1000.0 ms])>,
          <SpikeTrain(array([ 200.,  350.,  700.,  800.]) * ms,
@@ -348,7 +352,7 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
 
         # Create list of surrogate spike trains by random ISI permutation
         sts = []
-        for surrogate_id in range(n):
+        for surrogate_id in range(n_surrogates):
             surr_times = np.cumsum(np.random.permutation(ISIs)) * \
                 spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
@@ -358,12 +362,14 @@ def shuffle_isis(spiketrain, n=1, decimals=None):
     else:
         sts = [neo.SpikeTrain([] * spiketrain.units,
                               t_start=spiketrain.t_start,
-                              t_stop=spiketrain.t_stop)] * n
+                              t_stop=spiketrain.t_stop)] * n_surrogates
 
     return sts
 
 
-def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
+@deprecated_alias(n='n_surrogates')
+def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
+                       edges=True):
     """
     Generates surrogates of a spike train by spike train shifting.
 
@@ -383,7 +389,7 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
     shift : pq.Quantity
         Amount of shift. `spiketrain` is shifted by a random amount uniformly
         drawn from the range ]-shift, +shift[.
-    n : int, optional
+    n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
     decimals : int or None, optional
@@ -412,7 +418,7 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
     >>> print(dither_spike_train(st, shift = 20*pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spike_train(st, shift = 20*pq.ms, n=2))  # doctest: +SKIP
+    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))
     [<SpikeTrain(array([  92.89084054,  242.89084054,  592.89084054,
         792.89084054]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
@@ -428,7 +434,8 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
 
     # Main: generate the surrogates by spike train shifting
     surr = data.reshape(
-        (1, len(data))) + 2 * shift * np.random.random_sample((n, 1)) - shift
+        (1, len(data))) + 2 * shift * np.random.random_sample(
+        (n_surrogates, 1)) - shift
 
     # Round the surrogate data to decimal position, if requested
     if decimals is not None:
@@ -453,7 +460,8 @@ def dither_spike_train(spiketrain, shift, n=1, decimals=None, edges=True):
             for s in surr]
 
 
-def jitter_spikes(spiketrain, binsize, n=1):
+@deprecated_alias(binsize='bin_size', n='n_surrogates')
+def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     """
     Generates surrogates of a spike train by spike jittering.
 
@@ -469,11 +477,11 @@ def jitter_spikes(spiketrain, binsize, n=1):
     ----------
     spiketrain :  neo.SpikeTrain
         The spike train from which to generate the surrogates.
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Size of the time bins within which to randomize the spike times.
         Note: the last bin lasts until `spiketrain.t_stop` and might have
-        width different from `binsize`.
-    n : int, optional
+        width different from `bin_size`.
+    n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
 
@@ -491,39 +499,39 @@ def jitter_spikes(spiketrain, binsize, n=1):
     >>> import neo
     ...
     >>> st = neo.SpikeTrain([80, 150, 320, 480] * pq.ms, t_stop=1 * pq.s)
-    >>> print(jitter_spikes(st, binsize=100 * pq.ms))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  98.82898293,  178.45805954,  346.93993867,
         461.34268507]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, binsize=100 * pq.ms, n=2))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))
     [<SpikeTrain(array([  97.15720041,  199.06945744,  397.51928207,
         402.40065162]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  80.74513157,  173.69371317,  338.05860962,
         495.48869981]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, binsize=100 * pq.ms))  # doctest: +SKIP
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  4.55064897e-01,   1.31927046e+02,   3.57846265e+02,
          4.69370604e+02]) * ms, [0.0 ms, 1000.0 ms])>]
 
     """
     # Define standard time unit; all time Quantities are converted to
     # scalars after being rescaled to this unit, to use the power of numpy
-    std_unit = binsize.units
+    std_unit = bin_size.units
 
     # Compute bin edges for the jittering procedure
     # !: the last bin arrives until spiketrain.t_stop and might have
-    # size != binsize
+    # size != bin_size
     start_dl = spiketrain.t_start.rescale(std_unit).magnitude
     stop_dl = spiketrain.t_stop.rescale(std_unit).magnitude
 
-    bin_edges = start_dl + np.arange(start_dl, stop_dl, binsize.magnitude)
+    bin_edges = start_dl + np.arange(start_dl, stop_dl, bin_size.magnitude)
     bin_edges = np.hstack([bin_edges, stop_dl])
 
     # Create n surrogates with spikes randomly placed in the interval (0,1)
-    surr_poiss01 = np.random.random_sample((n, len(spiketrain)))
+    surr_poiss01 = np.random.random_sample((n_surrogates, len(spiketrain)))
 
     # Compute the bin id of each spike
     bin_ids = np.array(
         (spiketrain.view(pq.Quantity) /
-         binsize).rescale(pq.dimensionless).magnitude, dtype=int)
+         bin_size).rescale(pq.dimensionless).magnitude, dtype=int)
 
     # Compute the size of each time bin (as a numpy array)
     bin_sizes_dl = np.diff(bin_edges)
@@ -567,9 +575,9 @@ class JointISI(object):
         The Joint-ISI histogram is calculated for
         :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
         Default: 100 * pq.ms.
-    num_bins : int, optional
+    n_bins : int, optional
         The size of the joint-ISI-distribution will be
-        `num_bins*num_bins/2`.
+        `n_bins*n_bins/2`.
         Default: 100.
     sigma : pq.Quantity, optional
         The standard deviation of the Gaussian kernel, with which
@@ -596,7 +604,7 @@ class JointISI(object):
         period, which will be destroyed by the convolution with the
         2d-Gaussian function.
         Default: True.
-    refr_period : pq.Quantity, optional
+    refractory_period : pq.Quantity, optional
         Defines the refractory period of the dithered `spiketrain` unless
         the smallest ISI of the `spiketrain` is lower than this value.
         Default: 4. * pq.ms.
@@ -614,21 +622,22 @@ class JointISI(object):
     # Otherwise, the original spiketrain is copied N times.
     MIN_SPIKES = 3
 
+    @deprecated_alias(num_bins='n_bins', refr_period='refractory_period')
     def __init__(self,
                  spiketrain,
                  dither=15. * pq.ms,
                  truncation_limit=100. * pq.ms,
-                 num_bins=100,
+                 n_bins=100,
                  sigma=2. * pq.ms,
                  alternate=True,
                  use_sqrt=False,
                  method='fast',
                  cutoff=True,
-                 refr_period=4. * pq.ms
+                 refractory_period=4. * pq.ms
                  ):
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
-        self.num_bins = num_bins
+        self.n_bins = n_bins
 
         self.dither = self.get_magnitude(dither)
 
@@ -640,11 +649,11 @@ class JointISI(object):
                              "but not '{}'".format(method))
         self.method = method
 
-        refr_period = self.get_magnitude(refr_period)
+        refractory_period = self.get_magnitude(refractory_period)
         if not self.too_less_spikes:
             minimal_isi = np.min(self.isi)
-            refr_period = min(refr_period, minimal_isi)
-        self.refr_period = refr_period
+            refractory_period = min(refractory_period, minimal_isi)
+        self.refractory_period = refractory_period
 
         self.cutoff = cutoff
         self.use_sqrt = use_sqrt
@@ -652,6 +661,18 @@ class JointISI(object):
 
         self.max_change_index = self.isi_to_index(self.dither)
         self.max_change_isi = self.index_to_isi(self.max_change_index)
+
+    @property
+    def refr_period(self):
+        warnings.warn("'.refr_period' is deprecated; use '.refractory_period'",
+                      DeprecationWarning)
+        return self.refractory_period
+
+    @property
+    def num_bins(self):
+        warnings.warn("'.num_bins' is deprecated; use '.n_bins'",
+                      DeprecationWarning)
+        return self.n_bins
 
     def get_magnitude(self, quantity):
         """
@@ -693,7 +714,7 @@ class JointISI(object):
 
     @property
     def bin_width(self):
-        return self.truncation_limit / self.num_bins
+        return self.truncation_limit / self.n_bins
 
     def isi_to_index(self, inter_spike_interval):
         """
@@ -742,7 +763,7 @@ class JointISI(object):
         isis = self.isi
         joint_isi_histogram = np.histogram2d(
             isis[:-1], isis[1:],
-            bins=[self.num_bins, self.num_bins],
+            bins=[self.n_bins, self.n_bins],
             range=[[0., self.truncation_limit],
                    [0., self.truncation_limit]])[0]
 
@@ -751,7 +772,7 @@ class JointISI(object):
 
         if self.sigma:
             if self.cutoff:
-                start_index = self.isi_to_index(self.refr_period)
+                start_index = self.isi_to_index(self.refractory_period)
                 joint_isi_histogram[
                     start_index:, start_index:] = gaussian_filter(
                         joint_isi_histogram[start_index:, start_index:],
@@ -828,10 +849,10 @@ class JointISI(object):
 
         if self.method == 'fast':
             self._jisih_cumulatives = []
-            for double_index in range(self.num_bins):
+            for double_index in range(self.n_bins):
                 # Taking anti-diagonals of the original joint-ISI histogram
                 diagonal = np.diagonal(
-                    rotated_jisih, offset=-self.num_bins + double_index + 1)
+                    rotated_jisih, offset=-self.n_bins + double_index + 1)
                 jisih_cum = self.normalize_cumulative_distribution(
                     np.cumsum(diagonal))
                 self._jisih_cumulatives.append(jisih_cum)
@@ -842,10 +863,10 @@ class JointISI(object):
     def _window_cumulatives(self, rotated_jisih):
         jisih_diag_cums = self._window_diagonal_cumulatives(rotated_jisih)
         jisih_cumulatives = np.zeros(
-            (self.num_bins, self.num_bins,
+            (self.n_bins, self.n_bins,
              2 * self.max_change_index + 1))
-        for curr_isi_id in range(self.num_bins):
-            for next_isi_id in range(self.num_bins - curr_isi_id):
+        for curr_isi_id in range(self.n_bins):
+            for next_isi_id in range(self.n_bins - curr_isi_id):
                 double_index = next_isi_id + curr_isi_id
                 cum_slice = jisih_diag_cums[
                     double_index,
@@ -860,15 +881,15 @@ class JointISI(object):
         # An element of the first axis is defined as the sum of indices
         # for previous and subsequent ISI.
 
-        jisih_diag_cums = np.zeros((self.num_bins,
-                                    self.num_bins
+        jisih_diag_cums = np.zeros((self.n_bins,
+                                    self.n_bins
                                     + 2 * self.max_change_index))
 
         # double_index corresponds to the sum of the indices for the previous
         # and the subsequent ISI.
-        for double_index in range(self.num_bins):
+        for double_index in range(self.n_bins):
             cum_diag = np.cumsum(np.diagonal(rotated_jisih,
-                                             - self.num_bins
+                                             - self.n_bins
                                              + double_index + 1))
 
             right_padding = jisih_diag_cums.shape[1] - \
@@ -913,7 +934,7 @@ class JointISI(object):
         curr_isi_id = dithered_isi_indices[i]
         next_isi_id = dithered_isi_indices[i + 1]
         double_index = curr_isi_id + next_isi_id
-        if double_index < self.num_bins:
+        if double_index < self.n_bins:
             if self.method == 'fast':
                 cum_dist_func = self._jisih_cumulatives[
                     double_index]
@@ -937,14 +958,15 @@ class JointISI(object):
     def _uniform_dither_not_jisi_movable_spikes(self,
                                                 curr_isi,
                                                 next_isi):
-        left_dither = min(curr_isi - self.refr_period, self.dither)
-        right_dither = min(next_isi - self.refr_period, self.dither)
+        left_dither = min(curr_isi - self.refractory_period, self.dither)
+        right_dither = min(next_isi - self.refractory_period, self.dither)
         step = random.random() * (right_dither + left_dither) - left_dither
         return step
 
 
-def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
-               decimals=None, edges=True):
+@deprecated_alias(n='n_surrogates', surr_method='method')
+def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
+               dt=None, decimals=None, edges=True):
     """
     Generates surrogates of a `spiketrain` by a desired generation
     method.
@@ -960,10 +982,10 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
     ----------
     spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates
-    n : int, optional
+    n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
-    surr_method : str, optional
+    method : str, optional
         The method to use to generate surrogate spike trains. Can be one of:
         * 'dither_spike_train': see `surrogates.dither_spike_train` [dt needed]
         * 'dither_spikes': see `surrogates.dither_spikes` [dt needed]
@@ -1009,22 +1031,23 @@ def surrogates(spiketrain, n=1, surr_method='dither_spike_train', dt=None,
         'joint_isi_dithering': JointISI(spiketrain).dithering,
     }
 
-    if surr_method not in surrogate_types.keys():
+    if method not in surrogate_types.keys():
         raise ValueError("Specified surrogate method ('{}') "
-                         "is not valid".format(surr_method))
-    surr_method = surrogate_types[surr_method]
+                         "is not valid".format(method))
+    method = surrogate_types[method]
 
     # PYTHON2: replace with inspect.signature()
-    if dt is None and surr_method in (dither_spike_train, dither_spikes,
-                                      jitter_spikes):
+    if dt is None and method in (dither_spike_train, dither_spikes,
+                                 jitter_spikes):
         raise ValueError("{}() method requires 'dt' parameter to be "
-                         "not None".format(surr_method.__name__))
+                         "not None".format(method.__name__))
 
-    if surr_method in (dither_spike_train, dither_spikes):
-        return surr_method(spiketrain, dt, n=n, decimals=decimals, edges=edges)
-    if surr_method in (randomise_spikes, shuffle_isis):
-        return surr_method(spiketrain, n=n, decimals=decimals)
-    if surr_method == jitter_spikes:
-        return surr_method(spiketrain, dt, n=n)
-    # surr_method == 'joint_isi_dithering':
-    return surr_method(n)
+    if method in (dither_spike_train, dither_spikes):
+        return method(spiketrain, dt, n=n_surrogates, decimals=decimals,
+                      edges=edges)
+    if method in (randomise_spikes, shuffle_isis):
+        return method(spiketrain, n=n_surrogates, decimals=decimals)
+    if method == jitter_spikes:
+        return method(spiketrain, dt, n=n_surrogates)
+    # method == 'joint_isi_dithering':
+    return method(n_surrogates)
