@@ -141,7 +141,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # This is a spike clearly outside the bounds
         st = SpikeTrain(
             [-50, 50],
-            units='s', t_start=-100*pq.s, t_stop=100*pq.s)
+            units='s', t_start=-100 * pq.s, t_stop=100 * pq.s)
         phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
             elephant.signal_processing.hilbert(self.anasig0),
             st,
@@ -154,7 +154,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # spike is to be considered.
         st = SpikeTrain(
             [0, 50],
-            units='s', t_start=-100*pq.s, t_stop=100*pq.s)
+            units='s', t_start=-100 * pq.s, t_stop=100 * pq.s)
         phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
             elephant.signal_processing.hilbert(self.anasig0),
             st,
@@ -165,7 +165,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # This is a spike clearly outside the bounds
         st = SpikeTrain(
             [1, 250],
-            units='s', t_start=-1*pq.s, t_stop=300*pq.s)
+            units='s', t_start=-1 * pq.s, t_stop=300 * pq.s)
         phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
             elephant.signal_processing.hilbert(self.anasig0),
             st,
@@ -178,7 +178,7 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # spike is not to be considered.
         st = SpikeTrain(
             [1, 100],
-            units='s', t_start=-1*pq.s, t_stop=200*pq.s)
+            units='s', t_start=-1 * pq.s, t_stop=200 * pq.s)
         phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
             elephant.signal_processing.hilbert(self.anasig0),
             st,
@@ -192,9 +192,9 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         # before the end of the signal
         cu = pq.CompoundUnit("1/30000.*s")
         st = SpikeTrain(
-            [30000., (self.anasig0.t_stop-1*pq.s).rescale(cu).magnitude],
+            [30000., (self.anasig0.t_stop - 1 * pq.s).rescale(cu).magnitude],
             units=pq.CompoundUnit("1/30000.*s"),
-            t_start=-1*pq.s, t_stop=300*pq.s)
+            t_start=-1 * pq.s, t_stop=300 * pq.s)
         phases_noint, _, _ = elephant.phase_analysis.spike_triggered_phase(
             elephant.signal_processing.hilbert(self.anasig0),
             st,

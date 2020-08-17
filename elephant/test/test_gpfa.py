@@ -111,7 +111,12 @@ class GPFATestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             gpfa1.transform(self.data2)
 
+    @unittest.skipUnless(python_version_major == 3,
+                         "sklearn py2 has a bug in cross_val_score")
     def test_cross_validation(self):
+        # If GPFA.__init__ is decorated, sklearn signature function parsing
+        # magic throws the error
+        # __init__() got an unexpected keyword argument 'args'
         lls = []
         for x_dim in range(1, self.x_dim + 1):
             gpfa = GPFA(x_dim=x_dim, em_max_iters=self.n_iters)
