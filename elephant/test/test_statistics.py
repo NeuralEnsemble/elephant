@@ -341,10 +341,9 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertWarns(UserWarning, statistics.fanofactor, (st1, st2))
 
     def test_fanofactor_wrong_type(self):
-        # spiketrain object is not a neo.SpikeTrain
-        self.assertRaises(TypeError, statistics.fanofactor, [[1, 2, 3]])
         # warn_tolerance is not a quantity
-        self.assertRaises(TypeError, statistics.fanofactor, self.test_list,
+        st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        self.assertRaises(TypeError, statistics.fanofactor, [st1],
                           warn_tolerance=1e-4)
 
 
