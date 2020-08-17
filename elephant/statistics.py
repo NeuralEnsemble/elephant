@@ -222,7 +222,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                         format(type(spiketrain)))
 
 
-def fanofactor(spiketrains):
+def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
     a list of `neo.SpikeTrain` objects.
@@ -243,6 +243,10 @@ def fanofactor(spiketrains):
     spiketrains : list
         List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
         spike times for which to compute the Fano factor of spike counts.
+    warn_tolerance : float
+        If the durations of the input spike trains vary by more than
+        `warn_tolerence` seconds, throw a waring.
+        Default: 1e-4 sec (0.1 ms).
 
     Returns
     -------
@@ -251,15 +255,37 @@ def fanofactor(spiketrains):
         Returns np.NaN if an empty list is specified, or if all spike trains
         are empty.
 
+    Raises
+    ------
+    TypeError
+        If input spiketrain entries are not neo.SpikeTrain objects.
+
+        If `warn_tolerance` is not a quantity.
+
     """
+    if not isinstance(warn_tolerance, pq.Quantity):
+        raise TypeError("'warn_tolerance' must be a quantity.")
+    if not all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
+        raise TypeError("Input spiketrains must be a list of neo.SpikeTrain.")
+
     # Build array of spike counts (one per spike train)
-    spike_counts = np.array([len(t) for t in spiketrains])
+    spike_counts = np.array([len(st) for st in spiketrains])
 
     # Compute FF
     if all(count == 0 for count in spike_counts):
-        fano = np.nan
-    else:
-        fano = spike_counts.var() / spike_counts.mean()
+        # empty list of spiketrains reaches this branch, and NaN is returned
+        return np.nan
+
+    durations = [(st.t_stop - st.t_start).simplified.item()
+                 for st in spiketrains]
+    durations_min = min(durations)
+    durations_max = max(durations)
+    if durations_max - durations_min > warn_tolerance:
+        warnings.warn("Fano factor calculated for spike trains of different "
+                      "duration (minimum: {_min}s, maximum {_max}s)."
+                      .format(_min=durations_min, _max=durations_max))
+
+    fano = spike_counts.var() / spike_counts.mean()
     return fano
 
 

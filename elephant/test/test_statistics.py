@@ -334,6 +334,19 @@ class FanoFactorTestCase(unittest.TestCase):
         lst = [self.test_list[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_fanofactor_different_durations(self):
+        st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        st2 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4.5 * pq.s)
+        self.assertWarns(UserWarning, statistics.fanofactor, (st1, st2))
+
+    def test_fanofactor_wrong_type(self):
+        # spiketrain object is not a neo.SpikeTrain
+        self.assertRaises(TypeError, statistics.fanofactor, [[1, 2, 3]])
+        # warn_tolerance is not a quantity
+        self.assertRaises(TypeError, statistics.fanofactor, self.test_list,
+                          warn_tolerance=1e-4)
+
 
 class LVTestCase(unittest.TestCase):
     def setUp(self):
