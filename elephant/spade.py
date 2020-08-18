@@ -1431,6 +1431,41 @@ def _stability_filter(concept, stability_thresh):
     return keep_concept
 
 
+def _new_mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
+    """
+    The function filters the pvalue spectrum based on the number of
+    the statistical tests to be done. Only the entries of the pvalue spectrum
+    that coincide with concepts found in the original data are kept.
+    Moreover, entries of the pvalue spectrum with a value of 1 (all surrogates
+    datasets containing at least one mined pattern with that signature)
+    are discarded as well and considered trivial.
+    Parameters
+    ----------
+    pv_spec: List[List]
+    concepts: List[Tuple]
+    spectrum: {'#', '3d#'}
+    winlen: int
+
+    Returns
+    -------
+    mask : np.array
+        An array of boolean values, indicating if a signature of p-value
+        spectrum is also in the mined concepts of the original data.
+    """
+    if spectrum == '#':
+        signatures = {(len(concept[0]), len(concept[1]))
+                      for concept in concepts}
+    else:  # spectrum == '3d#':
+        # third entry of signatures is the duration, fixed as the maximum lag
+        signatures = {(len(concept[0]), len(concept[1]),
+                       max(np.array(concept[0]) % winlen))
+                      for concept in concepts}
+    mask = np.array([tuple(pvs[:-1]) in signatures
+                     and not np.isclose(pvs[-1], [1])
+                     for pvs in pv_spec])
+    return mask
+
+
 def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
     """
     The function filters the pvalue spectrum based on the number of
@@ -1566,6 +1601,16 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     mask = _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen)
     pvalues = pv_spec[:, -1]
     pvalues_totest = pvalues[mask]
+
+    # functions that counts number of tests given the concepts
+    pv_spec_masked = pv_spec[mask]  # (size, occ, duration, p-value)
+
+    pv_spec_dict = {}
+    for entry in pv_spec_masked:
+        pt_size, occ, duration, p_value = entry
+        pv_spec_dict[(pt_size, duration)] = (occ, p_value)
+
+    pvalues_totest = [entry[1] for entry in pv_spec_dict.values()]
 
     # Initialize test array to False
     tests = [False] * len(pvalues)
