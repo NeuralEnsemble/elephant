@@ -18,6 +18,7 @@ import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
 from elephant.spike_train_generation import homogeneous_poisson_process,\
     homogeneous_gamma_process
+import math
 
 python_version_major = sys.version_info.major
 
@@ -41,7 +42,7 @@ class CovarianceTestCase(unittest.TestCase):
         # And binned counterparts
         self.binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_1], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
 
     def test_covariance_binned(self):
         '''
@@ -96,7 +97,7 @@ class CovarianceTestCase(unittest.TestCase):
         # Calculate correlation
         binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_0], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
         result = sc.covariance(binned_st, fast=False)
 
         # Check dimensions
@@ -112,7 +113,7 @@ class CovarianceTestCase(unittest.TestCase):
         # Calculate correlation
         binned_st = conv.BinnedSpikeTrain(
             self.st_0, t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
         result = sc.covariance(binned_st, binary=True, fast=False)
 
         # Check result unclipped against result calculated by numpy.corrcoef
@@ -129,7 +130,7 @@ class CovarianceTestCase(unittest.TestCase):
     def test_covariance_fast_mode(self):
         np.random.seed(27)
         st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
-        binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
+        binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(sc.covariance(binned_st, fast=False),
                                   sc.covariance(binned_st, fast=True))
 
@@ -156,7 +157,7 @@ class CorrCoefTestCase(unittest.TestCase):
         # And binned counterparts
         self.binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_1], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
 
     def test_corrcoef_binned(self):
         '''
@@ -164,9 +165,9 @@ class CorrCoefTestCase(unittest.TestCase):
         '''
 
         # Calculate clipped and unclipped
-        res_clipped = sc.corrcoef(
+        res_clipped = sc.correlation_coefficient(
             self.binned_st, binary=True)
-        res_unclipped = sc.corrcoef(
+        res_unclipped = sc.correlation_coefficient(
             self.binned_st, binary=False)
 
         # Check dimensions
@@ -217,15 +218,17 @@ class CorrCoefTestCase(unittest.TestCase):
         # Calculate correlation
         binned_st = conv.BinnedSpikeTrain(
             [self.st_0, self.st_0], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
-        result = sc.corrcoef(binned_st, fast=False)
+            bin_size=1 * pq.ms)
+        result = sc.correlation_coefficient(binned_st, fast=False)
         target = np.ones((2, 2))
 
         # Check dimensions
         self.assertEqual(len(result), 2)
         # Check result
         assert_array_almost_equal(result, target)
-        assert_array_almost_equal(result, sc.corrcoef(binned_st, fast=True))
+        assert_array_almost_equal(
+            result, sc.correlation_coefficient(
+                binned_st, fast=True))
 
     def test_corrcoef_binned_short_input(self):
         '''
@@ -234,14 +237,16 @@ class CorrCoefTestCase(unittest.TestCase):
         # Calculate correlation
         binned_st = conv.BinnedSpikeTrain(
             self.st_0, t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
-        result = sc.corrcoef(binned_st, fast=False)
+            bin_size=1 * pq.ms)
+        result = sc.correlation_coefficient(binned_st, fast=False)
         target = np.array(1.)
 
         # Check result and dimensionality of result
         self.assertEqual(result.ndim, 0)
         assert_array_almost_equal(result, target)
-        assert_array_almost_equal(result, sc.corrcoef(binned_st, fast=True))
+        assert_array_almost_equal(
+            result, sc.correlation_coefficient(
+                binned_st, fast=True))
 
     @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
@@ -251,10 +256,10 @@ class CorrCoefTestCase(unittest.TestCase):
         '''
         # st_2 is empty
         binned_12 = conv.BinnedSpikeTrain([self.st_1, self.st_2],
-                                          binsize=1 * pq.ms)
+                                          bin_size=1 * pq.ms)
 
         with self.assertWarns(UserWarning):
-            result = sc.corrcoef(binned_12, fast=False)
+            result = sc.correlation_coefficient(binned_12, fast=False)
 
         # test for NaNs in the output array
         target = np.zeros((2, 2)) * np.NaN
@@ -264,9 +269,11 @@ class CorrCoefTestCase(unittest.TestCase):
     def test_corrcoef_fast_mode(self):
         np.random.seed(27)
         st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
-        binned_st = conv.BinnedSpikeTrain(st, num_bins=10)
-        assert_array_almost_equal(sc.corrcoef(binned_st, fast=False),
-                                  sc.corrcoef(binned_st, fast=True))
+        binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
+        assert_array_almost_equal(
+            sc.correlation_coefficient(
+                binned_st, fast=False), sc.correlation_coefficient(
+                binned_st, fast=True))
 
 
 class CrossCorrelationHistogramTest(unittest.TestCase):
@@ -288,27 +295,27 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         # And binned counterparts
         self.binned_st1 = conv.BinnedSpikeTrain(
             [self.st_1], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
         self.binned_st2 = conv.BinnedSpikeTrain(
             [self.st_2], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
         self.binned_sts = conv.BinnedSpikeTrain(
             [self.st_1, self.st_2], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
 
         # Binned sts to check errors raising
-        self.st_check_binsize = conv.BinnedSpikeTrain(
+        self.st_check_bin_size = conv.BinnedSpikeTrain(
             [self.st_1], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=5 * pq.ms)
+            bin_size=5 * pq.ms)
         self.st_check_t_start = conv.BinnedSpikeTrain(
             [self.st_1], t_start=1 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
         self.st_check_t_stop = conv.BinnedSpikeTrain(
             [self.st_1], t_start=0 * pq.ms, t_stop=40. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
         self.st_check_dimension = conv.BinnedSpikeTrain(
             [self.st_1, self.st_2], t_start=0 * pq.ms, t_stop=50. * pq.ms,
-            binsize=1 * pq.ms)
+            bin_size=1 * pq.ms)
 
     def test_cross_correlation_histogram(self):
         '''
@@ -367,11 +374,11 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
             st2 = neo.SpikeTrain(self.st_2.magnitude, units='ms',
                                  t_start=t0 * pq.ms, t_stop=t1 * pq.ms)
             binned_sts = conv.BinnedSpikeTrain([st1, st2],
-                                               binsize=1 * pq.ms,
+                                               bin_size=1 * pq.ms,
                                                t_start=t0 * pq.ms,
                                                t_stop=t1 * pq.ms)
             # caluclate corrcoef
-            corrcoef = sc.corrcoef(binned_sts)[1, 0]
+            corrcoef = sc.correlation_coefficient(binned_sts)[1, 0]
 
             # expand t_stop to have two spike trains with same length as st1,
             # st2
@@ -383,15 +390,15 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
                                  t_stop=self.st_2.t_stop + np.abs(t) * pq.ms)
             binned_st1 = conv.BinnedSpikeTrain(
                 st1, t_start=0 * pq.ms, t_stop=(50 + np.abs(t)) * pq.ms,
-                binsize=1 * pq.ms)
+                bin_size=1 * pq.ms)
             binned_st2 = conv.BinnedSpikeTrain(
                 st2, t_start=0 * pq.ms, t_stop=(50 + np.abs(t)) * pq.ms,
-                binsize=1 * pq.ms)
+                bin_size=1 * pq.ms)
             # calculate CCHcoef and take value at t=tau
             CCHcoef, _ = sc.cch(binned_st1, binned_st2,
-                                cross_corr_coef=True)
-            left_edge = - binned_st1.num_bins + 1
-            tau_bin = int(t / float(binned_st1.binsize.magnitude))
+                                cross_correlation_coefficient=True)
+            left_edge = - binned_st1.n_bins + 1
+            tau_bin = int(t / float(binned_st1.bin_size.magnitude))
             assert_array_almost_equal(
                 corrcoef, CCHcoef[tau_bin - left_edge].magnitude)
 
@@ -404,10 +411,10 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
 
         # Check the time axis and bin IDs of the resulting AnalogSignal
         assert_array_almost_equal(
-            (bin_ids_clipped - 0.5) * self.binned_st1.binsize,
+            (bin_ids_clipped - 0.5) * self.binned_st1.bin_size,
             cch_unclipped.times)
         assert_array_almost_equal(
-            (bin_ids_clipped - 0.5) * self.binned_st1.binsize,
+            (bin_ids_clipped - 0.5) * self.binned_st1.bin_size,
             cch_clipped.times)
 
         # Calculate CCH using Elephant (normal and binary version) with
@@ -461,10 +468,10 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
 
         # Check the time axis and bin IDs of the resulting AnalogSignal
         assert_array_equal(
-            (bin_ids_clipped - 0.5) * self.binned_st1.binsize,
+            (bin_ids_clipped - 0.5) * self.binned_st1.bin_size,
             cch_unclipped.times)
         assert_array_equal(
-            (bin_ids_clipped - 0.5) * self.binned_st1.binsize,
+            (bin_ids_clipped - 0.5) * self.binned_st1.bin_size,
             cch_clipped.times)
 
         # Check for wrong window parameter setting
@@ -478,11 +485,11 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
     def test_raising_error_wrong_inputs(self):
         '''Check that an exception is thrown if the two spike trains are not
         fullfilling the requirement of the function'''
-        # Check the binsizes are the same
+        # Check the bin_sizes are the same
         self.assertRaises(
             ValueError,
             sc.cross_correlation_histogram, self.binned_st1,
-            self.st_check_binsize)
+            self.st_check_bin_size)
         # Check input are one dimensional
         self.assertRaises(
             ValueError, sc.cross_correlation_histogram,
@@ -502,11 +509,11 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         self.assertEqual(len(bin_ids), cch_win.shape[0])
         assert_array_equal(bin_ids, np.arange(-30, 31, 1))
         assert_array_equal(
-            (bin_ids - 0.5) * self.binned_st1.binsize, cch_win.times)
+            (bin_ids - 0.5) * self.binned_st1.bin_size, cch_win.times)
 
         assert_array_equal(bin_ids_mem, np.arange(-30, 31, 1))
         assert_array_equal(
-            (bin_ids_mem - 0.5) * self.binned_st1.binsize, cch_win.times)
+            (bin_ids_mem - 0.5) * self.binned_st1.bin_size, cch_win.times)
 
         assert_array_equal(cch_win, cch_win_mem)
         cch_unclipped, _ = sc.cross_correlation_histogram(
@@ -573,10 +580,10 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
             self.binned_st1, self.binned_st2, window='full',
             border_correction=True)
 
-        num_bins_outside_window = np.min(np.abs(
+        n_bins_outside_window = np.min(np.abs(
             np.subtract.outer(lags_full, valid_lags)), axis=1)
 
-        min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
+        min_n_bins = min(self.binned_st1.n_bins, self.binned_st2.n_bins)
 
         border_correction = (cch_full_corrected / cch_full).magnitude.flatten()
 
@@ -585,8 +592,8 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             border_correction[mask],
-            (float(min_num_bins)
-             / (min_num_bins - num_bins_outside_window))[mask])
+            (float(min_n_bins)
+             / (min_n_bins - n_bins_outside_window))[mask])
 
     def test_kernel(self):
         '''Test if the smoothing kernel is correctly defined, and wheter it is
@@ -626,9 +633,9 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
         for window in ('valid', 'full'):
             for method in ('speed', 'memory'):
                 with self.subTest(window=window, method=method):
-                    binsize = 1 * pq.s
-                    st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
-                    st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
+                    bin_size = 1 * pq.s
+                    st1_binned = conv.BinnedSpikeTrain(st1, bin_size=bin_size)
+                    st2_binned = conv.BinnedSpikeTrain(st2, bin_size=bin_size)
                     left, right = lags_true[window][(0, -1), ]
                     cch_window, lags_window = sc.cross_correlation_histogram(
                         st1_binned, st2_binned, window=(left, right),
@@ -688,14 +695,14 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
         self._run_sub_tests(st1, st2, lags_true)
 
     def test_invalid_time_shift(self):
-        # time shift of 0.4 s is not multiple of binsize=1 s
+        # time shift of 0.4 s is not multiple of bin_size=1 s
         st1 = neo.SpikeTrain([2.5, 3.5] * pq.s, t_start=1 * pq.s,
                              t_stop=7 * pq.s)
         st2 = neo.SpikeTrain([3.5, 5.5] * pq.s, t_start=1.4 * pq.s,
                              t_stop=7.4 * pq.s)
-        binsize = 1 * pq.s
-        st1_binned = conv.BinnedSpikeTrain(st1, binsize=binsize)
-        st2_binned = conv.BinnedSpikeTrain(st2, binsize=binsize)
+        bin_size = 1 * pq.s
+        st1_binned = conv.BinnedSpikeTrain(st1, bin_size=bin_size)
+        st2_binned = conv.BinnedSpikeTrain(st2, bin_size=bin_size)
         self.assertRaises(ValueError, sc.cross_correlation_histogram,
                           st1_binned, st2_binned)
 
@@ -772,18 +779,57 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         '''
         nu = 25 / pq.s
         T = 15 * pq.min
-        binsize = 1 * pq.ms
+        bin_size = 1 * pq.ms
         timescale = 1 / (4 * nu)
+        np.random.seed(35)
 
         timescale_num = []
         for _ in range(10):
             spikes = homogeneous_gamma_process(2, 2 * nu, 0 * pq.ms, T)
-            spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
+            spikes_bin = conv.BinnedSpikeTrain(spikes, bin_size)
             timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
             timescale_i.units = timescale.units
             timescale_num.append(timescale_i.magnitude)
-        target = np.allclose(timescale.magnitude, timescale_num, rtol=2e-1)
-        self.assertTrue(target)
+        assert_array_almost_equal(timescale.magnitude, timescale_num,
+                                  decimal=3)
+
+    def test_timescale_errors(self):
+        spikes = neo.SpikeTrain([1, 5, 7, 8] * pq.ms, t_stop=10 * pq.ms)
+        binsize = 1 * pq.ms
+        spikes_bin = conv.BinnedSpikeTrain(spikes, binsize)
+
+        # Tau max with no units
+        tau_max = 1
+        self.assertRaises(ValueError,
+                          sc.spike_train_timescale, spikes_bin, tau_max)
+
+        # Tau max that is not a multiple of the binsize
+        tau_max = 1.1 * pq.ms
+        self.assertRaises(ValueError,
+                          sc.spike_train_timescale, spikes_bin, tau_max)
+
+    @unittest.skipUnless(python_version_major == 3,
+                         "assertWarns requires python 3.2")
+    def test_timescale_nan(self):
+        st0 = neo.SpikeTrain([] * pq.ms, t_stop=10 * pq.ms)
+        st1 = neo.SpikeTrain([1] * pq.ms, t_stop=10 * pq.ms)
+        st2 = neo.SpikeTrain([1, 5] * pq.ms, t_stop=10 * pq.ms)
+        st3 = neo.SpikeTrain([1, 5, 6] * pq.ms, t_stop=10 * pq.ms)
+        st4 = neo.SpikeTrain([1, 5, 6, 9] * pq.ms, t_stop=10 * pq.ms)
+
+        binsize = 1 * pq.ms
+        tau_max = 1 * pq.ms
+
+        for st in [st0, st1]:
+            bst = conv.BinnedSpikeTrain(st, binsize)
+            with self.assertWarns(UserWarning):
+                timescale = sc.spike_train_timescale(bst, tau_max)
+            self.assertTrue(math.isnan(timescale))
+
+        for st in [st2, st3, st4]:
+            bst = conv.BinnedSpikeTrain(st, binsize)
+            timescale = sc.spike_train_timescale(bst, tau_max)
+            self.assertFalse(math.isnan(timescale))
 
 
 if __name__ == '__main__':

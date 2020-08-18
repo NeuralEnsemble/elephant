@@ -53,8 +53,10 @@ import neo
 import numpy as np
 import quantities as pq
 import sklearn
+import warnings
 
 from elephant.gpfa import gpfa_core, gpfa_util
+from elephant.utils import deprecated_alias
 
 
 class GPFA(sklearn.base.BaseEstimator):
@@ -205,6 +207,7 @@ class GPFA(sklearn.base.BaseEstimator):
     ...                returned_data=['xorth', 'xsm'])
     """
 
+    @deprecated_alias(binsize='bin_size')
     def __init__(self, bin_size=20 * pq.ms, x_dim=3, min_var_frac=0.01,
                  tau_init=100.0 * pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
                  em_max_iters=500, freq_ll=5, verbose=False):
@@ -228,6 +231,11 @@ class GPFA(sklearn.base.BaseEstimator):
         self.params_estimated = dict()
         self.fit_info = dict()
         self.transform_info = dict()
+
+    @property
+    def binsize(self):
+        warnings.warn("'binsize' is deprecated; use 'bin_size'")
+        return self.bin_size
 
     def fit(self, spiketrains):
         """
