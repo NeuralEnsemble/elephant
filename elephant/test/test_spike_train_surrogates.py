@@ -381,8 +381,9 @@ class SurrogatesTestCase(unittest.TestCase):
             method='shuffle_isis',
             edges=False)
 
-        self.assertRaises(ValueError, surr.surrogates, spiketrain, n=1,
-                          surr_method='spike_shifting',
+        self.assertRaises(ValueError, surr.surrogates, spiketrain,
+                          n_surrogates=1,
+                          method='spike_shifting',
                           dt=None, decimals=None, edges=True)
         self.assertTrue(len(surrogate_trains) == n_surrogates)
 
@@ -425,7 +426,7 @@ class SurrogatesTestCase(unittest.TestCase):
 
         self.assertIsInstance(surrogate_trains, list)
         self.assertEqual(len(surrogate_trains), n_surrogates)
-        self.assertEqual(joint_isi_instance.method, 'fast')
+        self.assertEqual(joint_isi_instance.method, 'window')
 
         for surrogate_train in surrogate_trains:
             self.assertIsInstance(surrogate_train, neo.SpikeTrain)

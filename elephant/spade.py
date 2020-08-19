@@ -293,9 +293,11 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     time_mining = time.time()
     if rank == 0 or compute_stability:
+        binned_spiketrains = conv.BinnedSpikeTrain(
+            spiketrains, bin_size=bin_size, tolerance=None)
         # Mine the spiketrains for extraction of concepts
         concepts, rel_matrix = concepts_mining(
-            spiketrains, bin_size, winlen, min_spikes=min_spikes,
+            binned_spiketrains, winlen, min_spikes=min_spikes,
             min_occ=min_occ, max_spikes=max_spikes, max_occ=max_occ,
             min_neu=min_neu, report='a')
         time_mining = time.time() - time_mining
@@ -496,23 +498,20 @@ def _check_input(
 
 
 @deprecated_alias(binsize='bin_size')
-def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
+def concepts_mining(binned_spiketrains, winlen, min_spikes=2, min_occ=2,
                     max_spikes=None, max_occ=None, min_neu=1, report='a'):
     """
     Find pattern candidates extracting all the concepts of the context, formed
     by the objects defined as all windows of length `winlen*bin_size` slided
-    along the `spiketrains` and the attributes as the spikes occurring in each
-    of the window discretized at a time resolution equal to `bin_size`. Hence,
-    the output are all the repeated sequences of spikes with maximal length
-    `winlen`, which are not trivially explained by the same number of
-    occurrences of a superset of spikes.
+    along the `binned_spiketrains` and the attributes as the spikes occurring
+    in each of the windows discretized. Hence, the output are all the repeated
+    sequences of spikes with maximal length `winlen`, which are not trivially
+    explained by the same number of occurrences of a superset of spikes.
 
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrain
-        List containing the parallel spike trains to analyze
-    bin_size: pq.Quantity
-        The time precision used to discretize the `spiketrains` (clipping).
+    binned_spiketrains: conv.BinnedSpikeTrain
+        BinningSpikeTrain object containing the binned spiketrains to analyze
     winlen: int
         The size (number of bins) of the sliding window used for the analysis.
         The maximal length of a pattern (delay between first and last spike) is
@@ -579,24 +578,15 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         position for the first neuron, the entry `[0,winlen]` to the first
         bin of the first window position for the second neuron.
     """
-    # Check that spiketrains is a list of SpikeTrains
-    if not all([isinstance(elem, neo.SpikeTrain) for elem in spiketrains]):
+    if not isinstance(binned_spiketrains, conv.BinnedSpikeTrain):
         raise TypeError(
-            'spiketrains must be a list of SpikeTrains')
-    # Check that all spiketrains have same t_start and same t_stop
-    if not all([spiketrain.t_start == spiketrains[0].t_start
-                for spiketrain in spiketrains]) or\
-            not all([spiketrain.t_stop == spiketrains[0].t_stop
-                     for spiketrain in spiketrains]):
-        raise ValueError(
-            'All spiketrains must have the same t_start and t_stop')
-    if report not in ['a', '#', '3d#']:
+            'binned_spiketrains must be of type conv.BinnedSpikeTrain')
+    if report not in ('a', '#', '3d#'):
         raise ValueError(
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
-    # Binning the spiketrains and clipping (binary matrix)
-    binary_matrix = conv.BinnedSpikeTrain(
-        spiketrains, bin_size, tolerance=None).to_sparse_bool_array().tocoo()
+    # Clipping the spiketrains and (binary matrix)
+    binary_matrix = binned_spiketrains.to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
@@ -604,7 +594,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     # By default, set the maximum pattern size to the maximum number of
     # spikes in a window
     if max_spikes is None:
-        max_spikes = len(spiketrains) * winlen
+        max_spikes = binary_matrix.shape[0] * winlen
     # By default, set maximum number of occurrences to number of non-empty
     # windows
     if max_occ is None:
@@ -1276,25 +1266,68 @@ def pvalue_spectrum(
                                    max_spikes - min_spikes + 1, winlen),
                             dtype=np.uint16)
 
-    if surr_method == 'joint_isi_dithering':
-        joint_isi_instances = [surr.JointISI(spiketrain, dither=dither,
-                                             method='window')
+    for surr_id, binned_surrogates in _generate_binned_surrogates(
+            spiketrains, bin_size, winlen, dither, surr_method, len_partition,
+            add_remainder):
+
+        # Find all pattern signatures in the current surrogate data set
+        surr_concepts = concepts_mining(
+            binned_surrogates, winlen, min_spikes=min_spikes,
+            max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
+            min_neu=min_neu, report=spectrum)[0]
+        # The last entry of the signature is the number of times the
+        # signature appeared. This entry is not needed here.
+        surr_concepts = surr_concepts[:, :-1]
+
+        max_occs[surr_id] = _get_max_occ(
+            surr_concepts, min_spikes, max_spikes, winlen, spectrum)
+
+    # Collecting results on the first PCU
+    if size != 1:
+        max_occs = comm.gather(max_occs, root=0)
+
+        if rank != 0:  # pragma: no cover
+            return []
+
+        # The gather operator gives a list out. This is rearranged as a 2 resp.
+        # 3 dimensional numpy-array.
+        max_occs = np.vstack(max_occs)
+
+    # Compute the p-value spectrum, and return it
+    return _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ,
+                            n_surr, winlen, spectrum)
+
+
+def _generate_binned_surrogates(
+        spiketrains, bin_size, winlen, dither, surr_method, len_partition,
+        add_remainder):
+    if surr_method == 'bin_shuffling':
+        binned_spiketrains = [
+            conv.BinnedSpikeTrain(
+                spiketrain, bin_size=bin_size, tolerance=None)
+            for spiketrain in spiketrains]
+        max_displacement = int(dither.rescale(pq.ms).magnitude /
+             bin_size.rescale(pq.ms).magnitude)
+    elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
+        isi_dithering = surr_method == 'isi_dithering'
+        joint_isi_instances = [surr.JointISI(
+            spiketrain, dither=dither, isi_dithering=isi_dithering)
                                for spiketrain in spiketrains]
-    elif surr_method == 'isi_dithering':
-        isi_instances = [surr.JointISI(spiketrain, dither=dither,
-                                       method='window', isi_dithering=True)
-                         for spiketrain in spiketrains]
-    for i in range(len_partition + add_remainder):
-        if surr_method == 'joint_isi_dithering':
+    for surr_id in range(len_partition + add_remainder):
+        if surr_method == 'bin_shuffling':
+            binned_surrogates = [
+                surr.bin_shuffling(
+                    binned_spiketrain, max_displacement=max_displacement)[0]
+                for binned_spiketrain in binned_spiketrains]
+            binned_surrogates = conv.BinnedSpikeTrain(
+                np.array([binned_surrogate.to_bool_array()
+                          for binned_surrogate in binned_surrogates]),
+                bin_size=bin_size,
+                t_start=spiketrains[0].t_start,
+                t_stop=spiketrains[0].t_stop)
+        elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
             surrs = [instance.dithering()[0] for
                      instance in joint_isi_instances]
-        elif surr_method == 'isi_dithering':
-            surrs = [instance.dithering()[0] for
-                     instance in isi_instances]
-        elif surr_method == 'bin_shuffling':
-            surrs = [surr.bin_shuffling(
-                spiketrain, dt=dither, bin_size=bin_size, n_surrogates=1)[0]
-                     for spiketrain in spiketrains]
         elif surr_method == 'dither_spikes_with_refractory_period':
             # The initial refractory period is set to the bin size in order to
             # prevent that spikes fall into the same bin, if the spike trains
@@ -1313,32 +1346,10 @@ def pvalue_spectrum(
                 spiketrain, n_surrogates=1, method=surr_method,
                 dt=dither)[0] for spiketrain in spiketrains]
 
-        # Find all pattern signatures in the current surrogate data set
-        surr_concepts = concepts_mining(
-            surrs, bin_size, winlen, min_spikes=min_spikes,
-            max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
-            min_neu=min_neu, report=spectrum)[0]
-        # The last entry of the signature is the number of times the
-        # signature appeared. This entry is not needed here.
-        surr_concepts = surr_concepts[:, :-1]
-
-        max_occs[i] = _get_max_occ(surr_concepts, min_spikes, max_spikes,
-                                   winlen, spectrum)
-
-    # Collecting results on the first PCU
-    if size != 1:
-        max_occs = comm.gather(max_occs, root=0)
-
-        if rank != 0:  # pragma: no cover
-            return []
-
-        # The gather operator gives a list out. This is rearranged as a 2 resp.
-        # 3 dimensional numpy-array.
-        max_occs = np.vstack(max_occs)
-
-    # Compute the p-value spectrum, and return it
-    return _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ,
-                            n_surr, winlen, spectrum)
+        if not surr_method == 'bin_shuffling':
+            binned_surrogates = conv.BinnedSpikeTrain(
+                surrs, bin_size=bin_size, tolerance=None)
+        yield surr_id, binned_surrogates
 
 
 def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,

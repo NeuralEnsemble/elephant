@@ -554,20 +554,32 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
             for s in surr]
 
 
-def new_bin_shuffling(
+@deprecated_alias(binsize='bin_size', n='n_surrogates')
+def bin_shuffling(
         binned_spiketrain, max_displacement, n_surrogates=1, sliding=False):
     """
+    Bin shuffling surrogate generation.
+    Given a binned spiketrain, the function shuffles the binned spike
+    train entries inside windows of the twice the length of `max_displacement`,
+    either with sliding or exclusive windows.
 
     Parameters
     ----------
     binned_spiketrain : conv.BinnedSpikeTrain
+        the binned spiketrain to create surrogates of
     max_displacement : int
-    n_surrogates : int
-    sliding : bool
+        number of bins the a single spike can be displaced
+    n_surrogates : int, optional
+        number of surrogates
+        Default : 1
+    sliding : bool, optional
+        option to have a sliding window
+        Default : False
 
     Returns
     -------
-
+    binned_surrogates : list of conv.BinnedSpikeTrain
+        Each entry of the list is a binned surrogate spiketrain
     """
     displacement_window = 2 * max_displacement
 
@@ -606,159 +618,6 @@ def new_bin_shuffling(
                 t_start=binned_spiketrain.t_start,
                 t_stop=binned_spiketrain.t_stop))
     return surrogate_spiketrains
-
-
-def bin_shuffling(
-        spiketrain, dt, bin_size=None, n_surrogates=1, sliding=False):
-    """
-    Bin shuffling surrogate generation, both with and without moving window
-    Given a spiketrain, the function bins it and shuffles the binned spike
-    train entries into windows of the desired length, either in a moving
-    window fashion or with exclusive windows
-
-    Parameters
-    ----------
-    spiketrain : neo.SpikeTrain
-        as elephant.spiketrain
-    dt : pq.Quantity
-        length of slided/not slided window. The effective window is twice
-        the range given in input, in order for it to be comparable to the
-        other surrogate methods
-    bin_size : pq.Quantity
-        Size of the time bins within which to randomise the spike times.
-        Note: the last bin arrives until `spiketrain.t_stop` and might have
-        width different from `bin_size`.
-    n_surrogates: int (optional)
-        Number of surrogates to be generated.
-        Default: 1
-    sliding : bool
-        flag for moving or not moving the window
-
-    Returns
-    -------
-    list of neo.SpikeTrain
-      A list of `neo.SpikeTrain`, each obtained from :attr:`spiketrain` by
-      randomly dithering its spikes. The range of the surrogate spike trains
-      is the same as :attr:`spiketrain`
-    """
-    # Define standard time unit; all time Quantities are converted to
-    # scalars after being rescaled to this unit, to use the power of numpy
-    t_start = spiketrain.t_start
-    t_stop = spiketrain.t_stop
-    # rescale dt in bin_size units
-    if dt.rescale(pq.ms).magnitude % bin_size.rescale(pq.ms).magnitude != 0:
-        raise ValueError('dt has to be a multiple of the binsize')
-    # real dt is twice the range given as for the other surr methods
-    dt = int(dt.rescale(pq.ms).magnitude /
-             bin_size.rescale(pq.ms).magnitude) * 2
-    surr = []
-    binned_st = conv.BinnedSpikeTrain(
-        spiketrain, bin_size=bin_size)
-    bin_grid = binned_st.bin_centers.magnitude
-    binned_st = binned_st.to_bool_array()[0]
-    st_length = len(binned_st)
-    for surrogate_id in range(n_surrogates):
-        surr_binned = np.copy(binned_st)
-        if sliding:
-            for window_position in range(st_length - dt):
-                # shuffling the binned spike train within the window
-                np.random.shuffle(
-                    surr_binned[window_position:window_position + dt])
-        else:
-            windows = st_length // dt
-            windows_remainder = st_length % dt
-            # TODO: reshape the matrix and avoid for loop
-            for window_position in range(windows):
-                # shuffling the binned spike train within the window
-                np.random.shuffle(surr_binned[
-                    window_position * dt:(window_position + 1) * dt])
-            if windows_remainder != 0:
-                np.random.shuffle(surr_binned[windows * dt:])
-        surr.append(bin_grid[surr_binned.astype(bool)])
-    # go back to continuous time and place spike in the middle
-    # of the bin
-    return [neo.SpikeTrain(s + t_start.magnitude,
-                           t_start=t_start,
-                           t_stop=t_stop,
-                           units=spiketrain.units)
-            for s in surr]
-
-
-@deprecated_alias(binsize='bin_size', n='n_surrogates')
-def bin_shuffling(
-        spiketrain, dt, bin_size=None, n_surrogates=1, sliding=False):
-    """
-    Bin shuffling surrogate generation, both with and without moving window
-    Given a spiketrain, the function bins it and shuffles the binned spike
-    train entries into windows of the desired length, either in a moving
-    window fashion or with exclusive windows
-
-    Parameters
-    ----------
-    spiketrain : neo.SpikeTrain
-        as elephant.spiketrain
-    dt : pq.Quantity
-        length of slided/not slided window. The effective window is twice
-        the range given in input, in order for it to be comparable to the
-        other surrogate methods
-    bin_size : pq.Quantity
-        Size of the time bins within which to randomise the spike times.
-        Note: the last bin arrives until `spiketrain.t_stop` and might have
-        width different from `bin_size`.
-    n_surrogates: int (optional)
-        Number of surrogates to be generated.
-        Default: 1
-    sliding : bool
-        flag for moving or not moving the window
-
-    Returns
-    -------
-    list of neo.SpikeTrain
-      A list of `neo.SpikeTrain`, each obtained from :attr:`spiketrain` by
-      randomly dithering its spikes. The range of the surrogate spike trains
-      is the same as :attr:`spiketrain`
-    """
-    # Define standard time unit; all time Quantities are converted to
-    # scalars after being rescaled to this unit, to use the power of numpy
-    t_start = spiketrain.t_start
-    t_stop = spiketrain.t_stop
-    # rescale dt in bin_size units
-    if dt.rescale(pq.ms).magnitude % bin_size.rescale(pq.ms).magnitude != 0:
-        raise ValueError('dt has to be a multiple of the binsize')
-    # real dt is twice the range given as for the other surr methods
-    dt = int(dt.rescale(pq.ms).magnitude /
-             bin_size.rescale(pq.ms).magnitude) * 2
-    surr = []
-    binned_st = conv.BinnedSpikeTrain(
-        spiketrain, bin_size=bin_size)
-    bin_grid = binned_st.bin_centers.magnitude
-    binned_st = binned_st.to_bool_array()[0]
-    st_length = len(binned_st)
-    for surrogate_id in range(n_surrogates):
-        surr_binned = np.copy(binned_st)
-        if sliding:
-            for window_position in range(st_length - dt):
-                # shuffling the binned spike train within the window
-                np.random.shuffle(
-                    surr_binned[window_position:window_position + dt])
-        else:
-            windows = st_length // dt
-            windows_remainder = st_length % dt
-            # TODO: reshape the matrix and avoid for loop
-            for window_position in range(windows):
-                # shuffling the binned spike train within the window
-                np.random.shuffle(surr_binned[
-                    window_position * dt:(window_position + 1) * dt])
-            if windows_remainder != 0:
-                np.random.shuffle(surr_binned[windows * dt:])
-        surr.append(bin_grid[surr_binned.astype(bool)])
-    # go back to continuous time and place spike in the middle
-    # of the bin
-    return [neo.SpikeTrain(s + t_start.magnitude,
-                           t_start=t_start,
-                           t_stop=t_stop,
-                           units=spiketrain.units)
-            for s in surr]
 
 
 class JointISI(object):
@@ -807,7 +666,7 @@ class JointISI(object):
         * 'fast': the spike can move in the whole range between the
             previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`
-        Default: 'fast'.
+        Default: 'window'.
     cutoff : boolean, optional
         If True, then the filtering of the Joint-ISI histogram is
         limited on the lower side by the minimal ISI.
@@ -847,7 +706,7 @@ class JointISI(object):
                  sigma=2. * pq.ms,
                  alternate=True,
                  use_sqrt=False,
-                 method='fast',
+                 method='window',
                  cutoff=True,
                  refractory_period=4. * pq.ms,
                  isi_dithering=False):
@@ -1345,16 +1204,31 @@ def surrogates(
 
     if method in (dither_spike_train, dither_spikes):
         return method(
-            spiketrain, dt, n=n_surrogates, decimals=decimals, edges=edges)
+            spiketrain, dt, n_surrogates=n_surrogates, decimals=decimals,
+            edges=edges)
     if method in (randomise_spikes, shuffle_isis):
-        return method(spiketrain, n=n_surrogates, decimals=decimals)
+        return method(spiketrain, n_surrogates=n_surrogates, decimals=decimals)
     if method is jitter_spikes:
-        return method(spiketrain, dt, n=n_surrogates)
-    if method is bin_shuffling:
-        return method(spiketrain, dt, binsize=bin_size, n=n_surrogates)
+        return method(spiketrain, dt, n_surrogates=n_surrogates)
     if method is spiketrain_shifting:
         return method(
             spiketrain, trial_length=trial_length, dt=dt, sep=sep,
-            n=n_surrogates)
+            n_surrogates=n_surrogates)
+    if method is bin_shuffling:
+        binned_spiketrain = conv.BinnedSpikeTrain(
+            spiketrain, bin_size=bin_size)
+        bin_grid = binned_spiketrain.bin_centers.magnitude
+        max_displacement = int(
+            dt.rescale(pq.ms).magnitude / bin_size.rescale(pq.ms).magnitude)
+        binned_surrogates = method(
+            binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
+        surrogate_spiketrains = [neo.SpikeTrain(
+            bin_grid[binned_surrogate.astype(bool)]
+            + spiketrain.t_start.magnitude,
+            t_start=spiketrain.t_start,
+            t_stop=spiketrain.t_stop,
+            units=spiketrain.units)
+                                 for binned_surrogate in binned_surrogates]
+        return surrogate_spiketrains
     # surr_method is 'joint_isi_dithering' or isi_dithering:
     return method(n_surrogates)

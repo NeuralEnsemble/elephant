@@ -17,16 +17,16 @@ from numpy.testing.utils import assert_array_equal
 import elephant.conversion as conv
 import elephant.spade as spade
 import elephant.spike_train_generation as stg
-import elephant.spike_train_surrogates as surr
-from elephant.spade import HAVE_FIM
-
-python_version_major = sys.version_info.major
 
 try:
     import statsmodels
     HAVE_STATSMODELS = True
 except ImportError:
     HAVE_STATSMODELS = False
+
+python_version_major = sys.version_info.major
+
+HAVE_FIM = spade.HAVE_FIM
 
 
 class SpadeTestCase(unittest.TestCase):
@@ -144,15 +144,16 @@ class SpadeTestCase(unittest.TestCase):
     # Testing spectrum cpp
     def test_spade_spectrum_cpp(self):
         # Computing Spectrum
-        spectrum_cpp = spade.concepts_mining(self.cpp, self.bin_size,
+        binned_spiketrains = conv.BinnedSpikeTrain(
+            self.cpp, self.bin_size, tolerance=None)
+        spectrum_cpp = spade.concepts_mining(binned_spiketrains,
                                              1, report='#')[0]
         # Check spectrum
         assert_array_equal(
-            spectrum_cpp, [
-                (len(
-                    self.cpp), np.sum(
-                    conv.BinnedSpikeTrain(
-                        self.cpp[0], self.bin_size).to_bool_array()), 1)])
+            spectrum_cpp,
+            [(len(self.cpp),
+              np.sum(conv.BinnedSpikeTrain(
+                  self.cpp[0], self.bin_size).to_bool_array()), 1)])
 
     # Testing with multiple patterns input
     def test_spade_msip(self):
@@ -409,11 +410,15 @@ class SpadeTestCase(unittest.TestCase):
     # Test computation spectrum
     def test_spectrum(self):
         # test 2d spectrum
-        spectrum = spade.concepts_mining(self.patt1, self.bin_size,
+        binned_spiketrains = conv.BinnedSpikeTrain(
+            self.patt1, self.bin_size, tolerance=None)
+        spectrum = spade.concepts_mining(binned_spiketrains,
                                          self.winlen, report='#')[0]
         # test 3d spectrum
+        binned_spiketrains = conv.BinnedSpikeTrain(
+            self.patt1, self.bin_size, tolerance=None)
         assert_array_equal(spectrum, [[len(self.lags1) + 1, self.n_occ1, 1]])
-        spectrum_3d = spade.concepts_mining(self.patt1, self.bin_size,
+        spectrum_3d = spade.concepts_mining(binned_spiketrains,
                                             self.winlen, report='3d#')[0]
         assert_array_equal(spectrum_3d, [
             [len(self.lags1) + 1, self.n_occ1, max(self.lags1), 1]])
