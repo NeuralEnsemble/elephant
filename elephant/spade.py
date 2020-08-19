@@ -1292,9 +1292,9 @@ def pvalue_spectrum(
             surrs = [instance.dithering()[0] for
                      instance in isi_instances]
         elif surr_method == 'bin_shuffling':
-            surrs = [surr.surrogates(
-                spiketrain, n=1, binsize=bin_size, surr_method=surr_method,
-                dt=dither)[0] for spiketrain in spiketrains]
+            surrs = [surr.bin_shuffling(
+                spiketrain, dt=dither, bin_size=bin_size, n_surrogates=1)[0]
+                     for spiketrain in spiketrains]
         elif surr_method == 'dither_spikes_with_refractory_period':
             # The initial refractory period is set to the bin size in order to
             # prevent that spikes fall into the same bin, if the spike trains
@@ -1304,11 +1304,10 @@ def pvalue_spectrum(
                 refractory_period=bin_size)[0]
                      for spiketrain in spiketrains]
         elif surr_method == 'shift_spiketrain':
-            surrs = [
-                surr.spiketrain_shifting(spiketrain, trial_length=500 * pq.ms,
-                                         dt=dither,
-                                         sep=2 * winlen * bin_size, n=1)[0]
-                for spiketrain in spiketrains]
+            surrs = [surr.spiketrain_shifting(
+                spiketrain, trial_length=500 * pq.ms, dt=dither,
+                sep=2 * winlen * bin_size, n_surrogates=1)[0]
+                     for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n_surrogates=1, method=surr_method,
