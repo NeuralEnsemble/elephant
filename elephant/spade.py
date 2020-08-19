@@ -1307,12 +1307,12 @@ def _generate_binned_surrogates(
                 spiketrain, bin_size=bin_size, tolerance=None)
             for spiketrain in spiketrains]
         max_displacement = int(dither.rescale(pq.ms).magnitude /
-             bin_size.rescale(pq.ms).magnitude)
+                               bin_size.rescale(pq.ms).magnitude)
     elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
         isi_dithering = surr_method == 'isi_dithering'
         joint_isi_instances = [surr.JointISI(
             spiketrain, dither=dither, isi_dithering=isi_dithering)
-                               for spiketrain in spiketrains]
+            for spiketrain in spiketrains]
     for surr_id in range(len_partition + add_remainder):
         if surr_method == 'bin_shuffling':
             binned_surrogates = [
@@ -1335,12 +1335,12 @@ def _generate_binned_surrogates(
             surrs = [surr.dither_spikes(
                 spiketrain, dither=dither, n_surrogates=1,
                 refractory_period=bin_size)[0]
-                     for spiketrain in spiketrains]
+                for spiketrain in spiketrains]
         elif surr_method == 'shift_spiketrain':
             surrs = [surr.spiketrain_shifting(
                 spiketrain, trial_length=500 * pq.ms, dt=dither,
                 sep=2 * winlen * bin_size, n_surrogates=1)[0]
-                     for spiketrain in spiketrains]
+                for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n_surrogates=1, method=surr_method,
