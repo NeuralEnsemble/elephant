@@ -1644,7 +1644,6 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             np.array(targ.values, dtype=np.float),
             np.array(res0.values, dtype=np.float))
 
-
         assert_frame_equal(targ, res0)
 
     def test__multi_events_to_dataframe__block_noparents(self):

@@ -132,6 +132,15 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         res = statistics.mean_firing_rate(st)
         assert_array_almost_equal(res, target, decimal=9)
 
+    def test_mean_firing_rate_typical_use_case(self):
+        np.random.seed(92)
+        st = homogeneous_poisson_process(rate=100 * pq.Hz, t_stop=100 * pq.s)
+        rate1 = statistics.mean_firing_rate(st)
+        rate2 = statistics.mean_firing_rate(st, t_start=st.t_start,
+                                            t_stop=st.t_stop)
+        self.assertEqual(rate1.units, rate2.units)
+        self.assertAlmostEqual(rate1.item(), rate2.item())
+
     def test_mean_firing_rate_with_spiketrain_set_ends(self):
         st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
         target = pq.Quantity(2 / 0.5, '1/ms')
@@ -416,9 +425,10 @@ class RateEstimationTestCase(unittest.TestCase):
         np.random.seed(19)
         duration_effective = self.st_dur - 2 * self.st_margin
         st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
-        spike_train = np.random.rand(st_num_spikes) * duration_effective + \
-            self.st_margin
-        spike_train.sort()
+        spike_train = sorted(
+            np.random.rand(st_num_spikes) *
+            duration_effective +
+            self.st_margin)
 
         # convert spike train into neo objects
         self.spike_train = neo.SpikeTrain(spike_train * pq.s,
@@ -609,9 +619,10 @@ class RateEstimationTestCase(unittest.TestCase):
         np.random.seed(19)
         duration_effective = self.st_dur - 2 * self.st_margin
         st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
-        spike_train2 = np.random.rand(st_num_spikes) * duration_effective + \
-            self.st_margin
-        spike_train2.sort()
+        spike_train2 = sorted(
+            np.random.rand(st_num_spikes) *
+            duration_effective +
+            self.st_margin)
         spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
                                       t_start=self.st_tr[0] * pq.s,
                                       t_stop=self.st_tr[1] * pq.s)
@@ -651,8 +662,8 @@ class RateEstimationTestCase(unittest.TestCase):
         # of sskernel retrieves the kernel bandwidth of an optimal Gaussian
         # kernel in terms of its standard deviation sigma, then uses this value
         # directly in the function for creating the Gaussian kernel
-        kernel_width_sigma = statistics.sskernel(
-            spiketrain.magnitude, tin=None, bootstrap=False)['optw']
+        kernel_width_sigma = statistics.optimal_kernel_bandwidth(
+            spiketrain.magnitude, times=None, bootstrap=False)['optw']
         kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
         result_target = statistics.instantaneous_rate(
             spiketrain, 10 * pq.ms, kernel=kernel)
@@ -686,19 +697,19 @@ class TimeHistogramTestCase(unittest.TestCase):
 
     def test_time_histogram(self):
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s)
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_binary(self):
         targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               binary=True)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_tstart_tstop(self):
         # Start, stop short range
         targ = np.array([2, 1])
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               t_start=5 * pq.s,
                                               t_stop=7 * pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
@@ -706,25 +717,25 @@ class TimeHistogramTestCase(unittest.TestCase):
         # Test without t_stop
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = statistics.time_histogram(self.spiketrains,
-                                              binsize=1 * pq.s,
+                                              bin_size=1 * pq.s,
                                               t_start=0 * pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
         # Test without t_start
         histogram = statistics.time_histogram(self.spiketrains,
-                                              binsize=1 * pq.s,
+                                              bin_size=1 * pq.s,
                                               t_stop=10 * pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_output(self):
         # Normalization mean
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               output='mean')
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0], dtype=float) / 2
         assert_array_equal(targ.reshape(targ.size, 1), histogram.magnitude)
 
         # Normalization rate
-        histogram = statistics.time_histogram(self.spiketrains, binsize=pq.s,
+        histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               output='rate')
         assert_array_equal(histogram.view(pq.Quantity),
                            targ.reshape(targ.size, 1) * 1 / pq.s)
@@ -732,7 +743,7 @@ class TimeHistogramTestCase(unittest.TestCase):
         # Normalization unspecified, raises error
         self.assertRaises(ValueError, statistics.time_histogram,
                           self.spiketrains,
-                          binsize=pq.s, output=' ')
+                          bin_size=pq.s, output=' ')
 
 
 class ComplexityPdfTestCase(unittest.TestCase):
@@ -755,7 +766,7 @@ class ComplexityPdfTestCase(unittest.TestCase):
     def test_complexity_pdf(self):
         targ = np.array([0.92, 0.01, 0.01, 0.06])
         complexity = statistics.complexity_pdf(self.spiketrains,
-                                               binsize=0.1 * pq.s)
+                                               bin_size=0.1 * pq.s)
         assert_array_equal(targ, complexity.magnitude[:, 0])
         self.assertEqual(1, complexity.magnitude[:, 0].sum())
         self.assertEqual(len(self.spiketrains) + 1, len(complexity))
