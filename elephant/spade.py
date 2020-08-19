@@ -1577,16 +1577,16 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     if alpha == 1:
         return []
 
-    if spectrum not in ['#', '3d#']:
+    if spectrum not in ('#', '3d#'):
         raise ValueError("spectrum must be either '#' or '3d#', "
                          "got {} instead".format(spectrum))
-    if report not in ['spectrum', 'significant', 'non_significant']:
+    if report not in ('spectrum', 'significant', 'non_significant'):
         raise ValueError("report must be either 'spectrum'," +
                          "  'significant' or 'non_significant'," +
                          "got {} instead".format(report))
-    if corr not in ['bonferroni', 'sidak', 'holm-sidak', 'holm',
+    if corr not in ('bonferroni', 'sidak', 'holm-sidak', 'holm',
                     'simes-hochberg', 'hommel', 'fdr_bh', 'fdr_by',
-                    'fdr_tsbh', 'fdr_tsbky', '', 'no']:
+                    'fdr_tsbh', 'fdr_tsbky', '', 'no'):
         raise ValueError("Parameter corr not recognized")
 
     pv_spec = np.array(pv_spec)

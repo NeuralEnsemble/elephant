@@ -1114,7 +1114,7 @@ def spiketrain_shifting(spiketrain, trial_length, dt, sep, n_surrogates=1):
 def surrogates(
         spiketrain, n_surrogates=1, method='dither_spike_train',
         dt=None, trial_length=None, sep=None, bin_size=None, decimals=None,
-        edges=True):
+        edges=True):  # TODO: maybe we can work here with kwargs?
     """
     Generates surrogates of a `spiketrain` by a desired generation
     method.
@@ -1151,13 +1151,19 @@ def surrogates(
         within a certain window (`jitter_spikes`), dt represents the size of
         that shift / window. For other methods, dt is ignored.
         Default: None.
-    trial_length: pq.Quantity
+    trial_length : pq.Quantity, optional
         For the method spiketrain shifting, it represents the duration of the
         trial length in time units.
-    sep: pq.Quantity
+        Default: None
+    sep : pq.Quantity, optional
         For the method spiketrain shifting, it represents the buffering
          in between trials in time units.
-    decimals : int or None, optional
+         Default: None
+    bin_size : pq.Quantity, optional
+        Only when using bin_shuffling:
+         bin size to discretize the spike trains
+         Default: None
+    decimals : int or None , optional
         Number of decimal points for every spike time in the surrogates
         If None, machine precision is used.
         Default: None.
