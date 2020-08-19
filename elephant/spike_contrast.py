@@ -148,7 +148,8 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
                          "spiketrain.")
     if not all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
         raise TypeError("Input spike trains must be a list of neo.SpikeTrain.")
-    if not is_time_quantity(t_start, t_stop, allow_none=True):
+    if not is_time_quantity(t_start, allow_none=True) \
+            or not is_time_quantity(t_stop, allow_none=True):
         raise TypeError("'t_start' and 't_stop' must be quantities.")
     if not isinstance(min_bin, pq.Quantity):
         raise TypeError("'min_bin' must be a quantity.")
