@@ -25,8 +25,11 @@ from __future__ import division, print_function, unicode_literals
 
 from collections import namedtuple
 
+import neo
 import numpy as np
+import quantities as pq
 
+from elephant.utils import is_time_quantity
 
 SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
     "contrast", "active_spiketrains", "synchrony"))
@@ -61,25 +64,30 @@ def _binning_half_overlap(spiketrain, edges):
     return histogram
 
 
-def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
-                   bin_shrink_factor=0.9, return_trace=False):
+def spike_contrast(spiketrains, t_start=None, t_stop=None,
+                   min_bin=0.01 * pq.ms, bin_shrink_factor=0.9,
+                   return_trace=False):
     """
     Calculates the synchrony of spike trains. The spike trains can have
     different lengths.
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain or list of np.ndarray
-        Contains all the spike trains.
-    t_start : float
-        The beginning of the spike train.
-    t_stop : float
-        The end of the spike train.
-    min_bin : float, optional
+    spiketrains : list of neo.SpikeTrain
+        A list of input spike trains to calculate the synchrony from.
+    t_start : pq.Quantity, optional
+        The beginning of the spike train. If None, it's taken as the minimum
+        value of `t_start`s of the input spike trains.
+        Default: None
+    t_stop : pq.Quantity, optional
+        The end of the spike train. If None, it's taken as the maximum value
+        of `t_stop` of the input spike trains.
+        Default: None
+    min_bin : pq.Quantity, optional
         Sets the minimum value for the `bin_min` that is calculated by the
         algorithm and defines the smallest bin size to compute the histogram
         of the input `spiketrains`.
-        Default: 0.01
+        Default: 0.01 ms
     bin_shrink_factor : float, optional
         A multiplier to shrink the bin size on each iteration. The value must
         be in range `(0, 1)`.
@@ -87,8 +95,16 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
     return_trace : bool, optional
         If set to True, returns a history of spike-contrast synchrony, computed
         for a range of different bin sizes, alongside with the maximum value of
-        the synchrony. A trace is stored in `SpikeContrastTrace` namedtuple
-        with the following attributes:
+        the synchrony.
+        Default: False
+
+    Returns
+    -------
+    synchrony : float
+        Returns the synchrony of the input spike trains.
+    spike_contrast_trace : namedtuple
+        If `return_trace` is set to True, a `SpikeContrastTrace` namedtuple is
+        returned with the following attributes:
           `.contrast` - the average sum of differences of the number of spikes
           in subsuequent bins;
 
@@ -98,12 +114,18 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
 
           `.synchrony` - the product of `contrast` and `active_spiketrains`.
 
-        Default: False
+    Raises
+    ------
+    ValueError
+        If `bin_shrink_factor` is not in (0, 1) range.
 
-    Returns
-    -------
-    synchrony : float
-        Returns the synchrony of the input spike trains.
+        If the input spike trains constist of a single spiketrain.
+
+        If all input spike trains contain no more than 1 spike.
+    TypeError
+        If the input spike trains is not a list of neo.SpikeTrain objects.
+
+        If `t_start`, `t_stop`, or `min_bin` are not quantities.
 
     Examples
     --------
@@ -111,16 +133,38 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.spike_contrast import spike_contrast
     >>> spiketrain_1 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_start=5000*pq.ms, t_stop=10000*pq.ms, as_array=True)
-    >>> spiketrain_2 = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms, refractory_period=3*pq.ms, as_array=True)
-    >>> spike_contrast([spiketrain_1, spiketrain_2], t_start=0, t_stop=10000)
-    0.0
+    ...     t_stop=1000*pq.ms)
+    >>> spiketrain_2 = homogeneous_poisson_process(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms)
+    >>> spike_contrast([spiketrain_1, spiketrain_2])
+    0.4192546583850932
 
     """
     if not 0. < bin_shrink_factor < 1.:
         raise ValueError("'bin_shrink_factor' ({}) must be in range (0, 1)."
                          .format(bin_shrink_factor))
+    if not len(spiketrains) > 1:
+        raise ValueError("Spike contrast measure requires more than 1 input "
+                         "spiketrain.")
+    if not all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
+        raise TypeError("Input spike trains must be a list of neo.SpikeTrain.")
+    if not is_time_quantity(t_start, t_stop, allow_none=True):
+        raise TypeError("'t_start' and 't_stop' must be quantities.")
+    if not isinstance(min_bin, pq.Quantity):
+        raise TypeError("'min_bin' must be a quantity.")
+
+    if t_start is None:
+        t_start = min(st.t_start for st in spiketrains)
+    if t_stop is None:
+        t_stop = max(st.t_stop for st in spiketrains)
+    spiketrains = [st.time_slice(t_start=t_start, t_stop=t_stop)
+                   for st in spiketrains]
+
+    # convert everything to seconds
+    spiketrains = [st.simplified.magnitude for st in spiketrains]
+    t_start = t_start.simplified.item()
+    t_stop = t_stop.simplified.item()
+    min_bin = min_bin.simplified.item()
 
     n_spiketrains = len(spiketrains)
     n_spikes_total = sum(map(len, spiketrains))
@@ -129,7 +173,7 @@ def spike_contrast(spiketrains, t_start, t_stop, min_bin=0.01,
     bin_max = duration / 2
 
     try:
-        isi_min = min(np.min(np.diff(st)) for st in spiketrains if len(st) > 1)
+        isi_min = min(np.diff(st).min() for st in spiketrains if len(st) > 1)
     except TypeError:
         raise ValueError("All input spiketrains contain no more than 1 spike.")
     bin_min = max(isi_min / 2, min_bin)

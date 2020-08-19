@@ -70,11 +70,11 @@ def _rename_kwargs(func_name, kwargs, aliases):
             kwargs[new] = kwargs.pop(old)
 
 
-def is_time_quantity(x, allow_none=False):
+def is_time_quantity(*values, allow_none=False):
     """
     Parameters
     ----------
-    x : array-like
+    values : array-like
         A scalar or array-like to check for being a Quantity with time units.
     allow_none : bool
         Allow `x` to be None or not.
@@ -86,8 +86,11 @@ def is_time_quantity(x, allow_none=False):
         If the input is None and `allow_none` is set to True, returns True.
 
     """
-    if x is None and allow_none:
-        return True
-    if not isinstance(x, pq.Quantity):
-        return False
-    return x.dimensionality.simplified == pq.Quantity(1, "s").dimensionality
+    seconds_dim = pq.Quantity(1, "s").dimensionality
+    time_quantity_checked = True
+    for element in values:
+        if element is None and allow_none:
+            continue
+        time_quantity_checked &= isinstance(element, pq.Quantity) \
+            and element.dimensionality.simplified == seconds_dim
+    return time_quantity_checked
