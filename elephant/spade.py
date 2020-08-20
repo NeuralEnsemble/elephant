@@ -503,8 +503,8 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     """
     Find pattern candidates extracting all the concepts of the context, formed
     by the objects defined as all windows of length `winlen*bin_size` slided
-    along the `binned_spiketrains` and the attributes as the spikes occurring
-    in each of the windows discretized. Hence, the output are all the repeated
+    along the discretized `spiketrains` and the attributes as the spikes
+    occurring in each of the windows. Hence, the output are all the repeated
     sequences of spikes with maximal length `winlen`, which are not trivially
     explained by the same number of occurrences of a superset of spikes.
 
