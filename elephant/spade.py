@@ -1346,9 +1346,9 @@ def _generate_binned_surrogates(
                  for spiketrain in spiketrains]
         elif surr_method == 'shift_spiketrain':
             surrs = \
-                [surr.spiketrain_shifting(spiketrain, trial_length=500 * pq.ms,
-                                          dt=dither, sep=2 * winlen * bin_size,
-                                          n_surrogates=1)[0]
+                [surr.trial_shifting(spiketrain, trial_length=500 * pq.ms,
+                                     dt=dither, separation=2 * winlen * bin_size,
+                                     n_surrogates=1)[0]
                  for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
