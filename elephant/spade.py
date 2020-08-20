@@ -84,7 +84,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    import fim
+    from elephant.spade_src import fim
 
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
