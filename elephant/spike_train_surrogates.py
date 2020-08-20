@@ -62,7 +62,7 @@ from elephant.utils import deprecated_alias
 # List of all available surrogate methods
 SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
-                'dither_spikes_with_refractory_period', 'shift_spiketrain',
+                'dither_spikes_with_refractory_period', 'trial_shifting',
                 'bin_shuffling', 'isi_dithering']
 
 
