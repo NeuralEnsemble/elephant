@@ -293,11 +293,9 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     time_mining = time.time()
     if rank == 0 or compute_stability:
-        binned_spiketrains = conv.BinnedSpikeTrain(
-            spiketrains, bin_size=bin_size, tolerance=None)
         # Mine the spiketrains for extraction of concepts
         concepts, rel_matrix = concepts_mining(
-            binned_spiketrains, winlen, min_spikes=min_spikes,
+            spiketrains, bin_size, winlen, min_spikes=min_spikes,
             min_occ=min_occ, max_spikes=max_spikes, max_occ=max_occ,
             min_neu=min_neu, report='a')
         time_mining = time.time() - time_mining
@@ -498,7 +496,7 @@ def _check_input(
 
 
 @deprecated_alias(binsize='bin_size')
-def concepts_mining(binned_spiketrains, winlen, min_spikes=2, min_occ=2,
+def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
                     max_spikes=None, max_occ=None, min_neu=1, report='a'):
     """
     Find pattern candidates extracting all the concepts of the context, formed
@@ -510,8 +508,11 @@ def concepts_mining(binned_spiketrains, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    binned_spiketrains: conv.BinnedSpikeTrain
+    spiketrains: list of neo.SpikeTrain or conv.BinnedSpikeTrain
+        Either list of the spiketrains to analyze or
         BinningSpikeTrain object containing the binned spiketrains to analyze
+    bin_size: pq.Quantity
+        The time precision used to discretize the `spiketrains` (clipping).
     winlen: int
         The size (number of bins) of the sliding window used for the analysis.
         The maximal length of a pattern (delay between first and last spike) is
@@ -578,15 +579,21 @@ def concepts_mining(binned_spiketrains, winlen, min_spikes=2, min_occ=2,
         position for the first neuron, the entry `[0,winlen]` to the first
         bin of the first window position for the second neuron.
     """
-    if not isinstance(binned_spiketrains, conv.BinnedSpikeTrain):
-        raise TypeError(
-            'binned_spiketrains must be of type conv.BinnedSpikeTrain')
     if report not in ('a', '#', '3d#'):
         raise ValueError(
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
+    # if spiketrains is list of neo.SpikeTrain convert to conv.BinnedSpikeTrain
+    if isinstance(spiketrains, list) and \
+            isinstance(spiketrains[0], neo.SpikeTrain):
+        spiketrains = conv.BinnedSpikeTrain(
+            spiketrains, bin_size=bin_size, tolerance=None)
+    if not isinstance(spiketrains, conv.BinnedSpikeTrain):
+        raise TypeError(
+            'spiketrains must be either a list of neo.SpikeTrain or '
+            'a conv.BinnedSpikeTrain object')
     # Clipping the spiketrains and (binary matrix)
-    binary_matrix = binned_spiketrains.to_sparse_bool_array().tocoo()
+    binary_matrix = spiketrains.to_sparse_bool_array().tocoo()
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)
@@ -1272,7 +1279,7 @@ def pvalue_spectrum(
 
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
-            binned_surrogates, winlen, min_spikes=min_spikes,
+            binned_surrogates, bin_size, winlen, min_spikes=min_spikes,
             max_spikes=max_spikes, min_occ=min_occ, max_occ=max_occ,
             min_neu=min_neu, report=spectrum)[0]
         # The last entry of the signature is the number of times the
@@ -1310,15 +1317,16 @@ def _generate_binned_surrogates(
                                bin_size.rescale(pq.ms).magnitude)
     elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
         isi_dithering = surr_method == 'isi_dithering'
-        joint_isi_instances = [surr.JointISI(
-            spiketrain, dither=dither, isi_dithering=isi_dithering)
-            for spiketrain in spiketrains]
+        joint_isi_instances = \
+            [surr.JointISI(spiketrain, dither=dither,
+                           isi_dithering=isi_dithering)
+             for spiketrain in spiketrains]
     for surr_id in range(len_partition + add_remainder):
         if surr_method == 'bin_shuffling':
-            binned_surrogates = [
-                surr.bin_shuffling(
-                    binned_spiketrain, max_displacement=max_displacement)[0]
-                for binned_spiketrain in binned_spiketrains]
+            binned_surrogates = \
+                [surr.bin_shuffling(binned_spiketrain,
+                                    max_displacement=max_displacement)[0]
+                 for binned_spiketrain in binned_spiketrains]
             binned_surrogates = conv.BinnedSpikeTrain(
                 np.array([binned_surrogate.to_bool_array()
                           for binned_surrogate in binned_surrogates]),
@@ -1326,21 +1334,22 @@ def _generate_binned_surrogates(
                 t_start=spiketrains[0].t_start,
                 t_stop=spiketrains[0].t_stop)
         elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
-            surrs = [instance.dithering()[0] for
-                     instance in joint_isi_instances]
+            surrs = [instance.dithering()[0]
+                     for instance in joint_isi_instances]
         elif surr_method == 'dither_spikes_with_refractory_period':
             # The initial refractory period is set to the bin size in order to
             # prevent that spikes fall into the same bin, if the spike trains
             # are sparse (min(ISI)>bin size).
-            surrs = [surr.dither_spikes(
-                spiketrain, dither=dither, n_surrogates=1,
-                refractory_period=bin_size)[0]
-                for spiketrain in spiketrains]
+            surrs = \
+                [surr.dither_spikes(spiketrain, dither=dither, n_surrogates=1,
+                                    refractory_period=bin_size)[0]
+                 for spiketrain in spiketrains]
         elif surr_method == 'shift_spiketrain':
-            surrs = [surr.spiketrain_shifting(
-                spiketrain, trial_length=500 * pq.ms, dt=dither,
-                sep=2 * winlen * bin_size, n_surrogates=1)[0]
-                for spiketrain in spiketrains]
+            surrs = \
+                [surr.spiketrain_shifting(spiketrain, trial_length=500 * pq.ms,
+                                          dt=dither, sep=2 * winlen * bin_size,
+                                          n_surrogates=1)[0]
+                 for spiketrain in spiketrains]
         else:
             surrs = [surr.surrogates(
                 spiketrain, n_surrogates=1, method=surr_method,

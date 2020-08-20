@@ -144,9 +144,7 @@ class SpadeTestCase(unittest.TestCase):
     # Testing spectrum cpp
     def test_spade_spectrum_cpp(self):
         # Computing Spectrum
-        binned_spiketrains = conv.BinnedSpikeTrain(
-            self.cpp, self.bin_size, tolerance=None)
-        spectrum_cpp = spade.concepts_mining(binned_spiketrains,
+        spectrum_cpp = spade.concepts_mining(self.cpp, self.bin_size,
                                              1, report='#')[0]
         # Check spectrum
         assert_array_equal(
@@ -410,15 +408,11 @@ class SpadeTestCase(unittest.TestCase):
     # Test computation spectrum
     def test_spectrum(self):
         # test 2d spectrum
-        binned_spiketrains = conv.BinnedSpikeTrain(
-            self.patt1, self.bin_size, tolerance=None)
-        spectrum = spade.concepts_mining(binned_spiketrains,
+        spectrum = spade.concepts_mining(self.patt1, self.bin_size,
                                          self.winlen, report='#')[0]
         # test 3d spectrum
-        binned_spiketrains = conv.BinnedSpikeTrain(
-            self.patt1, self.bin_size, tolerance=None)
         assert_array_equal(spectrum, [[len(self.lags1) + 1, self.n_occ1, 1]])
-        spectrum_3d = spade.concepts_mining(binned_spiketrains,
+        spectrum_3d = spade.concepts_mining(self.patt1, self.bin_size,
                                             self.winlen, report='3d#')[0]
         assert_array_equal(spectrum_3d, [
             [len(self.lags1) + 1, self.n_occ1, max(self.lags1), 1]])
