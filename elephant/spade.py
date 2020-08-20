@@ -84,7 +84,7 @@ except ImportError:  # pragma: no cover
     HAVE_MPI = False
 
 try:
-    from elephant.spade_src import fim
+    import fim
 
     HAVE_FIM = True
 except ImportError:  # pragma: no cover
@@ -96,7 +96,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
           max_spikes=None, max_occ=None, min_neu=1, approx_stab_pars=None,
           n_surr=0, dither=15 * pq.ms, spectrum='#',
           alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
-          psr_param=None, output_format='patterns'):
+          psr_param=None, output_format='patterns', **surr_kwargs):
     r"""
     Perform the SPADE [1-3] analysis for the parallel input `spiketrains`.
     They are discretized with a temporal resolution equal to
@@ -210,6 +210,8 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     output_format: {'concepts', 'patterns'}
         Distinguish the format of the output (see Returns).
         Default: 'patterns'
+    **surr_kwargs
+        Keyword arguments that are passed to the surrogate methods.
 
     Returns
     -------
@@ -328,7 +330,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             spiketrains, bin_size, winlen, dither=dither, n_surr=n_surr,
             min_spikes=min_spikes, min_occ=min_occ, max_spikes=max_spikes,
             max_occ=max_occ, min_neu=min_neu, spectrum=spectrum,
-            surr_method=surr_method)
+            surr_method=surr_method, **surr_kwargs)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
         print("Time for pvalue spectrum computation: {}".format(
             time_pvalue_spectrum))
@@ -1158,7 +1160,8 @@ def pvalue_spectrum(
         max_occ=None,
         min_neu=1,
         spectrum='#',
-        surr_method='dither_spikes'):
+        surr_method='dither_spikes',
+        **surr_kwargs):
     """
     Compute the p-value spectrum of pattern signatures extracted from
     surrogates of parallel spike trains, under the null hypothesis of
@@ -1224,6 +1227,8 @@ def pvalue_spectrum(
         method defined in
         :func:`elephant.spike_train_surrogates.dither_spikes`.
         Default: 'dither_spikes'
+    **surr_kwargs
+        Keyword arguments that are passed to the surrogate methods.
 
     Returns
     -------
@@ -1274,8 +1279,8 @@ def pvalue_spectrum(
                             dtype=np.uint16)
 
     for surr_id, binned_surrogates in _generate_binned_surrogates(
-            spiketrains, bin_size, winlen, dither, surr_method, len_partition,
-            add_remainder):
+            spiketrains, bin_size, dither, surr_method, len_partition,
+            add_remainder, **surr_kwargs):
 
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
@@ -1306,8 +1311,8 @@ def pvalue_spectrum(
 
 
 def _generate_binned_surrogates(
-        spiketrains, bin_size, winlen, dither, surr_method, len_partition,
-        add_remainder):
+        spiketrains, bin_size, dither, surr_method, len_partition,
+        add_remainder, **surr_kwargs):
     if surr_method == 'bin_shuffling':
         binned_spiketrains = [
             conv.BinnedSpikeTrain(
@@ -1319,13 +1324,14 @@ def _generate_binned_surrogates(
         isi_dithering = surr_method == 'isi_dithering'
         joint_isi_instances = \
             [surr.JointISI(spiketrain, dither=dither,
-                           isi_dithering=isi_dithering)
+                           isi_dithering=isi_dithering, **surr_kwargs)
              for spiketrain in spiketrains]
     for surr_id in range(len_partition + add_remainder):
         if surr_method == 'bin_shuffling':
             binned_surrogates = \
                 [surr.bin_shuffling(binned_spiketrain,
-                                    max_displacement=max_displacement)[0]
+                                    max_displacement=max_displacement,
+                                    **surr_kwargs)[0]
                  for binned_spiketrain in binned_spiketrains]
             binned_surrogates = conv.BinnedSpikeTrain(
                 np.array([binned_surrogate.to_bool_array()
@@ -1341,19 +1347,16 @@ def _generate_binned_surrogates(
             # prevent that spikes fall into the same bin, if the spike trains
             # are sparse (min(ISI)>bin size).
             surrs = \
-                [surr.dither_spikes(spiketrain, dither=dither, n_surrogates=1,
-                                    refractory_period=bin_size)[0]
-                 for spiketrain in spiketrains]
-        elif surr_method == 'shift_spiketrain':
-            surrs = \
-                [surr.trial_shifting(spiketrain, trial_length=500 * pq.ms,
-                                     dt=dither, separation=2 * winlen * bin_size,
-                                     n_surrogates=1)[0]
+                [surr.dither_spikes(
+                    spiketrain, dither=dither, n_surrogates=1,
+                    refractory_period=bin_size, **surr_kwargs)[0]
                  for spiketrain in spiketrains]
         else:
-            surrs = [surr.surrogates(
-                spiketrain, n_surrogates=1, method=surr_method,
-                dt=dither)[0] for spiketrain in spiketrains]
+            surrs = \
+                [surr.surrogates(
+                    spiketrain, n_surrogates=1, method=surr_method,
+                    dt=dither, **surr_kwargs)[0]
+                 for spiketrain in spiketrains]
 
         if not surr_method == 'bin_shuffling':
             binned_surrogates = conv.BinnedSpikeTrain(
