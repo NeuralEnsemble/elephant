@@ -48,7 +48,6 @@ from __future__ import division, print_function, unicode_literals
 
 import random
 import warnings
-import copy
 
 import neo
 import numpy as np
@@ -60,10 +59,10 @@ import elephant.conversion as conv
 from elephant.utils import deprecated_alias
 
 # List of all available surrogate methods
-SURR_METHODS = ['dither_spike_train', 'dither_spikes', 'jitter_spikes',
+SURR_METHODS = ('dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
                 'dither_spikes_with_refractory_period', 'trial_shifting',
-                'bin_shuffling', 'isi_dithering']
+                'bin_shuffling', 'isi_dithering')
 
 
 def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
@@ -1151,6 +1150,8 @@ def surrogates(
         * 'joint_isi_dithering': see surrogates.joint_isi_dithering()
         * 'shift_spiketrain': see `surrogates.trial_shifting`
         * 'bin_shuffling': see surrogates.bin_shuffling()
+            If used in this module, specify the key-word argument `bin_size`
+            of type pq.Quantity
         Default: 'dither_spike_train'
     dt : pq.Quantity, optional
         For methods shifting spike times or spike trains randomly around
@@ -1177,6 +1178,7 @@ def surrogates(
     surrogate_types = {
         'dither_spike_train': dither_spike_train,
         'dither_spikes': dither_spikes,
+        'dither_spikes_with_refractory_period': dither_spikes,
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
@@ -1207,7 +1209,7 @@ def surrogates(
         return method(spiketrain, dt, n_surrogates=n_surrogates)
     if method is trial_shifting:
         return method(
-            spiketrain, dt=dt, n_surrogates=n_surrogates, **kwargs)
+            spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
         bin_size = kwargs['bin_size']
         binned_spiketrain = conv.BinnedSpikeTrain(
@@ -1218,7 +1220,7 @@ def surrogates(
         binned_surrogates = method(
             binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
         surrogate_spiketrains = [neo.SpikeTrain(
-            bin_grid[binned_surrogate.astype(bool)]
+            bin_grid[binned_surrogate.to_bool_array()[0]]
             + spiketrain.t_start.magnitude,
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop,

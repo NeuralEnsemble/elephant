@@ -374,44 +374,59 @@ class SurrogatesTestCase(unittest.TestCase):
 
     def test_surr_method(self):
 
+        surr_methods = \
+            ('dither_spike_train', 'dither_spikes', 'jitter_spikes',
+             'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',
+             'dither_spikes_with_refractory_period', 'trial_shifting',
+             'bin_shuffling', 'isi_dithering')
+
+        surr_method_kwargs = \
+            {'dither_spikes': {},
+             'dither_spikes_with_refractory_period': {'refractory_period':
+                                                      3*pq.ms},
+             'randomise_spikes': {},
+             'shuffle_isis': {},
+             'dither_spike_train': {},
+             'jitter_spikes': {},
+             'bin_shuffling': {'bin_size': 3*pq.ms},
+             'joint_isi_dithering': {},
+             'isi_dithering': {},
+             'trial_shifting': {'trial_length': 200*pq.ms,
+                                'trial_separation': 50*pq.ms}}
+
+        dt = 15 * pq.ms
         spiketrain = neo.SpikeTrain(
             [90, 150, 180, 350] * pq.ms, t_stop=500 * pq.ms)
-        n_surrogates = 2
-        surrogate_trains = surr.surrogates(
-            spiketrain,
-            dt=3 * pq.ms,
-            n_surrogates=n_surrogates,
-            method='shuffle_isis')
-        self.assertTrue(len(surrogate_trains) == n_surrogates)
+        n_surrogates = 3
+        for method in surr_methods:
+            surrogates = surr.surrogates(
+                spiketrain,
+                dt=dt,
+                n_surrogates=n_surrogates,
+                method=method,
+                **surr_method_kwargs[method]
+            )
+            self.assertTrue(len(surrogates) == n_surrogates)
+
+            for surrogate_train in surrogates:
+                self.assertTrue(
+                    isinstance(surrogates[0], neo.SpikeTrain))
+                self.assertEqual(surrogate_train.units, spiketrain.units)
+                self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
+                self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
+                self.assertEqual(len(surrogate_train), len(spiketrain))
+            self.assertTrue(len(surrogates) == n_surrogates)
 
         self.assertRaises(ValueError, surr.surrogates, spiketrain,
                           n_surrogates=1,
                           method='spike_shifting',
                           dt=None, decimals=None, edges=True)
 
-        n_surrogates2 = 4
-        surrogate_trains2 = surr.surrogates(
-            spiketrain,
-            dt=5 * pq.ms,
-            n_surrogates=n_surrogates2,
-            method='dither_spike_train',
-            edges=True)
+        self.assertRaises(ValueError, surr.surrogates, spiketrain,
+                          method='dither_spikes', dt=None)
 
-        for surrogate_train in surrogate_trains:
-            self.assertTrue(isinstance(surrogate_trains[0], neo.SpikeTrain))
-            self.assertEqual(surrogate_train.units, spiketrain.units)
-            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
-            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
-            self.assertEqual(len(surrogate_train), len(spiketrain))
-        self.assertTrue(len(surrogate_trains) == n_surrogates)
-
-        for surrogate_train in surrogate_trains2:
-            self.assertTrue(isinstance(surrogate_trains2[0], neo.SpikeTrain))
-            self.assertEqual(surrogate_train.units, spiketrain.units)
-            self.assertEqual(surrogate_train.t_start, spiketrain.t_start)
-            self.assertEqual(surrogate_train.t_stop, spiketrain.t_stop)
-            self.assertEqual(len(surrogate_train), len(spiketrain))
-        self.assertTrue(len(surrogate_trains2) == n_surrogates2)
+        self.assertRaises(ValueError, surr.surrogates, spiketrain.magnitude,
+                          method='dither_spikes', dt=10*pq.ms)
 
     def test_joint_isi_dithering_format(self):
 
@@ -524,23 +539,24 @@ class SurrogatesTestCase(unittest.TestCase):
         binned_spiketrain = conv.BinnedSpikeTrain(spiketrain, self.bin_size)
         n_surrogates = 2
 
-        surrogate_trains = surr.bin_shuffling(
-            binned_spiketrain, max_displacement=self.max_displacement,
-            n_surrogates=n_surrogates)
+        for sliding in (True, False):
+            surrogate_trains = surr.bin_shuffling(
+                binned_spiketrain, max_displacement=self.max_displacement,
+                n_surrogates=n_surrogates, sliding=sliding)
 
-        self.assertIsInstance(surrogate_trains, list)
-        self.assertEqual(len(surrogate_trains), n_surrogates)
+            self.assertIsInstance(surrogate_trains, list)
+            self.assertEqual(len(surrogate_trains), n_surrogates)
 
-        self.assertIsInstance(surrogate_trains[0], conv.BinnedSpikeTrain)
-        for surrogate_train in surrogate_trains:
-            self.assertEqual(surrogate_train.t_start,
-                             binned_spiketrain.t_start)
-            self.assertEqual(surrogate_train.t_stop,
-                             binned_spiketrain.t_stop)
-            self.assertEqual(surrogate_train.n_bins,
-                             binned_spiketrain.n_bins)
-            self.assertEqual(surrogate_train.bin_size,
-                             binned_spiketrain.bin_size)
+            self.assertIsInstance(surrogate_trains[0], conv.BinnedSpikeTrain)
+            for surrogate_train in surrogate_trains:
+                self.assertEqual(surrogate_train.t_start,
+                                 binned_spiketrain.t_start)
+                self.assertEqual(surrogate_train.t_stop,
+                                 binned_spiketrain.t_stop)
+                self.assertEqual(surrogate_train.n_bins,
+                                 binned_spiketrain.n_bins)
+                self.assertEqual(surrogate_train.bin_size,
+                                 binned_spiketrain.bin_size)
 
     def test_bin_shuffling_empty_train(self):
 
