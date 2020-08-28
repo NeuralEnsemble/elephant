@@ -553,7 +553,6 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
             for s in surr]
 
 
-@deprecated_alias(binsize='bin_size', n='n_surrogates')
 def bin_shuffling(
         binned_spiketrain, max_displacement, n_surrogates=1, sliding=False):
     """
@@ -598,7 +597,6 @@ def bin_shuffling(
         else:
             windows = st_length // displacement_window
             windows_remainder = st_length % displacement_window
-            # TODO: reshape the matrix and avoid for loop
             for window_position in range(windows):
                 # shuffling the binned spike train within the window
                 np.random.shuffle(
@@ -1053,7 +1051,6 @@ class JointISI(object):
         return step
 
 
-@deprecated_alias(n='n_surrogates')
 def trial_shifting(
         spiketrain, dither, trial_length, trial_separation, n_surrogates=1):
     """

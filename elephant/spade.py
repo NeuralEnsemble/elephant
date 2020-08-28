@@ -1272,8 +1272,9 @@ def pvalue_spectrum(
                             dtype=np.uint16)
 
     for surr_id, binned_surrogates in _generate_binned_surrogates(
-            spiketrains, bin_size, dither, surr_method, len_partition,
-            add_remainder, **surr_kwargs):
+            spiketrains, bin_size=bin_size, dither=dither,
+            surr_method=surr_method, n_surrogates=len_partition+add_remainder,
+            **surr_kwargs):
 
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
@@ -1304,8 +1305,7 @@ def pvalue_spectrum(
 
 
 def _generate_binned_surrogates(
-        spiketrains, bin_size, dither, surr_method, len_partition,
-        add_remainder, **surr_kwargs):
+        spiketrains, bin_size, dither, surr_method, n_surrogates, **surr_kwargs):
     if surr_method == 'bin_shuffling':
         binned_spiketrains = [
             conv.BinnedSpikeTrain(
@@ -1319,7 +1319,7 @@ def _generate_binned_surrogates(
             [surr.JointISI(spiketrain, dither=dither,
                            isi_dithering=isi_dithering, **surr_kwargs)
              for spiketrain in spiketrains]
-    for surr_id in range(len_partition + add_remainder):
+    for surr_id in range(n_surrogates):
         if surr_method == 'bin_shuffling':
             binned_surrogates = \
                 [surr.bin_shuffling(binned_spiketrain,
