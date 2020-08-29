@@ -1352,7 +1352,7 @@ def _generate_binned_surrogates(
                 [surr.trial_shifting(spiketrain, trial_length=500 * pq.ms,
                                      dither=dither,
                                      trial_separation=2 * winlen * bin_size,
-                                     n=1)[0]
+                                     n_surrogates=1)[0]
                 for spiketrain in spiketrains]
         else:
             surrs = \
