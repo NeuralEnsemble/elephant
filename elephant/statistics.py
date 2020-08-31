@@ -77,6 +77,20 @@ from elephant.utils import deprecated_alias
 
 from elephant.utils import is_time_quantity
 
+__all__ = [
+    "isi",
+    "mean_firing_rate",
+    "fanofactor",
+    "lv",
+    "cv",
+    "cv2",
+    "instantaneous_rate",
+    "time_histogram",
+    "complexity_pdf",
+    "fftkernel",
+    "optimal_kernel_bandwidth"
+]
+
 cv = scipy.stats.variation
 
 

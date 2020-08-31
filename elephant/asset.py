@@ -125,6 +125,17 @@ except ImportError:
     rank = 0
 
 
+__all__ = [
+    "ASSET",
+    "synchronous_events_intersection",
+    "synchronous_events_difference",
+    "synchronous_events_identical",
+    "synchronous_events_no_overlap",
+    "synchronous_events_contained_in",
+    "synchronous_events_contains_all",
+    "synchronous_events_overlap"
+]
+
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================

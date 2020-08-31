@@ -16,6 +16,11 @@ from neo.core import AnalogSignal, SpikeTrain
 import warnings
 from .conversion import BinnedSpikeTrain
 
+__all__ = [
+    "spike_triggered_average",
+    "spike_field_coherence"
+]
+
 
 def spike_triggered_average(signal, spiketrains, window):
     """

@@ -22,6 +22,17 @@ import quantities as pq
 from elephant.spike_train_surrogates import dither_spike_train
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "spike_extraction",
+    "threshold_detection",
+    "peak_detection",
+    "homogeneous_poisson_process",
+    "inhomogeneous_poisson_process",
+    "homogeneous_gamma_process",
+    "single_interaction_process",
+    "compound_poisson_process"
+]
+
 
 @deprecated_alias(extr_interval='interval')
 def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',

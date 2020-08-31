@@ -29,6 +29,10 @@ import warnings
 
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "cubic"
+]
+
 
 # Based on matlab code by Benjamin Staude
 # Adaptation to python by Pietro Quaglio and Emiliano Torre

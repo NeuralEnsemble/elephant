@@ -53,6 +53,11 @@ import quantities as pq
 
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "multiple_filter_test",
+    "empirical_parameters"
+]
+
 
 @deprecated_alias(dt='time_step')
 def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
