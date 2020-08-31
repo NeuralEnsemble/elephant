@@ -484,9 +484,9 @@ def _check_input(
 
     # Check psr_param
     if psr_param is not None:
-        if not (isinstance(psr_param, list) or isinstance(psr_param, tuple)):
+        if not isinstance(psr_param, (list, tuple)):
             raise TypeError('psr_param must be None or a list or tuple of '
-                             'integer')
+                            'integer')
         if not all(isinstance(param, int) for param in psr_param):
             raise TypeError('elements of psr_param must be integers')
 
@@ -1305,7 +1305,8 @@ def pvalue_spectrum(
 
 
 def _generate_binned_surrogates(
-        spiketrains, bin_size, dither, surr_method, n_surrogates, **surr_kwargs):
+        spiketrains, bin_size, dither, surr_method, n_surrogates,
+        **surr_kwargs):
     if surr_method == 'bin_shuffling':
         binned_spiketrains = [
             conv.BinnedSpikeTrain(
@@ -1353,7 +1354,7 @@ def _generate_binned_surrogates(
                     dt=dither, **surr_kwargs)[0]
                  for spiketrain in spiketrains]
 
-        if not surr_method == 'bin_shuffling':
+        if surr_method != 'bin_shuffling':
             binned_surrogates = conv.BinnedSpikeTrain(
                 surrs, bin_size=bin_size, tolerance=None)
         yield surr_id, binned_surrogates
