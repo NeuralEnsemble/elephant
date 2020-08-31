@@ -15,13 +15,14 @@ import warnings
 
 import neo
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_allclose
 from quantities import V, s, ms, second, Hz, kHz, mV, dimensionless
 from scipy.stats import expon
 from scipy.stats import kstest, poisson
 
 import elephant.spike_train_generation as stgen
-from elephant.statistics import isi
+from elephant.statistics import isi, instantaneous_rate
+from elephant import kernels
 
 python_version_major = sys.version_info.major
 
@@ -355,6 +356,45 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
             ValueError, stgen.inhomogeneous_gamma_process,
             rate=neo.AnalogSignal([] * Hz, sampling_period=0.001 * s),
             shape_factor=shape_factor)
+
+    def test_recovered_firing_rate_profile(self):
+        np.random.seed(54)
+        t_start = 0 * second
+        t_stop = 4 * np.pi * second  # 2 full periods
+        sampling_period = 0.001 * second
+
+        # an arbitrary rate profile
+        profile = 0.5 * (1 + np.sin(np.arange(t_start.item(), t_stop.item(),
+                                              sampling_period.item())))
+
+        n_trials = 200
+        rtol = 0.07  # 7% of deviation allowed
+        kernel = kernels.RectangularKernel(sigma=0.25 * second)
+        for rate in (10 * Hz, 100 * Hz):
+            rate_profile = neo.AnalogSignal(rate * profile,
+                                            sampling_period=sampling_period)
+            # the recovered firing rate profile should not depend on the
+            # shape factor
+            for shape_factor in [1, 2, 10]:
+                rate_recovered = []
+                for trial in range(n_trials):
+                    spiketrain = stgen.inhomogeneous_gamma_process(
+                        rate_profile,
+                        shape_factor=shape_factor)
+                    rate_trial = instantaneous_rate(
+                        spiketrain,
+                        sampling_period=sampling_period,
+                        kernel=kernel,
+                        t_start=t_start,
+                        t_stop=t_stop, trim=True)
+                    rate_trial = rate_trial.rescale(rate_profile.units)
+                    rate_recovered.append(rate_trial.magnitude)
+                rate_recovered = np.hstack(rate_recovered).mean(axis=1)
+                trim = (rate_profile.shape[0] - rate_recovered.shape[0]) // 2
+                rate_profile_valid = rate_profile.magnitude.squeeze()
+                rate_profile_valid = rate_profile_valid[trim: -trim]
+                assert_allclose(rate_recovered, rate_profile_valid,
+                                rtol=0, atol=rtol * rate.item())
 
 
 class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
