@@ -734,7 +734,8 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     return neo.SpikeTrain(spiketrain, units=pq.s, t_stop=rate.t_stop)
 
 
-def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
+@deprecated_alias(n='n_spiketrains')
+def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     """
     Generates one or more independent Poisson spike trains.
 
@@ -752,7 +753,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
     t_start : pq.Quantity, optional
         Single common start time of each output SpikeTrain. Must be < t_stop.
         Default: 0 * pq.ms
-    n: int, optional
+    n_spiketrains: int, optional
         If rate is a single pq.Quantity value, n specifies the number of
         SpikeTrains to be generated. If rate is an array, n is ignored and the
         number of SpikeTrains is equal to len(rate).
@@ -778,18 +779,19 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
     # Check t_start < t_stop and create their strip dimensions
     if not t_start < t_stop:
         raise ValueError(
-            't_start (=%s) must be < t_stop (=%s)' % (t_start, t_stop))
+            't_start (={}) must be < t_stop (={})'.format(t_start, t_stop))
 
     # Set number n of output spike trains (specified or set to len(rate))
-    if not (isinstance(n, int) and n > 0):
-        raise ValueError('n (=%s) must be a positive integer' % str(n))
+    if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
+        raise ValueError(
+            'n (={}) must be a positive integer'.format(str(n_spiketrains)))
     rate_dl = rate.simplified.magnitude.flatten()
 
     # Check rate input parameter
     if len(rate_dl) == 1:
         if rate_dl < 0:
-            raise ValueError('rate (=%s) must be non-negative.' % rate)
-        rates = np.array([rate_dl] * n)
+            raise ValueError('rate (={}) must be non-negative.'.format(rate))
+        rates = np.array([rate_dl] * n_spiketrains)
     else:
         rates = rate_dl.flatten()
         if any(rates < 0):
@@ -1292,7 +1294,7 @@ def compound_poisson_process(
           - a single value, all spike trains will have same rate rate
           - an array of values (of length len(A)-1), each indicating the
             firing rate of one process in output
-    amplitude_distribution : np.ndarray
+    amplitude_distribution : np.ndarray or list
         CPP's amplitude distribution :math:`A`. `A[j]` represents the
         probability of a synchronous event of size `j` among the generated
         spike trains. The sum over all entries of :math:`A` must be equal to
