@@ -271,8 +271,8 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         return np.nan
 
     if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
-        if not isinstance(warn_tolerance, pq.Quantity):
-            raise TypeError("'warn_tolerance' must be a quantity.")
+        if not is_time_quantity(warn_tolerance):
+            raise TypeError("'warn_tolerance' must be a time quantity.")
         durations = [(st.t_stop - st.t_start).simplified.item()
                      for st in spiketrains]
         durations_min = min(durations)
