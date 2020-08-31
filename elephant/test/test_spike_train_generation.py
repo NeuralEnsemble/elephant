@@ -364,7 +364,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
     def test_recovered_firing_rate_profile(self):
         np.random.seed(54)
         t_start = 0 * pq.s
-        t_stop = 4 * np.round(np.pi, decimals=3) * pq.s  # 1 full period
+        t_stop = 4 * np.round(np.pi, decimals=3) * pq.s  # 2 full periods
         sampling_period = 0.001 * pq.s
 
         # an arbitrary rate profile
@@ -380,7 +380,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
                                             sampling_period=sampling_period)
             # the recovered firing rate profile should not depend on the
             # shape factor
-            for shape_factor in (1., 2.1, 9.5):
+            for shape_factor in (1., 2.5, 10.):
 
                 spiketrains = \
                     [stgen.inhomogeneous_gamma_process(
