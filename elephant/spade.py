@@ -74,6 +74,16 @@ import elephant.spike_train_surrogates as surr
 from elephant.spade_src import fast_fca
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "spade",
+    "concepts_mining",
+    "pvalue_spectrum",
+    "test_signature_significance",
+    "approximate_stability",
+    "pattern_set_reduction",
+    "concept_output_to_patterns"
+]
+
 warnings.simplefilter('once', UserWarning)
 
 try:
