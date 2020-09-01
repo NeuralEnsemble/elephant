@@ -1089,15 +1089,10 @@ def trial_shifting(
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
     """
-    # trial_length = trial_length.simplified.magnitude
     dither = dither.simplified.magnitude
-    # t_start = spiketrain.t_start.simplified.magnitude
-    # t_stop = spiketrain.t_stop.simplified.magnitude
-    # trial_separation = trial_separation.simplified.magnitude
     units = spiketrain[0].units
 
     # number of trials in concatenated spiketrain
-    n_trials = len(spiketrain)
     t_starts = [single_trial_st.t_start.simplified.magnitude
                 for single_trial_st in spiketrain]
     t_stops = [single_trial_st.t_stop.simplified.magnitude
@@ -1110,8 +1105,6 @@ def trial_shifting(
         surrogate_spiketrain = []
         # looping over all trials
         for st_id, single_trial_st in enumerate(copied_spiketrain):
-            # trial_start = trial * (trial_length + trial_separation)
-            # trial_stop = trial_start + trial_length
             single_trial_st += dither * (2 * random.random() - 1)
             single_trial_st = \
                 np.remainder(
@@ -1121,8 +1114,8 @@ def trial_shifting(
             surrogate_spiketrain.append(
                 neo.SpikeTrain(
                     single_trial_st * pq.s,
-                    t_start=t_starts[st_id],
-                    t_stop=t_stops[st_id],
+                    t_start=t_starts[st_id] * pq.s,
+                    t_stop=t_stops[st_id] * pq.s,
                     units=units))
         surrogate_spiketrains.append(surrogate_spiketrain)
     return surrogate_spiketrains
