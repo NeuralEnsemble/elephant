@@ -140,7 +140,7 @@ class TestUM(unittest.TestCase):
     def test_spike_contrast_with_Izhikevich_network_auto(self):
         # This test reproduces the Test data 3 (Izhikevich network), fig. 3,
         # Manuel Ciba et. al, 2018.
-        # The data is a dictionary of different networks simulations.
+        # The data is a dictionary of simulations of different networks.
         # Each simulation of a network is a dictionary with two keys:
         # 'spiketrains' and the ground truth 'synchrony'.
         # The default unit time is seconds. Each simulation lasted 2 seconds,
@@ -148,8 +148,8 @@ class TestUM(unittest.TestCase):
         with open("Data_Izhikevich_network.json", "r") as read_file:
             data = json.load(read_file)
 
-        for networks_simulations in data.values():
-            for simulation in networks_simulations.values():
+        for network_simulations in data.values():
+            for simulation in network_simulations.values():
                 synchrony_true = simulation['synchrony']
                 spiketrains = [
                     neo.SpikeTrain(st, t_start=0 * second, t_stop=2 * second,
