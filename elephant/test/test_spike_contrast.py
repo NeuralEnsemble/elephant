@@ -10,6 +10,7 @@ from quantities import Hz, ms, second
 
 import elephant.spike_contrast as spc
 import elephant.spike_train_generation as stgen
+from elephant.test.download import download, unzip
 
 
 class TestUM(unittest.TestCase):
@@ -145,7 +146,15 @@ class TestUM(unittest.TestCase):
         # 'spiketrains' and the ground truth 'synchrony'.
         # The default unit time is seconds. Each simulation lasted 2 seconds,
         # starting from 0.
-        with open("Data_Izhikevich_network.json", "r") as read_file:
+
+        izhikevich_url = r"https://web.gin.g-node.org/INM-6/" \
+                         r"elephant-data/raw/master/" \
+                         r"dataset-3/Data_Izhikevich_network.zip"
+        filepath_zip = download(url=izhikevich_url,
+                                checksum="70e848500c1d9c6403b66de8c741d849")
+        unzip(filepath_zip)
+        filepath = filepath_zip.replace(".zip", ".json")
+        with open(filepath) as read_file:
             data = json.load(read_file)
 
         for network_simulations in data.values():
