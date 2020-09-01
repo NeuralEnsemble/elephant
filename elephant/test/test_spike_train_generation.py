@@ -379,8 +379,10 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
             rate_profile = neo.AnalogSignal(rate * profile,
                                             sampling_period=sampling_period)
             # the recovered firing rate profile should not depend on the
-            # shape factor
-            for shape_factor in (1., 2.5, 10.):
+            # shape factor; here we test float and integer values of the shape
+            # factor: the method supports float values that is not trivial
+            # for inhomogeneous gamma process generation
+            for shape_factor in (1, 2.5, 10.):
 
                 spiketrains = \
                     [stgen.inhomogeneous_gamma_process(
