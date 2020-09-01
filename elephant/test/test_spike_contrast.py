@@ -45,7 +45,7 @@ class TestUM(unittest.TestCase):
                                                         t_start=0. * ms,
                                                         t_stop=10000. * ms)
         spike_trains = [spike_train, spike_train]
-        synchrony = spc.spike_contrast(spike_trains)
+        synchrony = spc.spike_contrast(spike_trains, min_bin=1 * ms)
         self.assertEqual(synchrony, 1.0)
 
     def test_spike_contrast_2(self):

@@ -65,7 +65,7 @@ def _binning_half_overlap(spiketrain, edges):
 
 
 def spike_contrast(spiketrains, t_start=None, t_stop=None,
-                   min_bin=0.01 * pq.ms, bin_shrink_factor=0.9,
+                   min_bin=10 * pq.ms, bin_shrink_factor=0.9,
                    return_trace=False):
     """
     Calculates the synchrony of spike trains. The spike trains can have
