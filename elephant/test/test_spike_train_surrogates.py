@@ -7,6 +7,8 @@ unittests for spike_train_surrogates module.
 """
 
 import unittest
+import random
+
 import elephant.spike_train_surrogates as surr
 import elephant.spike_train_generation as stg
 import elephant.conversion as conv
@@ -14,7 +16,6 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_less
 import quantities as pq
 import neo
-import random
 
 
 class SurrogatesTestCase(unittest.TestCase):
@@ -572,13 +573,49 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(np.sum(surrogate_train.to_bool_array()), 0)
 
     def test_trial_shuffling_output_format(self):
+        spiketrain = [neo.SpikeTrain([90, 93, 97, 100, 105,
+                                     150, 180, 190] * pq.ms, t_stop=.2 * pq.s),
+                      neo.SpikeTrain([90, 93, 97, 100, 105,
+                                     150, 180, 190] * pq.ms, t_stop=.2 * pq.s)]
+        # trial_length = 200 * pq.ms
+        # trial_separation = 50 * pq.ms
+        n_surrogates = 2
+        dither = 10 * pq.ms
+        surrogate_trains = surr.trial_shifting(
+            spiketrain, dither=dither, n_surrogates=n_surrogates)
+
+        self.assertIsInstance(surrogate_trains, list)
+        self.assertEqual(len(surrogate_trains), n_surrogates)
+
+        self.assertIsInstance(surrogate_trains[0], list)
+        self.assertIsInstance(surrogate_trains[0][0], neo.SpikeTrain)
+        for surrogate_train in surrogate_trains[0]:
+            self.assertEqual(surrogate_train.units, spiketrain[0].units)
+            self.assertEqual(surrogate_train.t_start, spiketrain[0].t_start)
+            self.assertEqual(surrogate_train.t_stop, spiketrain[0].t_stop)
+            self.assertEqual(len(surrogate_train), len(spiketrain[0]))
+            assert_array_less(0., np.diff(surrogate_train))  # check ordering
+
+    def test_trial_shuffling_empty_train(self):
+
+        empty_spiketrain = [neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms),
+                            neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)]
+
+        dither = 10 * pq.ms
+        surrogate_train = surr.trial_shifting(
+            empty_spiketrain, dither=dither, n_surrogates=1)[0]
+
+        self.assertEqual(len(surrogate_train), 2)
+        self.assertEqual(len(surrogate_train[0]), 0)
+
+    def test_trial_shuffling_output_format_concatenated(self):
         spiketrain = neo.SpikeTrain([90, 93, 97, 100, 105,
                                      150, 180, 350] * pq.ms, t_stop=.5 * pq.s)
         trial_length = 200 * pq.ms
         trial_separation = 50 * pq.ms
         n_surrogates = 2
         dither = 10 * pq.ms
-        surrogate_trains = surr.trial_shifting(
+        surrogate_trains = surr._trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dither, n_surrogates=n_surrogates,
             trial_length=trial_length, trial_separation=trial_separation)
 
@@ -593,14 +630,14 @@ class SurrogatesTestCase(unittest.TestCase):
             self.assertEqual(len(surrogate_train), len(spiketrain))
             assert_array_less(0., np.diff(surrogate_train))  # check ordering
 
-    def test_trial_shuffling_empty_train(self):
+    def test_trial_shuffling_empty_train_concatenated(self):
 
         empty_spiketrain = neo.SpikeTrain([] * pq.ms, t_stop=500 * pq.ms)
         trial_length = 200 * pq.ms
         trial_separation = 50 * pq.ms
 
         dither = 10 * pq.ms
-        surrogate_train = surr.trial_shifting(
+        surrogate_train = surr._trial_shifting_of_concatenated_spiketrain(
             empty_spiketrain, dither=dither, n_surrogates=1,
             trial_length=trial_length, trial_separation=trial_separation)[0]
         self.assertEqual(len(surrogate_train), 0)
