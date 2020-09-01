@@ -1,11 +1,12 @@
 from __future__ import division
 
+import json
 import unittest
 
 import neo
 import numpy as np
 from numpy.testing import assert_array_equal
-from quantities import Hz, ms
+from quantities import Hz, ms, second
 
 import elephant.spike_contrast as spc
 import elephant.spike_train_generation as stgen
@@ -135,6 +136,27 @@ class TestUM(unittest.TestCase):
         edges = np.arange(t_start, t_stop + bin_step, bin_step)
         histogram = spc._binning_half_overlap(spiketrain, edges=edges)
         assert_array_equal(histogram, [3, 1, 1])
+
+    def test_spike_contrast_with_Izhikevich_network_auto(self):
+        # This test reproduces the Test data 3 (Izhikevich network), fig. 3,
+        # Manuel Ciba et. al, 2018.
+        # The data is a dictionary of different networks simulations.
+        # Each simulation of a network is a dictionary with two keys:
+        # 'spiketrains' and the ground truth 'synchrony'.
+        # The default unit time is seconds. Each simulation lasted 2 seconds,
+        # starting from 0.
+        with open("Data_Izhikevich_network.json", "r") as read_file:
+            data = json.load(read_file)
+
+        for networks_simulations in data.values():
+            for simulation in networks_simulations.values():
+                synchrony_true = simulation['synchrony']
+                spiketrains = [
+                    neo.SpikeTrain(st, t_start=0 * second, t_stop=2 * second,
+                                   units=second)
+                    for st in simulation['spiketrains']]
+                synchrony = spc.spike_contrast(spiketrains)
+                self.assertAlmostEqual(synchrony, synchrony_true, places=2)
 
 
 if __name__ == '__main__':
