@@ -465,7 +465,8 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     Calculate the measure of revised local variation LvR for a sequence of time
     intervals between events.
 
-    Given a vector :math:`I` containing a sequence of intervals, the LvR is defined as:
+    Given a vector :math:`I` containing a sequence of intervals, the LvR is
+    defined as:
 
     .. math::
         LvR := \frac{3}{N-1} \sum_{i=1}^{N-1}
@@ -483,7 +484,8 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     R : pq.Quantity or int or float
-        Refractoriness constant (R >= 0). If no quantity is passed `ms` are assumed.
+        Refractoriness constant (R >= 0). If no quantity is passed `ms` are
+        assumed.
         Default: 5 ms.
     with_nan : bool, optional
         If True, LvR of a spike train with less than two spikes results in a
