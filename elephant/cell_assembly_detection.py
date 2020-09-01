@@ -80,6 +80,10 @@ from scipy.stats import f
 import elephant.conversion as conv
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "cell_assembly_detection"
+]
+
 
 @deprecated_alias(data='binned_spiketrain', maxlag='max_lag',
                   min_occ='min_occurrences',

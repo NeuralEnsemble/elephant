@@ -59,6 +59,16 @@ from elephant.statistics import isi
 import elephant.conversion as conv
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "dither_spikes",
+    "randomise_spikes",
+    "shuffle_isis",
+    "dither_spike_train",
+    "jitter_spikes",
+    "JointISI",
+    "surrogates"
+]
+
 # List of all available surrogate methods
 SURR_METHODS = ('dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'randomise_spikes', 'shuffle_isis', 'joint_isi_dithering',

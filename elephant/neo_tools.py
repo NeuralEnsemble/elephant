@@ -14,6 +14,13 @@ from itertools import chain
 from neo.core.container import unique_objs
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "extract_neo_attributes",
+    "get_all_spiketrains",
+    "get_all_events",
+    "get_all_epochs"
+]
+
 
 @deprecated_alias(obj='neo_object')
 def extract_neo_attributes(neo_object, parents=True, child_first=True,
