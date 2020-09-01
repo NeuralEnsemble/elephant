@@ -707,7 +707,8 @@ class SpadeTestCase(unittest.TestCase):
         random.seed(0)
         spiketrains = [stg.homogeneous_poisson_process(rate=20*pq.Hz)
                        for _ in range(2)]
-        surr_methods = ('dither_spikes', 'joint_isi_dithering', 'bin_shuffling',
+        surr_methods = ('dither_spikes', 'joint_isi_dithering',
+                        'bin_shuffling',
                         'dither_spikes_with_refractory_period')
         pv_specs = {'dither_spikes': [[2, 2, 0.8], [2, 3, 0.2]],
                     'joint_isi_dithering': [[2, 2, 0.8]],

@@ -495,8 +495,8 @@ def _check_input(
     # Check psr_param
     if psr_param is not None:
         if not (isinstance(psr_param, list) or isinstance(psr_param, tuple)):
-            raise TypeError('psr_param must be None or a list or tuple of '
-                             'integer')
+            raise TypeError(
+                'psr_param must be None or a list or tuple of integer')
         if not all(isinstance(param, int) for param in psr_param):
             raise TypeError('elements of psr_param must be integers')
 
@@ -1284,7 +1284,7 @@ def pvalue_spectrum(
     for surr_id, binned_surrogates in _generate_binned_surrogates(
             spiketrains, bin_size=bin_size, dither=dither,
             surr_method=surr_method, n_surrogates=len_partition+add_remainder,
-            winlen=winlen,**surr_kwargs):
+            winlen=winlen, **surr_kwargs):
 
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
@@ -1363,7 +1363,7 @@ def _generate_binned_surrogates(
                                      dither=dither,
                                      trial_separation=2 * winlen * bin_size,
                                      n_surrogates=1)[0]
-                for spiketrain in spiketrains]
+                 for spiketrain in spiketrains]
         else:
             surrs = \
                 [surr.surrogates(
