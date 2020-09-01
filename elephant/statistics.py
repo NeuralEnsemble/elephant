@@ -465,13 +465,13 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     Calculate the measure of revised local variation LvR for a sequence of time
     intervals between events.
 
-    Given a vector I containing a sequence of intervals, the LvR is defined as:
+    Given a vector :math:`I` containing a sequence of intervals, the LvR is defined as:
 
     .. math::
         LvR := \frac{3}{N-1} \sum_{i=1}^{N-1}
-                            (1-\frac{4 I_i I_{i+1}}
-                            {(I_i+I_{i+1})^2})
-                            (1+\frac{4 R}{I_i+I_{i+1}})
+                            \left(1-\frac{4 I_i I_{i+1}}
+                            {(I_i+I_{i+1})^2}\right)
+                            \left(1+\frac{4 R}{I_i+I_{i+1}}\right)
 
     The LvR is a revised version of the Lv, with enhanced invariance to firing
     rate fluctuations by introducing a refractoriness constant R. The LvR with
@@ -486,7 +486,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
         Refractoriness constant (R >= 0). If no quantity is passed `ms` are assumed.
         Default: 5 ms.
     with_nan : bool, optional
-        If True, `lv` of a spike train with less than two spikes results in a
+        If True, LvR of a spike train with less than two spikes results in a
         np.NaN value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
@@ -495,7 +495,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     Returns
     -------
     float
-        The Lv of the inter-spike interval of the input sequence.
+        The LvR of the inter-spike interval of the input sequence.
 
     Raises
     ------
