@@ -206,19 +206,30 @@ class Provenance(object):
                 input_args_names = []
                 input_kwargs_names = []
 
-                func_parameters = inspect.signature(function).bind(*args,
+                try:
+                    func_parameters = inspect.signature(function).bind(*args,
                                                                    **kwargs)
-                for arg_name, arg_value in func_parameters.arguments.items():
-                    cur_parameter = func_parameters.signature.parameters[
-                        arg_name]
-                    if cur_parameter.kind != VAR_POSITIONAL:
-                        input_data[arg_name] = arg_value
-                    else:
-                        input_data[arg_name] = VarArgs(arg_value)
-                    if arg_name in kwargs:
-                        input_kwargs_names.append(arg_name)
-                    else:
-                        input_args_names.append(arg_name)
+                    for arg_name, arg_value in func_parameters.arguments.items():
+                        cur_parameter = func_parameters.signature.parameters[
+                            arg_name]
+                        if cur_parameter.kind != VAR_POSITIONAL:
+                            input_data[arg_name] = arg_value
+                        else:
+                            input_data[arg_name] = VarArgs(arg_value)
+                        if arg_name in kwargs:
+                            input_kwargs_names.append(arg_name)
+                        else:
+                            input_args_names.append(arg_name)
+                except ValueError:
+                    # Can't inspect signature
+                    for arg_index, arg in enumerate(args):
+                        input_data[arg_index] = arg
+                        input_args_names.append(arg_index)
+                    kwarg_start = len(input_data)
+                    for kwarg_index, kwarg in enumerate(kwargs, start=kwarg_start):
+                        input_data[kwarg_index] = kwarg
+                        input_kwargs_names.append(kwarg_index)
+
 
                 # 5. Create parameters/input descriptions for the graph
                 #    Here the inputs, but not the parameters passed to the
@@ -373,9 +384,14 @@ class Provenance(object):
             `BuffaloObjectHash` instance with the hash of the object.
 
         """
-        instance = cls.calling_frame.f_locals[name]
+        instance = cls.get_script_variable(name)
         object_hash = cls.add(instance)
         return instance, object_hash
+
+    @classmethod
+    def get_script_variable(cls, name):
+        return cls.calling_frame.f_locals[name]
+
 
 
 ##############################################################################
