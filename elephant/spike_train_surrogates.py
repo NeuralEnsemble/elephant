@@ -1062,8 +1062,7 @@ class JointISI(object):
         return step
 
 
-def trial_shifting(
-        spiketrain, dither, n_surrogates=1):
+def trial_shifting(spiketrains, dither, n_surrogates=1):
     """
     Generates surrogates of a spike train by trial shifting.
     It shifts by a random uniform amount independently different trials,
@@ -1073,9 +1072,9 @@ def trial_shifting(
 
     Parameters
     ----------
-    spiketrain :  list of neo.SpikeTrain
-        list of spike trains of the same neuron
-         where each element corresponds to one trial
+    spiketrains : list of neo.SpikeTrain
+        A list of spike trains of the same neuron
+        where each element corresponds to one trial.
     dither : pq.Quantity
         Amount of dithering.
     n_surrogates : int, optional
@@ -1084,24 +1083,24 @@ def trial_shifting(
 
     Returns
     -------
-    list of neo.SpikeTrain
+    surrogate_spiketrains : list of neo.SpikeTrain
         Each surrogate spike train obtained independently from `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
     """
     dither = dither.simplified.magnitude
-    units = spiketrain[0].units
+    units = spiketrains[0].units
 
     # number of trials in concatenated spiketrain
     t_starts = [single_trial_st.t_start.simplified.magnitude
-                for single_trial_st in spiketrain]
+                for single_trial_st in spiketrains]
     t_stops = [single_trial_st.t_stop.simplified.magnitude
-               for single_trial_st in spiketrain]
-    spiketrain = [single_trial_st.simplified.magnitude
-                  for single_trial_st in spiketrain]
+               for single_trial_st in spiketrains]
+    spiketrains = [single_trial_st.simplified.magnitude
+                   for single_trial_st in spiketrains]
     surrogate_spiketrains = []
     for surrogate_id in range(n_surrogates):
-        copied_spiketrain = copy.copy(spiketrain)
+        copied_spiketrain = copy.copy(spiketrains)
         surrogate_spiketrain = []
         # looping over all trials
         for st_id, single_trial_st in enumerate(copied_spiketrain):
@@ -1152,6 +1151,8 @@ def _trial_shifting_of_concatenated_spiketrain(
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
     """
+    spiketrains = ...  # convert concatenated spiketrain into a list of sts
+    return trial_shifting(spiketrains, dither=dither, n_surrogates=n_surrogates)
     trial_length = trial_length.simplified.magnitude
     dither = dither.simplified.magnitude
     t_start = spiketrain.t_start.simplified.magnitude
