@@ -11,6 +11,8 @@ from elephant.buffalo import provenance
 
 SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
 
+np.array = provenance.Provenance(inputs=[0])(np.array)
+
 
 @provenance.Provenance(inputs=[])
 def load_data(session_id, channels):
@@ -46,10 +48,15 @@ def main(session_id):
     block = load_data(session_id, channels)
 
     # ISI times (first spike train of the segment)
+    # sts = block.segments[0].spiketrains
+    # for spiketrain in sts:
+    #     isi_times = isi(spiketrain, axis=0)
+    #     firing_rate = mean_firing_rate(spiketrain)
 
-    isi_times = isi(block.segments[0].spiketrains[0], axis=0)
+    for index in range(len(block.segments[0].spiketrains)):
+        isi_times = isi(block.segments[0].spiketrains[index], axis=0)
+        firing_rate = mean_firing_rate(block.segments[0].spiketrains[index])
 
-    firing_rate = mean_firing_rate(block.segments[0].spiketrains[0])
     fano_factor = fanofactor(block.segments[0].spiketrains)
 
     # Custom spike times
