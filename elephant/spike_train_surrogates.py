@@ -1062,7 +1062,8 @@ class JointISI(object):
         return step
 
 
-def trial_shifting(spiketrains, dither, n_surrogates=1):
+def trial_shifting(spiketrains, dither, n_surrogates=1,
+                   trial_length=None, trial_separation=None):
     """
     Generates surrogates of a spike train by trial shifting.
     It shifts by a random uniform amount independently different trials,
@@ -1072,14 +1073,22 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
-        A list of spike trains of the same neuron
+    spiketrains : list of neo.SpikeTrain or neo.SpikeTrain
+        Either A list of spike trains of the same neuron
         where each element corresponds to one trial.
+        Or a single spike train, where the trials are concatenated.
+        In this case `trial_length` and `trial_duration` must be specified.
     dither : pq.Quantity
         Amount of dithering.
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
+    trial_length : pq.Quantity, optional
+        The length of the single-trial spiketrain.
+        Default: None
+    trial_separation : pq.Quantity, optional
+        Buffering in between trials in the concatenation of the spiketrain.
+        Default: None
 
     Returns
     -------
@@ -1089,99 +1098,66 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
         is the same as of `spiketrain`.
     """
     dither = dither.simplified.magnitude
-    units = spiketrains[0].units
 
-    # number of trials in concatenated spiketrain
-    t_starts = [single_trial_st.t_start.simplified.magnitude
-                for single_trial_st in spiketrains]
-    t_stops = [single_trial_st.t_stop.simplified.magnitude
-               for single_trial_st in spiketrains]
-    spiketrains = [single_trial_st.simplified.magnitude
+    if isinstance(spiketrains, list):
+        concatenated_input = False
+        units = spiketrains[0].units
+        t_starts = [single_trial_st.t_start.simplified.magnitude
+                    for single_trial_st in spiketrains]
+        t_stops = [single_trial_st.t_stop.simplified.magnitude
                    for single_trial_st in spiketrains]
+        spiketrains = [single_trial_st.simplified.magnitude
+                       for single_trial_st in spiketrains]
+    elif isinstance(spiketrains, neo.SpikeTrain) and \
+            isinstance(trial_length, pq.Quantity) and \
+            isinstance(trial_separation, pq.Quantity):
+        concatenated_input = True
+        units = spiketrains.units
+        t_start = spiketrains.t_start.simplified.magnitude
+        t_stop = spiketrains.t_stop.simplified.magnitude
+        trial_length = trial_length.simplified.magnitude
+        trial_separation = trial_separation.simplified.magnitude
+        n_trials = int((t_stop-t_start) // (trial_length + trial_separation))
+        t_starts = t_start + \
+            np.arange(n_trials)*(trial_length+trial_separation)
+        t_stops = t_starts + trial_length
+        spiketrains = spiketrains.simplified.magnitude
+        spiketrains = [spiketrains[(spiketrains >= t_starts[trial_id]) &
+                                   (spiketrains <= t_stops[trial_id])]
+                       for trial_id in range(n_trials)]
+    else:
+        raise ValueError(
+            'spiketrains must be either a list of spiketrains or a single'
+            ' neo.SpikeTrain, but then trial_length and trial_duration must be'
+            ' of type pq.Quantity.')
+
     surrogate_spiketrains = []
     for surrogate_id in range(n_surrogates):
         copied_spiketrain = copy.copy(spiketrains)
         surrogate_spiketrain = []
         # looping over all trials
-        for st_id, single_trial_st in enumerate(copied_spiketrain):
+        for trial_id, single_trial_st in enumerate(copied_spiketrain):
             single_trial_st += dither * (2 * random.random() - 1)
-            single_trial_st = \
-                np.remainder(
-                    single_trial_st - t_starts[st_id],
-                    t_stops[st_id] - t_starts[st_id]) + t_starts[st_id]
+            single_trial_st = np.remainder(
+                single_trial_st - t_starts[trial_id],
+                t_stops[trial_id] - t_starts[trial_id]
+            ) + t_starts[trial_id]
             single_trial_st.sort()
-            surrogate_spiketrain.append(
-                neo.SpikeTrain(
-                    single_trial_st * pq.s,
-                    t_start=t_starts[st_id] * pq.s,
-                    t_stop=t_stops[st_id] * pq.s,
-                    units=units))
-        surrogate_spiketrains.append(surrogate_spiketrain)
-    return surrogate_spiketrains
-
-
-def _trial_shifting_of_concatenated_spiketrain(
-        spiketrain, dither, trial_length, trial_separation, n_surrogates=1):
-    """
-    Generates surrogates of a spike train by trial shifting.
-    It shifts by a random uniform amount independently different trials,
-    individuated by the `trial_length` and the possible buffering period `sep`
-    present in between trials.
-    The shifting is done independently for each surrogate.
-
-    Parameters
-    ----------
-    spiketrain :  neo.SpikeTrain
-        The spiketrain from which to generate the surrogates.
-        The spiketrain must be a concatenation of single-trial spiketrains.
-    dither : pq.Quantity
-        Amount of dithering.
-    trial_length : pq.Quantity
-        The length of the single-trial spiketrain.
-    trial_separation : pq.Quantity
-        Buffering in between trials in the concatenation of the spiketrain.
-    n_surrogates : int, optional
-        Number of surrogates to be generated.
-        Default: 1.
-
-    Returns
-    -------
-    list of neo.SpikeTrain
-        Each surrogate spike train obtained independently from `spiketrain` by
-        randomly dithering its spikes. The range of the surrogate spike trains
-        is the same as of `spiketrain`.
-    """
-    spiketrains = ...  # convert concatenated spiketrain into a list of sts
-    return trial_shifting(spiketrains, dither=dither, n_surrogates=n_surrogates)
-    trial_length = trial_length.simplified.magnitude
-    dither = dither.simplified.magnitude
-    t_start = spiketrain.t_start.simplified.magnitude
-    t_stop = spiketrain.t_stop.simplified.magnitude
-    trial_separation = trial_separation.simplified.magnitude
-    units = spiketrain.units
-
-    # number of trials in concatenated spiketrain
-    n_trials = int(t_stop // (trial_length + trial_separation))
-    spiketrain = spiketrain.simplified.magnitude
-    surrogate_spiketrains = []
-    for surrogate_id in range(n_surrogates):
-        surrogate_spiketrain = np.copy(spiketrain)
-        # looping over all trials
-        for trial in range(n_trials):
-            trial_start = trial * (trial_length + trial_separation)
-            trial_stop = trial_start + trial_length
-            spikes_within_trial = (spiketrain >= trial_start) \
-                & (spiketrain <= trial_stop)
-            surrogate_spiketrain[spikes_within_trial] += \
-                dither * (2 * np.random.random() - 1)
-            surrogate_spiketrain[spikes_within_trial] = \
-                np.remainder(surrogate_spiketrain[spikes_within_trial],
-                             trial_length + trial_separation) + trial_start
-        surrogate_spiketrain.sort()
-        surrogate_spiketrain = neo.SpikeTrain(
-            surrogate_spiketrain * pq.s,
-            t_start=t_start * pq.s, t_stop=t_stop * pq.s,
-            units=units)
+            if not concatenated_input:
+                surrogate_spiketrain.append(
+                    neo.SpikeTrain(
+                        single_trial_st * pq.s,
+                        t_start=t_starts[trial_id] * pq.s,
+                        t_stop=t_stops[trial_id] * pq.s,
+                        units=units))
+            if concatenated_input:
+                surrogate_spiketrain.append(single_trial_st)
+        if concatenated_input:
+            surrogate_spiketrain = neo.SpikeTrain(
+                np.hstack(surrogate_spiketrain),
+                t_start=t_start*pq.s,
+                t_stop=t_stop*pq.s,
+                units=units)
         surrogate_spiketrains.append(surrogate_spiketrain)
     return surrogate_spiketrains
 
@@ -1276,11 +1252,8 @@ def surrogates(
     if method is jitter_spikes:
         return method(spiketrain, dt, n_surrogates=n_surrogates)
     if method is trial_shifting:
-        if isinstance(spiketrain, list):
-            return method(
-                spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
-        return _trial_shifting_of_concatenated_spiketrain(
-                spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
+        return method(
+            spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
         bin_size = kwargs['bin_size']
         binned_spiketrain = conv.BinnedSpikeTrain(
