@@ -1284,7 +1284,7 @@ def pvalue_spectrum(
     for surr_id, binned_surrogates in _generate_binned_surrogates(
             spiketrains, bin_size=bin_size, dither=dither,
             surr_method=surr_method, n_surrogates=len_partition+add_remainder,
-            winlen=winlen, **surr_kwargs):
+            **surr_kwargs):
 
         # Find all pattern signatures in the current surrogate data set
         surr_concepts = concepts_mining(
