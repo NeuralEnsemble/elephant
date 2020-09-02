@@ -615,7 +615,7 @@ class SurrogatesTestCase(unittest.TestCase):
         trial_separation = 50 * pq.ms
         n_surrogates = 2
         dither = 10 * pq.ms
-        surrogate_trains = surr.trial_shifting(
+        surrogate_trains = surr._trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dither, n_surrogates=n_surrogates,
             trial_length=trial_length, trial_separation=trial_separation)
 
@@ -637,7 +637,7 @@ class SurrogatesTestCase(unittest.TestCase):
         trial_separation = 50 * pq.ms
 
         dither = 10 * pq.ms
-        surrogate_train = surr.trial_shifting(
+        surrogate_train = surr._trial_shifting_of_concatenated_spiketrain(
             empty_spiketrain, dither=dither, n_surrogates=1,
             trial_length=trial_length, trial_separation=trial_separation)[0]
         self.assertEqual(len(surrogate_train), 0)
