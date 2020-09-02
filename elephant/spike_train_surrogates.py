@@ -1210,8 +1210,10 @@ def surrogates(
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain
-        The spike train from which to generate the surrogates
+    spiketrain : neo.SpikeTrain or list of neo.SpikeTrain
+        The spike train from which to generate the surrogates.
+        The only method that accepts a list of spike trains instead of a single
+        spike train to generate the surrogates from is 'trial_shifting'.
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
