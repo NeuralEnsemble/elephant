@@ -146,7 +146,7 @@ def main(session_id):
     titles.append(str(block.segments[0].spiketrains[0].annotations))
 
     isi_times2 = isi(block.segments[0].spiketrains[1], 0)
-    titles.append(str(block.segments[0].spiketrains[0].annotations))
+    titles.append(str(block.segments[0].spiketrains[1].annotations))
 
     firing_rate = mean_firing_rate(block.segments[0].spiketrains[0])
     fano_factor = fanofactor(block.segments[0].spiketrains)
@@ -160,11 +160,11 @@ def main(session_id):
     # Do plotting
     figure, axes = plot_isi_histograms((3, 1), *(isi_times, isi_times2,
                                                  isi_times3), titles=titles)
-    #plt.show()
+    plt.show()
 
     figure.savefig('isi.png')
 
-    # provenance.print_history()
+    provenance.print_history()
 
     provenance.save_graph("isi_histogram.html", show=True)
 
