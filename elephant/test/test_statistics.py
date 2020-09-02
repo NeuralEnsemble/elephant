@@ -425,6 +425,7 @@ class LVRTestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.lvr, np.array([seq, seq]))
         self.assertRaises(ValueError, statistics.lvr, seq, -1)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_lvr_refractoriness_kwarg(self):
         seq = np.array(self.test_seq)
         with self.assertWarns(UserWarning):
