@@ -148,10 +148,8 @@ class kernel_TestCase(unittest.TestCase):
         for kern_cls in self.kernel_types:
             for invert in (False, True):
                 kernel = kern_cls(sigma=1 * pq.s, invert=invert)
-                kernel_shuffled = kernel(t_shuffled)
-                kernel_shuffled.sort()
-                kernel_expected = kernel(t_array)
-                kernel_expected.sort()
+                kernel_shuffled = np.sort(kernel(t_shuffled))
+                kernel_expected = np.sort(kernel(t_array))
                 assert_array_almost_equal(kernel_shuffled, kernel_expected)
 
     def test_kernel_pdf_range(self):

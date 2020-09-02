@@ -61,16 +61,19 @@ from __future__ import division, print_function
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
 
+import warnings
+
+import neo
 import numpy as np
 import math
 import quantities as pq
-import scipy.stats
 import scipy.signal
-import neo
+import scipy.stats
 from neo.core import SpikeTrain
+
 import elephant.conversion as conv
 import elephant.kernels as kernels
-import warnings
+from elephant.utils import deprecated_alias
 
 from elephant.buffalo.provenance import Provenance
 from elephant.utils import is_time_quantity
@@ -285,8 +288,9 @@ def __variation_check(v, with_nan):
     return None
 
 
-@Provenance(inputs=["v"])
-def lv(v, with_nan=False):
+@deprecated_alias(v='time_intervals')
+@Provenance(inputs=["time_intervals"])
+def lv(time_intervals, with_nan=False):
     r"""
     Calculate the measure of local variation LV for a sequence of time
     intervals between events.
@@ -305,7 +309,7 @@ def lv(v, with_nan=False):
 
     Parameters
     ----------
-    v : pq.Quantity or np.ndarray or list
+    time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
         If True, `lv` of a spike train with less than two spikes results in a
@@ -342,17 +346,18 @@ def lv(v, with_nan=False):
 
     """
     # convert to array, cast to float
-    v = np.asarray(v)
-    np_nan = __variation_check(v, with_nan)
+    time_intervals = np.asarray(time_intervals)
+    np_nan = __variation_check(time_intervals, with_nan)
     if np_nan is not None:
         return np_nan
 
-    # calculate LV and return result
-    return 3. * np.mean(np.power(np.diff(v) / (v[:-1] + v[1:]), 2))
+    cv_i = np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:])
+    return 3. * np.mean(np.power(cv_i, 2))
 
 
-@Provenance(inputs=["v"])
-def cv2(v, with_nan=False):
+@deprecated_alias(v='time_intervals')
+@Provenance(inputs=["time_intervals"])
+def cv2(time_intervals, with_nan=False):
     r"""
     Calculate the measure of CV2 for a sequence of time intervals between
     events.
@@ -372,7 +377,7 @@ def cv2(v, with_nan=False):
 
     Parameters
     ----------
-    v : pq.Quantity or np.ndarray or list
+    time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
         If True, `cv2` of a spike train with less than two spikes results in a
@@ -410,13 +415,14 @@ def cv2(v, with_nan=False):
 
     """
     # convert to array, cast to float
-    v = np.asarray(v)
-    np_nan = __variation_check(v, with_nan)
+    time_intervals = np.asarray(time_intervals)
+    np_nan = __variation_check(time_intervals, with_nan)
     if np_nan is not None:
         return np_nan
 
     # calculate CV2 and return result
-    return 2. * np.mean(np.absolute(np.diff(v)) / (v[:-1] + v[1:]))
+    cv_i = np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:])
+    return 2. * np.mean(np.abs(cv_i))
 
 
 @Provenance(inputs=["spiketrain"])
@@ -574,8 +580,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     if kernel == 'auto':
         kernel_width_sigma = None
         if len(spiketrain) > 0:
-            kernel_width_sigma = sskernel(
-                spiketrain.magnitude, tin=None, bootstrap=False)['optw']
+            kernel_width_sigma = optimal_kernel_bandwidth(
+                spiketrain.magnitude, times=None, bootstrap=False)['optw']
         if kernel_width_sigma is None:
             raise ValueError(
                 "Unable to calculate optimal kernel width for "
@@ -675,8 +681,9 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     return rate
 
 
+@deprecated_alias(binsize='bin_size')
 @Provenance(inputs=["spiketrains"])
-def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
+def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
@@ -685,7 +692,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     ----------
     spiketrains : list of neo.SpikeTrain
         `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Width of the histogram's time bins.
     t_start : pq.Quantity, optional
         Start time of the histogram. Only events in `spiketrains` falling
@@ -722,7 +729,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
     neo.AnalogSignal
         A `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+        `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
 
     Raises
     ------
@@ -768,7 +775,7 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
 
     # Bin the spike trains and sum across columns
     bs = conv.BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
-                               binsize=binsize)
+                               bin_size=bin_size)
 
     if binary:
         bin_hist = bs.to_sparse_bool_array().sum(axis=0)
@@ -785,23 +792,24 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
         bin_hist = bin_hist * 1. / len(spiketrains) * pq.dimensionless
     elif output == 'rate':
         # Divide by number of input spike trains and bin width
-        bin_hist = bin_hist * 1. / len(spiketrains) / binsize
+        bin_hist = bin_hist * 1. / len(spiketrains) / bin_size
     else:
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
-                            sampling_period=binsize, units=bin_hist.units,
+                            sampling_period=bin_size, units=bin_hist.units,
                             t_start=t_start)
 
 
+@deprecated_alias(binsize='bin_size')
 @Provenance(inputs=["spiketrains"])
-def complexity_pdf(spiketrains, binsize):
+def complexity_pdf(spiketrains, bin_size):
     """
     Complexity Distribution of a list of `neo.SpikeTrain` objects.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
-    spike trains computed with a bin width of `binsize`.
+    spike trains computed with a bin width of `bin_size`.
     It provides for each complexity (== number of active neurons per bin) the
     number of occurrences. The normalization of that histogram to 1 is the
     probability density.
@@ -812,7 +820,7 @@ def complexity_pdf(spiketrains, binsize):
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains with a common time axis (same `t_start` and `t_stop`)
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         Width of the histogram's time bins.
 
     Returns
@@ -820,7 +828,7 @@ def complexity_pdf(spiketrains, binsize):
     complexity_distribution : neo.AnalogSignal
         A `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
+        `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
 
     See also
     --------
@@ -836,7 +844,7 @@ def complexity_pdf(spiketrains, binsize):
     """
     # Computing the population histogram with parameter binary=True to clip the
     # spike trains before summing
-    pophist = time_histogram(spiketrains, binsize, binary=True)
+    pophist = time_histogram(spiketrains, bin_size, binary=True)
 
     # Computing the histogram of the entries of pophist (=Complexity histogram)
     complexity_hist = np.histogram(
@@ -947,7 +955,9 @@ def cost_function(x, N, w, dt):
     return C, yh
 
 
-def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
+@deprecated_alias(tin='times', w='bandwidth')
+def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
+                             bootstrap=False):
     """
     Calculates optimal fixed kernel bandwidth, given as the standard deviation
     sigma.
@@ -956,15 +966,15 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     ----------
     spiketimes : np.ndarray
         Sequence of spike times (sorted to be ascending).
-    tin : np.ndarray, optional
+    times : np.ndarray, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
         Default: None.
-    w : np.ndarray, optional
+    bandwidth : np.ndarray, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
-        If None, `w` is obtained through a golden-section search on a log-exp
-        scale.
+        If None, `bandwidth` is obtained through a golden-section search on a
+        log-exp scale.
         Default: None.
     bootstrap : bool, optional
         If True, calculates the 95% confidence interval using Bootstrap.
@@ -982,7 +992,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         'w' : np.ndarray
             Kernel bandwidths examined (standard deviation sigma).
         'C' : np.ndarray
-            Cost functions of `w`.
+            Cost functions of `bandwidth`.
         'confb95' : tuple of np.ndarray
             Bootstrap 95% confidence interval: (lower level, upper level).
             If `bootstrap` is False, `confb95` is None.
@@ -1001,38 +1011,38 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
 
     """
 
-    if tin is None:
+    if times is None:
         time = np.max(spiketimes) - np.min(spiketimes)
         isi = np.diff(spiketimes)
         isi = isi[isi > 0].copy()
         dt = np.min(isi)
-        tin = np.linspace(np.min(spiketimes),
-                          np.max(spiketimes),
-                          min(int(time / dt + 0.5),
-                              1000))  # The 1000 seems somewhat arbitrary
-        t = tin
+        times = np.linspace(np.min(spiketimes),
+                            np.max(spiketimes),
+                            min(int(time / dt + 0.5),
+                                1000))  # The 1000 seems somewhat arbitrary
+        t = times
     else:
-        time = np.max(tin) - np.min(tin)
-        spiketimes = spiketimes[(spiketimes >= np.min(tin)) &
-                                (spiketimes <= np.max(tin))].copy()
+        time = np.max(times) - np.min(times)
+        spiketimes = spiketimes[(spiketimes >= np.min(times)) &
+                                (spiketimes <= np.max(times))].copy()
         isi = np.diff(spiketimes)
         isi = isi[isi > 0].copy()
         dt = np.min(isi)
-        if dt > np.min(np.diff(tin)):
-            t = np.linspace(np.min(tin), np.max(tin),
+        if dt > np.min(np.diff(times)):
+            t = np.linspace(np.min(times), np.max(times),
                             min(int(time / dt + 0.5), 1000))
         else:
-            t = tin
-    dt = np.min(np.diff(tin))
+            t = times
+    dt = np.min(np.diff(times))
     yhist, bins = np.histogram(spiketimes, np.r_[t - dt / 2, t[-1] + dt / 2])
     N = np.sum(yhist)
     yhist = yhist / (N * dt)  # density
     optw = None
     y = None
-    if w is not None:
-        C = np.zeros(len(w))
+    if bandwidth is not None:
+        C = np.zeros(len(bandwidth))
         Cmin = np.inf
-        for k, w_ in enumerate(w):
+        for k, w_ in enumerate(bandwidth):
             C[k], yh = cost_function(yhist, N, w_, dt)
             if C[k] < Cmin:
                 Cmin = C[k]
@@ -1043,7 +1053,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
         wmin = 2 * dt
         wmax = max(spiketimes) - min(spiketimes)
         imax = 20  # max iterations
-        w = np.zeros(imax)
+        bandwidth = np.zeros(imax)
         C = np.zeros(imax)
         tolerance = 1e-5
         phi = 0.5 * (np.sqrt(5) + 1)  # The Golden ratio
@@ -1062,7 +1072,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
                 c1 = (phi - 1) * a + (2 - phi) * b
                 f2 = f1
                 f1, y1 = cost_function(yhist, N, logexp(c1), dt)
-                w[k] = logexp(c1)
+                bandwidth[k] = logexp(c1)
                 C[k] = f1
                 optw = logexp(c1)
                 y = y1 / (np.sum(y1 * dt))
@@ -1072,7 +1082,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
                 c2 = (2 - phi) * a + (phi - 1) * b
                 f1 = f2
                 f2, y2 = cost_function(yhist, N, logexp(c2), dt)
-                w[k] = logexp(c2)
+                bandwidth[k] = logexp(c2)
                 C[k] = f2
                 optw = logexp(c2)
                 y = y2 / np.sum(y2 * dt)
@@ -1083,7 +1093,7 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
     # If bootstrap is requested, and an optimal kernel was found
     if bootstrap and optw:
         nbs = 1000
-        yb = np.zeros((nbs, len(tin)))
+        yb = np.zeros((nbs, len(times)))
         for ii in range(nbs):
             idx = np.floor(np.random.rand(N) * N).astype(int)
             xb = spiketimes[idx]
@@ -1091,21 +1101,27 @@ def sskernel(spiketimes, tin=None, w=None, bootstrap=False):
                 xb, np.r_[t - dt / 2, t[-1] + dt / 2]) / dt / N
             yb_buf = fftkernel(y_histb, optw / dt).real
             yb_buf = yb_buf / np.sum(yb_buf * dt)
-            yb[ii, :] = np.interp(tin, t, yb_buf)
+            yb[ii, :] = np.interp(times, t, yb_buf)
         ybsort = np.sort(yb, axis=0)
         y95b = ybsort[np.floor(0.05 * nbs).astype(int), :]
         y95u = ybsort[np.floor(0.95 * nbs).astype(int), :]
         confb95 = (y95b, y95u)
     # Only perform interpolation if y could be calculated
     if y is not None:
-        y = np.interp(tin, t, y)
+        y = np.interp(times, t, y)
     return {'y': y,
-            't': tin,
+            't': times,
             'optw': optw,
-            'w': w,
+            'w': bandwidth,
             'C': C,
             'confb95': confb95,
             'yb': yb}
+
+
+def sskernel(*args, **kwargs):
+    warnings.warn("'sskernel' function is deprecated; "
+                  "use 'optimal_kernel_bandwidth'", DeprecationWarning)
+    return optimal_kernel_bandwidth(*args, **kwargs)
 
 
 def _check_consistency_of_spiketrains(spiketrains, t_start=None,

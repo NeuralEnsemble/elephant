@@ -62,48 +62,47 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
         signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
-        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0. * pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
         rho = elephant.signal_processing.cross_correlation_function(
-            signal, [0, 1], nlags=nlags)
+            signal, [0, 1], n_lags=nlags)
         # Test if vector of lags tau has correct length
-        assert len(rho.times) == 2*int(nlags)+1
+        assert len(rho.times) == 2 * int(nlags) + 1
 
     def test_cross_correlation_phi(self):
         '''
         Sine with phase shift phi vs cosine
         '''
-        phi = np.pi/6.
+        phi = np.pi / 6.
         signal = np.zeros((self.n_samples, 2))
         signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times + phi)
         signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
-        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0. * pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
         rho = elephant.signal_processing.cross_correlation_function(
             signal, [0, 1])
         # Cross-correlation of sine and cosine should be sine + phi
-        assert_array_almost_equal(
-            rho.magnitude[:, 0], np.sin(2.*np.pi*self.freq*rho.times+phi),
-            decimal=2)
+        assert_array_almost_equal(rho.magnitude[:, 0], np.sin(
+            2. * np.pi * self.freq * rho.times + phi), decimal=2)
 
     def test_cross_correlation_envelope(self):
         '''
         Envelope of sine vs cosine
         '''
         # Sine with phase shift phi vs cosine for different frequencies
-        nlags = 800 # nlags need to be smaller than N/2 b/c border effects
+        nlags = 800  # nlags need to be smaller than N/2 b/c border effects
         signal = np.zeros((self.n_samples, 2))
         signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
         signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
         # Convert signal to neo.AnalogSignal
-        signal = neo.AnalogSignal(signal, units='mV', t_start=0.*pq.ms,
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0. * pq.ms,
                                   sampling_rate=self.sampling_rate,
                                   dtype=float)
         envelope = elephant.signal_processing.cross_correlation_function(
-            signal, [0, 1], nlags=nlags, env=True)
+            signal, [0, 1], n_lags=nlags, hilbert_envelope=True)
         # Envelope should be one for sinusoidal function
         assert_array_almost_equal(envelope, np.ones_like(envelope), decimal=2)
 
@@ -499,7 +498,7 @@ class ButterTestCase(unittest.TestCase):
 
         # check input as NumPy ndarray
         filtered_noise_np = elephant.signal_processing.butter(
-            noise_np, 400.0, 100.0, fs=1000.0)
+            noise_np, 400.0, 100.0, sampling_frequency=1000.0)
         self.assertTrue(isinstance(filtered_noise_np, np.ndarray))
         self.assertFalse(isinstance(filtered_noise_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(filtered_noise_np, neo.AnalogSignal))
@@ -507,7 +506,7 @@ class ButterTestCase(unittest.TestCase):
 
         # check input as Quantity array
         filtered_noise_pq = elephant.signal_processing.butter(
-            noise_pq, 400.0 * pq.Hz, 100.0 * pq.Hz, fs=1000.0)
+            noise_pq, 400.0 * pq.Hz, 100.0 * pq.Hz, sampling_frequency=1000.0)
         self.assertTrue(isinstance(filtered_noise_pq, pq.quantity.Quantity))
         self.assertFalse(isinstance(filtered_noise_pq, neo.AnalogSignal))
         self.assertEqual(filtered_noise_pq.shape, noise_pq.shape)
@@ -528,9 +527,9 @@ class ButterTestCase(unittest.TestCase):
     def test_butter_axis(self):
         noise = np.random.normal(size=(4, 5000))
         filtered_noise = elephant.signal_processing.butter(
-            noise, 250.0, fs=1000.0)
+            noise, 250.0, sampling_frequency=1000.0)
         filtered_noise_transposed = elephant.signal_processing.butter(
-            noise.T, 250.0, fs=1000.0, axis=0)
+            noise.T, 250.0, sampling_frequency=1000.0, axis=0)
         self.assertTrue(np.all(filtered_noise == filtered_noise_transposed.T))
 
     def test_butter_multidim_input(self):
@@ -540,7 +539,7 @@ class ButterTestCase(unittest.TestCase):
         noise_neo1d = neo.AnalogSignal(
             noise_pq[0], sampling_rate=1000.0 * pq.Hz)
         filtered_noise_pq = elephant.signal_processing.butter(
-            noise_pq, 250.0, fs=1000.0)
+            noise_pq, 250.0, sampling_frequency=1000.0)
         filtered_noise_neo = elephant.signal_processing.butter(
             noise_neo, 250.0)
         filtered_noise_neo1d = elephant.signal_processing.butter(
@@ -617,17 +616,17 @@ class HilbertTestCase(unittest.TestCase):
         """
         true_shape = np.shape(self.long_signals)
         output = elephant.signal_processing.hilbert(
-            self.long_signals, N='nextpow')
+            self.long_signals, padding='nextpow')
         self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
         output = elephant.signal_processing.hilbert(
-            self.long_signals, N=16384)
+            self.long_signals, padding=16384)
         self.assertEqual(np.shape(output), true_shape)
         self.assertEqual(output.units, pq.dimensionless)
 
     def test_hilbert_array_annotations(self):
         output = elephant.signal_processing.hilbert(self.long_signals,
-                                                    N='nextpow')
+                                                    padding='nextpow')
         # Test if array_annotations are preserved
         self.assertSetEqual(set(output.array_annotations.keys()), {"my_list"})
         assert_array_equal(output.array_annotations['my_list'],
@@ -642,7 +641,7 @@ class HilbertTestCase(unittest.TestCase):
         for padding in ['nextpow', 'none', 16384]:
 
             h = elephant.signal_processing.hilbert(
-                self.long_signals, N=padding)
+                self.long_signals, padding=padding)
 
             phase = np.angle(h.magnitude)
             amplitude = np.abs(h.magnitude)
@@ -688,7 +687,7 @@ class HilbertTestCase(unittest.TestCase):
         for padding in ['nextpow', 'none', 512]:
 
             h = elephant.signal_processing.hilbert(
-                self.one_period, N=padding)
+                self.one_period, padding=padding)
 
             amplitude = np.abs(h.magnitude)
             phase = np.angle(h.magnitude)
@@ -736,19 +735,31 @@ class WaveletTestCase(unittest.TestCase):
     def setUp(self):
         # generate a 10-sec test data of pure 50 Hz cosine wave
         self.fs = 1000.0
-        self.times = np.arange(0, 10.0, 1/self.fs)
+        self.times = np.arange(0, 10.0, 1 / self.fs)
         self.test_freq1 = 50.0
         self.test_freq2 = 60.0
-        self.test_data1 = np.cos(2*np.pi*self.test_freq1*self.times)
-        self.test_data2 = np.sin(2*np.pi*self.test_freq2*self.times)
+        self.test_data1 = np.cos(2 * np.pi * self.test_freq1 * self.times)
+        self.test_data2 = np.sin(2 * np.pi * self.test_freq2 * self.times)
         self.test_data_arr = np.vstack([self.test_data1, self.test_data2])
         self.test_data = neo.AnalogSignal(
-            self.test_data_arr.T*pq.mV, t_start=self.times[0]*pq.s,
-            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+            self.test_data_arr.T * pq.mV, t_start=self.times[0] * pq.s,
+            t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
         self.true_phase1 = np.angle(
-            self.test_data1 + 1j*np.sin(2*np.pi*self.test_freq1*self.times))
+            self.test_data1 +
+            1j *
+            np.sin(
+                2 *
+                np.pi *
+                self.test_freq1 *
+                self.times))
         self.true_phase2 = np.angle(
-            self.test_data2 - 1j*np.cos(2*np.pi*self.test_freq2*self.times))
+            self.test_data2 -
+            1j *
+            np.cos(
+                2 *
+                np.pi *
+                self.test_freq2 *
+                self.times))
         self.wt_freqs = [10, 20, 30]
 
     def test_wavelet_errors(self):
@@ -756,24 +767,27 @@ class WaveletTestCase(unittest.TestCase):
         Tests if errors are raised as expected.
         """
         # too high center frequency
-        kwds = {'signal': self.test_data, 'freq': self.fs/2}
+        kwds = {'signal': self.test_data, 'freq': self.fs / 2}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
-        kwds = {'signal': self.test_data_arr, 'freq': self.fs/2, 'fs': self.fs}
+        kwds = {
+            'signal': self.test_data_arr,
+            'freq': self.fs / 2,
+            'fs': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
         # too high center frequency in a list
-        kwds = {'signal': self.test_data, 'freq': [self.fs/10, self.fs/2]}
+        kwds = {'signal': self.test_data, 'freq': [self.fs / 10, self.fs / 2]}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
         kwds = {'signal': self.test_data_arr,
-                'freq': [self.fs/10, self.fs/2], 'fs': self.fs}
+                'freq': [self.fs / 10, self.fs / 2], 'fs': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
         # nco is not positive
-        kwds = {'signal': self.test_data, 'freq': self.fs/10, 'nco': 0}
+        kwds = {'signal': self.test_data, 'freq': self.fs / 10, 'nco': 0}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
@@ -786,13 +800,13 @@ class WaveletTestCase(unittest.TestCase):
         # check the shape of the result array
         # --- case of single center frequency
         wt = elephant.signal_processing.wavelet_transform(self.test_data,
-                                                          self.fs/10)
+                                                          self.fs / 10)
         self.assertTrue(wt.ndim == self.test_data.ndim)
         self.assertTrue(wt.shape[0] == self.test_data.shape[0])  # time axis
         self.assertTrue(wt.shape[1] == self.test_data.shape[1])  # channel axis
 
         wt_arr = elephant.signal_processing.wavelet_transform(
-            self.test_data_arr, self.fs/10, fs=self.fs)
+            self.test_data_arr, self.fs / 10, sampling_frequency=self.fs)
         self.assertTrue(wt_arr.ndim == self.test_data.ndim)
         # channel axis
         self.assertTrue(wt_arr.shape[0] == self.test_data_arr.shape[0])
@@ -800,7 +814,7 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(wt_arr.shape[1] == self.test_data_arr.shape[1])
 
         wt_arr1d = elephant.signal_processing.wavelet_transform(
-            self.test_data1, self.fs/10, fs=self.fs)
+            self.test_data1, self.fs / 10, sampling_frequency=self.fs)
         self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim)
         # time axis
         self.assertTrue(wt_arr1d.shape[0] == self.test_data1.shape[0])
@@ -808,14 +822,14 @@ class WaveletTestCase(unittest.TestCase):
         # --- case of multiple center frequencies
         wt = elephant.signal_processing.wavelet_transform(
             self.test_data, self.wt_freqs)
-        self.assertTrue(wt.ndim == self.test_data.ndim+1)
+        self.assertTrue(wt.ndim == self.test_data.ndim + 1)
         self.assertTrue(wt.shape[0] == self.test_data.shape[0])  # time axis
         self.assertTrue(wt.shape[1] == self.test_data.shape[1])  # channel axis
         self.assertTrue(wt.shape[2] == len(self.wt_freqs))  # frequency axis
 
         wt_arr = elephant.signal_processing.wavelet_transform(
-            self.test_data_arr, self.wt_freqs, fs=self.fs)
-        self.assertTrue(wt_arr.ndim == self.test_data_arr.ndim+1)
+            self.test_data_arr, self.wt_freqs, sampling_frequency=self.fs)
+        self.assertTrue(wt_arr.ndim == self.test_data_arr.ndim + 1)
         # channel axis
         self.assertTrue(wt_arr.shape[0] == self.test_data_arr.shape[0])
         # frequency axis
@@ -824,8 +838,8 @@ class WaveletTestCase(unittest.TestCase):
         self.assertTrue(wt_arr.shape[2] == self.test_data_arr.shape[1])
 
         wt_arr1d = elephant.signal_processing.wavelet_transform(
-            self.test_data1, self.wt_freqs, fs=self.fs)
-        self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim+1)
+            self.test_data1, self.wt_freqs, sampling_frequency=self.fs)
+        self.assertTrue(wt_arr1d.ndim == self.test_data1.ndim + 1)
         # frequency axis
         self.assertTrue(wt_arr1d.shape[0] == len(self.wt_freqs))
         # time axis
@@ -856,7 +870,7 @@ class WaveletTestCase(unittest.TestCase):
         wt = elephant.signal_processing.wavelet_transform(self.test_data,
                                                           self.test_freq1)
         # take a middle segment in order to avoid edge effects
-        amp = np.abs(wt[int(len(wt)/3):int(len(wt)//3*2), 0])
+        amp = np.abs(wt[int(len(wt) / 3):int(len(wt) // 3 * 2), 0])
         mean_amp = amp.mean()
         assert_array_almost_equal((amp - mean_amp) / mean_amp,
                                   np.zeros_like(amp), decimal=6)
@@ -864,14 +878,15 @@ class WaveletTestCase(unittest.TestCase):
         # check that the amplitude of WT is (almost) zero when center frequency
         # is considerably different from signal frequency
         wt_low = elephant.signal_processing.wavelet_transform(
-            self.test_data, self.test_freq1/10)
-        amp_low = np.abs(wt_low[int(len(wt)/3):int(len(wt)//3*2), 0])
+            self.test_data, self.test_freq1 / 10)
+        amp_low = np.abs(wt_low[int(len(wt) / 3):int(len(wt) // 3 * 2), 0])
         assert_array_almost_equal(amp_low, np.zeros_like(amp), decimal=6)
 
         # check that zero padding hardly affect the result
         wt_padded = elephant.signal_processing.wavelet_transform(
             self.test_data, self.test_freq1, zero_padding=False)
-        amp_padded = np.abs(wt_padded[int(len(wt)/3):int(len(wt)//3*2), 0])
+        amp_padded = np.abs(
+            wt_padded[int(len(wt) / 3):int(len(wt) // 3 * 2), 0])
         assert_array_almost_equal(amp_padded, amp, decimal=9)
 
     def test_wavelet_phase(self):
@@ -882,17 +897,22 @@ class WaveletTestCase(unittest.TestCase):
         # sinusoid
         wt = elephant.signal_processing.wavelet_transform(self.test_data,
                                                           self.test_freq1)
-        phase = np.angle(wt[int(len(wt)/3):int(len(wt)//3*2), 0])
-        true_phase = self.true_phase1[int(len(wt)/3):int(len(wt)//3*2)]
-        assert_array_almost_equal(np.exp(1j*phase), np.exp(1j*true_phase),
+        phase = np.angle(wt[int(len(wt) / 3):int(len(wt) // 3 * 2), 0])
+        true_phase = self.true_phase1[int(len(wt) / 3):int(len(wt) // 3 * 2)]
+        assert_array_almost_equal(np.exp(1j * phase), np.exp(1j * true_phase),
                                   decimal=6)
 
         # check that zero padding hardly affect the result
         wt_padded = elephant.signal_processing.wavelet_transform(
             self.test_data, self.test_freq1, zero_padding=False)
-        phase_padded = np.angle(wt_padded[int(len(wt)/3):int(len(wt)//3*2), 0])
-        assert_array_almost_equal(np.exp(1j*phase_padded), np.exp(1j*phase),
-                                  decimal=9)
+        phase_padded = np.angle(
+            wt_padded[int(len(wt) / 3):int(len(wt) // 3 * 2), 0])
+        assert_array_almost_equal(
+            np.exp(
+                1j * phase_padded),
+            np.exp(
+                1j * phase),
+            decimal=9)
 
 
 class DerivativeTestCase(unittest.TestCase):
@@ -901,16 +921,16 @@ class DerivativeTestCase(unittest.TestCase):
         self.fs = 1000.0
         self.tmin = 0.0
         self.tmax = 10.0
-        self.times = np.arange(self.tmin, self.tmax, 1/self.fs)
-        self.test_data1 = np.cos(2*np.pi*self.times)
+        self.times = np.arange(self.tmin, self.tmax, 1 / self.fs)
+        self.test_data1 = np.cos(2 * np.pi * self.times)
         self.test_data2 = np.vstack(
-            [np.cos(2*np.pi*self.times), np.sin(2*np.pi*self.times)]).T
+            [np.cos(2 * np.pi * self.times), np.sin(2 * np.pi * self.times)]).T
         self.test_signal1 = neo.AnalogSignal(
-            self.test_data1*pq.mV, t_start=self.times[0]*pq.s,
-            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+            self.test_data1 * pq.mV, t_start=self.times[0] * pq.s,
+            t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
         self.test_signal2 = neo.AnalogSignal(
-            self.test_data2*pq.mV, t_start=self.times[0]*pq.s,
-            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+            self.test_data2 * pq.mV, t_start=self.times[0] * pq.s,
+            t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
 
     def test_derivative_invalid_signal(self):
         '''Test derivative on non-AnalogSignal'''
@@ -925,7 +945,7 @@ class DerivativeTestCase(unittest.TestCase):
         self.assertTrue(isinstance(derivative, neo.AnalogSignal))
         self.assertEqual(
             derivative.units,
-            self.test_signal1.units/self.test_signal1.times.units)
+            self.test_signal1.units / self.test_signal1.times.units)
 
     def test_derivative_times(self):
         '''Test derivative returns AnalogSignal with correct times'''
@@ -936,11 +956,11 @@ class DerivativeTestCase(unittest.TestCase):
         # test that sampling period is correct
         self.assertEqual(
             derivative.sampling_period,
-            1/self.fs * self.test_signal1.times.units)
+            1 / self.fs * self.test_signal1.times.units)
 
         # test that all times are correct
         target_times = self.times[:-1] * self.test_signal1.times.units \
-            + derivative.sampling_period/2
+            + derivative.sampling_period / 2
         assert_array_almost_equal(derivative.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -961,12 +981,12 @@ class DerivativeTestCase(unittest.TestCase):
         # single channel
         assert_array_almost_equal(
             derivative1.magnitude,
-            np.vstack([np.diff(self.test_data1)]).T / (1/self.fs))
+            np.vstack([np.diff(self.test_data1)]).T / (1 / self.fs))
 
         # multi channel
         assert_array_almost_equal(derivative2.magnitude, np.vstack([
             np.diff(self.test_data2[:, 0]),
-            np.diff(self.test_data2[:, 1])]).T / (1/self.fs))
+            np.diff(self.test_data2[:, 1])]).T / (1 / self.fs))
 
 
 class RAUCTestCase(unittest.TestCase):
@@ -975,16 +995,16 @@ class RAUCTestCase(unittest.TestCase):
         self.fs = 1000.0
         self.tmin = 0.0
         self.tmax = 10.0
-        self.times = np.arange(self.tmin, self.tmax, 1/self.fs)
-        self.test_data1 = np.cos(2*np.pi*self.times)
+        self.times = np.arange(self.tmin, self.tmax, 1 / self.fs)
+        self.test_data1 = np.cos(2 * np.pi * self.times)
         self.test_data2 = np.vstack(
-            [np.cos(2*np.pi*self.times), np.sin(2*np.pi*self.times)]).T
+            [np.cos(2 * np.pi * self.times), np.sin(2 * np.pi * self.times)]).T
         self.test_signal1 = neo.AnalogSignal(
-            self.test_data1*pq.mV, t_start=self.times[0]*pq.s,
-            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+            self.test_data1 * pq.mV, t_start=self.times[0] * pq.s,
+            t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
         self.test_signal2 = neo.AnalogSignal(
-            self.test_data2*pq.mV, t_start=self.times[0]*pq.s,
-            t_stop=self.times[-1]*pq.s, sampling_period=(1/self.fs)*pq.s)
+            self.test_data2 * pq.mV, t_start=self.times[0] * pq.s,
+            t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
 
     def test_rauc_invalid_signal(self):
         '''Test rauc on non-AnalogSignal'''
@@ -1013,20 +1033,20 @@ class RAUCTestCase(unittest.TestCase):
         self.assertTrue(isinstance(rauc, pq.Quantity))
         self.assertEqual(
             rauc.units,
-            self.test_signal1.units*self.test_signal1.times.units)
+            self.test_signal1.units * self.test_signal1.times.units)
 
         # test that multi-bin result is AnalogSignal with correct units
         rauc_arr = elephant.signal_processing.rauc(
-            self.test_signal1, bin_duration=1*pq.s)
+            self.test_signal1, bin_duration=1 * pq.s)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
         self.assertEqual(
             rauc_arr.units,
-            self.test_signal1.units*self.test_signal1.times.units)
+            self.test_signal1.units * self.test_signal1.times.units)
 
     def test_rauc_times_without_overextending_bin(self):
         '''Test rauc returns correct times when signal is binned evenly'''
 
-        bin_duration = 1*pq.s  # results in all bin centers < original t_stop
+        bin_duration = 1 * pq.s  # results in all bin centers < original t_stop
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
@@ -1038,7 +1058,7 @@ class RAUCTestCase(unittest.TestCase):
         target_times = np.arange(self.tmin,
                                  self.tmax,
                                  bin_duration.magnitude) \
-            * bin_duration.units + bin_duration/2
+            * bin_duration.units + bin_duration / 2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -1050,7 +1070,7 @@ class RAUCTestCase(unittest.TestCase):
     def test_rauc_times_with_overextending_bin(self):
         '''Test rauc returns correct times when signal is NOT binned evenly'''
 
-        bin_duration = 0.99*pq.s  # results in one bin center > original t_stop
+        bin_duration = 0.99 * pq.s  # results in one bin center > original t_stop
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
@@ -1062,7 +1082,7 @@ class RAUCTestCase(unittest.TestCase):
         target_times = np.arange(self.tmin,
                                  self.tmax,
                                  bin_duration.magnitude) \
-            * bin_duration.units + bin_duration/2
+            * bin_duration.units + bin_duration / 2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -1093,9 +1113,9 @@ class RAUCTestCase(unittest.TestCase):
     def test_rauc_values_multi_bin(self):
         '''Test rauc returns correct values when there are multiple bins'''
         rauc_arr1 = elephant.signal_processing.rauc(
-            self.test_signal1, bin_duration=0.99*pq.s)
+            self.test_signal1, bin_duration=0.99 * pq.s)
         rauc_arr2 = elephant.signal_processing.rauc(
-            self.test_signal2, bin_duration=0.99*pq.s)
+            self.test_signal2, bin_duration=0.99 * pq.s)
         self.assertTrue(isinstance(rauc_arr1, neo.AnalogSignal))
         self.assertTrue(isinstance(rauc_arr2, neo.AnalogSignal))
 
@@ -1168,9 +1188,9 @@ class RAUCTestCase(unittest.TestCase):
     def test_rauc_arbitrary_baseline(self):
         '''Test rauc returns correct values when arbitrary baseline is given'''
         rauc1 = elephant.signal_processing.rauc(
-            self.test_signal1, baseline=0.123*pq.mV)
+            self.test_signal1, baseline=0.123 * pq.mV)
         rauc2 = elephant.signal_processing.rauc(
-            self.test_signal2, baseline=0.123*pq.mV)
+            self.test_signal2, baseline=0.123 * pq.mV)
         self.assertTrue(isinstance(rauc1, pq.Quantity))
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 
@@ -1187,9 +1207,9 @@ class RAUCTestCase(unittest.TestCase):
     def test_rauc_time_slice(self):
         '''Test rauc returns correct values when t_start, t_stop are given'''
         rauc1 = elephant.signal_processing.rauc(
-            self.test_signal1, t_start=0.123*pq.s, t_stop=0.456*pq.s)
+            self.test_signal1, t_start=0.123 * pq.s, t_stop=0.456 * pq.s)
         rauc2 = elephant.signal_processing.rauc(
-            self.test_signal2, t_start=0.123*pq.s, t_stop=0.456*pq.s)
+            self.test_signal2, t_start=0.123 * pq.s, t_stop=0.456 * pq.s)
         self.assertTrue(isinstance(rauc1, pq.Quantity))
         self.assertTrue(isinstance(rauc2, pq.Quantity))
 

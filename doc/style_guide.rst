@@ -42,6 +42,10 @@ throughout Elephant.
 
 .. code-block:: python
 
+    def pair_of_signals_example(spiketrain_i, spiketrain_j):
+        # Add '_i' and '_j' suffixes to a pair of signals, spiketrains or any
+        # other variables that come in pairs.
+
     def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
                          target_spiketrain, signal, signals, max_iterations,
                          min_threshold, n_bins, n_surrogates, bin_size, max_size,
@@ -119,9 +123,8 @@ throughout Elephant.
             Therefore, do not use terms as `n` or `n_surr`, that are not
             immediately understood.
         bin_size : pq.Quantity or int
-            Separate the words by underscore. Do not use `binsize`. Old functions
-            which use `binsize` will be gradually refactored to conform to the new
-            convention.
+            Separate the words by underscore. Do not use `bin_size`. Old functions
+            which use `binsize` are deprecated.
         max_size : float
             Another example showing that words should be separated by underscores.
             This intersects with the naming convention for a maximum value.

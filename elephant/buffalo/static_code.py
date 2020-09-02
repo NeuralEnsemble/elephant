@@ -148,6 +148,9 @@ class SubscriptStep(StaticStep):
                 index_value = int(slice_node.value.n)
             elif isinstance(slice_node.value, ast.Str):
                 index_value = slice_node.value.s
+            elif isinstance(slice_node.value, ast.Name):
+                from elephant.buffalo.provenance import Provenance
+                index_value = Provenance.get_script_variable(slice_node.value.id)
             else:
                 raise TypeError("Operation not supported")
 
