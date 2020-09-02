@@ -459,7 +459,6 @@ def lv(time_intervals, with_nan=False):
     return 3. * np.mean(np.power(cv_i, 2))
 
 
-@deprecated_alias(v='time_intervals')
 def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     r"""
     Calculate the measure of revised local variation LvR for a sequence of time
