@@ -20,7 +20,8 @@ from .statistics import instantaneous_rate
 
 __all__ = [
     "spike_triggered_average",
-    "spike_field_coherence"
+    "spike_field_coherence",
+    "spike_triggered_population_response"
 ]
 
 
@@ -352,6 +353,14 @@ def spike_triggered_population_response(spiketrains,
         Standard deviation of gaussian kernel for estimation of population
         rate.
         Default: 5*pq.ms
+
+    Returns
+    -------
+    list of neo.AnalogSignal
+        List of the zero time lag spike triggered response (stPR) from each
+        unit, in the same order as the input spiketrains, given for the time
+        window (-bin_size/2, bin_size/2).
+
 
     References
     ----------
