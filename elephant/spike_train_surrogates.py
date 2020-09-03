@@ -29,15 +29,16 @@ the original data:
 * joint_isi_dithering:
     calculate the Joint-ISI distribution and moves spike according to the
     probability distribution, that results from a fixed sum of ISI_before
-    and the ISI_afterwards. For further details see [1].
+    and the ISI_afterwards. For further details see [1,2].
 * bin_shuffling:
 
 References
 ----------
-[1] Louis et al (2010). Surrogate Spike Train Generation Through Dithering in
-    Operational Time. Front Comput Neurosci. 2010; 4: 127.
-[2] Gerstein, G. L. (2004). Searching for significance in spatio-temporal
+[1] Gerstein, G. (2004). Searching for significance in spatio-temporal
     firing patterns. Acta Neurobiologiae Experimentalis, 64(2), 203-208.
+[2] Louis, S., Gerstein, G., Gruen, S., and Diesmann M. (2010). Surrogate Spike
+    Train Generation Through Dithering in Operational Time. Front Comput
+    Neurosci. 2010; 4: 127.
 
 Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
@@ -139,11 +140,11 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     dither : pq.Quantity
         Amount of dithering. A spike at time `t` is placed randomly within
-        `]t-dither, t+dither[`.
+        `(t-dither, t+dither)`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
@@ -166,8 +167,8 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
         an initial estimation.
         Note, that with this option a spike cannot "jump" over the previous or
         next spike as it is normally possible.
-        If set to `None`, no refractoriness is in dithering.
-        Default: None
+        If set to None, no refractoriness is in dithering.
+        Default: None.
 
     Returns
     -------
@@ -259,7 +260,7 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     n_surrogates : int, optional
         Number of surrogates to be generated.
@@ -323,7 +324,7 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     n_surrogates : int, optional
         Number of surrogates to be generated.
@@ -398,11 +399,11 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     shift : pq.Quantity
         Amount of shift. `spiketrain` is shifted by a random amount uniformly
-        drawn from the range ]-shift, +shift[.
+        drawn from the range `(-shift, +shift)`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1.
@@ -410,7 +411,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
         Default: None.
-    edges : bool
+    edges : bool, optional
         For surrogate spikes falling outside the range `[spiketrain.t_start,
         spiketrain.t_stop)`, whether to drop them out (for `edges = True`) or
         set them to the range's closest end (for `edges = False`).
@@ -489,7 +490,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
 
     Parameters
     ----------
-    spiketrain :  neo.SpikeTrain
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     bin_size : pq.Quantity
         Size of the time bins within which to randomize the spike times.
@@ -568,27 +569,28 @@ def bin_shuffling(
         binned_spiketrain, max_displacement, n_surrogates=1, sliding=False):
     """
     Bin shuffling surrogate generation.
-    Given a binned spiketrain, the function shuffles the binned spike
-    train entries inside windows of the twice the length of `max_displacement`,
-    either with sliding or exclusive windows.
+
+    The function shuffles the entries of a binned spike train entries inside
+    windows with a fixed maximal displacement. The windows are either exclusive
+    or sliding.
 
     Parameters
     ----------
     binned_spiketrain : conv.BinnedSpikeTrain
-        the binned spiketrain to create surrogates of
+        The binned spiketrain to create surrogates of.
     max_displacement : int
-        number of bins the a single spike can be displaced
+        Number of bins that a single spike can be displaced.
     n_surrogates : int, optional
-        number of surrogates
-        Default : 1
+        Number of surrogates to create.
+        Default : 1.
     sliding : bool, optional
-        option to have a sliding window
-        Default : False
+        If True, the window is slided bin by bin.
+        Default : False.
 
     Returns
     -------
     binned_surrogates : list of conv.BinnedSpikeTrain
-        Each entry of the list is a binned surrogate spiketrain
+        Each entry of the list is a binned surrogate spiketrain.
     """
     displacement_window = 2 * max_displacement
 
@@ -631,7 +633,7 @@ def bin_shuffling(
 class JointISI(object):
     """
     The class :class:`JointISI` is implemented for Joint-ISI dithering
-    as a continuation of the ideas of Louis et al. (2010) and Gerstein (2004).
+    as a continuation of the ideas of [1] and [2].
 
     When creating a class instance, all necessary preprocessing steps are done
     to use :func:`JointISI.dithering` method.
@@ -639,20 +641,20 @@ class JointISI(object):
     Parameters
     ----------
     spiketrain : neo.SpikeTrain
-        Input spiketrain to create surrogates from.
+        Input spiketrain to create surrogates of.
     dither : pq.Quantity, optional
         This quantity describes the maximum displacement of a spike, when
-        method is 'window'. It is also used for the uniform dithering for
+        `method` is 'window'. It is also used for the uniform dithering for
         the spikes, which are outside the regime in the Joint-ISI
         histogram, where Joint-ISI dithering is applicable.
         Default: 15. * pq.ms.
     truncation_limit : pq.Quantity, optional
         The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
-        within the range `[0, inf]`. Since this is computationally not
+        within the range :math:`[0, \infty]`. Since this is computationally not
         feasible, the Joint-ISI distribution is truncated for high ISI.
         The Joint-ISI histogram is calculated for
         :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
-        Default: 100 * pq.ms.
+        Default: 100. * pq.ms.
     n_bins : int, optional
         The size of the joint-ISI-distribution will be
         `n_bins*n_bins/2`.
@@ -668,9 +670,9 @@ class JointISI(object):
         Default: True.
     use_sqrt : boolean, optional
         If True, the joint-ISI histogram is preprocessed by
-        applying a square root (following Gerstein et al. 2004).
+        applying a square root (following [1]).
         Default: False.
-    method : {'fast', window'}, optional
+    method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
             previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`
@@ -687,18 +689,25 @@ class JointISI(object):
         the smallest ISI of the `spiketrain` is lower than this value.
         Default: 4. * pq.ms.
     isi_dithering : boolean, optional
-        If true the Joint-ISI distribution is evaluated as the outer product
+        If True, the Joint-ISI distribution is evaluated as the outer product
         of the ISI-distribution with itself. Thus, all serial correlations are
         destroyed.
-        Default: False
+        Default: False.
 
     Attributes
     ----------
     max_change_index : np.ndarray or int:
-        For each ISI the corresponding index in the Joint-ISI distribution.
+        The maximal displacement in terms of bins.
     max_change_isi : np.ndarray or float:
-        The corresponding ISI for each index in :attr:`max_change_index`.
+        The maximal displacement in terms of the time units.
 
+    References
+    ----------
+    [1] Gerstein, G. (2004). Searching for significance in spatio-temporal
+        firing patterns. Acta Neurobiologiae Experimentalis, 64(2), 203-208.
+    [2] Louis, S., Gerstein, G., Gruen, S., and Diesmann M. (2010). Surrogate Spike
+        Train Generation Through Dithering in Operational Time. Front Comput
+        Neurosci. 2010; 4: 127.
     """
 
     # The min number of spikes, required for dithering.
@@ -718,6 +727,8 @@ class JointISI(object):
                  cutoff=True,
                  refractory_period=4. * pq.ms,
                  isi_dithering=False):
+        if not isinstance(spiketrain, neo.SpikeTrain):
+            raise TypeError('spiketrain must be of type neo.SpikeTrain')
         self.spiketrain = spiketrain
         self.truncation_limit = self.get_magnitude(truncation_limit)
         self.n_bins = n_bins
@@ -727,7 +738,7 @@ class JointISI(object):
         self.sigma = self.get_magnitude(sigma)
         self.alternate = alternate
 
-        if method not in ['fast', 'window']:
+        if method not in ('fast', 'window'):
             raise ValueError("The method can either be 'fast' or 'window', "
                              "but not '{}'".format(method))
         self.method = method
@@ -763,11 +774,11 @@ class JointISI(object):
         """
         Parameters
         ----------
-        quantity: pq.Quantity or float
+        quantity : pq.Quantity or float
 
         Returns
         -------
-        float
+        magnitude : float
             The magnitude of `quantity`, rescaled to the units of the input
             :attr:`spiketrain`.
         """
@@ -784,13 +795,15 @@ class JointISI(object):
         Returns
         -------
         bool
+            If True, the spike train is so sparse, that this algorithm can't be
+            applied properly. Instead spike_dithering() is used.
         """
         return len(self.spiketrain) < self.MIN_SPIKES
 
     @property
     def unit(self):
         """
-        The unit of the spiketrain. Also the unit of the surrogates.
+        The unit of the spiketrain. Thus, the unit of the output surrogates.
         """
         return self.spiketrain.units
 
@@ -798,6 +811,12 @@ class JointISI(object):
     def isi(self):
         """
         The inter-spike intervals of the spiketrain.
+
+        Returns
+        -------
+        np.ndarray or None
+            An array of inter-spike intervals of the `spiketrain`.
+            None, if not enough spikes in the `spiketrain`.
         """
         if self.too_less_spikes:
             return None
@@ -835,7 +854,7 @@ class JointISI(object):
 
         Returns
         -------
-        np.ndarray or float:
+        np.ndarray or float
             The corresponding ISI for each index.
         """
         return (isi_index + 0.5) * self.bin_width
@@ -847,7 +866,10 @@ class JointISI(object):
 
         Returns
         -------
-        joint_isi_histogram : np.ndarray
+        joint_isi_histogram : np.ndarray or None
+            A np.ndarray with shape `n_bins` x `n_bins` containing the
+            joint-ISI histogram.
+            None, if not enough spikes in the `spiketrain`.
         """
         if self.too_less_spikes:
             return None
@@ -885,19 +907,22 @@ class JointISI(object):
     @staticmethod
     def normalize_cumulative_distribution(array):
         """
-        This function normalizes parts of a cumulative distribution function
-        to be a cumulative distribution function again.
+        This function normalizes the cut-off of a cumulative distribution
+        function so that the first element is again zero and the last element
+        is one.
 
         Parameters
         ----------
-        array: np.ndarray
+        array : np.ndarray
             A monotonously increasing array as a part of an unnormalized
-             cumulative distribution function.
+            cumulative distribution function.
 
         Returns
         -------
         np.ndarray
             Monotonously increasing array from 0 to 1.
+            If `array` does not contain all equal elements, a only-zeros array
+            is returned.
         """
         if array[-1] - array[0] > 0.:
             return (array - array[0]) / (array[-1] - array[0])
@@ -907,20 +932,19 @@ class JointISI(object):
         """
         Implementation of Joint-ISI-dithering for spike trains that pass the
         threshold of the dense rate. If not, a uniform dithered spike train is
-        given back. The implementation continued the ideas of Louis et al.
-        (2010) and Gerstein (2004).
+        given back. The implementation continued the ideas of [1] and [2].
 
         Parameters
         ----------
-        n_surrogates: int
+        n_surrogates : int
             The number of dithered spiketrains to be returned.
             Default: 1.
 
         Returns
         ----------
-        dithered_sts: list of neo.SpikeTrain
+        dithered_sts : list of neo.SpikeTrain
             Spike trains, that are dithered versions of the given
-            :attr:`spiketrain`
+            :attr:`spiketrain`.
         """
         if self.too_less_spikes:
             return [self.spiketrain] * n_surrogates
@@ -1065,9 +1089,9 @@ class JointISI(object):
 def trial_shifting(spiketrains, dither, n_surrogates=1):
     """
     Generates surrogates of a spike train by trial shifting.
+
     It shifts by a random uniform amount independently different trials,
-    individuated by the `trial_length` and the possible buffering period `sep`
-    present in between trials.
+    which are the elements of a list of spiketrains.
     The shifting is done independently for each surrogate.
 
     Parameters
@@ -1142,8 +1166,8 @@ def _trial_shifting_of_concatenated_spiketrain(
     """
     Generates surrogates of a spike train by trial shifting.
     It shifts by a random uniform amount independently different trials,
-    individuated by the `trial_length` and the possible buffering period `sep`
-    present in between trials.
+    individuated by the `trial_length` and the possible buffering period
+    `trial_separation` present in between trials.
     The shifting is done independently for each surrogate.
 
     Parameters
@@ -1152,13 +1176,13 @@ def _trial_shifting_of_concatenated_spiketrain(
         A single spike train, where the trials are concatenated.
     dither : pq.Quantity
         Amount of dithering.
-    n_surrogates : int, optional
-        Number of surrogates to be generated.
-        Default: 1.
-    trial_length : pq.Quantity
+        trial_length : pq.Quantity
         The length of the single-trial spiketrain.
     trial_separation : pq.Quantity
         Buffering in between trials in the concatenation of the spiketrain.
+    n_surrogates : int, optional
+        Number of surrogates to be generated.
+        Default: 1.
 
     Returns
     -------
@@ -1246,10 +1270,20 @@ def surrogates(
         Each surrogate spike train obtained independently from `spiketrain`
         according to chosen surrogate type. The time range of the surrogate
         spike trains is the same as in `spiketrain`.
+
+    Raises
+    ------
+    TypeError :
     """
 
-    if not isinstance(spiketrain, neo.SpikeTrain):
-        raise ValueError("spiketrain must be of instance neo.SpikeTrain")
+    if isinstance(spiketrain, list):
+        if not isinstance(spiketrain[0], neo.SpikeTrain):
+            raise TypeError('spiketrain must be of instance neo.SpikeTrain or'
+                            ' a list of neo.SpikeTrain')
+    elif not isinstance(spiketrain, neo.SpikeTrain):
+        raise TypeError('spiketrain must be of instance neo.SpikeTrain or'
+                        ' a list of neo.SpikeTrain')
+
 
     # Define the surrogate function to use, depending on the specified method
     surrogate_types = {
