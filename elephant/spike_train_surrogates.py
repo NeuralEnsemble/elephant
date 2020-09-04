@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Module to generate surrogates of a spike train by randomising its spike times
-in different ways (see [1]). Different methods destroy different features of
-the original data:
+in different ways (see [2]_ and [3]_). Different methods destroy different
+features of the original data:
 
 * randomise_spikes:
     randomly reposition all spikes inside the time interval (t_start, t_stop).
@@ -17,7 +17,7 @@ the original data:
     amount; keeps spike count, ISIs, and firing rates computed on a slow
     temporal scale
 * jitter_spikes:
-    discretise the full time interval (t_start, t_stop) into time segments
+    discretize the full time interval (t_start, t_stop) into time segments
     and locally randomise the spike times (see randomise_spikes) inside each
     segment. Keeps spike count inside each segment and creates locally Poisson
     spike trains with locally time-stationary rates
@@ -29,16 +29,23 @@ the original data:
 * joint_isi_dithering:
     calculate the Joint-ISI distribution and moves spike according to the
     probability distribution, that results from a fixed sum of ISI_before
-    and the ISI_afterwards. For further details see [1,2].
+    and the ISI_afterwards. For further details see [1]_ and [2]_.
 * bin_shuffling:
+    shuffles the bins of a binned spiketrain inside of exclusive windows.
+* trial_shifting:
+    shifts each trial, i.e., each element of a list of spiketrains by a
+    uniformly drawn random amount.
 
 References
 ----------
-[1] Gerstein, G. (2004). Searching for significance in spatio-temporal
-    firing patterns. Acta Neurobiologiae Experimentalis, 64(2), 203-208.
-[2] Louis, S., Gerstein, G., Gruen, S., and Diesmann M. (2010). Surrogate Spike
-    Train Generation Through Dithering in Operational Time. Front Comput
-    Neurosci. 2010; 4: 127.
+.. [1] Gerstein, G. L. (2004). Searching for significance in spatio-temporal
+   firing patterns. Acta Neurobiol. Exp., 64:203–207.
+.. [2] Louis, S., Gerstein, G. L., Gruen, S., and Diesmann, M. (2010).
+   Surrogate spike train generation through dithering in operational time.
+   Front. Comput. Neurosci., 4(127).
+.. [3] Louis, S., Borgelt, C., and Gruen, S. (2010). Generation and selection
+   of surrogate methods for correlation analysis. In Rotter, S. and Gruen, S.,
+   editors, Analysis of Parallel Spike Trains. Springer, Berlin.
 
 Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
@@ -527,8 +534,8 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
          4.69370604e+02]) * ms, [0.0 ms, 1000.0 ms])>]
 
     """
-    # Define standard time unit; all time Quantities are converted to
-    # scalars after being rescaled to this unit, to use the power of numpy
+    # Define standard time _unit; all time Quantities are converted to
+    # scalars after being rescaled to this _unit, to use the power of numpy
     std_unit = bin_size.units
 
     # Compute bin edges for the jittering procedure
@@ -557,7 +564,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     dilats = np.array([bin_sizes_dl[bin_id] for bin_id in bin_ids])
 
     # Compute each surrogate by dilating and shifting each spike s in the
-    # poisson 0-1 spike trains to dilat * s + offset. Attach time unit again
+    # poisson 0-1 spike trains to dilat * s + offset. Attach time _unit again
     surr = np.sort(surr_poiss01 * dilats + offsets, axis=1) * std_unit
 
     return [neo.SpikeTrain(s, t_start=spiketrain.t_start,
@@ -633,7 +640,7 @@ def bin_shuffling(
 class JointISI(object):
     """
     The class :class:`JointISI` is implemented for Joint-ISI dithering
-    as a continuation of the ideas of [1] and [2].
+    as a continuation of the ideas of [1]_ and [2]_.
 
     When creating a class instance, all necessary preprocessing steps are done
     to use :func:`JointISI.dithering` method.
@@ -695,20 +702,13 @@ class JointISI(object):
         destroyed.
         Default: False.
 
-    Attributes
-    ----------
-    max_change_index : np.ndarray or int:
-        The maximal displacement in terms of bins.
-    max_change_isi : np.ndarray or float:
-        The maximal displacement in terms of the time units.
-
     References
     ----------
-    [1] Gerstein, G. (2004). Searching for significance in spatio-temporal
-        firing patterns. Acta Neurobiologiae Experimentalis, 64(2), 203-208.
-    [2] Louis, S., Gerstein, G., Gruen, S., and Diesmann M. (2010). Surrogate Spike
-        Train Generation Through Dithering in Operational Time. Front Comput
-        Neurosci. 2010; 4: 127.
+    .. [1] Gerstein, G. L. (2004). Searching for significance in
+       spatio-temporal firing patterns. Acta Neurobiol. Exp., 64:203–207.
+    .. [2] Louis, S., Gerstein, G. L., Gruen, S., and Diesmann, M. (2010).
+       Surrogate spike train generation through dithering in operational time.
+       Front. Comput. Neurosci., 4(127).
     """
 
     # The min number of spikes, required for dithering.
@@ -731,12 +731,12 @@ class JointISI(object):
         if not isinstance(spiketrain, neo.SpikeTrain):
             raise TypeError('spiketrain must be of type neo.SpikeTrain')
         self.spiketrain = spiketrain
-        self.truncation_limit = self.get_magnitude(truncation_limit)
+        self.truncation_limit = self._get_magnitude(truncation_limit)
         self.n_bins = n_bins
 
-        self.dither = self.get_magnitude(dither)
+        self.dither = self._get_magnitude(dither)
 
-        self.sigma = self.get_magnitude(sigma)
+        self.sigma = self._get_magnitude(sigma)
         self.alternate = alternate
 
         if method not in ('fast', 'window'):
@@ -744,8 +744,8 @@ class JointISI(object):
                              "but not '{}'".format(method))
         self.method = method
 
-        refractory_period = self.get_magnitude(refractory_period)
-        if not self.too_less_spikes:
+        refractory_period = self._get_magnitude(refractory_period)
+        if not self._too_less_spikes:
             minimal_isi = np.min(self.isi)
             refractory_period = min(refractory_period, minimal_isi)
         self.refractory_period = refractory_period
@@ -754,8 +754,8 @@ class JointISI(object):
         self.use_sqrt = use_sqrt
         self._jisih_cumulatives = None
 
-        self.max_change_index = self.isi_to_index(self.dither)
-        self.max_change_isi = self.index_to_isi(self.max_change_index)
+        self._max_change_index = self._isi_to_index(self.dither)
+        self._max_change_isi = self._index_to_isi(self._max_change_index)
 
         self.isi_dithering = isi_dithering
 
@@ -771,7 +771,7 @@ class JointISI(object):
                       DeprecationWarning)
         return self.n_bins
 
-    def get_magnitude(self, quantity):
+    def _get_magnitude(self, quantity):
         """
         Parameters
         ----------
@@ -784,11 +784,11 @@ class JointISI(object):
             :attr:`spiketrain`.
         """
         if isinstance(quantity, pq.Quantity):
-            return quantity.rescale(self.unit).magnitude
+            return quantity.rescale(self._unit).magnitude
         return quantity
 
     @property
-    def too_less_spikes(self):
+    def _too_less_spikes(self):
         """
         This is a check if the :attr:`spiketrain` has enough spikes to evaluate
         the joint-ISI histogram.
@@ -797,14 +797,15 @@ class JointISI(object):
         -------
         bool
             If True, the spike train is so sparse, that this algorithm can't be
-            applied properly. Instead spike_dithering() is used.
+            applied properly. Than in dithering() copies of the spiketrains are
+            returned.
         """
         return len(self.spiketrain) < self.MIN_SPIKES
 
     @property
-    def unit(self):
+    def _unit(self):
         """
-        The unit of the spiketrain. Thus, the unit of the output surrogates.
+        The _unit of the spiketrain. Thus, the _unit of the output surrogates.
         """
         return self.spiketrain.units
 
@@ -819,7 +820,7 @@ class JointISI(object):
             An array of inter-spike intervals of the `spiketrain`.
             None, if not enough spikes in the `spiketrain`.
         """
-        if self.too_less_spikes:
+        if self._too_less_spikes:
             return None
         return isi(self.spiketrain.magnitude)
 
@@ -827,7 +828,7 @@ class JointISI(object):
     def bin_width(self):
         return self.truncation_limit / self.n_bins
 
-    def isi_to_index(self, inter_spike_interval):
+    def _isi_to_index(self, inter_spike_interval):
         """
         A function that gives for each ISI the corresponding index in the
         Joint-ISI distribution.
@@ -845,7 +846,7 @@ class JointISI(object):
         """
         return np.floor(inter_spike_interval / self.bin_width).astype(int)
 
-    def index_to_isi(self, isi_index):
+    def _index_to_isi(self, isi_index):
         """
         Maps `isi_index` back to the original ISI.
 
@@ -874,7 +875,7 @@ class JointISI(object):
             joint-ISI histogram.
             None, if not enough spikes in the `spiketrain`.
         """
-        if self.too_less_spikes:
+        if self._too_less_spikes:
             return None
         isis = self.isi
         if not self.isi_dithering:
@@ -895,7 +896,7 @@ class JointISI(object):
 
         if self.sigma:
             if self.cutoff:
-                start_index = self.isi_to_index(self.refractory_period)
+                start_index = self._isi_to_index(self.refractory_period)
                 joint_isi_histogram[
                     start_index:, start_index:] = gaussian_filter(
                         joint_isi_histogram[start_index:, start_index:],
@@ -908,7 +909,7 @@ class JointISI(object):
         return joint_isi_histogram
 
     @staticmethod
-    def normalize_cumulative_distribution(array):
+    def _normalize_cumulative_distribution(array):
         """
         This function normalizes the cut-off of a cumulative distribution
         function so that the first element is again zero and the last element
@@ -935,7 +936,7 @@ class JointISI(object):
         """
         Implementation of Joint-ISI-dithering for spike trains that pass the
         threshold of the dense rate. If not, a uniform dithered spike train is
-        given back. The implementation continued the ideas of [1] and [2].
+        given back.
 
         Parameters
         ----------
@@ -949,7 +950,7 @@ class JointISI(object):
             Spike trains, that are dithered versions of the given
             :attr:`spiketrain`.
         """
-        if self.too_less_spikes:
+        if self._too_less_spikes:
             return [self.spiketrain] * n_surrogates
 
         # Checks, whether the preprocessing is already done.
@@ -963,7 +964,7 @@ class JointISI(object):
 
             dithered_st = self.spiketrain[0].magnitude + \
                 np.r_[0., np.cumsum(dithered_isi)]
-            dithered_st = neo.SpikeTrain(dithered_st * self.unit,
+            dithered_st = neo.SpikeTrain(dithered_st * self._unit,
                                          t_start=self.spiketrain.t_start,
                                          t_stop=self.spiketrain.t_stop)
             dithered_sts.append(dithered_st)
@@ -978,7 +979,7 @@ class JointISI(object):
                 # Taking anti-diagonals of the original joint-ISI histogram
                 diagonal = np.diagonal(
                     rotated_jisih, offset=-self.n_bins + double_index + 1)
-                jisih_cum = self.normalize_cumulative_distribution(
+                jisih_cum = self._normalize_cumulative_distribution(
                     np.cumsum(diagonal))
                 self._jisih_cumulatives.append(jisih_cum)
             self._jisih_cumulatives = np.array(self._jisih_cumulatives)
@@ -989,15 +990,15 @@ class JointISI(object):
         jisih_diag_cums = self._window_diagonal_cumulatives(rotated_jisih)
         jisih_cumulatives = np.zeros(
             (self.n_bins, self.n_bins,
-             2 * self.max_change_index + 1))
+             2 * self._max_change_index + 1))
         for curr_isi_id in range(self.n_bins):
             for next_isi_id in range(self.n_bins - curr_isi_id):
                 double_index = next_isi_id + curr_isi_id
                 cum_slice = jisih_diag_cums[
                     double_index,
-                    curr_isi_id: curr_isi_id + 2 * self.max_change_index + 1]
+                    curr_isi_id: curr_isi_id + 2 * self._max_change_index + 1]
 
-                normalized_cum = self.normalize_cumulative_distribution(
+                normalized_cum = self._normalize_cumulative_distribution(
                     cum_slice)
                 jisih_cumulatives[curr_isi_id][next_isi_id] = normalized_cum
         return jisih_cumulatives
@@ -1008,7 +1009,7 @@ class JointISI(object):
 
         jisih_diag_cums = np.zeros((self.n_bins,
                                     self.n_bins
-                                    + 2 * self.max_change_index))
+                                    + 2 * self._max_change_index))
 
         # double_index corresponds to the sum of the indices for the previous
         # and the subsequent ISI.
@@ -1018,11 +1019,11 @@ class JointISI(object):
                                              + double_index + 1))
 
             right_padding = jisih_diag_cums.shape[1] - \
-                len(cum_diag) - self.max_change_index
+                len(cum_diag) - self._max_change_index
 
             jisih_diag_cums[double_index] = np.pad(
                 cum_diag,
-                pad_width=(self.max_change_index, right_padding),
+                pad_width=(self._max_change_index, right_padding),
                 mode='constant',
                 constant_values=(cum_diag[0], cum_diag[-1])
             )
@@ -1040,7 +1041,7 @@ class JointISI(object):
         number_of_isis = len(dithered_isi)
 
         for start in range(sampling_rhythm):
-            dithered_isi_indices = self.isi_to_index(dithered_isi)
+            dithered_isi_indices = self._isi_to_index(dithered_isi)
             for i in range(start, number_of_isis - 1,
                            sampling_rhythm):
                 step = self._get_dithering_step(
@@ -1063,17 +1064,17 @@ class JointISI(object):
             if self.method == 'fast':
                 cum_dist_func = self._jisih_cumulatives[
                     double_index]
-                compare_isi = self.index_to_isi(curr_isi_id)
+                compare_isi = self._index_to_isi(curr_isi_id)
             else:
                 cum_dist_func = self._jisih_cumulatives[
                     curr_isi_id][next_isi_id]
-                compare_isi = self.max_change_isi
+                compare_isi = self._max_change_isi
 
             if cum_dist_func[-1] > 0.:
                 # when the method is 'fast', new_isi_id is where the current
                 # ISI id should go to.
                 new_isi_id = np.searchsorted(cum_dist_func, random.random())
-                step = self.index_to_isi(new_isi_id) - compare_isi
+                step = self._index_to_isi(new_isi_id) - compare_isi
                 return step
 
         return self._uniform_dither_not_jisi_movable_spikes(
@@ -1246,6 +1247,7 @@ def surrogates(
         Default: 1.
     method : str, optional
         The method to use to generate surrogate spike trains. Can be one of:
+
         * 'dither_spike_train': see `surrogates.dither_spike_train()`
             [`dt` needed]
         * 'dither_spikes': see `surrogates.dither_spikes()` [`dt` needed]
