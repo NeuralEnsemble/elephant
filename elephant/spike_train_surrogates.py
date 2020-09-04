@@ -534,8 +534,8 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
          4.69370604e+02]) * ms, [0.0 ms, 1000.0 ms])>]
 
     """
-    # Define standard time _unit; all time Quantities are converted to
-    # scalars after being rescaled to this _unit, to use the power of numpy
+    # Define standard time unit; all time Quantities are converted to
+    # scalars after being rescaled to this unit, to use the power of numpy
     std_unit = bin_size.units
 
     # Compute bin edges for the jittering procedure
@@ -564,7 +564,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     dilats = np.array([bin_sizes_dl[bin_id] for bin_id in bin_ids])
 
     # Compute each surrogate by dilating and shifting each spike s in the
-    # poisson 0-1 spike trains to dilat * s + offset. Attach time _unit again
+    # poisson 0-1 spike trains to dilat * s + offset. Attach time unit again
     surr = np.sort(surr_poiss01 * dilats + offsets, axis=1) * std_unit
 
     return [neo.SpikeTrain(s, t_start=spiketrain.t_start,
@@ -805,7 +805,7 @@ class JointISI(object):
     @property
     def _unit(self):
         """
-        The _unit of the spiketrain. Thus, the _unit of the output surrogates.
+        The unit of the spiketrain. Thus, the unit of the output surrogates.
         """
         return self.spiketrain.units
 
