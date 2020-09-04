@@ -9,6 +9,7 @@ import itertools
 
 from elephant.buffalo.static_code import (AttributeStep, NameStep,
                                           SubscriptStep)
+from elephant.buffalo.object_hash import BuffaloObjectHash
 
 
 class NameAST(ast.NodeTransformer):
@@ -29,9 +30,9 @@ class NameAST(ast.NodeTransformer):
 
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
-            instance, object_hash = self.provenance.add_script_variable(node.id)
+            instance = self.provenance.get_script_variable(node.id)
             setattr(node, 'instance', instance)
-            setattr(node, 'object_hash', object_hash)
+            setattr(node, 'object_hash', BuffaloObjectHash(instance).info())
             return node
         return node
 
@@ -87,14 +88,13 @@ def _build_object_tree_provenance(object_tree, provenance_tracker):
     def _hash_and_store(tree_node):
         if tree_node.object_hash is None:
             # Hash if needed
-            tree_node.object_hash = provenance_tracker.add(
-                tree_node.value)
+            tree_node.object_hash = BuffaloObjectHash(tree_node.value).info()
         if tree_node.parent is not None:
             # Insert provenance step
             if tree_node.parent.object_hash is None:
                 # Hash if needed
-                tree_node.parent.object_hash = provenance_tracker.add(
-                    tree_node.parent.value)
+                tree_node.parent.object_hash = BuffaloObjectHash(
+                    tree_node.parent.value).info()
             provenance_tracker.history.append(
                 tree_node.get_analysis_step())
             _hash_and_store(tree_node.parent)

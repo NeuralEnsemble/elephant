@@ -98,10 +98,10 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         ----------
         filename : str
             Destination where to save the file.
-        show : bool
+        show : bool, optional
             If True, display the graph in the browser after saving.
             Default: False.
-        layout : bool
+        layout : bool, optional
             If True, use hierarchical layout if this is set.
             Default: True.
 
