@@ -47,7 +47,7 @@ FunctionDefinition = namedtuple('FunctionDefinition', ('name',
 
 
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
-VarArgs = namedtuple('VarArgs', 'value')
+VarArgs = namedtuple('VarArgs', 'args')
 
 
 class Provenance(object):
@@ -90,10 +90,6 @@ class Provenance(object):
         * 'call_ast': `ast.AST` object containing the Abstract Syntax Tree
           of the code that generated the function call.
         * 'code_statement': `str` with the code statement calling the function.
-    objects : dict
-        Dictionary where the keys are the hash values of every input and
-        output object tracked during the workflow. The hashes are obtained
-        by the `:class:BuffaloObjectHash` class.
 
     Raises
     ------
@@ -103,7 +99,6 @@ class Provenance(object):
 
     active = False
     history = []
-    objects = set()
     inputs = None
 
     calling_frame = None
@@ -119,11 +114,12 @@ class Provenance(object):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
 
-    def _insert_static_information(self, tree, inputs, output):
+    def _insert_static_information(self, tree):
         # Use a NodeVisitor to find the Call node that corresponds to the
         # current AnalysisStep. It will fetch static relationships between
         # variables and attributes, and link to the inputs and outputs of the
         # function
+        # TODO: fix bug when call is inside another call e.g. list.append
         ast_visitor = CallAST(self)
         ast_visitor.visit(tree)
 
@@ -132,16 +128,21 @@ class Provenance(object):
         @wraps(function)
         def wrapped(*args, **kwargs):
 
-            # For functions that are used inside other decorated functions, or
-            # recursively, check if the calling frame is the one being
-            # tracked. We do this by fetching the calling line number if
-            # this comes from the calling frame. Otherwise, the line number
-            # will be None, and therefore the provenance tracking loop will
-            # be skipped.
-            # For list comprehensions, we need to check the frame above, as
-            # this creates a frame named <listcomp>
-            lineno = None
+            # Call the function
+            function_output = function(*args, **kwargs)
+            time_stamp = datetime.datetime.utcnow().isoformat()
+
+            # If capturing provenance...
             if Provenance.active:
+
+                # For functions that are used inside other decorated functions,
+                # or recursively, check if the calling frame is the one being
+                # tracked. We do this by getting the line number if this comes
+                # from the calling frame. Otherwise, the line number will be
+                # None, and the provenance tracking block will be skipped.
+                # For list comprehensions, we need to check the frame above,
+                # as this creates a frame named <listcomp>
+                lineno = None
                 try:
                     frame = inspect.currentframe().f_back
                     frame_info = inspect.getframeinfo(frame)
@@ -159,123 +160,132 @@ class Provenance(object):
                     del frame_info
                     del frame
 
-            # Call the function
-            function_output = function(*args, **kwargs)
-            time_stamp = datetime.datetime.utcnow().isoformat()
+                # Capture provenance information
+                if lineno is not None:
 
-            # If capturing provenance...
-            if Provenance.active and lineno is not None:
+                    # 1. Capture Abstract Syntax Tree (AST) of the call to the
+                    # function. We need to check the source code in case the
+                    # call spans multiple lines. In this case, we fetch the
+                    # full statement.
+                    source_line = \
+                        self.code_analyzer.extract_multiline_statement(lineno)
+                    ast_tree = ast.parse(source_line)
 
-                # 1. Capture Abstract Syntax Tree (AST) of the call to the
-                # function. We need to check the source code in case the
-                # call spans multiple lines. In this case, we fetch the
-                # full statement.
-                source_line = self.code_analyzer.extract_multiline_statement(
-                    lineno)
-                ast_tree = ast.parse(source_line)
+                    # 2. Check if there is an assignment to one or more
+                    # variables. This will be used to identify if there are
+                    # multiple output nodes. This is needed because just
+                    # checking if `function_output` is tuple does not work if
+                    # the function is actually returning a tuple.
+                    return_targets = []
+                    if isinstance(ast_tree.body[0], ast.Assign):
+                        assign_target = ast_tree.body[0].targets[0]
+                        if isinstance(assign_target, ast.Tuple):
+                            return_targets = [target.id for target in
+                                              assign_target.elts]
+                        elif isinstance(assign_target, ast.Name):
+                            return_targets = [assign_target.id]
+                        else:
+                            raise ValueError("Unknown assign target!")
 
-                # 2. Check if there is an assignment to one or more variables
-                # This will be used to identify if there are multiple output
-                # nodes. This is needed because just checking if
-                # `function_output` is tuple does not work if the function is
-                # actually returning a tuple
-                return_targets = []
-                if isinstance(ast_tree.body[0], ast.Assign):
-                    assign_target = ast_tree.body[0].targets[0]
-                    if isinstance(assign_target, ast.Tuple):
-                        return_targets = [target.id for target in
-                                          assign_target.elts]
-                    elif isinstance(assign_target, ast.Name):
-                        return_targets = [assign_target.id]
+                    # 3. Extract function name and information
+                    # TODO: fetch version information
+
+                    function_name = FunctionDefinition(
+                        function.__name__, function.__module__, None)
+
+                    # 4. Extract parameters passed to the function and store
+                    # in `input_data` dictionary. Two separate lists with the
+                    # names according to the arg/kwarg order are also
+                    # constructed, to map to the `args` and `keywords` fields
+                    # of the AST nodes
+
+                    input_data = {}
+                    input_args_names = []
+                    input_kwargs_names = []
+
+                    try:
+                        func_parameters = \
+                            inspect.signature(function).bind(*args, **kwargs)
+
+                        for arg_name, arg_value in \
+                                func_parameters.arguments.items():
+                            cur_parameter = \
+                                func_parameters.signature.parameters[arg_name]
+
+                            if cur_parameter.kind != VAR_POSITIONAL:
+                                input_data[arg_name] = arg_value
+                            else:
+                                # Variable positional arguments are stored as
+                                # the namedtuple VarArgs.
+                                input_data[arg_name] = VarArgs(arg_value)
+
+                            if arg_name in kwargs:
+                                input_kwargs_names.append(arg_name)
+                            else:
+                                input_args_names.append(arg_name)
+
+                    except ValueError:
+                        # Can't inspect signature. Append args/kwargs by
+                        # order
+                        for arg_index, arg in enumerate(args):
+                            input_data[arg_index] = arg
+                            input_args_names.append(arg_index)
+
+                        kwarg_start = len(input_data)
+                        for kwarg_index, kwarg in enumerate(kwargs,
+                                                            start=kwarg_start):
+                            input_data[kwarg_index] = kwarg
+                            input_kwargs_names.append(kwarg_index)
+
+                    # 5. Create parameters/input descriptions for the graph.
+                    # Here the inputs, but not the parameters passed to the
+                    # function, are transformed in the hashable type
+                    # `BuffaloObjectHash`. Inputs are defined by the parameter
+                    # `inputs` when initializing the class, and stored as the
+                    # class attribute `inputs`.
+
+                    parameters = {}
+                    inputs = {}
+                    for key, input_value in input_data.items():
+                        if key in self.inputs:
+                            if isinstance(input_value, VarArgs):
+                                var_input_list = []
+                                for var_arg in input_value.args:
+                                    var_input_list.append(
+                                        BuffaloObjectHash(var_arg).info())
+                                inputs[key] = VarArgs(tuple(var_input_list))
+                            else:
+                                inputs[key] = \
+                                    BuffaloObjectHash(input_value).info()
+                        else:
+                            parameters[key] = input_value
+
+                    # 6. Create hashable `BuffaloObjectHash` for the output
+                    # objects to follow individual returns
+                    outputs = {}
+                    if len(return_targets) > 1:
+                        for index, item in enumerate(function_output):
+                            outputs[index] = BuffaloObjectHash(item).info()
                     else:
-                        raise ValueError("Unknown assign target!")
+                        outputs[0] = BuffaloObjectHash(function_output).info()
 
-                # 3. Extract function name and information
-                # TODO: fetch version information
+                    # 7. Analyze AST and fetch static relationships in the
+                    # input/output and other variables/objects in the script
+                    self._insert_static_information(ast_tree)
 
-                function_name = FunctionDefinition(
-                    function.__name__, function.__module__, None)
+                    # 8. Create tuple with the analysis step information.
+                    step = AnalysisStep(function_name,
+                                        inputs,
+                                        parameters,
+                                        outputs,
+                                        input_args_names, input_kwargs_names,
+                                        ast_tree, source_line, time_stamp,
+                                        return_targets)
 
-                # 4. Extract parameters passed to function and store in
-                #    `input_data` dictionary
-                #    Two separate lists with the names according to the
-                #    arg/kwarg order are also constructed, to map to the
-                #    `args` and `keywords` fields of AST nodes
-
-                input_data = {}
-                input_args_names = []
-                input_kwargs_names = []
-
-                try:
-                    func_parameters = inspect.signature(function).bind(*args,
-                                                                   **kwargs)
-                    for arg_name, arg_value in func_parameters.arguments.items():
-                        cur_parameter = func_parameters.signature.parameters[
-                            arg_name]
-                        if cur_parameter.kind != VAR_POSITIONAL:
-                            input_data[arg_name] = arg_value
-                        else:
-                            input_data[arg_name] = VarArgs(arg_value)
-                        if arg_name in kwargs:
-                            input_kwargs_names.append(arg_name)
-                        else:
-                            input_args_names.append(arg_name)
-                except ValueError:
-                    # Can't inspect signature
-                    for arg_index, arg in enumerate(args):
-                        input_data[arg_index] = arg
-                        input_args_names.append(arg_index)
-                    kwarg_start = len(input_data)
-                    for kwarg_index, kwarg in enumerate(kwargs, start=kwarg_start):
-                        input_data[kwarg_index] = kwarg
-                        input_kwargs_names.append(kwarg_index)
-
-
-                # 5. Create parameters/input descriptions for the graph
-                #    Here the inputs, but not the parameters passed to the
-                #    function, are transformed in the hashable type
-                #    `BuffaloObjectHash`. Inputs are defined by the parameter
-                #    `inputs` when initializing the class, and stored as the
-                #    class attribute `inputs`
-
-                parameters = {}
-                inputs = {}
-                for key, value in input_data.items():
-                    if key in self.inputs:
-                        if isinstance(value, VarArgs):
-                            var_input_list = []
-                            for var_arg in value.value:
-                                var_input_list.append(self.add(var_arg))
-                            inputs[key] = VarArgs(tuple(var_input_list))
-                        else:
-                            inputs[key] = self.add(value)
-                    else:
-                        parameters[key] = value
-
-                # 6. Create hashable `BuffaloObjectHash` for the output
-                # objects to follow individual returns
-                outputs = {}
-                if len(return_targets) > 1:
-                    for index, item in enumerate(function_output):
-                        outputs[index] = self.add(item)
-                else:
-                    outputs[0] = self.add(function_output)
-
-                # 7. Analyze AST and fetch static relationships in the
-                # input/output and other variables/objects in the script
-                self._insert_static_information(ast_tree, inputs, outputs)
-
-                # 8. Create tuple with the analysis step information
-
-                step = AnalysisStep(function_name, inputs, parameters, outputs,
-                                    input_args_names, input_kwargs_names,
-                                    ast_tree, source_line, time_stamp,
-                                    return_targets)
-
-                # 7. Add to history
-                # The history will be the base to generate the graph / PROV
-                # document
-                Provenance.history.append(step)
+                    # 9. Add to the history.
+                    # The history will be the base to generate the graph and
+                    # PROV document.
+                    Provenance.history.append(step)
 
             return function_output
 
@@ -326,6 +336,9 @@ class Provenance(object):
         ----------
         filename : str
             HTML file to save the graph.
+        show : bool, optional
+            If True, shows the graph in the browser after saving.
+            Default: False.
 
         Raises
         ------
@@ -344,54 +357,8 @@ class Provenance(object):
         graph.to_pyvis(filename, show=show)
 
     @classmethod
-    def add(cls, obj):
-        """
-        Hashes and insert a given Python object into the internal dictionary
-        (:attr:`objects`), if the hash is new.
-
-        Parameters
-        ----------
-        obj : object
-            Python object to be added to `objects`.
-
-        Returns
-        -------
-        BuffaloObjectHash
-            Hash to the object that was added.
-
-        """
-        object_hash = BuffaloObjectHash(obj)
-        if object_hash not in cls.objects:
-            cls.objects.add(object_hash)
-        return object_hash
-
-    @classmethod
-    def add_script_variable(cls, name):
-        """
-        Hashes an object stored as a variable in the namespace where provenance
-        tracking was activated. Then add the hash to the internal dictionary.
-
-        Parameters
-        ----------
-        name : str
-            Name of the variable.
-
-        Returns
-        -------
-        object
-            Python object referenced by `name`.
-        object_hash
-            `BuffaloObjectHash` instance with the hash of the object.
-
-        """
-        instance = cls.get_script_variable(name)
-        object_hash = cls.add(instance)
-        return instance, object_hash
-
-    @classmethod
     def get_script_variable(cls, name):
         return cls.calling_frame.f_locals[name]
-
 
 
 ##############################################################################

@@ -5,10 +5,15 @@ class decorator to track unique objects during the script execution.
 
 import joblib
 from dill._dill import save_function
+from collections import namedtuple
+
 
 # Need to use `dill` pickling function to support lambdas
 # The dispatch table of the `joblib.Hasher` object is updated
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
+
+
+ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id'))
 
 
 class BuffaloObjectHash(object):
@@ -32,10 +37,6 @@ class BuffaloObjectHash(object):
         reference.
     """
 
-    _id = None
-    _type = None
-    _value = None
-
     @staticmethod
     def _get_object_info(obj):
         class_name = "{}.{}".format(type(obj).__module__,
@@ -43,43 +44,31 @@ class BuffaloObjectHash(object):
         return id(obj), class_name, obj
 
     def __init__(self, obj):
-        self._id, self._type, self._value = self._get_object_info(obj)
+        self.id, self.type, self.value = self._get_object_info(obj)
 
     def __hash__(self):
-        return hash((self._id, self._type, joblib.hash(self._value)))
+        return hash((self.id, self.type, joblib.hash(self.value)))
 
     def __eq__(self, other):
         if isinstance(other, BuffaloObjectHash):
             return hash(self) == hash(other)
         else:
             object_id, class_name, value = self._get_object_info(other)
-            if value is self._value:
+            if value is self.value:
                 return True
             else:
                 return (object_id, class_name, value) == (
-                    self._id, self._type, self._value
+                    self.id, self.type, self.value
                 )
 
     def __repr__(self):
-        #return "{}: {} = {}".format(self._id, self._type, self._value)
-        return "{}: {}".format(self._id, self._type)
-
-    @property
-    def value(self):
-        """
-        The actual Python object associated with this hash.
-        """
-        return self._value
-
-    @property
-    def type(self):
-        """
-        String representing the full type of the object.
-        """
-        return self._type
+        return "{}: {}".format(self.id, self.type)
 
     def get_label(self):
         return self.type
 
     def get_prov_entity_string(self, namespace):
         return "{}:{}:{}".format(namespace, self._type, hash(self))
+
+    def info(self):
+        return ObjectInfo(hash(self), self.type, self.id)

@@ -53,7 +53,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         for key, obj in analysis_step.input.items():
             if isinstance(obj, VarArgs):
-                for var_arg in obj.value:
+                for var_arg in obj.args:
                     self._add_input_to_output(analysis_step, var_arg,
                                               edge_label, edge_title,
                                               multi_output, **edge_attr,
@@ -73,10 +73,10 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         ----------
         filename : str
             Destination where to save the file.
-        show : bool
+        show : bool, optional
             If True, display the graph in the browser after saving.
             Default: False.
-        layout : bool
+        layout : bool, optional
             If True, use hierarchical layout if this is set.
             Default: True.
 
