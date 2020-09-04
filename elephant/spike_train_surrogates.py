@@ -650,7 +650,7 @@ class JointISI(object):
         Default: 15. * pq.ms.
     truncation_limit : pq.Quantity, optional
         The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
-        within the range :math:`[0, \infty]`. Since this is computationally not
+        within the range :math:`[0, \infty)`. Since this is computationally not
         feasible, the Joint-ISI distribution is truncated for high ISI.
         The Joint-ISI histogram is calculated for
         :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
@@ -675,7 +675,8 @@ class JointISI(object):
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
             previous and subsequent spikes (computationally efficient).
-        * 'window': the spike movement is limited to the parameter `dither`
+        * 'window': the spike movement is limited to the parameter `dither`.
+
         Default: 'window'.
     cutoff : boolean, optional
         If True, then the filtering of the Joint-ISI histogram is
@@ -838,8 +839,9 @@ class JointISI(object):
 
         Returns
         -------
-        np.ndarray or int
-            The corresponding index for each ISI.
+        indices : np.ndarray or int
+            The corresponding indices/index for each ISI. When the input is an
+            array, also the output is.
         """
         return np.floor(inter_spike_interval / self.bin_width).astype(int)
 
@@ -855,7 +857,8 @@ class JointISI(object):
         Returns
         -------
         np.ndarray or float
-            The corresponding ISI for each index.
+            The corresponding ISI(s) for each indices/index. When the input is
+            an array, also the output is.
         """
         return (isi_index + 0.5) * self.bin_width
 
@@ -1243,16 +1246,22 @@ def surrogates(
         Default: 1.
     method : str, optional
         The method to use to generate surrogate spike trains. Can be one of:
-        * 'dither_spike_train': see surrogates.dither_spike_train() [dt needed]
-        * 'dither_spikes': see surrogates.dither_spikes() [dt needed]
-        * 'jitter_spikes': see surrogates.jitter_spikes() [dt needed]
-        * 'randomise_spikes': see surrogates.randomise_spikes()
-        * 'shuffle_isis': see surrogates.shuffle_isis()
-        * 'joint_isi_dithering': see surrogates.joint_isi_dithering()
-        * 'shift_spiketrain': see `surrogates.trial_shifting`
-        * 'bin_shuffling': see surrogates.bin_shuffling()
+        * 'dither_spike_train': see `surrogates.dither_spike_train()`
+            [`dt` needed]
+        * 'dither_spikes': see `surrogates.dither_spikes()` [`dt` needed]
+        * 'jitter_spikes': see `surrogates.jitter_spikes()` [`dt` needed]
+        * 'randomise_spikes': see `surrogates.randomise_spikes()`
+        * 'shuffle_isis': see `surrogates.shuffle_isis()`
+        * 'joint_isi_dithering': see `surrogates.joint_isi_dithering()`
+            [`dt` needed]
+        * 'trial_shifting': see `surrogates.trial_shifting` [`dt` needed]
+            If used on a neo.SpikeTrain, specify the key-word argument
+            `trial_length` and `trial_separation` of type pq.Quantity.
+            Else, `spiketrain` has to be a list of neo.SpikeTrain.
+        * 'bin_shuffling': see `surrogates.bin_shuffling()` [`dt` needed]
             If used in this module, specify the key-word argument `bin_size`
-            of type pq.Quantity
+            of type pq.Quantity.
+
         Default: 'dither_spike_train'
     dt : pq.Quantity, optional
         For methods shifting spike times or spike trains randomly around
@@ -1261,8 +1270,8 @@ def surrogates(
         within a certain window (`jitter_spikes`), dt represents the size of
         that shift / window. For other methods, dt is ignored.
         Default: None.
-    ** kwargs
-        keyword arguments passed to the chosen surrogate method
+    kwargs
+        Keyword arguments passed to the chosen surrogate method.
 
     Returns
     -------
@@ -1273,17 +1282,23 @@ def surrogates(
 
     Raises
     ------
-    TypeError :
+    TypeError
+        If `spiketrain` is not either a neo.SpikeTrain object or a list of
+        neo.SpikeTrain.
+
+    ValueError
+        If `method` is not one of the surrogate methods defined in this module.
+
+        If `dt` is None and `method` is not randomise_spikes nor shuffle_isis.
     """
 
     if isinstance(spiketrain, list):
         if not isinstance(spiketrain[0], neo.SpikeTrain):
-            raise TypeError('spiketrain must be of instance neo.SpikeTrain or'
+            raise TypeError('spiketrain must be an instance neo.SpikeTrain or'
                             ' a list of neo.SpikeTrain')
     elif not isinstance(spiketrain, neo.SpikeTrain):
-        raise TypeError('spiketrain must be of instance neo.SpikeTrain or'
+        raise TypeError('spiketrain must be an instance neo.SpikeTrain or'
                         ' a list of neo.SpikeTrain')
-
 
     # Define the surrogate function to use, depending on the specified method
     surrogate_types = {

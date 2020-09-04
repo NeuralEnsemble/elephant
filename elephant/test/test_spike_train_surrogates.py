@@ -426,7 +426,7 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertRaises(ValueError, surr.surrogates, spiketrain,
                           method='dither_spikes', dt=None)
 
-        self.assertRaises(ValueError, surr.surrogates, spiketrain.magnitude,
+        self.assertRaises(TypeError, surr.surrogates, spiketrain.magnitude,
                           method='dither_spikes', dt=10*pq.ms)
 
     def test_joint_isi_dithering_format(self):
