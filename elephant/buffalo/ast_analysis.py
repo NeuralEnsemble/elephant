@@ -40,22 +40,29 @@ class NameAST(ast.NodeTransformer):
 class CallAST(ast.NodeVisitor):
 
     provenance_tracker = None
+    function = None
 
-    def __init__(self, provenance_tracker):
+    def __init__(self, provenance_tracker, function):
         super(CallAST, self).__init__()
         self.provenance_tracker = provenance_tracker
+        self.function = function
 
     def visit_Call(self, node):
 
-        # Fetch static information of Attribute and Subscript nodes that
-        # were inputs. This should capture provenance hierarchical information
-        # for inputs that are class members or items in iterables
-        for position, arg_node in enumerate(
-                itertools.chain(node.args, node.keywords)):
+        if isinstance(node.func, ast.Name) and node.func.id == self.function:
 
-            if isinstance(arg_node, (ast.Subscript, ast.Attribute)):
-                _process_subscript_or_attribute(arg_node,
-                                                self.provenance_tracker)
+            # Fetch static information of Attribute and Subscript nodes that
+            # were inputs. This should capture provenance hierarchical
+            # information for inputs that are class members or items in
+            # iterables
+            for position, arg_node in enumerate(
+                    itertools.chain(node.args, node.keywords)):
+
+                if isinstance(arg_node, (ast.Subscript, ast.Attribute)):
+                    _process_subscript_or_attribute(arg_node,
+                                                    self.provenance_tracker)
+        else:
+            self.generic_visit(node)
 
 
 def _fetch_object_tree(node):

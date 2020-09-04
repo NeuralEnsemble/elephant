@@ -114,13 +114,12 @@ class Provenance(object):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
 
-    def _insert_static_information(self, tree):
+    def _insert_static_information(self, tree, function):
         # Use a NodeVisitor to find the Call node that corresponds to the
         # current AnalysisStep. It will fetch static relationships between
         # variables and attributes, and link to the inputs and outputs of the
         # function
-        # TODO: fix bug when call is inside another call e.g. list.append
-        ast_visitor = CallAST(self)
+        ast_visitor = CallAST(self, function)
         ast_visitor.visit(tree)
 
     def __call__(self, function):
@@ -146,12 +145,12 @@ class Provenance(object):
                 try:
                     frame = inspect.currentframe().f_back
                     frame_info = inspect.getframeinfo(frame)
-                    function_name = frame_info.function
-                    if function_name == '<listcomp>':
-                        while function_name == '<listcomp>':
+                    function_def = frame_info.function
+                    if function_def == '<listcomp>':
+                        while function_def == '<listcomp>':
                             frame = frame.f_back
                             frame_info = inspect.getframeinfo(frame)
-                            function_name = frame_info.function
+                            function_def = frame_info.function
 
                     if (frame_info.filename == self.source_file and
                             frame_info.function == self.source_name):
@@ -190,7 +189,7 @@ class Provenance(object):
                     # 3. Extract function name and information
                     # TODO: fetch version information
 
-                    function_name = FunctionDefinition(
+                    function_def = FunctionDefinition(
                         function.__name__, function.__module__, None)
 
                     # 4. Extract parameters passed to the function and store
@@ -271,10 +270,11 @@ class Provenance(object):
 
                     # 7. Analyze AST and fetch static relationships in the
                     # input/output and other variables/objects in the script
-                    self._insert_static_information(ast_tree)
+                    self._insert_static_information(ast_tree,
+                                                    function_def.name)
 
                     # 8. Create tuple with the analysis step information.
-                    step = AnalysisStep(function_name,
+                    step = AnalysisStep(function_def,
                                         inputs,
                                         parameters,
                                         outputs,
