@@ -73,7 +73,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         if len(analysis_step.input.keys()):
             for key, obj in analysis_step.input.items():
                 if isinstance(obj, VarArgs):
-                    for var_arg in obj.value:
+                    for var_arg in obj.args:
                         self._add_input_to_output(analysis_step, var_arg,
                                                   edge_label, edge_title,
                                                   multi_output, function_edge,
