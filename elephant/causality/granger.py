@@ -365,7 +365,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     Parameters
     ----------
     signals : array-like or neo.AnalogSignal
-        Time series data (2xN in case of array-like).
+        Time series data (Nx2 in case of array-like).
     max_order : int
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
@@ -466,7 +466,8 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         # transpose (N,2) -> (2, N)
         signals = signals.magnitude.T
     else:
-        signals = np.asarray(signals)
+        # transpose (N,2) -> (2, N)
+        signals = np.asarray(signals.T)
 
     if not (signals.ndim == 2 and signals.shape[0] == 2):
         raise ValueError("The input 'signals' must be of dimensions 2xN.")
