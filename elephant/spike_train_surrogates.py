@@ -251,7 +251,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     # Return the surrogates as list of neo.SpikeTrain
     return [neo.SpikeTrain(
         train, t_start=t_start, t_stop=t_stop)
-            for train in dithered_spiketrains]
+        for train in dithered_spiketrains]
 
 
 @deprecated_alias(n='n_surrogates')
@@ -731,7 +731,7 @@ class JointISI(object):
 
         if not isinstance(spiketrain, neo.SpikeTrain):
             raise TypeError('spiketrain must be of type neo.SpikeTrain')
-            
+
         self.spiketrain = spiketrain
         self.truncation_limit = self._get_magnitude(truncation_limit)
         self.n_bins = n_bins
@@ -1174,11 +1174,11 @@ def _trial_shifting_of_concatenated_spiketrain(
         spiketrain, dither, trial_length, trial_separation, n_surrogates=1):
     """
     Generates surrogates of a spike train by trial shifting.
-    
+
     It shifts by a random uniform amount independently different trials,
     individuated by the `trial_length` and the possible buffering period
     `trial_separation` present in between trials.
-    
+
     The shifting is done independently for each surrogate.
 
     Parameters
@@ -1220,10 +1220,10 @@ def _trial_shifting_of_concatenated_spiketrain(
         spiketrains, dither, t_starts, t_stops, n_surrogates)
 
     surrogate_spiketrains = [neo.SpikeTrain(
-            np.hstack(surrogate_spiketrain) * pq.s,
-            t_start=t_start * pq.s,
-            t_stop=t_stop * pq.s,
-            units=units)
+        np.hstack(surrogate_spiketrain) * pq.s,
+        t_start=t_start * pq.s,
+        t_stop=t_stop * pq.s,
+        units=units)
         for surrogate_spiketrain in surrogate_spiketrains]
     return surrogate_spiketrains
 
@@ -1298,7 +1298,8 @@ def surrogates(
     ValueError
         If `method` is not one of the surrogate methods defined in this module.
 
-        If `dt` is None and `method` is not 'randomise_spikes' nor 'shuffle_isis'.
+        If `dt` is None and `method` is not 'randomise_spikes' nor
+        'shuffle_isis'.
     """
 
     if isinstance(spiketrain, list):
@@ -1363,7 +1364,7 @@ def surrogates(
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop,
             units=spiketrain.units)
-                                 for binned_surrogate in binned_surrogates]
+            for binned_surrogate in binned_surrogates]
         return surrogate_spiketrains
     # surr_method is 'joint_isi_dithering' or isi_dithering:
     return method(n_surrogates)
