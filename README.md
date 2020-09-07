@@ -11,6 +11,7 @@
 spike trains, LFP, analog signals. The input-output data format is either
 [Neo](https://github.com/NeuralEnsemble/python-neo), Quantity or Numpy array.
 
+
 ### More Information
 
 * Documentation: https://elephant.readthedocs.io/en/latest/
@@ -21,10 +22,18 @@ spike trains, LFP, analog signals. The input-output data format is either
  
 Modified BSD License, see [LICENSE.txt](LICENSE.txt) for details.
 
+
 #### Copyright
 
 :copyright: 2014-2020 by the [Elephant team](doc/authors.rst).
 
+
 #### Acknowledgments
 
 See [acknowledgments](doc/acknowledgments.rst).
+
+
+#### Citation
+
+See [citations](doc/citation.rst).
+
