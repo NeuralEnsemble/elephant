@@ -262,7 +262,7 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
     The surrogates are obtained by keeping the spike count of the original
     `spiketrain`, but placing the spikes randomly in the interval
     `[spiketrain.t_start, spiketrain.t_stop]`. The generated independent
-    neo.SpikeTrain objects follow  Poisson statistics (exponentially
+    `neo.SpikeTrain` objects follow  Poisson statistics (exponentially
     distributed inter-spike intervals).
 
     Parameters
@@ -589,10 +589,10 @@ def bin_shuffling(
         Number of bins that a single spike can be displaced.
     n_surrogates : int, optional
         Number of surrogates to create.
-        Default : 1.
+        Default: 1.
     sliding : bool, optional
         If True, the window is slided bin by bin.
-        Default : False.
+        Default: False.
 
     Returns
     -------
@@ -670,12 +670,12 @@ class JointISI(object):
         The standard deviation of the Gaussian kernel, with which
         the data is convolved.
         Default: 2. * pq.ms.
-    alternate : boolean, optional
+    alternate : bool, optional
         If True, then all even spikes are dithered followed
         by all odd spikes. Otherwise, the spikes are dithered in ascending
         order from the first to the last spike.
         Default: True.
-    use_sqrt : boolean, optional
+    use_sqrt : bool, optional
         If True, the joint-ISI histogram is preprocessed by
         applying a square root (following [1]).
         Default: False.
@@ -685,7 +685,7 @@ class JointISI(object):
         * 'window': the spike movement is limited to the parameter `dither`.
 
         Default: 'window'.
-    cutoff : boolean, optional
+    cutoff : bool, optional
         If True, then the filtering of the Joint-ISI histogram is
         limited on the lower side by the minimal ISI.
         This can be necessary, if in the data there is a certain refractory
@@ -696,7 +696,7 @@ class JointISI(object):
         Defines the refractory period of the dithered `spiketrain` unless
         the smallest ISI of the `spiketrain` is lower than this value.
         Default: 4. * pq.ms.
-    isi_dithering : boolean, optional
+    isi_dithering : bool, optional
         If True, the Joint-ISI distribution is evaluated as the outer product
         of the ISI-distribution with itself. Thus, all serial correlations are
         destroyed.
@@ -1285,13 +1285,13 @@ def surrogates(
     Raises
     ------
     TypeError
-        If `spiketrain` is not either a neo.SpikeTrain object or a list of
-        neo.SpikeTrain.
+        If `spiketrain` is not either a `neo.SpikeTrain` object or a list of
+        `neo.SpikeTrain`.
 
     ValueError
         If `method` is not one of the surrogate methods defined in this module.
 
-        If `dt` is None and `method` is not randomise_spikes nor shuffle_isis.
+        If `dt` is None and `method` is not 'randomise_spikes' nor 'shuffle_isis'.
     """
 
     if isinstance(spiketrain, list):
