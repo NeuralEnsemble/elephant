@@ -638,7 +638,7 @@ def bin_shuffling(
 
 
 class JointISI(object):
-    """
+    r"""
     The class :class:`JointISI` is implemented for Joint-ISI dithering
     as a continuation of the ideas of [1]_ and [2]_.
 
@@ -758,8 +758,6 @@ class JointISI(object):
 
         self._max_change_index = self._isi_to_index(self.dither)
         self._max_change_isi = self._index_to_isi(self._max_change_index)
-
-        self.isi_dithering = isi_dithering
 
         self.isi_dithering = isi_dithering
 
