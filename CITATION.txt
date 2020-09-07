@@ -1,0 +1,4 @@
+To refer to the Elephant software package in publications, please use 
+    Elephant (RRID:SCR_003833)
+
+To cite Elephant, please see doc/citation.rst.
