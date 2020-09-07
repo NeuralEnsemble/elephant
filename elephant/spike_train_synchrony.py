@@ -1,23 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Functions to measure the synchrony of several spike trains (based on [1]).
+Functions to measure the synchrony of several spike trains
+(:cite:`synchrony-ciba2018spike`).
 
 
-* get_theta_and_n_per_bin
-    This function calculates the amount of spikes per bin and the amount of active spike trains per bin.
-    Note: Bin overlap of half bin size.
-* binning_half_overlap
-    Current spike train is binned (calculating histogram) with an overlapping bin (overlap: half the bin size).
-* spike_contrast
-    Calculates the synchrony of the spike trains according to [1].
+Synchrony Measures
+------------------
 
-References
-----------
-[1] Manuel Ciba (2018). Spike-contrast: A novel time scale independent
-    and multivariate measure of spike train synchrony. Journal of Neuroscience Methods. 2018; 293: 136-143.
+.. autosummary::
+    :toctree: toctree/spike_train_synchrony/
+
+    spike_contrast
 
 
-Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
@@ -70,6 +65,8 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     """
     Calculates the synchrony of spike trains. The spike trains can have
     different lengths.
+
+    Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 
     Parameters
     ----------
@@ -125,13 +122,13 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     TypeError
         If the input spike trains is not a list of neo.SpikeTrain objects.
 
-        If `t_start`, `t_stop`, or `min_bin` are not quantities.
+        If `t_start`, `t_stop`, or `min_bin` are not time quantities.
 
     Examples
     --------
     >>> import quantities as pq
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> from elephant.spike_contrast import spike_contrast
+    >>> from elephant.spike_train_synchrony import spike_contrast
     >>> spiketrain_1 = homogeneous_poisson_process(rate=20*pq.Hz,
     ...     t_stop=1000*pq.ms)
     >>> spiketrain_2 = homogeneous_poisson_process(rate=20*pq.Hz,
@@ -150,9 +147,9 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         raise TypeError("Input spike trains must be a list of neo.SpikeTrain.")
     if not is_time_quantity(t_start, allow_none=True) \
             or not is_time_quantity(t_stop, allow_none=True):
-        raise TypeError("'t_start' and 't_stop' must be quantities.")
-    if not isinstance(min_bin, pq.Quantity):
-        raise TypeError("'min_bin' must be a quantity.")
+        raise TypeError("'t_start' and 't_stop' must be time quantities.")
+    if not is_time_quantity(min_bin):
+        raise TypeError("'min_bin' must be a time quantity.")
 
     if t_start is None:
         t_start = min(st.t_start for st in spiketrains)

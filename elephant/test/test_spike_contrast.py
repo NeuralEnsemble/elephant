@@ -8,7 +8,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 from quantities import Hz, ms, second
 
-import elephant.spike_contrast as spc
+import elephant.spike_train_synchrony as spc
 import elephant.spike_train_generation as stgen
 from elephant.test.download import download, unzip
 
@@ -157,7 +157,10 @@ class TestUM(unittest.TestCase):
         with open(filepath) as read_file:
             data = json.load(read_file)
 
-        for network_simulations in data.values():
+        # for the sake of compute time, take the first 5 networks
+        networks_subset = tuple(data.values())[:5]
+
+        for network_simulations in networks_subset:
             for simulation in network_simulations.values():
                 synchrony_true = simulation['synchrony']
                 spiketrains = [

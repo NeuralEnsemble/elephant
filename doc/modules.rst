@@ -24,6 +24,7 @@ Function Reference by Module
    reference/spike_train_dissimilarity
    reference/spike_train_generation
    reference/spike_train_surrogates
+   reference/spike_train_synchrony
    reference/sta
    reference/statistics
    reference/unitary_event_analysis
