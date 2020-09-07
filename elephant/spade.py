@@ -1515,9 +1515,24 @@ def _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen):
         signatures = {(len(concept[0]), len(concept[1]),
                        max(np.array(concept[0]) % winlen))
                       for concept in concepts}
-    mask = np.array([tuple(pvs[:-1]) in signatures
-                     and not np.isclose(pvs[-1], [1])
-                     for pvs in pv_spec])
+    mask = np.zeros(len(pv_spec), dtype=bool)
+    for index, pv_entry in enumerate(pv_spec):
+        if tuple(pv_entry[:-1]) in signatures \
+                and not np.isclose(pv_entry[-1], [1]):
+            # select the highest number of occurrences for size and duration
+            mask[index] = True
+            if mask[index-1]:
+                if spectrum == '#':
+                    size = pv_spec[index][0]
+                    prev_size = pv_spec[index-1][0]
+                    if prev_size == size:
+                        mask[index-1] = False
+                else:
+                    size, duration = pv_spec[index][[0, 2]]
+                    prev_size, prev_duration = pv_spec[index-1][[0, 2]]
+                    if prev_size == size and duration == prev_duration:
+                        mask[index-1] = False
+
     return mask
 
 
@@ -1624,6 +1639,7 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     pv_spec = np.array(pv_spec)
     mask = _mask_pvalue_spectrum(pv_spec, concepts, spectrum, winlen)
     pvalues = pv_spec[:, -1]
+
     pvalues_totest = pvalues[mask]
 
     # Initialize test array to False
@@ -1646,34 +1662,35 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
                                               method=corr)[0]
 
         # assign each corrected pvalue to its corresponding entry
+        # this breaks
         for index, value in zip(mask.nonzero()[0], tests_selected):
             tests[index] = value
 
     # Return the specified results:
     if spectrum == '#':
         if report == 'spectrum':
-            sig_spectrum = [(size, supp, test)
-                            for (size, supp, pv), test in zip(pv_spec, tests)]
+            sig_spectrum = [(size, occ, test)
+                            for (size, occ, pv), test in zip(pv_spec, tests)]
         elif report == 'significant':
-            sig_spectrum = [(size, supp) for ((size, supp, pv), test)
+            sig_spectrum = [(size, occ) for ((size, occ, pv), test)
                             in zip(pv_spec, tests) if test]
         else:  # report == 'non_significant'
-            sig_spectrum = [(size, supp)
-                            for ((size, supp, pv), test) in zip(pv_spec, tests)
+            sig_spectrum = [(size, occ)
+                            for ((size, occ, pv), test) in zip(pv_spec, tests)
                             if not test]
 
     else:  # spectrum == '3d#'
         if report == 'spectrum':
             sig_spectrum =\
-                [(size, supp, l, test)
-                 for (size, supp, l, pv), test in zip(pv_spec, tests)]
+                [(size, occ, l, test)
+                 for (size, occ, l, pv), test in zip(pv_spec, tests)]
         elif report == 'significant':
-            sig_spectrum = [(size, supp, l) for ((size, supp, l, pv), test)
+            sig_spectrum = [(size, occ, l) for ((size, occ, l, pv), test)
                             in zip(pv_spec, tests) if test]
         else:  # report == 'non_significant'
             sig_spectrum =\
-                [(size, supp, l)
-                 for ((size, supp, l, pv), test) in zip(pv_spec, tests)
+                [(size, occ, l)
+                 for ((size, occ, l, pv), test) in zip(pv_spec, tests)
                  if not test]
     return sig_spectrum
 

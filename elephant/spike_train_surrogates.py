@@ -251,7 +251,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     # Return the surrogates as list of neo.SpikeTrain
     return [neo.SpikeTrain(
         train, t_start=t_start, t_stop=t_stop)
-            for train in dithered_spiketrains]
+        for train in dithered_spiketrains]
 
 
 @deprecated_alias(n='n_surrogates')
@@ -638,7 +638,7 @@ def bin_shuffling(
 
 
 class JointISI(object):
-    """
+    r"""
     The class :class:`JointISI` is implemented for Joint-ISI dithering
     as a continuation of the ideas of [1]_ and [2]_.
 
@@ -728,8 +728,10 @@ class JointISI(object):
                  cutoff=True,
                  refractory_period=4. * pq.ms,
                  isi_dithering=False):
+
         if not isinstance(spiketrain, neo.SpikeTrain):
             raise TypeError('spiketrain must be of type neo.SpikeTrain')
+
         self.spiketrain = spiketrain
         self.truncation_limit = self._get_magnitude(truncation_limit)
         self.n_bins = n_bins
@@ -1096,6 +1098,7 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
 
     It shifts by a random uniform amount independently different trials,
     which are the elements of a list of spiketrains.
+
     The shifting is done independently for each surrogate.
 
     Parameters
@@ -1169,9 +1172,11 @@ def _trial_shifting_of_concatenated_spiketrain(
         spiketrain, dither, trial_length, trial_separation, n_surrogates=1):
     """
     Generates surrogates of a spike train by trial shifting.
+
     It shifts by a random uniform amount independently different trials,
     individuated by the `trial_length` and the possible buffering period
     `trial_separation` present in between trials.
+
     The shifting is done independently for each surrogate.
 
     Parameters
@@ -1180,7 +1185,7 @@ def _trial_shifting_of_concatenated_spiketrain(
         A single spike train, where the trials are concatenated.
     dither : pq.Quantity
         Amount of dithering.
-        trial_length : pq.Quantity
+    trial_length : pq.Quantity
         The length of the single-trial spiketrain.
     trial_separation : pq.Quantity
         Buffering in between trials in the concatenation of the spiketrain.
@@ -1213,10 +1218,10 @@ def _trial_shifting_of_concatenated_spiketrain(
         spiketrains, dither, t_starts, t_stops, n_surrogates)
 
     surrogate_spiketrains = [neo.SpikeTrain(
-            np.hstack(surrogate_spiketrain) * pq.s,
-            t_start=t_start * pq.s,
-            t_stop=t_stop * pq.s,
-            units=units)
+        np.hstack(surrogate_spiketrain) * pq.s,
+        t_start=t_start * pq.s,
+        t_stop=t_stop * pq.s,
+        units=units)
         for surrogate_spiketrain in surrogate_spiketrains]
     return surrogate_spiketrains
 
@@ -1291,7 +1296,8 @@ def surrogates(
     ValueError
         If `method` is not one of the surrogate methods defined in this module.
 
-        If `dt` is None and `method` is not 'randomise_spikes' nor 'shuffle_isis'.
+        If `dt` is None and `method` is not 'randomise_spikes' nor
+        'shuffle_isis'.
     """
 
     if isinstance(spiketrain, list):
@@ -1356,7 +1362,7 @@ def surrogates(
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop,
             units=spiketrain.units)
-                                 for binned_surrogate in binned_surrogates]
+            for binned_surrogate in binned_surrogates]
         return surrogate_spiketrains
     # surr_method is 'joint_isi_dithering' or isi_dithering:
     return method(n_surrogates)
