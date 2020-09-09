@@ -14,6 +14,18 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
+from elephant.utils import deprecated_alias
+
+__all__ = [
+    "zscore",
+    "cross_correlation_function",
+    "butter",
+    "wavelet_transform",
+    "hilbert",
+    "rauc",
+    "derivative"
+]
+
 
 def zscore(signal, inplace=True):
     r"""
@@ -151,8 +163,10 @@ def zscore(signal, inplace=True):
     return signal_ztransofrmed
 
 
-def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
-                               scaleopt='unbiased'):
+@deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
+                  env='hilbert_envelope')
+def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
+                               n_lags=None, scaleopt='unbiased'):
     r"""
     Computes unbiased estimator of the cross-correlation function.
 
@@ -165,9 +179,9 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     where :math:`R'(\tau) = \left<x(t)y(t+\tau)\right>` in a pairwise
     manner, i.e.:
 
-    `signal[ch_pairs[0,0]]` vs `signal[ch_pairs[0,1]]`,
+    `signal[channel_pairs[0,0]]` vs `signal[channel_pairs[0,1]]`,
 
-    `signal[ch_pairs[1,0]]` vs `signal[ch_pairs[1,1]]`,
+    `signal[channel_pairs[1,0]]` vs `signal[channel_pairs[1,1]]`,
 
     and so on.
 
@@ -180,17 +194,18 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     ----------
     signal : (nt, nch) neo.AnalogSignal
         Signal with `nt` number of samples that contains `nch` LFP channels.
-    ch_pairs : list or (n, 2) np.ndarray
+    channel_pairs : list or (n, 2) np.ndarray
         List with `n` channel pairs for which to compute cross-correlation.
         Each element of the list must contain 2 channel indices.
         If `np.ndarray`, the second axis must have dimension 2.
-    env : bool, optional
-        If True, returns the Hilbert envelope of cross-correlation function.
+    hilbert_envelope : bool, optional
+        If True, returns the Hilbert envelope of cross-correlation function
+        result.
         Default: False.
-    nlags : int, optional
+    n_lags : int, optional
         Defines the number of lags for cross-correlation function. If a `float`
         is passed, it will be rounded to the nearest integer. Number of
-        samples of output is `2*nlags+1`.
+        samples of output is `2*n_lags+1`.
         If None, the number of samples of the output is equal to the number of
         samples of the input signal (namely `nt`).
         Default: None.
@@ -225,22 +240,24 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     Returns
     -------
     cross_corr : neo.AnalogSignal
-        Shape: `[2*nlags+1, n]`
+        Shape: `[2*n_lags+1, n]`
         Pairwise cross-correlation functions for channel pairs given by
-        `ch_pairs`. If `env` is True, the output is the Hilbert envelope of
-        the pairwise cross-correlation function. This is helpful to compute
-        the correlation length for oscillating cross-correlation functions.
+        `channel_pairs`. If `hilbert_envelope` is True, the output is the
+        Hilbert envelope of the pairwise cross-correlation function. This is
+        helpful to compute the correlation length for oscillating
+        cross-correlation functions.
 
     Raises
     ------
     ValueError
         If input `signal` is not a `neo.AnalogSignal`.
 
-        If `ch_pairs` is not a list of channel pair indices with shape `(n,2)`.
+        If `channel_pairs` is not a list of channel pair indices with shape
+        `(n,2)`.
 
-        If `env` is not a boolean.
+        If `hilbert_envelope` is not a boolean.
 
-        If `nlags` is not a positive integer.
+        If `n_lags` is not a positive integer.
 
         If `scaleopt` is not one of the predefined above keywords.
 
@@ -267,9 +284,9 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     >>> # Generate neo.AnalogSignals from x and find cross-correlation
     >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
     >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
-    >>> rho = cross_correlation_function(signal, [0,1], nlags=150)
-    >>> env = cross_correlation_function(signal, [0,1], nlags=150,
-    ...     env=True)
+    >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
+    >>> env = cross_correlation_function(signal, [0,1], n_lags=150,
+    ...     hilbert_envelope=True)
     ...
     >>> plt.plot(rho.times, rho)
     >>> plt.plot(env.times, env) # should be equal to one
@@ -277,8 +294,8 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
 
     """
 
-    # Make ch_pairs a 2D array
-    pairs = np.asarray(ch_pairs)
+    # Make channel_pairs a 2D array
+    pairs = np.asarray(channel_pairs)
     if pairs.ndim == 1:
         pairs = np.expand_dims(pairs, axis=0)
 
@@ -286,13 +303,13 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     if not isinstance(signal, neo.AnalogSignal):
         raise ValueError('Input signal must be of type neo.AnalogSignal')
     if pairs.shape[1] != 2:
-        raise ValueError('`ch_pairs` is not a list of channel pair indices. '
-                         'Cannot define pairs for cross-correlation.')
-    if not isinstance(env, bool):
-        raise ValueError('`env` must be a boolean value')
-    if nlags is not None:
-        if not isinstance(nlags, int) or nlags <= 0:
-            raise ValueError('nlags must be a non-negative integer')
+        raise ValueError("'channel_pairs' is not a list of channel pair "
+                         "indices. Cannot define pairs for cross-correlation.")
+    if not isinstance(hilbert_envelope, bool):
+        raise ValueError("'hilbert_envelope' must be a boolean value")
+    if n_lags is not None:
+        if not isinstance(n_lags, int) or n_lags <= 0:
+            raise ValueError('n_lags must be a non-negative integer')
 
     # z-score analog signal and store channel time series in different arrays
     # Cross-correlation will be calculated between xsig and ysig
@@ -321,13 +338,13 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
 
     # Calculate envelope of cross-correlation function with Hilbert transform.
     # This is useful for transient oscillatory signals.
-    if env:
+    if hilbert_envelope:
         xcorr = np.abs(scipy.signal.hilbert(xcorr, axis=0))
 
     # Cut off lags outside the desired range
-    if nlags is not None:
+    if n_lags is not None:
         tau0 = np.argwhere(tau == 0).item()
-        xcorr = xcorr[tau0 - nlags: tau0 + nlags + 1, :]
+        xcorr = xcorr[tau0 - n_lags: tau0 + n_lags + 1, :]
 
     # Return neo.AnalogSignal
     cross_corr = neo.AnalogSignal(xcorr,
@@ -339,13 +356,16 @@ def cross_correlation_function(signal, ch_pairs, env=False, nlags=None,
     return cross_corr
 
 
-def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
-           filter_function='filtfilt', fs=1.0, axis=-1):
+@deprecated_alias(highpass_freq='highpass_frequency',
+                  lowpass_freq='lowpass_frequency',
+                  fs='sampling_frequency')
+def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
+           filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
     """
     Butterworth filtering function for `neo.AnalogSignal`.
 
-    Filter type is determined according to how values of `highpass_freq` and
-    `lowpass_freq` are given (see "Parameters" section for details).
+    Filter type is determined according to how values of `highpass_frequency`
+    and `lowpass_frequency` are given (see "Parameters" section for details).
 
     Parameters
     ----------
@@ -353,23 +373,25 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         Time series data to be filtered.
         If `pq.Quantity` or `np.ndarray`, the sampling frequency should be
         given through the keyword argument `fs`.
-    highpass_freq : pq.Quantity of float, optional
+    highpass_frequency : pq.Quantity of float, optional
         High-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
         Default: None.
-    lowpass_freq : pq.Quantity or float, optional
+    lowpass_frequency : pq.Quantity or float, optional
         Low-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
-        Filter type is determined depending on the values of `lowpass_freq`
-        and `highpass_freq`:
+        Filter type is determined depending on the values of
+        `lowpass_frequency` and `highpass_frequency`:
 
-        * `highpass_freq` only (`lowpass_freq` is None): highpass filter
+        * `highpass_frequency` only (`lowpass_frequency` is None):
+        highpass filter
 
-        * `lowpass_freq` only (`highpass_freq` is None): lowpass filter
+        * `lowpass_frequency` only (`highpass_frequency` is None):
+        lowpass filter
 
-        * `highpass_freq` < `lowpass_freq`: bandpass filter
+        * `highpass_frequency` < `lowpass_frequency`: bandpass filter
 
-        * `highpass_freq` > `lowpass_freq`: bandstop filter
+        * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
         Default: None.
     order : int, optional
@@ -389,7 +411,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         filtering, in particular higher order filters, use 'sosfiltfilt'
         (see [1]_).
         Default: 'filtfilt'.
-    fs : pq.Quantity or float, optional
+    sampling_frequency : pq.Quantity or float, optional
         The sampling frequency of the input time series. When given as
         `float`, its value is taken as frequency in Hz. When `signal` is given
         as `neo.AnalogSignal`, its attribute is used to specify the sampling
@@ -411,7 +433,7 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         If `filter_function` is not one of 'lfilter', 'filtfilt',
         or 'sosfiltfilt'.
 
-        If both `highpass_freq` and `lowpass_freq` are None.
+        If both `highpass_frequency` and `lowpass_frequency` are None.
 
     References
     ----------
@@ -426,30 +448,30 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
                              available_filters=available_filters))
     # design filter
     if hasattr(signal, 'sampling_rate'):
-        fs = signal.sampling_rate.rescale(pq.Hz).magnitude
-    if isinstance(highpass_freq, pq.quantity.Quantity):
-        highpass_freq = highpass_freq.rescale(pq.Hz).magnitude
-    if isinstance(lowpass_freq, pq.quantity.Quantity):
-        lowpass_freq = lowpass_freq.rescale(pq.Hz).magnitude
-    Fn = fs / 2.
+        sampling_frequency = signal.sampling_rate.rescale(pq.Hz).magnitude
+    if isinstance(highpass_frequency, pq.quantity.Quantity):
+        highpass_frequency = highpass_frequency.rescale(pq.Hz).magnitude
+    if isinstance(lowpass_frequency, pq.quantity.Quantity):
+        lowpass_frequency = lowpass_frequency.rescale(pq.Hz).magnitude
+    Fn = sampling_frequency / 2.
     # filter type is determined according to the values of cut-off
     # frequencies
-    if lowpass_freq and highpass_freq:
-        if highpass_freq < lowpass_freq:
-            Wn = (highpass_freq / Fn, lowpass_freq / Fn)
+    if lowpass_frequency and highpass_frequency:
+        if highpass_frequency < lowpass_frequency:
+            Wn = (highpass_frequency / Fn, lowpass_frequency / Fn)
             btype = 'bandpass'
         else:
-            Wn = (lowpass_freq / Fn, highpass_freq / Fn)
+            Wn = (lowpass_frequency / Fn, highpass_frequency / Fn)
             btype = 'bandstop'
-    elif lowpass_freq:
-        Wn = lowpass_freq / Fn
+    elif lowpass_frequency:
+        Wn = lowpass_frequency / Fn
         btype = 'lowpass'
-    elif highpass_freq:
-        Wn = highpass_freq / Fn
+    elif highpass_frequency:
+        Wn = highpass_frequency / Fn
         btype = 'highpass'
     else:
         raise ValueError(
-            "Either highpass_freq or lowpass_freq must be given"
+            "Either highpass_frequency or lowpass_frequency must be given"
         )
     if filter_function == 'sosfiltfilt':
         output = 'sos'
@@ -488,7 +510,9 @@ def butter(signal, highpass_freq=None, lowpass_freq=None, order=4,
         return filtered_data
 
 
-def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
+@deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
+def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
+                      zero_padding=True):
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
     wavelet.
@@ -502,19 +526,20 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
         `np.ndarray` or list is given, the time axis must be the last
         dimension. If `neo.AnalogSignal`, `Nt` is the number of time points
         and `Nch` is the number of channels.
-    freq : float or list of float
+    frequency : float or list of float
         Center frequency of the Morlet wavelet in Hz. Multiple center
         frequencies can be given as a list, in which case the function
         computes the wavelet transforms for all the given frequencies at once.
-    nco : float, optional
+    n_cycles : float, optional
         Size of the mother wavelet (approximate number of oscillation cycles
-        within a wavelet). A larger `nco` value leads to a higher frequency
-        resolution and a lower temporal resolution, and vice versa. Typically
-        used values are in a range of 3–8, but one should be cautious when
-        using a value smaller than ~ 6, in which case the admissibility of the
-        wavelet is not ensured (cf. [2]_).
+        within a wavelet). Corresponds to :math:`nco` in the paper [1]_.
+        A larger `n_cycles` value leads to a higher frequency resolution and a
+        lower temporal resolution, and vice versa.
+        Typically used values are in a range of 3–8, but one should be cautious
+        when using a value smaller than ~ 6, in which case the admissibility of
+        the wavelet is not ensured (cf. [2]_).
         Default: 6.0.
-    fs : float, optional
+    sampling_frequency : float, optional
         Sampling rate of the input data in Hz.
         When `signal` is given as a `neo.AnalogSignal`, the sampling frequency
         is taken from its attribute and this parameter is ignored.
@@ -530,8 +555,8 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     Returns
     -------
     signal_wt : np.ndarray
-        Wavelet transform of the input data. When `freq` was given as a list,
-        the way how the wavelet transforms for different frequencies are
+        Wavelet transform of the input data. When `frequency` was given as a
+        list, the way how the wavelet transforms for different frequencies are
         returned depends on the input type:
 
         * when the input was a `neo.AnalogSignal`, the returned array has
@@ -551,15 +576,15 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     Raises
     ------
     ValueError
-        If `freq` (or one of the values in `freq` when it is a list) is
-        greater than the half of `fs`.
+        If `frequency` (or one of the values in `frequency` when it is a list)
+        is greater than the half of `sampling_frequency`.
 
-        If `nco` is not positive.
+        If `n_cycles` is not positive.
 
     Notes
     -----
-    `nco` is related to the wavelet number :math:`w` as
-    :math:`w \sim 2 \pi \frac{'nco'}{6}`, as defined in [1]_.
+    `n_cycles` is related to the wavelet number :math:`w` as
+    :math:`w \sim 2 \pi \frac{n_{\text{cycles}}}{6}`, as defined in [1]_.
 
     References
     ----------
@@ -571,10 +596,10 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
            Turbulence," Annu Rev Fluid Mech, vol. 24, pp. 395–458, 1992.
 
     """
-    def _morlet_wavelet_ft(freq, nco, fs, n):
+    def _morlet_wavelet_ft(freq, n_cycles, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
         # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
-        sigma = nco / (6. * freq)
+        sigma = n_cycles / (6. * freq)
         freqs = np.fft.fftfreq(n, 1.0 / fs)
         heaviside = np.array(freqs > 0., dtype=np.float)
         ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
@@ -591,26 +616,27 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # When the input is AnalogSignal, use its attribute to specify the
     # sampling frequency
     if hasattr(signal, 'sampling_rate'):
-        fs = signal.sampling_rate
-    if isinstance(fs, pq.quantity.Quantity):
-        fs = fs.rescale('Hz').magnitude
+        sampling_frequency = signal.sampling_rate
+    if isinstance(sampling_frequency, pq.quantity.Quantity):
+        sampling_frequency = sampling_frequency.rescale('Hz').magnitude
 
-    if isinstance(freq, (list, tuple, np.ndarray)):
-        freqs = np.asarray(freq)
+    if isinstance(frequency, (list, tuple, np.ndarray)):
+        freqs = np.asarray(frequency)
     else:
-        freqs = np.array([freq, ])
+        freqs = np.array([frequency, ])
     if isinstance(freqs[0], pq.quantity.Quantity):
         freqs = [f.rescale('Hz').magnitude for f in freqs]
 
     # check whether the given central frequencies are less than the
     # Nyquist frequency of the signal
-    if np.any(freqs >= fs / 2):
-        raise ValueError("`freq` must be less than the half of " +
-                         "the sampling rate `fs` = {} Hz".format(fs))
+    if np.any(freqs >= sampling_frequency / 2):
+        raise ValueError("'frequency' elements must be less than the half of "
+                         "the 'sampling_frequency' ({}) Hz"
+                         .format(sampling_frequency))
 
-    # check if nco is positive
-    if nco <= 0:
-        raise ValueError("`nco` must be positive")
+    # check if n_cycles is positive
+    if n_cycles <= 0:
+        raise ValueError("`n_cycles` must be positive")
 
     n_orig = data.shape[-1]
     if zero_padding:
@@ -621,7 +647,7 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # generate Morlet wavelets (in the frequency domain)
     wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
     for i, f in enumerate(freqs):
-        wavelet_fts[i] = _morlet_wavelet_ft(f, nco, fs, n)
+        wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, sampling_frequency, n)
 
     # perform wavelet transform by convoluting the signal with the wavelets
     if data.ndim == 1:
@@ -633,18 +659,19 @@ def wavelet_transform(signal, freq, nco=6.0, fs=1.0, zero_padding=True):
     # reshape the result array according to the input
     if isinstance(signal, neo.AnalogSignal):
         signal_wt = np.rollaxis(signal_wt, -1)
-        if not isinstance(freq, (list, tuple, np.ndarray)):
+        if not isinstance(frequency, (list, tuple, np.ndarray)):
             signal_wt = signal_wt[..., 0]
     else:
         if signal.ndim == 1:
             signal_wt = signal_wt[0]
-        if not isinstance(freq, (list, tuple, np.ndarray)):
+        if not isinstance(frequency, (list, tuple, np.ndarray)):
             signal_wt = signal_wt[..., 0, :]
 
     return signal_wt
 
 
-def hilbert(signal, N='nextpow'):
+@deprecated_alias(N='padding')
+def hilbert(signal, padding='nextpow'):
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
     obtain its (complex) analytic signal.
@@ -663,9 +690,11 @@ def hilbert(signal, N='nextpow'):
     ----------
     signal : neo.AnalogSignal
         Signal(s) to transform.
-    N : int or {'none', 'nextpow'}, optional
+    padding : int, {'none', 'nextpow'}, or None, optional
         Defines whether the signal is zero-padded.
-        If 'none', no padding.
+        The `padding` argument corresponds to `N` in
+        `scipy.signal.hilbert(signal, N=padding)` function.
+        If 'none' or None, no padding.
         If 'nextpow', zero-pad to the next length that is a power of 2.
         If it is an `int`, directly specify the length to zero-pad to
         (indicates the number of Fourier components).
@@ -681,12 +710,7 @@ def hilbert(signal, N='nextpow'):
     Raises
     ------
     ValueError:
-        If `N` is not an integer or neither 'nextpow' nor 'none'.
-
-    Notes
-    -----
-    If `N` is an integer, this is passed as the parameter `N` of
-    `scipy.signal.hilbert` function.
+        If `padding` is not an integer or neither 'nextpow' nor 'none' (None).
 
     Examples
     --------
@@ -708,7 +732,7 @@ def hilbert(signal, N='nextpow'):
     ...       t_start=0*pq.s,
     ...       sampling_rate=1000*pq.Hz)
     ...
-    >>> analytic_signal = hilbert(a, N='nextpow')
+    >>> analytic_signal = hilbert(a, padding='nextpow')
     >>> angles = np.angle(analytic_signal)
     >>> amplitudes = np.abs(analytic_signal)
     >>> print(angles)
@@ -726,10 +750,10 @@ def hilbert(signal, N='nextpow'):
     n_org = signal.shape[0]
 
     # Right-pad signal to desired length using the signal itself
-    if isinstance(N, int):
+    if isinstance(padding, int):
         # User defined padding
-        n = N
-    elif N == 'nextpow':
+        n = padding
+    elif padding == 'nextpow':
         # To speed up calculation of the Hilbert transform, make sure we change
         # the signal to be of a length that is a power of two. Failure to do so
         # results in computations of certain signal lengths to not finish (or
@@ -746,11 +770,11 @@ def hilbert(signal, N='nextpow'):
         # For this reason, nextpow is the default setting for now.
 
         n = 2 ** (int(np.log2(n_org - 1)) + 1)
-    elif N == 'none':
+    elif padding == 'none' or padding is None:
         # No padding
         n = n_org
     else:
-        raise ValueError("'{}' is an unknown N.".format(N))
+        raise ValueError("Invalid padding '{}'.".format(padding))
 
     output = signal.duplicate_with_new_data(
         scipy.signal.hilbert(signal.magnitude, N=n, axis=0)[:n_org])

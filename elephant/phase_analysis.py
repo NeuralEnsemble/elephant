@@ -11,6 +11,10 @@ from __future__ import division, print_function, unicode_literals
 import numpy as np
 import quantities as pq
 
+__all__ = [
+    "spike_triggered_phase"
+]
+
 
 def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """

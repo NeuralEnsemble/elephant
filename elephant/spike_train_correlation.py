@@ -15,6 +15,16 @@ import quantities as pq
 import scipy.signal
 from scipy import integrate
 
+from elephant.utils import deprecated_alias
+
+__all__ = [
+    "covariance",
+    "correlation_coefficient",
+    "cross_correlation_histogram",
+    "spike_time_tiling_coefficient",
+    "spike_train_timescale"
+]
+
 # The highest sparsity of the `BinnedSpikeTrain` matrix for which
 # memory-efficient (sparse) implementation of `covariance()` is faster than
 # with the corresponding numpy dense array.
@@ -29,7 +39,8 @@ class _CrossCorrHist(object):
 
     Parameters
     ----------
-    binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain_i, binned_spiketrain_j :
+        elephant.conversion.BinnedSpikeTrain
         Binned spike trains to cross-correlate. The two spike trains must
         have the same `t_start` and `t_stop`.
     window : list or tuple
@@ -37,13 +48,13 @@ class _CrossCorrHist(object):
         Refer to the docs of `cross_correlation_histogram()`.
     """
 
-    def __init__(self, binned_st1, binned_st2, window):
-        self.binned_st1 = binned_st1
-        self.binned_st2 = binned_st2
+    def __init__(self, binned_spiketrain_i, binned_spiketrain_j, window):
+        self.binned_spiketrain_i = binned_spiketrain_i
+        self.binned_spiketrain_j = binned_spiketrain_j
         self.window = window
 
     @staticmethod
-    def get_valid_lags(binned_st1, binned_st2):
+    def get_valid_lags(binned_spiketrain_i, binned_spiketrain_j):
         """
         Computes the lags at which the cross-correlation
         of the input spiketrains can be calculated with full
@@ -51,7 +62,8 @@ class _CrossCorrHist(object):
 
         Parameters
         ----------
-        binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
+        binned_spiketrain_i, binned_spiketrain_j :
+            elephant.conversion.BinnedSpikeTrain
             Binned spike trains to cross-correlate. The input spike trains can
             have any `t_start` and `t_stop`.
 
@@ -62,22 +74,22 @@ class _CrossCorrHist(object):
             at full overlap (valid mode).
         """
 
-        binsize = binned_st1.binsize
+        bin_size = binned_spiketrain_i.bin_size
 
         # see cross_correlation_histogram for the examples
-        if binned_st1.num_bins < binned_st2.num_bins:
+        if binned_spiketrain_i.n_bins < binned_spiketrain_j.n_bins:
             # ex. 1) lags range: [-2, 5] ms
             # ex. 2) lags range: [1, 2] ms
-            left_edge = (binned_st2.t_start -
-                         binned_st1.t_start) / binsize
-            right_edge = (binned_st2.t_stop -
-                          binned_st1.t_stop) / binsize
+            left_edge = (binned_spiketrain_j.t_start -
+                         binned_spiketrain_i.t_start) / bin_size
+            right_edge = (binned_spiketrain_j.t_stop -
+                          binned_spiketrain_i.t_stop) / bin_size
         else:
             # ex. 3) lags range: [-1, 3] ms
-            left_edge = (binned_st2.t_stop -
-                         binned_st1.t_stop) / binsize
-            right_edge = (binned_st2.t_start -
-                          binned_st1.t_start) / binsize
+            left_edge = (binned_spiketrain_j.t_stop -
+                         binned_spiketrain_i.t_stop) / bin_size
+            right_edge = (binned_spiketrain_j.t_start -
+                          binned_spiketrain_i.t_start) / bin_size
         right_edge = int(right_edge.simplified.magnitude)
         left_edge = int(left_edge.simplified.magnitude)
         lags = np.arange(left_edge, right_edge + 1, dtype=np.int32)
@@ -91,13 +103,14 @@ class _CrossCorrHist(object):
         Return
         -------
         cross_corr : np.ndarray
-            Cross-correlation of `self.binned_st` and `self.binned_st2`.
+            Cross-correlation of `self.binned_spiketrain1` and
+            `self.binned_spiketrain2`.
         """
-        binned_st1 = self.binned_st1
-        binned_st2 = self.binned_st2
+        binned_spiketrain1 = self.binned_spiketrain_i
+        binned_spiketrain2 = self.binned_spiketrain_j
 
-        st1_spmat = self.binned_st1._sparse_mat_u
-        st2_spmat = self.binned_st2._sparse_mat_u
+        st1_spmat = self.binned_spiketrain_i._sparse_mat_u
+        st2_spmat = self.binned_spiketrain_j._sparse_mat_u
         left_edge, right_edge = self.window
 
         # extract the nonzero column indices of 1-d matrices
@@ -107,7 +120,7 @@ class _CrossCorrHist(object):
         # 'valid' mode requires bins correction due to the shift in t_starts
         # 'full' and 'pad' modes don't need this correction
         if cch_mode == "valid":
-            if binned_st1.num_bins > binned_st2.num_bins:
+            if binned_spiketrain1.n_bins > binned_spiketrain2.n_bins:
                 st2_bin_idx_unique += right_edge
             else:
                 st2_bin_idx_unique += left_edge
@@ -148,11 +161,12 @@ class _CrossCorrHist(object):
         Returns
         -------
         cross_corr : np.ndarray
-            Cross-correlation of `self.binned_st` and `self.binned_st2`.
+            Cross-correlation of `self.binned_spiketrain1` and
+            `self.binned_spiketrain2`.
         """
         # Retrieve the array of the binned spike trains
-        st1_arr = self.binned_st1.to_array()[0]
-        st2_arr = self.binned_st2.to_array()[0]
+        st1_arr = self.binned_spiketrain_i.to_array()[0]
+        st2_arr = self.binned_spiketrain_j.to_array()[0]
         left_edge, right_edge = self.window
         if cch_mode == 'pad':
             # Zero padding to stay between left_edge and right_edge
@@ -179,10 +193,11 @@ class _CrossCorrHist(object):
         np.ndarray
             Cross-correlation array with the border correction applied.
         """
-        min_num_bins = min(self.binned_st1.num_bins, self.binned_st2.num_bins)
+        min_num_bins = min(self.binned_spiketrain_i.n_bins,
+                           self.binned_spiketrain_j.n_bins)
         left_edge, right_edge = self.window
-        valid_lags = _CrossCorrHist.get_valid_lags(self.binned_st1,
-                                                   self.binned_st2)
+        valid_lags = _CrossCorrHist.get_valid_lags(self.binned_spiketrain_i,
+                                                   self.binned_spiketrain_j)
         lags_to_compute = np.arange(left_edge, right_edge + 1)
         outer_subtraction = np.subtract.outer(lags_to_compute, valid_lags)
         min_distance_from_window = np.abs(outer_subtraction).min(axis=1)
@@ -190,7 +205,7 @@ class _CrossCorrHist(object):
         correction = float(min_num_bins) / n_values_fall_in_window
         return cross_corr * correction
 
-    def cross_corr_coef(self, cross_corr):
+    def cross_correlation_coefficient(self, cross_corr):
         """
         Normalizes the CCH to obtain the cross-correlation coefficient
         function, ranging from -1 to 1.
@@ -210,11 +225,12 @@ class _CrossCorrHist(object):
         np.ndarray
             Normalized cross-correlation array in range `[-1, 1]`.
         """
-        max_num_bins = max(self.binned_st1.num_bins, self.binned_st2.num_bins)
-        n_spikes1 = self.binned_st1.get_num_of_spikes()
-        n_spikes2 = self.binned_st2.get_num_of_spikes()
-        data1 = self.binned_st1._sparse_mat_u.data
-        data2 = self.binned_st2._sparse_mat_u.data
+        max_num_bins = max(self.binned_spiketrain_i.n_bins,
+                           self.binned_spiketrain_j.n_bins)
+        n_spikes1 = self.binned_spiketrain_i.get_num_of_spikes()
+        n_spikes2 = self.binned_spiketrain_j.get_num_of_spikes()
+        data1 = self.binned_spiketrain_i._sparse_mat_u.data
+        data2 = self.binned_spiketrain_j._sparse_mat_u.data
         ii = data1.dot(data1)
         jj = data2.dot(data2)
         cov_mean = n_spikes1 * n_spikes2 / max_num_bins
@@ -223,13 +239,13 @@ class _CrossCorrHist(object):
         cross_corr_normalized = (cross_corr - cov_mean) / std_xy
         return cross_corr_normalized
 
-    def kernel_smoothing(self, cross_corr, kernel):
+    def kernel_smoothing(self, cross_corr_array, kernel):
         """
         Performs 1-d convolution with the `kernel`.
 
         Parameters
         ----------
-        cross_corr : np.ndarray
+        cross_corr_array : np.ndarray
             Cross-correlation array. The output of `self.correlate_speed()`
             or `self.correlate_memory()`.
         kernel : list
@@ -250,10 +266,11 @@ class _CrossCorrHist(object):
                                                          kern_len_max))
         kernel = np.divide(kernel, kernel.sum())
         # Smooth the cross-correlation histogram with the kern
-        return np.convolve(cross_corr, kernel, mode='same')
+        return np.convolve(cross_corr_array, kernel, mode='same')
 
 
-def covariance(binned_sts, binary=False, fast=True):
+@deprecated_alias(binned_sts='binned_spiketrain')
+def covariance(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise covariances between all combinations
     of N binned spike trains.
@@ -278,7 +295,7 @@ def covariance(binned_sts, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_sts : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, the spikes of a particular spike train falling in the same bin
@@ -286,7 +303,7 @@ def covariance(binned_sts, binary=False, fast=True):
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False.
     fast : bool, optional
-        If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
+        If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
         `np.cov()`. Otherwise, use memory efficient implementation.
         See Notes [2].
         Default: True.
@@ -295,26 +312,27 @@ def covariance(binned_sts, binary=False, fast=True):
     -------
     C : (N, N) np.ndarray
         The square matrix of covariances. The element :math:`C[i,j]=C[j,i]` is
-        the covariance between `binned_sts[i]` and `binned_sts[j]`.
+        the covariance between `binned_spiketrain[i]` and
+        `binned_spiketrain[j]`.
 
     Raises
     ------
     MemoryError
-        When using `fast=True` and `binned_sts` shape is large.
+        When using `fast=True` and `binned_spiketrain` shape is large.
 
     Warns
     --------
     UserWarning
-        If at least one row in `binned_sts` is empty (has no spikes).
+        If at least one row in `binned_spiketrain` is empty (has no spikes).
 
     See Also
     --------
-    corrcoef : Pearson correlation coefficient
+    correlation_coefficient : Pearson correlation coefficient
 
     Notes
     -----
     1. The spike trains in the binned structure are assumed to cover the
-       complete time span `[t_start, t_stop)` of `binned_sts`.
+       complete time span `[t_start, t_stop)` of `binned_spiketrain`.
     2. Using `fast=True` might lead to `MemoryError`. If it's the case,
        switch to `fast=False`.
 
@@ -330,23 +348,24 @@ def covariance(binned_sts, binary=False, fast=True):
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], binsize=5*ms))
+    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
     >>> print(cov_matrix[0, 1])
     -0.001668334167083546
 
     """
     if binary:
-        binned_sts = binned_sts.binarize(copy=True)
+        binned_spiketrain = binned_spiketrain.binarize(copy=True)
 
-    if fast and binned_sts.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
-        array = binned_sts.to_array()
+    if fast and binned_spiketrain.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
+        array = binned_spiketrain.to_array()
         return np.cov(array)
 
     return _covariance_sparse(
-        binned_sts, corrcoef_norm=False)
+        binned_spiketrain, corrcoef_norm=False)
 
 
-def corrcoef(binned_sts, binary=False, fast=True):
+@deprecated_alias(binned_sts='binned_spiketrain')
+def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
@@ -374,7 +393,7 @@ def corrcoef(binned_sts, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_sts : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, two spikes of a particular spike train falling in the same bin
@@ -382,7 +401,7 @@ def corrcoef(binned_sts, binary=False, fast=True):
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
         Default: False.
     fast : bool, optional
-        If `fast=True` and the sparsity of `binned_sts` is `> 0.1`, use
+        If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
         `np.corrcoef()`. Otherwise, use memory efficient implementation.
         See Notes[2]
         Default: True.
@@ -392,18 +411,18 @@ def corrcoef(binned_sts, binary=False, fast=True):
     C : (N, N) np.ndarray
         The square matrix of correlation coefficients. The element
         :math:`C[i,j]=C[j,i]` is the Pearson's correlation coefficient between
-        `binned_sts[i]` and `binned_sts[j]`. If `binned_sts` contains only one
-        `neo.SpikeTrain`, C=1.0.
+        `binned_spiketrain[i]` and `binned_spiketrain[j]`.
+        If `binned_spiketrain` contains only one `neo.SpikeTrain`, C=1.0.
 
     Raises
     ------
     MemoryError
-        When using `fast=True` and `binned_sts` shape is large.
+        When using `fast=True` and `binned_spiketrain` shape is large.
 
     Warns
     --------
     UserWarning
-        If at least one row in `binned_sts` is empty (has no spikes).
+        If at least one row in `binned_spiketrain` is empty (has no spikes).
 
     See Also
     --------
@@ -412,7 +431,7 @@ def corrcoef(binned_sts, binary=False, fast=True):
     Notes
     -----
     1. The spike trains in the binned structure are assumed to cover the
-       complete time span `[t_start, t_stop)` of `binned_sts`.
+       complete time span `[t_start, t_stop)` of `binned_spiketrain`.
     2. Using `fast=True` might lead to `MemoryError`. If it's the case,
        switch to `fast=False`.
 
@@ -428,23 +447,30 @@ def corrcoef(binned_sts, binary=False, fast=True):
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
     >>> st2 = homogeneous_poisson_process(
     ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cc_matrix = corrcoef(BinnedSpikeTrain([st1, st2], binsize=5*ms))
+    >>> cc_matrix = correlation_coefficient(BinnedSpikeTrain([st1, st2],
+    ... bin_size=5*ms))
     >>> print(cc_matrix[0, 1])
     0.015477320222075359
 
     """
     if binary:
-        binned_sts = binned_sts.binarize(copy=True)
+        binned_spiketrain = binned_spiketrain.binarize(copy=True)
 
-    if fast and binned_sts.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
-        array = binned_sts.to_array()
+    if fast and binned_spiketrain.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
+        array = binned_spiketrain.to_array()
         return np.corrcoef(array)
 
     return _covariance_sparse(
-        binned_sts, corrcoef_norm=True)
+        binned_spiketrain, corrcoef_norm=True)
 
 
-def _covariance_sparse(binned_sts, corrcoef_norm):
+def corrcoef(*args, **kwargs):
+    warnings.warn("'corrcoef' is deprecated; use 'correlation_coefficient'",
+                  DeprecationWarning)
+    return correlation_coefficient(*args, **kwargs)
+
+
+def _covariance_sparse(binned_spiketrain, corrcoef_norm):
     r"""
     Memory efficient helper function for `covariance()` and `corrcoef()`
     that performs the complete calculation for either the covariance
@@ -466,7 +492,7 @@ def _covariance_sparse(binned_sts, corrcoef_norm):
 
     Parameters
     ----------
-    binned_sts : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
         See `covariance()` or `corrcoef()`, respectively.
     corrcoef_norm : bool
         Use normalization factor for the correlation coefficient rather than
@@ -475,21 +501,21 @@ def _covariance_sparse(binned_sts, corrcoef_norm):
     Warns
     --------
     UserWarning
-        If at least one row in `binned_sts` is empty (has no spikes).
+        If at least one row in `binned_spiketrain` is empty (has no spikes).
 
     Returns
     -------
     (N, N) np.ndarray
         Pearson correlation or covariance matrix.
     """
-    spmat = binned_sts._sparse_mat_u
-    n_bins = binned_sts.num_bins
+    spmat = binned_spiketrain._sparse_mat_u
+    n_bins = binned_spiketrain.n_bins
 
     # Check for empty spike trains
     n_spikes_per_row = spmat.sum(axis=1)
     if n_spikes_per_row.min() == 0:
         warnings.warn(
-            'Detected empty spike trains (rows) in the argument binned_sts.')
+            'Detected empty spike trains (rows) in the binned_spiketrain.')
 
     res = spmat.dot(spmat.T) - n_spikes_per_row * n_spikes_per_row.T / n_bins
     res = np.asarray(res)
@@ -503,16 +529,21 @@ def _covariance_sparse(binned_sts, corrcoef_norm):
     return res
 
 
+@deprecated_alias(binned_st1='binned_spiketrain_i',
+                  binned_st2='binned_spiketrain_j',
+                  cross_corr_coef='cross_correlation_coefficient')
 def cross_correlation_histogram(
-        binned_st1, binned_st2, window='full', border_correction=False,
-        binary=False, kernel=None, method='speed', cross_corr_coef=False):
+        binned_spiketrain_i, binned_spiketrain_j, window='full',
+        border_correction=False, binary=False, kernel=None, method='speed',
+        cross_correlation_coefficient=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
-    trains `binned_st1` and `binned_st2`.
+    trains `binned_spiketrain_i` and `binned_spiketrain_j`.
 
     Parameters
     ----------
-    binned_st1, binned_st2 : elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain_i, binned_spiketrain_j :
+        elephant.conversion.BinnedSpikeTrain
         Binned spike trains of lengths N and M to cross-correlate. The input
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
@@ -563,7 +594,7 @@ def cross_correlation_histogram(
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
         Default: "speed".
-    cross_corr_coef : bool, optional
+    cross_correlation_coefficient : bool, optional
         If True, a normalization is applied to the CCH to obtain the
         cross-correlation  coefficient function ranging from -1 to 1 according
         to Equation (5.10) in [1]_. See Notes.
@@ -572,20 +603,21 @@ def cross_correlation_histogram(
     Returns
     -------
     cch_result : neo.AnalogSignal
-        Containing the cross-correlation histogram between `binned_st1` and
-        `binned_st2`.
+        Containing the cross-correlation histogram between
+        `binned_spiketrain_i` and `binned_spiketrain_j`.
 
         Offset bins correspond to correlations at delays equivalent
-        to the differences between the spike times of `binned_st1` and those of
-        `binned_st2`: an entry at positive lag corresponds to a spike in
-        `binned_st2` following a spike in `binned_st1` bins to the right, and
-        an entry at negative lag corresponds to a spike in `binned_st1`
-        following a spike in `binned_st2`.
+        to the differences between the spike times of `binned_spiketrain_i` and
+        those of `binned_spiketrain_j`: an entry at positive lag corresponds to
+        a spike in `binned_spiketrain_j` following a spike in
+        `binned_spiketrain_i` bins to the right, and an entry at negative lag
+        corresponds to a spike in `binned_spiketrain_i` following a spike in
+        `binned_spiketrain_j`.
 
         To illustrate this definition, consider two spike trains with the same
         `t_start` and `t_stop`:
-        `binned_st1` ('reference neuron') : 0 0 0 0 1 0 0 0 0 0 0
-        `binned_st2` ('target neuron')    : 0 0 0 0 0 0 0 1 0 0 0
+        `binned_spiketrain_i` ('reference neuron') : 0 0 0 0 1 0 0 0 0 0 0
+        `binned_spiketrain_j` ('target neuron')    : 0 0 0 0 0 0 0 1 0 0 0
         Here, the CCH will have an entry of `1` at `lag=+3`.
 
         Consistent with the definition of `neo.AnalogSignals`, the time axis
@@ -617,18 +649,18 @@ def cross_correlation_histogram(
     >>> import matplotlib.pyplot as plt
     >>> import quantities as pq
 
-    >>> binned_st1 = elephant.conversion.BinnedSpikeTrain(
+    >>> binned_spiketrain_i = elephant.conversion.BinnedSpikeTrain(
     ...        elephant.spike_train_generation.homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-    ...        binsize=5. * pq.ms)
-    >>> binned_st2 = elephant.conversion.BinnedSpikeTrain(
+    ...        bin_size=5. * pq.ms)
+    >>> binned_spiketrain_j = elephant.conversion.BinnedSpikeTrain(
     ...        elephant.spike_train_generation.homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
-    ...        binsize=5. * pq.ms)
+    ...        bin_size=5. * pq.ms)
 
     >>> cc_hist = \
     ...    elephant.spike_train_correlation.cross_correlation_histogram(
-    ...        binned_st1, binned_st2, window=[-30,30],
+    ...        binned_spiketrain_i, binned_spiketrain_j, window=[-30,30],
     ...        border_correction=False,
     ...        binary=False, kernel=None, method='memory')
 
@@ -644,29 +676,31 @@ def cross_correlation_histogram(
 
     # Check that the spike trains are binned with the same temporal
     # resolution
-    if binned_st1.matrix_rows != 1 or binned_st2.matrix_rows != 1:
+    if binned_spiketrain_i.matrix_rows != 1 or \
+            binned_spiketrain_j.matrix_rows != 1:
         raise ValueError("Spike trains must be one dimensional")
-    if not np.isclose(binned_st1.binsize.simplified.item(),
-                      binned_st2.binsize.simplified.item()):
+    if not np.isclose(binned_spiketrain_i.bin_size.simplified.item(),
+                      binned_spiketrain_j.bin_size.simplified.item()):
         raise ValueError("Bin sizes must be equal")
 
-    binsize = binned_st1.binsize
-    left_edge_min = -binned_st1.num_bins + 1
-    right_edge_max = binned_st2.num_bins - 1
+    bin_size = binned_spiketrain_i.bin_size
+    left_edge_min = -binned_spiketrain_i.n_bins + 1
+    right_edge_max = binned_spiketrain_j.n_bins - 1
 
-    t_lags_shift = (binned_st2.t_start - binned_st1.t_start) / binsize
+    t_lags_shift = (binned_spiketrain_j.t_start -
+                    binned_spiketrain_i.t_start) / bin_size
     t_lags_shift = t_lags_shift.simplified.item()
     if not np.isclose(t_lags_shift, round(t_lags_shift)):
-        # For example, if binsize=1 ms, binned_st1.t_start=0 ms, and
-        # binned_st2.t_start=0.5 ms then there is a global shift in the
-        # binning of the spike trains.
+        # For example, if bin_size=1 ms, binned_spiketrain_i.t_start=0 ms, and
+        # binned_spiketrain_j.t_start=0.5 ms then there is a global shift in
+        # the binning of the spike trains.
         raise ValueError(
-            "Binned spiketrains time shift is not multiple of binsize")
+            "Binned spiketrains time shift is not multiple of bin_size")
     t_lags_shift = int(round(t_lags_shift))
 
     # In the examples below we fix st2 and "move" st1.
     # Zero-lag is equal to `max(st1.t_start, st2.t_start)`.
-    # Binned spiketrains (t_start and t_stop) with binsize=1ms:
+    # Binned spiketrains (t_start and t_stop) with bin_size=1ms:
     # 1) st1=[3, 8] ms, st2=[1, 13] ms
     #    t_start_shift = -2 ms
     #    zero-lag is at 3 ms
@@ -704,17 +738,18 @@ def cross_correlation_histogram(
                          right_edge + 1 + t_lags_shift, dtype=np.int32)
         cch_mode = window
     elif window == 'valid':
-        lags = _CrossCorrHist.get_valid_lags(binned_st1, binned_st2)
+        lags = _CrossCorrHist.get_valid_lags(binned_spiketrain_i,
+                                             binned_spiketrain_j)
         left_edge, right_edge = lags[(0, -1), ]
         cch_mode = window
     else:
         raise ValueError("Invalid window parameter")
 
     if binary:
-        binned_st1 = binned_st1.binarize(copy=True)
-        binned_st2 = binned_st2.binarize(copy=True)
+        binned_spiketrain_i = binned_spiketrain_i.binarize(copy=True)
+        binned_spiketrain_j = binned_spiketrain_j.binarize(copy=True)
 
-    cch_builder = _CrossCorrHist(binned_st1, binned_st2,
+    cch_builder = _CrossCorrHist(binned_spiketrain_i, binned_spiketrain_j,
                                  window=(left_edge, right_edge))
     if method == 'memory':
         cross_corr = cch_builder.correlate_memory(cch_mode=cch_mode)
@@ -730,15 +765,15 @@ def cross_correlation_histogram(
             cross_corr = cch_builder.border_correction(cross_corr)
     if kernel is not None:
         cross_corr = cch_builder.kernel_smoothing(cross_corr, kernel=kernel)
-    if cross_corr_coef:
-        cross_corr = cch_builder.cross_corr_coef(cross_corr)
+    if cross_correlation_coefficient:
+        cross_corr = cch_builder.cross_correlation_coefficient(cross_corr)
 
     # Transform the array count into an AnalogSignal
     cch_result = neo.AnalogSignal(
         signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
-        t_start=(lags[0] - 0.5) * binned_st1.binsize,
-        sampling_period=binned_st1.binsize)
+        t_start=(lags[0] - 0.5) * binned_spiketrain_i.bin_size,
+        sampling_period=binned_spiketrain_i.bin_size)
     return cch_result, lags
 
 
@@ -746,7 +781,8 @@ def cross_correlation_histogram(
 cch = cross_correlation_histogram
 
 
-def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
+@deprecated_alias(spiketrain_1='spiketrain_i', spiketrain_2='spiketrain_j')
+def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     """
     Calculates the Spike Time Tiling Coefficient (STTC) as described in [1]_
     following their implementation in C.
@@ -774,18 +810,19 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 
     This is a Python implementation compatible with the elephant library of
     the original code by C. Cutts written in C and avaiable at:
-    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/blob/master/spike_time_tiling_coefficient.c)
+    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/
+    blob/master/spike_time_tiling_coefficient.c)
 
     Parameters
     ----------
-    spiketrain_1, spiketrain_2: neo.SpikeTrain
+    spiketrain_i, spiketrain_j: neo.SpikeTrain
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
     dt: pq.Quantity.
         The synchronicity window is used for both: the quantification of the
         proportion of total recording time that lies `[-dt, +dt]` of each spike
-        in each train and the proportion of spikes in `spiketrain_1` that lies
-        `[-dt, +dt]` of any spike in `spiketrain_2`.
+        in each train and the proportion of spikes in `spiketrain_i` that lies
+        `[-dt, +dt]` of any spike in `spiketrain_j`.
         Default : `0.005 * pq.s`
 
     Returns
@@ -806,40 +843,40 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
     Alias: `sttc`
     """
 
-    def run_P(spiketrain_1, spiketrain_2):
+    def run_P(spiketrain_i, spiketrain_j):
         """
         Check every spike in train 1 to see if there's a spike in train 2
         within dt
         """
-        N2 = len(spiketrain_2)
+        N2 = len(spiketrain_j)
 
-        # Search spikes of spiketrain_1 in spiketrain_2
+        # Search spikes of spiketrain_i in spiketrain_j
         # ind will contain index of
-        ind = np.searchsorted(spiketrain_2.times, spiketrain_1.times)
+        ind = np.searchsorted(spiketrain_j.times, spiketrain_i.times)
 
         # To prevent IndexErrors
-        # If a spike of spiketrain_1 is after the last spike of spiketrain_2,
-        # the index is N2, however spiketrain_2[N2] raises an IndexError.
-        # By shifting this index, the spike of spiketrain_1 will be compared
-        # to the last 2 spikes of spiketrain_2 (negligible overhead).
+        # If a spike of spiketrain_i is after the last spike of spiketrain_j,
+        # the index is N2, however spiketrain_j[N2] raises an IndexError.
+        # By shifting this index, the spike of spiketrain_i will be compared
+        # to the last 2 spikes of spiketrain_j (negligible overhead).
         # Note: Not necessary for index 0 that will be shifted to -1,
-        # because spiketrain_2[-1] is valid (additional negligible comparison)
+        # because spiketrain_j[-1] is valid (additional negligible comparison)
         ind[ind == N2] = N2 - 1
 
-        # Compare to nearest spike in spiketrain_2 BEFORE spike in spiketrain_1
+        # Compare to nearest spike in spiketrain_j BEFORE spike in spiketrain_i
         close_left = np.abs(
-            spiketrain_2.times[ind - 1] - spiketrain_1.times) <= dt
-        # Compare to nearest spike in spiketrain_2 AFTER (or simultaneous)
-        # spike in spiketrain_2
+            spiketrain_j.times[ind - 1] - spiketrain_i.times) <= dt
+        # Compare to nearest spike in spiketrain_j AFTER (or simultaneous)
+        # spike in spiketrain_j
         close_right = np.abs(
-            spiketrain_2.times[ind] - spiketrain_1.times) <= dt
+            spiketrain_j.times[ind] - spiketrain_i.times) <= dt
 
-        # spiketrain_2 spikes that are in [-dt, dt] range of spiketrain_1
+        # spiketrain_j spikes that are in [-dt, dt] range of spiketrain_i
         # spikes are counted only ONCE (as per original implementation)
         close = close_left + close_right
 
-        # Count how many spikes in spiketrain_1 have a "partner" in
-        # spiketrain_2
+        # Count how many spikes in spiketrain_i have a "partner" in
+        # spiketrain_j
         return np.count_nonzero(close)
 
     def run_T(spiketrain):
@@ -872,17 +909,17 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
         T = time_A / (spiketrain.t_stop - spiketrain.t_start)
         return T.simplified.item()  # enforce simplification, strip units
 
-    N1 = len(spiketrain_1)
-    N2 = len(spiketrain_2)
+    N1 = len(spiketrain_i)
+    N2 = len(spiketrain_j)
 
     if N1 == 0 or N2 == 0:
         index = np.nan
     else:
-        TA = run_T(spiketrain_1)
-        TB = run_T(spiketrain_2)
-        PA = run_P(spiketrain_1, spiketrain_2)
+        TA = run_T(spiketrain_i)
+        TB = run_T(spiketrain_j)
+        PA = run_P(spiketrain_i, spiketrain_j)
         PA = PA / N1
-        PB = run_P(spiketrain_2, spiketrain_1)
+        PB = run_P(spiketrain_j, spiketrain_i)
         PB = PB / N2
         # check if the P and T values are 1 to avoid division by zero
         # This only happens for TA = PB = 1 and/or TB = PA = 1,
@@ -906,7 +943,8 @@ def spike_time_tiling_coefficient(spiketrain_1, spiketrain_2, dt=0.005 * pq.s):
 sttc = spike_time_tiling_coefficient
 
 
-def spike_train_timescale(binned_st, tau_max):
+@deprecated_alias(binned_st='binned_spiketrain', tau_max='max_tau')
+def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
     Calculates the auto-correlation time of a binned spike train.
     Uses the definition of the auto-correlation time proposed in [[1]_,
@@ -921,17 +959,19 @@ def spike_train_timescale(binned_st, tau_max):
 
     Parameters
     ----------
-    binned_st : elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike train to be evaluated.
-    tau_max : pq.Quantity
-        Maximal integration time of the auto-correlation function. It needs to
-        be a multiple of the binsize of `binned_st`.
+    max_tau : pq.Quantity
+        Maximal integration time :math:`\tau_{max}` of the auto-correlation
+        function. It needs to be a multiple of the `bin_size` of
+        `binned_spiketrain`.
 
     Returns
     -------
     timescale : pq.Quantity
-        The auto-correlation time of the binned spiketrain. If `binned_st` has
-        less than 2 spikes `np.nan` is returned.
+        The auto-correlation time of the binned spiketrain. If
+        `binned_spiketrain` has less than 2 spikes, a warning is raised and
+        `np.nan` is returned.
 
     Notes
     -----
@@ -941,9 +981,9 @@ def spike_train_timescale(binned_st, tau_max):
       necessary to introduce a cutoff for the numerical integration - this
       cutoff should be neither smaller than the true auto-correlation time
       nor much bigger.
-    * The bin size of `binned_st` is another critical parameter as it defines
-      the discretization of the integral :math:`d\tau`. If it is too big, the
-      numerical approximation of the integral is inaccurate.
+    * The bin size of `binned_spiketrain` is another critical parameter as it
+      defines the discretization of the integral :math:`d\tau`. If it is too
+      big, the numerical approximation of the integral is inaccurate.
 
     References
     ----------
@@ -951,29 +991,30 @@ def spike_train_timescale(binned_st, tau_max):
         Slow fluctuations in recurrent networks of spiking neurons.
         Physical Review E, 92(4), 040901.
     """
-    if binned_st.get_num_of_spikes() < 2:
+    if binned_spiketrain.get_num_of_spikes() < 2:
         warnings.warn("Spike train contains less than 2 spikes! "
                       "np.nan will be returned.")
         return np.nan
 
-    binsize = binned_st.binsize
-    if not (tau_max / binsize).simplified.units == pq.dimensionless:
-        raise ValueError("tau_max needs units of time")
+    bin_size = binned_spiketrain.bin_size
+    if not (max_tau / bin_size).simplified.units == pq.dimensionless:
+        raise ValueError("max_tau needs units of time")
 
-    # safe casting of tau_max/binsize to integer
-    tau_max_bins = int(np.round((tau_max / binsize).simplified.magnitude))
-    if not np.isclose(tau_max.simplified.magnitude,
-                      (tau_max_bins * binsize).simplified.magnitude):
-        raise ValueError("tau_max has to be a multiple of the binsize")
+    # safe casting of max_tau/bin_size to integer
+    max_tau_bins = int(np.round((max_tau / bin_size).simplified.magnitude))
+    if not np.isclose(max_tau.simplified.magnitude,
+                      (max_tau_bins * bin_size).simplified.magnitude):
+        raise ValueError("max_tau has to be a multiple of the bin_size")
 
-    cch_window = [-tau_max_bins, tau_max_bins]
+    cch_window = [-max_tau_bins, max_tau_bins]
     corrfct, bin_ids = cross_correlation_histogram(
-        binned_st, binned_st, window=cch_window, cross_corr_coef=True
+        binned_spiketrain, binned_spiketrain, window=cch_window,
+        cross_correlation_coefficient=True
     )
     # Take only t > 0 values, in particular neglecting the delta peak.
-    corrfct_pos = corrfct.time_slice(binsize / 2, corrfct.t_stop).flatten()
+    corrfct_pos = corrfct.time_slice(bin_size / 2, corrfct.t_stop).flatten()
 
     # Calculate the timescale using trapezoidal integration
     integr = np.abs((corrfct_pos / corrfct_pos[0]).magnitude)**2
-    timescale = 2 * integrate.trapz(integr, dx=binsize)
+    timescale = 2 * integrate.trapz(integr, dx=bin_size)
     return timescale

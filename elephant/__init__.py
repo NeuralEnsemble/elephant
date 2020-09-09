@@ -31,7 +31,6 @@ from . import (statistics,
 #   parallel: avoid warns when elephant is imported
 
 try:
-    from . import pandas_bridge
     from . import asset
     from . import spade
 except ImportError:
