@@ -411,7 +411,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     Raises
     ------
     ValueError
-        If the provided signal does not have a shape of 2xN.
+        If the provided signal does not have a shape of Nx2.
 
         If the determinant of the prediction error covariance matrix is not
         positive.
@@ -467,13 +467,11 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     if isinstance(signals, AnalogSignal):
         signals = signals.magnitude
 
+    if not (signals.ndim == 2 and signals.shape[1] == 2):
+        raise ValueError("The input 'signals' must be of dimensions Nx2.")
+
     # transpose (N,2) -> (2,N) for mathematical convenience
     signals = signals.T
-
-    # Note: The shape tested here is for the *transformed* signals.
-    # If it does not match, it means that the input had wrong dimensions.
-    if not (signals.ndim == 2 and signals.shape[0] == 2):
-        raise ValueError("The input 'signals' must be of dimensions Nx2.")
 
     # signal_x and signal_y are (1, N) arrays
     signal_x, signal_y = np.expand_dims(signals, axis=1)
