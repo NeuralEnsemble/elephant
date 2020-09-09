@@ -314,7 +314,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
         dimensionality of the data
     max_order : int
         maximal order to consider
-    information_criterion : callable
+    information_criterion : str
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion
@@ -364,8 +364,9 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     Parameters
     ----------
-    signals : array-like or neo.AnalogSignal
-        Time series data (Nx2 in case of array-like).
+    signals : (N, 2) np.ndarray or neo.AnalogSignal
+        A matrix with two time series (second dimension) that have N time
+        points (first dimension).
     max_order : int
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
@@ -436,7 +437,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     >>> import numpy as np
     >>> from elephant.causality.granger import pairwise_granger
-    >>> pairwise_granger(np.random.uniform(size=(2, 1000)), max_order=2)
+    >>> pairwise_granger(np.random.uniform(size=(1000, 2)), max_order=2)
     Causality(directional_causality_x_y=0.0,
              directional_causality_y_x=-0.0,
              instantaneous_causality=0.0,
@@ -455,7 +456,8 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     >>> x = np.random.randn(1001)
     >>> y = 3.5 * x[:-1] + np.random.randn(1000)
-    >>> pairwise_granger([x[1:], y], max_order=1)
+    >>> signals = np.array([x[1:], y]).T  # N x 2 matrix
+    >>> pairwise_granger(signals, max_order=1)
     Causality(directional_causality_x_y=2.64,
               directional_causality_y_x=0.0,
               instantaneous_causality=0.0,
@@ -463,11 +465,10 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     """
     if isinstance(signals, AnalogSignal):
-        # transpose (N,2) -> (2, N)
-        signals = signals.magnitude.T
-    else:
-        # transpose (N,2) -> (2, N)
-        signals = np.asarray(signals.T)
+        signals = signals.magnitude
+
+    # transpose (N,2) -> (2,N) for mathematical convenience
+    signals = signals.T
 
     # Note: The shape tested here is for the *transformed* signals.
     # If it does not match, it means that the input had wrong dimensions.
