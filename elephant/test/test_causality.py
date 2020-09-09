@@ -47,7 +47,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
 
         signal = signal[:, 2:]
 
-        return signal
+        # Return signals as Nx2
+        return signal.T
 
     def setUp(self):
         # Generate a smaller random dataset for tests other than ground truth,
@@ -66,7 +67,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         Check if analog signal input result matches an otherwise identical 2D
         numpy array input result.
         """
-        analog_signal = AnalogSignal(self.signal.T, units='V',
+        analog_signal = AnalogSignal(self.signal, units='V',
                                      sampling_rate=1*pq.Hz)
         analog_signal_causality = \
             elephant.causality.granger.pairwise_granger(
@@ -110,7 +111,8 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                           null_signals, max_order=2)
 
     def test_pairwise_granger_identical_signal(self):
-        same_signal = np.vstack([self.signal[0], self.signal[0]])
+        same_signal = np.hstack([self.signal[:, 0, None],
+                                 self.signal[:, 0, None]])
         with self.assertRaises(ValueError):
             elephant.causality.granger.pairwise_granger(
                 same_signal, max_order=2)
@@ -186,7 +188,7 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         second_y2_l2 = -5.012730e-01
 
         coefficients, _, _ = elephant.causality.granger._optimal_vector_arm(
-            self.ground_truth, dimension=2, max_order=10,
+            self.ground_truth.T, dimension=2, max_order=10,
             information_criterion='aic')
 
         # Arrange the ground truth values in the same shape as coefficients
