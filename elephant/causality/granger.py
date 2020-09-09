@@ -469,6 +469,8 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         # transpose (N,2) -> (2, N)
         signals = np.asarray(signals.T)
 
+    # Note: The shape tested here is for the *transformed* signals.
+    # If it does not match, it means that the input had wrong dimensions.
     if not (signals.ndim == 2 and signals.shape[0] == 2):
         raise ValueError("The input 'signals' must be of dimensions Nx2.")
 
