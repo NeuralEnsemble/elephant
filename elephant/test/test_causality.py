@@ -113,9 +113,9 @@ class PairwiseGrangerTestCase(unittest.TestCase):
     def test_pairwise_granger_identical_signal(self):
         same_signal = np.hstack([self.signal[:, 0, None],
                                  self.signal[:, 0, None]])
-        with self.assertRaises(ValueError):
-            elephant.causality.granger.pairwise_granger(
-                same_signal, max_order=2)
+        self.assertRaises(ValueError,
+                          elephant.causality.granger.pairwise_granger,
+                          signals=same_signal, max_order=2)
 
     def test_pairwise_granger_error_1d_array(self):
         array_1d = np.ones(10, dtype=np.float32)
