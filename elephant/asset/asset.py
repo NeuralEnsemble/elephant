@@ -145,7 +145,7 @@ def _is_cuda_available():
     # a silly way to check for CUDA support
     # experimental: should not be public API
     try:
-        subprocess.check_call(["nvcc"],
+        subprocess.check_call(["nvcc", "-V"],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
         available = True
