@@ -2,3 +2,4 @@ pandas>=0.18.0
 scikit-learn>=0.19.0
 mpi4py>=3.0.1
 statsmodels>=0.8.0
+jinja2>=2.11.2  # required for ASSET CUDA

@@ -24,7 +24,7 @@ try:
 except ImportError:
     HAVE_SKLEARN = False
 else:
-    import elephant.asset as asset
+    import elephant.asset.asset as asset
 
     HAVE_SKLEARN = True
     stretchedmetric2d = asset._stretched_metric_2d
@@ -283,18 +283,38 @@ class AssetTestCase(unittest.TestCase):
             return False
 
         for n in range(1, 15):
-            for d in range(1, 6):
+            for d in range(1, min(6, n + 1)):
+                jsf = asset._JSFUniformOrderStat3D(n=n, d=d)
                 lists = [range(j, n + 1) for j in range(d, 0, -1)]
                 matrix_entries = list(
-                    asset._combinations_with_replacement(n=n, d=d)
+                    jsf._combinations_with_replacement()
                 )
                 matrix_entries_correct = [
                     indices for indices in itertools.product(*lists)
                     if not _wrong_order(indices)
                 ]
-                it_todo = asset._num_iterations(n=n, d=d)
                 self.assertEqual(matrix_entries, matrix_entries_correct)
-                self.assertEqual(it_todo, len(matrix_entries_correct))
+                self.assertEqual(jsf.num_iterations,
+                                 len(matrix_entries_correct))
+
+    def test_next_sequence_sorted(self):
+        for n in range(1, 15):
+            for d in range(1, min(6, n + 1)):
+                jsf = asset._JSFUniformOrderStat3D(n=n, d=d)
+                for iter_id, seq_sorted_true in enumerate(
+                        jsf._combinations_with_replacement()):
+                    seq_sorted = jsf._next_sequence_sorted(iteration=iter_id)
+                    self.assertEqual(seq_sorted, seq_sorted_true)
+
+    def test_JSFUniformOrderStat3D_invalid_values(self):
+        # 1) d > n
+        self.assertRaises(ValueError, asset._JSFUniformOrderStat3D, n=5, d=6)
+
+        # 2) d does not match the input data shape
+        d = 4
+        jsf = asset._JSFUniformOrderStat3D(n=5, d=d)
+        u = np.empty((3, d + 1))
+        self.assertRaises(ValueError, jsf.compute, u=u)
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
