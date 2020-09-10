@@ -140,6 +140,20 @@ __all__ = [
     "synchronous_events_overlap"
 ]
 
+
+def _is_cuda_available():
+    # a silly way to check for CUDA support
+    # experimental: should not be public API
+    try:
+        subprocess.run(["nvcc"],
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE).check_returncode()
+        available = True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        available = False
+    return available
+
+
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================
@@ -618,6 +632,8 @@ class _JSFUniformOrderStat3D(object):
         if int(os.getenv("ELEPHANT_USE_CUDA", '1')) == 0:
             # don't use CUDA
             return self.cpu
+        if not _is_cuda_available():
+            return self.cpu
         if self.d < 3 or self.n <= 10:
             return self.cpu
         return self.cuda
@@ -639,17 +655,7 @@ class _JSFUniformOrderStat3D(object):
 
         jsf_backend = self._choose_backend()
 
-        if jsf_backend == self.cuda:
-            try:
-                P_total = self.cuda(log_du)
-            except (FileNotFoundError, subprocess.CalledProcessError) as error:
-                if self.verbose:
-                    # if you don't use CUDA, to turn off annoying error prints,
-                    # set ELEPHANT_USE_CUDA=0 environment key
-                    print(error, file=sys.stderr)
-                P_total = self.cpu(log_du)
-        else:
-            P_total = self.cpu(log_du)
+        P_total = jsf_backend(log_du)
 
         return P_total
 
