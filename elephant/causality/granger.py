@@ -562,12 +562,28 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     # signal_x and signal_y are (1, N) arrays
     signal_x, signal_y, signal_z = np.expand_dims(signals, axis=1)
 
-    signals_xz = np.hstack([signal_x, signal_z])
+    signals_xz = np.vstack([signal_x, signal_z])
+
+    print(np.shape(signals_xz))
 
     coeffs_xz, cov_xz, p_1 = _optimal_vector_arm(signals_xz, 2, max_order,
                                                  information_criterion)
-    coeffs_xyz, cov_xyz, p2 = _optimal_vector_arm(signals, 3, max_order,
-                                                  information_criterion)
+    coeffs_xyz, cov_xyz, p_2 = _optimal_vector_arm(signals, 3, max_order,
+                                                   information_criterion)
+
+    print('Coefficients of xz')
+    print(coeffs_xz)
+    print('Covariance of xz')
+    print(cov_xz)
+    print('Optimal order of xz')
+    print(p_1)
+    print('##########################')
+    print('Coefficients of xyz')
+    print(coeffs_xyz)
+    print('Covariance of xyz')
+    print(cov_xyz)
+    print('Optimal order of xyz')
+    print(p_2)
 
     conditional_causality_xy_z = np.log(cov_xz[0, 0]) - np.log(cov_xyz[0, 0])
 
@@ -582,3 +598,34 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
                                                  est_sig_figures)
 
     return conditional_causality_xy_z_round
+
+
+if __name__ == '__main__':
+
+    np.random.seed(1)
+    length_2d = 30000
+    signal = np.zeros((3, length_2d))
+    order = 2
+
+    weights_1 = np.array([[0.8, 0, 0.4], #  X_t --> X_t-1, Y_t-1, Z_t-1
+                          [0, 0.9, 0],  #  Y_t --> X_t-1, Y_t-1, Z_t-1
+                          [0., 0.5, 0.5]]) # Z_t --> X_t-1, Y_t-1, Z_t-1
+    weights_2 = np.array([[-0.5, 0, 0.], # X_t --> X_t-2, Y_t-2, Z_t-2
+                          [0., -0.8, 0],# Y_t --> X_t-2, Y_t-2, Z_t-2
+                          [0, 0, -0.2]]) # Z_t --> X_t-2, Y_t-2, Z_t-2
+
+    weights = np.stack((weights_1, weights_2))
+    noise_covariance = np.array([[0.3, 0.0, 0.0],
+                                 [0.0, 1., 0.0],
+                                 [0.0, 0.0, 0.2]])
+    for i in range(length_2d):
+        for lag in range(order):
+            signal[:, i] += np.dot(weights[lag],
+                                   signal[:, i - lag - 1])
+        rnd_var = np.random.multivariate_normal([0, 0, 0], noise_covariance)
+        signal[0, i] += rnd_var[0]
+        signal[1, i] += rnd_var[1]
+        signal[2, i] += rnd_var[2]
+
+    conditional_causality = conditional_granger(signal.T, 10, 'bic')
+    print(conditional_causality)
