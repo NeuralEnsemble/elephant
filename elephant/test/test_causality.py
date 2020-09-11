@@ -203,5 +203,70 @@ class PairwiseGrangerTestCase(unittest.TestCase):
                                   decimal=4)
 
 
+class ConditionalGrangerTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(1)
+        cls.ground_truth = cls._generate_ground_truth()
+
+    @staticmethod
+    def _generate_ground_truth(length_2d=30000):
+        """
+        Recreated from Example 2 section 5.2 of :cite:'granger-Ding06-0608035'.
+        The following should generate three signals where there is no direct
+        causal influence from Y to X, but mediated through Z
+        (i.e. Y -> Z -> X).
+        """
+        order = 2
+        signal = np.zeros((3, length_2d + order))
+
+        weights_1 = np.array([[0.8, 0, 0.4],  # X_t --> X_t-1, Y_t-1, Z_t-1
+                              [0, 0.9, 0],  # Y_t --> X_t-1, Y_t-1, Z_t-1
+                              [0., 0.5, 0.5]])  # Z_t --> X_t-1, Y_t-1, Z_t-1
+
+        weights_2 = np.array([[-0.5, 0, 0.],  # X_t --> X_t-2, Y_t-2, Z_t-2
+                              [0., -0.8, 0],  # Y_t --> X_t-2, Y_t-2, Z_t-2
+                              [0, 0, -0.2]])  # Z_t --> X_t-2, Y_t-2, Z_t-2
+
+        weights = np.stack((weights_1, weights_2))
+
+        noise_covariance = np.array([[0.3, 0.0, 0.0],
+                                     [0.0, 1., 0.0],
+                                     [0.0, 0.0, 0.2]])
+
+        for i in range(length_2d):
+            for lag in range(order):
+                signal[:, i + order] += np.dot(weights[lag],
+                                               signal[:, i + 1 - lag])
+            rnd_var = np.random.multivariate_normal([0, 0, 0],
+                                                    noise_covariance)
+            signal[:, i + order] += rnd_var
+
+        signal = signal[:, 2:]
+
+        # Return signals as Nx3
+        return signal.T
+
+    def setUp(self):
+        # Generate a smaller random dataset for tests other than ground truth,
+        # using a different seed than in the ground truth - the convergence
+        # should not depend on the seed.
+        np.random.seed(10)
+        self.signal = self._generate_ground_truth(length_2d=1000)
+
+        # Estimate Granger causality
+        self.conditional_causality = elephant.causality.granger.\
+            conditional_granger(self.signal, max_order=10,
+                                information_criterion='bic')
+
+    def test_result_is_float(self):
+        self.assertIsInstance(self.conditional_causality, float)
+
+    def test_ground_truth_zero_value_conditional_causality(self):
+        self.assertEqual(elephant.causality.granger.conditional_granger(
+            self.ground_truth, 10, 'bic'), 0.0)
+
+
 if __name__ == '__main__':
     unittest.main()
