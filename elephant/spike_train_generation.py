@@ -22,6 +22,17 @@ import quantities as pq
 from elephant.spike_train_surrogates import dither_spike_train
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "spike_extraction",
+    "threshold_detection",
+    "peak_detection",
+    "homogeneous_poisson_process",
+    "inhomogeneous_poisson_process",
+    "homogeneous_gamma_process",
+    "single_interaction_process",
+    "compound_poisson_process"
+]
+
 
 @deprecated_alias(extr_interval='interval')
 def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
@@ -652,7 +663,90 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
                                 t_stop, as_array)
 
 
-def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
+def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
+    """
+    Returns a spike train whose spikes are a realization of an inhomogeneous
+    Gamma process with the given rate profile and the given shape factor.
+    The implementation using operational time is inspired by Nawrot et al.
+    (2018) [1]_.
+
+    Parameters
+    ----------
+    rate : neo.AnalogSignal
+        A `neo.AnalogSignal` representing the rate profile evolving over time.
+        Its values have all to be `>=0`. The output spiketrain will have
+        `t_start = rate.t_start` and `t_stop = rate.t_stop`
+    shape_factor : float
+        The shape factor of the Gamma process
+    as_array : bool, optional
+        If True, a NumPy array of sorted spikes is returned,
+        rather than a SpikeTrain object.
+        Default: False.
+
+    Returns
+    -------
+    spiketrain : neo.SpikeTrain or np.ndarray
+        Inhomogeneous Poisson process realization, of type `neo.SpikeTrain`
+        if `as_array` is False (default) and `np.ndarray` otherwise.
+
+    Raises
+    ------
+    ValueError
+        If `rate` is not a neo AnalogSignal
+        If `rate` contains a negative value.
+
+    References
+    ----------
+    .. [1] Nawrot, M., Boucsein, C., Denker, M., Rodriguez Molina, V.,
+           Riehle A., Aertsen A., & Rotter, S. (2008). Measurement of
+           variability dynamics in cortical spike trains. Journal of
+           Neuroscience Methods, 169, 374–390.
+    """
+
+    if not isinstance(rate, neo.AnalogSignal):
+        raise ValueError('rate must be a neo AnalogSignal')
+
+    # Check rate contains only positive values
+    if np.any(rate < 0) or rate.size == 0:
+        raise ValueError(
+            'rate must be a positive non empty signal, representing the'
+            'rate at time t')
+
+    # Operational time corresponds to the integral of the firing rate over time
+    operational_time = np.cumsum(
+        (rate*rate.sampling_period).simplified.magnitude)
+    operational_time = np.hstack((0., operational_time))
+
+    # The time points at which the firing rates are given
+    real_time = np.hstack((rate.times.simplified.magnitude,
+                           rate.t_stop.simplified.magnitude))
+
+    spiketrain_operational_time = homogeneous_gamma_process(
+        a=shape_factor, b=shape_factor*1.*pq.Hz,
+        t_start=0.*pq.s, t_stop=operational_time[-1]*pq.s, as_array=True)
+
+    # indices where between which points in operational time the spikes lie
+    indices = np.searchsorted(operational_time, spiketrain_operational_time)
+
+    # In real time the spikes are first aligned to the left border of the bin.
+    # Note that indices are greater than 0 because 'operational_time' was
+    # padded with zeros.
+    spiketrain = real_time[indices - 1]
+    # the relative position of the spikes in the operational time bins
+    positions_in_bins = \
+        (spiketrain_operational_time - operational_time[indices-1]) / (
+            operational_time[indices]-operational_time[indices-1])
+    # add the positions in the bin times the sampling period in real time
+    spiketrain += rate.sampling_period.simplified.magnitude * positions_in_bins
+
+    if as_array:
+        return spiketrain
+
+    return neo.SpikeTrain(spiketrain, units=pq.s, t_stop=rate.t_stop)
+
+
+@deprecated_alias(n='n_spiketrains')
+def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     """
     Generates one or more independent Poisson spike trains.
 
@@ -670,7 +764,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
     t_start : pq.Quantity, optional
         Single common start time of each output SpikeTrain. Must be < t_stop.
         Default: 0 * pq.ms
-    n: int, optional
+    n_spiketrains: int, optional
         If rate is a single pq.Quantity value, n specifies the number of
         SpikeTrains to be generated. If rate is an array, n is ignored and the
         number of SpikeTrains is equal to len(rate).
@@ -696,18 +790,19 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n=1):
     # Check t_start < t_stop and create their strip dimensions
     if not t_start < t_stop:
         raise ValueError(
-            't_start (=%s) must be < t_stop (=%s)' % (t_start, t_stop))
+            't_start (={}) must be < t_stop (={})'.format(t_start, t_stop))
 
     # Set number n of output spike trains (specified or set to len(rate))
-    if not (isinstance(n, int) and n > 0):
-        raise ValueError('n (=%s) must be a positive integer' % str(n))
+    if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
+        raise ValueError(
+            'n (={}) must be a positive integer'.format(str(n_spiketrains)))
     rate_dl = rate.simplified.magnitude.flatten()
 
     # Check rate input parameter
     if len(rate_dl) == 1:
         if rate_dl < 0:
-            raise ValueError('rate (=%s) must be non-negative.' % rate)
-        rates = np.array([rate_dl] * n)
+            raise ValueError('rate (={}) must be non-negative.'.format(rate))
+        rates = np.array([rate_dl] * n_spiketrains)
     else:
         rates = rate_dl.flatten()
         if any(rates < 0):
@@ -1210,7 +1305,7 @@ def compound_poisson_process(
           - a single value, all spike trains will have same rate rate
           - an array of values (of length len(A)-1), each indicating the
             firing rate of one process in output
-    amplitude_distribution : np.ndarray
+    amplitude_distribution : np.ndarray or list
         CPP's amplitude distribution :math:`A`. `A[j]` represents the
         probability of a synchronous event of size `j` among the generated
         spike trains. The sum over all entries of :math:`A` must be equal to

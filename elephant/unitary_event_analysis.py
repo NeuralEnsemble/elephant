@@ -64,6 +64,18 @@ import scipy
 import elephant.conversion as conv
 from elephant.utils import is_binary
 
+__all__ = [
+    "hash_from_pattern",
+    "inverse_hash_from_pattern",
+    "n_emp_mat",
+    "n_emp_mat_sum_trial",
+    "n_exp_mat",
+    "n_exp_mat_sum_trial",
+    "gen_pval_anal",
+    "jointJ",
+    "jointJ_window_analysis"
+]
+
 
 def hash_from_pattern(m, base=2):
     """

@@ -47,6 +47,8 @@ Do you want to contribute to Elephant? Please refer to the
 * Jan Lewen [1]
 * Alexander Kleinjohann [1]
 * Danylo Ulianych [1]
+* Anno Kurth [1]
+* Regimantas Jurkus [1]
 * Philipp Steigerwald [12]
 * Manuel Ciba [12]
 

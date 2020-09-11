@@ -17,6 +17,11 @@ import scipy.signal
 
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "welch_psd",
+    "welch_coherence"
+]
+
 
 @deprecated_alias(num_seg='n_segments', len_seg='len_segment',
                   freq_res='frequency_resolution')

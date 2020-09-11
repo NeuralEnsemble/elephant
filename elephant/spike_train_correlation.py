@@ -17,6 +17,14 @@ from scipy import integrate
 
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "covariance",
+    "correlation_coefficient",
+    "cross_correlation_histogram",
+    "spike_time_tiling_coefficient",
+    "spike_train_timescale"
+]
+
 # The highest sparsity of the `BinnedSpikeTrain` matrix for which
 # memory-efficient (sparse) implementation of `covariance()` is faster than
 # with the corresponding numpy dense array.
