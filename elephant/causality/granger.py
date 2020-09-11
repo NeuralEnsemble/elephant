@@ -531,7 +531,9 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
 def conditional_granger(signals, max_order, information_criterion='aic'):
     r"""
-    Determine Granger Causality of two time series
+    Determine conditional Granger Causality of the second time series on the
+    first time series, given the third time series. In other words, for time
+    series X_t, Y_t and Z_t, this function tests if Y_t influences X_t via Z_t.
 
     Parameters
     ----------
@@ -549,6 +551,14 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
 
     Returns
     -------
+    conditional_causality_xy_z_round : float
+        The value of conditional causality of Y_t on X_t given Z_t. Zero value
+        indicates that causality of Y_t on X_t is solely dependent on Z_t.
+
+    Raises
+    ------
+    ValueError
+        If the provided signal does not have a shape of Nx3.
     """
     if isinstance(signals, AnalogSignal):
         signals = signals.magnitude
@@ -559,7 +569,7 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     # transpose (N,3) -> (3,N) for mathematical convenience
     signals = signals.T
 
-    # signal_x and signal_y are (1, N) arrays
+    # signal_x, signal_y and signal_z are (1, N) arrays
     signal_x, signal_y, signal_z = np.expand_dims(signals, axis=1)
 
     signals_xz = np.vstack([signal_x, signal_z])
