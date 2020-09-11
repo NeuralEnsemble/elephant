@@ -45,6 +45,7 @@ Time-series Granger causality
     :toctree: toctree/causality/
 
     pairwise_granger
+    conditional_granger
 
 
 References
