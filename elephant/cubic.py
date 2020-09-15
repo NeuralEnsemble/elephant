@@ -7,12 +7,13 @@ Given a list sts of SpikeTrains, the analysis comprises the following
 steps:
 
 1) compute the population histogram (PSTH) with the desired bin size
-       >>> binsize = 5 * pq.ms
-       >>> pop_count = elephant.statistics.time_histogram(sts, binsize)
+       >>> bin_size = 5 * pq.ms
+       >>> pop_count = elephant.statistics.time_histogram(sts, bin_size)
 
 2) apply CuBIC to the population count
        >>> alpha = 0.05  # significance level of the tests used
-       >>> xi, p_val, k = cubic(data, ximax=100, alpha=0.05, errorval=4.):
+       >>> xi, p_val, k = cubic(data, max_iterations=100, alpha=0.05,
+       ... errorval=4.):
 
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
@@ -26,39 +27,46 @@ import scipy.special
 import math
 import warnings
 
+from elephant.utils import deprecated_alias
+
+__all__ = [
+    "cubic"
+]
+
 
 # Based on matlab code by Benjamin Staude
 # Adaptation to python by Pietro Quaglio and Emiliano Torre
 
 
-def cubic(data, ximax=100, alpha=0.05):
-    """
+@deprecated_alias(data='histogram', ximax='max_iterations')
+def cubic(histogram, max_iterations=100, alpha=0.05):
+    r"""
     Performs the CuBIC analysis [1]_ on a population histogram, calculated
     from a population of spiking neurons.
 
-    The null hypothesis :math:`H_0: k_3(data)<=k^*_{3,\\xi}` is iteratively
-    tested with increasing correlation order :math:`\\xi` (correspondent to
-    variable xi) until it is possible to accept, with a significance level alpha,
-    that :math:`\\hat{\\xi}` (corresponding to variable xi_hat) is the minimum
-    order of correlation necessary to explain the third cumulant
+    The null hypothesis :math:`H_0: k_3(data)<=k^*_{3,\xi}` is iteratively
+    tested with increasing correlation order :math:`\xi` until it is possible
+    to accept, with a significance level `alpha`, that :math:`\hat{\xi}` is
+    the minimum order of correlation necessary to explain the third cumulant
     :math:`k_3(data)`.
 
-    :math:`k^*_{3,\\xi}` is the maximized third cumulant, supposing a Compund
+    :math:`k^*_{3,\xi}` is the maximized third cumulant, supposing a Compound
     Poisson Process (CPP) model for correlated spike trains (see [1]_)
-    with maximum order of correlation equal to :math:`\\xi`.
+    with maximum order of correlation equal to :math:`\xi`.
 
     Parameters
     ----------
-    data : neo.AnalogSignal
+    histogram : neo.AnalogSignal
         The population histogram (count of spikes per time bin) of the entire
         population of neurons.
-    ximax : int, optional
-         The maximum number of iteration of the hypothesis test:
-         if it is not possible to compute the :math:`\\hat{\\xi}` before
-         `ximax` iteration, the CuBIC procedure is aborted.
+    max_iterations : int, optional
+         The maximum number of iterations of the hypothesis test. Corresponds
+         to the :math:`\hat{\xi_{\text{max}}}` in [1]_. If it is not possible
+         to compute the :math:`\hat{\xi}` before `max_iterations` iteration,
+         the CuBIC procedure is aborted.
          Default: 100.
     alpha : float, optional
-         The significance level of the hypothesis tests perfomed.
+         The significance level of the hypothesis tests performed.
          Default: 0.05.
 
     Returns
@@ -68,13 +76,13 @@ def cubic(data, ximax=100, alpha=0.05):
         explain the value of the third cumulant calculated from the population.
     p : list
         The ordered list of all the p-values of the hypothesis tests that have
-        been performed. If the maximum number of iteration `ximax` is reached,
-        the last p-value is set to -4.
+        been performed. If the maximum number of iteration `max_iterations` is
+        reached, the last p-value is set to -4.
     kappa : list
         The list of the first three cumulants of the data.
     test_aborted : bool
-        Wheter the test was aborted because reached the maximum number of
-        iteration `ximax`.
+        Whether the test was aborted because reached the maximum number of
+        iteration, `max_iterations`.
 
     References
     ----------
@@ -86,20 +94,19 @@ def cubic(data, ximax=100, alpha=0.05):
         raise ValueError(
             'the significance level alpha (= %s) has to be in [0,1]' % alpha)
 
-    if not isinstance(ximax, int) or ximax < 0:
-        raise ValueError(
-            'The maximum number of iterations ximax(= %i) has to be a positive'
-            % alpha + ' integer')
+    if not isinstance(max_iterations, int) or max_iterations < 0:
+        raise ValueError("'max_iterations' ({}) has to be a positive integer"
+                         .format(max_iterations))
 
     # dict of all possible rate functions
     try:
-        data = data.magnitude
+        histogram = histogram.magnitude
     except AttributeError:
         pass
-    L = len(data)
+    L = len(histogram)
 
     # compute first three cumulants
-    kappa = _kstat(data)
+    kappa = _kstat(histogram)
     xi_hat = 1
     xi = 1
     pval = 0.
@@ -109,8 +116,9 @@ def cubic(data, ximax=100, alpha=0.05):
     # compute xi_hat iteratively
     while pval < alpha:
         xi_hat = xi
-        if xi > ximax:
-            warnings.warn('Test aborted, xihat= %i > ximax= %i' % (xi, ximax))
+        if xi > max_iterations:
+            warnings.warn('Test aborted, xihat= %i > ximax= %i' % (
+                xi, max_iterations))
             test_aborted = True
             break
 

@@ -1,5 +1,4 @@
-pip install .[tutorials]
-
 # Install conda version of mpi4py for mybinder service
-conda install mpi4py
+conda install -c conda-forge mpi4py
 
+pip install .[tutorials,extras]
