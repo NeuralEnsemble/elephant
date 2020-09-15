@@ -1205,6 +1205,7 @@ def _trial_shifting_of_concatenated_spiketrain(
     t_stop = spiketrain.t_stop.simplified.magnitude
     trial_length = trial_length.simplified.magnitude
     trial_separation = trial_separation.simplified.magnitude
+    dither = dither.simplified.magnitude
     n_trials = int((t_stop - t_start) // (trial_length + trial_separation))
     t_starts = t_start + \
         np.arange(n_trials) * (trial_length + trial_separation)
