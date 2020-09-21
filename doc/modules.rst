@@ -6,6 +6,7 @@ Function Reference by Module
    :maxdepth: 1
 
    reference/asset
+   reference/causality
    reference/cell_assembly_detection
    reference/change_point_detection
    reference/conversion

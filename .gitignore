@@ -48,6 +48,7 @@ doc/reference/toctree/asset/elephant.asset.synchronous*
 doc/reference/toctree/parallel
 doc/reference/toctree/statistics
 doc/reference/toctree/unitary_event_analysis
+doc/reference/toctree/causality
 *.h5
 # setup.py dist directory
 dist
