@@ -1349,17 +1349,15 @@ def surrogates(
         return _trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
-        bin_size = kwargs['bin_size']
         binned_spiketrain = conv.BinnedSpikeTrain(
-            spiketrain, bin_size=bin_size)
+            spiketrain, bin_size=kwargs['bin_size'])
         bin_grid = binned_spiketrain.bin_centers.simplified.magnitude
         max_displacement = int(
-            dt.simplified.magnitude / bin_size.simplified.magnitude)
+            dt.simplified.magnitude / kwargs['bin_size'].simplified.magnitude)
         binned_surrogates = method(
             binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
         surrogate_spiketrains = [neo.SpikeTrain(
-            bin_grid[binned_surrogate.to_bool_array()[0]]
-            + spiketrain.t_start.simplified.magnitude,
+            bin_grid[binned_surrogate.to_bool_array()[0]] * pq.s,
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop,
             units=spiketrain.units)
