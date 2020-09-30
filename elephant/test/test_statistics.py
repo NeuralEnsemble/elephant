@@ -841,7 +841,7 @@ class ComplexityPdfTestCase(unittest.TestCase):
             spiketrain_a, spiketrain_b, spiketrain_c]
         # runs the previous function which will be deprecated
         targ = np.array([0.92, 0.01, 0.01, 0.06])
-        complexity_obj = statistics.complexity(spiketrains, bin_size=0.1*pq.s)
+        complexity_obj = statistics.Complexity(spiketrains, bin_size=0.1 * pq.s)
         pdf = complexity_obj.pdf()
         assert_array_equal(targ, complexity_obj.pdf().magnitude[:, 0])
         self.assertEqual(1, pdf.magnitude[:, 0].sum())
@@ -863,9 +863,9 @@ class ComplexityPdfTestCase(unittest.TestCase):
         correct_time_histogram = np.array([0, 2, 0, 0, 1, 1, 0, 0, 1, 1,
                                            0, 1, 1, 0, 0, 0, 2, 0, 1, 1])
 
-        complexity_obj = statistics.complexity(spiketrains,
-                                       sampling_rate=sampling_rate,
-                                       spread=0)
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=0)
 
         assert_array_equal(complexity_obj.complexity_histogram,
                            correct_histogram)
@@ -883,9 +883,9 @@ class ComplexityPdfTestCase(unittest.TestCase):
                        neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
                                       t_stop=20*pq.s)]
 
-        complexity_obj = statistics.complexity(spiketrains,
-                                       sampling_rate=sampling_rate,
-                                       spread=0)
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=0)
 
         self.assertIsInstance(complexity_obj.epoch,
                               neo.Epoch)
@@ -904,9 +904,9 @@ class ComplexityPdfTestCase(unittest.TestCase):
         correct_time_histogram = np.array([3, 3, 0, 0, 2, 2, 0, 1, 0, 1, 0,
                                            3, 3, 3, 0, 0, 1, 0, 1, 0, 1])
 
-        complexity_obj = statistics.complexity(spiketrains,
-                                       sampling_rate=sampling_rate,
-                                       spread=1)
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=1)
 
         assert_array_equal(complexity_obj.complexity_histogram,
                            correct_histogram)
@@ -929,9 +929,9 @@ class ComplexityPdfTestCase(unittest.TestCase):
         correct_time_histogram = np.array([0, 2, 0, 0, 7, 7, 7, 7, 7, 7, 7,
                                            7, 7, 7, 0, 0, 3, 3, 3, 3, 3])
 
-        complexity_obj = statistics.complexity(spiketrains,
-                                       sampling_rate=sampling_rate,
-                                       spread=2)
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=2)
 
         assert_array_equal(complexity_obj.complexity_histogram,
                            correct_histogram)
@@ -947,11 +947,11 @@ class ComplexityPdfTestCase(unittest.TestCase):
                                       t_stop=21*pq.s)]
 
         self.assertRaises(ValueError,
-                          statistics.complexity,
+                          statistics.Complexity,
                           spiketrains)
 
         self.assertRaises(ValueError,
-                          statistics.complexity,
+                          statistics.Complexity,
                           spiketrains,
                           sampling_rate=1*pq.s,
                           spread=-7)
@@ -964,9 +964,9 @@ class ComplexityPdfTestCase(unittest.TestCase):
                                       t_stop=21*pq.s)]
 
         with self.assertWarns(UserWarning):
-            statistics.complexity(spiketrains,
-                          bin_size=1*pq.s,
-                          spread=1)
+            statistics.Complexity(spiketrains,
+                                  bin_size=1*pq.s,
+                                  spread=1)
 
     def test_binning_for_input_with_rounding_errors(self):
 
@@ -985,9 +985,9 @@ class ComplexityPdfTestCase(unittest.TestCase):
         correct_time_histogram[:1000:2] = 1
         correct_time_histogram[:2000:4] += 1
 
-        complexity_obj = statistics.complexity(spiketrains,
-                                       sampling_rate=sampling_rate,
-                                       spread=1)
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=1)
 
         assert_array_equal(
             complexity_obj.time_histogram.magnitude.flatten().astype(int),

@@ -53,7 +53,7 @@ Statistics across spike trains
 
     fanofactor
     complexity_pdf
-    complexity
+    Complexity
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -89,6 +89,7 @@ __all__ = [
     "instantaneous_rate",
     "time_histogram",
     "complexity_pdf",
+    "Complexity",
     "fftkernel",
     "optimal_kernel_bandwidth"
 ]
@@ -969,12 +970,12 @@ def complexity_pdf(spiketrains, bin_size):
                   "class which has a pdf attribute. complexity_pdf will be "
                   "removed in the next Elephant release.", DeprecationWarning)
 
-    complexity_obj = complexity(spiketrains, bin_size=bin_size)
+    complexity = Complexity(spiketrains, bin_size=bin_size)
 
-    return complexity_obj.pdf()
+    return complexity.pdf()
 
 
-class complexity:
+class Complexity(object):
     """
     Class for complexity distribution (i.e. number of synchronous spikes found)
     of a list of `neo.SpikeTrain` objects.
@@ -989,10 +990,10 @@ class complexity:
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains with a common time axis (same `t_start` and `t_stop`)
-    sampling_rate : pq.Quantity, optional
+    sampling_rate : pq.Quantity or None, optional
         Sampling rate of the spike trains with units of 1/time.
         Default: None
-    bin_size : pq.Quantity, optional
+    bin_size : pq.Quantity or None, optional
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
           * If no `bin_size` is specified and the `sampling_rate` is available
@@ -1073,7 +1074,7 @@ class complexity:
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
-    elephant.spike_train_processing.synchrotool
+    elephant.spike_train_processing.Synchrotool
 
     References
     ----------
@@ -1090,7 +1091,7 @@ class complexity:
 
     >>> import neo
     >>> import quantities as pq
-    >>> from elephant.statistics import complexity
+    >>> from elephant.statistics import Complexity
 
     >>> sr = 1/pq.ms
 
@@ -1099,7 +1100,7 @@ class complexity:
     >>> sts = [st1, st2]
 
     >>> # spread = 0, a simple bincount
-    >>> cpx = complexity(sts, sampling_rate=sr)
+    >>> cpx = Complexity(sts, sampling_rate=sr)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [5 4 1]
@@ -1109,7 +1110,7 @@ class complexity:
     [0. 1. 2. 3. 4. 5. 6. 7. 8. 9.] ms
 
     >>> # spread = 1, consecutive spikes
-    >>> cpx = complexity(sts, sampling_rate=sr, spread=1)
+    >>> cpx = Complexity(sts, sampling_rate=sr, spread=1)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [5 4 1]
@@ -1117,7 +1118,7 @@ class complexity:
     [0 2 0 0 3 3 3 0 1 0] dimensionless
 
     >>> # spread = 2, consecutive spikes and separated by 1 empty bin
-    >>> cpx = complexity(sts, sampling_rate=sr, spread=2)
+    >>> cpx = Complexity(sts, sampling_rate=sr, spread=2)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [4 0 1 0 1]

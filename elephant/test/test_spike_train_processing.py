@@ -20,7 +20,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                        spread, deletion_threshold=2, mode='delete',
                        in_place=False, binary=True):
 
-        synchrofact_obj = spike_train_processing.synchrotool(
+        synchrofact_obj = spike_train_processing.Synchrotool(
             spiketrains,
             sampling_rate=sampling_rate,
             binary=binary,
@@ -35,24 +35,24 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         assert_array_equal(annotations, correct_complexities)
 
         if mode == 'extract':
-            correct_spike_times = np.array(
-                [spikes[mask] for spikes, mask
-                 in zip(spiketrains,
-                        correct_complexities >= deletion_threshold)
-                 ])
+            correct_spike_times = [
+                spikes[mask] for spikes, mask
+                in zip(spiketrains,
+                       correct_complexities >= deletion_threshold)
+            ]
         else:
-            correct_spike_times = np.array(
-                [spikes[mask] for spikes, mask
-                 in zip(spiketrains, correct_complexities < deletion_threshold)
-                 ])
+            correct_spike_times = [
+                spikes[mask] for spikes, mask
+                in zip(spiketrains,
+                       correct_complexities < deletion_threshold)
+            ]
 
         # test deletion
         synchrofact_obj.delete_synchrofacts(threshold=deletion_threshold,
                                             in_place=in_place,
                                             mode=mode)
 
-        cleaned_spike_times = np.array(
-            [st.times for st in spiketrains])
+        cleaned_spike_times = [st.times for st in spiketrains]
 
         for correct_st, cleaned_st in zip(correct_spike_times,
                                           cleaned_spike_times):
@@ -221,7 +221,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                      spiketrain.array_annotations.items()}
 
         # perform a synchrofact search with delete=True
-        synchrofact_obj = spike_train_processing.synchrotool(
+        synchrofact_obj = spike_train_processing.Synchrotool(
             [spiketrain],
             spread=0,
             sampling_rate=sampling_rate,
@@ -250,7 +250,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             assert_array_almost_equal(value, cleaned_array_annotations[key])
 
     def test_wrong_input_errors(self):
-        synchrofact_obj = spike_train_processing.synchrotool(
+        synchrofact_obj = spike_train_processing.Synchrotool(
             [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s)],
             sampling_rate=1/pq.s,
             binary=True,
