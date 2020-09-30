@@ -251,7 +251,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     # Return the surrogates as list of neo.SpikeTrain
     return [neo.SpikeTrain(train, t_start=t_start, t_stop=t_stop,
                            sampling_rate=spiketrain.sampling_rate)
-        for train in dithered_spiketrains]
+            for train in dithered_spiketrains]
 
 
 @deprecated_alias(n='n_surrogates')
@@ -974,11 +974,11 @@ class JointISI(object):
 
             dithered_st = self.spiketrain[0].magnitude + \
                 np.r_[0., np.cumsum(dithered_isi)]
+            sampling_rate = self.spiketrain.sampling_rate
             dithered_st = neo.SpikeTrain(dithered_st * self._unit,
                                          t_start=self.spiketrain.t_start,
                                          t_stop=self.spiketrain.t_stop,
-                                         sampling_rate=
-                                         self.spiketrain.sampling_rate)
+                                         sampling_rate=sampling_rate)
             dithered_sts.append(dithered_st)
         return dithered_sts
 
