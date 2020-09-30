@@ -34,6 +34,7 @@ Table of Contents
     release_notes
     get_in_touch
     acknowledgments
+    citation
 
 
 

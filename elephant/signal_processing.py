@@ -16,6 +16,16 @@ import scipy.signal
 
 from elephant.utils import deprecated_alias
 
+__all__ = [
+    "zscore",
+    "cross_correlation_function",
+    "butter",
+    "wavelet_transform",
+    "hilbert",
+    "rauc",
+    "derivative"
+]
+
 
 def zscore(signal, inplace=True):
     r"""

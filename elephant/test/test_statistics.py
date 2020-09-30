@@ -334,6 +334,18 @@ class FanoFactorTestCase(unittest.TestCase):
         lst = [self.test_list[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_fanofactor_different_durations(self):
+        st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        st2 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4.5 * pq.s)
+        self.assertWarns(UserWarning, statistics.fanofactor, (st1, st2))
+
+    def test_fanofactor_wrong_type(self):
+        # warn_tolerance is not a quantity
+        st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        self.assertRaises(TypeError, statistics.fanofactor, [st1],
+                          warn_tolerance=1e-4)
+
 
 class LVTestCase(unittest.TestCase):
     def setUp(self):
@@ -377,6 +389,59 @@ class LVTestCase(unittest.TestCase):
             an input with more than 1 entry.
             """
             self.assertTrue(math.isnan(statistics.lv(seq, with_nan=True)))
+
+
+class LVRTestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_seq = [1, 28, 4, 47, 5, 16, 2, 5, 21, 12,
+                         4, 12, 59, 2, 4, 18, 33, 25, 2, 34,
+                         4, 1, 1, 14, 8, 1, 10, 1, 8, 20,
+                         5, 1, 6, 5, 12, 2, 8, 8, 2, 8,
+                         2, 10, 2, 1, 1, 2, 15, 3, 20, 6,
+                         11, 6, 18, 2, 5, 17, 4, 3, 13, 6,
+                         1, 18, 1, 16, 12, 2, 52, 2, 5, 7,
+                         6, 25, 6, 5, 3, 15, 4, 3, 16, 3,
+                         6, 5, 24, 21, 3, 3, 4, 8, 4, 11,
+                         5, 7, 5, 6, 8, 11, 33, 10, 7, 4]
+
+        self.target = 2.1845363464753134
+
+    def test_lvr_with_quantities(self):
+        seq = pq.Quantity(self.test_seq, units='ms')
+        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+
+    def test_lvr_with_plain_array(self):
+        seq = np.array(self.test_seq)
+        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+
+    def test_lvr_with_list(self):
+        seq = self.test_seq
+        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+
+    def test_lvr_raise_error(self):
+        seq = self.test_seq
+        self.assertRaises(ValueError, statistics.lvr, [])
+        self.assertRaises(ValueError, statistics.lvr, 1)
+        self.assertRaises(ValueError, statistics.lvr, np.array([seq, seq]))
+        self.assertRaises(ValueError, statistics.lvr, seq, -1)
+
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_lvr_refractoriness_kwarg(self):
+        seq = np.array(self.test_seq)
+        with self.assertWarns(UserWarning):
+            assert_array_almost_equal(statistics.lvr(seq, R=5),
+                                      self.target, decimal=9)
+
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_2short_spike_train(self):
+        seq = [1]
+        with self.assertWarns(UserWarning):
+            """
+            Catches UserWarning: Input size is too small. Please provide
+            an input with more than 1 entry.
+            """
+            self.assertTrue(math.isnan(statistics.lvr(seq, with_nan=True)))
+
 
 
 class CV2TestCase(unittest.TestCase):

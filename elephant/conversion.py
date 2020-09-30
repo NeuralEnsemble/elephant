@@ -22,6 +22,11 @@ import scipy.sparse as sps
 
 from elephant.utils import is_binary, deprecated_alias
 
+__all__ = [
+    "binarize",
+    "BinnedSpikeTrain"
+]
+
 
 def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
              return_times=False):
