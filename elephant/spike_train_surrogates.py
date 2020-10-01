@@ -1205,6 +1205,7 @@ def _trial_shifting_of_concatenated_spiketrain(
     t_stop = spiketrain.t_stop.simplified.magnitude
     trial_length = trial_length.simplified.magnitude
     trial_separation = trial_separation.simplified.magnitude
+    dither = dither.simplified.magnitude
     n_trials = int((t_stop - t_start) // (trial_length + trial_separation))
     t_starts = t_start + \
         np.arange(n_trials) * (trial_length + trial_separation)
@@ -1348,17 +1349,15 @@ def surrogates(
         return _trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
-        bin_size = kwargs['bin_size']
         binned_spiketrain = conv.BinnedSpikeTrain(
-            spiketrain, bin_size=bin_size)
-        bin_grid = binned_spiketrain.bin_centers.magnitude
+            spiketrain, bin_size=kwargs['bin_size'])
+        bin_grid = binned_spiketrain.bin_centers.simplified.magnitude
         max_displacement = int(
-            dt.rescale(pq.ms).magnitude / bin_size.rescale(pq.ms).magnitude)
+            dt.simplified.magnitude / kwargs['bin_size'].simplified.magnitude)
         binned_surrogates = method(
             binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
         surrogate_spiketrains = [neo.SpikeTrain(
-            bin_grid[binned_surrogate.to_bool_array()[0]]
-            + spiketrain.t_start.magnitude,
+            bin_grid[binned_surrogate.to_bool_array()[0]] * pq.s,
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop,
             units=spiketrain.units)
