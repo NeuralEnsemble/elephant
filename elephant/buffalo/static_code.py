@@ -49,7 +49,7 @@ class StaticStep(object):
     _operation = None
     _node_type = None
 
-    def __init__(self, node, child=None):
+    def __init__(self, node, time_stamp, child=None):
         if not isinstance(node, self._node_type):
             raise TypeError("AST node must be of type '{}'".format(
                 type(self._node_type)))
@@ -58,6 +58,7 @@ class StaticStep(object):
         if child is not None:
             child.set_parent(self)
         self.object_hash = None
+        self.time_stamp = time_stamp
 
     def set_parent(self, parent):
         self.parent = parent
@@ -87,7 +88,7 @@ class StaticStep(object):
         return provenance.AnalysisStep(
             provenance.FunctionDefinition(self._operation, '', ''),
             {0: input_object}, params, {0:output_object}, None, None,
-            self._node, None, datetime.datetime.utcnow().isoformat(), [])
+            self._node, None, self.time_stamp, [])
 
 
 class NameStep(StaticStep):
@@ -106,8 +107,8 @@ class NameStep(StaticStep):
     _operation = 'variable'
     _node_type = ast.Name
 
-    def __init__(self, node, child=None):
-        super(NameStep, self).__init__(node, child)
+    def __init__(self, node, time_stamp, child=None):
+        super(NameStep, self).__init__(node, time_stamp, child)
         self.object_hash = node.object_hash
 
     @property
@@ -128,8 +129,8 @@ class SubscriptStep(StaticStep):
     _operation = 'subscript'
     _node_type = ast.Subscript
 
-    def __init__(self, node, child):
-        super(SubscriptStep, self).__init__(node, child)
+    def __init__(self, node, time_stamp, child):
+        super(SubscriptStep, self).__init__(node, time_stamp, child)
         self._slice, self._params = self._get_slice(node.slice)
 
     @staticmethod
@@ -195,8 +196,8 @@ class AttributeStep(StaticStep):
     _operation = 'attribute'
     _node_type = ast.Attribute
 
-    def __init__(self, node, child=None):
-        super(AttributeStep, self).__init__(node, child)
+    def __init__(self, node, time_stamp, child=None):
+        super(AttributeStep, self).__init__(node, time_stamp, child)
 
     def _get_params(self):
         return {'name': self._node.attr}

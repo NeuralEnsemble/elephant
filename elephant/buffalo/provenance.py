@@ -114,12 +114,12 @@ class Provenance(object):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
 
-    def _insert_static_information(self, tree, function):
+    def _insert_static_information(self, tree, function, time_stamp):
         # Use a NodeVisitor to find the Call node that corresponds to the
         # current AnalysisStep. It will fetch static relationships between
         # variables and attributes, and link to the inputs and outputs of the
         # function
-        ast_visitor = CallAST(self, function)
+        ast_visitor = CallAST(self, function, time_stamp)
         ast_visitor.visit(tree)
 
     def __call__(self, function):
@@ -271,7 +271,8 @@ class Provenance(object):
                     # 7. Analyze AST and fetch static relationships in the
                     # input/output and other variables/objects in the script
                     self._insert_static_information(ast_tree,
-                                                    function_def.name)
+                                                    function_def.name,
+                                                    time_stamp)
 
                     # 8. Create tuple with the analysis step information.
                     step = AnalysisStep(function_def,
