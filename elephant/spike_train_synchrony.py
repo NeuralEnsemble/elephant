@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions to measure the synchrony of several spike trains
-(:cite:`synchrony-ciba2018spike`).
+Functions to measure the synchrony of several spike trains.
 
 
 Synchrony Measures
@@ -13,7 +12,7 @@ Synchrony Measures
     spike_contrast
 
 
-:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2015-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -63,8 +62,8 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
                    min_bin=10 * pq.ms, bin_shrink_factor=0.9,
                    return_trace=False):
     """
-    Calculates the synchrony of spike trains. The spike trains can have
-    different lengths.
+    Calculates the synchrony of spike trains, according to
+    :cite:`synchrony-Ciba18_136`. The spike trains can have different lengths.
 
     Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 
@@ -120,7 +119,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
         If all input spike trains contain no more than 1 spike.
     TypeError
-        If the input spike trains is not a list of neo.SpikeTrain objects.
+        If the input spike trains is not a list of `neo.SpikeTrain` objects.
 
         If `t_start`, `t_stop`, or `min_bin` are not time quantities.
 

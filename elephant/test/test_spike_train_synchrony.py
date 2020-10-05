@@ -15,7 +15,9 @@ from elephant.test.download import download, unzip
 
 class TestUM(unittest.TestCase):
 
-    def test_spike_contrast(self):
+    def test_spike_contrast_random(self):
+        # randomly generated spiketrains that share the same t_start and
+        # t_stop
         np.random.seed(24)  # to make the results reproducible
         spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
                                                           t_start=0. * ms,
@@ -38,9 +40,9 @@ class TestUM(unittest.TestCase):
         spike_trains = [spike_train_1, spike_train_2, spike_train_3,
                         spike_train_4, spike_train_5, spike_train_6]
         synchrony = spc.spike_contrast(spike_trains)
-        self.assertEqual(synchrony, 0.2098687702924583)
+        self.assertAlmostEqual(synchrony, 0.2098687, places=6)
 
-    def test_spike_contrast_1(self):
+    def test_spike_contrast_same_signal(self):
         np.random.seed(21)
         spike_train = stgen.homogeneous_poisson_process(rate=10 * Hz,
                                                         t_start=0. * ms,
@@ -49,7 +51,7 @@ class TestUM(unittest.TestCase):
         synchrony = spc.spike_contrast(spike_trains, min_bin=1 * ms)
         self.assertEqual(synchrony, 1.0)
 
-    def test_spike_contrast_2(self):
+    def test_spike_contrast_double_duration(self):
         np.random.seed(19)
         spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
                                                           t_start=0. * ms,
