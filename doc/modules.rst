@@ -22,7 +22,6 @@ Function Reference by Module
    reference/spade
    reference/spectral
    reference/spike_train_generation
-   reference/spike_train_processing
    reference/spike_train_surrogates
    reference/sta
    reference/statistics

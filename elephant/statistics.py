@@ -1074,7 +1074,7 @@ class Complexity(object):
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
-    elephant.spike_train_processing.Synchrotool
+    elephant.spike_train_synchrony.Synchrotool
 
     References
     ----------
@@ -1085,10 +1085,6 @@ class Complexity(object):
 
     Examples
     --------
-    Here the behavior of
-    `elephant.spike_train_processing.precise_complexity_intervals` is shown, by
-    applying the function to some sample spiketrains.
-
     >>> import neo
     >>> import quantities as pq
     >>> from elephant.statistics import Complexity

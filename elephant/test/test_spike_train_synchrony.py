@@ -5,15 +5,17 @@ import unittest
 
 import neo
 import numpy as np
-from numpy.testing import assert_array_equal
+import quantities as pq
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 from quantities import Hz, ms, second
 
-import elephant.spike_train_synchrony as spc
 import elephant.spike_train_generation as stgen
+from elephant.spike_train_synchrony import Synchrotool, spike_contrast, \
+    _get_theta_and_n_per_bin, _binning_half_overlap
 from elephant.test.download import download, unzip
 
 
-class TestUM(unittest.TestCase):
+class TestSpikeContrast(unittest.TestCase):
 
     def test_spike_contrast_random(self):
         # randomly generated spiketrains that share the same t_start and
@@ -39,7 +41,7 @@ class TestUM(unittest.TestCase):
                                                           t_stop=10000. * ms)
         spike_trains = [spike_train_1, spike_train_2, spike_train_3,
                         spike_train_4, spike_train_5, spike_train_6]
-        synchrony = spc.spike_contrast(spike_trains)
+        synchrony = spike_contrast(spike_trains)
         self.assertAlmostEqual(synchrony, 0.2098687, places=6)
 
     def test_spike_contrast_same_signal(self):
@@ -48,7 +50,7 @@ class TestUM(unittest.TestCase):
                                                         t_start=0. * ms,
                                                         t_stop=10000. * ms)
         spike_trains = [spike_train, spike_train]
-        synchrony = spc.spike_contrast(spike_trains, min_bin=1 * ms)
+        synchrony = spike_contrast(spike_trains, min_bin=1 * ms)
         self.assertEqual(synchrony, 1.0)
 
     def test_spike_contrast_double_duration(self):
@@ -64,7 +66,7 @@ class TestUM(unittest.TestCase):
                                                           t_stop=10000. * ms)
 
         spike_trains = [spike_train_1, spike_train_2, spike_train_3]
-        synchrony = spc.spike_contrast(spike_trains, t_stop=20000 * ms)
+        synchrony = spike_contrast(spike_trains, t_stop=20000 * ms)
         self.assertEqual(synchrony, 0.5)
 
     def test_spike_contrast_non_overlapping_spiketrains(self):
@@ -76,7 +78,7 @@ class TestUM(unittest.TestCase):
                                                           t_start=5000. * ms,
                                                           t_stop=10000. * ms)
         spiketrains = [spike_train_1, spike_train_2]
-        synchrony = spc.spike_contrast(spiketrains, t_stop=5000 * ms)
+        synchrony = spike_contrast(spiketrains, t_stop=5000 * ms)
         # the synchrony of non-overlapping spiketrains must be zero
         self.assertEqual(synchrony, 0.)
 
@@ -86,7 +88,7 @@ class TestUM(unittest.TestCase):
                                                           t_stop=1000. * ms)
         spike_train_2 = stgen.homogeneous_poisson_process(rate=20 * Hz,
                                                           t_stop=1000. * ms)
-        synchrony, trace = spc.spike_contrast([spike_train_1, spike_train_2],
+        synchrony, trace = spike_contrast([spike_train_1, spike_train_2],
                                               return_trace=True)
         self.assertEqual(synchrony, max(trace.synchrony))
         self.assertEqual(len(trace.contrast), len(trace.active_spiketrains))
@@ -94,28 +96,28 @@ class TestUM(unittest.TestCase):
 
     def test_invalid_data(self):
         # invalid spiketrains
-        self.assertRaises(TypeError, spc.spike_contrast, [[0, 1], [1.5, 2.3]])
-        self.assertRaises(ValueError, spc.spike_contrast,
+        self.assertRaises(TypeError, spike_contrast, [[0, 1], [1.5, 2.3]])
+        self.assertRaises(ValueError, spike_contrast,
                           [neo.SpikeTrain([10] * ms, t_stop=1000 * ms),
                            neo.SpikeTrain([20] * ms, t_stop=1000 * ms)])
 
         # a single spiketrain
         spiketrain_valid = neo.SpikeTrain([0, 1000] * ms, t_stop=1000 * ms)
-        self.assertRaises(ValueError, spc.spike_contrast, [spiketrain_valid])
+        self.assertRaises(ValueError, spike_contrast, [spiketrain_valid])
 
         spiketrain_valid2 = neo.SpikeTrain([500, 800] * ms, t_stop=1000 * ms)
         spiketrains = [spiketrain_valid, spiketrain_valid2]
 
         # invalid shrink factor
-        self.assertRaises(ValueError, spc.spike_contrast, spiketrains,
+        self.assertRaises(ValueError, spike_contrast, spiketrains,
                           bin_shrink_factor=0.)
 
         # invalid t_start, t_stop, and min_bin
-        self.assertRaises(TypeError, spc.spike_contrast, spiketrains,
+        self.assertRaises(TypeError, spike_contrast, spiketrains,
                           t_start=0)
-        self.assertRaises(TypeError, spc.spike_contrast, spiketrains,
+        self.assertRaises(TypeError, spike_contrast, spiketrains,
                           t_stop=1000)
-        self.assertRaises(TypeError, spc.spike_contrast, spiketrains,
+        self.assertRaises(TypeError, spike_contrast, spiketrains,
                           min_bin=0.01)
 
     def test_get_theta_and_n_per_bin(self):
@@ -124,7 +126,7 @@ class TestUM(unittest.TestCase):
             [1, 2, 3, 9],
             [1, 2, 2.5]
         ]
-        theta, n = spc._get_theta_and_n_per_bin(spike_trains,
+        theta, n = _get_theta_and_n_per_bin(spike_trains,
                                                 t_start=0,
                                                 t_stop=10,
                                                 bin_size=5)
@@ -137,7 +139,7 @@ class TestUM(unittest.TestCase):
         t_start = 0
         t_stop = 10
         edges = np.arange(t_start, t_stop + bin_step, bin_step)
-        histogram = spc._binning_half_overlap(spiketrain, edges=edges)
+        histogram = _binning_half_overlap(spiketrain, edges=edges)
         assert_array_equal(histogram, [3, 1, 1])
 
     def test_spike_contrast_with_Izhikevich_network_auto(self):
@@ -169,8 +171,254 @@ class TestUM(unittest.TestCase):
                     neo.SpikeTrain(st, t_start=0 * second, t_stop=2 * second,
                                    units=second)
                     for st in simulation['spiketrains']]
-                synchrony = spc.spike_contrast(spiketrains)
+                synchrony = spike_contrast(spiketrains)
                 self.assertAlmostEqual(synchrony, synchrony_true, places=2)
+
+
+class SynchrofactDetectionTestCase(unittest.TestCase):
+
+    def _test_template(self, spiketrains, correct_complexities, sampling_rate,
+                       spread, deletion_threshold=2, mode='delete',
+                       in_place=False, binary=True):
+
+        synchrofact_obj = Synchrotool(
+            spiketrains,
+            sampling_rate=sampling_rate,
+            binary=binary,
+            spread=spread)
+
+        # test annotation
+        synchrofact_obj.annotate_synchrofacts()
+
+        annotations = [st.array_annotations['complexity']
+                       for st in spiketrains]
+
+        assert_array_equal(annotations, correct_complexities)
+
+        if mode == 'extract':
+            correct_spike_times = [
+                spikes[mask] for spikes, mask
+                in zip(spiketrains,
+                       correct_complexities >= deletion_threshold)
+            ]
+        else:
+            correct_spike_times = [
+                spikes[mask] for spikes, mask
+                in zip(spiketrains,
+                       correct_complexities < deletion_threshold)
+            ]
+
+        # test deletion
+        synchrofact_obj.delete_synchrofacts(threshold=deletion_threshold,
+                                            in_place=in_place,
+                                            mode=mode)
+
+        cleaned_spike_times = [st.times for st in spiketrains]
+
+        for correct_st, cleaned_st in zip(correct_spike_times,
+                                          cleaned_spike_times):
+            assert_array_almost_equal(cleaned_st, correct_st)
+
+    def test_no_synchrofacts(self):
+
+        # nothing to find here
+        # there used to be an error for spread > 0 when nothing was found
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 9, 12, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([3, 7, 15, 17] * pq.s,
+                                      t_stop=20*pq.s)]
+
+        correct_annotations = np.array([[1, 1, 1, 1],
+                                        [1, 1, 1, 1]])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, mode='delete',
+                            deletion_threshold=2)
+
+    def test_spread_0(self):
+
+        # basic test with a minimum number of two spikes per synchrofact
+        # only taking into account multiple spikes
+        # within one bin of size 1 / sampling_rate
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                      t_stop=20*pq.s)]
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=0, mode='delete', in_place=True,
+                            deletion_threshold=2)
+
+    def test_spread_1(self):
+
+        # test synchrofact search taking into account adjacent bins
+        # this requires an additional loop with shifted binning
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_annotations = np.array([[2, 2, 1, 3, 3, 1],
+                                        [2, 2, 1, 3, 1, 1]])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, mode='delete', in_place=True,
+                            deletion_threshold=2)
+
+    def test_n_equals_3(self):
+
+        # test synchrofact detection with a minimum number of
+        # three spikes per synchrofact
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 1, 5, 10, 13, 16, 17, 19] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 9, 12, 14, 16, 20] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_annotations = np.array([[3, 3, 2, 2, 3, 3, 3, 2],
+                                        [3, 2, 1, 2, 3, 3, 3, 2]])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, mode='delete', binary=False,
+                            in_place=True, deletion_threshold=3)
+
+    def test_extract(self):
+
+        # test synchrofact search taking into account adjacent bins
+        # this requires an additional loop with shifted binning
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_annotations = np.array([[2, 2, 1, 3, 3, 1],
+                                        [2, 2, 1, 3, 1, 1]])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=1, mode='extract', in_place=True,
+                            deletion_threshold=2)
+
+    def test_binning_for_input_with_rounding_errors(self):
+
+        # a test with inputs divided by 30000 which leads to rounding errors
+        # these errors have to be accounted for by proper binning;
+        # check if we still get the correct result
+
+        sampling_rate = 30000 / pq.s
+
+        spiketrains = [neo.SpikeTrain(np.arange(1000) * pq.s / 30000,
+                                      t_stop=.1 * pq.s),
+                       neo.SpikeTrain(np.arange(2000, step=2) * pq.s / 30000,
+                                      t_stop=.1 * pq.s)]
+
+        first_annotations = np.ones(1000)
+        first_annotations[::2] = 2
+
+        second_annotations = np.ones(1000)
+        second_annotations[:500] = 2
+
+        correct_annotations = np.array([first_annotations,
+                                        second_annotations])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=0, mode='delete', in_place=True,
+                            deletion_threshold=2)
+
+    def test_correct_transfer_of_spiketrain_attributes(self):
+
+        # for delete=True the spiketrains in the block are changed,
+        # test if their attributes remain correct
+
+        sampling_rate = 1 / pq.s
+
+        spiketrain = neo.SpikeTrain([1, 1, 5, 0] * pq.s,
+                                    t_stop=10 * pq.s)
+
+        block = neo.Block()
+
+        channel_index = neo.ChannelIndex(name='Channel 1', index=1)
+        block.channel_indexes.append(channel_index)
+
+        unit = neo.Unit('Unit 1')
+        channel_index.units.append(unit)
+        unit.spiketrains.append(spiketrain)
+        spiketrain.unit = unit
+
+        segment = neo.Segment()
+        block.segments.append(segment)
+        segment.spiketrains.append(spiketrain)
+        spiketrain.segment = segment
+
+        spiketrain.annotate(cool_spike_train=True)
+        spiketrain.array_annotate(
+            spike_number=np.arange(len(spiketrain.times.magnitude)))
+        spiketrain.waveforms = np.sin(
+            np.arange(len(spiketrain.times.magnitude))[:, np.newaxis]
+            + np.arange(len(spiketrain.times.magnitude))[np.newaxis, :])
+
+        correct_mask = np.array([False, False, True, True])
+
+        # store the correct attributes
+        correct_annotations = spiketrain.annotations.copy()
+        correct_waveforms = spiketrain.waveforms[correct_mask].copy()
+        correct_array_annotations = {key: value[correct_mask] for key, value in
+                                     spiketrain.array_annotations.items()}
+
+        # perform a synchrofact search with delete=True
+        synchrofact_obj = Synchrotool(
+            [spiketrain],
+            spread=0,
+            sampling_rate=sampling_rate,
+            binary=False)
+        synchrofact_obj.delete_synchrofacts(
+            mode='delete',
+            in_place=True,
+            threshold=2)
+
+        # Ensure that the spiketrain was not duplicated
+        self.assertEqual(len(block.filter(objects=neo.SpikeTrain)), 1)
+
+        cleaned_spiketrain = segment.spiketrains[0]
+
+        cleaned_annotations = cleaned_spiketrain.annotations
+        cleaned_waveforms = cleaned_spiketrain.waveforms
+        cleaned_array_annotations = cleaned_spiketrain.array_annotations
+        cleaned_array_annotations.pop('complexity')
+
+        self.assertDictEqual(correct_annotations, cleaned_annotations)
+        assert_array_almost_equal(cleaned_waveforms, correct_waveforms)
+        self.assertTrue(len(cleaned_array_annotations)
+                        == len(correct_array_annotations))
+        for key, value in correct_array_annotations.items():
+            self.assertTrue(key in cleaned_array_annotations.keys())
+            assert_array_almost_equal(value, cleaned_array_annotations[key])
+
+    def test_wrong_input_errors(self):
+        synchrofact_obj = Synchrotool(
+            [neo.SpikeTrain([1]*pq.s, t_stop=2*pq.s)],
+            sampling_rate=1/pq.s,
+            binary=True,
+            spread=1)
+        self.assertRaises(ValueError,
+                          synchrofact_obj.delete_synchrofacts,
+                          -1)
 
 
 if __name__ == '__main__':
