@@ -21,8 +21,6 @@ Function Reference by Module
    reference/signal_processing
    reference/spade
    reference/spectral
-   reference/spike_train_correlation
-   reference/spike_train_dissimilarity
    reference/spike_train_generation
    reference/spike_train_processing
    reference/spike_train_surrogates
@@ -30,3 +28,9 @@ Function Reference by Module
    reference/statistics
    reference/unitary_event_analysis
    reference/waveform_features
+
+
+.. toctree::
+   :maxdepth: 2
+
+   reference/_spike_train_processing
