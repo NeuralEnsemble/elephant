@@ -624,7 +624,8 @@ def jointJ(p_val):
 
     """
     p_arr = np.asarray(p_val)
-    Js = np.log10(1 - p_arr) - np.log10(p_arr)
+    with np.errstate(divide='ignore'):
+        Js = np.log10(1 - p_arr) - np.log10(p_arr)
     return Js
 
 
