@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-ASSET is a statistical method :cite:`asset-torre2016asset` for the detection of
-repeating sequences of synchronous spiking events in parallel spike trains.
+ASSET is a statistical method :cite:`asset-Torre16_e1004939` for the detection
+of repeating sequences of synchronous spiking events in parallel spike trains.
 
 
 ASSET analysis class object of finding patterns
