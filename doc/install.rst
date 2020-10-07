@@ -24,13 +24,13 @@ Elephant requires Python_ 2.7, 3.5, 3.6, 3.7, or 3.8.
 
            .. code-block:: sh
 
-              conda create --name elephant_env python=3.7 numpy scipy tqdm
+              conda create --name elephant python=3.7 numpy scipy tqdm
 
         2. Activate your environment:
 
            .. code-block:: sh
 
-              conda activate elephant_env
+              conda activate elephant
 
 
     .. tab:: Debian/Ubuntu
@@ -95,7 +95,24 @@ Installation
 
               git clone git://github.com/NeuralEnsemble/elephant.git
               cd elephant
-              pip install -e .
+
+        .. tabs::
+
+            .. tab:: Minimal setup
+
+                .. code-block:: sh
+
+                    pip install -e .
+
+
+            .. tab:: conda (with extras)
+
+                .. code-block:: sh
+
+                    conda remove -n elephant --all  # remove the previous environment
+                    conda env create -f requirements/environment.yml
+                    conda activate elephant
+                    pip install -e .
 
 
 
