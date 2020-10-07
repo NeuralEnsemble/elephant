@@ -13,7 +13,7 @@ from collections import namedtuple
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
 
-ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id'))
+ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
 
 
 class BuffaloObjectHash(object):
@@ -68,7 +68,12 @@ class BuffaloObjectHash(object):
         return self.type
 
     def get_prov_entity_string(self, namespace):
-        return "{}:{}:{}".format(namespace, self._type, hash(self))
+        return "{}:{}:{}".format(namespace, self.type, hash(self))
 
     def info(self):
-        return ObjectInfo(hash(self), self.type, self.id)
+        # Here we can extract specific metadata to record
+        # Currently fetching the whole class dictionary
+        details = {}
+        if hasattr(self.value, '__dict__'):
+            details = self.value.__dict__
+        return ObjectInfo(hash(self), self.type, self.id, details)
