@@ -269,6 +269,9 @@ class AssetTestCase(unittest.TestCase):
                           spiketrains_i=[st1, st2], bin_size=bin_size,
                           t_stop_j=5 * pq.ms)
 
+
+class TestJSFUniformOrderStat3D(unittest.TestCase):
+
     def test_combinations_with_replacement(self):
         # Test that _combinations_with_replacement yields the same tuples
         # as in the original implementation with itertools.product(*lists)
@@ -306,7 +309,7 @@ class AssetTestCase(unittest.TestCase):
                     seq_sorted = jsf._next_sequence_sorted(iteration=iter_id)
                     self.assertEqual(seq_sorted, seq_sorted_true)
 
-    def test_JSFUniformOrderStat3D_invalid_values(self):
+    def test_invalid_values(self):
         # 1) d > n
         self.assertRaises(ValueError, asset._JSFUniformOrderStat3D, n=5, d=6)
 
@@ -315,6 +318,15 @@ class AssetTestCase(unittest.TestCase):
         jsf = asset._JSFUniformOrderStat3D(n=5, d=d)
         u = np.empty((3, d + 1))
         self.assertRaises(ValueError, jsf.compute, u=u)
+
+    def test_point_mass_output(self):
+        # When N >> D, the expected output is [1, 0]
+        L, N, D = 2, 50, 2
+        jsf = asset._JSFUniformOrderStat3D(n=N, d=D, precision='double')
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u)
+        p_out = jsf.compute(u)
+        assert_array_almost_equal(p_out, [1., 0.])
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')

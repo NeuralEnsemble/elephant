@@ -27,15 +27,16 @@
 #define N_THREADS         {{N_THREADS}}
 #define L_BLOCK_SUPREMUM  min_macros(N_THREADS, L)
 
-__constant__ float log_factorial[N + 1];
-__constant__ float logK;
+typedef {{precision}} asset_float;
+
+__constant__ asset_float log_factorial[N + 1];
+__constant__ asset_float logK;
 __constant__ ULL ITERATIONS_TODO;
 __constant__ unsigned int L_BLOCK;
 __constant__ ULL L_NUM_BLOCKS;
 __constant__ ULL iteration_table[D][N];  /* Maps the iteration ID to the entries
                                             of a sequence_sorted array */
 
-typedef {{precision}} float_type;
 
 /**
  * Builds the next sequence_sorted, given the absolute iteration ID.
@@ -62,7 +63,7 @@ __device__ void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
  * @param P_out           P_total output array of size L
  * @param log_du_device   input log_du flattened matrix of size L*(D+1)
  */
-__global__ void jsf_uniform_orderstat_3d_kernel(float_type *P_out, float *log_du_device) {
+__global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, asset_float *log_du_device) {
     unsigned int i, row;
 
     // the row shift of log_du and P_total in the number of elements, between 0 and L
@@ -71,9 +72,9 @@ __global__ void jsf_uniform_orderstat_3d_kernel(float_type *P_out, float *log_du
     // account for the last block width that can be less than L_BLOCK
     const unsigned int block_width = (L - l_shift < L_BLOCK) ? (L - l_shift) : L_BLOCK;
 
-    extern __shared__ float shared_mem[];
-    float_type *P_total = (float_type*) shared_mem;  // L_BLOCK floats
-    float *log_du = (float*)&P_total[L_BLOCK];       // L_BLOCK * (D + 1) floats
+    extern __shared__ asset_float shared_mem[];
+    asset_float *P_total = (asset_float*) shared_mem;  // L_BLOCK floats
+    asset_float *log_du = (asset_float*)&P_total[L_BLOCK];       // L_BLOCK * (D + 1) floats
 
     for (row = threadIdx.x; row < block_width; row += blockDim.x) {
         P_total[row] = 0;
@@ -86,7 +87,7 @@ __global__ void jsf_uniform_orderstat_3d_kernel(float_type *P_out, float *log_du
 
     int di[D + 1];
     int sequence_sorted[D];
-    float_type P_thread[L_BLOCK_SUPREMUM];
+    asset_float P_thread[L_BLOCK_SUPREMUM];
     for (row = 0; row < block_width; row++) {
         P_thread[row] = 0;
     }
@@ -105,14 +106,14 @@ __global__ void jsf_uniform_orderstat_3d_kernel(float_type *P_out, float *log_du
         }
         di[D] = sequence_sorted[D - 1];
 
-        float sum_log_di_factorial = 0.f;
+        asset_float sum_log_di_factorial = 0.f;
         for (i = 0; i <= D; i++) {
             sum_log_di_factorial += log_factorial[di[i]];
         }
 
-        float colsum;
-        const float colsum_base = logK - sum_log_di_factorial;
-        const float *log_du_row = log_du;
+        asset_float colsum;
+        const asset_float colsum_base = logK - sum_log_di_factorial;
+        const asset_float *log_du_row = log_du;
         for (row = 0; row < block_width; row++) {
             colsum = colsum_base;
             for (i = 0; i <= D; i++) {
@@ -204,12 +205,12 @@ void print_constants() {
     cudaMemcpyFromSymbol((void*)&l_num_blocks, (const void*)&L_NUM_BLOCKS, sizeof(ULL));
     printf(">>> L_NUM_BLOCKS = %llu\n", l_num_blocks);
 
-    float logK_host;
-    cudaMemcpyFromSymbol((void*)&logK_host, (const void*)&logK, sizeof(float));
+    asset_float logK_host;
+    cudaMemcpyFromSymbol((void*)&logK_host, (const void*)&logK, sizeof(asset_float));
     printf(">>> logK = %f\n\n", logK_host);
 
-    float log_factorial_host[N + 1];
-    cudaMemcpyFromSymbol(log_factorial_host, log_factorial, sizeof(float) * (N+1));
+    asset_float log_factorial_host[N + 1];
+    cudaMemcpyFromSymbol(log_factorial_host, log_factorial, sizeof(asset_float) * (N+1));
     printf(">>> log_factorial\n");
     for (i = 0; i <= N; i++) {
         printf("%f ", log_factorial_host[i]);
@@ -225,25 +226,24 @@ void print_constants() {
  * @param P_total_host a pointer to P_total array to be calculated
  * @param log_du_host  input flattened L*(D+1) matrix of log_du values
  */
-void jsf_uniform_orderstat_3d(float_type *P_total_host, const float *log_du_host) {
+void jsf_uniform_orderstat_3d(asset_float *P_total_host, const asset_float *log_du_host) {
     ULL it_todo = create_iteration_table();
 
-    float logK_host = 0.f;
-    float log_factorial_host[N + 1] = {0.f};
+    asset_float logK_host = 0.f;
+    asset_float log_factorial_host[N + 1] = {0.f};
 
     int i;
     for (i = 1; i <= N; i++) {
-        logK_host += logf((float) i);
+        logK_host += log((asset_float) i);
         log_factorial_host[i] = logK_host;
     }
 
-    cudaMemcpyToSymbol((const void*) &logK, (const void*) &logK_host, sizeof(float));
-
-    cudaMemcpyToSymbol(log_factorial, log_factorial_host, sizeof(float) * (N + 1));
+    cudaMemcpyToSymbol((const void*) &logK, (const void*) &logK_host, sizeof(asset_float));
+    cudaMemcpyToSymbol(log_factorial, log_factorial_host, sizeof(asset_float) * (N + 1));
 
     cudaDeviceProp device_prop;
     cudaGetDeviceProperties(&device_prop, 0);
-    const unsigned int max_l_block = device_prop.sharedMemPerBlock / (sizeof(float) * (D + 1) + sizeof(float_type));
+    const unsigned int max_l_block = device_prop.sharedMemPerBlock / (sizeof(asset_float) * (D + 2));
 
     /**
      * It's important to match the width (tile) of
@@ -261,13 +261,13 @@ void jsf_uniform_orderstat_3d(float_type *P_total_host, const float *log_du_host
     const ULL l_num_blocks = (ULL) ceil(L * 1.f / l_block);
     cudaMemcpyToSymbol((const void*) &L_NUM_BLOCKS, (const void*) &l_num_blocks, sizeof(ULL));
 
-    float_type *P_total_device;
+    asset_float *P_total_device;
 
     // Initialize P_total_device with zeros.
     // Note that values other than 0x00 or 0xFF (NaN) won't work
     // with cudaMemset when the data type is float or double.
-    cudaMalloc((void**)&P_total_device, sizeof(float_type) * L);
-    cudaMemset(P_total_device, 0, sizeof(float_type) * L);
+    cudaMalloc((void**)&P_total_device, sizeof(asset_float) * L);
+    cudaMemset(P_total_device, 0, sizeof(asset_float) * L);
 
     ULL grid_size = (ULL) ceil(it_todo * 1.f / n_threads);
     grid_size = min_macros(grid_size, device_prop.maxGridSize[0]);
@@ -279,12 +279,12 @@ void jsf_uniform_orderstat_3d(float_type *P_total_host, const float *log_du_host
         grid_size = l_num_blocks;
     }
 
-    printf(">>> N=%d, D=%d, L=%d; L_BLOCK=%u, L_NUM_BLOCKS=%llu\n", N, D, L, l_block, l_num_blocks);
+    printf(">>> N=%d, D=%d, L=%d; L_BLOCK=%u, L_NUM_BLOCKS=%llu, EPS=%f\n", N, D, L, l_block, l_num_blocks, EPS);
     printf(">>> it_todo=%llu, grid_size=%llu, N_THREADS=%u\n\n", it_todo, grid_size, n_threads);
 
-    float *log_du_device;
-    cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1));
-    cudaMemcpy(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice);
+    asset_float *log_du_device;
+    cudaMalloc((void**)&log_du_device, sizeof(asset_float) * L * (D + 1));
+    cudaMemcpy(log_du_device, log_du_host, sizeof(asset_float) * L * (D + 1), cudaMemcpyHostToDevice);
 
 #if ASSET_DEBUG
     print_constants();
@@ -295,15 +295,16 @@ void jsf_uniform_orderstat_3d(float_type *P_total_host, const float *log_du_host
     cudaDeviceSynchronize();
 
     // Executing kernel
-    const unsigned long shared_mem_used = sizeof(float_type) * l_block + sizeof(float) * l_block * (D + 1);
+    const unsigned long shared_mem_used = sizeof(asset_float) * l_block * (D + 2);
     jsf_uniform_orderstat_3d_kernel<<<grid_size, n_threads, shared_mem_used>>>(P_total_device, log_du_device);
 
     // Transfer data back to host memory
-    cudaMemcpy(P_total_host, P_total_device, sizeof(float_type) * L, cudaMemcpyDeviceToHost);
+    cudaMemcpy(P_total_host, P_total_device, sizeof(asset_float) * L, cudaMemcpyDeviceToHost);
 
     cudaFree(P_total_device);
     cudaFree(log_du_device);
 }
+
 
 int main(int argc, char* argv[]) {
     // compile command: nvcc -o asset.o asset.cu
@@ -322,19 +323,19 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    float log_du_host[L * (D + 1)];
+    asset_float log_du_host[L * (D + 1)];
     uint32_t row, col, pos;
     for (row = 0; row < L; row++) {
         for (col = 0; col <= D; col++) {
             pos = row * (D + 1) + col;
-            int read_floats = fscanf(log_du_file, "%f", log_du_host + pos);
+            int read_floats = fscanf(log_du_file, "%{{precision_printf}}", log_du_host + pos);
             assert(read_floats == 1);
         }
     }
     fclose(log_du_file);
 
-    float_type P_total[L];
-    jsf_uniform_orderstat_3d(P_total, (const float*) log_du_host);
+    asset_float P_total[L];
+    jsf_uniform_orderstat_3d(P_total, (const asset_float*) log_du_host);
 
     FILE *P_total_file = fopen(P_total_path, "w");
     if (P_total_file == NULL) {
@@ -342,7 +343,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     for (col = 0; col < L; col++) {
-        fprintf(P_total_file, "%f\n", P_total[col]);
+        fprintf(P_total_file, "%{{precision_printf}}\n", P_total[col]);
     }
     fclose(P_total_file);
 

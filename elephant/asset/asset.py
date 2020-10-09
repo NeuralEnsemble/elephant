@@ -598,6 +598,7 @@ class _JSFUniformOrderStat3D(object):
         asset_cu = cu_template.render(
             ASSET_DEBUG=int(self.verbose),
             precision=self.precision,
+            precision_printf="f" if self.precision == "float" else "lf",
             N_THREADS=self.cuda_threads,
             L=log_du.shape[0], N=self.n, D=self.d)
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
