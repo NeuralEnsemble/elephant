@@ -63,7 +63,7 @@ __device__ void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
  * @param P_out           P_total output array of size L
  * @param log_du_device   input log_du flattened matrix of size L*(D+1)
  */
-__global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, asset_float *log_du_device) {
+__global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, float *log_du_device) {
     unsigned int i, row;
 
     // the row shift of log_du and P_total in the number of elements, between 0 and L
@@ -72,9 +72,9 @@ __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, asset_float 
     // account for the last block width that can be less than L_BLOCK
     const unsigned int block_width = (L - l_shift < L_BLOCK) ? (L - l_shift) : L_BLOCK;
 
-    extern __shared__ asset_float shared_mem[];
+    extern __shared__ float shared_mem[];
     asset_float *P_total = (asset_float*) shared_mem;  // L_BLOCK floats
-    asset_float *log_du = (asset_float*)&P_total[L_BLOCK];       // L_BLOCK * (D + 1) floats
+    float *log_du = (float*)&P_total[L_BLOCK];       // L_BLOCK * (D + 1) floats
 
     for (row = threadIdx.x; row < block_width; row += blockDim.x) {
         P_total[row] = 0;
@@ -113,7 +113,7 @@ __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, asset_float 
 
         asset_float colsum;
         const asset_float colsum_base = logK - sum_log_di_factorial;
-        const asset_float *log_du_row = log_du;
+        const float *log_du_row = log_du;
         for (row = 0; row < block_width; row++) {
             colsum = colsum_base;
             for (i = 0; i <= D; i++) {
@@ -226,7 +226,7 @@ void print_constants() {
  * @param P_total_host a pointer to P_total array to be calculated
  * @param log_du_host  input flattened L*(D+1) matrix of log_du values
  */
-void jsf_uniform_orderstat_3d(asset_float *P_total_host, const asset_float *log_du_host) {
+void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_host) {
     ULL it_todo = create_iteration_table();
 
     asset_float logK_host = 0.f;
@@ -281,9 +281,9 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const asset_float *log_
 
     printf(">>> it_todo=%llu, grid_size=%llu, N_THREADS=%u\n\n", it_todo, grid_size, n_threads);
 
-    asset_float *log_du_device;
-    cudaMalloc((void**)&log_du_device, sizeof(asset_float) * L * (D + 1));
-    cudaMemcpy(log_du_device, log_du_host, sizeof(asset_float) * L * (D + 1), cudaMemcpyHostToDevice);
+    float *log_du_device;
+    cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1));
+    cudaMemcpy(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice);
 
 #if ASSET_DEBUG
     print_constants();
@@ -294,7 +294,7 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const asset_float *log_
     cudaDeviceSynchronize();
 
     // Executing kernel
-    const unsigned long shared_mem_used = sizeof(asset_float) * l_block * (D + 2);
+    const unsigned long shared_mem_used = sizeof(asset_float) * l_block + sizeof(float) * l_block * (D + 1);
     jsf_uniform_orderstat_3d_kernel<<<grid_size, n_threads, shared_mem_used>>>(P_total_device, log_du_device);
 
     // Transfer data back to host memory
@@ -322,19 +322,19 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    asset_float log_du_host[L * (D + 1)];
+    float log_du_host[L * (D + 1)];
     uint32_t row, col, pos;
     for (row = 0; row < L; row++) {
         for (col = 0; col <= D; col++) {
             pos = row * (D + 1) + col;
-            int read_floats = fscanf(log_du_file, {{precision_printf}}, log_du_host + pos);
+            int read_floats = fscanf(log_du_file, "%f", log_du_host + pos);
             assert(read_floats == 1);
         }
     }
     fclose(log_du_file);
 
     asset_float P_total[L];
-    jsf_uniform_orderstat_3d(P_total, (const asset_float*) log_du_host);
+    jsf_uniform_orderstat_3d(P_total, (const float*) log_du_host);
 
     FILE *P_total_file = fopen(P_total_path, "w");
     if (P_total_file == NULL) {
@@ -342,7 +342,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     for (col = 0; col < L; col++) {
-        fprintf(P_total_file, {{precision_printf}}, P_total[col]);
+        fprintf(P_total_file, "%f\n", P_total[col]);
     }
     fclose(P_total_file);
 

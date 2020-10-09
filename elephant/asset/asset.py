@@ -598,7 +598,6 @@ class _JSFUniformOrderStat3D(object):
         asset_cu = cu_template.render(
             ASSET_DEBUG=int(self.verbose),
             precision=self.precision,
-            precision_printf='"%f"' if self.precision == "float" else '"%lf"',
             N_THREADS=self.cuda_threads,
             L=u_length, N=self.n, D=self.d)
         return asset_cu
@@ -621,7 +620,7 @@ class _JSFUniformOrderStat3D(object):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             log_du_path = os.path.join(asset_tmp_folder, "log_du.txt")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.txt")
-            np.savetxt(log_du_path, log_du, fmt="%f")
+            np.savetxt(log_du_path, log_du, fmt="%.10f")
             stdout, stderr = subprocess.Popen(
                 [asset_bin_path, log_du_path, P_total_path],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
