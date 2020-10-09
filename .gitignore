@@ -44,10 +44,9 @@ lib
 lib64
 # sphinx build directory
 doc/_build
-doc/reference/toctree/asset/elephant.asset.synchronous*
-doc/reference/toctree/parallel
-doc/reference/toctree/statistics
-doc/reference/toctree/unitary_event_analysis
+doc/reference/toctree/*
+!doc/reference/toctree/asset/elephant.asset.ASSET.rst
+!doc/reference/toctree/kernels
 *.h5
 # setup.py dist directory
 dist

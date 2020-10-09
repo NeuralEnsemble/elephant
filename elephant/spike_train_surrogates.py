@@ -249,9 +249,9 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
             dithered_spiketrains.rescale(pq.ms).round(decimals).rescale(units)
 
     # Return the surrogates as list of neo.SpikeTrain
-    return [neo.SpikeTrain(
-        train, t_start=t_start, t_stop=t_stop)
-        for train in dithered_spiketrains]
+    return [neo.SpikeTrain(train, t_start=t_start, t_stop=t_stop,
+                           sampling_rate=spiketrain.sampling_rate)
+            for train in dithered_spiketrains]
 
 
 @deprecated_alias(n='n_surrogates')
@@ -314,7 +314,8 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
 
     # Convert the Quantity array to a list of SpikeTrains, and return them
     return [neo.SpikeTrain(np.sort(st), t_start=spiketrain.t_start,
-                           t_stop=spiketrain.t_stop)
+                           t_stop=spiketrain.t_stop,
+                           sampling_rate=spiketrain.sampling_rate)
             for st in sts]
 
 
@@ -379,12 +380,15 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
                 spiketrain.units + spiketrain.t_start
             sts.append(neo.SpikeTrain(
                 surr_times, t_start=spiketrain.t_start,
-                t_stop=spiketrain.t_stop))
+                t_stop=spiketrain.t_stop,
+                sampling_rate=spiketrain.sampling_rate))
 
     else:
         sts = [neo.SpikeTrain([] * spiketrain.units,
                               t_start=spiketrain.t_start,
-                              t_stop=spiketrain.t_stop)] * n_surrogates
+                              t_stop=spiketrain.t_stop,
+                              sampling_rate=spiketrain.sampling_rate)
+               ] * n_surrogates
 
     return sts
 
@@ -478,7 +482,9 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     # Return the surrogates as SpikeTrains
     return [neo.SpikeTrain(s, t_start=spiketrain.t_start,
-                           t_stop=spiketrain.t_stop).rescale(spiketrain.units)
+                           t_stop=spiketrain.t_stop,
+                           sampling_rate=spiketrain.sampling_rate
+                           ).rescale(spiketrain.units)
             for s in surr]
 
 
@@ -568,7 +574,9 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     surr = np.sort(surr_poiss01 * dilats + offsets, axis=1) * std_unit
 
     return [neo.SpikeTrain(s, t_start=spiketrain.t_start,
-                           t_stop=spiketrain.t_stop).rescale(spiketrain.units)
+                           t_stop=spiketrain.t_stop,
+                           sampling_rate=spiketrain.sampling_rate
+                           ).rescale(spiketrain.units)
             for s in surr]
 
 
@@ -966,9 +974,11 @@ class JointISI(object):
 
             dithered_st = self.spiketrain[0].magnitude + \
                 np.r_[0., np.cumsum(dithered_isi)]
+            sampling_rate = self.spiketrain.sampling_rate
             dithered_st = neo.SpikeTrain(dithered_st * self._unit,
                                          t_start=self.spiketrain.t_start,
-                                         t_stop=self.spiketrain.t_stop)
+                                         t_stop=self.spiketrain.t_stop,
+                                         sampling_rate=sampling_rate)
             dithered_sts.append(dithered_st)
         return dithered_sts
 
@@ -1126,6 +1136,8 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
                 for single_trial_st in spiketrains]
     t_stops = [single_trial_st.t_stop.simplified.magnitude
                for single_trial_st in spiketrains]
+    sampling_rates = [single_trial_st.sampling_rate
+                      for single_trial_st in spiketrains]
     spiketrains = [single_trial_st.simplified.magnitude
                    for single_trial_st in spiketrains]
 
@@ -1138,7 +1150,8 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
             surrogate_spiketrain[trial_id] * pq.s,
             t_start=t_starts[trial_id] * pq.s,
             t_stop=t_stops[trial_id] * pq.s,
-            units=units)
+            units=units,
+            sampling_rate=sampling_rates[trial_id])
           for trial_id in range(len(surrogate_spiketrain))]
          for surrogate_spiketrain in surrogate_spiketrains]
 
@@ -1205,6 +1218,7 @@ def _trial_shifting_of_concatenated_spiketrain(
     t_stop = spiketrain.t_stop.simplified.magnitude
     trial_length = trial_length.simplified.magnitude
     trial_separation = trial_separation.simplified.magnitude
+    dither = dither.simplified.magnitude
     n_trials = int((t_stop - t_start) // (trial_length + trial_separation))
     t_starts = t_start + \
         np.arange(n_trials) * (trial_length + trial_separation)
@@ -1221,7 +1235,8 @@ def _trial_shifting_of_concatenated_spiketrain(
         np.hstack(surrogate_spiketrain) * pq.s,
         t_start=t_start * pq.s,
         t_stop=t_stop * pq.s,
-        units=units)
+        units=units,
+        sampling_rate=spiketrain.sampling_rate)
         for surrogate_spiketrain in surrogate_spiketrains]
     return surrogate_spiketrains
 
@@ -1348,21 +1363,20 @@ def surrogates(
         return _trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
-        bin_size = kwargs['bin_size']
         binned_spiketrain = conv.BinnedSpikeTrain(
-            spiketrain, bin_size=bin_size)
-        bin_grid = binned_spiketrain.bin_centers.magnitude
+            spiketrain, bin_size=kwargs['bin_size'])
+        bin_grid = binned_spiketrain.bin_centers.simplified.magnitude
         max_displacement = int(
-            dt.rescale(pq.ms).magnitude / bin_size.rescale(pq.ms).magnitude)
+            dt.simplified.magnitude / kwargs['bin_size'].simplified.magnitude)
         binned_surrogates = method(
             binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
-        surrogate_spiketrains = [neo.SpikeTrain(
-            bin_grid[binned_surrogate.to_bool_array()[0]]
-            + spiketrain.t_start.magnitude,
-            t_start=spiketrain.t_start,
-            t_stop=spiketrain.t_stop,
-            units=spiketrain.units)
-            for binned_surrogate in binned_surrogates]
+        surrogate_spiketrains = \
+            [neo.SpikeTrain(bin_grid[binned_surr.to_bool_array()[0]] * pq.s,
+                            t_start=spiketrain.t_start,
+                            t_stop=spiketrain.t_stop,
+                            units=spiketrain.units,
+                            sampling_rate=spiketrain.sampling_rate)
+             for binned_surr in binned_surrogates]
         return surrogate_spiketrains
     # surr_method is 'joint_isi_dithering' or isi_dithering:
     return method(n_surrogates)
