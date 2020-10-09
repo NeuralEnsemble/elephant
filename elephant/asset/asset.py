@@ -1673,10 +1673,10 @@ class ASSET(object):
         precision : {'float', 'double'}, optional
             The floating-point precision of the resulting `jmat` matrix.
               * `'float'`: 32 bits; requires CUDA compute capability 2.x, if
-              CUDA is used.
+              CUDA is used. The tolerance error is ``≲1e-3``.
 
               * `'double'`: 64 bits; requires CUDA compute capability 6.x, if
-              CUDA is used.
+              CUDA is used. The tolerance error is ``<1e-5``.
             Default: 'float'
         cuda_threads : int, optional
             The number of CUDA threads per block (in X axis) between 1 and
@@ -1692,14 +1692,11 @@ class ASSET(object):
 
         Notes
         -----
-        1. By default, if a GPU is detected, CUDA implementations is used for
-           large arrays. To turn off CUDA features, set an environment flag
-           `ELEPHANT_USE_CUDA=0` either in python or via the command line:
+        By default, if a GPU is detected, CUDA implementations is used for
+        large arrays. To turn off CUDA features, set the environment flag
+        `ELEPHANT_USE_CUDA=0` either in python or via the command line:
 
-           `ELEPHANT_USE_CUDA=0 python /path/to/script`
-        2. If CUDA backend is used, independently of the choice of `precision`,
-           the absolute values of the resulting probability matrix entries
-           diverge no more than `1e-3` from Python implementation.
+          ``ELEPHANT_USE_CUDA=0 python /path/to/script``
 
         """
         l, w = filter_shape
@@ -1722,11 +1719,11 @@ class ASSET(object):
         # Compute the joint p-value matrix jpvmat
         n = l * (1 + 2 * w) - w * (
                 w + 1)  # number of entries covered by kernel
-        jpvmat = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
-                                        precision=precision,
-                                        verbose=self.verbose,
-                                        cuda_threads=cuda_threads
-                                        ).compute(u=pmat_neighb)
+        jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
+                                     precision=precision,
+                                     verbose=self.verbose,
+                                     cuda_threads=cuda_threads)
+        jpvmat = jsf.compute(u=pmat_neighb)
 
         # restore the original shape using the stored indices
         jpvmat = jpvmat[pmat_neighb_indices].reshape(pmat.shape)
