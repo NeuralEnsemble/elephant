@@ -279,7 +279,6 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const asset_float *log_
         grid_size = l_num_blocks;
     }
 
-    printf(">>> N=%d, D=%d, L=%d; L_BLOCK=%u, L_NUM_BLOCKS=%llu, EPS=%f\n", N, D, L, l_block, l_num_blocks, EPS);
     printf(">>> it_todo=%llu, grid_size=%llu, N_THREADS=%u\n\n", it_todo, grid_size, n_threads);
 
     asset_float *log_du_device;
@@ -328,7 +327,7 @@ int main(int argc, char* argv[]) {
     for (row = 0; row < L; row++) {
         for (col = 0; col <= D; col++) {
             pos = row * (D + 1) + col;
-            int read_floats = fscanf(log_du_file, "%{{precision_printf}}", log_du_host + pos);
+            int read_floats = fscanf(log_du_file, {{precision_printf}}, log_du_host + pos);
             assert(read_floats == 1);
         }
     }
@@ -343,7 +342,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     for (col = 0; col < L; col++) {
-        fprintf(P_total_file, "%{{precision_printf}}\n", P_total[col]);
+        fprintf(P_total_file, {{precision_printf}}, P_total[col]);
     }
     fclose(P_total_file);
 

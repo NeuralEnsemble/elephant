@@ -589,7 +589,7 @@ class _JSFUniformOrderStat3D(object):
 
         return P_total
 
-    def cuda(self, log_du):
+    def _compile_cuda_template(self, u_length):
         from jinja2 import Template
         cu_template_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "asset.template.cu")
@@ -598,9 +598,13 @@ class _JSFUniformOrderStat3D(object):
         asset_cu = cu_template.render(
             ASSET_DEBUG=int(self.verbose),
             precision=self.precision,
-            precision_printf="f" if self.precision == "float" else "lf",
+            precision_printf='"%f"' if self.precision == "float" else '"%lf"',
             N_THREADS=self.cuda_threads,
-            L=log_du.shape[0], N=self.n, D=self.d)
+            L=u_length, N=self.n, D=self.d)
+        return asset_cu
+
+    def cuda(self, log_du):
+        asset_cu = self._compile_cuda_template(u_length=log_du.shape[0])
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
             asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
             asset_bin_path = os.path.join(asset_tmp_folder, 'asset.o')
