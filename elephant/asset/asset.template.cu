@@ -25,6 +25,15 @@
  * at runtime to match the tile (width L) of a block.
  */
 #define N_THREADS         {{N_THREADS}}
+
+/**
+ * To reduce branch divergence in 'next_sequence_sorted' function
+ * within a warp (threads in a warp take different branches),
+ * each thread runs CWR_LOOPS of 'combinations_with_replacement'.
+ * The value is chosen from the runtime benchmarks.
+ */
+#define CWR_LOOPS         32
+
 #define L_BLOCK_SUPREMUM  min_macros(N_THREADS, L)
 
 typedef {{precision}} asset_float;
@@ -54,6 +63,19 @@ __device__ void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
         iteration -= iteration_table[row][element];
         sequence_sorted[D - 1 - row] = element + 1;
     }
+}
+
+
+/**
+ * Set 'sequence_sorted' to the next valid sequence of indices in-place.
+ */
+__device__ void combinations_with_replacement(int *sequence_sorted) {
+    int increment_id = D - 1;
+    while (increment_id > 0 && sequence_sorted[increment_id - 1] == sequence_sorted[increment_id]) {
+      sequence_sorted[increment_id] = D - increment_id;
+      increment_id--;
+    }
+    sequence_sorted[increment_id]++;
 }
 
 
@@ -92,42 +114,47 @@ __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, float *log_d
         P_thread[row] = 0;
     }
 
-    const ULL burnout = (blockIdx.x / L_NUM_BLOCKS) * blockDim.x + threadIdx.x;
-    const ULL stride = (gridDim.x / L_NUM_BLOCKS) * blockDim.x;
+    const ULL burnout = (blockIdx.x / L_NUM_BLOCKS) * blockDim.x * CWR_LOOPS + threadIdx.x * CWR_LOOPS;
+    const ULL stride = (gridDim.x / L_NUM_BLOCKS) * blockDim.x * CWR_LOOPS;
 
-    ULL iteration;
+    ULL iteration, cwr_loop;
     for (iteration = burnout; iteration < ITERATIONS_TODO; iteration += stride) {
         next_sequence_sorted(sequence_sorted, iteration);
 
-        int prev = N;
-        for (i = 0; i < D; i++) {
-            di[i] = prev - sequence_sorted[i];
-            prev = sequence_sorted[i];
-        }
-        di[D] = sequence_sorted[D - 1];
-
-        asset_float sum_log_di_factorial = 0.f;
-        for (i = 0; i <= D; i++) {
-            sum_log_di_factorial += log_factorial[di[i]];
-        }
-
-        asset_float colsum;
-        const asset_float colsum_base = logK - sum_log_di_factorial;
-        const float *log_du_row = log_du;
-        for (row = 0; row < block_width; row++) {
-            colsum = colsum_base;
-            for (i = 0; i <= D; i++) {
-                if (di[i] != 0) {
-                    colsum += di[i] * log_du_row[i];
-                }
+        for (cwr_loop = 0; (cwr_loop < CWR_LOOPS) && (sequence_sorted[0] != N + 1); cwr_loop++) {
+            int prev = N;
+            for (i = 0; i < D; i++) {
+                di[i] = prev - sequence_sorted[i];
+                prev = sequence_sorted[i];
             }
-            P_thread[row] += exp(colsum);
-            log_du_row += D + 1;
+            di[D] = sequence_sorted[D - 1];
+
+            asset_float sum_log_di_factorial = 0.f;
+            for (i = 0; i <= D; i++) {
+                sum_log_di_factorial += log_factorial[di[i]];
+            }
+
+            asset_float colsum;
+            const asset_float colsum_base = logK - sum_log_di_factorial;
+            const float *log_du_row = log_du;
+            for (row = 0; row < block_width; row++) {
+                colsum = colsum_base;
+                for (i = 0; i <= D; i++) {
+                    if (di[i] != 0) {
+                        colsum += di[i] * log_du_row[i];
+                    }
+                }
+                P_thread[row] += exp(colsum);
+                log_du_row += D + 1;
+            }
+
+            combinations_with_replacement(sequence_sorted);
         }
     }
 
-    for (row = 0; row < block_width; row++) {
-        atomicAdd(P_total + row, P_thread[row]);
+    for (row = threadIdx.x; row < block_width + threadIdx.x; row++) {
+        // Reduce atomicAdd conflicts by adding threadIdx.x to each row
+        atomicAdd(P_total + row % block_width, P_thread[row % block_width]);
     }
 
     __syncthreads();
@@ -269,7 +296,7 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
     cudaMalloc((void**)&P_total_device, sizeof(asset_float) * L);
     cudaMemset(P_total_device, 0, sizeof(asset_float) * L);
 
-    ULL grid_size = (ULL) ceil(it_todo * 1.f / n_threads);
+    ULL grid_size = (ULL) ceil(it_todo * 1.f / (n_threads * CWR_LOOPS));
     grid_size = min_macros(grid_size, device_prop.maxGridSize[0]);
     if (grid_size > l_num_blocks) {
         // make grid_size divisible by l_num_blocks

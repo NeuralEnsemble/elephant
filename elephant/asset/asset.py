@@ -1682,7 +1682,9 @@ class ASSET(object):
             The number of CUDA threads per block (in X axis) between 1 and
             1024 and is used only if CUDA backend is enabled.
             For performance reasons, it should be a multiple of 32.
-            Note: a larger number of threads does not imply faster performance.
+            Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
+            than 64 while new series (Tesla T4) with capabilities 6.x and more
+            work best with 32 threads.
             Default: 64
 
         Returns
