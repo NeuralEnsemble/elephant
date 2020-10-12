@@ -430,7 +430,7 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
 
 class _JSFUniformOrderStat3D(object):
     def __init__(self, n, d, precision='float', verbose=False,
-                 cuda_threads=64):
+                 cuda_threads=64, cuda_cwr_loops=32):
         if d > n:
             raise ValueError("d ({d}) must be less or equal n ({n})".format(
                 d=d, n=n))
@@ -439,6 +439,7 @@ class _JSFUniformOrderStat3D(object):
         self.precision = precision
         self.verbose = verbose and rank == 0
         self.cuda_threads = cuda_threads
+        self.cuda_cwr_loops = cuda_cwr_loops
         self.map_iterations = self._create_iteration_table()
 
     @property
@@ -599,6 +600,7 @@ class _JSFUniformOrderStat3D(object):
             ASSET_DEBUG=int(self.verbose),
             precision=self.precision,
             N_THREADS=self.cuda_threads,
+            CWR_LOOPS=self.cuda_cwr_loops,
             L=u_length, N=self.n, D=self.d)
         return asset_cu
 
@@ -1637,7 +1639,7 @@ class ASSET(object):
 
     def joint_probability_matrix(self, pmat, filter_shape, n_largest,
                                  min_p_value=1e-5, precision='float',
-                                 cuda_threads=64):
+                                 cuda_threads=64, cuda_cwr_loops=32):
         """
         Map a probability matrix `pmat` to a joint probability matrix `jmat`,
         where `jmat[i, j]` is the joint p-value of the largest neighbors of
@@ -1686,6 +1688,12 @@ class ASSET(object):
             than 64 while new series (Tesla T4) with capabilities 6.x and more
             work best with 32 threads.
             Default: 64
+        cuda_cwr_loops : int, optional
+            CUDA optimization parameter, a positive integer that defines the
+            number of fast 'combinations_with_replacement' loops to run to
+            reduce branch divergence. This parameter influences the performance
+            when the number of iterations is huge (`>1e8`).
+            Default: 32
 
         Returns
         -------
@@ -1724,7 +1732,8 @@ class ASSET(object):
         jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
                                      precision=precision,
                                      verbose=self.verbose,
-                                     cuda_threads=cuda_threads)
+                                     cuda_threads=cuda_threads,
+                                     cuda_cwr_loops=cuda_cwr_loops)
         jpvmat = jsf.compute(u=pmat_neighb)
 
         # restore the original shape using the stored indices

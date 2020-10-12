@@ -270,6 +270,7 @@ class AssetTestCase(unittest.TestCase):
                           t_stop_j=5 * pq.ms)
 
 
+@unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class TestJSFUniformOrderStat3D(unittest.TestCase):
 
     def test_combinations_with_replacement(self):
@@ -542,16 +543,6 @@ class AssetTestIntegration(unittest.TestCase):
                                        indices_pmat=indices_pmat,
                                        index_proba=index_proba,
                                        expected_sses=expected_sses)
-
-
-def suite():
-    suite = unittest.makeSuite(AssetTestCase, 'test')
-    return suite
-
-
-def run():
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@
  * each thread runs CWR_LOOPS of 'combinations_with_replacement'.
  * The value is chosen from the runtime benchmarks.
  */
-#define CWR_LOOPS         32
+#define CWR_LOOPS         {{CWR_LOOPS}}
 
 #define L_BLOCK_SUPREMUM  min_macros(N_THREADS, L)
 
