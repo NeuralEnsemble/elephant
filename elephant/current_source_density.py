@@ -263,8 +263,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         return I
 
     def integrate_2D(x, y, xlin, ylin, csd, h, X, Y):
-        x = np.expand_dims(x, axis=(0, 1))
-        y = np.expand_dims(y, axis=(0, 1))
+        x = np.reshape(x, (1, 1, len(x)))
+        y = np.reshape(y, (1, 1, len(y)))
         X = np.expand_dims(X, axis=2)
         Y = np.expand_dims(Y, axis=2)
         csd = np.expand_dims(csd, axis=2)
@@ -314,9 +314,9 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         y = np.linspace(y_limits[0], y_limits[1], resolution)
         z = np.linspace(z_limits[0], z_limits[1], resolution)
 
-        chrg_x = np.expand_dims(x, axis=(1, 2))
-        chrg_y = np.expand_dims(y, axis=(0, 2))
-        chrg_z = np.expand_dims(z, axis=(0, 1))
+        chrg_x = np.reshape(x, (len(x), 1, 1))
+        chrg_y = np.reshape(y, (1, len(y), 1))
+        chrg_z = np.reshape(z, (1, 1, len(z)))
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
 
         pots = np.zeros(len(x_positions))
