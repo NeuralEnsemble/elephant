@@ -998,12 +998,11 @@ def synchronous_events_no_overlap(sse1, sse2):
         return False
 
     common_pixels = set(sse11.keys()).intersection(set(sse22.keys()))
-    if common_pixels == set([]):
+    if len(common_pixels) == 0:
         return True
-    elif all(sse11[p].isdisjoint(sse22[p]) for p in common_pixels):
+    if all(sse11[p].isdisjoint(sse22[p]) for p in common_pixels):
         return True
-    else:
-        return False
+    return False
 
 
 def synchronous_events_contained_in(sse1, sse2):
@@ -1054,7 +1053,7 @@ def synchronous_events_contained_in(sse1, sse2):
     for pixel1, link1 in sse11.items():
         if pixel1 not in sse22.keys():
             return False
-        elif not link1.issubset(sse22[pixel1]):
+        if not link1.issubset(sse22[pixel1]):
             return False
 
     # Check that sse1 is a STRICT subset of sse2, i.e. that sse2 contains at

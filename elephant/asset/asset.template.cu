@@ -162,7 +162,6 @@ __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, float *log_d
     for (row = threadIdx.x; row < block_width; row += blockDim.x) {
         atomicAdd(P_out + row + l_shift, P_total[row]);
     }
-
 }
 
 
