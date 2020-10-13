@@ -1,3 +1,8 @@
+/**
+ * CUDA implementation of ASSET.joint_probability_matrix function (refer to
+ * Python documentation).
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -30,7 +35,6 @@
  * To reduce branch divergence in 'next_sequence_sorted' function
  * within a warp (threads in a warp take different branches),
  * each thread runs CWR_LOOPS of 'combinations_with_replacement'.
- * The value is chosen from the runtime benchmarks.
  */
 #define CWR_LOOPS         {{CWR_LOOPS}}
 
