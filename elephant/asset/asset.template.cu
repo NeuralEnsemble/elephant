@@ -50,6 +50,30 @@ __constant__ ULL L_NUM_BLOCKS;
 __constant__ ULL iteration_table[D][N];  /* Maps the iteration ID to the entries
                                             of a sequence_sorted array */
 
+/**
+ * Compute capabilities lower than 6.0 don't have hardware support for
+ * double-precision atomicAdd. This software implementation is taken from
+ * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
+ */
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
+__device__ double atomicAdd(double* address, double val)
+{
+    ULL* address_as_ull = (ULL*)address;
+    ULL old = *address_as_ull, assumed;
+
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                        __double_as_longlong(val +
+                               __longlong_as_double(assumed)));
+
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+    } while (assumed != old);
+
+    return __longlong_as_double(old);
+}
+#endif
+
 
 /**
  * Builds the next sequence_sorted, given the absolute iteration ID.

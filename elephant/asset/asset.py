@@ -429,7 +429,7 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
 
 
 class _JSFUniformOrderStat3D(object):
-    def __init__(self, n, d, precision='float', verbose=False,
+    def __init__(self, n, d, precision='double', verbose=False,
                  cuda_threads=64, cuda_cwr_loops=32):
         if d > n:
             raise ValueError("d ({d}) must be less or equal n ({n})".format(
@@ -1637,7 +1637,7 @@ class ASSET(object):
         return pmat
 
     def joint_probability_matrix(self, pmat, filter_shape, n_largest,
-                                 min_p_value=1e-5, precision='float',
+                                 min_p_value=1e-5, precision='double',
                                  cuda_threads=64, cuda_cwr_loops=32):
         """
         Map a probability matrix `pmat` to a joint probability matrix `jmat`,
@@ -1673,11 +1673,9 @@ class ASSET(object):
             Default: 1e-5
         precision : {'float', 'double'}, optional
             The floating-point precision of the resulting `jmat` matrix.
-              * `'float'`: 32 bits; requires CUDA compute capability 2.x, if
-              CUDA is used. The tolerance error is ``≲1e-3``.
+              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
 
-              * `'double'`: 64 bits; requires CUDA compute capability 6.x, if
-              CUDA is used. The tolerance error is ``<1e-5``.
+              * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
             Default: 'float'
         cuda_threads : int, optional
             The number of CUDA threads per block (in X axis) between 1 and
