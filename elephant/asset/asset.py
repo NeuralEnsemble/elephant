@@ -115,6 +115,7 @@ from tqdm import trange, tqdm
 
 import elephant.conversion as conv
 from elephant import spike_train_surrogates
+from elephant.utils import get_cuda_capability_major
 
 try:
     from mpi4py import MPI
@@ -614,7 +615,7 @@ class _JSFUniformOrderStat3D(object):
             # -O3 optimization flag is for the host code only;
             # by default, GPU device code is optimized with -O3
             compile_cmd = ['nvcc', '-O3', '-o', asset_bin_path, asset_cu_path]
-            if self.precision == 'double':
+            if self.precision == 'double' and get_cuda_capability_major() >= 6:
                 # atomicAdd(double) requires compute capability 6.x
                 compile_cmd.extend(['-arch', 'sm_60'])
             subprocess.check_call(
