@@ -329,6 +329,23 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         p_out = jsf.compute(u)
         assert_array_almost_equal(p_out, [1., 0.])
 
+    def test_precision(self):
+        L = 2
+        for n in range(1, 10):
+            for d in range(1, min(6, n + 1)):
+                u = np.arange(L * d, dtype=np.float32).reshape((-1, d))
+                u /= np.max(u)
+                jsf_double = asset._JSFUniformOrderStat3D(n=n, d=d,
+                                                          precision='double')
+                jsf_float = asset._JSFUniformOrderStat3D(n=n, d=d,
+                                                         precision='float')
+                P_total_double = jsf_double.compute(u)
+                P_total_float = jsf_float.compute(u)
+                # decimal 5 is used because the number of iterations is small
+                # in practice, the results deviate starting at decimal 3 or 2
+                assert_array_almost_equal(P_total_double, P_total_float,
+                                          decimal=5)
+
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetTestIntegration(unittest.TestCase):
