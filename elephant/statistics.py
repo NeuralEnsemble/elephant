@@ -748,10 +748,15 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         warnings.warn("The width of the kernel was adjusted to a minimally "
                       "allowed width.")
 
-    t_arr = np.arange(-cutoff * kernel.sigma.rescale(units).magnitude,
-                      cutoff * kernel.sigma.rescale(units).magnitude +
-                      sampling_period.rescale(units).magnitude,
-                      sampling_period.rescale(units).magnitude) * units
+    # An odd number of points correctly resolves the median index and the
+    # fact that the peak of an instantaneous rate should be centered at t=0
+    # for symmetric kernels applied on a single spike at t=0.
+    # See issue https://github.com/NeuralEnsemble/elephant/issues/360
+    n_steps = 2 * math.ceil(cutoff * (
+            kernel.sigma / sampling_period).simplified.magnitude) + 1
+    cutoff_sigma = cutoff * kernel.sigma.rescale(units).magnitude
+    t_arr = np.linspace(-cutoff_sigma, stop=cutoff_sigma,
+                        num=n_steps, endpoint=True) * units
 
     if center_kernel:
         # keep the full convolve range and do the trimming afterwards;
@@ -766,11 +771,8 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     rate = scipy.signal.fftconvolve(time_vector,
                                     kernel(t_arr).rescale(pq.Hz).magnitude,
                                     mode=fft_mode)
-
-    if np.any(rate < -1e-8):  # abs tolerance in np.isclose
-        warnings.warn("Instantaneous firing rate approximation contains "
-                      "negative values, possibly caused due to machine "
-                      "precision errors.")
+    # the convolution of non-negative vectors is non-negative
+    rate = np.clip(rate, a_min=0, a_max=None)
 
     median_id = kernel.median_index(t_arr)
     # the size of kernel() output matches the input size

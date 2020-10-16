@@ -15,7 +15,7 @@ import neo
 import numpy as np
 import quantities as pq
 import scipy.integrate as spint
-from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 import elephant.kernels as kernels
 from elephant import statistics
@@ -443,7 +443,6 @@ class LVRTestCase(unittest.TestCase):
             self.assertTrue(math.isnan(statistics.lvr(seq, with_nan=True)))
 
 
-
 class CV2TestCase(unittest.TestCase):
     def setUp(self):
         self.test_seq = [1, 28, 4, 47, 5, 16, 2, 5, 21, 12,
@@ -744,6 +743,54 @@ class RateEstimationTestCase(unittest.TestCase):
             spiketrain, 10 * pq.ms, kernel='auto')
 
         assert_array_almost_equal(result_target, result_automatic)
+
+    def test_instantaneous_rate_non_negative(self):
+        np.random.seed(0)
+        spiketrain = homogeneous_poisson_process(rate=20 * pq.Hz,
+                                                 t_stop=10 * pq.s)
+        kernel = kernels.GaussianKernel(sigma=100 * pq.ms)
+        for sampling_period in np.linspace(1, 2000, num=10) * pq.ms:
+            rate = statistics.instantaneous_rate(
+                spiketrain,
+                sampling_period=sampling_period,
+                kernel=kernel)
+            assert (rate.magnitude >= 0).all()
+
+    # Regression test for #360
+    def test_centered_at_origin(self):
+        # Skip RectangularKernel because it doesn't have a strong peak.
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.SymmetricKernel) and
+            kern_cls not in (kernels.SymmetricKernel,
+                             kernels.RectangularKernel))
+        kernels_symmetric = [kern_cls(sigma=50 * pq.ms, invert=False)
+                             for kern_cls in kernel_types]
+
+        # first part: a symmetric spiketrain with a symmetric kernel
+        spiketrain = neo.SpikeTrain(np.array([-0.0001, 0, 0.0001]) * pq.s,
+                                    t_start=-1,
+                                    t_stop=1)
+        for kernel in kernels_symmetric:
+            rate = statistics.instantaneous_rate(spiketrain,
+                                                 sampling_period=20 * pq.ms,
+                                                 kernel=kernel)
+            # the peak time must be centered at origin
+            self.assertEqual(rate.times[np.argmax(rate)], 0)
+
+        # second part: a single spike at t=0
+        periods = [2 ** c for c in range(-3, 6)]
+        for period in periods:
+            spiketrain = neo.SpikeTrain(np.array([0]) * pq.s,
+                                        t_start=-period * 10 * pq.ms,
+                                        t_stop=period * 10 * pq.ms)
+            for kernel in kernels_symmetric:
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=period * pq.ms,
+                    kernel=kernel)
+                self.assertEqual(rate.times[np.argmax(rate)], 0)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
