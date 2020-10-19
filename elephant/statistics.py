@@ -642,9 +642,10 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         If `cutoff` is less than `min_cutoff` attribute of `kernel`, the width
         of the kernel is adjusted to a minimally allowed width.
 
-        If the instantaneous firing rate approximation contains negative values
-        with respect to a tolerance (less than -1e-5), possibly due to machine
-        precision errors.
+    Notes
+    -----
+    The resulting instantaneous firing rate values smaller than ``0``, which
+    can happen due to machine precision errors, are clipped to zero.
 
     References
     ----------
