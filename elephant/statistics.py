@@ -261,7 +261,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         spike times for which to compute the Fano factor of spike counts.
     warn_tolerance : pq.Quantity
         In case of a list of input neo.SpikeTrains, if their durations vary by
-        more than `warn_tolerence` in their absolute values, throw a waring
+        more than `warn_tolerence` in their absolute values, throw a warning
         (see Notes).
         Default: 0.1 ms.
 
