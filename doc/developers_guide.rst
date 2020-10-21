@@ -78,7 +78,7 @@ Developers' Guide
 
    * fixing a bug;
    * improving the documentation;
-   * adding a new functional.
+   * adding a new functionality.
 
 6. If it is a new functionality, please write:
 
