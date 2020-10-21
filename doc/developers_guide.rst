@@ -80,7 +80,7 @@ Developers' Guide
    * improving the documentation;
    * adding a new functional.
 
-6. If it's a new functional, please write:
+6. If it is a new functionality, please write:
 
    - documentation (refer to :ref:`documentation_guide`);
    - tests to cover your new functions as much as possible.
