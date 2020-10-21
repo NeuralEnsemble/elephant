@@ -8,9 +8,10 @@ Developers' Guide
     1. The documentation guide (how to write a good documentation, naming
        conventions, docstring examples) is in the :ref:`documentation_guide`.
 
-    2. It's advisable to let us know (see :ref:`get_in_touch`) *before* you
-       start implementing a new feature in Elephant to make sure no one else is
-       working on it.
+    2. We highly recommend to get in touch with us (see :ref:`get_in_touch`) *before* starting
+       to implement a new feature in Elephant. This way, we can point out synergies with
+       complementary efforts and help in designing your implementation such that its integration
+       into Elephant will be an easy process.
 
     3. If you experience any problems during one of the steps below, please
        contact us and we'll help you.
