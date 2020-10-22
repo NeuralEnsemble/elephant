@@ -7,6 +7,7 @@ Unit tests for the statistics module.
 """
 from __future__ import division
 
+import itertools
 import math
 import sys
 import unittest
@@ -15,7 +16,8 @@ import neo
 import numpy as np
 import quantities as pq
 import scipy.integrate as spint
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal, \
+    assert_array_less
 
 import elephant.kernels as kernels
 from elephant import statistics
@@ -613,16 +615,39 @@ class RateEstimationTestCase(unittest.TestCase):
                                                  t_start=0 * pq.s,
                                                  t_stop=10 * pq.s)
         kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
+        # check that instantaneous_rate "works" for kernels with small sigma
+        # without triggering an incomprehensible error
         rate = statistics.instantaneous_rate(spiketrain,
                                              sampling_period=sampling_period,
                                              kernel=kernel)
         self.assertEqual(
             len(rate), (spiketrain.t_stop / sampling_period).simplified.item())
 
-        # 3 Hz is not a target - it's meant to test the non-negativity of the
-        # result rate; ideally, for smaller sampling rates, the integral
-        # should match the num. of spikes in the spiketrain
-        self.assertGreater(rate.mean(), 3 * pq.Hz)
+    def test_small_kernel_sigma(self):
+        # Test that the instantaneous rate is overestimated when
+        # kernel.sigma << sampling_period and center_kernel is True.
+        # The setup is set to match the issue 288.
+        np.random.seed(9)
+        sampling_period = 200 * pq.ms
+        sigma = 5 * pq.ms
+        rate_expected = 10 * pq.Hz
+        spiketrain = homogeneous_poisson_process(rate_expected,
+                                                 t_start=0 * pq.s,
+                                                 t_stop=10 * pq.s)
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.Kernel) and
+            kern_cls is not kernels.Kernel and
+            kern_cls is not kernels.SymmetricKernel)
+        for kern_cls, invert in itertools.product(kernel_types, (False, True)):
+            kernel = kern_cls(sigma=sigma, invert=invert)
+            with self.subTest(kernel=kernel):
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=sampling_period,
+                    kernel=kernel, center_kernel=True)
+                self.assertGreater(rate.mean(), rate_expected)
 
     def test_spikes_on_edges(self):
         # this test demonstrates that the trimming (convolve valid mode)
@@ -744,17 +769,24 @@ class RateEstimationTestCase(unittest.TestCase):
 
         assert_array_almost_equal(result_target, result_automatic)
 
-    def test_instantaneous_rate_non_negative(self):
+    def test_instantaneous_rate_grows_with_sampling_period(self):
         np.random.seed(0)
-        spiketrain = homogeneous_poisson_process(rate=20 * pq.Hz,
+        rate_expected = 10 * pq.Hz
+        spiketrain = homogeneous_poisson_process(rate=rate_expected,
                                                  t_stop=10 * pq.s)
         kernel = kernels.GaussianKernel(sigma=100 * pq.ms)
-        for sampling_period in np.linspace(1, 2000, num=10) * pq.ms:
-            rate = statistics.instantaneous_rate(
-                spiketrain,
-                sampling_period=sampling_period,
-                kernel=kernel)
-            assert (rate.magnitude >= 0).all()
+        rates_mean = []
+        for sampling_period in np.linspace(1, 1000, num=10) * pq.ms:
+            with self.subTest(sampling_period=sampling_period):
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=sampling_period,
+                    kernel=kernel)
+                rates_mean.append(rate.mean())
+        # rate means are greater or equal the expected rate
+        assert_array_less(rate_expected, rates_mean)
+        # check sorted
+        self.assertTrue(np.all(rates_mean[:-1] < rates_mean[1:]))
 
     # Regression test for #360
     def test_centered_at_origin(self):
@@ -782,15 +814,16 @@ class RateEstimationTestCase(unittest.TestCase):
         # second part: a single spike at t=0
         periods = [2 ** c for c in range(-3, 6)]
         for period in periods:
-            spiketrain = neo.SpikeTrain(np.array([0]) * pq.s,
-                                        t_start=-period * 10 * pq.ms,
-                                        t_stop=period * 10 * pq.ms)
-            for kernel in kernels_symmetric:
-                rate = statistics.instantaneous_rate(
-                    spiketrain,
-                    sampling_period=period * pq.ms,
-                    kernel=kernel)
-                self.assertEqual(rate.times[np.argmax(rate)], 0)
+            with self.subTest(period=period):
+                spiketrain = neo.SpikeTrain(np.array([0]) * pq.s,
+                                            t_start=-period * 10 * pq.ms,
+                                            t_stop=period * 10 * pq.ms)
+                for kernel in kernels_symmetric:
+                    rate = statistics.instantaneous_rate(
+                        spiketrain,
+                        sampling_period=period * pq.ms,
+                        kernel=kernel)
+                    self.assertEqual(rate.times[np.argmax(rate)], 0)
 
 
 class TimeHistogramTestCase(unittest.TestCase):

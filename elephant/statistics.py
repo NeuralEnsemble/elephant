@@ -720,20 +720,22 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     _check_consistency_of_spiketrains(spiketrains,
                                       t_start=t_start, t_stop=t_stop)
-    if t_start is None:
-        t_start = spiketrains[0].t_start
-    if t_stop is None:
-        t_stop = spiketrains[0].t_stop
     if concatenate or kernel == 'auto':
         spikes_sorted = np.concatenate([st.magnitude for st in spiketrains])
         spikes_sorted.sort()
         merged_spiketrain = SpikeTrain(spikes_sorted,
                                        units=spiketrains[0].units,
-                                       t_start=t_start, t_stop=t_stop)
+                                       t_start=spiketrains[0].t_start,
+                                       t_stop=spiketrains[0].t_stop)
         if kernel == 'auto':
             kernel = optimal_kernel(merged_spiketrain)
         if concatenate:
             spiketrains = [merged_spiketrain]
+
+    if t_start is None:
+        t_start = spiketrains[0].t_start
+    if t_stop is None:
+        t_stop = spiketrains[0].t_stop
 
     units = pq.CompoundUnit(
         "{}*s".format(sampling_period.rescale('s').item()))
@@ -757,11 +759,18 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     # fact that the peak of an instantaneous rate should be centered at t=0
     # for symmetric kernels applied on a single spike at t=0.
     # See issue https://github.com/NeuralEnsemble/elephant/issues/360
-    n_steps = 2 * math.ceil(cutoff * (
-            kernel.sigma / sampling_period).simplified.magnitude) + 1
+    n_half = math.ceil(cutoff * (
+            kernel.sigma / sampling_period).simplified.item())
     cutoff_sigma = cutoff * kernel.sigma.rescale(units).magnitude
-    t_arr = np.linspace(-cutoff_sigma, stop=cutoff_sigma,
-                        num=n_steps, endpoint=True) * units
+    if center_kernel:
+        # t_arr must be centered at the kernel median.
+        # Not centering on the kernel median leads to underestimating the
+        # instantaneous rate in cases when sampling_period >> kernel.sigma.
+        median = kernel.icdf(0.5).rescale(units).item()
+    else:
+        median = 0
+    t_arr = np.linspace(-cutoff_sigma + median, stop=cutoff_sigma + median,
+                        num=2 * n_half + 1, endpoint=True) * units
 
     if center_kernel:
         # keep the full convolve range and do the trimming afterwards;
@@ -782,11 +791,10 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     # the convolution of non-negative vectors is non-negative
     rate = np.clip(rate, a_min=0, a_max=None, out=rate)
 
-    median_id = kernel.median_index(t_arr)
-    # the size of kernel() output matches the input size
-    kernel_array_size = len(t_arr)
-    if center_kernel:
-        # account for the kernel asymmetry
+    if center_kernel:  # account for the kernel asymmetry
+        median_id = kernel.median_index(t_arr)
+        # the size of kernel() output matches the input size, len(t_arr)
+        kernel_array_size = len(t_arr)
         if not trim:
             rate = rate[median_id: -kernel_array_size + median_id]
         else:
