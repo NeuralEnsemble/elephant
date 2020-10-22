@@ -626,10 +626,11 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(np.sum(surrogate_train.to_bool_array()), 0)
 
     def test_trial_shuffling_output_format(self):
-        spiketrain = [neo.SpikeTrain([90, 93, 97, 100, 105,
-                                      150, 180, 190] * pq.ms, t_stop=.2 * pq.s),
-                      neo.SpikeTrain([90, 93, 97, 100, 105,
-                                      150, 180, 190] * pq.ms, t_stop=.2 * pq.s)]
+        spiketrain = \
+            [neo.SpikeTrain([90, 93, 97, 100, 105, 150, 180, 190] * pq.ms,
+                            t_stop=.2 * pq.s),
+             neo.SpikeTrain([90, 93, 97, 100, 105, 150, 180, 190] * pq.ms,
+                            t_stop=.2 * pq.s)]
         # trial_length = 200 * pq.ms
         # trial_separation = 50 * pq.ms
         n_surrogates = 2
