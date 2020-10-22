@@ -546,7 +546,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
-                       center_kernel=True, concatenate=True):
+                       center_kernel=True):
     """
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -604,13 +604,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         centered on the spike, thus putting equal weight before and after the
         spike. If False, no adjustment is performed such that the spike sits at
         the origin of the kernel.
-        Default: True
-    concatenate : bool, optional
-        If set to True, the input `spiketrains` are concatenated and sorted in
-        time before calculating the instantaneous rate. Otherwise, treat each
-        spike train in `spiketrains` separately: the output rate is a 2d matrix
-        of ``time x len(spiketrains)`` dimension. Either way the optimal kernel
-        is estimated from a merged spiketrain if it's set to ``'auto'``.
         Default: True
 
     Returns
@@ -720,17 +713,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     _check_consistency_of_spiketrains(spiketrains,
                                       t_start=t_start, t_stop=t_stop)
-    if concatenate or kernel == 'auto':
+    if kernel == 'auto':
         spikes_sorted = np.concatenate([st.magnitude for st in spiketrains])
         spikes_sorted.sort()
         merged_spiketrain = SpikeTrain(spikes_sorted,
                                        units=spiketrains[0].units,
                                        t_start=spiketrains[0].t_start,
                                        t_stop=spiketrains[0].t_stop)
-        if kernel == 'auto':
-            kernel = optimal_kernel(merged_spiketrain)
-        if concatenate:
-            spiketrains = [merged_spiketrain]
+        kernel = optimal_kernel(merged_spiketrain)
 
     if t_start is None:
         t_start = spiketrains[0].t_start

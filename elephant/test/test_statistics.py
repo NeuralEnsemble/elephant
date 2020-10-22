@@ -523,20 +523,20 @@ class RateEstimationTestCase(unittest.TestCase):
     def test_error_instantaneous_rate(self):
         self.assertRaises(
             TypeError, statistics.instantaneous_rate,
-            spiketrain=[1, 2, 3] * pq.s,
+            spiketrains=[1, 2, 3] * pq.s,
             sampling_period=0.01 * pq.ms, kernel=self.kernel)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=[1, 2, 3],
+            TypeError, statistics.instantaneous_rate, spiketrains=[1, 2, 3],
             sampling_period=0.01 * pq.ms, kernel=self.kernel)
         st = self.spike_train
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01, kernel=self.kernel)
         self.assertRaises(
-            ValueError, statistics.instantaneous_rate, spiketrain=st,
+            ValueError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=-0.01 * pq.ms, kernel=self.kernel)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel='NONE')
         self.assertRaises(TypeError, statistics.instantaneous_rate,
                           self.spike_train,
@@ -545,18 +545,18 @@ class RateEstimationTestCase(unittest.TestCase):
                           t_stop=self.st_tr[1] * pq.s,
                           trim=False)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel,
             cutoff=20 * pq.ms)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel, t_start=2)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel,
             t_stop=20 * pq.mV)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel, trim=1)
 
     def test_rate_estimation_consistency(self):
@@ -725,11 +725,11 @@ class RateEstimationTestCase(unittest.TestCase):
             [self.spike_train, spike_train2],
             sampling_period=0.01 * pq.s,
             kernel=self.kernel)
-        summed_rate = st_rate_1 + st_rate_2  # equivalent for identical kernels
+        rate_concat = np.c_[st_rate_1, st_rate_2]
         # 'time_vector.dtype' in instantaneous_rate() is changed from float64
         # to float32 which results in 3e-6 abs difference
         assert_array_almost_equal(combined_rate.magnitude,
-                                  summed_rate.magnitude, decimal=5)
+                                  rate_concat.magnitude, decimal=5)
 
     # Regression test for #144
     def test_instantaneous_rate_regression_144(self):
