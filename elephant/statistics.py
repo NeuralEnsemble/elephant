@@ -739,13 +739,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     units = pq.CompoundUnit(
         "{}*s".format(sampling_period.rescale('s').item()))
-    spiketrains = [st.rescale(units) for st in spiketrains]
-    t_start = t_start.rescale(units)
-    t_stop = t_stop.rescale(units)
+    t_start = t_start.rescale(spiketrains[0].units)
+    t_stop = t_stop.rescale(spiketrains[0].units)
 
-    n_bins = int(t_stop - t_start) + 1
+    n_bins = int(((t_stop - t_start) / units).simplified) + 1
     time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
-    hist_range = (t_start.item(), (t_stop + sampling_period).item())
+    hist_range_end = t_stop + sampling_period.rescale(spiketrains[0].units)
+    hist_range = (t_start.item(), hist_range_end.item())
     for i, st in enumerate(spiketrains):
         time_vectors[i], _ = np.histogram(st.magnitude, bins=n_bins,
                                           range=hist_range)
