@@ -1,9 +1,11 @@
-import numpy as np
 import unittest
+
+import numpy as np
+import quantities as pq
 from numpy.testing import assert_array_almost_equal
 
-import quantities as pq
 from elephant.online import MeanOnline, VarianceOnline
+from elephant.statistics import mean_firing_rate, cv, isi
 
 
 class TestMeanOnline(unittest.TestCase):
@@ -49,12 +51,26 @@ class TestMeanOnline(unittest.TestCase):
 
     def test_reset(self):
         target_value = 2.5
-        online = MeanOnline(val=target_value)
+        online = MeanOnline()
+        online.update(target_value)
         self.assertEqual(online.get_mean(), target_value)
         online.reset()
         self.assertIsNone(online.mean)
         self.assertIsNone(online.units)
         self.assertEqual(online.count, 0)
+
+    def test_mean_firing_rate(self):
+        np.random.seed(4)
+        spiketrain = np.random.rand(10000).cumsum()
+        rate_target = mean_firing_rate(spiketrain)
+        online = MeanOnline()
+        n_batches = 10
+        t_start = None
+        for st_window in np.array_split(spiketrain, n_batches):
+            rate_batch = mean_firing_rate(st_window, t_start=t_start)
+            online.update(rate_batch)
+            t_start = st_window[-1]
+        self.assertAlmostEqual(online.get_mean(), rate_target, places=3)
 
 
 class TestVarianceOnline(unittest.TestCase):
@@ -116,13 +132,28 @@ class TestVarianceOnline(unittest.TestCase):
 
     def test_reset(self):
         target_value = 2.5
-        online = VarianceOnline(val=target_value)
+        online = VarianceOnline()
+        online.update(target_value)
         self.assertEqual(online.get_mean(), target_value)
         online.reset()
         self.assertIsNone(online.mean)
         self.assertIsNone(online.units)
         self.assertEqual(online.count, 0)
         self.assertEqual(online.variance_sum, 0.)
+
+    def test_cv(self):
+        np.random.seed(4)
+        spiketrain = np.random.rand(10000).cumsum()
+        isi_all = isi(spiketrain)
+        cv_target = cv(isi_all)
+        online = VarianceOnline(batch_mode=True)
+        n_batches = 10
+        for st_window in np.array_split(spiketrain, n_batches):
+            isi_batch = isi(st_window)
+            online.update(isi_batch)
+        isi_mean, isi_std = online.get_mean_std(unbiased=False)
+        cv_online = isi_std / isi_mean
+        self.assertAlmostEqual(cv_online, cv_target, places=3)
 
 
 if __name__ == '__main__':
