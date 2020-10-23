@@ -23,7 +23,8 @@ import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import homogeneous_poisson_process
 
-python_version_major = sys.version_info.major
+if sys.version_info.major == 2:
+    import unittest2 as unittest
 
 
 class isi_TestCase(unittest.TestCase):
@@ -336,7 +337,6 @@ class FanoFactorTestCase(unittest.TestCase):
         lst = [self.test_list[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_fanofactor_different_durations(self):
         st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
         st2 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4.5 * pq.s)
@@ -382,7 +382,6 @@ class LVTestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.lv, 1)
         self.assertRaises(ValueError, statistics.lv, np.array([seq, seq]))
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_2short_spike_train(self):
         seq = [1]
         with self.assertWarns(UserWarning):
@@ -425,16 +424,14 @@ class LVRTestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.lvr, [])
         self.assertRaises(ValueError, statistics.lvr, 1)
         self.assertRaises(ValueError, statistics.lvr, np.array([seq, seq]))
-        self.assertRaises(ValueError, statistics.lvr, seq, -1)
+        self.assertRaises(ValueError, statistics.lvr, seq, -1 * pq.ms)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_lvr_refractoriness_kwarg(self):
         seq = np.array(self.test_seq)
         with self.assertWarns(UserWarning):
             assert_array_almost_equal(statistics.lvr(seq, R=5),
                                       self.target, decimal=9)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_2short_spike_train(self):
         seq = [1]
         with self.assertWarns(UserWarning):
@@ -504,7 +501,6 @@ class RateEstimationTestCase(unittest.TestCase):
         # generation of a multiply used specific kernel
         self.kernel = kernels.TriangularKernel(sigma=0.03 * pq.s)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_instantaneous_rate_and_warnings(self):
         st = self.spike_train
         sampling_period = 0.01 * pq.s

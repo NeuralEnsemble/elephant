@@ -73,7 +73,8 @@ install:
     fi
 
   - pip -V
-  - pip install coverage coveralls nose
+  - pip install -r requirements/requirements-tests.txt
+  - pip install coverage coveralls
   - python setup.py install
   - python -c "from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list
