@@ -365,31 +365,32 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
               [0.0 ms, 1000.0 ms])>]
 
     """
-    if len(spiketrain) > 0:
-        isi0 = spiketrain[0] - spiketrain.t_start
-        ISIs = np.hstack([isi0, isi(spiketrain)])
+    if len(spiketrain) == 0:
+        return [neo.SpikeTrain([] * spiketrain.units,
+                               t_start=spiketrain.t_start,
+                               t_stop=spiketrain.t_stop,
+                               sampling_rate=spiketrain.sampling_rate)
+                for _ in range(n_surrogates)]
 
-        # Round the isis to decimal position, if requested
-        if decimals is not None:
-            ISIs = ISIs.round(decimals)
+    # A correct sorting is necessary, to calculate the ISIs
+    spiketrain = spiketrain.copy()
+    spiketrain.sort()
+    isi0 = spiketrain[0] - spiketrain.t_start
+    isis = np.hstack([isi0, isi(spiketrain)])
 
-        # Create list of surrogate spike trains by random ISI permutation
-        sts = []
-        for surrogate_id in range(n_surrogates):
-            surr_times = np.cumsum(np.random.permutation(ISIs)) * \
-                spiketrain.units + spiketrain.t_start
-            sts.append(neo.SpikeTrain(
-                surr_times, t_start=spiketrain.t_start,
-                t_stop=spiketrain.t_stop,
-                sampling_rate=spiketrain.sampling_rate))
+    # Round the isis to decimal position, if requested
+    if decimals is not None:
+        isis = isis.round(decimals)
 
-    else:
-        sts = [neo.SpikeTrain([] * spiketrain.units,
-                              t_start=spiketrain.t_start,
-                              t_stop=spiketrain.t_stop,
-                              sampling_rate=spiketrain.sampling_rate)
-               ] * n_surrogates
-
+    # Create list of surrogate spike trains by random ISI permutation
+    sts = []
+    for surrogate_id in range(n_surrogates):
+        surr_times = np.cumsum(np.random.permutation(isis)) * \
+            spiketrain.units + spiketrain.t_start
+        sts.append(neo.SpikeTrain(
+            surr_times, t_start=spiketrain.t_start,
+            t_stop=spiketrain.t_stop,
+            sampling_rate=spiketrain.sampling_rate))
     return sts
 
 
@@ -740,6 +741,9 @@ class JointISI(object):
         if not isinstance(spiketrain, neo.SpikeTrain):
             raise TypeError('spiketrain must be of type neo.SpikeTrain')
 
+        # A correct sorting is necessary to calculate the ISIs
+        spiketrain = spiketrain.copy()
+        spiketrain.sort()
         self.spiketrain = spiketrain
         self.truncation_limit = self._get_magnitude(truncation_limit)
         self.n_bins = n_bins
@@ -975,6 +979,12 @@ class JointISI(object):
             dithered_st = self.spiketrain[0].magnitude + \
                 np.r_[0., np.cumsum(dithered_isi)]
             sampling_rate = self.spiketrain.sampling_rate
+
+            # Due to rounding errors, the last spike may be above t_stop.
+            # If the case, this is set to t_stop.
+            if dithered_st[-1] > self.spiketrain.t_stop:
+                dithered_st[-1] = self.spiketrain.t_stop
+
             dithered_st = neo.SpikeTrain(dithered_st * self._unit,
                                          t_start=self.spiketrain.t_start,
                                          t_stop=self.spiketrain.t_stop,
@@ -994,7 +1004,8 @@ class JointISI(object):
                 jisih_cum = self._normalize_cumulative_distribution(
                     np.cumsum(diagonal))
                 self._jisih_cumulatives.append(jisih_cum)
-            self._jisih_cumulatives = np.array(self._jisih_cumulatives)
+            self._jisih_cumulatives = np.array(
+                self._jisih_cumulatives, dtype=object)
         else:
             self._jisih_cumulatives = self._window_cumulatives(rotated_jisih)
 
