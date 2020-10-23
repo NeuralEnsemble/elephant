@@ -609,10 +609,10 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     Returns
     -------
     rate : neo.AnalogSignal
-        Contains the rate estimation in unit hertz (Hz). In case a list of
-        spike trains was given, this is the combined rate of all spike trains
-        (not the average rate). `rate.times` contains the time axis of the rate
-        estimate. The unit of this property is the same as the resolution that
+        2D matrix that contains the rate estimation in unit hertz (Hz) of shape
+        ``(time, len(spiketrains))`` or ``(time, 1)`` in case of a single
+        input spiketrain. `rate.times` contains the time axis of the rate
+        estimate: the unit of this property is the same as the resolution that
         is given via the argument `sampling_period` to the function.
 
     Raises
@@ -732,7 +732,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     t_start = t_start.rescale(spiketrains[0].units)
     t_stop = t_stop.rescale(spiketrains[0].units)
 
-    n_bins = int(((t_stop - t_start) / units).simplified) + 1
+    n_bins = int(((t_stop - t_start) / sampling_period).simplified) + 1
     time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
     hist_range_end = t_stop + sampling_period.rescale(spiketrains[0].units)
     hist_range = (t_start.item(), hist_range_end.item())

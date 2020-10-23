@@ -393,7 +393,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
                     sampling_period=sampling_period,
                     kernel=kernel,
                     t_start=t_start,
-                    t_stop=t_stop, trim=True) / n_trials
+                    t_stop=t_stop, trim=True).sum(axis=1) / n_trials
 
                 rate_recovered = rate_recovered.flatten().magnitude
                 trim = (rate_profile.shape[0] - rate_recovered.shape[0]) // 2
