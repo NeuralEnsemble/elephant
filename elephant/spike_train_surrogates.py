@@ -370,9 +370,10 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
                                t_start=spiketrain.t_start,
                                t_stop=spiketrain.t_stop,
                                sampling_rate=spiketrain.sampling_rate)
-                ] * n_surrogates
+                for _ in range(n_surrogates)]
 
     # A correct sorting is necessary, to calculate the ISIs
+    spiketrain = spiketrain.copy()
     spiketrain.sort()
     isi0 = spiketrain[0] - spiketrain.t_start
     isis = np.hstack([isi0, isi(spiketrain)])
@@ -741,6 +742,7 @@ class JointISI(object):
             raise TypeError('spiketrain must be of type neo.SpikeTrain')
 
         # A correct sorting is necessary to calculate the ISIs
+        spiketrain = spiketrain.copy()
         spiketrain.sort()
         self.spiketrain = spiketrain
         self.truncation_limit = self._get_magnitude(truncation_limit)
