@@ -5,7 +5,7 @@ import quantities as pq
 from numpy.testing import assert_array_almost_equal
 
 from elephant.online import MeanOnline, VarianceOnline
-from elephant.statistics import mean_firing_rate, cv, isi
+from elephant import statistics
 
 
 class TestMeanOnline(unittest.TestCase):
@@ -62,15 +62,52 @@ class TestMeanOnline(unittest.TestCase):
     def test_mean_firing_rate(self):
         np.random.seed(4)
         spiketrain = np.random.rand(10000).cumsum()
-        rate_target = mean_firing_rate(spiketrain)
+        rate_target = statistics.mean_firing_rate(spiketrain)
         online = MeanOnline()
         n_batches = 10
         t_start = None
-        for st_window in np.array_split(spiketrain, n_batches):
-            rate_batch = mean_firing_rate(st_window, t_start=t_start)
+        for spiketrain_chunk in np.array_split(spiketrain, n_batches):
+            rate_batch = statistics.mean_firing_rate(spiketrain_chunk,
+                                                     t_start=t_start)
             online.update(rate_batch)
-            t_start = st_window[-1]
+            t_start = spiketrain_chunk[-1]
         self.assertAlmostEqual(online.get_mean(), rate_target, places=3)
+
+    def test_cv2(self):
+        np.random.seed(5)
+        spiketrain = np.random.rand(10000).cumsum()
+        cv2_target = statistics.cv2(statistics.isi(spiketrain))
+        online = MeanOnline()
+        n_batches = 10
+        for spiketrain_chunk in np.array_split(spiketrain, n_batches):
+            isi_batch = statistics.isi(spiketrain_chunk)
+            cv2_batch = statistics.cv2(isi_batch)
+            online.update(cv2_batch)
+        self.assertAlmostEqual(online.get_mean(), cv2_target, places=3)
+
+    def test_lv(self):
+        np.random.seed(6)
+        spiketrain = np.random.rand(10000).cumsum()
+        lv_target = statistics.lv(statistics.isi(spiketrain))
+        online = MeanOnline()
+        n_batches = 10
+        for spiketrain_chunk in np.array_split(spiketrain, n_batches):
+            isi_batch = statistics.isi(spiketrain_chunk)
+            lv_batch = statistics.lv(isi_batch)
+            online.update(lv_batch)
+        self.assertAlmostEqual(online.get_mean(), lv_target, places=3)
+
+    def test_lvr(self):
+        np.random.seed(6)
+        spiketrain = np.random.rand(10000).cumsum()
+        lvr_target = statistics.lvr(statistics.isi(spiketrain))
+        online = MeanOnline()
+        n_batches = 10
+        for spiketrain_chunk in np.array_split(spiketrain, n_batches):
+            isi_batch = statistics.isi(spiketrain_chunk)
+            lvr_batch = statistics.lvr(isi_batch)
+            online.update(lvr_batch)
+        self.assertAlmostEqual(online.get_mean(), lvr_target, places=1)
 
 
 class TestVarianceOnline(unittest.TestCase):
@@ -144,12 +181,12 @@ class TestVarianceOnline(unittest.TestCase):
     def test_cv(self):
         np.random.seed(4)
         spiketrain = np.random.rand(10000).cumsum()
-        isi_all = isi(spiketrain)
-        cv_target = cv(isi_all)
+        isi_all = statistics.isi(spiketrain)
+        cv_target = statistics.cv(isi_all)
         online = VarianceOnline(batch_mode=True)
         n_batches = 10
-        for st_window in np.array_split(spiketrain, n_batches):
-            isi_batch = isi(st_window)
+        for spiketrain_chunk in np.array_split(spiketrain, n_batches):
+            isi_batch = statistics.isi(spiketrain_chunk)
             online.update(isi_batch)
         isi_mean, isi_std = online.get_mean_std(unbiased=False)
         cv_online = isi_std / isi_mean
