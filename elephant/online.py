@@ -47,8 +47,8 @@ class MeanOnline(object):
 
 class VarianceOnline(MeanOnline):
     def __init__(self, batch_mode=False):
-        self.variance_sum = 0.
         super(VarianceOnline, self).__init__(batch_mode=batch_mode)
+        self.variance_sum = 0.
 
     def update(self, new_val):
         units = None

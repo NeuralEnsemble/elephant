@@ -4,8 +4,30 @@ import numpy as np
 import quantities as pq
 from numpy.testing import assert_array_almost_equal
 
-from elephant.online import MeanOnline, VarianceOnline
 from elephant import statistics
+from elephant.online import MeanOnline, VarianceOnline
+from elephant.spike_train_generation import homogeneous_poisson_process
+
+
+class TestSlidingWindowGeneric(unittest.TestCase):
+    def test_fanofactor(self):
+        """
+        This test computes the Fano factor in a sliding window fashion
+        without the use of MeanOnline or VarianceOnline.
+        """
+        np.random.seed(0)
+        t_stop = 10 * pq.s
+        spiketrains = [homogeneous_poisson_process(
+            rate=20 * pq.Hz, t_stop=t_stop) for _ in range(10)]
+        fanofactor_target = statistics.fanofactor(spiketrains)
+        spike_counts = np.zeros(len(spiketrains))
+        checkpoints = np.linspace(0 * pq.s, t_stop, num=10)
+        for t_start, t_stop in zip(checkpoints[:-1], checkpoints[1:]):
+            sts_chunk = [st.time_slice(t_start=t_start, t_stop=t_stop)
+                         for st in spiketrains]
+            spike_counts += list(map(len, sts_chunk))
+        fanofactor = spike_counts.var() / spike_counts.mean()
+        self.assertAlmostEqual(fanofactor, fanofactor_target)
 
 
 class TestMeanOnline(unittest.TestCase):
