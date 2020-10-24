@@ -7,6 +7,7 @@ from numpy.testing import assert_array_almost_equal
 from elephant import statistics
 from elephant.online import MeanOnline, VarianceOnline
 from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_synchrony import spike_contrast
 
 
 class TestSlidingWindowGeneric(unittest.TestCase):
@@ -130,6 +131,23 @@ class TestMeanOnline(unittest.TestCase):
             lvr_batch = statistics.lvr(isi_batch)
             online.update(lvr_batch)
         self.assertAlmostEqual(online.get_mean(), lvr_target, places=1)
+
+    def test_spike_contrast(self):
+        np.random.seed(1)
+        t_stop = 100 * pq.s
+        spiketrains = [homogeneous_poisson_process(
+            rate=20 * pq.Hz, t_stop=t_stop) for _ in range(10)]
+        synchrony_target = spike_contrast(spiketrains)
+        checkpoints = np.linspace(0 * pq.s, t_stop, num=10)
+        online = MeanOnline()
+        for t_start, t_stop in zip(checkpoints[:-1], checkpoints[1:]):
+            synchrony_batch, trace = spike_contrast(spiketrains,
+                                                    t_start=t_start,
+                                                    t_stop=t_stop,
+                                                    return_trace=True)
+            online.update(np.asarray(trace.synchrony))
+        synchrony = max(online.get_mean())
+        self.assertAlmostEqual(synchrony, synchrony_target, places=2)
 
 
 class TestVarianceOnline(unittest.TestCase):
