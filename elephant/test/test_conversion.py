@@ -178,7 +178,7 @@ class binarize_TestCase(unittest.TestCase):
         self.assertRaises(ValueError, cv.binarize, st1)
 
     @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
-    def test_bin_edges(self):
+    def test_bin_edges_empty_binned_spiketrain(self):
         st = neo.SpikeTrain(times=np.array([2.5]) * pq.s, t_start=0 * pq.s,
                             t_stop=3 * pq.s)
         with self.assertWarns(UserWarning):
@@ -271,9 +271,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
             t_start=-1 * pq.s, t_stop=8 * pq.s)
         c = [a, b]
 
-        bin_size = self.bin_size
-        with self.assertWarns(UserWarning):
-            x_bool = cv.BinnedSpikeTrain(c, bin_size=bin_size)
+        x_bool = cv.BinnedSpikeTrain(c, bin_size=self.bin_size)
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
                   [1, 0, 1, 1, 0, 1, 1, 0]]
 

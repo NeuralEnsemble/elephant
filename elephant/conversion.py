@@ -490,15 +490,11 @@ class BinnedSpikeTrain(object):
         self._check_consistency(spiketrains, self.bin_size, self.n_bins,
                                 self.t_start, self.t_stop)
         # Now create sparse matrix
-        self._convert_to_binned(spiketrains)
+        n_discarded = self._convert_to_binned(spiketrains)
 
-        if self.is_spiketrain:
-            n_spikes = sum(map(len, spiketrains))
-            n_spikes_binned = self.get_num_of_spikes()
-            if n_spikes != n_spikes_binned:
-                warnings.warn("Binning discarded {n} last spike(s) in the "
-                              "input spiketrain.".format(
-                                  n=n_spikes - n_spikes_binned))
+        if n_discarded > 0:
+            warnings.warn("Binning discarded {} last spike(s) in the "
+                          "input spiketrain".format(n_discarded))
 
     @property
     def matrix_rows(self):
@@ -750,8 +746,8 @@ class BinnedSpikeTrain(object):
         """
         # Return sparse Matrix as a copy
         tmp_mat = self._sparse_mat_u.copy()
-        tmp_mat[tmp_mat.nonzero()] = 1
-        return tmp_mat.astype(bool)
+        tmp_mat.data = tmp_mat.data.astype(bool)
+        return tmp_mat
 
     def get_num_of_spikes(self, axis=None):
         """
@@ -971,9 +967,11 @@ class BinnedSpikeTrain(object):
             Spike trains to bin.
 
         """
+        n_discarded = 0
+
         if not self.is_spiketrain:
             self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=np.int32)
-            return
+            return n_discarded
 
         row_ids, column_ids = [], []
         # data
@@ -982,11 +980,14 @@ class BinnedSpikeTrain(object):
         for idx, st in enumerate(spiketrains):
             times = rescale_magnitude(st.times - self.t_start,
                                       units=self.bin_size.units)
-            scale = times / self.bin_size.item()
+            duration = (self.t_stop - self.t_start).rescale(
+                self.bin_size.units).magnitude
+            time_slice = np.logical_and(times >= 0, times <= duration)
+            bins = times[time_slice] / self.bin_size.item()
 
             # shift spikes that are very close
             # to the right edge into the next bin
-            rounding_error_indices = _detect_rounding_errors(scale,
+            rounding_error_indices = _detect_rounding_errors(bins,
                                                              self.tolerance)
             num_rounding_corrections = rounding_error_indices.sum()
             if num_rounding_corrections > 0:
@@ -994,16 +995,12 @@ class BinnedSpikeTrain(object):
                               'the affected spikes into the following bin. '
                               'You can set tolerance=None to disable this '
                               'behaviour.'.format(num_rounding_corrections))
-            scale[rounding_error_indices] += .5
+            bins[rounding_error_indices] += .5
 
-            scale = scale.astype(np.int32)
-
-            duration = (self.t_stop - self.t_start).rescale(
-                self.bin_size.units).magnitude
-            la = np.logical_and(times >= 0, times <= duration)
-            filled_tmp = scale[la]
-            filled_tmp = filled_tmp[filled_tmp < self.n_bins]
-            f, c = np.unique(filled_tmp, return_counts=True)
+            bins = bins.astype(np.int32)
+            valid_bins = bins[bins < self.n_bins]
+            n_discarded += len(bins) - len(valid_bins)
+            f, c = np.unique(valid_bins, return_counts=True)
             column_ids.extend(f)
             counts.extend(c)
             row_ids.extend([idx] * len(f))
@@ -1011,6 +1008,8 @@ class BinnedSpikeTrain(object):
                                     shape=(len(spiketrains), self.n_bins),
                                     dtype=np.int32)
         self._sparse_mat_u = csr_matrix
+
+        return n_discarded
 
 
 def _check_neo_spiketrain(matrix):
