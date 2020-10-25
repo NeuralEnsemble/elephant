@@ -20,7 +20,7 @@ import numpy as np
 import quantities as pq
 import scipy.sparse as sps
 
-from elephant.utils import is_binary, deprecated_alias
+from elephant.utils import is_binary, deprecated_alias, rescale_magnitude
 
 __all__ = [
     "binarize",
@@ -186,7 +186,8 @@ def _detect_rounding_errors(values, tolerance):
     """
     if tolerance is None:
         return np.zeros_like(values, dtype=bool)
-    return 1 - (values % 1) <= tolerance
+    # same as '1 - (values % 1) <= tolerance' but faster
+    return 1 - tolerance <= values % 1
 
 
 def _calc_tstart(n_bins, bin_size, t_stop):
@@ -901,8 +902,7 @@ class BinnedSpikeTrain(object):
         if store_array:
             self._store_array()
             return self._mat_u
-        # Matrix on demand
-        else:
+        else:  # Matrix on demand
             return self._sparse_mat_u.toarray()
 
     def _store_array(self):
@@ -972,7 +972,7 @@ class BinnedSpikeTrain(object):
 
         """
         if not self.is_spiketrain:
-            self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=int)
+            self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=np.int32)
             return
 
         row_ids, column_ids = [], []
@@ -980,8 +980,9 @@ class BinnedSpikeTrain(object):
         counts = []
 
         for idx, st in enumerate(spiketrains):
-            times = (st.times - self.t_start).rescale(self.bin_size.units)
-            scale = np.array((times / self.bin_size).magnitude)
+            times = rescale_magnitude(st.times - self.t_start,
+                                      units=self.bin_size.units)
+            scale = times / self.bin_size.item()
 
             # shift spikes that are very close
             # to the right edge into the next bin
@@ -995,12 +996,11 @@ class BinnedSpikeTrain(object):
                               'behaviour.'.format(num_rounding_corrections))
             scale[rounding_error_indices] += .5
 
-            scale = scale.astype(int)
+            scale = scale.astype(np.int32)
 
-            la = np.logical_and(times >= 0 * self.bin_size.units,
-                                times <= (self.t_stop
-                                          - self.t_start).rescale(
-                                              self.bin_size.units))
+            duration = (self.t_stop - self.t_start).rescale(
+                self.bin_size.units).magnitude
+            la = np.logical_and(times >= 0, times <= duration)
             filled_tmp = scale[la]
             filled_tmp = filled_tmp[filled_tmp < self.n_bins]
             f, c = np.unique(filled_tmp, return_counts=True)
@@ -1008,9 +1008,8 @@ class BinnedSpikeTrain(object):
             counts.extend(c)
             row_ids.extend([idx] * len(f))
         csr_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
-                                    shape=(len(spiketrains),
-                                           self.n_bins),
-                                    dtype=int)
+                                    shape=(len(spiketrains), self.n_bins),
+                                    dtype=np.int32)
         self._sparse_mat_u = csr_matrix
 
 

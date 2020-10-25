@@ -91,3 +91,8 @@ def is_time_quantity(x, allow_none=False):
     if not isinstance(x, pq.Quantity):
         return False
     return x.dimensionality.simplified == pq.Quantity(1, "s").dimensionality
+
+
+def rescale_magnitude(neo_object, units):
+    factor = neo_object.units.rescale(units).item()
+    return neo_object.magnitude * factor
