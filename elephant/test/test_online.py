@@ -141,12 +141,11 @@ class TestMeanOnline(unittest.TestCase):
         checkpoints = np.linspace(0 * pq.s, t_stop, num=10)
         online = MeanOnline()
         for t_start, t_stop in zip(checkpoints[:-1], checkpoints[1:]):
-            synchrony_batch, trace = spike_contrast(spiketrains,
-                                                    t_start=t_start,
-                                                    t_stop=t_stop,
-                                                    return_trace=True)
-            online.update(np.asarray(trace.synchrony))
-        synchrony = max(online.get_mean())
+            synchrony_batch = spike_contrast(spiketrains,
+                                             t_start=t_start,
+                                             t_stop=t_stop)
+            online.update(synchrony_batch)
+        synchrony = online.get_mean()
         self.assertAlmostEqual(synchrony, synchrony_target, places=2)
 
 
