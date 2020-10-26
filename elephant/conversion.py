@@ -307,7 +307,7 @@ class BinnedSpikeTrain(object):
         self._sparse_mat_u = None
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains)
-        self._round_number_of_bins()
+        self._check_consistency()
         # Now create sparse matrix
         n_discarded = self._convert_to_binned(spiketrains)
 
@@ -372,25 +372,26 @@ class BinnedSpikeTrain(object):
             self.__resolve_binned(spiketrains)
             return
 
-        def check_bin_size_n_bins():
-            if self.bin_size is None or self.n_bins is None:
-                raise ValueError("When only 't_start' or 't_stop' is given, "
-                                 "both 'bin_size' and 'n_bins' must be set")
-
         if self.bin_size is None and self.n_bins is None:
             raise ValueError("Either 'bin_size' or 'n_bins' must be given")
 
-        # The input is a list a spiketrains
-        if self.t_start is None and self.t_stop is None:
-            check_consistency_of_spiketrains(spiketrains)
+        try:
+            check_consistency_of_spiketrains(spiketrains,
+                                             t_start=self.t_start,
+                                             t_stop=self.t_stop)
+        except ValueError as er:
+            raise ValueError(er, "If you want to bin over the shared "
+                                 "[t_start, t_stop] interval, provide "
+                                 "shared t_start and t_stop explicitly, "
+                                 "which can be obtained like so: "
+                                 "t_start, t_stop = elephant.utils."
+                                 "get_common_start_stop_times(spiketrains)"
+                             )
+
+        if self.t_start is None:
             self.t_start = spiketrains[0].t_start
+        if self.t_stop is None:
             self.t_stop = spiketrains[0].t_stop
-        elif self.t_start is None and self.t_stop is not None:
-            check_bin_size_n_bins()
-            self.t_start = self.t_stop - self.bin_size * self.n_bins
-        elif self.t_start is not None and self.t_stop is None:
-            check_bin_size_n_bins()
-            self.t_stop = self.t_start + self.bin_size * self.n_bins
         start_shared, stop_shared = get_common_start_stop_times(spiketrains)
         if self.t_start < start_shared or self.t_stop > stop_shared:
             raise ValueError("'t_start' ({t_start}) or 't_stop' ({t_stop}) is "
@@ -414,10 +415,10 @@ class BinnedSpikeTrain(object):
             # n_bins is provided
             self.bin_size = (self.t_stop - self.t_start) / self.n_bins
 
+    def _check_consistency(self):
         if self.t_start >= self.t_stop:
             raise ValueError("t_start must be smaller than t_stop")
 
-    def _round_number_of_bins(self):
         # account for rounding errors in the reference num_bins
         n_bins_rounded = ((self.t_stop - self.t_start) / self.bin_size
                           ).simplified.item()
