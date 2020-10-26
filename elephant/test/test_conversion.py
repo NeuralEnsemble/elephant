@@ -384,60 +384,10 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertTrue(
             np.array_equal(x_bool_a.to_array(), y_matrix_a))
 
-    def test_binned_spiketrain_matrix_storing(self):
-        a = self.spiketrain_a
-        b = self.spiketrain_b
-
-        x_bool = cv.BinnedSpikeTrain(a, bin_size=pq.s, t_start=0 * pq.s,
-                                     t_stop=10. * pq.s)
-        x = cv.BinnedSpikeTrain(b, bin_size=pq.s, t_start=0 * pq.s,
-                                t_stop=10. * pq.s)
-        # Store Matrix in variable
-        matrix_bool = x_bool.to_bool_array()
-        matrix = x.to_array(store_array=True)
-
-        # Check if same matrix
-        self.assertTrue(np.array_equal(x._mat_u,
-                                       matrix))
-        # Get the stored matrix using method
-        self.assertTrue(
-            np.array_equal(x_bool.to_bool_array(),
-                           matrix_bool))
-        self.assertTrue(
-            np.array_equal(x.to_array(),
-                           matrix))
-
-        # Test storing of sparse mat
-        sparse_bool = x_bool.to_sparse_bool_array()
-        self.assertTrue(np.array_equal(
-            sparse_bool.toarray(),
-            x_bool.to_sparse_bool_array().toarray()))
-
-        # New class without calculating the matrix
-        x = cv.BinnedSpikeTrain(b, bin_size=pq.s, t_start=0 * pq.s,
-                                t_stop=10. * pq.s)
-        # No matrix calculated, should be None
-        self.assertEqual(x._mat_u, None)
-        # Test with stored matrix
-        self.assertFalse(np.array_equal(x, matrix))
-
-    # Test matrix removing
-    def test_binned_spiketrain_remove_matrix(self):
-        a = self.spiketrain_a
-        x = cv.BinnedSpikeTrain(a, bin_size=1 * pq.s, n_bins=10,
-                                t_stop=10. * pq.s)
-        # Store
-        x.to_array(store_array=True)
-        # Remove
-        x.remove_stored_array()
-        # Assert matrix is not stored
-        self.assertIsNone(x._mat_u)
-
     # Test if t_start is calculated correctly
     def test_binned_spiketrain_parameter_calc_tstart(self):
-        a = self.spiketrain_a
-        x = cv.BinnedSpikeTrain(a, bin_size=1 * pq.s, n_bins=10,
-                                t_stop=10. * pq.s)
+        x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=1 * pq.s,
+                                n_bins=10, t_stop=10. * pq.s)
         self.assertEqual(x.t_start, 0. * pq.s)
         self.assertEqual(x.t_stop, 10. * pq.s)
         self.assertEqual(x.bin_size, 1 * pq.s)
@@ -449,6 +399,12 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, bin_size=pq.s,
                           n_bins=1.4, t_start=0 * pq.s,
                           t_stop=10. * pq.s)
+
+    def test_to_array(self):
+        x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=1 * pq.s,
+                                n_bins=10, t_stop=10. * pq.s)
+        arr_float = x.to_array(dtype=np.float32)
+        assert_array_equal(arr_float, x.to_array().astype(np.float32))
 
     # Test if error is raised when providing insufficient number of
     # parameters

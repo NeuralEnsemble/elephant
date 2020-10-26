@@ -301,14 +301,11 @@ class BinnedSpikeTrain(object):
         self.n_bins = n_bins
         self.bin_size = bin_size
         self.tolerance = tolerance
-        # Empty matrix for storage, time points matrix
-        self._mat_u = None
-        # Variables to store the sparse matrix
-        self._sparse_mat_u = None
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains)
         self._check_consistency()
         # Now create sparse matrix
+        self.sparse_matrix = None
         n_discarded = self._convert_to_binned(spiketrains)
 
         if n_discarded > 0:
@@ -317,7 +314,7 @@ class BinnedSpikeTrain(object):
 
     @property
     def shape(self):
-        return self._sparse_mat_u.shape
+        return self.sparse_matrix.shape
 
     @property
     def binsize(self):
@@ -491,7 +488,7 @@ class BinnedSpikeTrain(object):
         to_array
 
         """
-        return self._sparse_mat_u
+        return self.sparse_matrix
 
     def to_sparse_bool_array(self):
         """
@@ -510,9 +507,9 @@ class BinnedSpikeTrain(object):
 
         """
         # Return sparse Matrix as a copy
-        tmp_mat = self._sparse_mat_u.copy()
-        tmp_mat.data = tmp_mat.data.astype(bool)
-        return tmp_mat
+        spmat_copy = self.sparse_matrix.copy()
+        spmat_copy.data = spmat_copy.data.astype(bool)
+        return spmat_copy
 
     def get_num_of_spikes(self, axis=None):
         """
@@ -533,9 +530,9 @@ class BinnedSpikeTrain(object):
 
         """
         if axis is None:
-            return self._sparse_mat_u.sum(axis=axis)
-        n_spikes_per_row = self._sparse_mat_u.sum(axis=axis)
-        n_spikes_per_row = np.asarray(n_spikes_per_row)[:, 0]
+            return self.sparse_matrix.sum(axis=axis)
+        n_spikes_per_row = self.sparse_matrix.sum(axis=axis)
+        n_spikes_per_row = np.ravel(n_spikes_per_row)
         return n_spikes_per_row
 
     @property
@@ -566,7 +563,7 @@ class BinnedSpikeTrain(object):
 
         """
         spike_idx = []
-        for row in self._sparse_mat_u:
+        for row in self.sparse_matrix:
             # Extract each non-zeros column index and how often it exists,
             # i.e., how many spikes fall in this column
             n_cols = np.repeat(row.indices, row.data)
@@ -622,17 +619,15 @@ class BinnedSpikeTrain(object):
         [[ True  True False  True  True  True  True False False False]]
 
         """
-        return self.to_array().astype(bool)
+        return self.to_array(dtype=bool)
 
-    def to_array(self, store_array=False):
+    def to_array(self, dtype=None):
         """
         Returns a dense matrix, calculated from the sparse matrix, with counted
         time points of spikes. The rows correspond to spike trains and the
         columns correspond to bins in a `BinnedSpikeTrain`.
         Entries contain the count of spikes that occurred in the given bin of
         the given spike train.
-        If the boolean :attr:`store_array` is set to `True`, the matrix
-        will be stored in memory.
 
         Returns
         -------
@@ -658,27 +653,13 @@ class BinnedSpikeTrain(object):
         scipy.sparse.csr_matrix.toarray
 
         """
-        if self._mat_u is not None:
-            return self._mat_u
-        if store_array:
-            self._store_array()
-            return self._mat_u
-        else:  # Matrix on demand
-            return self._sparse_mat_u.toarray()
-
-    def _store_array(self):
-        """
-        Stores the matrix with counted time points in memory.
-
-        """
-        if self._mat_u is None:
-            self._mat_u = self._sparse_mat_u.toarray()
-
-    def remove_stored_array(self):
-        """
-        Unlinks the matrix with counted time points from memory.
-        """
-        self._mat_u = None
+        spmat = self.sparse_matrix
+        if dtype is not None and dtype != spmat.data.dtype:
+            # avoid a copy
+            spmat = sps.csr_matrix(
+                (spmat.data.astype(dtype), spmat.indices, spmat.indptr),
+                shape=spmat.shape)
+        return spmat.toarray()
 
     def binarize(self, copy=True):
         """
@@ -703,9 +684,7 @@ class BinnedSpikeTrain(object):
             bst = deepcopy(self)
         else:
             bst = self
-        bst._sparse_mat_u.data.clip(max=1, out=bst._sparse_mat_u.data)
-        if bst._mat_u is not None:
-            bst._mat_u.clip(max=1, out=bst._mat_u)
+        bst.sparse_matrix.data.clip(max=1, out=bst.sparse_matrix.data)
         return bst
 
     @property
@@ -717,8 +696,8 @@ class BinnedSpikeTrain(object):
             Matrix sparsity defined as no. of nonzero elements divided by
             the matrix size
         """
-        num_nonzero = self._sparse_mat_u.data.shape[0]
-        return num_nonzero / np.prod(self._sparse_mat_u.shape)
+        num_nonzero = self.sparse_matrix.data.shape[0]
+        return num_nonzero / np.prod(self.sparse_matrix.shape)
 
     def _convert_to_binned(self, spiketrains):
         """
@@ -736,7 +715,7 @@ class BinnedSpikeTrain(object):
 
         if not _check_neo_spiketrain(spiketrains):
             # a binned numpy array
-            self._sparse_mat_u = sps.csr_matrix(spiketrains, dtype=np.int32)
+            self.sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
             return n_discarded
 
         row_ids, column_ids = [], []
@@ -773,7 +752,7 @@ class BinnedSpikeTrain(object):
         csr_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
                                     shape=(len(spiketrains), self.n_bins),
                                     dtype=np.int32)
-        self._sparse_mat_u = csr_matrix
+        self.sparse_matrix = csr_matrix
 
         return n_discarded
 

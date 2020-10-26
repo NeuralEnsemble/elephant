@@ -109,8 +109,8 @@ class _CrossCorrHist(object):
         binned_spiketrain1 = self.binned_spiketrain_i
         binned_spiketrain2 = self.binned_spiketrain_j
 
-        st1_spmat = self.binned_spiketrain_i._sparse_mat_u
-        st2_spmat = self.binned_spiketrain_j._sparse_mat_u
+        st1_spmat = self.binned_spiketrain_i.sparse_matrix
+        st2_spmat = self.binned_spiketrain_j.sparse_matrix
         left_edge, right_edge = self.window
 
         # extract the nonzero column indices of 1-d matrices
@@ -229,8 +229,8 @@ class _CrossCorrHist(object):
                            self.binned_spiketrain_j.n_bins)
         n_spikes1 = self.binned_spiketrain_i.get_num_of_spikes()
         n_spikes2 = self.binned_spiketrain_j.get_num_of_spikes()
-        data1 = self.binned_spiketrain_i._sparse_mat_u.data
-        data2 = self.binned_spiketrain_j._sparse_mat_u.data
+        data1 = self.binned_spiketrain_i.sparse_matrix.data
+        data2 = self.binned_spiketrain_j.sparse_matrix.data
         ii = data1.dot(data1)
         jj = data2.dot(data2)
         cov_mean = n_spikes1 * n_spikes2 / max_num_bins
@@ -515,7 +515,7 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
     (N, N) np.ndarray
         Pearson correlation or covariance matrix.
     """
-    spmat = binned_spiketrain._sparse_mat_u
+    spmat = binned_spiketrain.sparse_matrix
     n_bins = binned_spiketrain.n_bins
 
     # Check for empty spike trains
