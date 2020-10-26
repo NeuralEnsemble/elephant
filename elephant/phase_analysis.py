@@ -190,3 +190,43 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
 
     return result_phases, result_amps, result_times
+
+
+def phase_locking_value(phases_x, phases_y):
+
+    """
+    This method uses responses to a repeated stimulus and looks for latencies
+    at which the phase difference between the signals varies little across
+    trials (phase-locking). Given two series of signals x and
+    y and a frequency of interest f, the procedure computes
+    for each latency a measure of phase-locking between
+    the components of x and y at frequency f,
+    called phase-locking value, or PLV.
+
+
+    Parameters:
+    -----------
+        - phases_x: array-like object
+            time-series of signal x
+        - phases_y: array-like object
+            time-series of signal y
+
+    Returns:
+    --------
+        - plv: phase-locking value (float)
+
+
+    References:
+    -----------
+    "Measuring Phase Synchrony in Brain Signals" - Jean-Philippe Lachaux,
+    Eugenio Rodriguez, Jacques Martinerie, and Francisco J. Varela*
+
+    Mathematics:
+    ------------
+    PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * theta(t, n)} ) )
+    where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n)
+    """
+    import math
+
+    
+
