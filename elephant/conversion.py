@@ -722,13 +722,14 @@ class BinnedSpikeTrain(object):
         # data
         counts = []
 
+        scale_units = (spiketrains[0].units / self.bin_size).simplified.item()
+        t_start = self.t_start.item()
+        t_stop = self.t_stop.item()
         for idx, st in enumerate(spiketrains):
-            times = rescale_magnitude(st.times - self.t_start,
-                                      units=self.bin_size.units)
-            duration = (self.t_stop - self.t_start).rescale(
-                self.bin_size.units).magnitude
-            time_slice = np.logical_and(times >= 0, times <= duration)
-            bins = times[time_slice] / self.bin_size.item()
+            # avoid a copy with .times attribute
+            times = np.asarray(st.data)
+            times = times[(times >= t_start) & (times <= t_stop)] - t_start
+            bins = times * scale_units
 
             # shift spikes that are very close
             # to the right edge into the next bin
