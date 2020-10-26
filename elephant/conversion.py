@@ -20,7 +20,7 @@ import numpy as np
 import quantities as pq
 import scipy.sparse as sps
 
-from elephant.utils import is_binary, deprecated_alias, rescale_magnitude, \
+from elephant.utils import is_binary, deprecated_alias, \
     check_consistency_of_spiketrains, get_common_start_stop_times
 
 __all__ = [

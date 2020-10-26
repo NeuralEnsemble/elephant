@@ -121,7 +121,7 @@ def get_common_start_stop_times(neo_objects):
         If there is no shared interval ``[t_start, t_stop]`` across the input
         neo objects.
     """
-    if isinstance(neo_objects, neo.SpikeTrain):
+    if hasattr(neo_objects, 't_start') and hasattr(neo_objects, 't_stop'):
         return neo_objects.t_start, neo_objects.t_stop
     try:
         t_start = max(elem.t_start for elem in neo_objects)
@@ -137,6 +137,26 @@ def get_common_start_stop_times(neo_objects):
 
 def check_consistency_of_spiketrains(spiketrains, t_start=None,
                                      t_stop=None):
+    """
+    Checks that all input spike trains share the same units, t_start, and
+    t_stop.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrain
+        Input spike trains.
+    t_start, t_stop : pq.Quantity or None, optional
+        If None, check for exact match of t_start/t_stop across the spike
+        trains.
+
+    Raises
+    ------
+    TypeError
+        If the input spike trains are not of type `neo.SpikeTrain`.
+    ValueError
+        If input spike train units, t_start, or t_stop do not match across
+        trials.
+    """
     for st in spiketrains:
         if not isinstance(st, neo.SpikeTrain):
             raise TypeError("The spike trains must be instances of "
