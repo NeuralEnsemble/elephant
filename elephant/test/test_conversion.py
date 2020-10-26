@@ -12,10 +12,10 @@ import unittest
 import neo
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import (assert_array_almost_equal,
-                                 assert_array_equal)
+from numpy.testing import (assert_array_almost_equal, assert_array_equal)
 
 import elephant.conversion as cv
+from elephant.utils import get_common_start_stop_times
 
 python_version_major = sys.version_info.major
 
@@ -269,9 +269,17 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         b = neo.SpikeTrain(
             [-0.1, -0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s,
             t_start=-1 * pq.s, t_stop=8 * pq.s)
-        c = [a, b]
+        spiketrains = [a, b]
 
-        x_bool = cv.BinnedSpikeTrain(c, bin_size=self.bin_size)
+        # not the same t_start and t_stop
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain,
+                          spiketrains=spiketrains,
+                          bin_size=self.bin_size)
+        t_start, t_stop = get_common_start_stop_times(spiketrains)
+        self.assertEqual(t_start, -1 * pq.s)
+        self.assertEqual(t_stop, 7 * pq.s)
+        x_bool = cv.BinnedSpikeTrain(spiketrains, bin_size=self.bin_size,
+                                     t_start=t_start, t_stop=t_stop)
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
                   [1, 0, 1, 1, 0, 1, 1, 0]]
 
@@ -436,9 +444,9 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertEqual(x.n_bins, 10)
 
     # Test if error raises when type of n_bins is not an integer
-    def test_binned_spiketrain_numbins_type_error(self):
+    def test_binned_spiketrain_n_bins_not_int(self):
         a = self.spiketrain_a
-        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, bin_size=pq.s,
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, bin_size=pq.s,
                           n_bins=1.4, t_start=0 * pq.s,
                           t_stop=10. * pq.s)
 
@@ -446,7 +454,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
     # parameters
     def test_binned_spiketrain_insufficient_arguments(self):
         a = self.spiketrain_a
-        self.assertRaises(AttributeError, cv.BinnedSpikeTrain, a)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a)
         self.assertRaises(
             ValueError,
             cv.BinnedSpikeTrain,
@@ -455,17 +463,11 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
             t_start=0 * pq.s,
             t_stop=0 * pq.s)
 
-    def test_calc_attributes_error(self):
-        self.assertRaises(ValueError, cv._calc_number_of_bins,
-                          1, 1 * pq.s, 0 * pq.s, self.tolerance)
-        self.assertRaises(ValueError, cv._calc_bin_size,
-                          1, 1 * pq.s, 0 * pq.s)
-
     def test_different_input_types(self):
         a = self.spiketrain_a
         q = [1, 2, 3] * pq.s
         self.assertRaises(
-            TypeError, cv.BinnedSpikeTrain, [
+            ValueError, cv.BinnedSpikeTrain, [
                 a, q], bin_size=pq.s)
 
     def test_get_start_stop(self):
@@ -473,10 +475,10 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         b = neo.SpikeTrain(
             [-0.1, -0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s,
             t_start=-1 * pq.s, t_stop=8 * pq.s)
-        start, stop = cv._get_start_stop_from_input(a)
+        start, stop = cv.get_common_start_stop_times(a)
         self.assertEqual(start, a.t_start)
         self.assertEqual(stop, a.t_stop)
-        start, stop = cv._get_start_stop_from_input([a, b])
+        start, stop = cv.get_common_start_stop_times([a, b])
         self.assertEqual(start, a.t_start)
         self.assertEqual(stop, b.t_stop)
 
@@ -594,18 +596,18 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertFalse(y.is_binary)
 
         # Raise Errors
-        # give a strangely shaped matrix as input (not MxN), which should
-        # produce a TypeError
-        a = np.array([[0, 1, 2, 3], [1, 2, 3]])
-        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
+        # give a strangely shaped matrix as input (not MxN)
+        a = np.array([[0, 1, 2, 3], [1, 2, 3]], dtype=object)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
                           bin_size=1 * pq.s)
         # Give no t_start or t_stop
         a = np.array([[0, 1, 2, 3], [1, 2, 3, 4]])
-        self.assertRaises(AttributeError, cv.BinnedSpikeTrain, a,
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a,
                           bin_size=1 * pq.s)
         # Input format not supported
-        a = np.array(([0, 1, 2], [0, 1, 2, 3, 4]))
-        self.assertRaises(TypeError, cv.BinnedSpikeTrain, a, bin_size=1 * pq.s)
+        a = np.array(([0, 1, 2], [0, 1, 2, 3, 4]), dtype=object)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain, a,
+                          bin_size=1 * pq.s)
 
     def test_binnend_spiketrain_rescaling(self):
         train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,

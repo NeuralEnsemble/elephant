@@ -683,8 +683,8 @@ def cross_correlation_histogram(
 
     # Check that the spike trains are binned with the same temporal
     # resolution
-    if binned_spiketrain_i.matrix_rows != 1 or \
-            binned_spiketrain_j.matrix_rows != 1:
+    if binned_spiketrain_i.shape[0] != 1 or \
+            binned_spiketrain_j.shape[0] != 1:
         raise ValueError("Spike trains must be one dimensional")
     if not np.isclose(binned_spiketrain_i.bin_size.simplified.item(),
                       binned_spiketrain_j.bin_size.simplified.item()):

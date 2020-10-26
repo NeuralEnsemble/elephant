@@ -72,9 +72,10 @@ import scipy.signal
 import scipy.stats
 from neo.core import SpikeTrain
 
-import elephant.conversion as conv
 import elephant.kernels as kernels
-from elephant.utils import deprecated_alias
+from elephant.conversion import BinnedSpikeTrain
+from elephant.utils import deprecated_alias, get_common_start_stop_times, \
+    check_consistency_of_spiketrains
 
 from elephant.utils import is_time_quantity
 
@@ -669,7 +670,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     """
     # Merge spike trains if list of spike trains given:
     if isinstance(spiketrain, list):
-        _check_consistency_of_spiketrains(
+        check_consistency_of_spiketrains(
             spiketrain, t_start=t_start, t_stop=t_stop)
         if t_start is None:
             t_start = spiketrain[0].t_start
@@ -875,7 +876,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     if t_start is None:
         # Find the internal range for t_start, where all spike trains are
         # defined; cut all spike trains taking that time range only
-        max_tstart, min_tstop = conv._get_start_stop_from_input(spiketrains)
+        max_tstart, min_tstop = get_common_start_stop_times(spiketrains)
         t_start = max_tstart
         if not all([max_tstart == t.t_start for t in spiketrains]):
             warnings.warn(
@@ -885,7 +886,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     if t_stop is None:
         # Find the internal range for t_stop
         if not min_tstop:
-            min_tstop = conv._get_start_stop_from_input(spiketrains)[1]
+            min_tstop = get_common_start_stop_times(spiketrains)[1]
         t_stop = min_tstop
         if not all([min_tstop == t.t_stop for t in spiketrains]):
             warnings.warn(
@@ -896,8 +897,8 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                spiketrains]
 
     # Bin the spike trains and sum across columns
-    bs = conv.BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
-                               bin_size=bin_size)
+    bs = BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
+                          bin_size=bin_size)
 
     if binary:
         bin_hist = bs.to_sparse_bool_array().sum(axis=0)
@@ -1243,19 +1244,3 @@ def sskernel(*args, **kwargs):
     warnings.warn("'sskernel' function is deprecated; "
                   "use 'optimal_kernel_bandwidth'", DeprecationWarning)
     return optimal_kernel_bandwidth(*args, **kwargs)
-
-
-def _check_consistency_of_spiketrains(spiketrains, t_start=None,
-                                      t_stop=None):
-    for st in spiketrains:
-        if not isinstance(st, SpikeTrain):
-            raise TypeError("The spike trains must be instances of "
-                            "neo.SpikeTrain. Found: '{}'".
-                            format(type(st)))
-
-        if t_start is None and not st.t_start == spiketrains[0].t_start:
-            raise ValueError("The spike trains must have the same t_start.")
-        if t_stop is None and not st.t_stop == spiketrains[0].t_stop:
-            raise ValueError("The spike trains must have the same t_stop.")
-        if not st.units == spiketrains[0].units:
-            raise ValueError("The spike trains must have the same units.")
