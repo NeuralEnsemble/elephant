@@ -720,12 +720,13 @@ class BinnedSpikeTrain(object):
         # data
         counts = []
 
+        # all spiketrains carry the same units
         scale_units = (spiketrains[0].units / self.bin_size).simplified.item()
         t_start = self.t_start.item()
         t_stop = self.t_stop.item()
         for idx, st in enumerate(spiketrains):
-            # avoid a copy with .times attribute
-            times = np.asarray(st.data)
+            # PYTHON2: use np.asarray(st.data) to avoid a copy
+            times = st.times.magnitude
             times = times[(times >= t_start) & (times <= t_stop)] - t_start
             bins = times * scale_units
 
