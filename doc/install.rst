@@ -57,6 +57,14 @@ Installation
 
               pip install elephant
 
+        If you want to use advanced features of Elephant, install the package
+        with extras:
+
+           .. code-block:: sh
+
+              pip install elephant[extras]
+
+
         To upgrade to a newer release use the ``--upgrade`` flag:
 
            .. code-block:: sh
@@ -69,12 +77,6 @@ Installation
            .. code-block:: sh
 
               pip install --user elephant
-
-        To install Elephant with all extra packages, do:
-
-           .. code-block:: sh
-
-              pip install elephant[extras]
 
 
     .. tab:: Development version

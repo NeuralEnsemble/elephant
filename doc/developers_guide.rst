@@ -44,13 +44,7 @@ Developers' Guide
             pip install -r requirements/requirements-extras.txt  # optional
             pip install -r requirements/requirements-tests.txt
 
-        If you install extras, make sure you've installed OpenMPI
-        (e.g., for Debian based distributions ``sudo apt install -y libopenmpi-dev openmpi-bin``).
-
     .. tab:: conda
-
-        If you don't have or don't want to install OpenMPI system-wide,
-        use conda.
 
         .. code-block:: sh
 
