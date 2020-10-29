@@ -3,6 +3,7 @@ from __future__ import division, print_function, unicode_literals
 import warnings
 from functools import wraps
 
+import neo
 import numpy as np
 import quantities as pq
 import neo
@@ -169,8 +170,3 @@ def check_consistency_of_spiketrains(spiketrains, t_start=None,
             raise ValueError("The spike trains must have the same t_stop.")
         if not st.units == spiketrains[0].units:
             raise ValueError("The spike trains must have the same units.")
-
-
-def rescale_magnitude(neo_object, units):
-    factor = neo_object.units.rescale(units).item()
-    return neo_object.magnitude * factor

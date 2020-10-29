@@ -223,7 +223,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_start=0 * pq.s)
         x_sparse = [2, 1, 2, 1]
         s = x.to_sparse_array()
-        self.assertTrue(np.array_equal(s.data, x_sparse))
+        assert_array_equal(s.data, x_sparse)
         assert_array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]])
 
     def test_binned_spiketrain_shape(self):
@@ -233,8 +233,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_start=0 * pq.s)
         x_bool = cv.BinnedSpikeTrain(a, n_bins=10, bin_size=self.bin_size,
                                      t_start=0 * pq.s)
-        self.assertTrue(x.to_array().shape == (1, 10))
-        self.assertTrue(x_bool.to_bool_array().shape == (1, 10))
+        self.assertEqual(x.to_array().shape, (1, 10))
+        self.assertEqual(x_bool.to_bool_array().shape, (1, 10))
 
     # shape of the matrix for a list of spike trains
     def test_binned_spiketrain_shape_list(self):
@@ -246,8 +246,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_stop=10.0 * pq.s)
         x_bool = cv.BinnedSpikeTrain(c, n_bins=nbins, t_start=0 * pq.s,
                                      t_stop=10.0 * pq.s)
-        self.assertTrue(x.to_array().shape == (2, 5))
-        self.assertTrue(x_bool.to_bool_array().shape == (2, 5))
+        self.assertEqual(x.to_array().shape, (2, 5))
+        self.assertEqual(x_bool.to_bool_array().shape, (2, 5))
 
     def test_binned_spiketrain_neg_times(self):
         a = neo.SpikeTrain(
@@ -257,11 +257,9 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         nbins = 16
         x = cv.BinnedSpikeTrain(a, n_bins=nbins, bin_size=bin_size,
                                 t_start=-6.5 * pq.s)
-        y = [
-            np.array([1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0])]
-        self.assertTrue(np.array_equal(x.to_bool_array(), y))
+        y = [[1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0]]
+        assert_array_equal(x.to_bool_array(), y)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_binned_spiketrain_neg_times_list(self):
         a = neo.SpikeTrain(
             [-6.5, 0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7] * pq.s,
@@ -283,8 +281,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         y_bool = [[0, 1, 1, 0, 1, 1, 1, 1],
                   [1, 0, 1, 1, 0, 1, 1, 0]]
 
-        self.assertTrue(
-            np.array_equal(x_bool.to_bool_array(), y_bool))
+        assert_array_equal(x_bool.to_bool_array(), y_bool)
 
     # checking spike_indices(f) and matrix(m) for 1 spiketrain
     def test_binned_spiketrain_indices(self):
@@ -295,20 +292,13 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_start=0 * pq.s)
         x_bool = cv.BinnedSpikeTrain(a, n_bins=nbins, bin_size=bin_size,
                                      t_start=0 * pq.s)
-        y_matrix = [
-            np.array([2., 1., 0., 1., 1., 1., 1., 0., 0., 0.])]
-        y_bool_matrix = [
-            np.array([1., 1., 0., 1., 1., 1., 1., 0., 0., 0.])]
-        self.assertTrue(
-            np.array_equal(x.to_array(),
-                           y_matrix))
-        self.assertTrue(
-            np.array_equal(x_bool.to_bool_array(), y_bool_matrix))
-        self.assertTrue(
-            np.array_equal(x_bool.to_bool_array(), y_bool_matrix))
+        y_matrix = [[2., 1., 0., 1., 1., 1., 1., 0., 0., 0.]]
+        y_bool_matrix = [[1., 1., 0., 1., 1., 1., 1., 0., 0., 0.]]
+        assert_array_equal(x.to_array(), y_matrix)
+        assert_array_equal(x_bool.to_bool_array(), y_bool_matrix)
         s = x_bool.to_sparse_bool_array()[
             x_bool.to_sparse_bool_array().nonzero()]
-        self.assertTrue(np.array_equal(s, [[True] * 6]))
+        assert_array_equal(s, [[True] * 6])
 
     def test_binned_spiketrain_list(self):
         a = self.spiketrain_a
@@ -321,17 +311,12 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_start=0 * pq.s)
         x_bool = cv.BinnedSpikeTrain(c, n_bins=nbins, bin_size=bin_size,
                                      t_start=0 * pq.s)
-        y_matrix = np.array(
-            [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0],
-             [2, 1, 1, 0, 1, 1, 0, 0, 1, 0]])
-        y_matrix_bool = np.array(
-            [[1, 1, 0, 1, 1, 1, 1, 0, 0, 0],
-             [1, 1, 1, 0, 1, 1, 0, 0, 1, 0]])
-        self.assertTrue(
-            np.array_equal(x.to_array(),
-                           y_matrix))
-        self.assertTrue(
-            np.array_equal(x_bool.to_bool_array(), y_matrix_bool))
+        y_matrix = [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0],
+                    [2, 1, 1, 0, 1, 1, 0, 0, 1, 0]]
+        y_matrix_bool = [[1, 1, 0, 1, 1, 1, 1, 0, 0, 0],
+                         [1, 1, 1, 0, 1, 1, 0, 0, 1, 0]]
+        assert_array_equal(x.to_array(), y_matrix)
+        assert_array_equal(x_bool.to_bool_array(), y_matrix_bool)
 
     # t_stop is None
     def test_binned_spiketrain_list_t_stop(self):
@@ -345,8 +330,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_stop=None)
         x_bool = cv.BinnedSpikeTrain(c, n_bins=nbins, bin_size=bin_size,
                                      t_start=0 * pq.s)
-        self.assertTrue(x.t_stop == 10 * pq.s)
-        self.assertTrue(x_bool.t_stop == 10 * pq.s)
+        self.assertEqual(x.t_stop, 10 * pq.s)
+        self.assertEqual(x_bool.t_stop, 10 * pq.s)
 
     # Test number of bins
     def test_binned_spiketrain_list_numbins(self):
@@ -358,8 +343,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                 t_stop=10. * pq.s)
         x_bool = cv.BinnedSpikeTrain(c, bin_size=bin_size, t_start=0 * pq.s,
                                      t_stop=10. * pq.s)
-        self.assertTrue(x.n_bins == 10)
-        self.assertTrue(x_bool.n_bins == 10)
+        self.assertEqual(x.n_bins, 10)
+        self.assertEqual(x_bool.n_bins, 10)
 
     def test_binned_spiketrain_matrix(self):
         # Init
@@ -371,18 +356,14 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                        t_stop=10. * pq.s)
 
         # Assumed results
-        y_matrix_a = [
-            np.array([2, 1, 0, 1, 1, 1, 1, 0, 0, 0])]
-        y_matrix_bool_a = [np.array([1, 1, 0, 1, 1, 1, 1, 0, 0, 0])]
-        y_matrix_bool_b = [np.array([1, 1, 1, 0, 1, 1, 0, 0, 1, 0])]
+        y_matrix_a = [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0]]
+        y_matrix_bool_a = [[1, 1, 0, 1, 1, 1, 1, 0, 0, 0]]
+        y_matrix_bool_b = [[1, 1, 1, 0, 1, 1, 0, 0, 1, 0]]
 
         # Asserts
-        self.assertTrue(
-            np.array_equal(x_bool_a.to_bool_array(), y_matrix_bool_a))
-        self.assertTrue(np.array_equal(x_bool_b.to_bool_array(),
-                                       y_matrix_bool_b))
-        self.assertTrue(
-            np.array_equal(x_bool_a.to_array(), y_matrix_a))
+        assert_array_equal(x_bool_a.to_bool_array(), y_matrix_bool_a)
+        assert_array_equal(x_bool_b.to_bool_array(), y_matrix_bool_b)
+        assert_array_equal(x_bool_a.to_array(), y_matrix_a)
 
     # Test if t_start is calculated correctly
     def test_binned_spiketrain_parameter_calc_tstart(self):
@@ -422,9 +403,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
     def test_different_input_types(self):
         a = self.spiketrain_a
         q = [1, 2, 3] * pq.s
-        self.assertRaises(
-            ValueError, cv.BinnedSpikeTrain, [
-                a, q], bin_size=pq.s)
+        self.assertRaises(ValueError, cv.BinnedSpikeTrain,
+                          spiketrains=[a, q], bin_size=pq.s)
 
     def test_get_start_stop(self):
         a = self.spiketrain_a
@@ -468,20 +448,10 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         x = cv.BinnedSpikeTrain(a, bin_size=1 * pq.s, n_bins=10,
                                 t_stop=10. * pq.s)
         # Test all edges
-        edges = [float(i) for i in range(11)]
-        self.assertTrue(np.array_equal(x.bin_edges, edges))
-
-        # Test left edges
-        edges = [float(i) for i in range(10)]
-        self.assertTrue(np.array_equal(x.bin_edges[:-1], edges))
-
-        # Test right edges
-        edges = [float(i) for i in range(1, 11)]
-        self.assertTrue(np.array_equal(x.bin_edges[1:], edges))
+        assert_array_equal(x.bin_edges, [float(i) for i in range(11)])
 
         # Test center edges
-        edges = np.arange(0, 10) + 0.5
-        self.assertTrue(np.array_equal(x.bin_centers, edges))
+        assert_array_equal(x.bin_centers, np.arange(0, 10) + 0.5)
 
     # Test for different units but same times
     def test_binned_spiketrain_different_units(self):
@@ -490,27 +460,24 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         bin_size = 1 * pq.s
         xa = cv.BinnedSpikeTrain(a, bin_size=bin_size)
         xb = cv.BinnedSpikeTrain(b, bin_size=bin_size.rescale(pq.ms))
-        self.assertTrue(
-            np.array_equal(xa.to_bool_array(), xb.to_bool_array()))
-        self.assertTrue(
-            np.array_equal(xa.to_sparse_array().data,
-                           xb.to_sparse_array().data))
-        self.assertTrue(
-            np.array_equal(xa.bin_edges[:-1],
-                           xb.bin_edges[:-1].rescale(bin_size.units)))
+        assert_array_equal(xa.to_array(), xb.to_array())
+        assert_array_equal(xa.to_bool_array(), xb.to_bool_array())
+        assert_array_equal(xa.to_sparse_array().data,
+                           xb.to_sparse_array().data)
+        assert_array_equal(xa.bin_edges, xb.bin_edges)
 
     def test_binary_to_binned_matrix(self):
         a = [[1, 0, 0, 0], [0, 1, 1, 0]]
         x = cv.BinnedSpikeTrain(a, t_start=0 * pq.s, t_stop=5 * pq.s)
         # Check for correctness with different init params
-        self.assertTrue(np.array_equal(a, x.to_bool_array()))
-        self.assertTrue(np.array_equal(np.array(a), x.to_bool_array()))
-        self.assertTrue(np.array_equal(a, x.to_bool_array()))
+        assert_array_equal(x.to_array(), a)
+        assert_array_equal(x.to_bool_array(), a)
         self.assertEqual(x.n_bins, 4)
         self.assertEqual(x.bin_size, 1.25 * pq.s)
 
         x = cv.BinnedSpikeTrain(a, t_start=1 * pq.s, bin_size=2 * pq.s)
-        self.assertTrue(np.array_equal(a, x.to_bool_array()))
+        assert_array_equal(x.to_array(), a)
+        assert_array_equal(x.to_bool_array(), a)
         self.assertEqual(x.t_stop, 9 * pq.s)
 
         x = cv.BinnedSpikeTrain(a, t_stop=9 * pq.s, bin_size=2 * pq.s)
@@ -533,20 +500,20 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         a = self.spiketrain_a
         x = cv.BinnedSpikeTrain(a, bin_size=1 * pq.s).to_array()
         y = cv.BinnedSpikeTrain(x, bin_size=1 * pq.s, t_start=0 * pq.s)
-        self.assertTrue(np.array_equal(x, y.to_array()))
+        assert_array_equal(y.to_array(), x)
 
         # test with a list
         x = cv.BinnedSpikeTrain([[0, 1, 2, 3]], bin_size=1 * pq.s,
                                 t_stop=3 * pq.s).to_array()
         y = cv.BinnedSpikeTrain(x, bin_size=1 * pq.s, t_start=0 * pq.s)
-        self.assertTrue(np.array_equal(x, y.to_array()))
+        assert_array_equal(y.to_array(), x)
 
         # test with a numpy array
         a = np.array([[0, 1, 2, 3], [1, 2, 2.5, 3]])
         x = cv.BinnedSpikeTrain(a, bin_size=1 * pq.s,
                                 t_stop=3 * pq.s).to_array()
         y = cv.BinnedSpikeTrain(x, bin_size=1 * pq.s, t_start=0 * pq.s)
-        self.assertTrue(np.array_equal(x, y.to_array()))
+        assert_array_equal(y.to_array(), x)
 
         # Check binary property
         self.assertFalse(y.is_binary)
@@ -576,17 +543,18 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         target_centers = np.array(
             [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
              1008.5, 1009.5], dtype=np.float)
-        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
-        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
-        self.assertTrue(bst.bin_centers.units == pq.ms)
-        self.assertTrue(bst.bin_edges.units == pq.ms)
+        assert_array_almost_equal(bst.bin_edges.magnitude, target_edges)
+        assert_array_almost_equal(bst.bin_centers.magnitude, target_centers)
+        self.assertEqual(bst.bin_centers.units, pq.ms)
+        self.assertEqual(bst.bin_edges.units, pq.ms)
+
         bst = cv.BinnedSpikeTrain(train,
                                   t_start=1 * pq.s, t_stop=1010 * pq.ms,
                                   bin_size=1 * pq.ms)
-        self.assertTrue(np.allclose(bst.bin_edges.magnitude, target_edges))
-        self.assertTrue(np.allclose(bst.bin_centers.magnitude, target_centers))
-        self.assertTrue(bst.bin_centers.units == pq.ms)
-        self.assertTrue(bst.bin_edges.units == pq.ms)
+        assert_array_almost_equal(bst.bin_edges.magnitude, target_edges)
+        assert_array_almost_equal(bst.bin_centers.magnitude, target_centers)
+        self.assertEqual(bst.bin_centers.units, pq.ms)
+        self.assertEqual(bst.bin_edges.units, pq.ms)
 
     def test_binned_sparsity(self):
         train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)

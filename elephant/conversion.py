@@ -293,20 +293,17 @@ class BinnedSpikeTrain(object):
         if isinstance(spiketrains, neo.SpikeTrain):
             spiketrains = [spiketrains]
 
-        # Link to input
-        self.input_spiketrains = spiketrains
         # Set given parameters
         self.t_start = t_start
         self.t_stop = t_stop
         self.n_bins = n_bins
         self.bin_size = bin_size
-        self.tolerance = tolerance
         # Check all parameter, set also missing values
-        self._resolve_input_parameters(spiketrains)
-        self._check_consistency()
-        # Now create sparse matrix
-        self.sparse_matrix = None
-        n_discarded = self._convert_to_binned(spiketrains)
+        self._resolve_input_parameters(spiketrains, tolerance=tolerance)
+        self._check_consistency(tolerance=tolerance)
+        # Now create the sparse matrix
+        self.sparse_matrix, n_discarded = self._create_sparse_matrix(
+            spiketrains, tolerance=tolerance)
 
         if n_discarded > 0:
             warnings.warn("Binning discarded {} last spike(s) in the "
@@ -352,7 +349,7 @@ class BinnedSpikeTrain(object):
         if self.t_stop is None:
             self.t_stop = self.t_start + self.bin_size * self.n_bins
 
-    def _resolve_input_parameters(self, spiketrains):
+    def _resolve_input_parameters(self, spiketrains, tolerance):
         """
         Calculates `t_start`, `t_stop` from given spike trains.
 
@@ -394,14 +391,15 @@ class BinnedSpikeTrain(object):
             raise ValueError("'t_start' ({t_start}) or 't_stop' ({t_stop}) is "
                              "outside of the shared [{start_shared}, "
                              "{stop_shared}] interval".format(
-                t_start=self.t_start, t_stop=self.t_stop,
-                start_shared=start_shared, stop_shared=stop_shared))
+                                 t_start=self.t_start, t_stop=self.t_stop,
+                                 start_shared=start_shared,
+                                 stop_shared=stop_shared))
 
         if self.n_bins is None:
             # bin_size is provided
             n_bins = ((self.t_stop - self.t_start) / self.bin_size
                       ).simplified.item()
-            if _detect_rounding_errors(n_bins, self.tolerance):
+            if _detect_rounding_errors(n_bins, tolerance=tolerance):
                 warnings.warn('Correcting a rounding error in the calculation '
                               'of n_bins by increasing n_bins by 1. '
                               'You can set tolerance=None to disable this '
@@ -412,22 +410,22 @@ class BinnedSpikeTrain(object):
             # n_bins is provided
             self.bin_size = (self.t_stop - self.t_start) / self.n_bins
 
-    def _check_consistency(self):
+    def _check_consistency(self, tolerance):
         if self.t_start >= self.t_stop:
             raise ValueError("t_start must be smaller than t_stop")
 
         # account for rounding errors in the reference num_bins
         n_bins_rounded = ((self.t_stop - self.t_start) / self.bin_size
                           ).simplified.item()
-        if _detect_rounding_errors(n_bins_rounded, tolerance=self.tolerance):
+        if _detect_rounding_errors(n_bins_rounded, tolerance=tolerance):
             n_bins_rounded += 1
         n_bins_rounded = int(n_bins_rounded)
         if self.n_bins != n_bins_rounded:
             raise ValueError("Inconsistent arguments: t_start ({t_start}), "
                              "t_stop ({t_stop}), bin_size ({bin_size}), and "
                              "n_bins ({n_bins})".format(
-                t_start=self.t_start, t_stop=self.t_stop,
-                bin_size=self.bin_size, n_bins=self.n_bins))
+                                 t_start=self.t_start, t_stop=self.t_stop,
+                                 bin_size=self.bin_size, n_bins=self.n_bins))
         if not isinstance(self.n_bins, int) or self.n_bins <= 0:
             raise TypeError("The number of bins ({}) must be a positive "
                             "integer".format(self.n_bins))
@@ -584,7 +582,7 @@ class BinnedSpikeTrain(object):
             True for binary input, False otherwise.
         """
 
-        return is_binary(self.input_spiketrains)
+        return is_binary(self.sparse_matrix.data)
 
     def to_bool_array(self):
         """
@@ -699,7 +697,7 @@ class BinnedSpikeTrain(object):
         num_nonzero = self.sparse_matrix.data.shape[0]
         return num_nonzero / np.prod(self.sparse_matrix.shape)
 
-    def _convert_to_binned(self, spiketrains):
+    def _create_sparse_matrix(self, spiketrains, tolerance):
         """
         Converts `neo.SpikeTrain` objects to a sparse matrix
         (`scipy.sparse.csr_matrix`), which contains the binned spike times, and
@@ -715,26 +713,26 @@ class BinnedSpikeTrain(object):
 
         if not _check_neo_spiketrain(spiketrains):
             # a binned numpy array
-            self.sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
-            return n_discarded
+            sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
+            return sparse_matrix, n_discarded
 
         row_ids, column_ids = [], []
         # data
         counts = []
 
+        # all spiketrains carry the same units
         scale_units = (spiketrains[0].units / self.bin_size).simplified.item()
         t_start = self.t_start.item()
         t_stop = self.t_stop.item()
         for idx, st in enumerate(spiketrains):
-            # avoid a copy with .times attribute
-            times = np.asarray(st.data)
+            times = st.magnitude
             times = times[(times >= t_start) & (times <= t_stop)] - t_start
             bins = times * scale_units
 
             # shift spikes that are very close
             # to the right edge into the next bin
-            rounding_error_indices = _detect_rounding_errors(bins,
-                                                             self.tolerance)
+            rounding_error_indices = _detect_rounding_errors(
+                bins, tolerance=tolerance)
             num_rounding_corrections = rounding_error_indices.sum()
             if num_rounding_corrections > 0:
                 warnings.warn('Correcting {} rounding errors by shifting '
@@ -747,15 +745,18 @@ class BinnedSpikeTrain(object):
             valid_bins = bins[bins < self.n_bins]
             n_discarded += len(bins) - len(valid_bins)
             f, c = np.unique(valid_bins, return_counts=True)
-            column_ids.extend(f)
-            counts.extend(c)
-            row_ids.extend([idx] * len(f))
-        csr_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
-                                    shape=(len(spiketrains), self.n_bins),
-                                    dtype=np.int32)
-        self.sparse_matrix = csr_matrix
+            column_ids.append(f)
+            counts.append(c)
+            row_ids.append(np.repeat(idx, repeats=len(f)))
 
-        return n_discarded
+        counts = np.hstack(counts)
+        row_ids = np.hstack(row_ids)
+        column_ids = np.hstack(column_ids)
+
+        sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
+                                       shape=(len(spiketrains), self.n_bins),
+                                       dtype=np.int32)
+        return sparse_matrix, n_discarded
 
 
 def _check_neo_spiketrain(matrix):
