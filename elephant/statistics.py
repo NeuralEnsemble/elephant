@@ -118,6 +118,12 @@ def isi(spiketrain, axis=-1):
     intervals : np.ndarray or pq.Quantity
         The inter-spike intervals of the `spiketrain`.
 
+    Warns
+    -----
+    UserWarning
+        When the input array is not sorted, negative intervals are returned
+        with a warning.
+
     """
     if isinstance(spiketrain, neo.SpikeTrain):
         intervals = np.diff(spiketrain.magnitude, axis=axis)
