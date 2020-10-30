@@ -29,7 +29,7 @@ Rate estimation
     mean_firing_rate
     instantaneous_rate
     time_histogram
-    sskernel
+    optimal_kernel_bandwidth
 
 
 Spike interval statistics
@@ -336,13 +336,13 @@ def cv2(time_intervals, with_nan=False):
     Calculate the measure of Cv2 for a sequence of time intervals between
     events.
 
-    Given a vector v containing a sequence of intervals, the Cv2 is defined
-    as:
+    Given a vector :math:`I` containing a sequence of intervals, the Cv2 is
+    defined as:
 
     .. math::
         Cv2 := \frac{1}{N} \sum_{i=1}^{N-1}
-                           \frac{2|isi_{i+1}-isi_i|}
-                          {|isi_{i+1}+isi_i|}
+                           \frac{2|I_{i+1}-I_i|}
+                          {|I_{i+1}+I_i|}
 
     The Cv2 is typically computed as a substitute for the classical
     coefficient of variation (Cv) for sequences of events which include some
@@ -405,7 +405,8 @@ def lv(time_intervals, with_nan=False):
     Calculate the measure of local variation Lv for a sequence of time
     intervals between events.
 
-    Given a vector I containing a sequence of intervals, the Lv is defined as:
+    Given a vector :math:`I` containing a sequence of intervals, the Lv is
+    defined as:
 
     .. math::
         Lv := \frac{1}{N} \sum_{i=1}^{N-1}
@@ -422,8 +423,8 @@ def lv(time_intervals, with_nan=False):
     time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
-        If True, `lv` of a spike train with less than two spikes results in a
-        np.NaN value and a warning is raised.
+        If True, the Lv of a spike train with less than two spikes results in a
+        `np.NaN` value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
         Default: True.
@@ -445,7 +446,7 @@ def lv(time_intervals, with_nan=False):
     Warns
     -----
     UserWarning
-        If `with_nan` is True and the `lv` is calculated for a spike train
+        If `with_nan` is True and the Lv is calculated for a spike train
         with less than two spikes, generating a np.NaN.
 
     References
