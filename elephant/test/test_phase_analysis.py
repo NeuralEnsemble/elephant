@@ -202,5 +202,109 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         self.assertEqual(len(phases_noint[0]), 2)
 
 
+class MeanVectorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.n_sampels = 200
+        # create a phase-locked 'non'-distribution
+        self.lock_value = np.random.random(1)[0] * 2 * np.pi
+        self.dataset1 = np.full((1, self.n_sampels), self.lock_value)[0]
+        # create a evenly spaced / uniform distribution
+        self.dataset2 = [i * 2 * np.pi / self.n_sampels
+                         for i in range(self.n_sampels)]
+
+    def testMeanVector(self):
+        theta_bar_1, r_1 = \
+            elephant.phase_analysis.my_mean_vector(self.dataset1)
+        theta_bar_2, r_2 = \
+            elephant.phase_analysis.my_mean_vector(self.dataset2)
+        # mean direction
+        self.assertAlmostEqual(theta_bar_1, self.lock_value,
+                               delta=self.tolerance)
+
+        # mean vector length
+        self.assertAlmostEqual(r_1, 1, delta=self.tolerance)
+        self.assertAlmostEqual(r_2, 0, delta=self.tolerance)
+
+
+class AngularDifferenceTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.delta = np.pi/4
+        self.alpha = np.random.random(1) * 2 * np.pi
+        self.beta = self.alpha - self.delta
+
+    def testADiff(self):
+        adiff = elephant.phase_analysis.my_aDiff(self.alpha, self.beta)[0]
+        self.assertAlmostEqual(adiff, self.delta, delta=self.tolerance)
+
+
+class PhaseLockingValueTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.phase_shift = np.pi/4
+        self.num_time_points = 201
+        self.time = np.linspace(0, 2 * np.pi, self.num_time_points)
+        self.frequency = 1
+        self.num_trials = 100
+        # create discrete representations of the phases of sin() and cos()
+        one_sine_trial = np.array((2 * np.pi * self.frequency * self.time)
+                                  % (2 * np.pi))
+        self.signal_x_sine = np.empty([self.num_trials, self.num_time_points])
+        self.signal_x_sine[:] = one_sine_trial
+
+        one_cos_trial = np.array((2 * np.pi * self.frequency * self.time
+                                  + np.pi/2) % (2 * np.pi))
+        self.signal_y_cos = np.empty([self.num_trials, self.num_time_points])
+        self.signal_y_cos[:] = one_cos_trial
+        # print(f"sine: {self.signal_x_sine}")
+        # print(f"cos: {self.signal_y_cos}")
+
+        # create phase-shifted trials of signal_x_sine,
+        # to create later phase differences, which vary a lot across trials
+        self.shifted_signal_x = np.copy(self.signal_x_sine)
+        for i, trial in enumerate(self.shifted_signal_x):
+            trial += i/self.num_trials * 2 * np.pi
+        # print(f"sine: {self.signal_x_sine}")
+        # print(f"shifted sine: {self.shifted_signal_x}")
+
+    def testPhaseLockingValue(self):
+        # example 1: sine minus sine
+        list1_plv_t = \
+            elephant.phase_analysis.phase_locking_value(self.signal_x_sine,
+                                                        self.signal_x_sine)
+        # print("list1_plv_t")
+        for i in range(len(list1_plv_t)):
+            plv_theta_i = list1_plv_t[i][0]
+            plv_r_i = list1_plv_t[i][1]
+            # print(f"plv_theta_{i}: {plv_theta_i}, plv_r_{i}: {plv_r_i}")
+            self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
+            self.assertAlmostEqual(plv_theta_i, 0, delta=self.tolerance)
+
+        # example 2: sine minus cos
+        list2_plv_t = elephant.phase_analysis.phase_locking_value(
+            self.signal_x_sine, self.signal_y_cos)
+        # print("list2_plv_t")
+        for i in range(len(list2_plv_t)):
+            plv_theta_i = list2_plv_t[i][0]
+            plv_r_i = list2_plv_t[i][1]
+            # print(f"plv_theta_{i}: {plv_theta_i}, plv_r_{i}: {plv_r_i}")
+            self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
+            # expected phase lag: -pi/2 = 3/2 pi
+            # NOTE: 1.7763568394002505e-15 difference occurred for delta=1e-15
+            # so it was increased to 2e-15
+            self.assertAlmostEqual(plv_theta_i, 3/2 * np.pi,
+                                   delta=2*self.tolerance)
+
+        # example 3: shuffled sine minus shuffled sine
+        list3_plv_t = elephant.phase_analysis.phase_locking_value(
+            self.signal_x_sine, self.shifted_signal_x)
+        for i in range(len(list3_plv_t)):
+            plv_theta_i = list3_plv_t[i][0]
+            plv_r_i = list3_plv_t[i][1]
+            # print(f"plv_theta_{i}: {plv_theta_i}, plv_r_{i}: {plv_r_i}")
+            self.assertAlmostEqual(plv_r_i, 0, delta=self.tolerance)
+
+
 if __name__ == '__main__':
     unittest.main()

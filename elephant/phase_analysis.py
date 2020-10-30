@@ -190,3 +190,118 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
 
     return result_phases, result_amps, result_times
+
+
+def phase_locking_value(phases_x, phases_y):
+    """
+    TODO: add the description
+
+    Parameters:
+    -----------
+        - phases_x: array of arrays
+            time-series of signal x with n trials
+        - phases_y: array of arrays
+            time-series of signal y with n trials
+
+    Returns:
+    --------
+        - plv: phase-locking value (float)
+
+
+    References:
+    -----------
+    "Measuring Phase Synchrony in Brain Signals" - Jean-Philippe Lachaux,
+    Eugenio Rodriguez, Jacques Martinerie, and Francisco J. Varela*
+
+    Mathematics:
+    ------------
+    PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * theta(t, n)} ) )
+    where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n)
+    """
+
+    if len(phases_x) == len(phases_y):
+        num_trial = len(phases_x)
+        num_time_points = len(phases_x[0])
+    else:
+        raise ValueError("trial number of signal x and y must be equal")
+
+    # trial by trial and time-resolved
+    # version 0.2: signal x and y have multiple trials
+    # with discrete values/phases
+
+    # list of trial averaged plv at time t
+    list_plv_t = []
+    for time_i in range(num_time_points):
+        # list of phase differences at time i and
+        # for each trial j from signal x and y
+        list_adiff_i = []
+        for trial_j in range(num_trial):
+            adiff_i_j = my_aDiff(phases_x[trial_j][time_i],
+                                 phases_y[trial_j][time_i])
+            list_adiff_i.append(adiff_i_j)
+        plv_theta_i, plv_r_i = my_mean_vector(list_adiff_i)
+        list_plv_t.append((plv_theta_i, plv_r_i))
+    return list_plv_t
+
+
+def my_mean_vector(phases):
+    """
+    This function calculates the mean direction & the mean vector length
+    of the phases-set.
+
+    Parameters
+    ----------
+    - phases: array-like object
+        phases of circular data
+
+    Returns
+    -------
+    - theta_bar: mean direction of the phases
+    - r: length of the mean vector
+    """
+    # applying trigonometric functions to calculate the mean direction
+    # n: number of phases
+    n = len(phases)
+    # x_i and y_i: cartesian coordinates of phase_i
+    x_i = np.cos(phases)
+    y_i = np.sin(phases)
+    # x_bar and y_bar: mean cartesian coordinates of the phases
+    x_bar = np.sum(x_i) / n
+    y_bar = np.sum(y_i) / n
+    # r: length of the mean vector
+    r = np.sqrt(x_bar**2 + y_bar**2)
+    # theta_bar: mean direction of the phases in radians
+    if x_bar > 0:
+        theta_bar = np.arctan(y_bar / x_bar)
+    elif x_bar < 0:
+        theta_bar = np.pi + np.arctan(y_bar / x_bar)
+    elif x_bar == 0:
+        if y_bar > 0:
+            theta_bar = np.pi/2
+        elif y_bar < 0:
+            theta_bar = 3/2 * np.pi
+        else:
+            print("undeterminded")
+    theta_bar %= (2*np.pi)
+    return theta_bar, r
+
+
+def my_aDiff(alpha, beta):
+    """
+    This function calculates the difference between a pair of angles.
+
+    Parameters
+    ----------
+    - alpha: array-like object
+        angles in radians
+    - beta: array-like object
+        angles in radians
+
+    Returns
+    -------
+    - adiff: float
+        angle difference between alpha and beta
+
+    """
+    adiff = (alpha - beta + np.pi) % (2*np.pi) - np.pi
+    return adiff
