@@ -13,14 +13,14 @@ Below is the explanation of how to proceed with these two steps.
 Prerequisites
 =============
 
-Elephant requires Python_ 2.7, 3.5, 3.6, 3.7, or 3.8.
+Elephant requires `Python <http://python.org/>`_ 2.7, 3.5, 3.6, 3.7, or 3.8.
 
 .. tabs::
 
 
     .. tab:: (recommended) Conda (Linux/MacOS/Windows)
 
-        1. Create your conda environment (e.g., `elephant_env`):
+        1. Create your conda environment (e.g., `elephant`):
 
            .. code-block:: sh
 
@@ -51,7 +51,7 @@ Installation
 
     .. tab:: Stable release version
 
-        The easiest way to install Elephant is via pip_:
+        The easiest way to install Elephant is via `pip <http://pypi.python.org/pypi/pip>`_:
 
            .. code-block:: sh
 
@@ -116,40 +116,43 @@ Installation
                     conda activate elephant
                     pip install -e .
 
+MPI support
+-----------
+
+Some Elephant modules (ASSET, SPADE, etc.) are parallelized to run with MPI.
+In order to make use of MPI parallelization, you need to install ``mpi4py``
+package:
+
+.. tabs::
+
+    .. tab:: conda (easiest)
+
+        .. code-block:: sh
+
+            conda install -c conda-forge mpi4py
+
+    .. tab:: pip (Debian/Ubuntu)
+
+        .. code-block:: sh
+
+            sudo apt install -y libopenmpi-dev openmpi-bin
+            pip install mpi4py
+
+To run a python script that supports MPI parallelization, run in a terminal:
+
+.. code-block:: sh
+
+    mpiexec -n numprocs python -m mpi4py pyfile [arg] ...
+
+For more information, refer to `mpi4py
+<https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html>`_ documentation.
 
 
 Dependencies
 ------------
 
-The following packages are required to use Elephant (refer to requirements_ for the exact package versions):
+Elephant relies on the following packages (automatically installed when you
+run ``pip install elephant``):
 
-    * numpy_ - fast array computations
-    * scipy_ - scientific library for Python
-    * quantities_ - support for physical quantities with units (mV, ms, etc.)
-    * neo_ - electrophysiology data manipulations
-    * tqdm_ - progress bar
-    * six_ - Python 2 and 3 compatibility utilities
-
-These packages are automatically installed when you run ``pip install elephant``.
-
-The following packages are optional in order to run certain parts of Elephant:
-
-    * `pandas <https://pypi.org/project/pandas/>`_ - for the :doc:`pandas_bridge <reference/pandas_bridge>` module
-    * `scikit-learn <https://pypi.org/project/scikit-learn/>`_ - for the :doc:`ASSET <reference/asset>` analysis
-    * `nose <https://pypi.org/project/nose/>`_ - for running tests
-    * `numpydoc <https://pypi.org/project/numpydoc/>`_ and `sphinx <https://pypi.org/project/Sphinx/>`_ - for building the documentation
-
-These and above packages are automatically installed when you run ``pip install elephant[extras]``.
-
-.. _`Python`: http://python.org/
-.. _`numpy`: http://www.numpy.org/
-.. _`scipy`: https://www.scipy.org/
-.. _`quantities`: http://pypi.python.org/pypi/quantities
-.. _`neo`: http://pypi.python.org/pypi/neo
-.. _`pip`: http://pypi.python.org/pypi/pip
-.. _Anaconda: https://docs.anaconda.com/anaconda/install/
-.. _`Conda environment`: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
-.. _`tqdm`: https://pypi.org/project/tqdm/
-.. _`six`: https://pypi.org/project/six/
-.. _requirements: https://github.com/NeuralEnsemble/elephant/blob/master/requirements/requirements.txt
-.. _PyPI: https://pypi.org/
+    * `quantities <http://pypi.python.org/pypi/quantities>`_ - support for physical quantities with units (mV, ms, etc.)
+    * `neo <http://pypi.python.org/pypi/neo>`_ - electrophysiology data manipulations
