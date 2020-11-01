@@ -823,21 +823,21 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         histogram.
         If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
         `t_start`.
-        Default: None.
+        Default: None
     t_stop : pq.Quantity, optional
         Stop time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
         histogram.
         If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
         `t_stop`.
-        Default: None.
+        Default: None
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
         * 'counts': spike counts at each bin (as integer numbers)
         * 'mean': mean spike counts per spike train
         * 'rate': mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
-        Default: 'counts'.
+        Default: 'counts'
     binary : bool, optional
         If True, indicates whether all `neo.SpikeTrain` objects should first
         be binned to a binary representation (using the
@@ -845,7 +845,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         histogram is based on this representation.
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -909,19 +909,20 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     # Renormalise the histogram
     if output == 'counts':
         # Raw
-        bin_hist = bin_hist * pq.dimensionless
+        bin_hist = pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
     elif output == 'mean':
         # Divide by number of input spike trains
-        bin_hist = bin_hist * 1. / len(spiketrains) * pq.dimensionless
+        bin_hist = pq.Quantity(bin_hist / len(spiketrains),
+                               units=pq.dimensionless, copy=False)
     elif output == 'rate':
         # Divide by number of input spike trains and bin width
-        bin_hist = bin_hist * 1. / len(spiketrains) / bin_size
+        bin_hist = bin_hist / (len(spiketrains) * bin_size)
     else:
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=bin_size, units=bin_hist.units,
-                            t_start=t_start)
+                            t_start=t_start, normalization=output)
 
 
 @deprecated_alias(binsize='bin_size')
