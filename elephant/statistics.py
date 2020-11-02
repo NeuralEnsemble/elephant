@@ -714,13 +714,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     _check_consistency_of_spiketrains(spiketrains,
                                       t_start=t_start, t_stop=t_stop)
     if kernel == 'auto':
-        spikes_sorted = np.concatenate([st.magnitude for st in spiketrains])
-        spikes_sorted.sort()
-        merged_spiketrain = SpikeTrain(spikes_sorted,
-                                       units=spiketrains[0].units,
-                                       t_start=spiketrains[0].t_start,
-                                       t_stop=spiketrains[0].t_stop)
-        kernel = optimal_kernel(merged_spiketrain)
+        if len(spiketrains) == 1:
+            kernel = optimal_kernel(spiketrains[0])
+        else:
+            raise ValueError("Cannot estimate a kernel for a list of spike "
+                             "trains. Please provide a kernel explicitly "
+                             "rather than 'auto'.")
 
     if t_start is None:
         t_start = spiketrains[0].t_start
@@ -792,15 +791,21 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             t_start = t_start + median_id * units
             t_stop = t_stop - (kernel_array_size - median_id) * units
     else:
+        # FIXME: don't shrink the output array
         # (to be consistent with center_kernel=True)
         # n points have n-1 intervals;
         # instantaneous rate is a list of intervals;
         # hence, the last element is excluded
         rate = rate[:-1]
 
+    kernel_annotation = dict(type=type(kernel).__name__,
+                             sigma=str(kernel.sigma),
+                             invert=kernel.invert)
+
     rate = neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
-                            units=pq.Hz, t_start=t_start, t_stop=t_stop)
+                            units=pq.Hz, t_start=t_start, t_stop=t_stop,
+                            kernel=kernel_annotation)
 
     return rate
 

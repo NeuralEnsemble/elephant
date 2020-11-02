@@ -476,7 +476,7 @@ class CV2TestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.cv2, np.array([seq, seq]))
 
 
-class RateEstimationTestCase(unittest.TestCase):
+class InstantaneousRateTest(unittest.TestCase):
 
     def setUp(self):
         # create a poisson spike train:
@@ -554,6 +554,11 @@ class RateEstimationTestCase(unittest.TestCase):
         self.assertRaises(
             TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel, trim=1)
+
+        # cannot estimate a kernel for a list of spiketrains
+        self.assertRaises(ValueError, statistics.instantaneous_rate,
+                          spiketrains=[st, st], sampling_period=10 * pq.ms,
+                          kernel='auto')
 
     def test_rate_estimation_consistency(self):
         """
@@ -820,6 +825,18 @@ class RateEstimationTestCase(unittest.TestCase):
                         sampling_period=period * pq.ms,
                         kernel=kernel)
                     self.assertEqual(rate.times[np.argmax(rate)], 0)
+
+    def test_annotations(self):
+        spiketrain = neo.SpikeTrain([1, 2], t_stop=2 * pq.s, units=pq.s)
+        kernel = kernels.AlphaKernel(sigma=100 * pq.ms)
+        rate = statistics.instantaneous_rate(spiketrain,
+                                             sampling_period=10 * pq.ms,
+                                             kernel=kernel)
+        kernel_annotation = dict(type=type(kernel).__name__,
+                                 sigma=str(kernel.sigma),
+                                 invert=kernel.invert)
+        self.assertIn('kernel', rate.annotations)
+        self.assertEqual(rate.annotations['kernel'], kernel_annotation)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
