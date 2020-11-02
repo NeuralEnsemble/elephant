@@ -236,15 +236,15 @@ def phase_locking_value(phases_x, phases_y):
         # for each trial j from signal x and y
         list_adiff_i = []
         for trial_j in range(num_trial):
-            adiff_i_j = my_aDiff(phases_x[trial_j][time_i],
-                                 phases_y[trial_j][time_i])
+            adiff_i_j = angular_difference(phases_x[trial_j][time_i],
+                                           phases_y[trial_j][time_i])
             list_adiff_i.append(adiff_i_j)
-        plv_theta_i, plv_r_i = my_mean_vector(list_adiff_i)
-        list_plv_t.append((plv_theta_i, plv_r_i))
+        plv_theta_i, plv_r_i = mean_vector(list_adiff_i)
+        list_plv_t.append(plv_r_i)
     return list_plv_t
 
 
-def my_mean_vector(phases):
+def mean_vector(phases):
     """
     This function calculates the mean direction & the mean vector length
     of the phases-set.
@@ -286,7 +286,7 @@ def my_mean_vector(phases):
     return theta_bar, r
 
 
-def my_aDiff(alpha, beta):
+def angular_difference(alpha, beta):
     """
     This function calculates the difference between a pair of angles.
 
@@ -300,7 +300,7 @@ def my_aDiff(alpha, beta):
     Returns
     -------
     - adiff: float
-        angle difference between alpha and beta
+        angle difference between alpha and beta in range of [-pi, pi]
 
     """
     adiff = (alpha - beta + np.pi) % (2*np.pi) - np.pi
