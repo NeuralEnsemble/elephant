@@ -91,3 +91,34 @@ def is_time_quantity(x, allow_none=False):
     if not isinstance(x, pq.Quantity):
         return False
     return x.dimensionality.simplified == pq.Quantity(1, "s").dimensionality
+
+
+def check_same_units(quantities, object_type=pq.Quantity):
+    """
+    Check that all input quantities are of the same type and share common
+    units. Raise an error if the check is unsuccessful.
+
+    Parameters
+    ----------
+    quantities : list of pq.Quantity or pq.Quantity
+        A list of quantities, neo objects or a single neo object.
+    object_type : type
+        The common type.
+
+    Raises
+    ------
+    TypeError
+        If input objects are not instances of the specified `object_type`.
+    ValueError
+        If input objects do not share common units.
+    """
+    if not isinstance(quantities, (list, tuple)):
+        quantities = [quantities]
+    for quantity in quantities:
+        if not isinstance(quantity, object_type):
+            raise TypeError("The input must be a list of {}. Got {}".format(
+                object_type.__name__, type(quantity).__name__))
+        if quantity.units != quantities[0].units:
+            raise ValueError("The input quantities must have the same units, "
+                             "which is achieved with object.rescale('ms') "
+                             "operation.")
