@@ -100,14 +100,14 @@ def isi(spiketrain, axis=-1):
     """
     Return an array containing the inter-spike intervals of the spike train.
 
-    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
-    `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` is provided,
-    the return value will be `pq.Quantity`, otherwise `np.ndarray`. The units
-    of `pq.Quantity` will be the same as `spiketrain`.
+    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, a `np.ndarray`, or a
+    list of time spikes. If either a `neo.SpikeTrain` or `pq.Quantity` is
+    provided, the return value will be `pq.Quantity`, otherwise `np.ndarray`.
+    The units of `pq.Quantity` will be the same as `spiketrain`.
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+    spiketrain : neo.SpikeTrain or pq.Quantity or array-like
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
@@ -118,14 +118,23 @@ def isi(spiketrain, axis=-1):
     intervals : np.ndarray or pq.Quantity
         The inter-spike intervals of the `spiketrain`.
 
+    Warns
+    -----
+    UserWarning
+        When the input array is not sorted, negative intervals are returned
+        with a warning.
+
     """
-    if axis is None:
-        axis = -1
     if isinstance(spiketrain, neo.SpikeTrain):
-        intervals = np.diff(
-            np.sort(spiketrain.times.view(pq.Quantity)), axis=axis)
+        intervals = np.diff(spiketrain.magnitude, axis=axis)
+        # np.diff makes a copy
+        intervals = pq.Quantity(intervals, units=spiketrain.units, copy=False)
     else:
-        intervals = np.diff(np.sort(spiketrain), axis=axis)
+        intervals = np.diff(spiketrain, axis=axis)
+    if (intervals < 0).any():
+        warnings.warn("ISI evaluated to negative values. "
+                      "Please sort the input array.")
+
     return intervals
 
 

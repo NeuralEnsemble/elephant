@@ -80,6 +80,13 @@ class isi_TestCase(unittest.TestCase):
         assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
 
+    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
+    def test_unsorted_array(self):
+        np.random.seed(0)
+        array = np.random.rand(100)
+        with self.assertWarns(UserWarning):
+            isi = statistics.isi(array)
+
 
 class isi_cv_TestCase(unittest.TestCase):
     def setUp(self):
