@@ -29,7 +29,7 @@ Rate estimation
     mean_firing_rate
     instantaneous_rate
     time_histogram
-    sskernel
+    optimal_kernel_bandwidth
 
 
 Spike interval statistics
@@ -72,9 +72,10 @@ import scipy.signal
 import scipy.stats
 from neo.core import SpikeTrain
 
-import elephant.conversion as conv
 import elephant.kernels as kernels
-from elephant.utils import deprecated_alias
+from elephant.conversion import BinnedSpikeTrain
+from elephant.utils import deprecated_alias, get_common_start_stop_times, \
+    check_consistency_of_spiketrains
 
 from elephant.utils import is_time_quantity
 
@@ -100,14 +101,14 @@ def isi(spiketrain, axis=-1):
     """
     Return an array containing the inter-spike intervals of the spike train.
 
-    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
-    `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` is provided,
-    the return value will be `pq.Quantity`, otherwise `np.ndarray`. The units
-    of `pq.Quantity` will be the same as `spiketrain`.
+    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, a `np.ndarray`, or a
+    list of time spikes. If either a `neo.SpikeTrain` or `pq.Quantity` is
+    provided, the return value will be `pq.Quantity`, otherwise `np.ndarray`.
+    The units of `pq.Quantity` will be the same as `spiketrain`.
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+    spiketrain : neo.SpikeTrain or pq.Quantity or array-like
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
@@ -118,14 +119,23 @@ def isi(spiketrain, axis=-1):
     intervals : np.ndarray or pq.Quantity
         The inter-spike intervals of the `spiketrain`.
 
+    Warns
+    -----
+    UserWarning
+        When the input array is not sorted, negative intervals are returned
+        with a warning.
+
     """
-    if axis is None:
-        axis = -1
     if isinstance(spiketrain, neo.SpikeTrain):
-        intervals = np.diff(
-            np.sort(spiketrain.times.view(pq.Quantity)), axis=axis)
+        intervals = np.diff(spiketrain.magnitude, axis=axis)
+        # np.diff makes a copy
+        intervals = pq.Quantity(intervals, units=spiketrain.units, copy=False)
     else:
-        intervals = np.diff(np.sort(spiketrain), axis=axis)
+        intervals = np.diff(spiketrain, axis=axis)
+    if (intervals < 0).any():
+        warnings.warn("ISI evaluated to negative values. "
+                      "Please sort the input array.")
+
     return intervals
 
 
@@ -261,7 +271,8 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         spike times for which to compute the Fano factor of spike counts.
     warn_tolerance : pq.Quantity
         In case of a list of input neo.SpikeTrains, if their durations vary by
-        more than `warn_tolerence` in their absolute values, throw a waring.
+        more than `warn_tolerence` in their absolute values, throw a warning
+        (see Notes).
         Default: 0.1 ms.
 
     Returns
@@ -277,6 +288,11 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         If the input spiketrains are neo.SpikeTrain objects, but
         `warn_tolerance` is not a quantity.
 
+    Notes
+    -----
+    The check for the equal duration of the input spike trains is performed
+    only if the input is of type`neo.SpikeTrain`: if you pass a numpy array,
+    please make sure that they all have the same duration manually.
     """
     # Build array of spike counts (one per spike train)
     spike_counts = np.array([len(st) for st in spiketrains])
@@ -330,13 +346,13 @@ def cv2(time_intervals, with_nan=False):
     Calculate the measure of Cv2 for a sequence of time intervals between
     events.
 
-    Given a vector v containing a sequence of intervals, the Cv2 is defined
-    as:
+    Given a vector :math:`I` containing a sequence of intervals, the Cv2 is
+    defined as:
 
     .. math::
         Cv2 := \frac{1}{N} \sum_{i=1}^{N-1}
-                           \frac{2|isi_{i+1}-isi_i|}
-                          {|isi_{i+1}+isi_i|}
+                           \frac{2|I_{i+1}-I_i|}
+                          {|I_{i+1}+I_i|}
 
     The Cv2 is typically computed as a substitute for the classical
     coefficient of variation (Cv) for sequences of events which include some
@@ -399,7 +415,8 @@ def lv(time_intervals, with_nan=False):
     Calculate the measure of local variation Lv for a sequence of time
     intervals between events.
 
-    Given a vector I containing a sequence of intervals, the Lv is defined as:
+    Given a vector :math:`I` containing a sequence of intervals, the Lv is
+    defined as:
 
     .. math::
         Lv := \frac{1}{N} \sum_{i=1}^{N-1}
@@ -416,8 +433,8 @@ def lv(time_intervals, with_nan=False):
     time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
-        If True, `lv` of a spike train with less than two spikes results in a
-        np.NaN value and a warning is raised.
+        If True, the Lv of a spike train with less than two spikes results in a
+        `np.NaN` value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
         Default: True.
@@ -439,7 +456,7 @@ def lv(time_intervals, with_nan=False):
     Warns
     -----
     UserWarning
-        If `with_nan` is True and the `lv` is calculated for a spike train
+        If `with_nan` is True and the Lv is calculated for a spike train
         with less than two spikes, generating a np.NaN.
 
     References
@@ -711,8 +728,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if not isinstance(trim, bool):
         raise TypeError("'trim' must be bool")
 
-    _check_consistency_of_spiketrains(spiketrains,
-                                      t_start=t_start, t_stop=t_stop)
+    check_consistency_of_spiketrains(spiketrains,
+                                     t_start=t_start, t_stop=t_stop)
     if kernel == 'auto':
         if len(spiketrains) == 1:
             kernel = optimal_kernel(spiketrains[0])
@@ -828,21 +845,21 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         histogram.
         If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
         `t_start`.
-        Default: None.
+        Default: None
     t_stop : pq.Quantity, optional
         Stop time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
         histogram.
         If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
         `t_stop`.
-        Default: None.
+        Default: None
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
         * 'counts': spike counts at each bin (as integer numbers)
         * 'mean': mean spike counts per spike train
         * 'rate': mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
-        Default: 'counts'.
+        Default: 'counts'
     binary : bool, optional
         If True, indicates whether all `neo.SpikeTrain` objects should first
         be binned to a binary representation (using the
@@ -850,7 +867,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         histogram is based on this representation.
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -881,7 +898,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     if t_start is None:
         # Find the internal range for t_start, where all spike trains are
         # defined; cut all spike trains taking that time range only
-        max_tstart, min_tstop = conv._get_start_stop_from_input(spiketrains)
+        max_tstart, min_tstop = get_common_start_stop_times(spiketrains)
         t_start = max_tstart
         if not all([max_tstart == t.t_start for t in spiketrains]):
             warnings.warn(
@@ -891,7 +908,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     if t_stop is None:
         # Find the internal range for t_stop
         if not min_tstop:
-            min_tstop = conv._get_start_stop_from_input(spiketrains)[1]
+            min_tstop = get_common_start_stop_times(spiketrains)[1]
         t_stop = min_tstop
         if not all([min_tstop == t.t_stop for t in spiketrains]):
             warnings.warn(
@@ -902,31 +919,31 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                spiketrains]
 
     # Bin the spike trains and sum across columns
-    bs = conv.BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
-                               bin_size=bin_size)
+    bs = BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
+                          bin_size=bin_size)
 
     if binary:
-        bin_hist = bs.to_sparse_bool_array().sum(axis=0)
-    else:
-        bin_hist = bs.to_sparse_array().sum(axis=0)
+        bs = bs.binarize(copy=False)
+    bin_hist = bs.get_num_of_spikes(axis=0)
     # Flatten array
     bin_hist = np.ravel(bin_hist)
     # Renormalise the histogram
     if output == 'counts':
         # Raw
-        bin_hist = bin_hist * pq.dimensionless
+        bin_hist = pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
     elif output == 'mean':
         # Divide by number of input spike trains
-        bin_hist = bin_hist * 1. / len(spiketrains) * pq.dimensionless
+        bin_hist = pq.Quantity(bin_hist / len(spiketrains),
+                               units=pq.dimensionless, copy=False)
     elif output == 'rate':
         # Divide by number of input spike trains and bin width
-        bin_hist = bin_hist * 1. / len(spiketrains) / bin_size
+        bin_hist = bin_hist / (len(spiketrains) * bin_size)
     else:
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=bin_size, units=bin_hist.units,
-                            t_start=t_start)
+                            t_start=t_start, normalization=output)
 
 
 @deprecated_alias(binsize='bin_size')
@@ -1249,19 +1266,3 @@ def sskernel(*args, **kwargs):
     warnings.warn("'sskernel' function is deprecated; "
                   "use 'optimal_kernel_bandwidth'", DeprecationWarning)
     return optimal_kernel_bandwidth(*args, **kwargs)
-
-
-def _check_consistency_of_spiketrains(spiketrains, t_start=None,
-                                      t_stop=None):
-    for st in spiketrains:
-        if not isinstance(st, SpikeTrain):
-            raise TypeError("The spike trains must be instances of "
-                            "neo.SpikeTrain. Found: '{}'".
-                            format(type(st)))
-
-        if t_start is None and not st.t_start == spiketrains[0].t_start:
-            raise ValueError("The spike trains must have the same t_start.")
-        if t_stop is None and not st.t_stop == spiketrains[0].t_stop:
-            raise ValueError("The spike trains must have the same t_stop.")
-        if not st.units == spiketrains[0].units:
-            raise ValueError("The spike trains must have the same units.")

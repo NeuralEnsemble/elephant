@@ -118,6 +118,27 @@ class TestUM(unittest.TestCase):
         self.assertRaises(TypeError, spc.spike_contrast, spiketrains,
                           min_bin=0.01)
 
+    def test_t_start_agnostic(self):
+        np.random.seed(15)
+        t_stop = 10 * second
+        spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
+                                                          t_stop=t_stop)
+        spike_train_2 = stgen.homogeneous_poisson_process(rate=10 * Hz,
+                                                          t_stop=t_stop)
+        spiketrains = [spike_train_1, spike_train_2]
+        synchrony_target = spc.spike_contrast(spiketrains)
+        # a check for developer: test meaningful result
+        assert synchrony_target > 0
+        t_shift = 20 * second
+        spiketrains_shifted = [
+            neo.SpikeTrain(st.times + t_shift,
+                           t_start=t_shift,
+                           t_stop=t_stop + t_shift)
+            for st in spiketrains
+        ]
+        synchrony = spc.spike_contrast(spiketrains_shifted)
+        self.assertAlmostEqual(synchrony, synchrony_target)
+
     def test_get_theta_and_n_per_bin(self):
         spike_trains = [
             [1, 2, 3, 9],

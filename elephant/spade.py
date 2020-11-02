@@ -616,7 +616,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             'spiketrains must be either a list of neo.SpikeTrain or '
             'a conv.BinnedSpikeTrain object')
     # Clipping the spiketrains and (binary matrix)
-    binary_matrix = spiketrains.to_sparse_bool_array().tocoo()
+    binary_matrix = spiketrains.to_sparse_bool_array().tocoo(copy=False)
     # Computing the context and the binary matrix encoding the relation between
     # objects (window positions) and attributes (spikes,
     # indexed with a number equal to  neuron idx*winlen+bin idx)

@@ -295,20 +295,16 @@ class ZscoreTestCase(unittest.TestCase):
         Test if the z-score is correctly calculated even if the input is an
         AnalogSignal of type int, asking for an inplace operation.
         """
-        signal = neo.AnalogSignal(
-            self.test_seq1, units='mV',
-            t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=int)
-
         m = np.mean(self.test_seq1)
         s = np.std(self.test_seq1)
         target = (self.test_seq1 - m) / s
 
-        assert_array_almost_equal(
-            elephant.signal_processing.zscore(signal, inplace=True).magnitude,
-            target.reshape(-1, 1).astype(int), decimal=9)
+        signal = neo.AnalogSignal(
+            self.test_seq1, units='mV',
+            t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=int)
+        zscored = elephant.signal_processing.zscore(signal, inplace=True)
 
-        # Assert original signal is overwritten
-        self.assertEqual(signal[0].magnitude, target.astype(int)[0])
+        assert_array_almost_equal(zscored.magnitude.squeeze(), target)
 
     def test_zscore_list_dup(self):
         """
@@ -385,6 +381,16 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertEqual(signal1[0, 0].magnitude, target11[0])
         self.assertEqual(signal2[0, 0].magnitude, target21[0])
+
+    def test_wrong_input(self):
+        # wrong type
+        self.assertRaises(TypeError, elephant.signal_processing.zscore,
+                          signal=[1, 2] * pq.uV)
+        # units mismatch
+        asig1 = neo.AnalogSignal([0, 1], units=pq.uV, sampling_rate=1 * pq.ms)
+        asig2 = neo.AnalogSignal([0, 1], units=pq.V, sampling_rate=1 * pq.ms)
+        self.assertRaises(ValueError, elephant.signal_processing.zscore,
+                          signal=[asig1, asig2])
 
 
 class ButterTestCase(unittest.TestCase):

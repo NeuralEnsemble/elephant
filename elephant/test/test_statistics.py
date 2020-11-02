@@ -83,6 +83,12 @@ class isi_TestCase(unittest.TestCase):
         assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
 
+    def test_unsorted_array(self):
+        np.random.seed(0)
+        array = np.random.rand(100)
+        with self.assertWarns(UserWarning):
+            isi = statistics.isi(array)
+
 
 class isi_cv_TestCase(unittest.TestCase):
     def setUp(self):
@@ -902,6 +908,17 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.time_histogram,
                           self.spiketrains,
                           bin_size=pq.s, output=' ')
+
+    def test_annotations(self):
+        np.random.seed(1)
+        spiketrains = [homogeneous_poisson_process(
+            rate=10 * pq.Hz, t_stop=10 * pq.s) for _ in range(10)]
+        for output in ("counts", "mean", "rate"):
+            histogram = statistics.time_histogram(spiketrains,
+                                                  bin_size=3 * pq.ms,
+                                                  output=output)
+            self.assertIn('normalization', histogram.annotations)
+            self.assertEqual(histogram.annotations['normalization'], output)
 
 
 class ComplexityPdfTestCase(unittest.TestCase):
