@@ -14,7 +14,7 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import deprecated_alias
+from elephant.utils import deprecated_alias, check_same_units
 
 __all__ = [
     "zscore",
@@ -134,6 +134,7 @@ def zscore(signal, inplace=True):
     # Transform input to a list
     if isinstance(signal, neo.AnalogSignal):
         signal = [signal]
+    check_same_units(signal, object_type=neo.AnalogSignal)
 
     # Calculate mean and standard deviation
     signal_stacked = np.vstack(signal).magnitude

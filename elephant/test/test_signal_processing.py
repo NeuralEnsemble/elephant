@@ -382,6 +382,16 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal1[0, 0].magnitude, target11[0])
         self.assertEqual(signal2[0, 0].magnitude, target21[0])
 
+    def test_wrong_input(self):
+        # wrong type
+        self.assertRaises(TypeError, elephant.signal_processing.zscore,
+                          signal=[1, 2] * pq.uV)
+        # units mismatch
+        asig1 = neo.AnalogSignal([0, 1], units=pq.uV, sampling_rate=1 * pq.ms)
+        asig2 = neo.AnalogSignal([0, 1], units=pq.V, sampling_rate=1 * pq.ms)
+        self.assertRaises(ValueError, elephant.signal_processing.zscore,
+                          signal=[asig1, asig2])
+
 
 class ButterTestCase(unittest.TestCase):
 
