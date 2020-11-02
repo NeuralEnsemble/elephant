@@ -281,7 +281,7 @@ def mean_vector(phases):
         elif y_bar < 0:
             theta_bar = 3/2 * np.pi
         else:
-            print("undeterminded")
+            print("undetermined")
     theta_bar %= (2*np.pi)
     return theta_bar, r
 
@@ -300,7 +300,7 @@ def angular_difference(alpha, beta):
     Returns
     -------
     - adiff: float
-        angle difference between alpha and beta in range of [-pi, pi]
+        angle difference between alpha and beta TODO:in range of [-pi, pi]
 
     """
     adiff = (alpha - beta + np.pi) % (2*np.pi) - np.pi

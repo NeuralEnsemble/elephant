@@ -287,39 +287,25 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         list1_plv_t = \
             elephant.phase_analysis.phase_locking_value(self.signal_x_sine,
                                                         self.signal_x_sine)
-        # print("list1_plv_t")
         for i in range(len(list1_plv_t)):
-            plv_theta_i = list1_plv_t[i]
-            # plv_r_i = list1_plv_t[i][1]
-            # print(f"plv_theta_{i}: {plv_theta_i}, plv_r_{i}: {plv_r_i}")
-            # self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
-            self.assertAlmostEqual(plv_theta_i, 0, delta=self.tolerance)
+            plv_r_i = list1_plv_t[i]
+            self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
 
     def testPhaseLockingValue_sineMinusCos(self):
         # example 2: sine minus cos
         list2_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x_sine, self.signal_y_cos)
-        # print("list2_plv_t")
         for i in range(len(list2_plv_t)):
-            plv_theta_i = list2_plv_t[i]
-            # plv_r_i = list2_plv_t[i][1]
-            # print(f"plv_theta_{i}: {plv_theta_i}, plv_r_{i}: {plv_r_i}")
-            # self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
-            # expected phase lag: -pi/2 = 3/2 pi
-            # NOTE: 1.7763568394002505e-15 difference occurred for delta=1e-15
-            # so it was increased to 2e-15
-            self.assertAlmostEqual(plv_theta_i, 3/2 * np.pi,
-                                   delta=2*self.tolerance)
+            plv_r_i = list2_plv_t[i]
+            self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
 
     def testPhaseLockingValue_shuffledSineMinusShuffledSine(self):
         # example 3: shuffled sine minus shuffled sine
         list3_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x_sine, self.shifted_signal_x)
         for i in range(len(list3_plv_t)):
-            plv_theta_i = list3_plv_t[i]
-            # plv_r_i = list3_plv_t[i][1]
-            # print(f"plv_theta_{i}: {plv_theta_i}, plv_r_{i}: {plv_r_i}")
-            # self.assertAlmostEqual(plv_r_i, 0, delta=self.tolerance)
+            plv_r_i = list3_plv_t[i]
+            self.assertAlmostEqual(plv_r_i, 0, delta=self.tolerance)
 
 
 if __name__ == '__main__':
