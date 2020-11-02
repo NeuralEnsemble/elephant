@@ -3,6 +3,7 @@ from __future__ import division, print_function, unicode_literals
 import warnings
 from functools import wraps
 
+import neo
 import numpy as np
 import quantities as pq
 
@@ -91,6 +92,83 @@ def is_time_quantity(x, allow_none=False):
     if not isinstance(x, pq.Quantity):
         return False
     return x.dimensionality.simplified == pq.Quantity(1, "s").dimensionality
+
+
+def get_common_start_stop_times(neo_objects):
+    """
+    Extracts the `t_start`and the `t_stop` from the input neo objects.
+
+    If a single neo object is given, its `t_start` and `t_stop` is returned.
+    Otherwise, the aligned times are returned: the maximal `t_start` and
+    minimal `t_stop` across `neo_objects`.
+
+    Parameters
+    ----------
+    neo_objects : neo.SpikeTrain or neo.AnalogSignal or list
+        A neo object or a list of neo objects that have `t_start` and `t_stop`
+        attributes.
+
+    Returns
+    -------
+    t_start, t_stop : pq.Quantity
+        Shared start and stop times.
+
+    Raises
+    ------
+    AttributeError
+        If the input neo objects do not have `t_start` and `t_stop` attributes.
+    ValueError
+        If there is no shared interval ``[t_start, t_stop]`` across the input
+        neo objects.
+    """
+    if hasattr(neo_objects, 't_start') and hasattr(neo_objects, 't_stop'):
+        return neo_objects.t_start, neo_objects.t_stop
+    try:
+        t_start = max(elem.t_start for elem in neo_objects)
+        t_stop = min(elem.t_stop for elem in neo_objects)
+    except AttributeError:
+        raise AttributeError("Input neo objects must have 't_start' and "
+                             "'t_stop' attributes")
+    if t_stop < t_start:
+        raise ValueError("t_stop ({t_stop}) is smaller than t_start "
+                         "({t_start})".format(t_stop=t_stop, t_start=t_start))
+    return t_start, t_stop
+
+
+def check_consistency_of_spiketrains(spiketrains, t_start=None,
+                                     t_stop=None):
+    """
+    Checks that all input spike trains share the same units, t_start, and
+    t_stop.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrain
+        Input spike trains.
+    t_start, t_stop : pq.Quantity or None, optional
+        If None, check for exact match of t_start/t_stop across the spike
+        trains.
+
+    Raises
+    ------
+    TypeError
+        If the input spike trains are not of type `neo.SpikeTrain`.
+    ValueError
+        If input spike train units, t_start, or t_stop do not match across
+        trials.
+    """
+    for st in spiketrains:
+        if not isinstance(st, neo.SpikeTrain):
+            raise TypeError("The spike trains must be instances of "
+                            "neo.SpikeTrain. Found: '{}'".
+                            format(type(st)))
+
+        if t_start is None and not st.t_start == spiketrains[0].t_start:
+            raise ValueError("The spike trains must have the same t_start.")
+        if t_stop is None and not st.t_stop == spiketrains[0].t_stop:
+            raise ValueError("The spike trains must have the same t_stop.")
+        if not st.units == spiketrains[0].units:
+            raise ValueError("The spike trains must have the same units.")
 
 
 def check_same_units(quantities, object_type=pq.Quantity):
