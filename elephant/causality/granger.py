@@ -578,9 +578,13 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
 
     signals_xz = np.vstack([signal_x, signal_z])
 
-    coeffs_xz, cov_xz, p_1 = _optimal_vector_arm(signals_xz, 2, max_order,
+    coeffs_xz, cov_xz, p_1 = _optimal_vector_arm(signals_xz, dimension=2,
+                                                 max_order=max_order,
+                                                 information_criterion=
                                                  information_criterion)
-    coeffs_xyz, cov_xyz, p_2 = _optimal_vector_arm(signals, 3, max_order,
+    coeffs_xyz, cov_xyz, p_2 = _optimal_vector_arm(signals, dimension=3,
+                                                   max_order=max_order,
+                                                   information_criterion=
                                                    information_criterion)
 
     conditional_causality_xy_z = np.log(cov_xz[0, 0]) - np.log(cov_xyz[0, 0])
