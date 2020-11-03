@@ -211,23 +211,35 @@ class ConditionalGrangerTestCase(unittest.TestCase):
         cls.ground_truth = cls._generate_ground_truth()
 
     @staticmethod
-    def _generate_ground_truth(length_2d=30000):
+    def _generate_ground_truth(length_2d=30000, causality_type="indirect"):
         """
         Recreated from Example 2 section 5.2 of :cite:'granger-Ding06-0608035'.
-        The following should generate three signals where there is no direct
+        The following should generate three signals in one of the two ways:
+         1. "indirect" would generate data which contains no direct
         causal influence from Y to X, but mediated through Z
         (i.e. Y -> Z -> X).
+        2. "both" would generate data which contains both direct and indirect
+        causal influences from Y to X.
+
         """
+        if causality_type == "indirect":
+            y_t_lag_2 = 0
+        elif causality_type == "both":
+            y_t_lag_2 = 0.2
+        else:
+            raise ValueError("causality_type should be either 'indirect' or "
+                             "'both'")
+
         order = 2
         signal = np.zeros((3, length_2d + order))
 
-        weights_1 = np.array([[0.8, 0, 0.4],  # X_t --> X_t-1, Y_t-1, Z_t-1
-                              [0, 0.9, 0],  # Y_t --> X_t-1, Y_t-1, Z_t-1
-                              [0., 0.5, 0.5]])  # Z_t --> X_t-1, Y_t-1, Z_t-1
+        weights_1 = np.array([[0.8, 0, 0.4],
+                              [0, 0.9, 0],
+                              [0., 0.5, 0.5]])
 
-        weights_2 = np.array([[-0.5, 0, 0.],  # X_t --> X_t-2, Y_t-2, Z_t-2
-                              [0., -0.8, 0],  # Y_t --> X_t-2, Y_t-2, Z_t-2
-                              [0, 0, -0.2]])  # Z_t --> X_t-2, Y_t-2, Z_t-2
+        weights_2 = np.array([[-0.5, y_t_lag_2, 0.],
+                              [0., -0.8, 0],
+                              [0, 0, -0.2]])
 
         weights = np.stack((weights_1, weights_2))
 
@@ -255,6 +267,11 @@ class ConditionalGrangerTestCase(unittest.TestCase):
         np.random.seed(10)
         self.signal = self._generate_ground_truth(length_2d=1000)
 
+        # Generate a small dataset for containing both direct and indirect
+        # causality.
+        self.non_zero_signal = self._generate_ground_truth(length_2d=1000,
+                                                           causality_type=
+                                                           "both")
         # Estimate Granger causality
         self.conditional_causality = elephant.causality.granger.\
             conditional_granger(self.signal, max_order=10,
@@ -266,6 +283,10 @@ class ConditionalGrangerTestCase(unittest.TestCase):
     def test_ground_truth_zero_value_conditional_causality(self):
         self.assertEqual(elephant.causality.granger.conditional_granger(
             self.ground_truth, 10, 'bic'), 0.0)
+
+    def test_non_zero_conditional_causality(self):
+        self.assertGreater(elephant.causality.granger.conditional_granger(
+            self.non_zero_signal, 10, 'bic'), 0.0)
 
 
 if __name__ == '__main__':
