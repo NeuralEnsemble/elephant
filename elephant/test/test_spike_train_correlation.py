@@ -625,6 +625,15 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         '''
         self.assertEqual(sc.cross_correlation_histogram, sc.cch)
 
+    def test_annotations(self):
+        cch, _ = sc.cross_correlation_histogram(
+            self.binned_st1, self.binned_st2, kernel=np.ones(3))
+        target_dict = dict(window='full', border_correction=False,
+                           binary=False, kernel=True,
+                           normalization='counts')
+        self.assertIn('cch_parameters', cch.annotations)
+        self.assertEqual(cch.annotations['cch_parameters'], target_dict)
+
 
 @unittest.skipUnless(python_version_major == 3, "subTest requires 3.4")
 class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
