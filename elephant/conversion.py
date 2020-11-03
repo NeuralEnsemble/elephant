@@ -493,6 +493,9 @@ class BinnedSpikeTrain(object):
         to_array
 
         """
+        warnings.warn("'.to_sparse_array()' function is deprecated; "
+                      "use '.sparse_matrix' attribute directly",
+                      DeprecationWarning)
         return self.sparse_matrix
 
     def to_sparse_bool_array(self):
@@ -561,7 +564,7 @@ class BinnedSpikeTrain(object):
         ...                           t_start=0 * pq.s)
         >>> print(x.spike_indices)
         [[0, 0, 1, 3, 4, 5, 6]]
-        >>> print(x.to_sparse_array().nonzero()[1])
+        >>> print(x.sparse_matrix.nonzero()[1])
         [0 1 3 4 5 6]
         >>> print(x.to_array())
         [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0]]

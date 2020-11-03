@@ -222,8 +222,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         x = cv.BinnedSpikeTrain([a, b], n_bins=nbins, bin_size=bin_size,
                                 t_start=0 * pq.s)
         x_sparse = [2, 1, 2, 1]
-        s = x.to_sparse_array()
-        assert_array_equal(s.data, x_sparse)
+        assert_array_equal(x.sparse_matrix.data, x_sparse)
         assert_array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]])
 
     def test_binned_spiketrain_shape(self):
@@ -462,8 +461,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         xb = cv.BinnedSpikeTrain(b, bin_size=bin_size.rescale(pq.ms))
         assert_array_equal(xa.to_array(), xb.to_array())
         assert_array_equal(xa.to_bool_array(), xb.to_bool_array())
-        assert_array_equal(xa.to_sparse_array().data,
-                           xb.to_sparse_array().data)
+        assert_array_equal(xa.sparse_matrix.data,
+                           xb.sparse_matrix.data)
         assert_array_equal(xa.bin_edges, xb.bin_edges)
 
     def test_binary_to_binned_matrix(self):
