@@ -72,7 +72,8 @@ from neo.core import AnalogSignal
 
 __all__ = (
     "Causality",
-    "pairwise_granger"
+    "pairwise_granger",
+    "conditional_granger"
 )
 
 
