@@ -230,13 +230,42 @@ class MeanVectorTestCase(unittest.TestCase):
 class AngularDifferenceTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
-        self.delta = np.pi/4
-        self.alpha = np.random.random(1) * 2 * np.pi
-        self.beta = self.alpha - self.delta
 
-    def testADiff(self):
-        adiff = elephant.phase_analysis.angular_difference(self.alpha, self.beta)[0]
-        self.assertAlmostEqual(adiff, self.delta, delta=self.tolerance)
+    def testADiff_ABS_AlphaMinusBeta_SmallerPi(self):
+        adiff_1 = elephant.phase_analysis.angular_difference(0.8 * np.pi,
+                                                             0.6 * np.pi)
+        self.assertAlmostEqual(adiff_1, 0.2*np.pi, delta=self.tolerance)
+        adiff_2 = elephant.phase_analysis.angular_difference(0.6 * np.pi,
+                                                             0.8 * np.pi)
+        self.assertAlmostEqual(adiff_2, -0.2*np.pi, delta=self.tolerance)
+        adiff_3 = elephant.phase_analysis.angular_difference(0.2 * np.pi,
+                                                             -0.2 * np.pi)
+        self.assertAlmostEqual(adiff_3, 0.4 * np.pi, delta=self.tolerance)
+        adiff_4 = elephant.phase_analysis.angular_difference(-0.2 * np.pi,
+                                                             0.2 * np.pi)
+        self.assertAlmostEqual(adiff_4, -0.4 * np.pi, delta=self.tolerance)
+
+    def testADiff_ABS_AlphaMinusBeta_GreaterPi(self):
+        adiff_1 = elephant.phase_analysis.angular_difference(0.8 * np.pi,
+                                                             -0.8 * np.pi)
+        self.assertAlmostEqual(adiff_1, -0.4 * np.pi, delta=self.tolerance)
+        adiff_2 = elephant.phase_analysis.angular_difference(-0.8 * np.pi,
+                                                             0.8 * np.pi)
+        self.assertAlmostEqual(adiff_2, 0.4 * np.pi, delta=self.tolerance)
+        adiff_3 = elephant.phase_analysis.angular_difference(0.3 * np.pi,
+                                                             -0.8 * np.pi)
+        self.assertAlmostEqual(adiff_3, -0.9 * np.pi, delta=self.tolerance)
+        adiff_4 = elephant.phase_analysis.angular_difference(-0.8 * np.pi,
+                                                             0.3 * np.pi)
+        self.assertAlmostEqual(adiff_4, 0.9 * np.pi, delta=self.tolerance)
+
+    def testADiff_in_range_MinusPi_and_Pi(self):
+        sign_1 = 1 if np.random.random(1) < 0.5 else -1
+        sign_2 = 1 if np.random.random(1) < 0.5 else -1
+        alpha = sign_1 * np.random.random(1) * np.pi
+        beta = sign_2 * np.random.random(1) * np.pi
+        adiff = elephant.phase_analysis.angular_difference(alpha, beta)
+        self.assertTrue(-np.pi <= adiff <= np.pi)
 
 
 class PhaseLockingValueTestCase(unittest.TestCase):

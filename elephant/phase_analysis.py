@@ -303,5 +303,11 @@ def angular_difference(alpha, beta):
         angle difference between alpha and beta TODO:in range of [-pi, pi]
 
     """
-    adiff = (alpha - beta + np.pi) % (2*np.pi) - np.pi
+    adiff = alpha - beta
+
+    if adiff < -np.pi:
+        return adiff % np.pi
+    if adiff > np.pi:
+        return adiff - 2*np.pi
+
     return adiff
