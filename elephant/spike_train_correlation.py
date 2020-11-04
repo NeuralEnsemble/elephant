@@ -768,12 +768,18 @@ def cross_correlation_histogram(
     if cross_correlation_coefficient:
         cross_corr = cch_builder.cross_correlation_coefficient(cross_corr)
 
+    normalization = 'normalized' if cross_correlation_coefficient else 'counts'
+    annotations = dict(window=window, border_correction=border_correction,
+                       binary=binary, kernel=kernel is not None,
+                       normalization=normalization)
+    annotations = dict(cch_parameters=annotations)
+
     # Transform the array count into an AnalogSignal
     cch_result = neo.AnalogSignal(
         signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
         t_start=(lags[0] - 0.5) * binned_spiketrain_i.bin_size,
-        sampling_period=binned_spiketrain_i.bin_size)
+        sampling_period=binned_spiketrain_i.bin_size, **annotations)
     return cch_result, lags
 
 

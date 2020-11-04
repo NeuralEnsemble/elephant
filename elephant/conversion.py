@@ -21,7 +21,7 @@ import quantities as pq
 import scipy.sparse as sps
 
 from elephant.utils import is_binary, deprecated_alias, \
-    check_consistency_of_spiketrains, get_common_start_stop_times
+    check_neo_consistency, get_common_start_stop_times
 
 __all__ = [
     "binarize",
@@ -370,9 +370,10 @@ class BinnedSpikeTrain(object):
             raise ValueError("Either 'bin_size' or 'n_bins' must be given")
 
         try:
-            check_consistency_of_spiketrains(spiketrains,
-                                             t_start=self.t_start,
-                                             t_stop=self.t_stop)
+            check_neo_consistency(spiketrains,
+                                  object_type=neo.SpikeTrain,
+                                  t_start=self.t_start,
+                                  t_stop=self.t_stop)
         except ValueError as er:
             raise ValueError(er, "If you want to bin over the shared "
                                  "[t_start, t_stop] interval, provide "

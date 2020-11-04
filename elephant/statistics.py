@@ -75,7 +75,7 @@ from neo.core import SpikeTrain
 import elephant.kernels as kernels
 from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, get_common_start_stop_times, \
-    check_consistency_of_spiketrains
+    check_neo_consistency
 
 from elephant.utils import is_time_quantity
 
@@ -728,8 +728,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if not isinstance(trim, bool):
         raise TypeError("'trim' must be bool")
 
-    check_consistency_of_spiketrains(spiketrains,
-                                     t_start=t_start, t_stop=t_stop)
+    check_neo_consistency(spiketrains,
+                          object_type=neo.SpikeTrain,
+                          t_start=t_start, t_stop=t_stop)
     if kernel == 'auto':
         if len(spiketrains) == 1:
             kernel = optimal_kernel(spiketrains[0])

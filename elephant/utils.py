@@ -135,40 +135,40 @@ def get_common_start_stop_times(neo_objects):
     return t_start, t_stop
 
 
-def check_consistency_of_spiketrains(spiketrains, t_start=None,
-                                     t_stop=None):
+def check_neo_consistency(neo_objects, object_type, t_start=None,
+                          t_stop=None):
     """
-    Checks that all input spike trains share the same units, t_start, and
+    Checks that all input neo objects share the same units, t_start, and
     t_stop.
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
-        Input spike trains.
+    neo_objects : list of neo.SpikeTrain or neo.AnalogSignal
+        A list of neo spike trains or analog signals.
+    object_type : type
+        The common type.
     t_start, t_stop : pq.Quantity or None, optional
-        If None, check for exact match of t_start/t_stop across the spike
-        trains.
+        If None, check for exact match of t_start/t_stop across the input.
 
     Raises
     ------
     TypeError
-        If the input spike trains are not of type `neo.SpikeTrain`.
+        If input objects are not instances of the specified `object_type`.
     ValueError
-        If input spike train units, t_start, or t_stop do not match across
-        trials.
+        If input object units, t_start, or t_stop do not match across trials.
     """
-    for st in spiketrains:
-        if not isinstance(st, neo.SpikeTrain):
-            raise TypeError("The spike trains must be instances of "
-                            "neo.SpikeTrain. Found: '{}'".
-                            format(type(st)))
-
-        if t_start is None and not st.t_start == spiketrains[0].t_start:
-            raise ValueError("The spike trains must have the same t_start.")
-        if t_stop is None and not st.t_stop == spiketrains[0].t_stop:
-            raise ValueError("The spike trains must have the same t_stop.")
-        if not st.units == spiketrains[0].units:
-            raise ValueError("The spike trains must have the same units.")
+    if not isinstance(neo_objects, (list, tuple)):
+        neo_objects = [neo_objects]
+    for neo_obj in neo_objects:
+        if not isinstance(neo_obj, object_type):
+            raise TypeError("The input must be a list of {}. Got {}".format(
+                object_type.__name__, type(neo_obj).__name__))
+        if t_start is None and not neo_obj.t_start == neo_objects[0].t_start:
+            raise ValueError("The input must have the same t_start.")
+        if t_stop is None and not neo_obj.t_stop == neo_objects[0].t_stop:
+            raise ValueError("The input must have the same t_stop.")
+        if not neo_obj.units == neo_objects[0].units:
+            raise ValueError("The input must have the same units.")
 
 
 def check_same_units(quantities, object_type=pq.Quantity):
@@ -180,8 +180,9 @@ def check_same_units(quantities, object_type=pq.Quantity):
     ----------
     quantities : list of pq.Quantity or pq.Quantity
         A list of quantities, neo objects or a single neo object.
-    object_type : type
+    object_type : type, optional
         The common type.
+        Default: pq.Quantity
 
     Raises
     ------
