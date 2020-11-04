@@ -232,30 +232,30 @@ class AngularDifferenceTestCase(unittest.TestCase):
         self.tolerance = 1e-15
 
     def testADiff_ABS_AlphaMinusBeta_SmallerPi(self):
-        adiff_1 = elephant.phase_analysis.angular_difference(0.8 * np.pi,
+        adiff_1 = elephant.phase_analysis.phase_difference(0.8 * np.pi,
                                                              0.6 * np.pi)
         self.assertAlmostEqual(adiff_1, 0.2*np.pi, delta=self.tolerance)
-        adiff_2 = elephant.phase_analysis.angular_difference(0.6 * np.pi,
+        adiff_2 = elephant.phase_analysis.phase_difference(0.6 * np.pi,
                                                              0.8 * np.pi)
         self.assertAlmostEqual(adiff_2, -0.2*np.pi, delta=self.tolerance)
-        adiff_3 = elephant.phase_analysis.angular_difference(0.2 * np.pi,
+        adiff_3 = elephant.phase_analysis.phase_difference(0.2 * np.pi,
                                                              -0.2 * np.pi)
         self.assertAlmostEqual(adiff_3, 0.4 * np.pi, delta=self.tolerance)
-        adiff_4 = elephant.phase_analysis.angular_difference(-0.2 * np.pi,
+        adiff_4 = elephant.phase_analysis.phase_difference(-0.2 * np.pi,
                                                              0.2 * np.pi)
         self.assertAlmostEqual(adiff_4, -0.4 * np.pi, delta=self.tolerance)
 
     def testADiff_ABS_AlphaMinusBeta_GreaterPi(self):
-        adiff_1 = elephant.phase_analysis.angular_difference(0.8 * np.pi,
+        adiff_1 = elephant.phase_analysis.phase_difference(0.8 * np.pi,
                                                              -0.8 * np.pi)
         self.assertAlmostEqual(adiff_1, -0.4 * np.pi, delta=self.tolerance)
-        adiff_2 = elephant.phase_analysis.angular_difference(-0.8 * np.pi,
+        adiff_2 = elephant.phase_analysis.phase_difference(-0.8 * np.pi,
                                                              0.8 * np.pi)
         self.assertAlmostEqual(adiff_2, 0.4 * np.pi, delta=self.tolerance)
-        adiff_3 = elephant.phase_analysis.angular_difference(0.3 * np.pi,
+        adiff_3 = elephant.phase_analysis.phase_difference(0.3 * np.pi,
                                                              -0.8 * np.pi)
         self.assertAlmostEqual(adiff_3, -0.9 * np.pi, delta=self.tolerance)
-        adiff_4 = elephant.phase_analysis.angular_difference(-0.8 * np.pi,
+        adiff_4 = elephant.phase_analysis.phase_difference(-0.8 * np.pi,
                                                              0.3 * np.pi)
         self.assertAlmostEqual(adiff_4, 0.9 * np.pi, delta=self.tolerance)
 
@@ -264,7 +264,7 @@ class AngularDifferenceTestCase(unittest.TestCase):
         sign_2 = 1 if np.random.random(1) < 0.5 else -1
         alpha = sign_1 * np.random.random(1) * np.pi
         beta = sign_2 * np.random.random(1) * np.pi
-        adiff = elephant.phase_analysis.angular_difference(alpha, beta)
+        adiff = elephant.phase_analysis.phase_difference(alpha, beta)
         self.assertTrue(-np.pi <= adiff <= np.pi)
 
 
