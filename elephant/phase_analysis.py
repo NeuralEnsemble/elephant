@@ -256,8 +256,8 @@ def mean_vector(phases):
 
     Returns
     -------
-    - theta_bar: mean direction of the phases
-    - r: length of the mean vector
+    - z_mean_theta: mean direction of the phases
+    - z_mean_r: length of the mean vector
     """
     # use complex number representation
     z_phases = np.cos(phases) + 1j * np.sin(phases)

@@ -206,18 +206,18 @@ class MeanVectorTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
         self.n_sampels = 200
-        # create a phase-locked 'non'-distribution
-        self.lock_value = np.random.random(1)[0] * 2 * np.pi
+        # create a nonuniform-distribution at a random phase-lock
+        self.lock_value = np.random.random(1)[0] * 2 * np.pi - np.pi
         self.dataset1 = np.full((1, self.n_sampels), self.lock_value)[0]
         # create a evenly spaced / uniform distribution
         self.dataset2 = [i * 2 * np.pi / self.n_sampels
                          for i in range(self.n_sampels)]
+        # create a random distribution
+        self.dataset3 = np.random.random(self.n_sampels) * 2 * np.pi
 
-    def testMeanVector(self):
-        theta_bar_1, r_1 = \
-            elephant.phase_analysis.mean_vector(self.dataset1)
-        theta_bar_2, r_2 = \
-            elephant.phase_analysis.mean_vector(self.dataset2)
+    def testMeanVector_direction_and_length(self):
+        theta_bar_1, r_1 = elephant.phase_analysis.mean_vector(self.dataset1)
+        theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2)
         # mean direction
         self.assertAlmostEqual(theta_bar_1, self.lock_value,
                                delta=self.tolerance)
@@ -225,6 +225,10 @@ class MeanVectorTestCase(unittest.TestCase):
         # mean vector length
         self.assertAlmostEqual(r_1, 1, delta=self.tolerance)
         self.assertAlmostEqual(r_2, 0, delta=self.tolerance)
+
+    def testMeanVector_range_of_direction(self):
+        theta_bar_3, r_3 = elephant.phase_analysis.mean_vector(self.dataset3)
+        self.assertTrue(-np.pi < theta_bar_3 <= np.pi)
 
 
 class AngularDifferenceTestCase(unittest.TestCase):
