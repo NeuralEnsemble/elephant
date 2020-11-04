@@ -352,7 +352,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     """
     if binary:
-        binned_spiketrain = binned_spiketrain.binarize(copy=True)
+        binned_spiketrain = binned_spiketrain.binarize()
 
     if fast and binned_spiketrain.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
         array = binned_spiketrain.to_array()
@@ -452,7 +452,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     """
     if binary:
-        binned_spiketrain = binned_spiketrain.binarize(copy=True)
+        binned_spiketrain = binned_spiketrain.binarize()
 
     if fast and binned_spiketrain.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
         array = binned_spiketrain.to_array()
@@ -745,8 +745,8 @@ def cross_correlation_histogram(
         raise ValueError("Invalid window parameter")
 
     if binary:
-        binned_spiketrain_i = binned_spiketrain_i.binarize(copy=True)
-        binned_spiketrain_j = binned_spiketrain_j.binarize(copy=True)
+        binned_spiketrain_i = binned_spiketrain_i.binarize()
+        binned_spiketrain_j = binned_spiketrain_j.binarize()
 
     cch_builder = _CrossCorrHist(binned_spiketrain_i, binned_spiketrain_j,
                                  window=(left_edge, right_edge))

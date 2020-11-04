@@ -728,30 +728,37 @@ class BinnedSpikeTrain(object):
                 shape=spmat.shape)
         return spmat.toarray()
 
-    def binarize(self, copy=True):
+    def binarize(self, copy=None):
         """
         Clip the internal array (no. of spikes in a bin) to `0` (no spikes) or
         `1` (at least one spike) values only.
 
         Parameters
         ----------
-        copy : bool
-            Perform the clipping in-place (False) or on a copy (True).
-            Default: True.
+        copy : bool, optional
+            Deprecated parameter. It has no effect.
 
         Returns
         -------
-        bst : BinnedSpikeTrain
-            `BinnedSpikeTrain` with both sparse and dense (if present) array
-            representation clipped to `0` (no spike) or `1` (at least one
-            spike) entries.
+        bst : _BinnedSpikeTrainView
+            A view of `BinnedSpikeTrain` with a sparse matrix containing
+            data clipped to `0`s and `1`s.
 
         """
-        if copy:
-            bst = deepcopy(self)
-        else:
-            bst = self
-        bst.sparse_matrix.data.clip(max=1, out=bst.sparse_matrix.data)
+        if copy is not None:
+            warnings.warn("'copy' parameter is deprecated - a view is always "
+                          "returned; set this parameter to None.",
+                          DeprecationWarning)
+        spmat = self.sparse_matrix
+        spmat = sps.csr_matrix(
+            (spmat.data.clip(max=1), spmat.indices, spmat.indptr),
+            shape=spmat.shape, copy=False)
+        bst = _BinnedSpikeTrainView(t_start=self._t_start,
+                                    t_stop=self._t_stop,
+                                    bin_size=self._bin_size,
+                                    n_bins=self.n_bins,
+                                    units=self.units,
+                                    sparse_matrix=spmat)
         return bst
 
     @property
@@ -825,6 +832,19 @@ class BinnedSpikeTrain(object):
                                        shape=(len(spiketrains), self.n_bins),
                                        dtype=np.int32, copy=False)
         return sparse_matrix, n_discarded
+
+
+class _BinnedSpikeTrainView(BinnedSpikeTrain):
+    # Experimental feature and should not be public now.
+
+    def __init__(self, t_start, t_stop, bin_size, n_bins, units,
+                 sparse_matrix):
+        self._t_start = t_start
+        self._t_stop = t_stop
+        self._bin_size = bin_size
+        self.n_bins = n_bins
+        self.units = units
+        self.sparse_matrix = sparse_matrix
 
 
 def _check_neo_spiketrain(matrix):

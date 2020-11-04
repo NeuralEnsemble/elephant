@@ -159,7 +159,6 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
     """
     if not isinstance(neo_objects, (list, tuple)):
         neo_objects = [neo_objects]
-    units = neo_objects[0].units
     for neo_obj in neo_objects:
         if not isinstance(neo_obj, object_type):
             raise TypeError("The input must be a list of {}. Got {}".format(
@@ -168,7 +167,7 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
             raise ValueError("The input must have the same t_start.")
         if t_stop is None and neo_obj.t_stop != neo_objects[0].t_stop:
             raise ValueError("The input must have the same t_stop.")
-        if neo_obj.units != units:
+        if neo_obj.units != neo_objects[0].units:
             raise ValueError("The input must have the same units.")
 
 
