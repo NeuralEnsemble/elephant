@@ -300,7 +300,6 @@ class BinnedSpikeTrain(object):
         self.bin_size = bin_size
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains, tolerance=tolerance)
-        self._check_consistency(tolerance=tolerance)
         # Now create the sparse matrix
         self.sparse_matrix, n_discarded = self._create_sparse_matrix(
             spiketrains, tolerance=tolerance)
@@ -362,8 +361,37 @@ class BinnedSpikeTrain(object):
         spiketrains : neo.SpikeTrain or list or np.ndarray of neo.SpikeTrain
 
         """
+        def get_n_bins():
+            n_bins = ((self.t_stop - self.t_start) / self.bin_size
+                      ).simplified.item()
+            if _detect_rounding_errors(n_bins, tolerance=tolerance):
+                warnings.warn('Correcting a rounding error in the calculation '
+                              'of n_bins by increasing n_bins by 1. '
+                              'You can set tolerance=None to disable this '
+                              'behaviour.')
+            return int(n_bins)
+
+        def check_n_bins_consistency():
+            if self.n_bins != get_n_bins():
+                raise ValueError(
+                    "Inconsistent arguments: t_start ({t_start}), "
+                    "t_stop ({t_stop}), bin_size ({bin_size}), and "
+                    "n_bins ({n_bins})".format(
+                        t_start=self.t_start, t_stop=self.t_stop,
+                        bin_size=self.bin_size, n_bins=self.n_bins))
+
+        def check_consistency():
+            if self.t_start >= self.t_stop:
+                raise ValueError("t_start must be smaller than t_stop")
+            if not isinstance(self.n_bins, int) or self.n_bins <= 0:
+                raise TypeError("The number of bins ({}) must be a positive "
+                                "integer".format(self.n_bins))
+
         if not _check_neo_spiketrain(spiketrains):
+            # a binned numpy matrix
             self.__resolve_binned(spiketrains)
+            check_n_bins_consistency()
+            check_consistency()
             return
 
         if self.bin_size is None and self.n_bins is None:
@@ -391,8 +419,7 @@ class BinnedSpikeTrain(object):
         start_shared, stop_shared = get_common_start_stop_times(spiketrains)
         if tolerance is None:
             tolerance = 0
-        # At this point, all spiketrains, t_start/stop and shared t_start/stop
-        # share the same units.
+        # At this point, all spiketrains share the same units.
         tolerance_units = tolerance * spiketrains[0].units
         if self.t_start < start_shared - tolerance_units \
                 or self.t_stop > stop_shared + tolerance_units:
@@ -405,38 +432,15 @@ class BinnedSpikeTrain(object):
 
         if self.n_bins is None:
             # bin_size is provided
-            n_bins = ((self.t_stop - self.t_start) / self.bin_size
-                      ).simplified.item()
-            if _detect_rounding_errors(n_bins, tolerance=tolerance):
-                warnings.warn('Correcting a rounding error in the calculation '
-                              'of n_bins by increasing n_bins by 1. '
-                              'You can set tolerance=None to disable this '
-                              'behaviour.')
-                n_bins += 1
-            self.n_bins = int(n_bins)
+            self.n_bins = get_n_bins()
         elif self.bin_size is None:
             # n_bins is provided
             self.bin_size = (self.t_stop - self.t_start) / self.n_bins
+        else:
+            # both n_bins are bin_size are given
+            check_n_bins_consistency()
 
-    def _check_consistency(self, tolerance):
-        if self.t_start >= self.t_stop:
-            raise ValueError("t_start must be smaller than t_stop")
-
-        # account for rounding errors in the reference num_bins
-        n_bins_rounded = ((self.t_stop - self.t_start) / self.bin_size
-                          ).simplified.item()
-        if _detect_rounding_errors(n_bins_rounded, tolerance=tolerance):
-            n_bins_rounded += 1
-        n_bins_rounded = int(n_bins_rounded)
-        if self.n_bins != n_bins_rounded:
-            raise ValueError("Inconsistent arguments: t_start ({t_start}), "
-                             "t_stop ({t_stop}), bin_size ({bin_size}), and "
-                             "n_bins ({n_bins})".format(
-                                 t_start=self.t_start, t_stop=self.t_stop,
-                                 bin_size=self.bin_size, n_bins=self.n_bins))
-        if not isinstance(self.n_bins, int) or self.n_bins <= 0:
-            raise TypeError("The number of bins ({}) must be a positive "
-                            "integer".format(self.n_bins))
+        check_consistency()
 
     @property
     def bin_edges(self):
@@ -732,7 +736,8 @@ class BinnedSpikeTrain(object):
         counts = []
 
         # all spiketrains carry the same units
-        scale_units = (spiketrains[0].units / self.bin_size).simplified.item()
+        units = spiketrains[0].units
+        scale_units = 1 / self.bin_size.rescale(units).item()
         t_start = self.t_start.item()
         t_stop = self.t_stop.item()
         for idx, st in enumerate(spiketrains):
@@ -766,7 +771,7 @@ class BinnedSpikeTrain(object):
 
         sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
                                        shape=(len(spiketrains), self.n_bins),
-                                       dtype=np.int32)
+                                       dtype=np.int32, copy=False)
         return sparse_matrix, n_discarded
 
 
