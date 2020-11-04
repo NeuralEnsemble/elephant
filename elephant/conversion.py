@@ -185,7 +185,7 @@ def _detect_rounding_errors(values, tolerance):
     Returns True for values that are within tolerance of the next integer.
     Works for both scalars and numpy arrays.
     """
-    if tolerance is None:
+    if tolerance is None or tolerance == 0:
         return np.zeros_like(values, dtype=bool)
     # same as '1 - (values % 1) <= tolerance' but faster
     return 1 - tolerance <= values % 1
@@ -375,6 +375,7 @@ class BinnedSpikeTrain(object):
                                   t_start=self.t_start,
                                   t_stop=self.t_stop)
         except ValueError as er:
+            # different t_start/t_stop
             raise ValueError(er, "If you want to bin over the shared "
                                  "[t_start, t_stop] interval, provide "
                                  "shared t_start and t_stop explicitly, "
@@ -388,7 +389,13 @@ class BinnedSpikeTrain(object):
         if self.t_stop is None:
             self.t_stop = spiketrains[0].t_stop
         start_shared, stop_shared = get_common_start_stop_times(spiketrains)
-        if self.t_start < start_shared or self.t_stop > stop_shared:
+        if tolerance is None:
+            tolerance = 0
+        # At this point, all spiketrains, t_start/stop and shared t_start/stop
+        # share the same units.
+        tolerance_units = tolerance * spiketrains[0].units
+        if self.t_start < start_shared - tolerance_units \
+                or self.t_stop > stop_shared + tolerance_units:
             raise ValueError("'t_start' ({t_start}) or 't_stop' ({t_stop}) is "
                              "outside of the shared [{start_shared}, "
                              "{stop_shared}] interval".format(
@@ -487,6 +494,9 @@ class BinnedSpikeTrain(object):
         to_array
 
         """
+        warnings.warn("'.to_sparse_array()' function is deprecated; "
+                      "use '.sparse_matrix' attribute directly",
+                      DeprecationWarning)
         return self.sparse_matrix
 
     def to_sparse_bool_array(self):
@@ -555,7 +565,7 @@ class BinnedSpikeTrain(object):
         ...                           t_start=0 * pq.s)
         >>> print(x.spike_indices)
         [[0, 0, 1, 3, 4, 5, 6]]
-        >>> print(x.to_sparse_array().nonzero()[1])
+        >>> print(x.sparse_matrix.nonzero()[1])
         [0 1 3 4 5 6]
         >>> print(x.to_array())
         [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0]]
