@@ -336,6 +336,15 @@ class BinnedSpikeTrain(object):
         warnings.warn("'.num_bins' is deprecated; use '.n_bins'")
         return self.n_bins
 
+    def __repr__(self):
+        return "{klass}(t_start={t_start}, t_stop={t_stop}, " \
+               "bin_size={bin_size}; shape={shape})".format(
+                     klass=type(self).__name__,
+                     t_start=self.t_start,
+                     t_stop=self.t_stop,
+                     bin_size=self.bin_size,
+                     shape=self.shape)
+
     def rescale(self, units):
         """
         Inplace rescaling to the new quantity units.
@@ -535,7 +544,13 @@ class BinnedSpikeTrain(object):
             All center edges in interval (:attr:`start`, :attr:`stop`).
 
         """
-        return self.bin_edges[:-1] + self.bin_size / 2
+        start = self._t_start + self._bin_size / 2
+        stop = start + (self.n_bins - 1) * self._bin_size
+        bin_centers = np.linspace(start=start,
+                                  stop=stop,
+                                  num=self.n_bins, endpoint=True)
+        bin_centers = pq.Quantity(bin_centers, units=self.units, copy=False)
+        return bin_centers
 
     def to_sparse_array(self):
         """

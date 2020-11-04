@@ -571,6 +571,16 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertEqual(bst._t_stop, 1010)  # 1.01 s
         self.assertEqual(bst._bin_size, 1)  # 0.001 s
 
+    def test_repr(self):
+        train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
+                               t_start=1 * pq.s, t_stop=1.01 * pq.s)
+        bst = cv.BinnedSpikeTrain(train, t_start=1 * pq.s,
+                                  t_stop=1.01 * pq.s,
+                                  bin_size=1 * pq.ms)
+        self.assertEqual(repr(bst), "BinnedSpikeTrain(t_start=1.0 s, "
+                                    "t_stop=1.01 s, bin_size=0.001 s; "
+                                    "shape=(1, 10))")
+
     def test_binned_sparsity(self):
         train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)
         bst = cv.BinnedSpikeTrain(train, n_bins=100)
