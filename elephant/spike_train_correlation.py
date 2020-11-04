@@ -774,10 +774,12 @@ def cross_correlation_histogram(
     annotations = dict(cch_parameters=annotations)
 
     # Transform the array count into an AnalogSignal
+    t_start = pq.Quantity((lags[0] - 0.5) * bin_size,
+                          units=binned_spiketrain_i.units, copy=False)
     cch_result = neo.AnalogSignal(
         signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
-        t_start=(lags[0] - 0.5) * binned_spiketrain_i.bin_size,
+        t_start=t_start,
         sampling_period=binned_spiketrain_i.bin_size, copy=False,
         **annotations)
     return cch_result, lags
