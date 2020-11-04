@@ -74,24 +74,24 @@ class _CrossCorrHist(object):
             at full overlap (valid mode).
         """
 
-        bin_size = binned_spiketrain_i.bin_size
+        bin_size = binned_spiketrain_i._bin_size
 
         # see cross_correlation_histogram for the examples
         if binned_spiketrain_i.n_bins < binned_spiketrain_j.n_bins:
             # ex. 1) lags range: [-2, 5] ms
             # ex. 2) lags range: [1, 2] ms
-            left_edge = (binned_spiketrain_j.t_start -
-                         binned_spiketrain_i.t_start) / bin_size
-            right_edge = (binned_spiketrain_j.t_stop -
-                          binned_spiketrain_i.t_stop) / bin_size
+            left_edge = (binned_spiketrain_j._t_start -
+                         binned_spiketrain_i._t_start) / bin_size
+            right_edge = (binned_spiketrain_j._t_stop -
+                          binned_spiketrain_i._t_stop) / bin_size
         else:
             # ex. 3) lags range: [-1, 3] ms
-            left_edge = (binned_spiketrain_j.t_stop -
-                         binned_spiketrain_i.t_stop) / bin_size
-            right_edge = (binned_spiketrain_j.t_start -
-                          binned_spiketrain_i.t_start) / bin_size
-        right_edge = int(right_edge.simplified.magnitude)
-        left_edge = int(left_edge.simplified.magnitude)
+            left_edge = (binned_spiketrain_j._t_stop -
+                         binned_spiketrain_i._t_stop) / bin_size
+            right_edge = (binned_spiketrain_j._t_start -
+                          binned_spiketrain_i._t_start) / bin_size
+        right_edge = int(right_edge)
+        left_edge = int(left_edge)
         lags = np.arange(left_edge, right_edge + 1, dtype=np.int32)
 
         return lags
@@ -106,9 +106,6 @@ class _CrossCorrHist(object):
             Cross-correlation of `self.binned_spiketrain1` and
             `self.binned_spiketrain2`.
         """
-        binned_spiketrain1 = self.binned_spiketrain_i
-        binned_spiketrain2 = self.binned_spiketrain_j
-
         st1_spmat = self.binned_spiketrain_i.sparse_matrix
         st2_spmat = self.binned_spiketrain_j.sparse_matrix
         left_edge, right_edge = self.window
@@ -120,7 +117,8 @@ class _CrossCorrHist(object):
         # 'valid' mode requires bins correction due to the shift in t_starts
         # 'full' and 'pad' modes don't need this correction
         if cch_mode == "valid":
-            if binned_spiketrain1.n_bins > binned_spiketrain2.n_bins:
+            if self.binned_spiketrain_i.n_bins > \
+                    self.binned_spiketrain_j.n_bins:
                 st2_bin_idx_unique += right_edge
             else:
                 st2_bin_idx_unique += left_edge
@@ -679,17 +677,18 @@ def cross_correlation_histogram(
     if binned_spiketrain_i.shape[0] != 1 or \
             binned_spiketrain_j.shape[0] != 1:
         raise ValueError("Spike trains must be one dimensional")
-    if not np.isclose(binned_spiketrain_i.bin_size.simplified.item(),
-                      binned_spiketrain_j.bin_size.simplified.item()):
+    if binned_spiketrain_j.units != binned_spiketrain_i.units:
+        binned_spiketrain_j.rescale(binned_spiketrain_i.units)
+    if not np.isclose(binned_spiketrain_i._bin_size,
+                      binned_spiketrain_j._bin_size):
         raise ValueError("Bin sizes must be equal")
 
-    bin_size = binned_spiketrain_i.bin_size
+    bin_size = binned_spiketrain_i._bin_size
     left_edge_min = -binned_spiketrain_i.n_bins + 1
     right_edge_max = binned_spiketrain_j.n_bins - 1
 
-    t_lags_shift = (binned_spiketrain_j.t_start -
-                    binned_spiketrain_i.t_start) / bin_size
-    t_lags_shift = t_lags_shift.simplified.item()
+    t_lags_shift = (binned_spiketrain_j._t_start -
+                    binned_spiketrain_i._t_start) / bin_size
     if not np.isclose(t_lags_shift, round(t_lags_shift)):
         # For example, if bin_size=1 ms, binned_spiketrain_i.t_start=0 ms, and
         # binned_spiketrain_j.t_start=0.5 ms then there is a global shift in
@@ -779,7 +778,8 @@ def cross_correlation_histogram(
         signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
         t_start=(lags[0] - 0.5) * binned_spiketrain_i.bin_size,
-        sampling_period=binned_spiketrain_i.bin_size, **annotations)
+        sampling_period=binned_spiketrain_i.bin_size, copy=False,
+        **annotations)
     return cch_result, lags
 
 

@@ -944,7 +944,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=bin_size, units=bin_hist.units,
-                            t_start=t_start, normalization=output)
+                            t_start=t_start, normalization=output, copy=False)
 
 
 @deprecated_alias(binsize='bin_size')
