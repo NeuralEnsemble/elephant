@@ -977,9 +977,9 @@ def spike_train_timescale(binned_spiketrain, max_tau):
     Returns
     -------
     timescale : pq.Quantity
-        The auto-correlation time of the binned spiketrain. If
-        `binned_spiketrain` has less than 2 spikes, a warning is raised and
-        `np.nan` is returned.
+        The auto-correlation time of the binned spiketrain with the same units
+        as in the input. If `binned_spiketrain` has less than 2 spikes, a
+        warning is raised and `np.nan` is returned.
 
     Notes
     -----
@@ -1004,14 +1004,15 @@ def spike_train_timescale(binned_spiketrain, max_tau):
                       "np.nan will be returned.")
         return np.nan
 
-    bin_size = binned_spiketrain.bin_size
-    if not (max_tau / bin_size).simplified.units == pq.dimensionless:
+    bin_size = binned_spiketrain._bin_size
+    try:
+        max_tau = max_tau.rescale(binned_spiketrain.units).item()
+    except (AttributeError, ValueError):
         raise ValueError("max_tau needs units of time")
 
     # safe casting of max_tau/bin_size to integer
-    max_tau_bins = int(np.round((max_tau / bin_size).simplified.magnitude))
-    if not np.isclose(max_tau.simplified.magnitude,
-                      (max_tau_bins * bin_size).simplified.magnitude):
+    max_tau_bins = int(round(max_tau / bin_size))
+    if not np.isclose(max_tau, max_tau_bins * bin_size):
         raise ValueError("max_tau has to be a multiple of the bin_size")
 
     cch_window = [-max_tau_bins, max_tau_bins]
@@ -1020,9 +1021,10 @@ def spike_train_timescale(binned_spiketrain, max_tau):
         cross_correlation_coefficient=True
     )
     # Take only t > 0 values, in particular neglecting the delta peak.
-    corrfct_pos = corrfct.time_slice(bin_size / 2, corrfct.t_stop).flatten()
+    start_id = corrfct.time_index((bin_size / 2) * binned_spiketrain.units)
+    corrfct = corrfct.magnitude.squeeze()[start_id:]
 
     # Calculate the timescale using trapezoidal integration
-    integr = np.abs((corrfct_pos / corrfct_pos[0]).magnitude)**2
+    integr = (corrfct / corrfct[0]) ** 2
     timescale = 2 * integrate.trapz(integr, dx=bin_size)
-    return timescale
+    return pq.Quantity(timescale, units=binned_spiketrain.units, copy=False)
