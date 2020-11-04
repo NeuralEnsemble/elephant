@@ -159,16 +159,23 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
     """
     if not isinstance(neo_objects, (list, tuple)):
         neo_objects = [neo_objects]
+    try:
+        units = neo_objects[0].units
+        t_start0 = neo_objects[0].t_start.item()
+        t_stop0 = neo_objects[0].t_stop.item()
+    except AttributeError:
+        raise TypeError("The input must be a list of {}. Got {}".format(
+                object_type.__name__, type(neo_objects[0]).__name__))
     for neo_obj in neo_objects:
         if not isinstance(neo_obj, object_type):
             raise TypeError("The input must be a list of {}. Got {}".format(
                 object_type.__name__, type(neo_obj).__name__))
-        if t_start is None and neo_obj.t_start != neo_objects[0].t_start:
-            raise ValueError("The input must have the same t_start.")
-        if t_stop is None and neo_obj.t_stop != neo_objects[0].t_stop:
-            raise ValueError("The input must have the same t_stop.")
-        if neo_obj.units != neo_objects[0].units:
+        if neo_obj.units != units:
             raise ValueError("The input must have the same units.")
+        if t_start is None and neo_obj.t_start.item() != t_start0:
+            raise ValueError("The input must have the same t_start.")
+        if t_stop is None and neo_obj.t_stop.item() != t_stop0:
+            raise ValueError("The input must have the same t_stop.")
 
 
 def check_same_units(quantities, object_type=pq.Quantity):
