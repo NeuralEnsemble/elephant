@@ -677,8 +677,11 @@ def cross_correlation_histogram(
     if binned_spiketrain_i.shape[0] != 1 or \
             binned_spiketrain_j.shape[0] != 1:
         raise ValueError("Spike trains must be one dimensional")
-    if binned_spiketrain_j.units != binned_spiketrain_i.units:
-        binned_spiketrain_j.rescale(binned_spiketrain_i.units)
+
+    # rescale to the common units
+    # this does not change the data - only its representation
+    binned_spiketrain_j.rescale(binned_spiketrain_i.units)
+
     if not np.isclose(binned_spiketrain_i._bin_size,
                       binned_spiketrain_j._bin_size):
         raise ValueError("Bin sizes must be equal")

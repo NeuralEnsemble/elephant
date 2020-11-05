@@ -362,6 +362,9 @@ class BinnedSpikeTrain(object):
         """
         if isinstance(units, str):
             units = pq.Quantity(1, units=units)
+        if units == self.units:
+            # do nothing
+            return
         if not isinstance(units, pq.Quantity):
             raise TypeError("The input units must be quantities or string")
         scale = self.units.rescale(units).item()
