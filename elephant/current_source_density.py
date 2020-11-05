@@ -313,10 +313,12 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     elif dim == 3:
         y = np.linspace(y_limits[0], y_limits[1], resolution)
         z = np.linspace(z_limits[0], z_limits[1], resolution)
+        chrg_x, chrg_y, chrg_z = np.mgrid[
+            x_limits[0]: x_limits[1]: np.complex(0, resolution),
+            y_limits[0]: y_limits[1]: np.complex(0, resolution),
+            z_limits[0]: z_limits[1]: np.complex(0, resolution)
+        ]
 
-        chrg_x = np.reshape(x, (len(x), 1, 1))
-        chrg_y = np.reshape(y, (1, len(y), 1))
-        chrg_z = np.reshape(z, (1, 1, len(z)))
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
 
         pots = np.zeros(len(x_positions))
