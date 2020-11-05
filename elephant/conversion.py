@@ -302,12 +302,8 @@ class BinnedSpikeTrain(object):
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains, tolerance=tolerance)
         # Now create the sparse matrix
-        self.sparse_matrix, n_discarded = self._create_sparse_matrix(
-            spiketrains, tolerance=tolerance)
-
-        if n_discarded > 0:
-            warnings.warn("Binning discarded {} last spike(s) in the "
-                          "input spiketrain".format(n_discarded))
+        self.sparse_matrix = self._create_sparse_matrix(spiketrains,
+                                                        tolerance=tolerance)
 
     @property
     def shape(self):
@@ -802,16 +798,15 @@ class BinnedSpikeTrain(object):
             Spike trains to bin.
 
         """
-        n_discarded = 0
-
         if not _check_neo_spiketrain(spiketrains):
             # a binned numpy array
             sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
-            return sparse_matrix, n_discarded
+            return sparse_matrix
 
         row_ids, column_ids = [], []
         # data
         counts = []
+        n_discarded = 0
 
         # all spiketrains carry the same units
         scale_units = 1 / self._bin_size
@@ -841,6 +836,10 @@ class BinnedSpikeTrain(object):
             counts.append(c)
             row_ids.append(np.repeat(idx, repeats=len(f)))
 
+        if n_discarded > 0:
+            warnings.warn("Binning discarded {} last spike(s) of the "
+                          "input spiketrain".format(n_discarded))
+
         counts = np.hstack(counts)
         row_ids = np.hstack(row_ids)
         column_ids = np.hstack(column_ids)
@@ -848,7 +847,7 @@ class BinnedSpikeTrain(object):
         sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
                                        shape=(len(spiketrains), self.n_bins),
                                        dtype=np.int32, copy=False)
-        return sparse_matrix, n_discarded
+        return sparse_matrix
 
 
 class _BinnedSpikeTrainView(BinnedSpikeTrain):
