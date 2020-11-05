@@ -1376,16 +1376,19 @@ def surrogates(
     if method is bin_shuffling:
         binned_spiketrain = conv.BinnedSpikeTrain(
             spiketrain, bin_size=kwargs['bin_size'])
-        bin_grid = binned_spiketrain.bin_centers.simplified.magnitude
+        bin_size = binned_spiketrain._bin_size
+        # bin_centers share the same units as bin_size
+        bin_grid = binned_spiketrain.bin_centers.magnitude
         max_displacement = int(
-            dt.simplified.magnitude / kwargs['bin_size'].simplified.magnitude)
-        binned_surrogates = method(
-            binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
+            dt.rescale(binned_spiketrain.units).item() / bin_size)
+        binned_surrogates = bin_shuffling(binned_spiketrain,
+                                          max_displacement=max_displacement,
+                                          n_surrogates=n_surrogates)
         surrogate_spiketrains = \
-            [neo.SpikeTrain(bin_grid[binned_surr.to_bool_array()[0]] * pq.s,
+            [neo.SpikeTrain(bin_grid[binned_surr.sparse_matrix.nonzero()[1]],
                             t_start=spiketrain.t_start,
                             t_stop=spiketrain.t_stop,
-                            units=spiketrain.units,
+                            units=binned_spiketrain.units,
                             sampling_rate=spiketrain.sampling_rate)
              for binned_surr in binned_surrogates]
         return surrogate_spiketrains

@@ -294,35 +294,80 @@ class BinnedSpikeTrain(object):
             spiketrains = [spiketrains]
 
         # Set given parameters
-        self.t_start = t_start
-        self.t_stop = t_stop
+        self._t_start = t_start
+        self._t_stop = t_stop
         self.n_bins = n_bins
-        self.bin_size = bin_size
+        self._bin_size = bin_size
+        self.units = None  # will be set later
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains, tolerance=tolerance)
-        self._check_consistency(tolerance=tolerance)
         # Now create the sparse matrix
-        self.sparse_matrix, n_discarded = self._create_sparse_matrix(
-            spiketrains, tolerance=tolerance)
-
-        if n_discarded > 0:
-            warnings.warn("Binning discarded {} last spike(s) in the "
-                          "input spiketrain".format(n_discarded))
+        self.sparse_matrix = self._create_sparse_matrix(spiketrains,
+                                                        tolerance=tolerance)
 
     @property
     def shape(self):
         return self.sparse_matrix.shape
 
     @property
+    def bin_size(self):
+        return pq.Quantity(self._bin_size, units=self.units, copy=False)
+
+    @property
+    def t_start(self):
+        return pq.Quantity(self._t_start, units=self.units, copy=False)
+
+    @property
+    def t_stop(self):
+        return pq.Quantity(self._t_stop, units=self.units, copy=False)
+
+    @property
     def binsize(self):
         warnings.warn("'.binsize' is deprecated; use '.bin_size'",
                       DeprecationWarning)
-        return self.bin_size
+        return self._bin_size
 
     @property
     def num_bins(self):
         warnings.warn("'.num_bins' is deprecated; use '.n_bins'")
         return self.n_bins
+
+    def __repr__(self):
+        return "{klass}(t_start={t_start}, t_stop={t_stop}, " \
+               "bin_size={bin_size}; shape={shape})".format(
+                     klass=type(self).__name__,
+                     t_start=self.t_start,
+                     t_stop=self.t_stop,
+                     bin_size=self.bin_size,
+                     shape=self.shape)
+
+    def rescale(self, units):
+        """
+        Inplace rescaling to the new quantity units.
+
+        Parameters
+        ----------
+        units : pq.Quantity or str
+            New quantity units.
+
+        Raises
+        ------
+        TypeError
+            If the input units are not quantities.
+
+        """
+        if isinstance(units, str):
+            units = pq.Quantity(1, units=units)
+        if units == self.units:
+            # do nothing
+            return
+        if not isinstance(units, pq.Quantity):
+            raise TypeError("The input units must be quantities or string")
+        scale = self.units.rescale(units).item()
+        self._t_stop *= scale
+        self._t_start *= scale
+        self._bin_size *= scale
+        self.units = units
 
     def __resolve_binned(self, spiketrains):
         spiketrains = np.asarray(spiketrains)
@@ -337,17 +382,17 @@ class BinnedSpikeTrain(object):
                              "must be set to None - it's extracted from the "
                              "input shape.")
         self.n_bins = spiketrains.shape[1]
-        if self.bin_size is None:
-            if self.t_start is None or self.t_stop is None:
+        if self._bin_size is None:
+            if self._t_start is None or self._t_stop is None:
                 raise ValueError("To determine the bin size, both 't_start' "
                                  "and 't_stop' must be set")
-            self.bin_size = (self.t_stop - self.t_start) / self.n_bins
-        if self.t_start is None and self.t_stop is None:
+            self._bin_size = (self._t_stop - self._t_start) / self.n_bins
+        if self._t_start is None and self._t_stop is None:
             raise ValueError("Either 't_start' or 't_stop' must be set")
-        if self.t_start is None:
-            self.t_start = self.t_stop - self.bin_size * self.n_bins
-        if self.t_stop is None:
-            self.t_stop = self.t_start + self.bin_size * self.n_bins
+        if self._t_start is None:
+            self._t_start = self._t_stop - self._bin_size * self.n_bins
+        if self._t_stop is None:
+            self._t_stop = self._t_start + self._bin_size * self.n_bins
 
     def _resolve_input_parameters(self, spiketrains, tolerance):
         """
@@ -362,18 +407,52 @@ class BinnedSpikeTrain(object):
         spiketrains : neo.SpikeTrain or list or np.ndarray of neo.SpikeTrain
 
         """
+        def get_n_bins():
+            n_bins = (self._t_stop - self._t_start) / self._bin_size
+            if isinstance(n_bins, pq.Quantity):
+                n_bins = n_bins.simplified.item()
+            if _detect_rounding_errors(n_bins, tolerance=tolerance):
+                warnings.warn('Correcting a rounding error in the calculation '
+                              'of n_bins by increasing n_bins by 1. '
+                              'You can set tolerance=None to disable this '
+                              'behaviour.')
+            return int(n_bins)
+
+        def check_n_bins_consistency():
+            if self.n_bins != get_n_bins():
+                raise ValueError(
+                    "Inconsistent arguments: t_start ({t_start}), "
+                    "t_stop ({t_stop}), bin_size ({bin_size}), and "
+                    "n_bins ({n_bins})".format(
+                        t_start=self.t_start, t_stop=self.t_stop,
+                        bin_size=self.bin_size, n_bins=self.n_bins))
+
+        def check_consistency():
+            if self.t_start >= self.t_stop:
+                raise ValueError("t_start must be smaller than t_stop")
+            if not isinstance(self.n_bins, int) or self.n_bins <= 0:
+                raise TypeError("The number of bins ({}) must be a positive "
+                                "integer".format(self.n_bins))
+
         if not _check_neo_spiketrain(spiketrains):
+            # a binned numpy matrix
             self.__resolve_binned(spiketrains)
+            self.units = self._bin_size.units
+            check_n_bins_consistency()
+            check_consistency()
+            self._t_start = self._t_start.rescale(self.units).item()
+            self._t_stop = self._t_stop.rescale(self.units).item()
+            self._bin_size = self._bin_size.rescale(self.units).item()
             return
 
-        if self.bin_size is None and self.n_bins is None:
+        if self._bin_size is None and self.n_bins is None:
             raise ValueError("Either 'bin_size' or 'n_bins' must be given")
 
         try:
             check_neo_consistency(spiketrains,
                                   object_type=neo.SpikeTrain,
-                                  t_start=self.t_start,
-                                  t_stop=self.t_stop)
+                                  t_start=self._t_start,
+                                  t_stop=self._t_stop)
         except ValueError as er:
             # different t_start/t_stop
             raise ValueError(er, "If you want to bin over the shared "
@@ -384,18 +463,27 @@ class BinnedSpikeTrain(object):
                                  "get_common_start_stop_times(spiketrains)"
                              )
 
-        if self.t_start is None:
-            self.t_start = spiketrains[0].t_start
-        if self.t_stop is None:
-            self.t_stop = spiketrains[0].t_stop
+        if self._t_start is None:
+            self._t_start = spiketrains[0].t_start
+        if self._t_stop is None:
+            self._t_stop = spiketrains[0].t_stop
+        # At this point, all spiketrains share the same units.
+        self.units = spiketrains[0].units
+
+        try:
+            self._t_start = self._t_start.rescale(self.units).item()
+            self._t_stop = self._t_stop.rescale(self.units).item()
+        except AttributeError:
+            raise ValueError("'t_start' and 't_stop' must be quantities")
+
         start_shared, stop_shared = get_common_start_stop_times(spiketrains)
+        start_shared = start_shared.rescale(self.units).item()
+        stop_shared = stop_shared.rescale(self.units).item()
+
         if tolerance is None:
             tolerance = 0
-        # At this point, all spiketrains, t_start/stop and shared t_start/stop
-        # share the same units.
-        tolerance_units = tolerance * spiketrains[0].units
-        if self.t_start < start_shared - tolerance_units \
-                or self.t_stop > stop_shared + tolerance_units:
+        if self._t_start < start_shared - tolerance \
+                or self._t_stop > stop_shared + tolerance:
             raise ValueError("'t_start' ({t_start}) or 't_stop' ({t_stop}) is "
                              "outside of the shared [{start_shared}, "
                              "{stop_shared}] interval".format(
@@ -405,38 +493,17 @@ class BinnedSpikeTrain(object):
 
         if self.n_bins is None:
             # bin_size is provided
-            n_bins = ((self.t_stop - self.t_start) / self.bin_size
-                      ).simplified.item()
-            if _detect_rounding_errors(n_bins, tolerance=tolerance):
-                warnings.warn('Correcting a rounding error in the calculation '
-                              'of n_bins by increasing n_bins by 1. '
-                              'You can set tolerance=None to disable this '
-                              'behaviour.')
-                n_bins += 1
-            self.n_bins = int(n_bins)
-        elif self.bin_size is None:
+            self._bin_size = self._bin_size.rescale(self.units).item()
+            self.n_bins = get_n_bins()
+        elif self._bin_size is None:
             # n_bins is provided
-            self.bin_size = (self.t_stop - self.t_start) / self.n_bins
+            self._bin_size = (self._t_stop - self._t_start) / self.n_bins
+        else:
+            # both n_bins are bin_size are given
+            self._bin_size = self._bin_size.rescale(self.units).item()
+            check_n_bins_consistency()
 
-    def _check_consistency(self, tolerance):
-        if self.t_start >= self.t_stop:
-            raise ValueError("t_start must be smaller than t_stop")
-
-        # account for rounding errors in the reference num_bins
-        n_bins_rounded = ((self.t_stop - self.t_start) / self.bin_size
-                          ).simplified.item()
-        if _detect_rounding_errors(n_bins_rounded, tolerance=tolerance):
-            n_bins_rounded += 1
-        n_bins_rounded = int(n_bins_rounded)
-        if self.n_bins != n_bins_rounded:
-            raise ValueError("Inconsistent arguments: t_start ({t_start}), "
-                             "t_stop ({t_stop}), bin_size ({bin_size}), and "
-                             "n_bins ({n_bins})".format(
-                                 t_start=self.t_start, t_stop=self.t_stop,
-                                 bin_size=self.bin_size, n_bins=self.n_bins))
-        if not isinstance(self.n_bins, int) or self.n_bins <= 0:
-            raise TypeError("The number of bins ({}) must be a positive "
-                            "integer".format(self.n_bins))
+        check_consistency()
 
     @property
     def bin_edges(self):
@@ -457,11 +524,10 @@ class BinnedSpikeTrain(object):
             All edges in interval [:attr:`t_start`, :attr:`t_stop`] with
             :attr:`n_bins` bins are returned as a quantity array.
         """
-        t_start = self.t_start.rescale(self.bin_size.units).item()
-        bin_edges = np.linspace(t_start, t_start + self.n_bins *
-                                self.bin_size.item(),
+        bin_edges = np.linspace(self._t_start, self._t_start + self.n_bins *
+                                self._bin_size,
                                 num=self.n_bins + 1, endpoint=True)
-        return pq.Quantity(bin_edges, units=self.bin_size.units)
+        return pq.Quantity(bin_edges, units=self.units, copy=False)
 
     @property
     def bin_centers(self):
@@ -477,7 +543,13 @@ class BinnedSpikeTrain(object):
             All center edges in interval (:attr:`start`, :attr:`stop`).
 
         """
-        return self.bin_edges[:-1] + self.bin_size / 2
+        start = self._t_start + self._bin_size / 2
+        stop = start + (self.n_bins - 1) * self._bin_size
+        bin_centers = np.linspace(start=start,
+                                  stop=stop,
+                                  num=self.n_bins, endpoint=True)
+        bin_centers = pq.Quantity(bin_centers, units=self.units, copy=False)
+        return bin_centers
 
     def to_sparse_array(self):
         """
@@ -670,30 +742,36 @@ class BinnedSpikeTrain(object):
                 shape=spmat.shape)
         return spmat.toarray()
 
-    def binarize(self, copy=True):
+    def binarize(self, copy=None):
         """
         Clip the internal array (no. of spikes in a bin) to `0` (no spikes) or
         `1` (at least one spike) values only.
 
         Parameters
         ----------
-        copy : bool
-            Perform the clipping in-place (False) or on a copy (True).
-            Default: True.
+        copy : bool, optional
+            Deprecated parameter. It has no effect.
 
         Returns
         -------
-        bst : BinnedSpikeTrain
-            `BinnedSpikeTrain` with both sparse and dense (if present) array
-            representation clipped to `0` (no spike) or `1` (at least one
-            spike) entries.
+        bst : _BinnedSpikeTrainView
+            A view of `BinnedSpikeTrain` with a sparse matrix containing
+            data clipped to `0`s and `1`s.
 
         """
-        if copy:
-            bst = deepcopy(self)
-        else:
-            bst = self
-        bst.sparse_matrix.data.clip(max=1, out=bst.sparse_matrix.data)
+        if copy is not None:
+            warnings.warn("'copy' parameter is deprecated - a view is always "
+                          "returned; set this parameter to None.",
+                          DeprecationWarning)
+        spmat = self.sparse_matrix
+        spmat = sps.csr_matrix(
+            (spmat.data.clip(max=1), spmat.indices, spmat.indptr),
+            shape=spmat.shape, copy=False)
+        bst = _BinnedSpikeTrainView(t_start=self._t_start,
+                                    t_stop=self._t_stop,
+                                    bin_size=self._bin_size,
+                                    units=self.units,
+                                    sparse_matrix=spmat)
         return bst
 
     @property
@@ -720,24 +798,22 @@ class BinnedSpikeTrain(object):
             Spike trains to bin.
 
         """
-        n_discarded = 0
-
         if not _check_neo_spiketrain(spiketrains):
             # a binned numpy array
             sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
-            return sparse_matrix, n_discarded
+            return sparse_matrix
 
         row_ids, column_ids = [], []
         # data
         counts = []
+        n_discarded = 0
 
         # all spiketrains carry the same units
-        scale_units = (spiketrains[0].units / self.bin_size).simplified.item()
-        t_start = self.t_start.item()
-        t_stop = self.t_stop.item()
+        scale_units = 1 / self._bin_size
         for idx, st in enumerate(spiketrains):
             times = st.magnitude
-            times = times[(times >= t_start) & (times <= t_stop)] - t_start
+            times = times[(times >= self._t_start) & (
+                    times <= self._t_stop)] - self._t_start
             bins = times * scale_units
 
             # shift spikes that are very close
@@ -760,14 +836,30 @@ class BinnedSpikeTrain(object):
             counts.append(c)
             row_ids.append(np.repeat(idx, repeats=len(f)))
 
+        if n_discarded > 0:
+            warnings.warn("Binning discarded {} last spike(s) of the "
+                          "input spiketrain".format(n_discarded))
+
         counts = np.hstack(counts)
         row_ids = np.hstack(row_ids)
         column_ids = np.hstack(column_ids)
 
         sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
                                        shape=(len(spiketrains), self.n_bins),
-                                       dtype=np.int32)
-        return sparse_matrix, n_discarded
+                                       dtype=np.int32, copy=False)
+        return sparse_matrix
+
+
+class _BinnedSpikeTrainView(BinnedSpikeTrain):
+    # Experimental feature and should not be public now.
+
+    def __init__(self, t_start, t_stop, bin_size, units, sparse_matrix):
+        self._t_start = t_start
+        self._t_stop = t_stop
+        self._bin_size = bin_size
+        self.n_bins = sparse_matrix.shape[1]
+        self.units = units
+        self.sparse_matrix = sparse_matrix
 
 
 def _check_neo_spiketrain(matrix):

@@ -792,15 +792,11 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         timescale = 1 / (4 * nu)
         np.random.seed(35)
 
-        timescale_num = []
         for _ in range(10):
             spikes = homogeneous_gamma_process(2, 2 * nu, 0 * pq.ms, T)
             spikes_bin = conv.BinnedSpikeTrain(spikes, bin_size)
             timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
-            timescale_i.units = timescale.units
-            timescale_num.append(timescale_i.magnitude)
-        assert_array_almost_equal(timescale.magnitude, timescale_num,
-                                  decimal=3)
+            assert_array_almost_equal(timescale, timescale_i, decimal=3)
 
     def test_timescale_errors(self):
         spikes = neo.SpikeTrain([1, 5, 7, 8] * pq.ms, t_stop=10 * pq.ms)
