@@ -771,7 +771,6 @@ class BinnedSpikeTrain(object):
         bst = _BinnedSpikeTrainView(t_start=self._t_start,
                                     t_stop=self._t_stop,
                                     bin_size=self._bin_size,
-                                    n_bins=self.n_bins,
                                     units=self.units,
                                     sparse_matrix=spmat)
         return bst
@@ -852,12 +851,11 @@ class BinnedSpikeTrain(object):
 class _BinnedSpikeTrainView(BinnedSpikeTrain):
     # Experimental feature and should not be public now.
 
-    def __init__(self, t_start, t_stop, bin_size, n_bins, units,
-                 sparse_matrix):
+    def __init__(self, t_start, t_stop, bin_size, units, sparse_matrix):
         self._t_start = t_start
         self._t_stop = t_stop
         self._bin_size = bin_size
-        self.n_bins = n_bins
+        self.n_bins = sparse_matrix.shape[1]
         self.units = units
         self.sparse_matrix = sparse_matrix
 
