@@ -136,7 +136,7 @@ def get_common_start_stop_times(neo_objects):
 
 
 def check_neo_consistency(neo_objects, object_type, t_start=None,
-                          t_stop=None):
+                          t_stop=None, tolerance=1e-6):
     """
     Checks that all input neo objects share the same units, t_start, and
     t_stop.
@@ -149,6 +149,10 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         The common type.
     t_start, t_stop : pq.Quantity or None, optional
         If None, check for exact match of t_start/t_stop across the input.
+    tolerance : float, optional
+        The absolute affordable tolerance for the discrepancies between
+        t_start/stop magnitude values across trials.
+        Default : 1e-6
 
     Raises
     ------
@@ -161,8 +165,8 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         neo_objects = [neo_objects]
     try:
         units = neo_objects[0].units
-        t_start0 = neo_objects[0].t_start.item()
-        t_stop0 = neo_objects[0].t_stop.item()
+        start = neo_objects[0].t_start.item()
+        stop = neo_objects[0].t_stop.item()
     except AttributeError:
         raise TypeError("The input must be a list of {}. Got {}".format(
                 object_type.__name__, type(neo_objects[0]).__name__))
@@ -172,9 +176,9 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
                 object_type.__name__, type(neo_obj).__name__))
         if neo_obj.units != units:
             raise ValueError("The input must have the same units.")
-        if t_start is None and neo_obj.t_start.item() != t_start0:
+        if t_start is None and abs(neo_obj.t_start.item() - start) > tolerance:
             raise ValueError("The input must have the same t_start.")
-        if t_stop is None and neo_obj.t_stop.item() != t_stop0:
+        if t_stop is None and abs(neo_obj.t_stop.item() - stop) > tolerance:
             raise ValueError("The input must have the same t_stop.")
 
 

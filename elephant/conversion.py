@@ -452,7 +452,8 @@ class BinnedSpikeTrain(object):
             check_neo_consistency(spiketrains,
                                   object_type=neo.SpikeTrain,
                                   t_start=self._t_start,
-                                  t_stop=self._t_stop)
+                                  t_stop=self._t_stop,
+                                  tolerance=tolerance)
         except ValueError as er:
             # different t_start/t_stop
             raise ValueError(er, "If you want to bin over the shared "
