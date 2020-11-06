@@ -170,6 +170,8 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
     except AttributeError:
         raise TypeError("The input must be a list of {}. Got {}".format(
                 object_type.__name__, type(neo_objects[0]).__name__))
+    if tolerance is None:
+        tolerance = 0
     for neo_obj in neo_objects:
         if not isinstance(neo_obj, object_type):
             raise TypeError("The input must be a list of {}. Got {}".format(
