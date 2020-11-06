@@ -23,7 +23,7 @@ New functionality and features
 * Revised local variability LvR (https://github.com/NeuralEnsemble/elephant/pull/346) as an alternative to the LV measure.
 * Three surrogate methods: Trial-shifting, Bin Shuffling, ISI dithering (https://github.com/NeuralEnsemble/elephant/pull/343).
 * Added a new function to generate spike trains: 'inhomogeneous_gamma_process' (https://github.com/NeuralEnsemble/elephant/pull/339).
-* The output of 'instantaneous_rate' function is now a 2D matrix of shape `(time, len(spiketrains))` (https://github.com/NeuralEnsemble/elephant/issues/363). Not only the users can assess the averaged instantaneous rate (`rates.mean(axis=1)`) but also explore how much the instantaneous rate deviates from trial to trial (`rates.std(axis=1)`) (originally asked in https://github.com/NeuralEnsemble/elephant/issues/363).
+* The output of 'instantaneous_rate' function is now a 2D matrix of shape `(time, len(spiketrains))` (https://github.com/NeuralEnsemble/elephant/issues/363). Not only can the users assess the averaged instantaneous rate (`rates.mean(axis=1)`) but also explore how much the instantaneous rate deviates from trial to trial (`rates.std(axis=1)`) (originally asked in https://github.com/NeuralEnsemble/elephant/issues/363).
 
 Dropping Python 2.7 and 3.5 support
 -----------------------------------
@@ -34,12 +34,13 @@ Optimization
 ------------
 * You have been asking for direct numpy support for years. Added `_t_start`, `_t_stop`, and `_bin_size` attributes of BinnedSpikeTrain are guaranteed to be of the same units and hence are unitless (https://github.com/NeuralEnsemble/elephant/pull/378). It doesn't mean though that you need to care about units on your own: `t_start`, `t_stop`, and `bin_size` properties are still quantities with units. The `.rescale()` method of a BinnedSpikeTrain rescales the internal units to new ones in-place. The following Elephant functions are optimized with unitless BinnedSpikeTrain:
   - cross_correlation_histogram
-  - bin_shuffling (one of surrogate methods)
+  - bin_shuffling (one of the surrogate methods)
   - spike_train_timescale
 * X4 faster binning and overall BinnedSpikeTrain object creation (https://github.com/NeuralEnsemble/elephant/pull/368).
-* X25 faster 'instantaneous_rate' function (https://github.com/NeuralEnsemble/elephant/pull/362) (thanks to @gyyang for the idea and original implementation).
+* 'instantaneous_rate' function is vectorized to work with a list of spike train trials rather than computing them in a loop (previously, `for spiketrain in spiketrains; do compute instantaneous_rate(spiketrain); done`), which brought X25 speedup (https://github.com/NeuralEnsemble/elephant/pull/362; thanks to @gyyang for the idea and original implementation).
 * Memory-efficient 'zscore' function (https://github.com/NeuralEnsemble/elephant/pull/372).
 * Don't sort the input array in ISI function (https://github.com/NeuralEnsemble/elephant/pull/371), which reduces function algorithmic time complexity from `O(N logN)` to linear `O(N)`. Now, when the input time array is not sorted, a warning is shown.
+* Vectorized Current Source Density 'generate_lfp' function (https://github.com/NeuralEnsemble/elephant/pull/358).
 
 Breaking changes
 ----------------
@@ -60,9 +61,9 @@ Other changes
 
 Bug fixes
 ---------
-* instantaneous rate array was not centered at the origin for spike trains that are symmetric at t=0 with `center_kernel=True` option (https://github.com/NeuralEnsemble/elephant/pull/362);
-* the number of discarded spikes that fall into the last bin of a BinnedSpikeTrain object was wrongly calculated (https://github.com/NeuralEnsemble/elephant/pull/368);
-* fixed surrogates bugs:
+* Instantaneous rate arrays were not centered at the origin for spike trains that are symmetric at t=0 with `center_kernel=True` option (https://github.com/NeuralEnsemble/elephant/pull/362).
+* The number of discarded spikes that fall into the last bin of a BinnedSpikeTrain object was incorrectly calculated (https://github.com/NeuralEnsemble/elephant/pull/368).
+* Fixed surrogates bugs:
   - 'joint-ISI' and 'shuffle ISI' output spike trains were not sorted in time (https://github.com/NeuralEnsemble/elephant/pull/364);
   - surrogates get arbitrary sampling_rate (https://github.com/NeuralEnsemble/elephant/pull/353), which relates to the provenance tracking issue;
 
