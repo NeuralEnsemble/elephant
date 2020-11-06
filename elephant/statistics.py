@@ -895,32 +895,8 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     elephant.conversion.BinnedSpikeTrain
 
     """
-    min_tstop = 0
-    if t_start is None:
-        # Find the internal range for t_start, where all spike trains are
-        # defined; cut all spike trains taking that time range only
-        max_tstart, min_tstop = get_common_start_stop_times(spiketrains)
-        t_start = max_tstart
-        if not all([max_tstart == t.t_start for t in spiketrains]):
-            warnings.warn(
-                "Spiketrains have different t_start values -- "
-                "using maximum t_start as t_start.")
-
-    if t_stop is None:
-        # Find the internal range for t_stop
-        if not min_tstop:
-            min_tstop = get_common_start_stop_times(spiketrains)[1]
-        t_stop = min_tstop
-        if not all([min_tstop == t.t_stop for t in spiketrains]):
-            warnings.warn(
-                "Spiketrains have different t_stop values -- "
-                "using minimum t_stop as t_stop.")
-
-    sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in
-               spiketrains]
-
     # Bin the spike trains and sum across columns
-    bs = BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
+    bs = BinnedSpikeTrain(spiketrains, t_start=t_start, t_stop=t_stop,
                           bin_size=bin_size)
 
     if binary:
@@ -944,7 +920,8 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=bin_size, units=bin_hist.units,
-                            t_start=t_start, normalization=output, copy=False)
+                            t_start=bs.t_start, normalization=output,
+                            copy=False)
 
 
 @deprecated_alias(binsize='bin_size')
