@@ -229,22 +229,12 @@ def phase_locking_value(phases_x, phases_y):
     # version 0.2: signal x and y have multiple trials
     # with discrete values/phases
 
-    # list of trial averaged plv at time t
-    list_plv_t = []
-    for time_i in range(num_time_points):
-        # list of phase differences at time i and
-        # for each trial j from signal x and y
-        list_adiff_i = []
-        for trial_j in range(num_trial):
-            phase_diff_i_j = phase_difference(phases_x[trial_j][time_i],
-                                              phases_y[trial_j][time_i])
-            list_adiff_i.append(phase_diff_i_j)
-        plv_theta_i, plv_r_i = mean_vector(list_adiff_i)
-        list_plv_t.append(plv_r_i)
-    return list_plv_t
+    phase_diff = phase_difference(phases_x, phases_y)
+    theta, r = mean_vector(phase_diff, axis=0)
+    return r
 
 
-def mean_vector(phases):
+def mean_vector(phases, axis):
     """
     This function calculates the mean direction & the mean vector length
     of the phases-set.
@@ -253,6 +243,8 @@ def mean_vector(phases):
     ----------
     - phases: array-like object
         phases of circular data
+    - axis: None or int(0, 1)
+        axis along which the mean_vector will be calculated
 
     Returns
     -------
@@ -260,8 +252,9 @@ def mean_vector(phases):
     - z_mean_r: length of the mean vector
     """
     # use complex number representation
-    z_phases = np.cos(phases) + 1j * np.sin(phases)
-    z_mean = np.mean(z_phases)
+    # z_phases = np.cos(phases) + 1j * np.sin(phases)
+    z_phases = np.exp(1j * np.asarray(phases))
+    z_mean = np.mean(z_phases, axis=axis)
     z_mean_theta = np.angle(z_mean)
     z_mean_r = np.abs(z_mean)
     return z_mean_theta, z_mean_r
@@ -281,14 +274,9 @@ def phase_difference(alpha, beta):
     Returns
     -------
     - phase_diff: float
-        phase difference between alpha and beta TODO:in range of [-pi, pi]
+        phase difference between alpha and beta
 
     """
-    phase_diff = alpha - beta
 
-    if phase_diff < -np.pi:
-        return phase_diff % np.pi
-    if phase_diff > np.pi:
-        return phase_diff - 2*np.pi
-
+    phase_diff = np.arctan2(np.sin(alpha - beta), np.cos(alpha - beta))
     return phase_diff
