@@ -210,8 +210,7 @@ class MeanVectorTestCase(unittest.TestCase):
         self.lock_value = np.random.random(1)[0] * 2 * np.pi - np.pi
         self.dataset1 = np.ones(self.n_samples) * self.lock_value
         # create a evenly spaced / uniform distribution
-        self.dataset2 = [i * 2 * np.pi / self.n_samples
-                         for i in range(self.n_samples)]
+        self.dataset2 = np.arange(0, 2*np.pi, (2*np.pi) / self.n_samples)
         # create a random distribution
         self.dataset3 = np.random.random(self.n_samples) * 2 * np.pi
 
@@ -303,32 +302,29 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         one_sine_trial = np.array((2 * np.pi * self.frequency * self.time)
                                   % (2 * np.pi))
         # change phases range from [0, 2pi] to [-pi, pi]
-        one_sine_trial = np.where(one_sine_trial <= np.pi, one_sine_trial,
-                                  one_sine_trial - 2*np.pi)
+        one_sine_trial = np.arctan2(np.sin(one_sine_trial),
+                                    np.cos(one_sine_trial))
         self.signal_x_sine = np.empty([self.num_trials, self.num_time_points])
         self.signal_x_sine[:] = one_sine_trial
 
         one_cos_trial = np.array((2 * np.pi * self.frequency * self.time
                                   + np.pi/2) % (2 * np.pi))
         # change phases range from [0, 2pi] to [-pi, pi]
-        one_cos_trial = np.where(one_cos_trial <= np.pi, one_cos_trial,
-                                 one_cos_trial - 2*np.pi)
+        one_cos_trial = np.arctan2(np.sin(one_cos_trial),
+                                   np.cos(one_cos_trial))
         self.signal_y_cos = np.empty([self.num_trials, self.num_time_points])
         self.signal_y_cos[:] = one_cos_trial
 
         # create phase-shifted trials of signal_x_sine,
         # to create later phase differences, which vary a lot across trials
-        self.shifted_signal_x = np.copy(self.signal_x_sine)
-        for i, trial in enumerate(self.shifted_signal_x):
-            trial += i/self.num_trials * 2 * np.pi
-        # change phases range from [0, 2pi] to [-pi, pi]
-        self.shifted_signal_x = \
-            np.where(self.shifted_signal_x <= np.pi, self.shifted_signal_x,
-                     self.shifted_signal_x - 2*np.pi)
+        shift_steps = \
+            np.reshape(np.arange(0, 2*np.pi, (2*np.pi)/self.num_trials),
+                       (self.num_trials, 1))
+        self.shifted_signal_x = np.copy(self.signal_x_sine) + shift_steps
 
-        # print(f"sine: {self.signal_x_sine}")
-        # print(f"cos: {self.signal_y_cos}")
-        # print(f"shifted sine: {self.shifted_signal_x}")
+        # change phases range from [0, 2pi] to [-pi, pi]
+        self.shifted_signal_x = np.arctan2(np.sin(self.shifted_signal_x),
+                                           np.cos(self.shifted_signal_x))
 
     def testPhaseLockingValue_sineMinusSine(self):
         # example 1: sine minus sine
@@ -336,23 +332,24 @@ class PhaseLockingValueTestCase(unittest.TestCase):
             elephant.phase_analysis.phase_locking_value(self.signal_x_sine,
                                                         self.signal_x_sine)
         target_plv_r_is_one = np.ones_like(list1_plv_t)
-        self.assertTrue(np.array_equiv(list1_plv_t, target_plv_r_is_one))
+        self.assertTrue(np.allclose(list1_plv_t, target_plv_r_is_one,
+                                    self.tolerance))
 
     def testPhaseLockingValue_sineMinusCos(self):
         # example 2: sine minus cos
         list2_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x_sine, self.signal_y_cos)
-        for i in range(len(list2_plv_t)):
-            plv_r_i = list2_plv_t[i]
-            self.assertAlmostEqual(plv_r_i, 1, delta=self.tolerance)
+        target_plv_r_is_one = np.ones_like(list2_plv_t)
+        self.assertTrue(np.allclose(list2_plv_t, target_plv_r_is_one,
+                                    self.tolerance))
 
     def testPhaseLockingValue_SineMinusShiftedSine(self):
         # example 3: sine minus shifted sine
         list3_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x_sine, self.shifted_signal_x)
-        for i in range(len(list3_plv_t)):
-            plv_r_i = list3_plv_t[i]
-            self.assertAlmostEqual(plv_r_i, 0, delta=self.tolerance)
+        target_plv_r_is_zero = np.zeros_like(list3_plv_t)
+        self.assertTrue(np.allclose(list3_plv_t, target_plv_r_is_zero,
+                                    self.tolerance))
 
 
 if __name__ == '__main__':
