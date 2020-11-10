@@ -125,14 +125,13 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         sttimeind = np.where(np.logical_and(
             spiketrain >= start[phase_i], spiketrain < stop[phase_i]))[0]
 
-        # Find index into signal for each spike
-        ind_at_spike = np.searchsorted(hilbert_trials[trial].times,
-                                       spike_trials[trial],
-                                       side='right') - 1
-
         # Extract times for speed reasons
         times = hilbert_transform[phase_i].times
 
+        # Find index into signal for each spike
+        ind_at_spike = np.searchsorted(times, spiketrain[sttimeind],
+                                       side='right') - 1
+                                       
         # Append new list to the results for this spiketrain
         result_phases.append([])
         result_amps.append([])
