@@ -129,8 +129,10 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         times = hilbert_transform[phase_i].times
 
         # Find index into signal for each spike
-        ind_at_spike = np.searchsorted(times, spiketrain[sttimeind],
-                                       side='right').magnitude - 1
+        ind_at_spike = (
+            (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
+            hilbert_transform[phase_i].sampling_period). \
+            simplified.magnitude.astype(int)
 
         # Append new list to the results for this spiketrain
         result_phases.append([])
@@ -149,13 +151,12 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                     hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
-                print(ind_at_spike_j)
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
-                result_phases[spiketrain_i].append(
-                    np.angle(
-                        (1 - z) * np.exp(np.complex(0, p1)) +
-                        z * np.exp(np.complex(0, p2))))
+                interpolation = (1 - z) * np.exp(np.complex(0, p1)) \
+                                    + z * np.exp(np.complex(0, p2))
+                p12 = np.angle([interpolation])
+                result_phases[spiketrain_i].append(p12)
 
                 # Save amplitude
                 result_amps[spiketrain_i].append(
@@ -180,5 +181,4 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         result_amps[i] = pq.Quantity(entry, units=entry[0].units).flatten()
     for i, entry in enumerate(result_times):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
-
     return result_phases, result_amps, result_times
