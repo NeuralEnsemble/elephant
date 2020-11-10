@@ -130,8 +130,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Find index into signal for each spike
         ind_at_spike = np.searchsorted(times, spiketrain[sttimeind],
-                                       side='right') - 1
-                                       
+                                       side='right').magnitude - 1
+
         # Append new list to the results for this spiketrain
         result_phases.append([])
         result_amps.append([])
@@ -139,11 +139,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Step through all spikes
         for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
-            # Difference vector between actual spike time and sample point,
-            # positive if spike time is later than sample point
-            dv = spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]
 
-            if interpolate:
+            if interpolate and ind_at_spike_j+1 < len(times):
                 # Get relative spike occurrence between the two closest signal
                 # sample points
                 # if z->0 spike is more to the left sample
@@ -152,6 +149,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                     hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
+                print(ind_at_spike_j)
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
                 result_phases[spiketrain_i].append(
