@@ -91,17 +91,19 @@ class GPFATestCase(unittest.TestCase):
     def test_data1(self):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa.fit(self.data1)
-        xorth = gpfa.transform(self.data1)
+        latent_variable_orth = gpfa.transform(self.data1)
         self.assertAlmostEqual(gpfa.transform_info['log_likelihood'],
                                -8172.004695554373, places=5)
         # Since data1 is inherently 2 dimensional, only the first two
-        # dimensions of xorth should have finite power.
+        # dimensions of latent_variable_orth should have finite power.
         for i in [0, 1]:
-            self.assertNotEqual(xorth[0][i].mean(), 0)
-            self.assertNotEqual(xorth[0][i].var(), 0)
+            self.assertNotEqual(latent_variable_orth[0][i].mean(), 0)
+            self.assertNotEqual(latent_variable_orth[0][i].var(), 0)
         for i in [2, 3]:
-            self.assertAlmostEqual(xorth[0][i].mean(), 0, places=2)
-            self.assertAlmostEqual(xorth[0][i].var(), 0, places=2)
+            self.assertAlmostEqual(latent_variable_orth[0][i].mean(), 0,
+                                   places=2)
+            self.assertAlmostEqual(latent_variable_orth[0][i].var(), 0,
+                                   places=2)
 
     def test_transform_testing_data(self):
         # check if the num. of neurons in the test data matches the
@@ -169,12 +171,14 @@ class GPFATestCase(unittest.TestCase):
         gpfa1 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
                      em_max_iters=self.n_iters)
         gpfa1.fit(self.data1)
-        xorth1 = gpfa1.transform(self.data1)
-        xorth2 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
-                      em_max_iters=self.n_iters).fit_transform(self.data1)
+        latent_variable_orth1 = gpfa1.transform(self.data1)
+        latent_variable_orth2 = GPFA(
+            bin_size=self.bin_size, x_dim=self.x_dim,
+            em_max_iters=self.n_iters).fit_transform(self.data1)
         for i in range(len(self.data1)):
             for j in range(self.x_dim):
-                assert_array_almost_equal(xorth1[i][j], xorth2[i][j])
+                assert_array_almost_equal(latent_variable_orth1[i][j],
+                                          latent_variable_orth2[i][j])
 
     def test_get_seq_sqrt(self):
         data = [self.data2[0]]
