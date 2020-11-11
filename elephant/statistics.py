@@ -1323,39 +1323,40 @@ class Complexity(object):
         else:
             bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
 
-        i = 0
-        complexities = []
-        left_edges = []
-        right_edges = []
-        while i < len(bincount):
-            current_bincount = bincount[i]
-            if current_bincount == 0:
-                i += 1
-            else:
-                last_window_sum = current_bincount
-                last_nonzero_index = 0
-                current_window = bincount[i:i + self.spread + 1]
-                window_sum = current_window.sum()
-                while window_sum > last_window_sum:
-                    last_nonzero_index = np.nonzero(current_window)[0][-1]
-                    current_window = bincount[i:
-                                              i + last_nonzero_index
-                                              + self.spread + 1]
-                    last_window_sum = window_sum
-                    window_sum = current_window.sum()
-                complexities.append(window_sum)
-                left_edges.append(
-                    bst.bin_edges[i].magnitude.item())
-                right_edges.append(
-                    bst.bin_edges[
-                        i + last_nonzero_index + 1
-                    ].magnitude.item())
-                i += last_nonzero_index + 1
+        nonzero_indices = np.nonzero(bincount)[0]
+        left_diff = np.diff(nonzero_indices,
+                            prepend=-self.spread - 1)
+        right_diff = np.diff(nonzero_indices,
+                             append=len(bincount) + self.spread + 1)
 
-        # we dropped units above, neither concatenate nor append works
-        # with arrays of quantities
-        left_edges *= bst.bin_edges.units
-        right_edges *= bst.bin_edges.units
+        # standalone bins (no merging required)
+        single_bin_indices = np.logical_and(left_diff > self.spread,
+                                            right_diff > self.spread)
+        single_bins = nonzero_indices[single_bin_indices]
+
+        # bins separated by fewer than spread bins form clusters
+        # that have to be merged
+        cluster_start_indices = np.logical_and(left_diff > self.spread,
+                                               right_diff <= self.spread)
+        cluster_starts = nonzero_indices[cluster_start_indices]
+        cluster_stop_indices = np.logical_and(left_diff <= self.spread,
+                                              right_diff > self.spread)
+        cluster_stops = nonzero_indices[cluster_stop_indices] + 1
+
+        single_bin_complexities = bincount[single_bins]
+        cluster_complexities = [bincount[start:stop].sum()
+                                for start, stop in zip(cluster_starts,
+                                                       cluster_stops)]
+
+        # merge standalone bins and clusters and sort them
+        combined_starts = np.concatenate((single_bins, cluster_starts))
+        combined_stops = np.concatenate((single_bins + 1, cluster_stops))
+        combined_complexities = np.concatenate((single_bin_complexities,
+                                                cluster_complexities))
+        sorting = np.argsort(combined_starts, kind='mergesort')
+        left_edges = bst.bin_edges[combined_starts[sorting]]
+        right_edges = bst.bin_edges[combined_stops[sorting]]
+        complexities = combined_complexities[sorting].astype(int)
 
         if self.sampling_rate:
             # ensure that spikes are not on the bin edges
