@@ -269,9 +269,8 @@ class ConditionalGrangerTestCase(unittest.TestCase):
 
         # Generate a small dataset for containing both direct and indirect
         # causality.
-        self.non_zero_signal = self._generate_ground_truth(length_2d=1000,
-                                                           causality_type=
-                                                           "both")
+        self.non_zero_signal = self._generate_ground_truth(
+            length_2d=1000, causality_type="both")
         # Estimate Granger causality
         self.conditional_causality = elephant.causality.granger.\
             conditional_granger(self.signal, max_order=10,
