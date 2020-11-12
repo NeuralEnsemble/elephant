@@ -239,32 +239,22 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         self.n_samples = 200
 
     def test_phaseDiff_ABS_AlphaMinusBeta_SmallerPi(self):
-        adiff_1 = elephant.phase_analysis.phase_difference(0.8 * np.pi,
-                                                           0.6 * np.pi)
-        self.assertAlmostEqual(adiff_1, 0.2*np.pi, delta=self.tolerance)
-        adiff_2 = elephant.phase_analysis.phase_difference(0.6 * np.pi,
-                                                           0.8 * np.pi)
-        self.assertAlmostEqual(adiff_2, -0.2*np.pi, delta=self.tolerance)
-        adiff_3 = elephant.phase_analysis.phase_difference(0.2 * np.pi,
-                                                           -0.2 * np.pi)
-        self.assertAlmostEqual(adiff_3, 0.4 * np.pi, delta=self.tolerance)
-        adiff_4 = elephant.phase_analysis.phase_difference(-0.2 * np.pi,
-                                                           0.2 * np.pi)
-        self.assertAlmostEqual(adiff_4, -0.4 * np.pi, delta=self.tolerance)
+        alpha = np.array([0.8, 0.6, 0.2, -0.2]) * np.pi
+        beta = np.array([0.6, 0.8, -0.2, 0.2]) * np.pi
+        target_phase_diff = np.array([0.2, -0.2, 0.4, -0.4]) * np.pi
+
+        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
+        self.assertTrue(np.allclose(phase_diff, target_phase_diff,
+                                    self.tolerance))
 
     def test_phaseDiff_ABS_AlphaMinusBeta_GreaterPi(self):
-        adiff_1 = elephant.phase_analysis.phase_difference(0.8 * np.pi,
-                                                           -0.8 * np.pi)
-        self.assertAlmostEqual(adiff_1, -0.4 * np.pi, delta=self.tolerance)
-        adiff_2 = elephant.phase_analysis.phase_difference(-0.8 * np.pi,
-                                                           0.8 * np.pi)
-        self.assertAlmostEqual(adiff_2, 0.4 * np.pi, delta=self.tolerance)
-        adiff_3 = elephant.phase_analysis.phase_difference(0.3 * np.pi,
-                                                           -0.8 * np.pi)
-        self.assertAlmostEqual(adiff_3, -0.9 * np.pi, delta=self.tolerance)
-        adiff_4 = elephant.phase_analysis.phase_difference(-0.8 * np.pi,
-                                                           0.3 * np.pi)
-        self.assertAlmostEqual(adiff_4, 0.9 * np.pi, delta=self.tolerance)
+        alpha = np.array([0.8, -0.8, 0.3, -0.8]) * np.pi
+        beta = np.array([-0.8, 0.8, -0.8, 0.3]) * np.pi
+        target_phase_diff = np.array([-0.4, 0.4, -0.9, 0.9]) * np.pi
+
+        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
+        self.assertTrue(np.allclose(phase_diff, target_phase_diff,
+                                    self.tolerance))
 
     def test_phaseDiff_in_range_MinusPi_and_Pi(self):
         sign_1 = 1 if np.random.random(1) < 0.5 else -1
