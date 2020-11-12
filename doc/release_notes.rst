@@ -18,7 +18,7 @@ Provenance is becoming a separate direction in Elephant. Many things are still t
 
 New functionality and features
 ------------------------------
-* Time-domain pairwise Granger causality (https://github.com/NeuralEnsemble/elephant/pull/332)
+* Time-domain pairwise and conditional pairwise Granger causality measures (https://github.com/NeuralEnsemble/elephant/pull/332, https://github.com/NeuralEnsemble/elephant/pull/359)
 * Spike contrast function that measures the synchrony of spike trains (https://github.com/NeuralEnsemble/elephant/pull/354; thanks to @Broxy7 for bringing this in Elephant).
 * Revised local variability LvR (https://github.com/NeuralEnsemble/elephant/pull/346) as an alternative to the LV measure.
 * Three surrogate methods: Trial-shifting, Bin Shuffling, ISI dithering (https://github.com/NeuralEnsemble/elephant/pull/343).
@@ -58,6 +58,7 @@ Other changes
 * `waveform_snr` function now directly takes a 2D or 3D waveforms matrix rather than a spike train (deprecated behavior).
 * Added a warning in fanofactor function when the input spiketrains vary in their durations (https://github.com/NeuralEnsemble/elephant/pull/341).
 * SPADE: New way to count patterns for multiple testing (https://github.com/NeuralEnsemble/elephant/pull/347)
+* GPFA renamed 'xsm' -> 'latent_variable' and 'xorth' -> 'latent_variable_orth'
 
 Bug fixes
 ---------
@@ -91,12 +92,11 @@ Optimization
 
 Python 2.7 and 3.5 deprecation
 ------------------------------
-Python 2.7 and 3.5 are deprecated will not be maintained by the end of 2020. Switch to Python 3.6+.
+Python 2.7 and 3.5 are deprecated and will not be maintained by the end of 2020. Switch to Python 3.6+.
 
 Breaking changes
 ----------------
-* Naming convention changes (`binsize` -> `bin_size`, etc.) in all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
-
+* Naming convention changes (`binsize` -> `bin_size`, etc.) in almost all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
 
 Elephant 0.7.0 release notes
 ============================
