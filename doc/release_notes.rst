@@ -25,10 +25,10 @@ New functionality and features
 * Added a new function to generate spike trains: `inhomogeneous_gamma_process` (https://github.com/NeuralEnsemble/elephant/pull/339).
 * The output of `instantaneous_rate` function is now a 2D matrix of shape `(time, len(spiketrains))` (https://github.com/NeuralEnsemble/elephant/issues/363). Not only can the users assess the averaged instantaneous rate (`rates.mean(axis=1)`) but also explore how much the instantaneous rate deviates from trial to trial (`rates.std(axis=1)`) (originally asked in https://github.com/NeuralEnsemble/elephant/issues/363).
 
-Dropping Python 2.7 and 3.5 support
------------------------------------
-This release v0.9.0 is the last release that supports Python 2.7 and 3.5;
-starting from Elephant v0.10.0, only >= 3.6 Python versions will be maintained.
+Python 3 only
+-------------
+* This release v0.9.0 is the last release that supports Python 2.7 and 3.5; starting from Elephant v0.10.0, only >= 3.6 Python versions will be maintained.
+* Added Python 3.9 support.
 
 Optimization
 ------------

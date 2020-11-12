@@ -44,6 +44,10 @@ matrix:
       python: 3.8
       env: DISTRIB="pip"
 
+    - name: "pip 3.9"
+      python: 3.9
+      env: DISTRIB="pip"
+
     - name: "docs"
       python: 3.6
       env: DISTRIB="conda"
