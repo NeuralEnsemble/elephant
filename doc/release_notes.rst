@@ -27,7 +27,7 @@ New functionality and features
 
 Python 3 only
 -------------
-* This release v0.9.0 is the last release that supports Python 2.7 and 3.5; starting from Elephant v0.10.0, only >= 3.6 Python versions will be maintained.
+* Python 2.7 and 3.5 support is dropped. You can still however enjoy the features of Elephant v0.9.0 with Python 2.7 or 3.5 by installing Elephant from [this](https://github.com/NeuralEnsemble/elephant/tree/295c6bd7fea196cf9665a78649fafedab5840cfa) commit `pip install git+https://github.com/NeuralEnsemble/elephant@295c6bd7fea196cf9665a78649fafedab5840cfa#egg=elephant[extras]`
 * Added Python 3.9 support.
 
 Optimization

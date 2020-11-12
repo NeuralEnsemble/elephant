@@ -9,19 +9,6 @@ addons:
 
 matrix:
   include:
-    - name: "conda 2.7"
-      python: 2.7
-      env: DISTRIB="conda"
-      before_install: sed -i 's/conda-forge/conda/g' requirements/environment.yml
-
-    - name: "pip 2.7"
-      python: 2.7
-      env: DISTRIB="pip"
-
-    - name: "pip 3.5"
-      python: 3.5
-      env: DISTRIB="pip"
-
     - name: "pip 3.6 requirements-extras"
       python: 3.6
       env: DISTRIB="pip"
@@ -39,10 +26,6 @@ matrix:
     - name: "conda 3.8"
       python: 3.8
       env: DISTRIB="conda"
-
-    - name: "pip 3.8"
-      python: 3.8
-      env: DISTRIB="pip"
 
     - name: "pip 3.9"
       python: 3.9
@@ -64,8 +47,7 @@ matrix:
 install:
   - if [[ "${DISTRIB}" == "conda" ]];
     then
-      py_major=${TRAVIS_PYTHON_VERSION:0:1};
-      wget https://repo.continuum.io/miniconda/Miniconda${py_major}-latest-Linux-x86_64.sh -O miniconda.sh;
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
       source "$HOME/miniconda/etc/profile.d/conda.sh";
       conda config --set always_yes yes;
