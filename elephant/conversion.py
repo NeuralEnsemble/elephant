@@ -6,6 +6,13 @@ into other representations useful to perform calculations on the data.
 An example is the representation of a spike train as a sequence of 0-1 values
 (binned spike train).
 
+
+.. autosummary::
+    :toctree: toctree/conversion
+
+    BinnedSpikeTrain
+    binarize
+
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """

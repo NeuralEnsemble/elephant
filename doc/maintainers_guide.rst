@@ -128,10 +128,12 @@ Making a release
    :file:`doc/modules.rst` and make a file with a short description in
    :file:`doc/reference/<modulename>.rst`.
 
-5. Remove :file:`elephant/spade_src/fim.so`. Otherwise, it'll be included in
+5. Push the commit with release notes and version updated to github.
+
+6. Remove :file:`elephant/spade_src/fim.so`. Otherwise, it'll be included in
    the built package (it should be downloaded at pip install).
 
-6. Build a source package and upload it to PyPi.
+7. Build a source package and upload it to PyPi.
 
    Build a source package (see `Packaging Python Projects
    <https://packaging.python.org/tutorials/packaging-projects/#generating-distribution-archives>`_)::
@@ -144,7 +146,7 @@ Making a release
 
     $ python -m twine upload dist/elephant-X.Y.Z.tar.gz
 
-7. Finally, make a release on GitHub UI page and copy-paste the release notes.
+8. Finally, make a release on GitHub UI page and copy-paste the release notes.
    Then tag the release in the Git repository and push it::
 
     $ git tag <version>

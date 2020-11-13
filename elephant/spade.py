@@ -3,10 +3,27 @@ SPADE [1]_, [2]_, [3]_ is the combination of a mining technique and multiple
 statistical tests to detect and assess the statistical significance of repeated
 occurrences of spike sequences (spatio-temporal patterns, STP).
 
-Given a list of Neo Spiketrain objects, assumed to be recorded in parallel, the
-SPADE analysis can be applied as demonstrated in this short toy example of 10
-artificial spike trains of exhibiting fully synchronous events of order 10.
 
+.. autosummary::
+    :toctree: toctree/spade
+
+    spade
+    concepts_mining
+    pvalue_spectrum
+    test_signature_significance
+    approximate_stability
+    pattern_set_reduction
+    concept_output_to_patterns
+
+
+Visualization
+-------------
+Visualization of SPADE analysis is covered in Viziphant:
+https://viziphant.readthedocs.io/en/latest/modules.html
+
+
+Notes
+-----
 This modules relies on the implementation of the fp-growth algorithm contained
 in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
 and should be available in the spade_src folder (elephant/spade_src/).
@@ -17,6 +34,10 @@ implementation of the fast fca algorithm contained in
 
 Examples
 --------
+Given a list of Neo Spiketrain objects, assumed to be recorded in parallel, the
+SPADE analysis can be applied as demonstrated in this short toy example of 10
+artificial spike trains of exhibiting fully synchronous events of order 10.
+
 >>> from elephant.spade import spade
 >>> import elephant.spike_train_generation
 >>> import quantities as pq

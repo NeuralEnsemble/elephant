@@ -106,6 +106,9 @@ def isi(spiketrain, axis=-1):
     provided, the return value will be `pq.Quantity`, otherwise `np.ndarray`.
     The units of `pq.Quantity` will be the same as `spiketrain`.
 
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.statistics.plot_isi_histogram`.
+
     Parameters
     ----------
     spiketrain : neo.SpikeTrain or pq.Quantity or array-like
@@ -567,6 +570,10 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     """
     Estimates instantaneous firing rate by kernel convolution.
 
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.statistics.plot_instantaneous_rates_colormesh`.
+
+
     Parameters
     ----------
     spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
@@ -833,6 +840,9 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
+
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.statistics.plot_time_histogram`.
 
     Parameters
     ----------

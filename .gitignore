@@ -82,3 +82,6 @@ ignored/
 
 # data
 *.nix
+
+# neo logs
+**/logs
