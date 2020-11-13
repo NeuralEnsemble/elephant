@@ -1317,10 +1317,8 @@ class Complexity(object):
                                     tolerance=self.tolerance)
 
         if self.binary:
-            binarized = bst.to_sparse_bool_array()
-            bincount = np.array(binarized.sum(axis=0)).squeeze()
-        else:
-            bincount = np.array(bst.to_sparse_array().sum(axis=0)).squeeze()
+            bst = bst.binarize()
+        bincount = bst.get_num_of_spikes(axis=0)
 
         nonzero_indices = np.nonzero(bincount)[0]
         left_diff = np.diff(nonzero_indices,
@@ -1367,9 +1365,9 @@ class Complexity(object):
                           'Note that using the complexity epoch to get '
                           'precise spike times can lead to rounding errors.')
 
-        # ensure that an epoch does not start before the minimum t_start
-        min_t_start = min(st.t_start for st in self.input_spiketrains)
-        left_edges[0] = max(min_t_start, left_edges[0])
+        # Ensure that an epoch does not start before the minimum t_start.
+        # Note: all spike trains share the same t_start and t_stop.
+        left_edges[0] = max(self.t_start, left_edges[0])
 
         complexity_epoch = neo.Epoch(times=left_edges,
                                      durations=right_edges - left_edges,
