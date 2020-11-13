@@ -2,6 +2,15 @@
 """
 This modules provides functions to calculate correlations between spike trains.
 
+.. autosummary::
+    :toctree: toctree/spike_train_correlation
+
+    covariance
+    correlation_coefficient
+    cross_correlation_histogram
+    spike_time_tiling_coefficient
+    spike_train_timescale
+
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
@@ -389,6 +398,10 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     computing the correlation coefficients, so that the binned vectors
     :math:`b_i` and :math:`b_j` are binary.
 
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.spike_train_correlation.plot_corrcoef`.
+
+
     Parameters
     ----------
     binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
@@ -537,6 +550,10 @@ def cross_correlation_histogram(
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains `binned_spiketrain_i` and `binned_spiketrain_j`.
+
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
+
 
     Parameters
     ----------

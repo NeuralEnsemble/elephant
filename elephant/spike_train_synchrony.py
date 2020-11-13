@@ -154,14 +154,15 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         t_start = min(st.t_start for st in spiketrains)
     if t_stop is None:
         t_stop = max(st.t_stop for st in spiketrains)
-    spiketrains = [st.time_slice(t_start=t_start, t_stop=t_stop)
-                   for st in spiketrains]
 
     # convert everything to seconds
     spiketrains = [st.simplified.magnitude for st in spiketrains]
     t_start = t_start.simplified.item()
     t_stop = t_stop.simplified.item()
     min_bin = min_bin.simplified.item()
+
+    spiketrains = [times[(times >= t_start) & (times <= t_stop)]
+                   for times in spiketrains]
 
     n_spiketrains = len(spiketrains)
     n_spikes_total = sum(map(len, spiketrains))
