@@ -1,7 +1,7 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
-[#f1]_ for neural trajectory visualization of parallel spike trains. GPFA applies
-factor analysis (FA) to time-binned spike count data to reduce the
+[#f1]_ for neural trajectory visualization of parallel spike trains. GPFA
+applies factor analysis (FA) to time-binned spike count data to reduce the
 dimensionality and at the same time smoothes the resulting low-dimensional
 trajectories by fitting a Gaussian process (GP) model to them.
 
@@ -198,13 +198,16 @@ class GPFA(sklearn.base.BaseEstimator):
     ...
     >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
     >>> gpfa.fit(data)
-    >>> results = gpfa.transform(data, returned_data=['xorth', 'xsm'])
-    >>> xorth = results['xorth']; xsm = results['xsm']
+    >>> results = gpfa.transform(data, returned_data=['latent_variable_orth',
+    ...                                               'latent_variable'])
+    >>> latent_variable_orth = results['latent_variable_orth']
+    >>> latent_variable = results['latent_variable']
 
     or simply
 
     >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,
-    ...                returned_data=['xorth', 'xsm'])
+    ...                returned_data=['latent_variable_orth',
+    ...                               'latent_variable'])
     """
 
     @deprecated_alias(binsize='bin_size')
@@ -219,7 +222,12 @@ class GPFA(sklearn.base.BaseEstimator):
         self.em_tol = em_tol
         self.em_max_iters = em_max_iters
         self.freq_ll = freq_ll
-        self.valid_data_names = ('xorth', 'xsm', 'Vsm', 'VsmGP', 'y')
+        self.valid_data_names = (
+            'latent_variable_orth',
+            'latent_variable',
+            'Vsm',
+            'VsmGP',
+            'y')
         self.verbose = verbose
 
         if not isinstance(self.bin_size, pq.Quantity):
@@ -317,7 +325,7 @@ class GPFA(sklearn.base.BaseEstimator):
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return seqs
 
-    def transform(self, spiketrains, returned_data=['xorth']):
+    def transform(self, spiketrains, returned_data=['latent_variable_orth']):
         """
         Obtain trajectories of neural activity in a low-dimensional latent
         variable space by inferring the posterior mean of the obtained GPFA
@@ -338,9 +346,10 @@ class GPFA(sklearn.base.BaseEstimator):
             The dimensionality reduction transform generates the following
             resultant data:
 
-               'xorth': orthonormalized posterior mean of latent variable
+               'latent_variable_orth': orthonormalized posterior mean of latent
+               variable
 
-               'xsm': posterior mean of latent variable before
+               'latent_variable': posterior mean of latent variable before
                orthonormalization
 
                'Vsm': posterior covariance between latent variables
@@ -352,7 +361,7 @@ class GPFA(sklearn.base.BaseEstimator):
             `returned_data` specifies the keys by which the data dict is
             returned.
 
-            Default is ['xorth'].
+            Default is ['latent_variable_orth'].
 
         Returns
         -------
@@ -367,9 +376,9 @@ class GPFA(sklearn.base.BaseEstimator):
             shape, specific to each data type, containing the corresponding
             data for the n-th trial:
 
-                `xorth`: (#latent_vars, #bins) np.ndarray
+                `latent_variable_orth`: (#latent_vars, #bins) np.ndarray
 
-                `xsm`:  (#latent_vars, #bins) np.ndarray
+                `latent_variable`:  (#latent_vars, #bins) np.ndarray
 
                 `y`:  (#units, #bins) np.ndarray
 
@@ -410,7 +419,8 @@ class GPFA(sklearn.base.BaseEstimator):
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self, spiketrains, returned_data=['xorth']):
+    def fit_transform(self, spiketrains, returned_data=[
+                      'latent_variable_orth']):
         """
         Fit the model with `spiketrains` data and apply the dimensionality
         reduction on `spiketrains`.
