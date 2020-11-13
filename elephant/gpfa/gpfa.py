@@ -33,6 +33,31 @@ provided as input (c.f., `gpfa_core.em()`)
 3) orthonormalization of the matrix C and the corresponding subspace, for
 visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
 
+
+.. autosummary::
+    :toctree: toctree/gpfa
+
+    GPFA
+
+
+Visualization
+-------------
+Visualization of GPFA transforms is covered in Viziphant:
+https://viziphant.readthedocs.io/en/latest/modules.html
+
+
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/gpfa>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/gpfa.ipynb
+
+
 References
 ----------
 The code was ported from the MATLAB code based on Byron Yu's implementation.
@@ -57,6 +82,11 @@ import warnings
 
 from elephant.gpfa import gpfa_core, gpfa_util
 from elephant.utils import deprecated_alias
+
+
+__all__ = [
+    "GPFA"
+]
 
 
 class GPFA(sklearn.base.BaseEstimator):

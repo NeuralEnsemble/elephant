@@ -3,9 +3,6 @@ SPADE [1]_, [2]_, [3]_ is the combination of a mining technique and multiple
 statistical tests to detect and assess the statistical significance of repeated
 occurrences of spike sequences (spatio-temporal patterns, STP).
 
-Visualization of SPADE analysis is covered in Viziphant:
-https://viziphant.readthedocs.io/en/latest/modules.html
-
 
 .. autosummary::
     :toctree: toctree/spade
@@ -17,6 +14,12 @@ https://viziphant.readthedocs.io/en/latest/modules.html
     approximate_stability
     pattern_set_reduction
     concept_output_to_patterns
+
+
+Visualization
+-------------
+Visualization of SPADE analysis is covered in Viziphant:
+https://viziphant.readthedocs.io/en/latest/modules.html
 
 
 Notes
