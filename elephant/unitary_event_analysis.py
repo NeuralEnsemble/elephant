@@ -624,7 +624,10 @@ def jointJ(p_val):
 
     """
     p_arr = np.asarray(p_val)
-    Js = np.log10(1 - p_arr) - np.log10(p_arr)
+    with np.errstate(divide='ignore'):
+        # Ignore 'Division by zero' warning which happens when p_arr is 1.0 or
+        # 0.0 (no spikes).
+        Js = np.log10(1 - p_arr) - np.log10(p_arr)
     return Js
 
 

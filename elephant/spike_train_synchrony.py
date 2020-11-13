@@ -189,11 +189,12 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     active_spiketrains = []
     synchrony_curve = []
 
+    # Set new time boundaries
+    t_start = t_start - isi_min
+    t_stop = t_stop + isi_min
+
     bin_size = bin_max
     while bin_size >= bin_min:
-        # Set new time boundaries
-        t_start = -isi_min
-        t_stop = duration + isi_min
         # Calculate Theta and n
         theta_k, n_k = _get_theta_and_n_per_bin(spiketrains,
                                                 t_start=t_start,
@@ -226,7 +227,6 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         return synchrony, spike_contrast_trace
 
     return synchrony
-
 
 
 class Synchrotool(Complexity):

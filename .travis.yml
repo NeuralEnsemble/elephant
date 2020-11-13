@@ -26,7 +26,9 @@ matrix:
       python: 3.6
       env: DISTRIB="pip"
       before_install: sudo apt install -y libopenmpi-dev openmpi-bin
-      before_script: pip install -r requirements/requirements-extras.txt
+      before_script:
+        - pip install -r requirements/requirements-extras.txt
+        - pip install mpi4py
       script: mpiexec -n 1 python -m mpi4py.futures -m nose --with-coverage --cover-package=elephant
       after_success: coveralls || echo "coveralls failed"
 
@@ -51,6 +53,7 @@ matrix:
         - pip install -r requirements/requirements-docs.txt
         - pip install -r requirements/requirements-tutorials.txt
         - pip install -r requirements/requirements-extras.txt
+        - pip install mpi4py
         - sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
       script: cd doc && make html
 
@@ -64,16 +67,17 @@ install:
       conda config --set always_yes yes;
       conda update conda;
       sed -i "s/python>=[0-9]\.[0-9]/python=${TRAVIS_PYTHON_VERSION}/g" requirements/environment.yml;
+      sed -i '/mpi4py/d' requirements/environment.yml;
       conda env create -f requirements/environment.yml;
       conda activate elephant;
-      conda uninstall -y mpi4py;
       pip list;
     else
       pip install -r requirements/requirements.txt;
     fi
 
   - pip -V
-  - pip install coverage coveralls nose
+  - pip install -r requirements/requirements-tests.txt
+  - pip install coverage coveralls
   - python setup.py install
   - python -c "from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list

@@ -4,8 +4,17 @@
 Developers' Guide
 =================
 
-.. note:: The documentation guide (how to write a good documentation, naming
-          conventions, docstring examples) is in :ref:`documentation_guide`.
+.. note::
+    1. The documentation guide (how to write a good documentation, naming
+       conventions, docstring examples) is in the :ref:`documentation_guide`.
+
+    2. We highly recommend to get in touch with us (see :ref:`get_in_touch`) *before* starting
+       to implement a new feature in Elephant. This way, we can point out synergies with
+       complementary efforts and help in designing your implementation such that its integration
+       into Elephant will be an easy process.
+
+    3. If you experience any problems during one of the steps below, please
+       contact us and we'll help you.
 
 
 1. Follow the instructions in :ref:`prerequisites` to setup a clean conda
@@ -23,12 +32,26 @@ Developers' Guide
     $ git clone git://github.com/<your-github-profile>/elephant.git
     $ cd elephant
 
-3. Install requirements.txt, (optionally) requirements-extras.txt, and
-   requirements-tests.txt::
+3. Install the requirements (either via pip or conda):
 
-    $ pip install -r requirements/requirements.txt
-    $ pip install -r requirements/requirements-extras.txt  # optional
-    $ pip install -r requirements/requirements-tests.txt
+.. tabs::
+
+    .. tab:: pip
+
+        .. code-block:: sh
+
+            pip install -r requirements/requirements.txt
+            pip install -r requirements/requirements-extras.txt  # optional
+            pip install -r requirements/requirements-tests.txt
+
+    .. tab:: conda
+
+        .. code-block:: sh
+
+            conda env create -f requirements/environment.yml
+            conda activate elephant
+            pip install -r requirements/requirements-tests.txt
+
 
 4. Before you make any changes, run the test suite to make sure all the tests
    pass on your system::
@@ -49,9 +72,9 @@ Developers' Guide
 
    * fixing a bug;
    * improving the documentation;
-   * adding a new functional.
+   * adding a new functionality.
 
-6. If it was a new functional, please write:
+6. If it is a new functionality, please write:
 
    - documentation (refer to :ref:`documentation_guide`);
    - tests to cover your new functions as much as possible.
@@ -69,7 +92,3 @@ Developers' Guide
 
 9. Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
    Then we'll merge your code in Elephant.
-
-
-.. note:: If you experience a problem during one of the steps above, please
-          contact us by :ref:`get_in_touch`.
