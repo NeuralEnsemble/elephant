@@ -219,10 +219,7 @@ def phase_locking_value(phases_x, phases_y):
     where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n)
     """
 
-    if len(phases_x) == len(phases_y):
-        num_trial = len(phases_x)
-        num_time_points = len(phases_x[0])
-    else:
+    if len(phases_x) != len(phases_y):
         raise ValueError("trial number of signal x and y must be equal")
 
     # trial by trial and time-resolved

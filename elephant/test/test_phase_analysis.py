@@ -207,20 +207,27 @@ class MeanVectorTestCase(unittest.TestCase):
         self.tolerance = 1e-15
         self.n_samples = 200
         # create a nonuniform-distribution at a random phase-lock
-        self.lock_value = np.random.random(1)[0] * 2 * np.pi - np.pi
-        self.dataset1 = np.ones(self.n_samples) * self.lock_value
+        self.lock_value_phi = np.random.random(1)[0] * 2 * np.pi - np.pi
+        self.dataset1 = np.ones(self.n_samples) * self.lock_value_phi
         # create a evenly spaced / uniform distribution
         self.dataset2 = np.arange(0, 2*np.pi, (2*np.pi) / self.n_samples)
         # create a random distribution
         self.dataset3 = np.random.random(self.n_samples) * 2 * np.pi
 
     def testMeanVector_direction_and_length(self):
+        """
+        Test if the mean vector length of a evenly spaced distribution on the
+        unit circle is 0.
+        Test if the mean vector length of a homogenous sample with phase phi
+        on the unit circle is 1 and if the mean direction is phi.
+
+        """
         theta_bar_1, r_1 = elephant.phase_analysis.mean_vector(self.dataset1,
                                                                axis=0)
         theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2,
                                                                axis=0)
         # mean direction
-        self.assertAlmostEqual(theta_bar_1, self.lock_value,
+        self.assertAlmostEqual(theta_bar_1, self.lock_value_phi,
                                delta=self.tolerance)
 
         # mean vector length
@@ -265,7 +272,7 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         self.assertTrue(-np.pi <= adiff <= np.pi)
 
     def test_phaseDiff_for_arrays(self):
-        delta = np.random.random(1)
+        delta = np.random.random(1) * np.pi
         alpha = np.random.random(self.n_samples) * 2 * np.pi
         alpha = np.arctan2(np.sin(alpha), np.cos(alpha))
         beta = alpha - delta
