@@ -251,8 +251,8 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         target_phase_diff = np.array([0.2, -0.2, 0.4, -0.4]) * np.pi
 
         phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
-        self.assertTrue(np.allclose(phase_diff, target_phase_diff,
-                                    self.tolerance))
+        np.testing.assert_allclose(phase_diff, target_phase_diff,
+                                   self.tolerance)
 
     def test_phaseDiff_ABS_AlphaMinusBeta_GreaterPi(self):
         alpha = np.array([0.8, -0.8, 0.3, -0.8]) * np.pi
@@ -260,14 +260,15 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         target_phase_diff = np.array([-0.4, 0.4, -0.9, 0.9]) * np.pi
 
         phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
-        self.assertTrue(np.allclose(phase_diff, target_phase_diff,
-                                    self.tolerance))
+        np.testing.assert_allclose(phase_diff, target_phase_diff,
+                                    self.tolerance)
 
     def test_phaseDiff_in_range_MinusPi_and_Pi(self):
         sign_1 = 1 if np.random.random(1) < 0.5 else -1
         sign_2 = 1 if np.random.random(1) < 0.5 else -1
         alpha = sign_1 * np.random.random(1) * np.pi
         beta = sign_2 * np.random.random(1) * np.pi
+
         adiff = elephant.phase_analysis.phase_difference(alpha, beta)
         self.assertTrue(-np.pi <= adiff <= np.pi)
 
@@ -277,10 +278,11 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         alpha = np.arctan2(np.sin(alpha), np.cos(alpha))
         beta = alpha - delta
         beta = np.arctan2(np.sin(beta), np.cos(beta))
+
         phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
         target_phase_diff = np.ones_like(phase_diff) * delta
-        self.assertTrue(np.allclose(phase_diff, target_phase_diff,
-                                    self.tolerance))
+        np.testing.assert_allclose(phase_diff, target_phase_diff,
+                                   self.tolerance)
 
 
 class PhaseLockingValueTestCase(unittest.TestCase):
@@ -329,24 +331,25 @@ class PhaseLockingValueTestCase(unittest.TestCase):
             elephant.phase_analysis.phase_locking_value(self.signal_x_sine,
                                                         self.signal_x_sine)
         target_plv_r_is_one = np.ones_like(list1_plv_t)
-        self.assertTrue(np.allclose(list1_plv_t, target_plv_r_is_one,
-                                    self.tolerance))
+        np.testing.assert_allclose(list1_plv_t, target_plv_r_is_one,
+                                   self.tolerance)
 
     def testPhaseLockingValue_sineMinusCos(self):
         # example 2: sine minus cos
         list2_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x_sine, self.signal_y_cos)
         target_plv_r_is_one = np.ones_like(list2_plv_t)
-        self.assertTrue(np.allclose(list2_plv_t, target_plv_r_is_one,
-                                    self.tolerance))
+        np.testing.assert_allclose(list2_plv_t, target_plv_r_is_one,
+                                    self.tolerance)
 
     def testPhaseLockingValue_SineMinusShiftedSine(self):
         # example 3: sine minus shifted sine
         list3_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x_sine, self.shifted_signal_x)
         target_plv_r_is_zero = np.zeros_like(list3_plv_t)
-        self.assertTrue(np.allclose(list3_plv_t, target_plv_r_is_zero,
-                                    self.tolerance))
+        # use default value from np.allclose() for atol=1e-8 to prevent failure
+        np.testing.assert_allclose(list3_plv_t, target_plv_r_is_zero,
+                                   rtol=self.tolerance, atol=1e-08)
 
 
 if __name__ == '__main__':
