@@ -8,7 +8,6 @@ Unit tests for the Unitary Events analysis
 import os
 import shutil
 import ssl
-import sys
 import types
 import unittest
 
@@ -18,15 +17,10 @@ import quantities as pq
 from neo.test.rawiotest.tools import create_local_temp_dir
 from numpy.testing import assert_array_equal
 
-try:
-    from urllib2 import urlopen
-except ImportError:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 
 
 import elephant.unitary_event_analysis as ue
-
-python_version_major = sys.version_info.major
 
 
 class UETestCase(unittest.TestCase):

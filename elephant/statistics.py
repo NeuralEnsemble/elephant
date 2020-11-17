@@ -1011,8 +1011,7 @@ def nextpow2(x):
     """
     Return the smallest integral power of 2 that is equal or larger than `x`.
     """
-    # PYTHON2: math.log2 does not exist
-    log2_n = int(math.ceil(math.log(x, 2)))
+    log2_n = math.ceil(math.log2(x))
     n = 2 ** log2_n
     return n
 

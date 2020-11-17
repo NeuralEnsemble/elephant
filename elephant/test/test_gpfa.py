@@ -6,7 +6,6 @@ Unit tests for the GPFA analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import sys
 import unittest
 
 import neo
@@ -24,8 +23,6 @@ try:
     HAVE_SKLEARN = True
 except ImportError:
     HAVE_SKLEARN = False
-
-python_version_major = sys.version_info.major
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
@@ -113,8 +110,6 @@ class GPFATestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             gpfa1.transform(self.data2)
 
-    @unittest.skipUnless(python_version_major == 3,
-                         "sklearn py2 has a bug in cross_val_score")
     def test_cross_validation(self):
         # If GPFA.__init__ is decorated, sklearn signature function parsing
         # magic throws the error
@@ -204,7 +199,6 @@ class GPFATestCase(unittest.TestCase):
         seqs_cut = gpfa_util.cut_trials(seqs, seg_length=seg_length)
         assert_array_almost_equal(seqs[0]['y'], seqs_cut[0]['y'])
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_cut_trials_larger_length(self):
         data = [self.data2[0]]
         seqs = gpfa_util.get_seqs(data, bin_size=self.bin_size)
