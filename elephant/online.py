@@ -75,7 +75,7 @@ class VarianceOnline(MeanOnline):
             delta_var *= new_val - self.mean
         self.variance_sum += delta_var
 
-    def get_mean_std(self, unbiased=True):
+    def get_mean_std(self, unbiased=False):
         if self.mean is None:
             return None, None
         if self.count > 1:

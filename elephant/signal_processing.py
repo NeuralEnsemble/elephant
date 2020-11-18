@@ -14,7 +14,8 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import deprecated_alias, check_same_units
+from elephant.online import VarianceOnline
+from elephant.utils import deprecated_alias, check_neo_consistency
 
 __all__ = [
     "zscore",
@@ -55,7 +56,10 @@ def zscore(signal, inplace=True):
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
         z-transformed signal, if possible, i.e when the signal type is float.
-        If False, a copy of the original `signal` is returned.
+        If False, a copy of the original `signal` is returned. In either case,
+        the units of the input `signal` are not changed and, therefore, a new
+        `AnalogSignal` with dimensionless units is always returned because
+        it's not possible to modify the units of an `AnalogSignal` in-place.
         Default: True
 
     Returns
@@ -134,14 +138,15 @@ def zscore(signal, inplace=True):
     # Transform input to a list
     if isinstance(signal, neo.AnalogSignal):
         signal = [signal]
-    check_same_units(signal, object_type=neo.AnalogSignal)
+    check_neo_consistency(signal, object_type=neo.AnalogSignal)
 
-    # Calculate mean and standard deviation
-    signal_stacked = np.vstack(signal).magnitude
-    mean = signal_stacked.mean(axis=0)
-    std = signal_stacked.std(axis=0)
+    # Calculate mean and standard deviation vectors
+    online = VarianceOnline(batch_mode=True)
+    for sig in signal:
+        online.update(sig.magnitude)
+    mean, std = online.get_mean_std(unbiased=False)
 
-    signal_ztransofrmed = []
+    signal_ztransformed = []
     for sig in signal:
         sig_normalized = sig.magnitude.astype(mean.dtype, copy=not inplace)
         sig_normalized -= mean
@@ -158,12 +163,12 @@ def zscore(signal, inplace=True):
                                        description=sig.description,
                                        array_annotations=sig.array_annotations,
                                        **sig.annotations)
-        signal_ztransofrmed.append(sig_dimless)
+        signal_ztransformed.append(sig_dimless)
 
     # Return single object, or list of objects
-    if len(signal_ztransofrmed) == 1:
-        signal_ztransofrmed = signal_ztransofrmed[0]
-    return signal_ztransofrmed
+    if len(signal_ztransformed) == 1:
+        signal_ztransformed = signal_ztransformed[0]
+    return signal_ztransformed
 
 
 @deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
