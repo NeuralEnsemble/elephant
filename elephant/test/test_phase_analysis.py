@@ -333,7 +333,7 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
     def testPhaseLockingValue_2_different_signals_heterogeneous_trials(self):
         # example 3: two different signals (original & shifted), where
-        # each trial got shifted by a constant step
+        # each trial got shifted by a variable step in the shifted version
         list3_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x, self.shifted_signal_x)
         target_plv_r_is_zero = np.zeros_like(list3_plv_t)

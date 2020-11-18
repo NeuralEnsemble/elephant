@@ -194,29 +194,38 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
 def phase_locking_value(phases_x, phases_y):
     """
-    TODO: add the description
+    Calculates the phase locking value (PLV).
+
+    This function expects phases of two signals (with multiple trials).
+    For each trial-pair it calculates the phase difference at each given
+    time-point. Than it calculates the mean vectors of those phase differences
+    across all trials for each given time-point.
+    The PLV at time t is the length of the corresponding mean vector.
 
     Parameters:
     -----------
-        - phases_x: array of arrays
-            time-series of signal x with n trials
-        - phases_y: array of arrays
-            time-series of signal y with n trials
+    phases_x, phases_y: array-like object
+        time-series of signal x and signal y with each n trials
 
     Returns:
     --------
-        - plv: phase-locking value (float)
+    plv: array-like object
+        phase-locking value (float)
+        range: [0, 1]
 
+    Notes
+    -----
+    This implementation is based on the formula taken from [1] (pp. 195).
+
+    PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * theta(t, n)} ) )
+
+    where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n).
 
     References:
     -----------
-    "Measuring Phase Synchrony in Brain Signals" - Jean-Philippe Lachaux,
-    Eugenio Rodriguez, Jacques Martinerie, and Francisco J. Varela*
-
-    Mathematics:
-    ------------
-    PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * theta(t, n)} ) )
-    where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n)
+    [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
+    and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
+    Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
 
     if len(phases_x) != len(phases_y):
@@ -231,22 +240,29 @@ def phase_locking_value(phases_x, phases_y):
     return r
 
 
-def mean_vector(phases, axis):
+def mean_vector(phases, axis=0):
     """
-    This function calculates the mean direction & the mean vector length
-    of the phases-set.
+    Calculates the mean vector of phases.
+
+    This function expects phases (in radians) and uses their representation as
+    complex numbers to calculate the direction 'theta' and the length 'r'
+    of the mean vector.
 
     Parameters
     ----------
-    - phases: array-like object
+    phases: array-like object
         phases of circular data
-    - axis: None or int(0, 1)
+    axis: {0, 1, None}
         axis along which the mean_vector will be calculated
 
     Returns
     -------
-    - z_mean_theta: mean direction of the phases
-    - z_mean_r: length of the mean vector
+    z_mean_theta: array-like object
+        mean direction of the phases
+        range: (-pi, pi]
+    z_mean_r: array-like object
+        length of the mean vector
+        range: [0, 1]
     """
     # use complex number representation
     # z_phases = np.cos(phases) + 1j * np.sin(phases)
@@ -259,20 +275,29 @@ def mean_vector(phases, axis):
 
 def phase_difference(alpha, beta):
     """
-    This function calculates the difference between a pair of phases.
+    Calculates the difference between a pair of phases.
+
+    This function expects two phases and calculates their difference, which
+    means the smallest amount of rotation (clockwise or counter-clockwise) to
+    get from the first phase to the second.
 
     Parameters
     ----------
-    - alpha: array-like object
+    alpha: array-like object
         phases in radians
-    - beta: array-like object
+    beta: array-like object
         phases in radians
 
     Returns
     -------
-    - phase_diff: float
+    phase_diff: float
         phase difference between alpha and beta
+        range: [-pi, pi]
 
+    Notes
+    -----
+    The usage of arctan2 assures that the range of the phase difference
+    is [-pi, pi) and is located in the correct quadrant.
     """
 
     phase_diff = np.arctan2(np.sin(alpha - beta), np.cos(alpha - beta))
