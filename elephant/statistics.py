@@ -29,7 +29,7 @@ Rate estimation
     mean_firing_rate
     instantaneous_rate
     time_histogram
-    sskernel
+    optimal_kernel_bandwidth
 
 
 Spike interval statistics
@@ -75,7 +75,7 @@ from neo.core import SpikeTrain
 import elephant.kernels as kernels
 from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, get_common_start_stop_times, \
-    check_consistency_of_spiketrains
+    check_neo_consistency
 
 from elephant.utils import is_time_quantity
 
@@ -101,14 +101,17 @@ def isi(spiketrain, axis=-1):
     """
     Return an array containing the inter-spike intervals of the spike train.
 
-    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, or a plain
-    `np.ndarray`. If either a `neo.SpikeTrain` or `pq.Quantity` is provided,
-    the return value will be `pq.Quantity`, otherwise `np.ndarray`. The units
-    of `pq.Quantity` will be the same as `spiketrain`.
+    Accepts a `neo.SpikeTrain`, a `pq.Quantity` array, a `np.ndarray`, or a
+    list of time spikes. If either a `neo.SpikeTrain` or `pq.Quantity` is
+    provided, the return value will be `pq.Quantity`, otherwise `np.ndarray`.
+    The units of `pq.Quantity` will be the same as `spiketrain`.
+
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.statistics.plot_isi_histogram`.
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+    spiketrain : neo.SpikeTrain or pq.Quantity or array-like
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
@@ -119,14 +122,23 @@ def isi(spiketrain, axis=-1):
     intervals : np.ndarray or pq.Quantity
         The inter-spike intervals of the `spiketrain`.
 
+    Warns
+    -----
+    UserWarning
+        When the input array is not sorted, negative intervals are returned
+        with a warning.
+
     """
-    if axis is None:
-        axis = -1
     if isinstance(spiketrain, neo.SpikeTrain):
-        intervals = np.diff(
-            np.sort(spiketrain.times.view(pq.Quantity)), axis=axis)
+        intervals = np.diff(spiketrain.magnitude, axis=axis)
+        # np.diff makes a copy
+        intervals = pq.Quantity(intervals, units=spiketrain.units, copy=False)
     else:
-        intervals = np.diff(np.sort(spiketrain), axis=axis)
+        intervals = np.diff(spiketrain, axis=axis)
+    if (intervals < 0).any():
+        warnings.warn("ISI evaluated to negative values. "
+                      "Please sort the input array.")
+
     return intervals
 
 
@@ -337,13 +349,13 @@ def cv2(time_intervals, with_nan=False):
     Calculate the measure of Cv2 for a sequence of time intervals between
     events.
 
-    Given a vector v containing a sequence of intervals, the Cv2 is defined
-    as:
+    Given a vector :math:`I` containing a sequence of intervals, the Cv2 is
+    defined as:
 
     .. math::
         Cv2 := \frac{1}{N} \sum_{i=1}^{N-1}
-                           \frac{2|isi_{i+1}-isi_i|}
-                          {|isi_{i+1}+isi_i|}
+                           \frac{2|I_{i+1}-I_i|}
+                          {|I_{i+1}+I_i|}
 
     The Cv2 is typically computed as a substitute for the classical
     coefficient of variation (Cv) for sequences of events which include some
@@ -406,7 +418,8 @@ def lv(time_intervals, with_nan=False):
     Calculate the measure of local variation Lv for a sequence of time
     intervals between events.
 
-    Given a vector I containing a sequence of intervals, the Lv is defined as:
+    Given a vector :math:`I` containing a sequence of intervals, the Lv is
+    defined as:
 
     .. math::
         Lv := \frac{1}{N} \sum_{i=1}^{N-1}
@@ -423,8 +436,8 @@ def lv(time_intervals, with_nan=False):
     time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals.
     with_nan : bool, optional
-        If True, `lv` of a spike train with less than two spikes results in a
-        np.NaN value and a warning is raised.
+        If True, the Lv of a spike train with less than two spikes results in a
+        `np.NaN` value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
         Default: True.
@@ -446,7 +459,7 @@ def lv(time_intervals, with_nan=False):
     Warns
     -----
     UserWarning
-        If `with_nan` is True and the `lv` is calculated for a spike train
+        If `with_nan` is True and the Lv is calculated for a spike train
         with less than two spikes, generating a np.NaN.
 
     References
@@ -550,15 +563,20 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     return lvr
 
 
-def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
+@deprecated_alias(spiketrain='spiketrains')
+def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True):
     """
     Estimates instantaneous firing rate by kernel convolution.
 
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.statistics.plot_instantaneous_rates_colormesh`.
+
+
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or list of neo.SpikeTrain
+    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
         Neo object(s) that contains spike times, the unit of the time stamps,
         and `t_start` and `t_stop` of the spike train.
     sampling_period : pq.Quantity
@@ -615,10 +633,10 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     Returns
     -------
     rate : neo.AnalogSignal
-        Contains the rate estimation in unit hertz (Hz). In case a list of
-        spike trains was given, this is the combined rate of all spike trains
-        (not the average rate). `rate.times` contains the time axis of the rate
-        estimate. The unit of this property is the same as the resolution that
+        2D matrix that contains the rate estimation in unit hertz (Hz) of shape
+        ``(time, len(spiketrains))`` or ``(time, 1)`` in case of a single
+        input spiketrain. `rate.times` contains the time axis of the rate
+        estimate: the unit of this property is the same as the resolution that
         is given via the argument `sampling_period` to the function.
 
     Raises
@@ -649,9 +667,10 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         If `cutoff` is less than `min_cutoff` attribute of `kernel`, the width
         of the kernel is adjusted to a minimally allowed width.
 
-        If the instantaneous firing rate approximation contains negative values
-        with respect to a tolerance (less than -1e-5), possibly due to machine
-        precision errors.
+    Notes
+    -----
+    The resulting instantaneous firing rate values smaller than ``0``, which
+    can happen due to machine precision errors, are clipped to zero.
 
     References
     ----------
@@ -663,34 +682,31 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     --------
     >>> import quantities as pq
     >>> from elephant import kernels
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> spiketrain = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=5*pq.s)
     >>> kernel = kernels.AlphaKernel(sigma=0.05*pq.s, invert=True)
     >>> rate = instantaneous_rate(spiketrain, sampling_period=2*pq.ms,
-    ...     kernel=kernel)
+    ...        kernel=kernel)
 
     """
-    # Merge spike trains if list of spike trains given:
-    if isinstance(spiketrain, list):
-        check_consistency_of_spiketrains(
-            spiketrain, t_start=t_start, t_stop=t_stop)
-        if t_start is None:
-            t_start = spiketrain[0].t_start
-        if t_stop is None:
-            t_stop = spiketrain[0].t_stop
-        spikes = np.concatenate([st.magnitude for st in spiketrain])
-        merged_spiketrain = SpikeTrain(np.sort(spikes),
-                                       units=spiketrain[0].units,
-                                       t_start=t_start, t_stop=t_stop)
-        return instantaneous_rate(merged_spiketrain,
-                                  sampling_period=sampling_period,
-                                  kernel=kernel, cutoff=cutoff,
-                                  t_start=t_start,
-                                  t_stop=t_stop, trim=trim)
+    def optimal_kernel(st):
+        width_sigma = None
+        if len(st) > 0:
+            width_sigma = optimal_kernel_bandwidth(
+                st.magnitude, times=None, bootstrap=False)['optw']
+        if width_sigma is None:
+            raise ValueError("Unable to calculate optimal kernel width for "
+                             "instantaneous rate from input data.")
+        return kernels.GaussianKernel(width_sigma * st.units)
 
-    # Checks of input variables:
-    if not isinstance(spiketrain, SpikeTrain):
+    if isinstance(spiketrains, neo.SpikeTrain):
+        if kernel == 'auto':
+            kernel = optimal_kernel(spiketrains)
+        spiketrains = [spiketrains]
+    elif not isinstance(spiketrains, (list, tuple)):
         raise TypeError(
-            "'spiketrain' must be an instance of neo.SpikeTrain. \n"
-            "Found: '{}'".format(type(spiketrain)))
+            "'spiketrains' must be a list of neo.SpikeTrain's or a single "
+            "neo.SpikeTrain. Found: '{}'".format(type(spiketrains)))
 
     if not is_time_quantity(sampling_period):
         raise TypeError(
@@ -701,17 +717,7 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
         raise ValueError("The 'sampling_period' ({}) must be non-negative.".
                          format(sampling_period))
 
-    if kernel == 'auto':
-        kernel_width_sigma = None
-        if len(spiketrain) > 0:
-            kernel_width_sigma = optimal_kernel_bandwidth(
-                spiketrain.magnitude, times=None, bootstrap=False)['optw']
-        if kernel_width_sigma is None:
-            raise ValueError(
-                "Unable to calculate optimal kernel width for "
-                "instantaneous rate from input data.")
-        kernel = kernels.GaussianKernel(kernel_width_sigma * spiketrain.units)
-    elif not isinstance(kernel, kernels.Kernel):
+    if not (isinstance(kernel, kernels.Kernel) or kernel == 'auto'):
         raise TypeError(
             "'kernel' must be either instance of class elephant.kernels.Kernel"
             " or the string 'auto'. Found: %s, value %s" % (type(kernel),
@@ -729,36 +735,56 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     if not isinstance(trim, bool):
         raise TypeError("'trim' must be bool")
 
-    # main function:
+    check_neo_consistency(spiketrains,
+                          object_type=neo.SpikeTrain,
+                          t_start=t_start, t_stop=t_stop)
+    if kernel == 'auto':
+        if len(spiketrains) == 1:
+            kernel = optimal_kernel(spiketrains[0])
+        else:
+            raise ValueError("Cannot estimate a kernel for a list of spike "
+                             "trains. Please provide a kernel explicitly "
+                             "rather than 'auto'.")
+
+    if t_start is None:
+        t_start = spiketrains[0].t_start
+    if t_stop is None:
+        t_stop = spiketrains[0].t_stop
+
     units = pq.CompoundUnit(
         "{}*s".format(sampling_period.rescale('s').item()))
-    spiketrain = spiketrain.rescale(units)
-    if t_start is None:
-        t_start = spiketrain.t_start
-    else:
-        t_start = t_start.rescale(spiketrain.units)
+    t_start = t_start.rescale(spiketrains[0].units)
+    t_stop = t_stop.rescale(spiketrains[0].units)
 
-    if t_stop is None:
-        t_stop = spiketrain.t_stop
-    else:
-        t_stop = t_stop.rescale(spiketrain.units)
-
-    # float32 makes fftconvolve less precise which may result in nan
-    time_vector = np.zeros(int(t_stop - t_start) + 1, dtype=np.float64)
-    spikes_slice = spiketrain.time_slice(t_start, t_stop)
-    bins_active = (spikes_slice.times - t_start).magnitude.astype(np.int32)
-    bins_unique, bin_counts = np.unique(bins_active, return_counts=True)
-    time_vector[bins_unique] = bin_counts
+    n_bins = int(((t_stop - t_start) / sampling_period).simplified) + 1
+    time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
+    hist_range_end = t_stop + sampling_period.rescale(spiketrains[0].units)
+    hist_range = (t_start.item(), hist_range_end.item())
+    for i, st in enumerate(spiketrains):
+        time_vectors[i], _ = np.histogram(st.magnitude, bins=n_bins,
+                                          range=hist_range)
 
     if cutoff < kernel.min_cutoff:
         cutoff = kernel.min_cutoff
         warnings.warn("The width of the kernel was adjusted to a minimally "
                       "allowed width.")
 
-    t_arr = np.arange(-cutoff * kernel.sigma.rescale(units).magnitude,
-                      cutoff * kernel.sigma.rescale(units).magnitude +
-                      sampling_period.rescale(units).magnitude,
-                      sampling_period.rescale(units).magnitude) * units
+    # An odd number of points correctly resolves the median index and the
+    # fact that the peak of an instantaneous rate should be centered at t=0
+    # for symmetric kernels applied on a single spike at t=0.
+    # See issue https://github.com/NeuralEnsemble/elephant/issues/360
+    n_half = math.ceil(cutoff * (
+            kernel.sigma / sampling_period).simplified.item())
+    cutoff_sigma = cutoff * kernel.sigma.rescale(units).magnitude
+    if center_kernel:
+        # t_arr must be centered at the kernel median.
+        # Not centering on the kernel median leads to underestimating the
+        # instantaneous rate in cases when sampling_period >> kernel.sigma.
+        median = kernel.icdf(0.5).rescale(units).item()
+    else:
+        median = 0
+    t_arr = np.linspace(-cutoff_sigma + median, stop=cutoff_sigma + median,
+                        num=2 * n_half + 1, endpoint=True) * units
 
     if center_kernel:
         # keep the full convolve range and do the trimming afterwards;
@@ -770,37 +796,41 @@ def instantaneous_rate(spiketrain, sampling_period, kernel='auto',
     else:
         # no median index trimming is involved
         fft_mode = 'same'
-    rate = scipy.signal.fftconvolve(time_vector,
-                                    kernel(t_arr).rescale(pq.Hz).magnitude,
+
+    time_vectors = time_vectors.T  # make it (time, units)
+    kernel_arr = np.expand_dims(kernel(t_arr).rescale(pq.Hz).magnitude, axis=1)
+    rate = scipy.signal.fftconvolve(time_vectors,
+                                    kernel_arr,
                                     mode=fft_mode)
+    # the convolution of non-negative vectors is non-negative
+    rate = np.clip(rate, a_min=0, a_max=None, out=rate)
 
-    if np.any(rate < -1e-8):  # abs tolerance in np.isclose
-        warnings.warn("Instantaneous firing rate approximation contains "
-                      "negative values, possibly caused due to machine "
-                      "precision errors.")
-
-    median_id = kernel.median_index(t_arr)
-    # the size of kernel() output matches the input size
-    kernel_array_size = len(t_arr)
-    if center_kernel:
-        # account for the kernel asymmetry
+    if center_kernel:  # account for the kernel asymmetry
+        median_id = kernel.median_index(t_arr)
+        # the size of kernel() output matches the input size, len(t_arr)
+        kernel_array_size = len(t_arr)
         if not trim:
             rate = rate[median_id: -kernel_array_size + median_id]
         else:
             rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
-            t_start = t_start + median_id * spiketrain.units
-            t_stop = t_stop - (kernel_array_size - median_id
-                               ) * spiketrain.units
+            t_start = t_start + median_id * units
+            t_stop = t_stop - (kernel_array_size - median_id) * units
     else:
+        # FIXME: don't shrink the output array
         # (to be consistent with center_kernel=True)
         # n points have n-1 intervals;
         # instantaneous rate is a list of intervals;
         # hence, the last element is excluded
         rate = rate[:-1]
 
-    rate = neo.AnalogSignal(signal=np.expand_dims(rate, axis=1),
+    kernel_annotation = dict(type=type(kernel).__name__,
+                             sigma=str(kernel.sigma),
+                             invert=kernel.invert)
+
+    rate = neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
-                            units=pq.Hz, t_start=t_start, t_stop=t_stop)
+                            units=pq.Hz, t_start=t_start, t_stop=t_stop,
+                            kernel=kernel_annotation)
 
     return rate
 
@@ -810,6 +840,9 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
+
+    Visualization of this function is covered in Viziphant:
+    :func:`viziphant.statistics.plot_time_histogram`.
 
     Parameters
     ----------
@@ -823,21 +856,21 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         histogram.
         If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
         `t_start`.
-        Default: None.
+        Default: None
     t_stop : pq.Quantity, optional
         Stop time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
         histogram.
         If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
         `t_stop`.
-        Default: None.
+        Default: None
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
         * 'counts': spike counts at each bin (as integer numbers)
         * 'mean': mean spike counts per spike train
         * 'rate': mean spike rate per spike train. Like 'mean', but the
           counts are additionally normalized by the bin width.
-        Default: 'counts'.
+        Default: 'counts'
     binary : bool, optional
         If True, indicates whether all `neo.SpikeTrain` objects should first
         be binned to a binary representation (using the
@@ -845,7 +878,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         histogram is based on this representation.
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -872,55 +905,33 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     elephant.conversion.BinnedSpikeTrain
 
     """
-    min_tstop = 0
-    if t_start is None:
-        # Find the internal range for t_start, where all spike trains are
-        # defined; cut all spike trains taking that time range only
-        max_tstart, min_tstop = get_common_start_stop_times(spiketrains)
-        t_start = max_tstart
-        if not all([max_tstart == t.t_start for t in spiketrains]):
-            warnings.warn(
-                "Spiketrains have different t_start values -- "
-                "using maximum t_start as t_start.")
-
-    if t_stop is None:
-        # Find the internal range for t_stop
-        if not min_tstop:
-            min_tstop = get_common_start_stop_times(spiketrains)[1]
-        t_stop = min_tstop
-        if not all([min_tstop == t.t_stop for t in spiketrains]):
-            warnings.warn(
-                "Spiketrains have different t_stop values -- "
-                "using minimum t_stop as t_stop.")
-
-    sts_cut = [st.time_slice(t_start=t_start, t_stop=t_stop) for st in
-               spiketrains]
-
     # Bin the spike trains and sum across columns
-    bs = BinnedSpikeTrain(sts_cut, t_start=t_start, t_stop=t_stop,
+    bs = BinnedSpikeTrain(spiketrains, t_start=t_start, t_stop=t_stop,
                           bin_size=bin_size)
 
     if binary:
-        bs = bs.binarize(copy=False)
+        bs = bs.binarize()
     bin_hist = bs.get_num_of_spikes(axis=0)
     # Flatten array
     bin_hist = np.ravel(bin_hist)
     # Renormalise the histogram
     if output == 'counts':
         # Raw
-        bin_hist = bin_hist * pq.dimensionless
+        bin_hist = pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
     elif output == 'mean':
         # Divide by number of input spike trains
-        bin_hist = bin_hist * 1. / len(spiketrains) * pq.dimensionless
+        bin_hist = pq.Quantity(bin_hist / len(spiketrains),
+                               units=pq.dimensionless, copy=False)
     elif output == 'rate':
         # Divide by number of input spike trains and bin width
-        bin_hist = bin_hist * 1. / len(spiketrains) / bin_size
+        bin_hist = bin_hist / (len(spiketrains) * bin_size)
     else:
         raise ValueError('Parameter output is not valid.')
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=bin_size, units=bin_hist.units,
-                            t_start=t_start)
+                            t_start=bs.t_start, normalization=output,
+                            copy=False)
 
 
 @deprecated_alias(binsize='bin_size')

@@ -10,6 +10,7 @@ from __future__ import division, print_function, unicode_literals
 
 import warnings
 
+import neo
 import numpy as np
 
 __all__ = [
@@ -106,6 +107,10 @@ def waveform_snr(waveforms):
            J. Neurosci. 27, 5105–5114 (2007).
 
     """
+    if isinstance(waveforms, neo.SpikeTrain):
+        warnings.warn("spiketrain input is deprecated; "
+                      "pass 'spiketrain.waveforms' directly.")
+        waveforms = waveforms.waveforms
     # asarray removes quantities, if present
     waveforms = np.squeeze(np.asarray(waveforms))
     # average over all waveforms for each bin

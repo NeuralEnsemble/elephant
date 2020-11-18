@@ -20,6 +20,17 @@ Quantity is a Numpy-wrapper package for handling physical quantities like
 seconds, milliseconds, Hz, volts, etc. Quantity is used in both Neo and
 Elephant.
 
+
+**Visualization of Elephant analysis objects**
+
+`Viziphant <https://viziphant.readthedocs.io/en/latest/>`_ package is developed
+by Elephant team and provides a high-level API to easily generate plots and
+interactive visualizations of neuroscientific data and analysis results.
+The API uses and extends the same structure as in Elephant to ensure intuitive
+usage for scientists that are used to Elephant.
+
+
+
 Table of Contents
 -----------------
 

@@ -222,8 +222,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         x = cv.BinnedSpikeTrain([a, b], n_bins=nbins, bin_size=bin_size,
                                 t_start=0 * pq.s)
         x_sparse = [2, 1, 2, 1]
-        s = x.to_sparse_array()
-        assert_array_equal(s.data, x_sparse)
+        assert_array_equal(x.sparse_matrix.data, x_sparse)
         assert_array_equal(x.spike_indices, [[1, 1, 4], [1, 1, 4]])
 
     def test_binned_spiketrain_shape(self):
@@ -462,8 +461,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         xb = cv.BinnedSpikeTrain(b, bin_size=bin_size.rescale(pq.ms))
         assert_array_equal(xa.to_array(), xb.to_array())
         assert_array_equal(xa.to_bool_array(), xb.to_bool_array())
-        assert_array_equal(xa.to_sparse_array().data,
-                           xb.to_sparse_array().data)
+        assert_array_equal(xa.sparse_matrix.data,
+                           xb.sparse_matrix.data)
         assert_array_equal(xa.bin_edges, xb.bin_edges)
 
     def test_binary_to_binned_matrix(self):
@@ -532,29 +531,55 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertRaises(ValueError, cv.BinnedSpikeTrain, a,
                           bin_size=1 * pq.s)
 
-    def test_binnend_spiketrain_rescaling(self):
+    def test_binnend_spiketrain_different_input_units(self):
         train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
                                t_start=1 * pq.s, t_stop=1.01 * pq.s)
         bst = cv.BinnedSpikeTrain(train,
                                   t_start=1 * pq.s, t_stop=1.01 * pq.s,
                                   bin_size=1 * pq.ms)
+        self.assertEqual(bst.units, pq.s)
         target_edges = np.array([1000, 1001, 1002, 1003, 1004, 1005, 1006,
-                                 1007, 1008, 1009, 1010], dtype=np.float)
+                                 1007, 1008, 1009, 1010], dtype=np.float
+                                ) * pq.ms
         target_centers = np.array(
             [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
-             1008.5, 1009.5], dtype=np.float)
-        assert_array_almost_equal(bst.bin_edges.magnitude, target_edges)
-        assert_array_almost_equal(bst.bin_centers.magnitude, target_centers)
-        self.assertEqual(bst.bin_centers.units, pq.ms)
-        self.assertEqual(bst.bin_edges.units, pq.ms)
+             1008.5, 1009.5], dtype=np.float) * pq.ms
+        assert_array_almost_equal(bst.bin_edges, target_edges)
+        assert_array_almost_equal(bst.bin_centers, target_centers)
 
         bst = cv.BinnedSpikeTrain(train,
                                   t_start=1 * pq.s, t_stop=1010 * pq.ms,
                                   bin_size=1 * pq.ms)
-        assert_array_almost_equal(bst.bin_edges.magnitude, target_edges)
-        assert_array_almost_equal(bst.bin_centers.magnitude, target_centers)
-        self.assertEqual(bst.bin_centers.units, pq.ms)
-        self.assertEqual(bst.bin_edges.units, pq.ms)
+        self.assertEqual(bst.units, pq.s)
+        assert_array_almost_equal(bst.bin_edges, target_edges)
+        assert_array_almost_equal(bst.bin_centers, target_centers)
+
+    def test_rescale(self):
+        train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
+                               t_start=1 * pq.s, t_stop=1.01 * pq.s)
+        bst = cv.BinnedSpikeTrain(train, t_start=1 * pq.s,
+                                  t_stop=1.01 * pq.s,
+                                  bin_size=1 * pq.ms)
+        self.assertEqual(bst.units, pq.s)
+        self.assertEqual(bst._t_start, 1)  # 1 s
+        self.assertEqual(bst._t_stop, 1.01)  # 1.01 s
+        self.assertEqual(bst._bin_size, 0.001)  # 0.001 s
+
+        bst.rescale(units='ms')
+        self.assertEqual(bst.units, pq.ms)
+        self.assertEqual(bst._t_start, 1000)  # 1 s
+        self.assertEqual(bst._t_stop, 1010)  # 1.01 s
+        self.assertEqual(bst._bin_size, 1)  # 0.001 s
+
+    def test_repr(self):
+        train = neo.SpikeTrain(times=np.array([1.001, 1.002, 1.005]) * pq.s,
+                               t_start=1 * pq.s, t_stop=1.01 * pq.s)
+        bst = cv.BinnedSpikeTrain(train, t_start=1 * pq.s,
+                                  t_stop=1.01 * pq.s,
+                                  bin_size=1 * pq.ms)
+        self.assertEqual(repr(bst), "BinnedSpikeTrain(t_start=1.0 s, "
+                                    "t_stop=1.01 s, bin_size=0.001 s; "
+                                    "shape=(1, 10))")
 
     def test_binned_sparsity(self):
         train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)
