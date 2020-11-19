@@ -57,7 +57,6 @@ from __future__ import division, print_function, unicode_literals
 import random
 import warnings
 import copy
-import inspect
 
 import neo
 import numpy as np
@@ -1358,8 +1357,7 @@ def surrogates(
                          "is not valid".format(method))
     method = surrogate_types[method]
 
-    requires_dt = 'dt' in inspect.signature(method).parameters.keys()
-    if dt is None and requires_dt:
+    if dt is None and method not in (randomise_spikes, shuffle_isis):
         raise ValueError(f"'{method.__name__}' method requires 'dt' parameter "
                          f"to be set")
 
