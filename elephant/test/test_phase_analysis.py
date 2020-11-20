@@ -258,46 +258,32 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         self.tolerance = 1e-15
         self.n_samples = 200
 
-    def testPhaseDifference_abs_alpha_minus_beta_smaller_pi(self):
-        alpha = np.array([0.8, 0.6, 0.2, -0.2]) * np.pi
-        beta = np.array([0.6, 0.8, -0.2, 0.2]) * np.pi
-        target_phase_diff = np.array([0.2, -0.2, 0.4, -0.4]) * np.pi
-
-        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
-        np.testing.assert_allclose(phase_diff, target_phase_diff,
-                                   self.tolerance)
-
-    def testPhaseDifference_abs_alpha_minus_beta_greater_pi(self):
-        alpha = np.array([0.8, -0.8, 0.3, -0.8]) * np.pi
-        beta = np.array([-0.8, 0.8, -0.8, 0.3]) * np.pi
-        target_phase_diff = np.array([-0.4, 0.4, -0.9, 0.9]) * np.pi
-
-        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
-        np.testing.assert_allclose(phase_diff, target_phase_diff,
-                                    self.tolerance)
-
     def testPhaseDifference_in_range_minus_pi_to_pi(self):
-        sign_1 = 1 if np.random.random(1) < 0.5 else -1
-        sign_2 = 1 if np.random.random(1) < 0.5 else -1
-        alpha = sign_1 * np.random.random(1) * np.pi
-        beta = sign_2 * np.random.random(1) * np.pi
+        """
+        Test if the range of the phase difference is within [-pi, pi] for
+        random pairs of alpha and beta.
+        """
+        alpha = np.random.uniform(-np.pi, np.pi, self.n_samples)
+        beta = np.random.uniform(-np.pi, np.pi, self.n_samples)
 
         phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
-        self.assertTrue(-np.pi <= phase_diff <= np.pi)
+        self.assertTrue((-np.pi <= phase_diff).all()
+                        and (phase_diff <= np.pi).all())
 
-    def testPhaseDifference_for_arrays(self):
-        delta = np.random.random(1) * np.pi
-        alpha = np.random.random(self.n_samples) * 2 * np.pi
-        alpha = np.arctan2(np.sin(alpha), np.cos(alpha))
-        beta = alpha - delta
-        beta = np.arctan2(np.sin(beta), np.cos(beta))
+    def testPhaseDifference_is_delta(self):
+        """
+        Test if the phase difference is random delta for random pairs of
+        alpha and beta, where beta is a copy of alpha shifted by delta.
+        """
+        delta = np.random.uniform(-np.pi, np.pi, self.n_samples)
+        alpha = np.random.uniform(-np.pi, np.pi, self.n_samples)
+        _beta = alpha - delta
+        beta = np.arctan2(np.sin(_beta), np.cos(_beta))
 
         phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
-        target_phase_diff = np.ones_like(phase_diff) * delta
-        np.testing.assert_allclose(phase_diff, target_phase_diff,
-                                   3 * self.tolerance)
+        np.testing.assert_allclose(phase_diff, delta, 3 * self.tolerance)
         # NOTE: tolerance must be increased to 3e-15 to prevent failure
-        
+
 
 class PhaseLockingValueTestCase(unittest.TestCase):
     def setUp(self):
