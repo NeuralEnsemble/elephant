@@ -227,9 +227,8 @@ def phase_locking_value(phases_x, phases_y):
     and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
     Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
-
-    if len(phases_x) != len(phases_y):
-        raise ValueError("trial number of signal x and y must be equal")
+    assert (np.shape(phases_x) == np.shape(phases_y)), \
+        "trial number and trial length of signal x and y must be equal"
 
     # trial by trial and time-resolved
     # version 0.2: signal x and y have multiple trials
@@ -297,7 +296,7 @@ def phase_difference(alpha, beta):
     Notes
     -----
     The usage of arctan2 assures that the range of the phase difference
-    is [-pi, pi) and is located in the correct quadrant.
+    is [-pi, pi] and is located in the correct quadrant.
     """
 
     phase_diff = np.arctan2(np.sin(alpha - beta), np.cos(alpha - beta))

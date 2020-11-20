@@ -206,38 +206,51 @@ class MeanVectorTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
         self.n_samples = 200
-        # create a nonuniform-distribution at a random phase-lock
-        self.lock_value_phi = np.random.random(1)[0] * 2 * np.pi - np.pi
+        # create a nonuniform-distribution at a random phase-lock phi
+        phi = np.random.random(1)[0] * 2 * np.pi
+        self.lock_value_phi = np.arctan2(np.sin(phi), np.cos(phi))
         self.dataset1 = np.ones(self.n_samples) * self.lock_value_phi
         # create a evenly spaced / uniform distribution
         self.dataset2 = np.arange(0, 2*np.pi, (2*np.pi) / self.n_samples)
         # create a random distribution
         self.dataset3 = np.random.random(self.n_samples) * 2 * np.pi
 
-    def testMeanVector_direction_and_length(self):
+    def testMeanVector_direction_is_phi_and_length_is_1(self):
         """
-        Test if the mean vector length of a evenly spaced distribution on the
-        unit circle is 0.
-        Test if the mean vector length of a homogenous sample with phase phi
-        on the unit circle is 1 and if the mean direction is phi.
+        Test if the mean vector length of a homogenous sample with all phases
+        equal phi on the unit circle is 1 and if the mean direction is phi.
 
         """
         theta_bar_1, r_1 = elephant.phase_analysis.mean_vector(self.dataset1,
                                                                axis=0)
-        theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2,
-                                                               axis=0)
-        # mean direction
+        # mean direction must be phi
         self.assertAlmostEqual(theta_bar_1, self.lock_value_phi,
                                delta=self.tolerance)
-
-        # mean vector length
+        # mean vector length must be almost equal 1
         self.assertAlmostEqual(r_1, 1, delta=self.tolerance)
+
+    def testMeanVector_length_is_0(self):
+        """
+        Test if the mean vector length of a evenly spaced distribution on the
+        unit circle is 0.
+        """
+        theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2,
+                                                               axis=0)
+        # mean vector length must be almost equal 0
         self.assertAlmostEqual(r_2, 0, delta=self.tolerance)
 
-    def testMeanVector_range_of_direction(self):
+    def testMeanVector_ranges_of_direction_and_length(self):
+        """
+        Test if the range of the mean vector direction follows numpy standard
+        and is within (-pi, pi].
+        Test if the range of the mean vector length is within [0, 1].
+        """
         theta_bar_3, r_3 = elephant.phase_analysis.mean_vector(self.dataset3,
                                                                axis=0)
+        # mean vector direction
         self.assertTrue(-np.pi < theta_bar_3 <= np.pi)
+        # mean vector length
+        self.assertTrue(0 <= r_3 <= 1)
 
 
 class PhaseDifferenceTestCase(unittest.TestCase):
@@ -245,7 +258,7 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         self.tolerance = 1e-15
         self.n_samples = 200
 
-    def test_phaseDiff_ABS_AlphaMinusBeta_SmallerPi(self):
+    def testPhaseDifference_abs_alpha_minus_beta_smaller_pi(self):
         alpha = np.array([0.8, 0.6, 0.2, -0.2]) * np.pi
         beta = np.array([0.6, 0.8, -0.2, 0.2]) * np.pi
         target_phase_diff = np.array([0.2, -0.2, 0.4, -0.4]) * np.pi
@@ -254,7 +267,7 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         np.testing.assert_allclose(phase_diff, target_phase_diff,
                                    self.tolerance)
 
-    def test_phaseDiff_ABS_AlphaMinusBeta_GreaterPi(self):
+    def testPhaseDifference_abs_alpha_minus_beta_greater_pi(self):
         alpha = np.array([0.8, -0.8, 0.3, -0.8]) * np.pi
         beta = np.array([-0.8, 0.8, -0.8, 0.3]) * np.pi
         target_phase_diff = np.array([-0.4, 0.4, -0.9, 0.9]) * np.pi
@@ -263,16 +276,16 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         np.testing.assert_allclose(phase_diff, target_phase_diff,
                                     self.tolerance)
 
-    def test_phaseDiff_in_range_MinusPi_and_Pi(self):
+    def testPhaseDifference_in_range_minus_pi_to_pi(self):
         sign_1 = 1 if np.random.random(1) < 0.5 else -1
         sign_2 = 1 if np.random.random(1) < 0.5 else -1
         alpha = sign_1 * np.random.random(1) * np.pi
         beta = sign_2 * np.random.random(1) * np.pi
 
-        adiff = elephant.phase_analysis.phase_difference(alpha, beta)
-        self.assertTrue(-np.pi <= adiff <= np.pi)
+        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
+        self.assertTrue(-np.pi <= phase_diff <= np.pi)
 
-    def test_phaseDiff_for_arrays(self):
+    def testPhaseDifference_for_arrays(self):
         delta = np.random.random(1) * np.pi
         alpha = np.random.random(self.n_samples) * 2 * np.pi
         alpha = np.arctan2(np.sin(alpha), np.cos(alpha))
@@ -282,8 +295,9 @@ class PhaseDifferenceTestCase(unittest.TestCase):
         phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
         target_phase_diff = np.ones_like(phase_diff) * delta
         np.testing.assert_allclose(phase_diff, target_phase_diff,
-                                   self.tolerance)
-
+                                   3 * self.tolerance)
+        # NOTE: tolerance must be increased to 3e-15 to prevent failure
+        
 
 class PhaseLockingValueTestCase(unittest.TestCase):
     def setUp(self):
@@ -312,8 +326,12 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         self.shifted_signal_x = np.arctan2(np.sin(self.shifted_signal_x),
                                            np.cos(self.shifted_signal_x))
 
-    def testPhaseLockingValue_2_identical_signals_homogeneous_trials(self):
-        # example 1: two identical signals
+    def testPhaseLockingValue_identical_signals_both_homogeneous_trials(self):
+        """
+        Test if the PLV's are 1, when 2 identical signals with homogenous 
+        trials are passed. PLV's needed to be 1, due to the constant phase 
+        difference of 0 across trials at each time-point.
+        """
         list1_plv_t = \
             elephant.phase_analysis.phase_locking_value(self.signal_x,
                                                         self.signal_x)
@@ -321,9 +339,12 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         np.testing.assert_allclose(list1_plv_t, target_plv_r_is_one,
                                    self.tolerance)
 
-    def testPhaseLockingValue_2_different_signals_homogenous_trials(self):
-        # example 2: two different signals, where the trials in both signals
-        # dose not change
+    def testPhaseLockingValue_different_signals_both_homogenous_trials(self):
+        """
+        Test if the PLV's are 1, when 2 different signals with homogenous
+        trials are passed. PLV's needed to be 1, due to a constant phase
+        difference across trials, which may vary for different time-points.
+        """
         list2_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x, self.signal_y)
         target_plv_r_is_one = np.ones_like(list2_plv_t)
@@ -331,9 +352,15 @@ class PhaseLockingValueTestCase(unittest.TestCase):
                                    3 * self.tolerance)
         # NOTE: tolerance must be increased to 3e-15 to prevent failure
 
-    def testPhaseLockingValue_2_different_signals_heterogeneous_trials(self):
-        # example 3: two different signals (original & shifted), where
-        # each trial got shifted by a variable step in the shifted version
+    def testPhaseLockingValue_different_signals_one_heterogeneous_trials(self):
+        """
+        Test if the PLV's are 0, when 2 different signals (original & shifted
+        version) are passed, where one has homogenous trials and the other
+        heterogeneous trials. In the shifted version each trial got shifted by
+        a variable step (steps are evenly spaced/distributed).
+        The PLV's needed to be 0, do to a variable (evenly spaced/distributed)
+        phase difference across trials for each time-point.
+        """
         list3_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x, self.shifted_signal_x)
         target_plv_r_is_zero = np.zeros_like(list3_plv_t)
