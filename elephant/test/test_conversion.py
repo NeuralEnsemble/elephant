@@ -6,7 +6,6 @@ Unit tests for the conversion module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import sys
 import unittest
 
 import neo
@@ -16,8 +15,6 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal)
 
 import elephant.conversion as cv
 from elephant.utils import get_common_start_stop_times
-
-python_version_major = sys.version_info.major
 
 
 def get_nearest(times, time):
@@ -177,7 +174,6 @@ class binarize_TestCase(unittest.TestCase):
                           t_start=0., t_stop=pq.Quantity(10, 'ms'))
         self.assertRaises(ValueError, cv.binarize, st1)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_bin_edges_empty_binned_spiketrain(self):
         st = neo.SpikeTrain(times=np.array([2.5]) * pq.s, t_start=0 * pq.s,
                             t_stop=3 * pq.s)
@@ -587,7 +583,6 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.assertAlmostEqual(bst.sparsity, 0.1)
 
     # Test fix for rounding errors
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_binned_spiketrain_rounding(self):
         train = neo.SpikeTrain(times=np.arange(120000) / 30000. * pq.s,
                                t_start=0 * pq.s, t_stop=4 * pq.s)

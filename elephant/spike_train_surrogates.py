@@ -73,7 +73,9 @@ __all__ = [
     "shuffle_isis",
     "dither_spike_train",
     "jitter_spikes",
+    "bin_shuffling",
     "JointISI",
+    "trial_shifting",
     "surrogates"
 ]
 
@@ -1355,10 +1357,9 @@ def surrogates(
                          "is not valid".format(method))
     method = surrogate_types[method]
 
-    # PYTHON2: replace with inspect.signature()
     if dt is None and method not in (randomise_spikes, shuffle_isis):
-        raise ValueError("{}() method requires 'dt' parameter to be "
-                         "not None".format(method.__name__))
+        raise ValueError(f"'{method.__name__}' method requires 'dt' parameter "
+                         f"to be set")
 
     if method in (dither_spike_train, dither_spikes):
         return method(

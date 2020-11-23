@@ -6,7 +6,6 @@ Unit tests for the spade module.
 """
 from __future__ import division
 
-import sys
 import unittest
 import random
 
@@ -24,8 +23,6 @@ try:
     HAVE_STATSMODELS = True
 except ImportError:
     HAVE_STATSMODELS = False
-
-python_version_major = sys.version_info.major
 
 HAVE_FIM = spade.HAVE_FIM
 
@@ -183,7 +180,6 @@ class SpadeTestCase(unittest.TestCase):
         # check the lags
         assert_array_equal(lags_msip, self.lags_msip)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_parameters(self):
         """
         Test under different configuration of parameters than the default one

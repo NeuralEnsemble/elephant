@@ -9,7 +9,6 @@ Unit tests for the spike_train_generation module.
 from __future__ import division
 
 import os
-import sys
 import unittest
 import warnings
 
@@ -23,8 +22,6 @@ from scipy.stats import kstest, poisson
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi, instantaneous_rate
 from elephant import kernels
-
-python_version_major = sys.version_info.major
 
 
 def pdiff(a, b):

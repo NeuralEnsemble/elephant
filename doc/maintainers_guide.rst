@@ -8,21 +8,12 @@ This guide is for Elephant maintainers only.
 Python 3
 --------
 
-Elephant should work with Python 2.7 and Python 3.
-
-So far, we have managed to write code that works with both Python 2 and 3.
-Mainly this involves and putting
+Backward compatibility is achieved by putting a few future imports at the
+beginning of each source file:
 
 .. code-block:: python
 
     from __future__ import division, print_function, unicode_literals
-
-at the beginning of each source file. The most important thing to remember is
-to run tests with at least one version of Python 2 and at least one version of
-Python 3.
-
-If in doubt, `Porting to Python 3 <http://python3porting.com/>`_ by Lennart
-Regebro is an excellent resource.
 
 All code should conform as much as possible to
 `PEP 8 <http://www.python.org/dev/peps/pep-0008/>`_.

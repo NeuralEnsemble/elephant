@@ -53,7 +53,6 @@ Functions overview
 
 from __future__ import division, print_function, unicode_literals
 
-import sys
 import warnings
 
 import neo
@@ -179,11 +178,7 @@ def inverse_hash_from_pattern(h, N, base=2):
 
     """
     h = np.asarray(h)  # this will cast to object type if h > int64
-    if sys.version_info < (3,):
-        integer_types = (int, long)
-    else:
-        integer_types = (int,)
-    if not all(isinstance(v, integer_types) for v in h.tolist()):
+    if not all(isinstance(v, int) for v in h.tolist()):
         # .tolist() is necessary because np.int[64] is not int
         raise ValueError("hash values should be integers")
 

@@ -4,4 +4,3 @@ quantities>=0.12.1
 scipy>=1.5.4
 six>=1.10.0
 tqdm
-futures; python_version == '2.7'

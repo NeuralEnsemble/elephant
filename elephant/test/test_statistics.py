@@ -9,7 +9,6 @@ from __future__ import division
 
 import itertools
 import math
-import sys
 import unittest
 
 import neo
@@ -22,9 +21,6 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal, \
 import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import homogeneous_poisson_process
-
-if sys.version_info.major == 2:
-    import unittest2 as unittest
 
 
 class isi_TestCase(unittest.TestCase):

@@ -5,11 +5,7 @@ from zipfile import ZipFile
 
 from tqdm import tqdm
 
-try:
-    from urllib.request import urlretrieve
-except ImportError:
-    # python 2
-    from urllib import urlretrieve
+from urllib.request import urlretrieve
 
 ELEPHANT_TMP_DIR = os.path.join(tempfile.gettempdir(), "elephant")
 
