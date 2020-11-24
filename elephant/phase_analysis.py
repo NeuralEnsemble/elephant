@@ -205,13 +205,18 @@ def phase_locking_value(phases_x, phases_y):
     Parameters:
     -----------
     phases_x, phases_y: array-like object
-        time-series of signal x and signal y with each n trials
+        time-series of signal x and signal y with n trials each
 
     Returns:
     --------
     plv: array-like object
         phase-locking value (float)
         range: [0, 1]
+
+    Raises:
+    -------
+    ValueError:
+        if shapes of phases x and y are different
 
     Notes
     -----
@@ -227,8 +232,9 @@ def phase_locking_value(phases_x, phases_y):
     and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
     Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
-    assert (np.shape(phases_x) == np.shape(phases_y)), \
-        "trial number and trial length of signal x and y must be equal"
+    if np.shape(phases_x) != np.shape(phases_y):
+        raise ValueError("trial number and trial length of signal x and y "
+                         "must be equal")
 
     # trial by trial and time-resolved
     # version 0.2: signal x and y have multiple trials
@@ -250,14 +256,14 @@ def mean_vector(phases, axis=0):
     Parameters
     ----------
     phases: array-like object
-        phases of circular data
+        phases in radians
     axis: {0, 1, None}
         axis along which the mean_vector will be calculated
 
     Returns
     -------
     z_mean_theta: array-like object
-        mean direction of the phases
+        angle of the mean vector
         range: (-pi, pi]
     z_mean_r: array-like object
         length of the mean vector
@@ -274,11 +280,8 @@ def mean_vector(phases, axis=0):
 
 def phase_difference(alpha, beta):
     """
-    Calculates the difference between a pair of phases.
-
-    This function expects two phases and calculates their difference, which
-    means the smallest amount of rotation (clockwise or counter-clockwise) to
-    get from the first phase to the second.
+    Calculates the difference between a pair of phases. The output is in range
+    of -pi to pi.
 
     Parameters
     ----------
@@ -298,6 +301,6 @@ def phase_difference(alpha, beta):
     The usage of arctan2 assures that the range of the phase difference
     is [-pi, pi] and is located in the correct quadrant.
     """
-
-    phase_diff = np.arctan2(np.sin(alpha - beta), np.cos(alpha - beta))
+    delta = alpha - beta
+    phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
     return phase_diff
