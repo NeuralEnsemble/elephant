@@ -216,12 +216,11 @@ class MeanVectorTestCase(unittest.TestCase):
 
     def testMeanVector_direction_is_phi_and_length_is_1(self):
         """
-        Test if the mean vector length of a sample with all phases
-        equal phi on the unit circle is 1 and if the mean direction is phi.
+        Test if the mean vector length is 1 and if the mean direction is phi
+        for a sample with all phases equal to phi on the unit circle.
 
         """
-        theta_bar_1, r_1 = elephant.phase_analysis.mean_vector(self.dataset1,
-                                                               axis=0)
+        theta_bar_1, r_1 = elephant.phase_analysis.mean_vector(self.dataset1)
         # mean direction must be phi
         self.assertAlmostEqual(theta_bar_1, self.lock_value_phi,
                                delta=self.tolerance)
@@ -230,11 +229,10 @@ class MeanVectorTestCase(unittest.TestCase):
 
     def testMeanVector_length_is_0(self):
         """
-        Test if the mean vector length of a evenly spaced distribution on the
-        unit circle is 0.
+        Test if the mean vector length  is 0 for a evenly spaced distribution
+        on the unit circle.
         """
-        theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2,
-                                                               axis=0)
+        theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2)
         # mean vector length must be almost equal 0
         self.assertAlmostEqual(r_2, 0, delta=self.tolerance)
 
@@ -244,8 +242,7 @@ class MeanVectorTestCase(unittest.TestCase):
         and is within (-pi, pi].
         Test if the range of the mean vector length is within [0, 1].
         """
-        theta_bar_3, r_3 = elephant.phase_analysis.mean_vector(self.dataset3,
-                                                               axis=0)
+        theta_bar_3, r_3 = elephant.phase_analysis.mean_vector(self.dataset3)
         # mean vector direction
         self.assertTrue(-np.pi < theta_bar_3 <= np.pi)
         # mean vector length
@@ -290,12 +287,10 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         self.num_time_points = 1000
         self.num_trials = 100
 
-        # create randomly two uniform distributions in the half-open interval
-        # of [-pi, pi)
+        # create two random uniform distributions (all trials are identical)
         self.signal_x = \
             np.full([self.num_trials, self.num_time_points],
                     np.random.uniform(-np.pi, np.pi, self.num_time_points))
-
         self.signal_y = \
             np.full([self.num_trials, self.num_time_points],
                     np.random.uniform(-np.pi, np.pi, self.num_time_points))
@@ -326,9 +321,10 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
     def testPhaseLockingValue_different_signals_both_identical_trials(self):
         """
-        Test if the PLV's are 1, when 2 different signals with identical
-        trials are passed. PLV's needed to be 1, due to a constant phase
-        difference across trials, which may vary for different time-points.
+        Test if the PLV's are 1, when 2 different signals are passed, where
+        within each signal the trials are identical. PLV's needed to be 1,
+        due to a constant phase difference across trials, which may vary for
+        different time-points.
         """
         list2_plv_t = elephant.phase_analysis.phase_locking_value(
             self.signal_x, self.signal_y)
@@ -338,8 +334,8 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
     def testPhaseLockingValue_different_signals_both_different_trials(self):
         """
-        Test if the PLV's are 0, when 2 different signals are passed, where
-        both have different trials, which are all randomly distributed.
+        Test if the PLV's are close to 0, when 2 different signals are passed,
+        where both have different trials, which are all randomly distributed.
         The PLV's needed to be close to 0, do to a random
         phase difference across trials for each time-point.
         """

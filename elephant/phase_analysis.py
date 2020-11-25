@@ -259,6 +259,9 @@ def mean_vector(phases, axis=0):
         phases in radians
     axis: {0, 1, None}
         axis along which the mean_vector will be calculated
+        - None: across flattened array
+        - 0: across columns of array (default)
+        - 1: across rows of array
 
     Returns
     -------
