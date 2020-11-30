@@ -171,9 +171,8 @@ def zscore(signal, inplace=True):
 def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
                                n_lags=None, scaleopt='unbiased'):
     r"""
-    Computes unbiased estimator of the cross-correlation function.
-
-    The calculations are based on [1]_:
+    Computes an estimator of the cross-correlation function
+    :cite:`signal-Stoica2005`.
 
     .. math::
 
@@ -263,12 +262,6 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
         If `n_lags` is not a positive integer.
 
         If `scaleopt` is not one of the predefined above keywords.
-
-    References
-    ----------
-    .. [1] Stoica, P., & Moses, R. (2005). Spectral Analysis of Signals.
-       Prentice Hall. Retrieved from http://user.it.uu.se/~ps/SAS-new.pdf,
-       Eq. 2.2.3.
 
     Examples
     --------
@@ -415,7 +408,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         In most applications 'filtfilt' should be used, because it doesn't
         bring about phase shift due to filtering. For numerically stable
         filtering, in particular higher order filters, use 'sosfiltfilt'
-        (see [1]_).
+        (see https://github.com/NeuralEnsemble/elephant/issues/220).
         Default: 'filtfilt'
     sampling_frequency : pq.Quantity or float, optional
         The sampling frequency of the input time series. When given as
@@ -440,10 +433,6 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         or 'sosfiltfilt'.
 
         If both `highpass_frequency` and `lowpass_frequency` are None.
-
-    References
-    ----------
-    .. [1] https://github.com/NeuralEnsemble/elephant/issues/220
 
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
@@ -521,9 +510,8 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
                       zero_padding=True):
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
-    wavelet.
-
-    The parametrization of the wavelet is based on [1]_.
+    wavelet. The parametrization of the wavelet is based on
+    :cite:`signal-Le2001_83`.
 
     Parameters
     ----------
@@ -538,12 +526,12 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         computes the wavelet transforms for all the given frequencies at once.
     n_cycles : float, optional
         Size of the mother wavelet (approximate number of oscillation cycles
-        within a wavelet). Corresponds to :math:`nco` in the paper [1]_.
-        A larger `n_cycles` value leads to a higher frequency resolution and a
-        lower temporal resolution, and vice versa.
+        within a wavelet). Corresponds to :math:`nco` in
+        :cite:`signal-Le2001_83`. A larger `n_cycles` value leads to a higher
+        frequency resolution and a lower temporal resolution, and vice versa.
         Typically used values are in a range of 3–8, but one should be cautious
         when using a value smaller than ~ 6, in which case the admissibility of
-        the wavelet is not ensured (cf. [2]_).
+        the wavelet is not ensured :cite:`signal-Farge1992_395`.
         Default: 6.0
     sampling_frequency : float, optional
         Sampling rate of the input data in Hz.
@@ -590,17 +578,8 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     Notes
     -----
     `n_cycles` is related to the wavelet number :math:`w` as
-    :math:`w \sim 2 \pi \frac{n_{\text{cycles}}}{6}`, as defined in [1]_.
-
-    References
-    ----------
-    .. [1] M. Le Van Quyen, J. Foucher, J. Lachaux, E. Rodriguez, A. Lutz,
-           J. Martinerie, & F.J. Varela, "Comparison of Hilbert transform and
-           wavelet methods for the analysis of neuronal synchrony," J Neurosci
-           Meth, vol. 111, pp. 83–98, 2001.
-    .. [2] M. Farge, "Wavelet Transforms and their Applications to
-           Turbulence," Annu Rev Fluid Mech, vol. 24, pp. 395–458, 1992.
-
+    :math:`w \sim 2 \pi \frac{n_{\text{cycles}}}{6}` as defined in
+    :cite:`signal-Le2001_83`.
     """
     def _morlet_wavelet_ft(freq, n_cycles, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
