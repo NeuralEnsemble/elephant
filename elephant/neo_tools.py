@@ -2,6 +2,14 @@
 """
 Tools to manipulate Neo objects.
 
+.. autosummary::
+    :toctree: toctree/neo_tools
+
+    extract_neo_attributes
+    get_all_spiketrains
+    get_all_events
+    get_all_epochs
+
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
