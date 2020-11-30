@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Features of waveforms (e.g waveform_snr).
+.. autosummary::
+    :toctree: toctree/waveform_features
+
+    waveform_width
+    waveform_snr
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -70,12 +74,12 @@ def waveform_width(waveform, cutoff=0.75):
 def waveform_snr(waveforms):
     """
     Return the signal-to-noise ratio of the waveforms of one or more
-    spike trains.
+    spike trains :cite:`waveforms-Hatsopoulos2007_5105`.
 
     Signal-to-noise ratio is defined as the difference in mean peak-to-trough
     voltage divided by twice the mean SD. The mean SD is computed by
     measuring the SD of the spike waveform over all acquired spikes
-    at each of the sample time points of the waveform and then averaging [1]_.
+    at each of the sample time points of the waveform and then averaging.
 
     Parameters
     ----------
@@ -88,7 +92,8 @@ def waveform_snr(waveforms):
     Returns
     -------
     snr : float or np.ndarray
-        Signal-to-noise ratio according to [1]_. If the input `waveforms`
+        Signal-to-noise ratio according to
+        :cite:`waveforms-Hatsopoulos2007_5105`. If the input `waveforms`
         shape is ``(n_waveforms, time)`` or ``(n_waveforms, 1, time)``, a
         single float is returned. Otherwise, if the shape is
         ``(n_waveforms, n_spiketrains, time)``, a numpy array of length
@@ -99,12 +104,6 @@ def waveform_snr(waveforms):
     The waveforms of a `neo.SpikeTrain` can be extracted as
     `spiketrain.waveforms`, if it's loaded from a file, in which case you need
     to set ``load_waveforms=True`` in ``neo.read_block()``.
-
-    References
-    ----------
-    .. [1] Hatsopoulos, N. G., Xu, Q. & Amit, Y.
-           Encoding of Movement Fragments in the Motor Cortex.
-           J. Neurosci. 27, 5105–5114 (2007).
 
     """
     if isinstance(waveforms, neo.SpikeTrain):
