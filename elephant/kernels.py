@@ -523,15 +523,12 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     The Epanechnikov kernel under full consideration of its axioms has a half
     width of :math:`\sqrt{5}`. Ignoring one axiom also the respective kernel
-    with half width = 1 can be called Epanechnikov kernel [1]_.
+    with half width = 1 can be called `Epanechnikov kernel
+    <https://de.wikipedia.org/wiki/Epanechnikov-Kern>`_.
     However, arbitrary width of this type of kernel is here preferred to be
     called 'Epanechnikov-like' kernel.
 
     The parameter `invert` has no effect on symmetric kernels.
-
-    References
-    ----------
-    .. [1] https://de.wikipedia.org/wiki/Epanechnikov-Kern
 
     Examples
     --------
@@ -594,8 +591,9 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         For Epanechnikov-like kernels, integration of its density within
         the boundaries 0 and :math:`b`, and then solving for :math:`b` leads
         to the problem of finding the roots of a polynomial of third order.
-        The implemented formulas are based on the solution of this problem
-        given in [1]_, where the following 3 solutions are given:
+        The implemented formulas are based on the solution of a
+        `cubic function <https://en.wikipedia.org/wiki/Cubic_function>`_,
+        where the following 3 solutions are given:
 
         * :math:`u_1 = 1`, solution on negative side;
         * :math:`u_2 = \frac{-1 + i\sqrt{3}}{2}`, solution for larger
@@ -605,11 +603,6 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
         The solution :math:`u_3` is the relevant one for the problem at hand,
         since it involves only positive area contributions.
-
-        References
-        ----------
-        .. [1] https://en.wikipedia.org/wiki/Cubic_function
-
         """
         self._check_fraction(fraction)
         # Python's complex-operator cannot handle quantities, hence the
