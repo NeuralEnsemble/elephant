@@ -1,7 +1,8 @@
 """
-SPADE [1]_, [2]_, [3]_ is the combination of a mining technique and multiple
-statistical tests to detect and assess the statistical significance of repeated
-occurrences of spike sequences (spatio-temporal patterns, STP).
+SPADE :cite:`spade-Torre2013_132`, :cite:`spade-Quaglio2017_41`,
+:cite:`spade-Stella2019_104022` is the combination of a mining technique and
+multiple statistical tests to detect and assess the statistical significance of
+repeated occurrences of spike sequences (spatio-temporal patterns, STP).
 
 
 .. autosummary::
@@ -73,19 +74,6 @@ Raster plot of the spiketrains.
 >>> plt.legend()
 >>> plt.show()
 
-References
-----------
-.. [1] Torre, E., Picado-Muino, D., Denker, M., Borgelt, C., & Gruen, S.
-   (2013). Statistical evaluation of synchronous spike patterns extracted
-   by frequent item set mining. Frontiers in Computational Neuroscience, 7.
-.. [2] Quaglio, P., Yegenoglu, A., Torre, E., Endres, D. M., & Gruen, S.
-   (2017). Detection and Evaluation of Spatio-Temporal Spike Patterns in
-   Massively Parallel Spike Train Data with SPADE. Frontiers in
-   Computational Neuroscience, 11.
-.. [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019). 3d-SPADE:
-   Significance evaluation of spatio-temporal patterns of various temporal
-   extents. Biosystems, 185, 104022.
-
 :copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
@@ -142,9 +130,10 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
           alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns', **surr_kwargs):
     r"""
-    Perform the SPADE [1]_, [2]_, [3]_ analysis for the parallel input
-    `spiketrains`. They are discretized with a temporal resolution equal to
-    `bin_size` in a sliding window of `winlen*bin_size`.
+    Perform the SPADE :cite:`spade-Torre2013_132`,
+    :cite:`spade-Quaglio2017_41`, :cite:`spade-Stella2019_104022` analysis for
+    the parallel input `spiketrains`. They are discretized with a temporal
+    resolution equal to `bin_size` in a sliding window of `winlen*bin_size`.
 
     First, spike patterns are mined from the `spiketrains` using a technique
     called frequent itemset mining (FIM) or formal concept analysis (FCA). In
@@ -293,19 +282,6 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     Notes
     -----
     If detected, this function will use MPI to parallelize the analysis.
-
-    References
-    ----------
-    .. [1] Torre, E., Picado-Muino, D., Denker, M., Borgelt, C., & Gruen, S.
-       (2013). Statistical evaluation of synchronous spike patterns extracted
-       by frequent item set mining. Frontiers in Computational Neuroscience, 7.
-    .. [2] Quaglio, P., Yegenoglu, A., Torre, E., Endres, D. M., & Gruen, S.
-       (2017). Detection and Evaluation of Spatio-Temporal Spike Patterns in
-       Massively Parallel Spike Train Data with SPADE. Frontiers in
-       Computational Neuroscience, 11.
-    .. [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019). 3d-SPADE:
-       Significance evaluation of spatio-temporal patterns of various temporal
-       extents. Biosystems, 185, 104022.
 
     Examples
     --------
