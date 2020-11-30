@@ -1,7 +1,36 @@
 # -*- coding: utf-8 -*-
 """
-Functions to generate spike trains from analog signals,
-or to generate random spike trains.
+Functions to generate/extract spike trains from analog signals, or to generate
+random spike trains.
+
+Extract spike times from analog signals
+---------------------------------------
+.. autosummary::
+    :toctree: toctree/spike_train_generation
+
+    spike_extraction
+    threshold_detection
+    peak_detection
+
+
+Random spike train processes
+----------------------------
+.. autosummary::
+    :toctree: toctree/spike_train_generation
+
+    homogeneous_poisson_process
+    inhomogeneous_poisson_process
+    homogeneous_gamma_process
+    inhomogeneous_gamma_process
+
+
+Coincident spike times generation
+---------------------------------
+.. autosummary::
+    :toctree: toctree/spike_train_generation
+
+    single_interaction_process
+    compound_poisson_process
 
 Some functions are based on the NeuroTools stgen module, which was mostly
 written by Eilif Muller, or from the NeuroTools signals.analogs module.
@@ -29,6 +58,7 @@ __all__ = [
     "homogeneous_poisson_process",
     "inhomogeneous_poisson_process",
     "homogeneous_gamma_process",
+    "inhomogeneous_gamma_process",
     "single_interaction_process",
     "compound_poisson_process"
 ]
@@ -142,7 +172,6 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
     """
     Returns the times when the analog signal crosses a threshold.
     Usually used for extracting spike times from a membrane potential.
-    Adapted from version in NeuroTools.
 
     Parameters
     ----------
@@ -666,9 +695,8 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
 def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     """
     Returns a spike train whose spikes are a realization of an inhomogeneous
-    Gamma process with the given rate profile and the given shape factor.
-    The implementation using operational time is inspired by Nawrot et al.
-    (2018) [1]_.
+    Gamma process with the given rate profile and the given shape factor
+    :cite:`generation-Nawrot2008_374`.
 
     Parameters
     ----------
@@ -695,12 +723,6 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
         If `rate` is not a neo AnalogSignal
         If `rate` contains a negative value.
 
-    References
-    ----------
-    .. [1] Nawrot, M., Boucsein, C., Denker, M., Rodriguez Molina, V.,
-           Riehle A., Aertsen A., & Rotter, S. (2008). Measurement of
-           variability dynamics in cortical spike trains. Journal of
-           Neuroscience Methods, 169, 374–390.
     """
 
     if not isinstance(rate, neo.AnalogSignal):
@@ -820,13 +842,11 @@ def single_interaction_process(
         return_coincidences=False):
     """
     Generates a multidimensional Poisson SIP (single interaction process)
-    plus independent Poisson processes
+    plus independent Poisson processes :cite:`generation-Kuhn2003_67`.
 
     A Poisson SIP consists of Poisson time series which are independent
     except for simultaneous events in all of them. This routine generates
     a SIP plus additional parallel independent Poisson processes.
-
-    See _[1].
 
     Parameters
     ----------
@@ -881,15 +901,11 @@ def single_interaction_process(
     Returns
     -------
     output: list
-        Realization of a SIP consisting of n Poisson processes characterized
-        by synchronous events (with the given jitter)
+        Realization of a SIP consisting of `n_spiketrains` Poisson processes
+        characterized by synchronous events (with the given jitter).
         If `return_coinc` is `True`, the coincidence times are returned as a
         second output argument. They also have an associated time unit (same
         as `t_stop`).
-
-    References
-    ----------
-    .. [1] Kuhn, Aertsen, Rotter (2003) Neural Comput 15(1):67-101
 
     Examples
     --------
@@ -1281,8 +1297,9 @@ def _cpp_het_stat(A, t_stop, rates, t_start=0. * pq.ms):
 def compound_poisson_process(
         rate, amplitude_distribution, t_stop, shift=None, t_start=0 * pq.ms):
     """
-    Generate a Compound Poisson Process (CPP; see _[1]) with a given
-    `amplitude_distribution` :math:`A` and stationary marginal rates `rate`.
+    Generate a Compound Poisson Process (CPP; see
+    :cite:`generation-Staude2010_327`) with a given `amplitude_distribution`
+    :math:`A` and stationary marginal rates `rate`.
 
     The CPP process is a model for parallel, correlated processes with Poisson
     spiking statistics at pre-defined firing rates. It is composed of
@@ -1303,7 +1320,7 @@ def compound_poisson_process(
     rate : pq.Quantity
         Average rate of each spike train generated. Can be:
           - a single value, all spike trains will have same rate rate
-          - an array of values (of length len(A)-1), each indicating the
+          - an array of values (of length `len(A)-1`), each indicating the
             firing rate of one process in output
     amplitude_distribution : np.ndarray or list
         CPP's amplitude distribution :math:`A`. `A[j]` represents the
@@ -1324,12 +1341,8 @@ def compound_poisson_process(
     Returns
     -------
     list of neo.SpikeTrain
-        SpikeTrains with specified firing rates forming the CPP with amplitude
-        distribution :math:`A`.
-
-    References
-    ----------
-    .. [1] Staude, Rotter, Gruen (2010) J Comput Neurosci 29:327-350.
+        A list of `len(A) - 1` neo.SpikeTrains with specified firing rates
+        forming the CPP with amplitude distribution :math:`A`.
     """
     if not isinstance(amplitude_distribution, np.ndarray):
         amplitude_distribution = np.array(amplitude_distribution)

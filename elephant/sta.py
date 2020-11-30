@@ -1,19 +1,27 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Functions to calculate spike-triggered average and spike-field coherence of
 analog signals.
 
+.. autosummary::
+    :toctree: toctree/sta
+
+    spike_triggered_average
+    spike_field_coherence
+
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
-'''
+"""
 
 from __future__ import division, print_function, unicode_literals
 
-import numpy as np
-import scipy.signal
-import quantities as pq
-from neo.core import AnalogSignal, SpikeTrain
 import warnings
+
+import numpy as np
+import quantities as pq
+import scipy.signal
+from neo.core import AnalogSignal, SpikeTrain
+
 from .conversion import BinnedSpikeTrain
 
 __all__ = [
