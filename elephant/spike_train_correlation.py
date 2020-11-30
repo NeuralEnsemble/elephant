@@ -308,12 +308,12 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         If True, the spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
-        Default: False.
+        Default: False
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
         `np.cov()`. Otherwise, use memory efficient implementation.
         See Notes [2].
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -410,12 +410,12 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
         If True, two spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
-        Default: False.
+        Default: False
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
         `np.corrcoef()`. Otherwise, use memory efficient implementation.
         See Notes[2]
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -574,7 +574,7 @@ def cross_correlation_histogram(
               The entries of window are two integers representing the left and
               right extremes (expressed as number of bins) where the
               cross-correlation is computed.
-        Default: 'full'.
+        Default: 'full'
     border_correction : bool, optional
         whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
@@ -584,11 +584,11 @@ def cross_correlation_histogram(
                             (H+1)/(H+1-|b|),
 
         which linearly corrects for loss of bins at the edges.
-        Default: False.
+        Default: False
     binary : bool, optional
         If True, spikes falling in the same bin are counted as a single spike;
         otherwise they are counted as different spikes.
-        Default: False.
+        Default: False
     kernel : np.ndarray or None, optional
         A one dimensional array containing a smoothing kernel applied
         to the resulting CCH. The length N of the kernel indicates the
@@ -600,7 +600,7 @@ def cross_correlation_histogram(
           * hanning: `numpy.hanning(N)`
           * bartlett: `numpy.bartlett(N)`
         If None, the CCH is not smoothed.
-        Default: None.
+        Default: None
     method : {'speed', 'memory'}, optional
         Defines the algorithm to use. "speed" uses `numpy.correlate` to
         calculate the correlation between two binned spike trains using a
@@ -608,12 +608,12 @@ def cross_correlation_histogram(
         fastest realization. In contrast, the option "memory" uses an own
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
-        Default: "speed".
+        Default: "speed"
     cross_correlation_coefficient : bool, optional
         If True, a normalization is applied to the CCH to obtain the
         cross-correlation  coefficient function ranging from -1 to 1 according
         to Equation (5.10) in :cite:`correlation-Eggermont2010_77`. See Notes.
-        Default: False.
+        Default: False
 
     Returns
     -------

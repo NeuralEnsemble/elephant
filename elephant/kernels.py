@@ -91,7 +91,7 @@ class Kernel(object):
     invert : bool, optional
         If True, asymmetric kernels (e.g., exponential or alpha kernels) are
         inverted along the time axis.
-        Default: False.
+        Default: False
 
     Raises
     ------

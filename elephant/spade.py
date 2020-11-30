@@ -1767,10 +1767,10 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         Default: 0
     delta : float, optional
         delta: probability with at least :math:`1-\delta`
-        Default: 0.
+        Default: 0.0
     epsilon : float, optional
         epsilon: absolute error
-        Default: 0.
+        Default: 0.0
 
     Returns
     -------

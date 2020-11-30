@@ -204,14 +204,14 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     hilbert_envelope : bool, optional
         If True, returns the Hilbert envelope of cross-correlation function
         result.
-        Default: False.
+        Default: False
     n_lags : int, optional
         Defines the number of lags for cross-correlation function. If a `float`
         is passed, it will be rounded to the nearest integer. Number of
         samples of output is `2*n_lags+1`.
         If None, the number of samples of the output is equal to the number of
         samples of the input signal (namely `nt`).
-        Default: None.
+        Default: None
     scaleopt : {'none', 'biased', 'unbiased', 'normalized', 'coeff'}, optional
         Normalization option, equivalent to matlab `xcorr(..., scaleopt)`.
         Specified as one of the following.
@@ -238,7 +238,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
             R_{xy,coeff}(\tau) = \frac{1}{\sqrt{R_{xx}(0) R_{yy}(0)}}
                                  R_{xy}(\tau)
 
-        Default: 'unbiased'.
+        Default: 'unbiased'
 
     Returns
     -------
@@ -382,7 +382,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     highpass_frequency : pq.Quantity of float, optional
         High-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
-        Default: None.
+        Default: None
     lowpass_frequency : pq.Quantity or float, optional
         Low-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
@@ -399,10 +399,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
 
         * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
-        Default: None.
+        Default: None
     order : int, optional
         Order of the Butterworth filter.
-        Default: 4.
+        Default: 4
     filter_function : {'filtfilt', 'lfilter', 'sosfiltfilt'}, optional
         Filtering function to be used. Available filters:
 
@@ -416,16 +416,16 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         bring about phase shift due to filtering. For numerically stable
         filtering, in particular higher order filters, use 'sosfiltfilt'
         (see [1]_).
-        Default: 'filtfilt'.
+        Default: 'filtfilt'
     sampling_frequency : pq.Quantity or float, optional
         The sampling frequency of the input time series. When given as
         `float`, its value is taken as frequency in Hz. When `signal` is given
         as `neo.AnalogSignal`, its attribute is used to specify the sampling
         frequency and this parameter is ignored.
-        Default: 1.0.
+        Default: 1.0
     axis : int, optional
         Axis along which filter is applied.
-        Default: last axis (-1).
+        Default: last axis (-1)
 
     Returns
     -------
@@ -544,19 +544,19 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         Typically used values are in a range of 3–8, but one should be cautious
         when using a value smaller than ~ 6, in which case the admissibility of
         the wavelet is not ensured (cf. [2]_).
-        Default: 6.0.
+        Default: 6.0
     sampling_frequency : float, optional
         Sampling rate of the input data in Hz.
         When `signal` is given as a `neo.AnalogSignal`, the sampling frequency
         is taken from its attribute and this parameter is ignored.
-        Default: 1.0.
+        Default: 1.0
     zero_padding : bool, optional
         Specifies whether the data length is extended to the least power of
         2 greater than the original length, by padding zeros to the tail, for
         speeding up the computation.
         If True, the extended part is cut out from the final result before
         returned, so that the output has the same length as the input.
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -704,7 +704,7 @@ def hilbert(signal, padding='nextpow'):
         If 'nextpow', zero-pad to the next length that is a power of 2.
         If it is an `int`, directly specify the length to zero-pad to
         (indicates the number of Fourier components).
-        Default: 'nextpow'.
+        Default: 'nextpow'
 
     Returns
     -------
@@ -811,7 +811,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         channel-by-channel basis.
         If 'median', the median value of the entire `signal` is subtracted on
         a channel-by-channel basis.
-        Default: None.
+        Default: None
     bin_duration : pq.Quantity, optional
         The length of time that each integration should span.
         If None, there will be only one bin spanning the entire signal
@@ -819,11 +819,11 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         If `bin_duration` does not divide evenly into the signal duration, the
         end of the signal is padded with zeros to accomodate the final,
         overextending bin.
-        Default: None.
+        Default: None
     t_start: pq.Quantity, optional
         Time to start the algorithm.
         If None, starts at the beginning of `signal`.
-        Default: None.
+        Default: None
     t_stop : pq.Quantity, optional
         Time to end the algorithm.
         If None, ends at the last time of `signal`.
@@ -832,7 +832,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         the signal but want the mean or median calculation (`baseline`='mean'
         or `baseline`='median') to use the entire signal for better baseline
         estimation.
-        Default: None.
+        Default: None
 
     Returns
     -------

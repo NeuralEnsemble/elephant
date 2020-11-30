@@ -64,10 +64,10 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
          to the :math:`\hat{\xi_{\text{max}}}` in [1]_. If it is not possible
          to compute the :math:`\hat{\xi}` before `max_iterations` iteration,
          the CuBIC procedure is aborted.
-         Default: 100.
+         Default: 100
     alpha : float, optional
          The significance level of the hypothesis tests performed.
-         Default: 0.05.
+         Default: 0.05
 
     Returns
     -------

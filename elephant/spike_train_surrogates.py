@@ -136,18 +136,18 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
         `(t-dither, t+dither)`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
     decimals : int or None, optional
         Number of decimal points for every spike time in the surrogates at a
         millisecond level.
         If None, machine precision is used.
-        Default: None.
+        Default: None
     edges : bool, optional
         For surrogate spikes falling outside the range
         `[spiketrain.t_start, spiketrain.t_stop)`, whether to drop them out
         (for `edges = True`) or set them to the range's closest end
         (for `edges = False`).
-        Default: True.
+        Default: True
     refractory_period : pq.Quantity or None, optional
         The dither range of each spike is adjusted such that the spike can not
         fall into the `refractory_period` of the previous or next spike.
@@ -157,7 +157,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
         Note, that with this option a spike cannot "jump" over the previous or
         next spike as it is normally possible.
         If set to None, no refractoriness is in dithering.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -253,11 +253,11 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
         The spike train from which to generate the surrogates.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
     decimals : int or None, optional
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -318,11 +318,11 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
         The spike train from which to generate the surrogates.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
     decimals : int or None, optional
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -400,16 +400,16 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
         drawn from the range `(-shift, +shift)`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
     decimals : int or None, optional
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
-        Default: None.
+        Default: None
     edges : bool, optional
         For surrogate spikes falling outside the range `[spiketrain.t_start,
         spiketrain.t_stop)`, whether to drop them out (for `edges = True`) or
         set them to the range's closest end (for `edges = False`).
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -494,7 +494,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
         width different from `bin_size`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
 
     Returns
     -------
@@ -580,10 +580,10 @@ def bin_shuffling(
         Number of bins that a single spike can be displaced.
     n_surrogates : int, optional
         Number of surrogates to create.
-        Default: 1.
+        Default: 1
     sliding : bool, optional
         If True, the window is slided bin by bin.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -644,53 +644,53 @@ class JointISI(object):
         `method` is 'window'. It is also used for the uniform dithering for
         the spikes, which are outside the regime in the Joint-ISI
         histogram, where Joint-ISI dithering is applicable.
-        Default: 15. * pq.ms.
+        Default: 15. * pq.ms
     truncation_limit : pq.Quantity, optional
         The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
         within the range :math:`[0, \infty)`. Since this is computationally not
         feasible, the Joint-ISI distribution is truncated for high ISI.
         The Joint-ISI histogram is calculated for
         :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
-        Default: 100. * pq.ms.
+        Default: 100. * pq.ms
     n_bins : int, optional
         The size of the joint-ISI-distribution will be
         `n_bins*n_bins/2`.
-        Default: 100.
+        Default: 100
     sigma : pq.Quantity, optional
         The standard deviation of the Gaussian kernel, with which
         the data is convolved.
-        Default: 2. * pq.ms.
+        Default: 2. * pq.ms
     alternate : bool, optional
         If True, then all even spikes are dithered followed
         by all odd spikes. Otherwise, the spikes are dithered in ascending
         order from the first to the last spike.
-        Default: True.
+        Default: True
     use_sqrt : bool, optional
         If True, the joint-ISI histogram is preprocessed by
         applying a square root (following :cite:`surrogates-Gerstein2004_203`).
-        Default: False.
+        Default: False
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
             previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`.
 
-        Default: 'window'.
+        Default: 'window'
     cutoff : bool, optional
         If True, then the filtering of the Joint-ISI histogram is
         limited on the lower side by the minimal ISI.
         This can be necessary, if in the data there is a certain refractory
         period, which will be destroyed by the convolution with the
         2d-Gaussian function.
-        Default: True.
+        Default: True
     refractory_period : pq.Quantity, optional
         Defines the refractory period of the dithered `spiketrain` unless
         the smallest ISI of the `spiketrain` is lower than this value.
-        Default: 4. * pq.ms.
+        Default: 4. * pq.ms
     isi_dithering : bool, optional
         If True, the Joint-ISI distribution is evaluated as the outer product
         of the ISI-distribution with itself. Thus, all serial correlations are
         destroyed.
-        Default: False.
+        Default: False
     """
 
     # The min number of spikes, required for dithering.
@@ -929,7 +929,7 @@ class JointISI(object):
         ----------
         n_surrogates : int
             The number of dithered spiketrains to be returned.
-            Default: 1.
+            Default: 1
 
         Returns
         ----------
@@ -1104,7 +1104,7 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
         Amount of dithering.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
 
     Returns
     -------
@@ -1188,7 +1188,7 @@ def _trial_shifting_of_concatenated_spiketrain(
         Buffering in between trials in the concatenation of the spiketrain.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
 
     Returns
     -------
@@ -1247,7 +1247,7 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
         spike train to generate the surrogates from is 'trial_shifting'.
     n_surrogates : int, optional
         Number of surrogates to be generated.
-        Default: 1.
+        Default: 1
     method : str, optional
         The method to use to generate surrogate spike trains. Can be one of:
 
@@ -1274,7 +1274,7 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
         (`dither_spikes`, `dither_spike_train`) or replacing them randomly
         within a certain window (`jitter_spikes`), dt represents the size of
         that shift / window. For other methods, dt is ignored.
-        Default: None.
+        Default: None
     kwargs
         Keyword arguments passed to the chosen surrogate method.
 

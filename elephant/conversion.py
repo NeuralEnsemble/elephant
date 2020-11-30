@@ -61,23 +61,23 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
         The sampling rate to use for the time points.
         If not specified, retrieved from the `sampling_rate` attribute of
         `spiketrain`.
-        Default: None.
+        Default: None
     t_start : float or pq.Quantity, optional
         The start time to use for the time points.
         If not specified, retrieved from the `t_start` attribute of
         `spiketrain`. If this is not present, defaults to `0`.  Any element of
         `spiketrain` lower than `t_start` is ignored.
-        Default: None.
+        Default: None
     t_stop : float or pq.Quantity, optional
         The stop time to use for the time points.
         If not specified, retrieved from the `t_stop` attribute of
         `spiketrain`. If this is not present, defaults to the maximum value of
         `spiketrain`. Any element of `spiketrain` higher than `t_stop` is
         ignored.
-        Default: None.
+        Default: None
     return_times : bool, optional
         If True, also return the corresponding time points.
-        Default: False.
+        Default: False
 
     Returns
     -------

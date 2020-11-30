@@ -62,54 +62,54 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_segment` or `frequency_resolution` is
         given.
-        Default: 8.
+        Default: 8
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
-        Default: None.
+        Default: None
     frequency_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained PSD estimate in terms of
         the interval between adjacent frequency bins. When given as a `float`,
         it is taken as frequency in Hz.
         If None, it will be determined from other parameters.
-        Default: None.
+        Default: None
     overlap : float, optional
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
-        Default: 0.5 (half-overlapped).
+        Default: 0.5 (half-overlapped)
     fs : pq.Quantity or float, optional
         Specifies the sampling frequency of the input time series. When the
         input is given as a `neo.AnalogSignal`, the sampling frequency is
         taken from its attribute and this parameter is ignored.
-        Default: 1.0.
+        Default: 1.0
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [2].
-        Default: 'hanning'.
+        Default: 'hanning'
     nfft : int, optional
         Length of the FFT used.
         See Notes [2].
-        Default: None.
+        Default: None
     detrend : str or function or False, optional
         Specifies how to detrend each segment.
         See Notes [2].
-        Default: 'constant'.
+        Default: 'constant'
     return_onesided : bool, optional
         If True, return a one-sided spectrum for real data.
         If False return a two-sided spectrum.
         See Notes [2].
-        Default: True.
+        Default: True
     scaling : {'density', 'spectrum'}, optional
         If 'density', computes the power spectral density where Pxx has units
         of V**2/Hz. If 'spectrum', computes the power spectrum where Pxx has
         units of V**2, if `signal` is measured in V and `fs` is measured in
         Hz.
         See Notes [2].
-        Default: 'density'.
+        Default: 'density'
     axis : int, optional
         Axis along which the periodogram is computed.
         See Notes [2].
-        Default: last axis (-1).
+        Default: last axis (-1)
 
     Returns
     -------
@@ -277,49 +277,49 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_seg` or `frequency_resolution` is given.
-        Default: 8.
+        Default: 8
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it is determined from other parameters.
-        Default: None.
+        Default: None
     frequency_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained coherence estimate in
         terms of the interval between adjacent frequency bins. When given as a
         `float`, it is taken as frequency in Hz.
         If None, it is determined from other parameters.
-        Default: None.
+        Default: None
     overlap : float, optional
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
-        Default: 0.5 (half-overlapped).
+        Default: 0.5 (half-overlapped)
     fs : pq.Quantity or float, optional
         Specifies the sampling frequency of the input time series. When the
         input time series are given as `neo.AnalogSignal`, the sampling
         frequency is taken from their attribute and this parameter is ignored.
-        Default: 1.0.
+        Default: 1.0
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [1].
-        Default: 'hanning'.
+        Default: 'hanning'
     nfft : int, optional
         Length of the FFT used.
         See Notes [1].
-        Default: None.
+        Default: None
     detrend : str or function or False, optional
         Specifies how to detrend each segment.
         See Notes [1].
-        Default: 'constant'.
+        Default: 'constant'
     scaling : {'density', 'spectrum'}, optional
         If 'density', computes the power spectral density where Pxx has units
         of V**2/Hz. If 'spectrum', computes the power spectrum where Pxx has
         units of V**2, if `signal` is measured in V and `fs` is measured in
         Hz.
         See Notes [1].
-        Default: 'density'.
+        Default: 'density'
     axis : int, optional
         Axis along which the periodogram is computed.
         See Notes [1].
-        Default: last axis (-1).
+        Default: last axis (-1)
 
     Returns
     -------

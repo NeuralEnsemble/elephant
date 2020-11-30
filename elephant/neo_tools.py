@@ -35,19 +35,19 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
     parents : bool, optional
         If True, also include attributes and annotations from parent Neo
         objects (if any).
-        Default: True.
+        Default: True
     child_first : bool, optional
         If True, values of child attributes are used over parent attributes in
         the event of a name conflict.
         If False, parent attributes are used.
         This parameter does nothing if `parents` is False.
-        Default: True.
+        Default: True
     skip_array : bool, optional
         If True, skip attributes that store non-scalar array values.
-        Default: False.
+        Default: False
     skip_none : bool, optional
         If True, skip annotations and attributes that have a value of None.
-        Default: False.
+        Default: False
 
     Returns
     -------

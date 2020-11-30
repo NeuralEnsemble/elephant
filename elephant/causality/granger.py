@@ -374,7 +374,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion,
-        Default: 'aic'.
+        Default: 'aic'
 
     Returns
     -------
@@ -547,7 +547,7 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion,
-        Default: 'aic'.
+        Default: 'aic'
 
     Returns
     -------

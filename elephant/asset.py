@@ -231,18 +231,18 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
         time segment `[t_start, t_start+bin_size]`.
         If None, takes the value of `spiketrain.t_start`, common for all
         input `spiketrains` (raises ValueError if it's not the case).
-        Default: None.
+        Default: None
     t_stop : pq.Quantity
         The ending time. Only spikes occurring at times `t < t_stop` are
         considered.
         If None, takes the value of `spiketrain.t_stop`, common for all
         input `spiketrains` (raises ValueError if it's not the case).
-        Default: None.
+        Default: None
     ids : list of int, optional
         List of spike train IDs.
         If None, the IDs `0` to `N-1` are used, where `N` is the number of
         input spike trains.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -533,7 +533,7 @@ def _jsf_uniform_orderstat_3d(u, n, verbose=False):
         assumed to have been sampled from.
     verbose : bool
         If True, print messages during the computation.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -751,7 +751,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
         of synchronous events as values (see above).
     intersection : {'pixelwise', 'linkwise'}, optional
         The type of intersection to perform among the two SSEs (see above).
-        Default: 'linkwise'.
+        Default: 'linkwise'
 
     Returns
     -------
@@ -820,7 +820,7 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
     difference : {'pixelwise', 'linkwise'}, optional
         The type of difference to perform between `sse1` and `sse2` (see
         above).
-        Default: 'linkwise'.
+        Default: 'linkwise'
 
     Returns
     -------
@@ -1188,16 +1188,16 @@ class ASSET(object):
         respectively.
         If None, the attribute `t_start` of the spike trains is used
         (if the same for all spike trains).
-        Default: None.
+        Default: None
     t_stop_i, t_stop_j : pq.Quantity, optional
         The stop time of the binning for the first and second axes,
         respectively.
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
-        Default: None.
+        Default: None
     verbose : bool, optional
         If True, print messages and show progress bar.
-        Default: True.
+        Default: True
 
 
     Raises
@@ -1312,7 +1312,7 @@ class ASSET(object):
                 * 'intersection': `len(intersection(s_i, s_j))`
                 * 'mean': `sqrt(len(s_1) * len(s_2))`
                 * 'union': `len(union(s_i, s_j))`
-            Default: None.
+            Default: None
 
         Returns
         -------
@@ -1373,7 +1373,7 @@ class ASSET(object):
             :func:`spike_train_surrogates.surrogates` documentation for more
             information about each surrogate method. Note that some of these
             methods need `surrogate_dt` parameter, others ignore it.
-            Default: 'dither_spike_train'.
+            Default: 'dither_spike_train'
         surrogate_dt : pq.Quantity, optional
             For surrogate methods shifting spike times randomly around their
             original time ('dither_spike_train', 'dither_spikes') or replacing
@@ -1381,7 +1381,7 @@ class ASSET(object):
             `surrogate_dt` represents the size of that shift (window). For
             other methods, `surrogate_dt` is ignored.
             If None, it's set to `self.bin_size * 5`.
-            Default: None.
+            Default: None
 
         Returns
         -------
@@ -1496,11 +1496,11 @@ class ASSET(object):
             `spiketrains[i]`.
             If 'estimate', firing rates are estimated by simple boxcar kernel
             convolution, with the specified `kernel_width`.
-            Default: 'estimate'.
+            Default: 'estimate'
         kernel_width : pq.Quantity, optional
             The total width of the kernel used to estimate the rate profiles
             when `firing_rates` is 'estimate'.
-            Default: 100 * pq.ms.
+            Default: 100 * pq.ms
 
         Returns
         -------
@@ -1636,7 +1636,7 @@ class ASSET(object):
             `min(pmat[i, j], 1-p_value_min)` to avoid that a single highly
             significant value in `pmat` (extreme case: `pmat[i, j] = 1`) yields
             joint significance of itself and its neighbors.
-            Default: 1e-5.
+            Default: 1e-5
 
         Returns
         -------
@@ -1841,7 +1841,7 @@ class ASSET(object):
         ids : list, optional
             A list of spike train IDs. If provided, `ids[i]` is the identity
             of `spiketrains[i]`. If None, the IDs `0,1,...,n-1` are used.
-            Default: None.
+            Default: None
 
         Returns
         -------

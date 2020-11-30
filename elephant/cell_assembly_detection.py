@@ -127,48 +127,48 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     reference_lag : int, optional
         Reference lag (in bins) for the non-stationarity correction in the
         statistical test.
-        Default: 2.
+        Default: 2
     alpha : float, optional
         Significance level for the statistical test.
-        Default: 0.05.
+        Default: 0.05
     min_occurrences : int, optional
         Minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
-        Default: 0.
+        Default: 0
     size_chunks : int, optional
         Size (in bins) of chunks in which the spike trains are divided
         to compute the variance (to reduce non stationarity effects
         on variance estimation).
-        Default: 100.
+        Default: 100
     max_spikes : int, optional
         Maximal assembly order (the algorithm will return assemblies
         composed of maximum `max_spikes` elements).
-        Default: `np.inf`.
+        Default: `np.inf`
     significance_pruning : bool, optional
         If True, the method performs significance pruning among
         the detected assemblies.
-        Default: True.
+        Default: True
     subgroup_pruning : bool, optional
         If True, the method performs subgroup pruning among
         the detected assemblies.
-        Default: True.
+        Default: True
     same_configuration_pruning : bool, optional
         If True, performs pruning (not present in the original code and more
         efficient), not testing assemblies already formed
         if they appear in the very same configuration.
-        Default: False.
+        Default: False
     bool_times_format : bool, optional
         If True, the activation time series is a list of 0/1 elements, where
         1 indicates the first spike of the pattern.
         Otherwise, the activation times of the assemblies are indicated by the
         indices of the bins in which the first spike of the pattern
         is happening.
-        Default: False.
+        Default: False
     verbose : bool, optional
         Regulates the number of prints given by the method. If true all prints
         are given, otherwise the method does give any prints.
-        Default: False.
+        Default: False
 
     Returns
     -------
