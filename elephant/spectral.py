@@ -3,6 +3,12 @@
 Identification of spectral properties in analog signals (e.g., the power
 spectrum).
 
+.. autosummary::
+    :toctree: toctree/spectral
+
+    welch_psd
+    welch_coherence
+
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
