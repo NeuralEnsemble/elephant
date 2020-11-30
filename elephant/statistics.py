@@ -59,25 +59,23 @@ Statistics across spike trains
 """
 
 from __future__ import division, print_function
-# do not import unicode_literals
-# (quantities rescale does not work with unicodes)
 
+import math
 import warnings
 
 import neo
 import numpy as np
-import math
 import quantities as pq
 import scipy.signal
 import scipy.stats
-from neo.core import SpikeTrain
 
 import elephant.kernels as kernels
 from elephant.conversion import BinnedSpikeTrain
-from elephant.utils import deprecated_alias, get_common_start_stop_times, \
-    check_neo_consistency
-
+from elephant.utils import deprecated_alias, check_neo_consistency
 from elephant.utils import is_time_quantity
+
+# do not import unicode_literals
+# (quantities rescale does not work with unicodes)
 
 __all__ = [
     "isi",
@@ -347,7 +345,7 @@ def __variation_check(v, with_nan):
 def cv2(time_intervals, with_nan=False):
     r"""
     Calculate the measure of Cv2 for a sequence of time intervals between
-    events.
+    events :cite:`statistics-Holt1996_1806`.
 
     Given a vector :math:`I` containing a sequence of intervals, the Cv2 is
     defined as:
@@ -392,14 +390,6 @@ def cv2(time_intervals, with_nan=False):
     UserWarning
         If `with_nan` is True and `cv2` is calculated for a sequence with less
         than two entries, generating a np.NaN.
-
-    References
-    ----------
-    .. [1] G. R. Holt, W. R. Softky, C. Koch, & R. J. Douglas, "Comparison of
-           discharge variability in vitro and in vivo in cat visual cortex
-           neurons," Journal of Neurophysiology, vol. 75, no. 5, pp. 1806-1814,
-           1996.
-
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -416,7 +406,7 @@ def cv2(time_intervals, with_nan=False):
 def lv(time_intervals, with_nan=False):
     r"""
     Calculate the measure of local variation Lv for a sequence of time
-    intervals between events.
+    intervals between events :cite:`statistics-Shinomoto2003_2823`.
 
     Given a vector :math:`I` containing a sequence of intervals, the Lv is
     defined as:
@@ -461,13 +451,6 @@ def lv(time_intervals, with_nan=False):
     UserWarning
         If `with_nan` is True and the Lv is calculated for a spike train
         with less than two spikes, generating a np.NaN.
-
-    References
-    ----------
-    .. [1] S. Shinomoto, K. Shima, & J. Tanji, "Differences in spiking
-           patterns among cortical neurons," Neural Computation, vol. 15,
-           pp. 2823–2842, 2003.
-
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -482,7 +465,7 @@ def lv(time_intervals, with_nan=False):
 def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     r"""
     Calculate the measure of revised local variation LvR for a sequence of time
-    intervals between events.
+    intervals between events :cite:`statistics-Shinomoto2009_e1000433`.
 
     Given a vector :math:`I` containing a sequence of intervals, the LvR is
     defined as:
@@ -496,7 +479,8 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     The LvR is a revised version of the Lv, with enhanced invariance to firing
     rate fluctuations by introducing a refractoriness constant R. The LvR with
     `R=5ms` was shown to outperform other ISI variability measures in spike
-    trains with firing rate fluctuatins and sensory stimuli [1]_.
+    trains with firing rate fluctuations and sensory stimuli
+    :cite:`statistics-Shinomoto2009_e1000433`.
 
     Parameters
     ----------
@@ -533,13 +517,6 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
         If `with_nan` is True and the `lvr` is calculated for a spike train
         with less than two spikes, generating a np.NaN.
         If R is passed without any units attached milliseconds are assumed.
-
-    References
-    ----------
-    .. [1] S. Shinomoto, H. Kim, T. Shimokawa et al. "Relating Neuronal Firing
-           Patterns to Functional Differentiation of Cerebral Cortex" PLOS
-           Computational Biology 5(7): e1000433, 2009.
-
     """
     if isinstance(R, pq.Quantity):
         R = R.rescale('ms').magnitude
@@ -590,9 +567,10 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
         If 'auto', the optimized kernel width for the rate estimation is
-        calculated according to [1]_ and with this width a gaussian kernel is
-        constructed. Automatized calculation of the kernel width is not
-        available for other than gaussian kernel shapes.
+        calculated according to :cite:`statistics-Shimazaki2010_171` and with
+        this width a gaussian kernel is constructed. Automatized calculation
+        of the kernel width is not available for other than gaussian kernel
+        shapes.
         Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
@@ -671,12 +649,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     -----
     The resulting instantaneous firing rate values smaller than ``0``, which
     can happen due to machine precision errors, are clipped to zero.
-
-    References
-    ----------
-    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
-           spike rate estimation," J Comput Neurosci, vol. 29, pp. 171–182,
-           2010.
 
     Examples
     --------
@@ -937,7 +909,8 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 @deprecated_alias(binsize='bin_size')
 def complexity_pdf(spiketrains, bin_size):
     """
-    Complexity Distribution of a list of `neo.SpikeTrain` objects.
+    Complexity Distribution of a list of `neo.SpikeTrain` objects
+    :cite:`statistics-Gruen2007_96`.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
@@ -945,8 +918,6 @@ def complexity_pdf(spiketrains, bin_size):
     It provides for each complexity (== number of active neurons per bin) the
     number of occurrences. The normalization of that histogram to 1 is the
     probability density.
-
-    Implementation is based on [1]_.
 
     Parameters
     ----------
@@ -965,14 +936,6 @@ def complexity_pdf(spiketrains, bin_size):
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
-
-    References
-    ----------
-    .. [1] S. Gruen, M. Abeles, & M. Diesmann, "Impact of higher-order
-           correlations on coincidence distributions of massively parallel
-           data," In "Dynamic Brain - from Neural Spikes to Behaviors",
-           pp. 96-114, Springer Berlin Heidelberg, 2008.
-
     """
     # Computing the population histogram with parameter binary=True to clip the
     # spike trains before summing
@@ -1090,18 +1053,19 @@ def cost_function(x, N, w, dt):
 def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                              bootstrap=False):
     """
-    Calculates optimal fixed kernel bandwidth, given as the standard deviation
+    Calculates optimal fixed kernel bandwidth
+    :cite:`statistics-Shimazaki2010_171`, given as the standard deviation
     sigma.
 
     Parameters
     ----------
     spiketimes : np.ndarray
         Sequence of spike times (sorted to be ascending).
-    times : np.ndarray, optional
+    times : np.ndarray or None, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
         Default: None
-    bandwidth : np.ndarray, optional
+    bandwidth : np.ndarray or None, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
         If None, `bandwidth` is obtained through a golden-section search on a
@@ -1133,12 +1097,6 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
 
         If no optimal kernel could be found, all entries of the dictionary are
         set to None.
-
-    References
-    ----------
-    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
-           spike rate estimation," Journal of Computational Neuroscience,
-           vol. 29, no. 1-2, pp. 171-82, 2010. doi:10.1007/s10827-009-0180-4.
 
     """
 
