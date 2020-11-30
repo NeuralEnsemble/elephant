@@ -311,14 +311,14 @@ def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
 @deprecated_alias(trains='spiketrains', tau='time_constant')
 def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     """
-    Calculates the van Rossum distance.
+    Calculates the van Rossum distance :cite:`dissimilarity-Rossum2001_751`,
+    defined as Euclidean distance of the spike trains convolved with a
+    causal decaying exponential smoothing filter.
 
-    It is defined as Euclidean distance of the spike trains convolved with a
-    causal decaying exponential smoothing filter. A detailed description can
-    be found in [1]_. This implementation is normalized to yield
-    a distance of 1.0 for the distance between an empty spike train and a
-    spike train with a single spike. Divide the result by sqrt(2.0) to get
-    the normalization used in the cited paper.
+    The implementation is normalized to yield a distance of 1.0 for the
+    distance between an empty spike train and a spike train with a single
+    spike. Divide the result by sqrt(2.0) to get the normalization used in the
+    paper.
 
     Given :math:`N` spike trains with :math:`n` spikes on average the run-time
     complexity of this function is :math:`O(N^2 n)`.
@@ -330,9 +330,9 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     time_constant : Quantity scalar
         Decay rate of the exponential function as time scalar. Controls for
         which time scale the metric will be sensitive. Denoted as :math:`t_c`
-        in [1]_. This parameter will be ignored if `kernel` is not `None`.
-        May also be :const:`scipy.inf` which will lead to only measuring
-        differences in spike count.
+        in :cite:`dissimilarity-Rossum2001_751`. This parameter will be
+        ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
+        which will lead to only measuring differences in spike count.
         Default: 1.0 * pq.s
     sort : bool
         Spike trains with sorted spike times might be needed for the
@@ -345,11 +345,6 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     np.ndarray
         2-D Matrix containing the van Rossum distances for all pairs of
         spike trains.
-
-    References
-    ----------
-    [1] Rossum, M. V. (2001). A novel spike distance. Neural computation,
-        13(4), 751-763.
 
     Examples
     --------

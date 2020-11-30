@@ -612,7 +612,7 @@ def cross_correlation_histogram(
     cross_correlation_coefficient : bool, optional
         If True, a normalization is applied to the CCH to obtain the
         cross-correlation  coefficient function ranging from -1 to 1 according
-        to Equation (5.10) in [1]_. See Notes.
+        to Equation (5.10) in :cite:`correlation-Eggermont2010_77`. See Notes.
         Default: False.
 
     Returns
@@ -647,14 +647,10 @@ def cross_correlation_histogram(
 
     Notes
     -----
-    1. The Eq. (5.10) in [1]_ is valid for binned spike trains with at most one
-       spike per bin. For a general case, refer to the implementation of
-       `_covariance_sparse()`.
+    1. The Eq. (5.10) in :cite:`correlation-Eggermont2010_77` is valid for
+       binned spike trains with at most one spike per bin. For a general case,
+       refer to the implementation of `_covariance_sparse()`.
     2. Alias: `cch`
-
-    References
-    ----------
-    .. [1] "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
 
     Examples
     --------
@@ -812,8 +808,8 @@ cch = cross_correlation_histogram
 @deprecated_alias(spiketrain_1='spiketrain_i', spiketrain_2='spiketrain_j')
 def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     """
-    Calculates the Spike Time Tiling Coefficient (STTC) as described in [1]_
-    following their implementation in C.
+    Calculates the Spike Time Tiling Coefficient (STTC) as described in
+    :cite:`correlation-Cutts2014_14288` following their implementation in C.
     The STTC is a pairwise measure of correlation between spike trains.
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
@@ -858,13 +854,6 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     index:  float or np.nan
         The spike time tiling coefficient (STTC). Returns np.nan if any spike
         train is empty.
-
-    References
-    ----------
-    .. [1] Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations
-           in Spike Trains: An Objective Comparison of Methods and Application
-           to the Study of Retinal Waves. Journal of Neuroscience, 34(43),
-           14288–14303.
 
     Notes
     -----
@@ -974,9 +963,9 @@ sttc = spike_time_tiling_coefficient
 @deprecated_alias(binned_st='binned_spiketrain', tau_max='max_tau')
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
-    Calculates the auto-correlation time of a binned spike train.
-    Uses the definition of the auto-correlation time proposed in [[1]_,
-    Eq. (6)]:
+    Calculates the auto-correlation time of a binned spike train; uses the
+    definition of the auto-correlation time proposed in
+    :cite:`correlation-Wieland2015_040901` (Eq. 6):
 
     .. math::
         \tau_\mathrm{corr} = \int_{-\tau_\mathrm{max}}^{\tau_\mathrm{max}}\
@@ -1012,12 +1001,6 @@ def spike_train_timescale(binned_spiketrain, max_tau):
     * The bin size of `binned_spiketrain` is another critical parameter as it
       defines the discretization of the integral :math:`d\tau`. If it is too
       big, the numerical approximation of the integral is inaccurate.
-
-    References
-    ----------
-    .. [1] Wieland, S., Bernardi, D., Schwalger, T., & Lindner, B. (2015).
-        Slow fluctuations in recurrent networks of spiking neurons.
-        Physical Review E, 92(4), 040901.
     """
     if binned_spiketrain.get_num_of_spikes() < 2:
         warnings.warn("Spike train contains less than 2 spikes! "
