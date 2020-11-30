@@ -11,7 +11,7 @@ To cite Elephant, please use:
 
 A BibTeX entry for LaTeX users is:
 
-.. code-block:: bibtex
+.. code-block::
 
     @conference{elephant18,
         author = {Denker, M. and Yegenoglu, A. and Grün, S.},

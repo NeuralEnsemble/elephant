@@ -1,53 +1,33 @@
 # -*- coding: utf-8 -*-
 """
 Module to generate surrogates of a spike train by randomising its spike times
-in different ways (see [2]_ and [3]_). Different methods destroy different
-features of the original data:
+in different ways (see :cite:`surrogates-Gerstein2004_203`,
+:cite:`surrogates-Louis2010_127`, and :cite:`surrogates-Louis2010_359`).
+Different methods destroy different features of the original data.
 
-* randomise_spikes:
-    randomly reposition all spikes inside the time interval (t_start, t_stop).
-    Keeps spike count, generates Poisson spike trains with time-stationary
-    firing rate
-* dither_spikes:
-    dither each spike time around original position by a random amount;
-    keeps spike count and firing rates computed on a slow temporal scale;
-    destroys ISIs, making them more exponentially distributed
-* dither_spike_train:
-    dither the whole input spike train (i.e. all spikes equally) by a random
-    amount; keeps spike count, ISIs, and firing rates computed on a slow
-    temporal scale
-* jitter_spikes:
-    discretize the full time interval (t_start, t_stop) into time segments
-    and locally randomise the spike times (see randomise_spikes) inside each
-    segment. Keeps spike count inside each segment and creates locally Poisson
-    spike trains with locally time-stationary rates
-* shuffle_isis:
-    shuffle the inter-spike intervals (ISIs) of the spike train randomly,
-    keeping the first spike time fixed and generating the others from the
-    new sequence of ISIs. Keeps spike count and ISIs, flattens the firing rate
-    profile
-* joint_isi_dithering:
-    calculate the Joint-ISI distribution and moves spike according to the
-    probability distribution, that results from a fixed sum of ISI_before
-    and the ISI_afterwards. For further details see [1]_ and [2]_.
-* bin_shuffling:
-    shuffles the bins of a binned spiketrain inside of exclusive windows.
-* trial_shifting:
-    shifts each trial, i.e., each element of a list of spiketrains by a
-    uniformly drawn random amount.
 
-References
-----------
-.. [1] Gerstein, G. L. (2004). Searching for significance in spatio-temporal
-   firing patterns. Acta Neurobiol. Exp., 64:203–207.
-.. [2] Louis, S., Gerstein, G. L., Gruen, S., and Diesmann, M. (2010).
-   Surrogate spike train generation through dithering in operational time.
-   Front. Comput. Neurosci., 4(127).
-.. [3] Louis, S., Borgelt, C., and Gruen, S. (2010). Generation and selection
-   of surrogate methods for correlation analysis. In Rotter, S. and Gruen, S.,
-   editors, Analysis of Parallel Spike Trains. Springer, Berlin.
+Main function
+-------------
+.. autosummary::
+    :toctree: toctree/spike_train_surrogates
 
-Original implementation by: Emiliano Torre [e.torre@fz-juelich.de]
+    surrogates
+
+
+Surrogate types
+---------------
+.. autosummary::
+    :toctree: toctree/spike_train_surrogates
+
+    JointISI
+    dither_spikes
+    randomise_spikes
+    shuffle_isis
+    dither_spike_train
+    jitter_spikes
+    bin_shuffling
+    trial_shifting
+
 :copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
@@ -650,11 +630,10 @@ def bin_shuffling(
 
 class JointISI(object):
     r"""
-    The class :class:`JointISI` is implemented for Joint-ISI dithering
-    as a continuation of the ideas of [1]_ and [2]_.
+    Joint-ISI dithering implementation, based on the ideas from
+    :cite:`surrogates-Gerstein2004_203` and :cite:`surrogates-Louis2010_127`.
 
-    When creating a class instance, all necessary preprocessing steps are done
-    to use :func:`JointISI.dithering` method.
+    The main function is :func:`JointISI.dithering`.
 
     Parameters
     ----------
@@ -688,7 +667,7 @@ class JointISI(object):
         Default: True.
     use_sqrt : bool, optional
         If True, the joint-ISI histogram is preprocessed by
-        applying a square root (following [1]).
+        applying a square root (following :cite:`surrogates-Gerstein2004_203`).
         Default: False.
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
@@ -712,14 +691,6 @@ class JointISI(object):
         of the ISI-distribution with itself. Thus, all serial correlations are
         destroyed.
         Default: False.
-
-    References
-    ----------
-    .. [1] Gerstein, G. L. (2004). Searching for significance in
-       spatio-temporal firing patterns. Acta Neurobiol. Exp., 64:203–207.
-    .. [2] Louis, S., Gerstein, G. L., Gruen, S., and Diesmann, M. (2010).
-       Surrogate spike train generation through dithering in operational time.
-       Front. Comput. Neurosci., 4(127).
     """
 
     # The min number of spikes, required for dithering.
@@ -1255,9 +1226,8 @@ def _trial_shifting_of_concatenated_spiketrain(
 
 
 @deprecated_alias(n='n_surrogates', surr_method='method')
-def surrogates(
-        spiketrain, n_surrogates=1, method='dither_spike_train',
-        dt=None, **kwargs):
+def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
+               dt=None, **kwargs):
     """
     Generates surrogates of a `spiketrain` by a desired generation
     method.
@@ -1335,6 +1305,10 @@ def surrogates(
     elif not isinstance(spiketrain, neo.SpikeTrain):
         raise TypeError('spiketrain must be an instance neo.SpikeTrain or'
                         ' a list of neo.SpikeTrain')
+
+    if method == "dither_spikes_with_refractory_period":
+        warnings.warn("'dither_spikes_with_refractory_period' is deprecated "
+                      "in favor of 'dither_spikes'", DeprecationWarning)
 
     # Define the surrogate function to use, depending on the specified method
     surrogate_types = {
