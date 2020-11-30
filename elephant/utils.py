@@ -1,3 +1,13 @@
+"""
+.. autosummary::
+    :toctree: toctree/utils
+
+    is_time_quantity
+    get_common_start_stop_times
+    check_neo_consistency
+    round_binning_errors
+"""
+
 from __future__ import division, print_function, unicode_literals
 
 import warnings
@@ -6,8 +16,6 @@ from functools import wraps
 import neo
 import numpy as np
 import quantities as pq
-
-from neo import SpikeTrain
 
 
 def is_binary(array):
@@ -98,7 +106,7 @@ def is_time_quantity(x, allow_none=False):
 
 def get_common_start_stop_times(neo_objects):
     """
-    Extracts the `t_start`and the `t_stop` from the input neo objects.
+    Extracts the common `t_start` and the `t_stop` from the input neo objects.
 
     If a single neo object is given, its `t_start` and `t_stop` is returned.
     Otherwise, the aligned times are returned: the maximal `t_start` and
@@ -138,7 +146,7 @@ def get_common_start_stop_times(neo_objects):
 
 
 def check_neo_consistency(neo_objects, object_type, t_start=None,
-                          t_stop=None, tolerance=1e-6):
+                          t_stop=None, tolerance=1e-8):
     """
     Checks that all input neo objects share the same units, t_start, and
     t_stop.
@@ -215,3 +223,56 @@ def check_same_units(quantities, object_type=pq.Quantity):
             raise ValueError("The input quantities must have the same units, "
                              "which is achieved with object.rescale('ms') "
                              "operation.")
+
+
+def round_binning_errors(values, tolerance=1e-8):
+    """
+    Round the input `values` in-place due to the machine floating point
+    precision errors.
+
+    Parameters
+    ----------
+    values : np.ndarray or float
+        An input array or a scalar.
+    tolerance : float or None, optional
+        The precision error absolute tolerance; acts as ``atol`` in
+        :func:`numpy.isclose` function. If None, no rounding is performed.
+        Default: 1e-8
+
+    Returns
+    -------
+    values : np.ndarray or int
+        Corrected integer values.
+
+    Examples
+    --------
+    >>> from elephant.utils import round_binning_errors
+    >>> round_binning_errors(0.999999, tolerance=None)
+    0
+    >>> round_binning_errors(0.999999, tolerance=1e-6)
+    1
+    """
+    if tolerance is None or tolerance == 0:
+        if isinstance(values, np.ndarray):
+            return values.astype(np.int32)
+        return int(values)  # a scalar
+
+    # same as '1 - (values % 1) <= tolerance' but faster
+    correction_mask = 1 - tolerance <= values % 1
+    if isinstance(values, np.ndarray):
+        num_corrections = correction_mask.sum()
+        if num_corrections > 0:
+            warnings.warn(f'Correcting {num_corrections} rounding errors by '
+                          f'shifting the affected spikes into the following '
+                          f'bin. You can set tolerance=None to disable this '
+                          'behaviour.')
+            values[correction_mask] += 0.5
+        return values.astype(np.int32)
+
+    if correction_mask:
+        warnings.warn('Correcting a rounding error in the calculation '
+                      'of the number of bins by incrementing the value by 1. '
+                      'You can set tolerance=None to disable this '
+                      'behaviour.')
+        values += 0.5
+    return int(values)

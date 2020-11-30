@@ -73,7 +73,7 @@ import elephant.conversion as conv
 import elephant.kernels as kernels
 from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, check_neo_consistency, \
-    is_time_quantity
+    is_time_quantity, round_binning_errors
 
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
@@ -1214,13 +1214,7 @@ class Complexity(object):
             self.epoch.array_annotations['complexity'])
         num_bins = (self.t_stop - self.t_start).rescale(
             self.bin_size.units).item() / self.bin_size.item()
-        if conv._detect_rounding_errors(num_bins, tolerance=self.tolerance):
-            warnings.warn('Correcting a rounding error in the histogram '
-                          'calculation by increasing num_bins by 1. '
-                          'You can set tolerance=None to disable this '
-                          'behaviour.')
-            num_bins += 1
-        num_bins = int(num_bins)
+        num_bins = round_binning_errors(num_bins, tolerance=self.tolerance)
         time_hist = np.zeros(num_bins, dtype=int)
 
         start_bins = (self.epoch.times - self.t_start).rescale(
@@ -1239,31 +1233,8 @@ class Complexity(object):
                 start_bins += shift
             stop_bins += shift
 
-        rounding_error_indices = conv._detect_rounding_errors(start_bins,
-                                                              self.tolerance)
-
-        num_rounding_corrections = rounding_error_indices.sum()
-        if num_rounding_corrections > 0:
-            warnings.warn('Correcting {} rounding errors by shifting '
-                          'the affected spikes into the following bin. '
-                          'You can set tolerance=None to disable this '
-                          'behaviour.'.format(num_rounding_corrections))
-        start_bins[rounding_error_indices] += .5
-
-        start_bins = start_bins.astype(int)
-
-        rounding_error_indices = conv._detect_rounding_errors(stop_bins,
-                                                              self.tolerance)
-
-        num_rounding_corrections = rounding_error_indices.sum()
-        if num_rounding_corrections > 0:
-            warnings.warn('Correcting {} rounding errors by shifting '
-                          'the affected spikes into the following bin. '
-                          'You can set tolerance=None to disable this '
-                          'behaviour.'.format(num_rounding_corrections))
-        stop_bins[rounding_error_indices] += .5
-
-        stop_bins = stop_bins.astype(int)
+        start_bins = round_binning_errors(start_bins, tolerance=self.tolerance)
+        stop_bins = round_binning_errors(stop_bins, tolerance=self.tolerance)
 
         for idx, (start, stop) in enumerate(zip(start_bins, stop_bins)):
             time_hist[start:stop] = \
@@ -1277,14 +1248,7 @@ class Complexity(object):
         empty_bins = (self.t_stop - self.t_start - self.epoch.durations.sum())
         empty_bins = empty_bins.rescale(self.bin_size.units
                                         ).magnitude / self.bin_size.item()
-        if conv._detect_rounding_errors(empty_bins, tolerance=self.tolerance):
-            warnings.warn('Correcting a rounding error in the histogram '
-                          'calculation by increasing num_bins by 1. '
-                          'You can set tolerance=None to disable this '
-                          'behaviour.')
-            empty_bins += 1
-        empty_bins = int(empty_bins)
-
+        empty_bins = round_binning_errors(empty_bins, tolerance=self.tolerance)
         complexity_hist[0] = empty_bins
 
         return time_hist, complexity_hist
