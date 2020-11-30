@@ -240,7 +240,7 @@ class Synchrotool(Complexity):
     Such that, synchronous events can be found both in multi-unit and
     single-unit spike trains.
 
-    This class inherits from :func:`elephant.statistics.Complexity`, see its
+    This class inherits from :class:`elephant.statistics.Complexity`, see its
     documentation for more details and input parameters description.
 
     See also
@@ -308,8 +308,8 @@ class Synchrotool(Complexity):
             self.annotate_synchrofacts()
 
         if mode not in ['delete', 'extract']:
-            raise ValueError(str(mode) + ' is not a valid mode. '
-                             "valid modes are ['delete', 'extract']")
+            raise ValueError(f"Invalid mode '{mode}'. Valid modes are: "
+                             f"'delete', 'extract'")
 
         if threshold <= 1:
             raise ValueError('A deletion threshold <= 1 would result '

@@ -1183,8 +1183,9 @@ class Complexity(object):
         norm_hist = self.complexity_histogram / self.complexity_histogram.sum()
         # Convert the Complexity pdf to an neo.AnalogSignal
         pdf = neo.AnalogSignal(
-            np.array(norm_hist).reshape(len(norm_hist), 1) *
-            pq.dimensionless, t_start=0 * pq.dimensionless,
+            np.expand_dims(norm_hist, axis=1),
+            units=pq.dimensionless,
+            t_start=0 * pq.dimensionless,
             sampling_period=1 * pq.dimensionless)
         return pdf
 
@@ -1211,8 +1212,8 @@ class Complexity(object):
         """
         complexity_hist = np.bincount(
             self.epoch.array_annotations['complexity'])
-        num_bins = ((self.t_stop - self.t_start).rescale(
-                        self.bin_size.units) / self.bin_size.magnitude).item()
+        num_bins = (self.t_stop - self.t_start).rescale(
+            self.bin_size.units).item() / self.bin_size.item()
         if conv._detect_rounding_errors(num_bins, tolerance=self.tolerance):
             warnings.warn('Correcting a rounding error in the histogram '
                           'calculation by increasing num_bins by 1. '
@@ -1220,17 +1221,16 @@ class Complexity(object):
                           'behaviour.')
             num_bins += 1
         num_bins = int(num_bins)
-        time_hist = np.zeros((num_bins, ), dtype=int)
+        time_hist = np.zeros(num_bins, dtype=int)
 
-        start_bins = ((self.epoch.times - self.t_start).rescale(
-            self.bin_size.units) / self.bin_size).magnitude.flatten()
-        stop_bins = ((self.epoch.times + self.epoch.durations
-                      - self.t_start).rescale(
-            self.bin_size.units) / self.bin_size).magnitude.flatten()
+        start_bins = (self.epoch.times - self.t_start).rescale(
+            self.bin_size.units).magnitude / self.bin_size.item()
+        stop_bins = (self.epoch.times + self.epoch.durations - self.t_start
+                     ).rescale(self.bin_size.units
+                               ).magnitude / self.bin_size.item()
 
         if self.sampling_rate is not None:
-            shift = (.5 / self.sampling_rate / self.bin_size
-                     ).simplified.magnitude.item()
+            shift = (.5 / self.sampling_rate / self.bin_size).simplified.item()
             # account for the first bin not being shifted in the epoch creation
             # if the shift would move it past t_start
             if self.epoch.times[0] == self.t_start:
@@ -1275,7 +1275,8 @@ class Complexity(object):
             t_start=self.t_start)
 
         empty_bins = (self.t_stop - self.t_start - self.epoch.durations.sum())
-        empty_bins = empty_bins.rescale(self.bin_size.units) / self.bin_size
+        empty_bins = empty_bins.rescale(self.bin_size.units
+                                        ).magnitude / self.bin_size.item()
         if conv._detect_rounding_errors(empty_bins, tolerance=self.tolerance):
             warnings.warn('Correcting a rounding error in the histogram '
                           'calculation by increasing num_bins by 1. '
@@ -1300,12 +1301,11 @@ class Complexity(object):
             bin_shift = .5 / self.sampling_rate
             left_edges -= bin_shift
 
-            # ensure that an epoch does not start before the minimum t_start
-            min_t_start = min(st.t_start for st in self.input_spiketrains)
-            if left_edges[0] < min_t_start:
-                left_edges[0] = min_t_start
+            # Ensure that an epoch does not start before the minimum t_start.
+            # Note: all spike trains share the same t_start and t_stop.
+            if left_edges[0] < self.t_start:
+                left_edges[0] = self.t_start
                 durations[0] -= bin_shift
-
         else:
             warnings.warn('No sampling rate specified. '
                           'Note that using the complexity epoch to get '
