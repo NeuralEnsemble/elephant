@@ -1,8 +1,8 @@
 """
-CAD [1] is a method aimed to capture structures of higher-order correlation in
-massively parallel spike trains. In particular, it is able to extract
-patterns of spikes with arbitrary configuration of time lags (time interval
-between spikes in a pattern), and at multiple time scales,
+CAD :cite:`cad-Russo2017_e19428` is a method aimed to capture structures of
+higher-order correlation in massively parallel spike trains. In particular, it
+is able to extract patterns of spikes with arbitrary configuration of time lags
+(time interval between spikes in a pattern), and at multiple time scales,
 e.g. from synchronous patterns to firing rate co-modulations.
 
 CAD consists of a statistical parametric testing done on the level of pairs
@@ -11,9 +11,6 @@ detect and test statistically precise repetitions of spikes in the data.
 In particular, pairs of neurons are tested for significance under the null
 hypothesis of independence, and then the significant pairs are agglomerated
 into higher order patterns.
-
-The method was published in Russo et al. 2017 [1]. The original
-code is in Matlab language.
 
 Given a list of discretized (binned) spike trains by a given temporal
 scale (bin_size), assumed to be recorded in parallel, the CAD analysis can be
@@ -60,12 +57,6 @@ Examples
 >>> plt.legend()
 >>> plt.show()
 
-References
-----------
-[1] Russo, E., & Durstewitz, D. (2017).
-Cell assemblies at multiple time scales with arbitrary lag constellations.
-Elife, 6.
-
 """
 
 from __future__ import division, print_function, unicode_literals
@@ -96,8 +87,8 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             bool_times_format=False, verbose=False):
 
     """
-    The function performs the CAD analysis for the binned (discretized) spike
-    trains given in input. The method looks for candidate
+    Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
+    (discretized) spike trains given in input. The method looks for candidate
     significant patterns with lags (number of bins between successive spikes
     in the pattern) going from `-max_lag` to `max_lag` (second parameter of the
     function). Thus, between two successive spikes in the pattern there can
@@ -209,11 +200,6 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     Notes
     -----
     Alias: cad
-
-    References
-    ----------
-    [1] Russo, E., & Durstewitz, D. (2017). Cell assemblies at multiple time
-    scales with arbitrary lag constellations. Elife, 6.
 
     Examples
     --------
