@@ -12,5 +12,5 @@ Author Contributions
 - Michał Czerwinski (MC)
 
 EH implemented the iCSD methods and StandardCSD.
-CC implemented the kCSD methods, kCSD1D(MC and CC).
-CC and EH developed the interface to elephant.
+CC implemented the kCSD methods, kCSD1D (MC and CC).
+CC and EH developed the interface to Elephant.

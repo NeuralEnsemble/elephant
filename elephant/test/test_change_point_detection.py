@@ -13,10 +13,10 @@ from numpy.testing.utils import assert_array_almost_equal, assert_allclose
 class FilterTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array = [0.4, 0.5, 0.65, 0.7, 0.9, 1.15, 1.2, 1.9]
-        '''
+        """
         spks_ri = [0.9, 1.15, 1.2]
         spk_le = [0.4, 0.5, 0.65, 0.7]
-        '''
+        """
         mu_ri = (0.25 + 0.05) / 2
         mu_le = (0.1 + 0.15 + 0.05) / 3
         sigma_ri = ((0.25 - 0.15) ** 2 + (0.05 - 0.15) ** 2) / 2

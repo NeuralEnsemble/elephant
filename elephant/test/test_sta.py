@@ -48,7 +48,7 @@ class sta_TestCase(unittest.TestCase):
     # ************************ Test for typical values **********************
 
     def test_spike_triggered_average_with_n_spikes_on_constant_function(self):
-        '''Signal should average to the input'''
+        """Signal should average to the input"""
         const = 13.8
         x = const * np.ones(201)
         asiga = AnalogSignal(
@@ -65,7 +65,7 @@ class sta_TestCase(unittest.TestCase):
         assert_array_almost_equal(STA, cutout, 12)
 
     def test_spike_triggered_average_with_shifted_sin_wave(self):
-        '''Signal should average to zero'''
+        """Signal should average to zero"""
         STA = sta.spike_triggered_average(
             self.asiga0, self.st0, (-4 * ms, 4 * ms))
         target = 5e-2 * mV
@@ -74,7 +74,7 @@ class sta_TestCase(unittest.TestCase):
         self.assertLess(np.abs(STA).max(), target)
 
     def test_only_one_spike(self):
-        '''The output should be the same as the input'''
+        """The output should be the same as the input"""
         x = np.arange(0, 20, 0.1)
         y = x**2
         sr = 10 / ms
@@ -108,7 +108,7 @@ class sta_TestCase(unittest.TestCase):
     # ********* an exception or returns an error code ***********************
 
     def test_analog_signal_of_wrong_type(self):
-        '''Analog signal given as list, but must be AnalogSignal'''
+        """Analog signal given as list, but must be AnalogSignal"""
         asiga = [0, 1, 2, 3, 4]
         self.assertRaises(TypeError, sta.spike_triggered_average,
                           asiga, self.st0, (-2 * ms, 2 * ms))
@@ -128,7 +128,7 @@ class sta_TestCase(unittest.TestCase):
                           self.st0, (-2 * ms, 2 * ms))
 
     def test_one_smaller_nrspiketrains_smaller_nranalogsignals(self):
-        '''Number of spiketrains between 1 and number of analogsignals'''
+        """Number of spiketrains between 1 and number of analogsignals"""
         self.assertRaises(ValueError, sta.spike_triggered_average,
                           self.asiga2, self.lst, (-2 * ms, 2 * ms))
 
@@ -189,7 +189,7 @@ class sta_TestCase(unittest.TestCase):
                           asiga, st, (-1 * ms, 1 * ms))
 
     def test_one_spiketrain_empty(self):
-        '''Test for one empty SpikeTrain, but existing spikes in other'''
+        """Test for one empty SpikeTrain, but existing spikes in other"""
         st = [SpikeTrain(
             [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
             units='ms', t_stop=self.asiga1.t_stop),

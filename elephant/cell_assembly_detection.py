@@ -17,6 +17,11 @@ scale (bin_size), assumed to be recorded in parallel, the CAD analysis can be
 applied as demonstrated in this short toy example of 5 parallel spike trains
 that exhibit fully synchronous events of order 5.
 
+.. autosummary::
+    :toctree: toctree/cell_assembly_detection
+
+    cell_assembly_detection
+
 Examples
 --------
 >>> import matplotlib.pyplot as plt
