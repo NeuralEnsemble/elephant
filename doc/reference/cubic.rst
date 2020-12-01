@@ -9,6 +9,6 @@ References
 ----------
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: cu
+   :labelprefix: cubic
    :keyprefix: cubic-
    :style: unsrt

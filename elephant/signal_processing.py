@@ -3,6 +3,17 @@
 Basic processing procedures for analog signals (e.g., performing a z-score of a
 signal, or filtering a signal).
 
+.. autosummary::
+    :toctree: toctree/signal_processing
+    
+    zscore
+    cross_correlation_function
+    butter
+    wavelet_transform
+    hilbert
+    rauc
+    derivative
+
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """

@@ -9,6 +9,6 @@ References
 ----------
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: sp
+   :labelprefix: spade
    :keyprefix: spade-
    :style: unsrt

@@ -123,8 +123,8 @@ nbsphinx_allow_errors = False
 # the autosummary fields of each module.
 autosummary_generate = True
 
-# don't overwrite our custom toctree/*.rst
-autosummary_generate_overwrite = False
+# Set to False to not overwrite the custom toctree/*.rst
+autosummary_generate_overwrite = True
 
 # -- Options for HTML output ---------------------------------------------
 

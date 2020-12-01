@@ -7,7 +7,7 @@ Methods for performing phase analysis.
 
     spike_triggered_phase
 
-:copyright: Copyright 2014-2018 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

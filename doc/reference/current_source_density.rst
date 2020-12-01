@@ -4,6 +4,17 @@ Current source density analysis
 
 .. automodule:: elephant.current_source_density
 
+Keywords
+--------
+LFP, CSD, multielectrode, Laminar electrode, Barrel cortex.
+
+
+Citation Policy
+---------------
+See `current_source_density_src/README.md
+<https://github.com/NeuralEnsemble/elephant/blob/master/elephant/
+current_source_density_src/README.md>`_
+
 
 Author Contributions
 --------------------

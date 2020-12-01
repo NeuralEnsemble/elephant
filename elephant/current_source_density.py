@@ -12,20 +12,18 @@ Neuroscience.)
 CSD is also called as Source Localization or Source Imaging in the EEG circles.
 Here are CSD methods for different types of electrode configurations.
 
-1D - laminar probe like electrodes.
-2D - Microelectrode Array like
-3D - UtahArray or multiple laminar probes.
+- 1D - laminar probe like electrodes.
+- 2D - Microelectrode Array like
+- 3D - UtahArray or multiple laminar probes.
 
 The following methods have been implemented so far
 
-1D - StandardCSD, DeltaiCSD, SplineiCSD, StepiCSD, KCSD1D
-2D - KCSD2D, MoIKCSD (Saline layer on top of slice)
-3D - KCSD3D
+- 1D: StandardCSD, DeltaiCSD, SplineiCSD, StepiCSD, KCSD1D
+- 2D: KCSD2D, MoIKCSD (Saline layer on top of slice)
+- 3D: KCSD3D
 
 Each listed method has some advantages. The KCSD methods, for instance, can
 handle broken or irregular electrode configurations electrode.
-
-Keywords: LFP; CSD; Multielectrode; Laminar electrode; Barrel cortex
 
 .. autosummary::
     :toctree: toctree/current_source_density
@@ -33,9 +31,6 @@ Keywords: LFP; CSD; Multielectrode; Laminar electrode; Barrel cortex
     estimate_csd
     generate_lfp
 
-Citation Policy: see `current_source_density_src/README.md
-<https://github.com/NeuralEnsemble/elephant/blob/master/elephant/
-current_source_density_src/README.md>`_
 """
 
 from __future__ import division, print_function, unicode_literals
