@@ -551,6 +551,9 @@ def cross_correlation_histogram(
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains `binned_spiketrain_i` and `binned_spiketrain_j`.
 
+    Cross-correlation coefficient is computed according to
+    :cite:`correlation-Eggermont2010_77`.
+
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
 

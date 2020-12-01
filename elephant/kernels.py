@@ -583,8 +583,31 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     def boundary_enclosing_area_fraction(self, fraction):
         r"""
-        Refer to :func:`Kernel.boundary_enclosing_area_fraction` for the
-        documentation.
+        Calculates the boundary :math:`b` so that the integral from
+        :math:`-b` to :math:`b` encloses a certain fraction of the
+        integral over the complete kernel.
+
+        By definition the returned value is hence non-negative, even if the
+        whole probability mass of the kernel is concentrated over negative
+        support for inverted kernels.
+
+        Parameters
+        ----------
+        fraction : float
+            Fraction of the whole area which has to be enclosed.
+
+        Returns
+        -------
+        pq.Quantity
+            Boundary of the kernel containing area `fraction` under the
+            kernel density.
+
+        Raises
+        ------
+        ValueError
+            If `fraction` was chosen too close to one, such that in
+            combination with integral approximation errors the calculation of
+            a boundary was not possible.
 
         Notes
         -----

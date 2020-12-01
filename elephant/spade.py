@@ -1,8 +1,8 @@
 """
-SPADE :cite:`spade-Torre2013_132`, :cite:`spade-Quaglio2017_41`,
-:cite:`spade-Stella2019_104022` is the combination of a mining technique and
-multiple statistical tests to detect and assess the statistical significance of
-repeated occurrences of spike sequences (spatio-temporal patterns, STP).
+SPADE :cite:`spade-Torre2013_132,spade-Quaglio2017_41,spade-Stella2019_104022`
+is the combination of a mining technique and multiple statistical tests to
+detect and assess the statistical significance of repeated occurrences of spike
+sequences (spatio-temporal patterns, STP).
 
 
 .. autosummary::
