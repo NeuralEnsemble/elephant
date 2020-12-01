@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 CuBIC is a statistical method for the detection of higher order of
 correlations in parallel spike trains based on the analysis of the
 cumulants of the population count.
+
+.. autosummary::
+    :toctree: toctree/cubic
+
+    cubic
+
+Examples
+--------
 Given a list sts of SpikeTrains, the analysis comprises the following
 steps:
 
@@ -17,15 +25,15 @@ steps:
 
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
-'''
-# -*- coding: utf-8 -*-
+"""
 
 from __future__ import division, print_function, unicode_literals
 
-import scipy.stats
-import scipy.special
 import math
 import warnings
+
+import scipy.special
+import scipy.stats
 
 from elephant.utils import deprecated_alias
 
@@ -41,8 +49,8 @@ __all__ = [
 @deprecated_alias(data='histogram', ximax='max_iterations')
 def cubic(histogram, max_iterations=100, alpha=0.05):
     r"""
-    Performs the CuBIC analysis [1]_ on a population histogram, calculated
-    from a population of spiking neurons.
+    Performs the CuBIC analysis :cite:`cubic-Staude2010_327` on a population
+    histogram, calculated from a population of spiking neurons.
 
     The null hypothesis :math:`H_0: k_3(data)<=k^*_{3,\xi}` is iteratively
     tested with increasing correlation order :math:`\xi` until it is possible
@@ -51,7 +59,7 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
     :math:`k_3(data)`.
 
     :math:`k^*_{3,\xi}` is the maximized third cumulant, supposing a Compound
-    Poisson Process (CPP) model for correlated spike trains (see [1]_)
+    Poisson Process (CPP) model for correlated spike trains (see the paper)
     with maximum order of correlation equal to :math:`\xi`.
 
     Parameters
@@ -61,9 +69,9 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
         population of neurons.
     max_iterations : int, optional
          The maximum number of iterations of the hypothesis test. Corresponds
-         to the :math:`\hat{\xi_{\text{max}}}` in [1]_. If it is not possible
-         to compute the :math:`\hat{\xi}` before `max_iterations` iteration,
-         the CuBIC procedure is aborted.
+         to the :math:`\hat{\xi_{\text{max}}}` in :cite:`cubic-Staude2010_327`.
+         If it is not possible to compute the :math:`\hat{\xi}` before
+         `max_iterations` iteration, the CuBIC procedure is aborted.
          Default: 100
     alpha : float, optional
          The significance level of the hypothesis tests performed.
@@ -83,11 +91,6 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
     test_aborted : bool
         Whether the test was aborted because reached the maximum number of
         iteration, `max_iterations`.
-
-    References
-    ----------
-    .. [1] Staude, Rotter, Gruen, (2009) J. Comp. Neurosci
-
     """
     # alpha in in the interval [0,1]
     if alpha < 0 or alpha > 1:
@@ -131,7 +134,7 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
 
 
 def _H03xi(kappa, xi, L):
-    '''
+    """
     Computes the p_value for testing  the :math:`H_0: k_3(data)<=k^*_{3,\\xi}`
     hypothesis of CuBIC in the stationary rate version
 
@@ -150,7 +153,7 @@ def _H03xi(kappa, xi, L):
     -----
     p : float
         The p-value of the hypothesis tests
-    '''
+    """
 
     # Check the order condition of the cumulants necessary to perform CuBIC
     if kappa[1] < kappa[0]:
@@ -173,7 +176,7 @@ def _H03xi(kappa, xi, L):
 
 
 def _kappamstar(kappa, m, xi):
-    '''
+    """
     Computes maximized cumulant of order m
 
     Parameters
@@ -189,7 +192,7 @@ def _kappamstar(kappa, m, xi):
     -----
     k_out : list
         The maximized cumulant of order m
-    '''
+    """
 
     if xi == 1:
         kappa_out = kappa[1]
@@ -201,7 +204,7 @@ def _kappamstar(kappa, m, xi):
 
 
 def _kstat(data):
-    '''
+    """
     Compute first three cumulants of a population count of a population of
     spiking
     See http://mathworld.wolfram.com/k-Statistic.html
@@ -216,7 +219,7 @@ def _kstat(data):
     -----
     moments : list
         The first three unbiased cumulants of the population count
-    '''
+    """
     if len(data) == 0:
         raise ValueError('The input data must be a non-empty array')
     moments = [scipy.stats.kstat(data, n=n) for n in [1, 2, 3]]
