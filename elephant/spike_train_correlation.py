@@ -148,8 +148,8 @@ class _CrossCorrHist(object):
                                  right_edge + i, side='right')
             timediff = st2_bin_idx_unique[il:ir] - i
             assert ((timediff >= left_edge) & (
-                timediff <= right_edge)).all(), 'Not all the '
-            'entries of cch lie in the window'
+                timediff <= right_edge)).all(), \
+                'Not all the entries of cch lie in the window'
             cross_corr[timediff - left_edge] += (
                 st1_spmat[idx] * st2_spmat[il:ir])
             st2_bin_idx_unique = st2_bin_idx_unique[il:]

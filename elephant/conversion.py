@@ -169,12 +169,11 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
     # figure out what to output
     if not return_times:
         return res
-    elif units is None:
+    if units is None:
         return res, np.arange(t_start, t_stop + sampling_period,
                               sampling_period)
-    else:
-        return res, pq.Quantity(np.arange(t_start, t_stop + sampling_period,
-                                          sampling_period), units=units)
+    return res, pq.Quantity(np.arange(t_start, t_stop + sampling_period,
+                                      sampling_period), units=units)
 
 
 ###########################################################################

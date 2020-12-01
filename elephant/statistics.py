@@ -225,7 +225,6 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                                  t_stop=t_stop, axis=axis)
 
         rates = pq.Quantity(rates, units=1. / units)
-        return rates
     elif isinstance(spiketrain, (np.ndarray, list, tuple)):
         if isinstance(t_start, pq.Quantity) or isinstance(t_stop, pq.Quantity):
             raise TypeError("'t_start' and 't_stop' cannot be quantities if "
@@ -242,11 +241,11 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
             t_stop = np.expand_dims(t_stop, axis)
         rates = np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
                        axis=axis) / time_interval
-        return rates
     else:
         raise TypeError("Invalid input spiketrain type: '{}'. Allowed: "
                         "neo.SpikeTrain, Quantity, ndarray".
                         format(type(spiketrain)))
+    return rates
 
 
 def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
@@ -333,10 +332,9 @@ def __variation_check(v, with_nan):
                           "an input with more than 1 entry. Returning `NaN`"
                           "since the argument `with_nan` is `True`")
             return np.NaN
-        else:
-            raise ValueError("Input size is too small. Please provide "
-                             "an input with more than 1 entry. Set 'with_nan' "
-                             "to True to replace the error by a warning.")
+        raise ValueError("Input size is too small. Please provide "
+                         "an input with more than 1 entry. Set 'with_nan' "
+                         "to True to replace the error by a warning.")
 
     return None
 
@@ -956,20 +954,6 @@ def complexity_pdf(spiketrains, bin_size):
     return complexity_distribution
 
 
-"""
-Kernel Bandwidth Optimization.
-
-Python implementation by Subhasis Ray.
-
-Original matlab code (sskernel.m) here:
-http://2000.jukuin.keio.ac.jp/shimazaki/res/kernel.html
-
-This was translated into Python by Subhasis Ray, NCBS. Tue Jun 10
-23:01:43 IST 2014
-
-"""
-
-
 def nextpow2(x):
     """
     Return the smallest integral power of 2 that is equal or larger than `x`.
@@ -1056,6 +1040,10 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
     Calculates optimal fixed kernel bandwidth
     :cite:`statistics-Shimazaki2010_171`, given as the standard deviation
     sigma.
+
+    Original matlab code (sskernel.m)
+    http://2000.jukuin.keio.ac.jp/shimazaki/res/kernel.html has been ported to
+    Python by Subhasis Ray, NCBS.
 
     Parameters
     ----------

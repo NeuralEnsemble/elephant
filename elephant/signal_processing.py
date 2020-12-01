@@ -5,7 +5,7 @@ signal, or filtering a signal).
 
 .. autosummary::
     :toctree: toctree/signal_processing
-    
+
     zscore
     cross_correlation_function
     butter

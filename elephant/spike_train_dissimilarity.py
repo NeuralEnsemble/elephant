@@ -138,12 +138,11 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         if cost_factor == 0.0:
             num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return np.absolute(num_spikes.T - num_spikes)
-        elif cost_factor == np.inf:
+        if cost_factor == np.inf:
             num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return num_spikes.T + num_spikes
-        else:
-            kernel = kernels.TriangularKernel(
-                sigma=2.0 / (np.sqrt(6.0) * cost_factor))
+        kernel = kernels.TriangularKernel(
+            sigma=2.0 / (np.sqrt(6.0) * cost_factor))
 
     if sort:
         spiketrains = [np.sort(st.view(type=pq.Quantity))
@@ -152,16 +151,13 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
     def compute(i, j):
         if i == j:
             return 0.0
-        else:
-            if algorithm == 'fast':
-                return _victor_purpura_dist_for_st_pair_fast(
-                    spiketrains[i], spiketrains[j], kernel)
-            elif algorithm == 'intuitive':
-                return _victor_purpura_dist_for_st_pair_intuitive(
-                    spiketrains[i], spiketrains[j], cost_factor)
-            else:
-                raise NameError("algorithm must be either 'fast' "
-                                "or 'intuitive'.")
+        if algorithm == 'fast':
+            return _victor_purpura_dist_for_st_pair_fast(
+                spiketrains[i], spiketrains[j], kernel)
+        if algorithm == 'intuitive':
+            return _victor_purpura_dist_for_st_pair_intuitive(
+                spiketrains[i], spiketrains[j], cost_factor)
+        raise NameError("The algorithm must be either 'fast' or 'intuitive'.")
 
     return _create_matrix_from_indexed_function(
         (len(spiketrains), len(spiketrains)), compute, kernel.is_symmetric())
@@ -368,7 +364,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     if time_constant == 0:
         spike_counts = [st.size for st in spiketrains]
         return np.sqrt(spike_counts + np.atleast_2d(spike_counts).T)
-    elif time_constant == np.inf:
+    if time_constant == np.inf:
         spike_counts = [st.size for st in spiketrains]
         return np.absolute(spike_counts - np.atleast_2d(spike_counts).T)
 
