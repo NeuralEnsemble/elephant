@@ -264,21 +264,14 @@ class BinnedSpikeTrain(object):
     UserWarning
         If some spikes fall outside of [`t_start`, `t_stop`] range
 
-    See also
-    --------
-    _convert_to_binned
-    spike_indices
-    to_bool_array
-    to_array
-
     Notes
     -----
     There are four minimal configurations of the optional parameters which have
     to be provided, otherwise a `ValueError` will be raised:
-    * `t_start`, `n_bins`, `bin_size`
-    * `t_start`, `n_bins`, `t_stop`
-    * `t_start`, `bin_size`, `t_stop`
-    * `t_stop`, `n_bins`, `bin_size`
+      * t_start, n_bins, bin_size
+      * t_start, n_bins, t_stop
+      * t_start, bin_size, t_stop
+      * t_stop, n_bins, bin_size
 
     If `spiketrains` is a `neo.SpikeTrain` or a list thereof, it is enough to
     explicitly provide only one parameter: `n_bins` or `bin_size`. The
@@ -313,29 +306,48 @@ class BinnedSpikeTrain(object):
 
     @property
     def shape(self):
+        """
+        The shape of the sparse matrix.
+        """
         return self.sparse_matrix.shape
 
     @property
     def bin_size(self):
+        """
+        Bin size quantity.
+        """
         return pq.Quantity(self._bin_size, units=self.units, copy=False)
 
     @property
     def t_start(self):
+        """
+        t_start quantity; spike times below this value have been ignored.
+        """
         return pq.Quantity(self._t_start, units=self.units, copy=False)
 
     @property
     def t_stop(self):
+        """
+        t_stop quantity; spike times above this value have been ignored.
+        """
         return pq.Quantity(self._t_stop, units=self.units, copy=False)
 
     @property
     def binsize(self):
+        """
+        Deprecated in favor of :attr:`bin_size`.
+        """
         warnings.warn("'.binsize' is deprecated; use '.bin_size'",
                       DeprecationWarning)
         return self._bin_size
 
     @property
     def num_bins(self):
-        warnings.warn("'.num_bins' is deprecated; use '.n_bins'")
+        """
+        Deprecated in favor of :attr:`n_bins`.
+        """
+        warnings.warn("'.num_bins' is deprecated; use '.n_bins'",
+                      DeprecationWarning)
         return self.n_bins
 
     def __repr__(self):
@@ -560,7 +572,8 @@ class BinnedSpikeTrain(object):
 
     def to_sparse_array(self):
         """
-        Getter for sparse matrix with time points.
+        Getter for sparse matrix with time points. Deprecated in favor of
+        :attr:`sparse_matrix`.
 
         Returns
         -------
@@ -630,8 +643,8 @@ class BinnedSpikeTrain(object):
         that in turn contains for each spike the index into the binned matrix
         where this spike enters.
 
-        In contrast to `to_sparse_array().nonzero()`, this function will report
-        two spikes falling in the same bin as two entries.
+        In contrast to `self.sparse_matrix.nonzero()`, this function will
+        report two spikes falling in the same bin as two entries.
 
         Examples
         --------
@@ -661,8 +674,8 @@ class BinnedSpikeTrain(object):
     @property
     def is_binary(self):
         """
-        Checks and returns `True` if given input is a binary input.
-        Beware, that the function does not know if the input is binary
+        Returns True if the sparse matrix contains binary values only.
+        Beware, that the function does not know if the input was binary
         because e.g `to_bool_array()` was used before or if the input is just
         sparse (i.e. only one spike per bin at maximum).
 
@@ -757,7 +770,8 @@ class BinnedSpikeTrain(object):
         Parameters
         ----------
         copy : bool, optional
-            Deprecated parameter. It has no effect.
+            .. deprecated:: 0.9.0
+            Has no effect - a view is always returned.
 
         Returns
         -------
@@ -784,11 +798,12 @@ class BinnedSpikeTrain(object):
     @property
     def sparsity(self):
         """
+        The sparsity of the sparse matrix computed as the no. of nonzero
+        elements divided by the matrix size.
+
         Returns
         -------
         float
-            Matrix sparsity defined as no. of nonzero elements divided by
-            the matrix size
         """
         num_nonzero = self.sparse_matrix.data.shape[0]
         return num_nonzero / np.prod(self.sparse_matrix.shape)
