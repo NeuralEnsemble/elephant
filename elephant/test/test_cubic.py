@@ -16,20 +16,16 @@ import elephant.cubic as cubic
 
 
 class CubicTestCase(unittest.TestCase):
-    '''
+    """
     This test is constructed to check the implementation of the CuBIC
-    method [1].
+    method :cite:`cubic-Staude2010_327`.
     In the setup function is constructed an neo.AnalogSignal, that
     represents the Population Histogram of a population of neurons with order
-    of correlation equal to ten. Since the population contu is either equal to
+    of correlation equal to ten. Since the population count is either equal to
     0 or 10 means that the embedded order of correlation is exactly 10.
     In test_cubic() the format of all the output and the order of correlation
-    of the function jelephant.cubic.cubic() are tested.
-
-    References
-    ----------
-    [1]Staude, Rotter, Gruen, (2009) J. Comp. Neurosci
-    '''
+    of the function `elephant.cubic.cubic()` are tested.
+    """
 
     def setUp(self):
         n2 = 300

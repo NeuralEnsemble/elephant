@@ -47,16 +47,6 @@ Time-series Granger causality
     pairwise_granger
     conditional_granger
 
-
-References
-----------
-
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: gr
-   :keyprefix: granger-
-   :style: unsrt
-
-
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
