@@ -325,15 +325,15 @@ class UETestCase(unittest.TestCase):
         sts1 = self.sts1_neo
         sts2 = self.sts2_neo
         data = np.vstack((sts1, sts2)).T
-        winsize = 100 * pq.ms
+        win_size = 100 * pq.ms
         bin_size = 5 * pq.ms
-        winstep = 20 * pq.ms
+        win_step = 20 * pq.ms
         pattern_hash = [3]
         UE_dic = ue.jointJ_window_analysis(spiketrains=data,
                                            pattern_hash=pattern_hash,
                                            bin_size=bin_size,
-                                           win_size=winsize,
-                                           win_step=winstep)
+                                           win_size=win_size,
+                                           win_step=win_step)
         expected_Js = np.array(
             [0.57953708, 0.47348757, 0.1729669,
              0.01883295, -0.21934742, -0.80608759])
@@ -360,6 +360,16 @@ class UETestCase(unittest.TestCase):
             UE_dic['indices']['trial26'], expected_indecis_tril26))
         self.assertTrue(np.allclose(
             UE_dic['indices']['trial4'], expected_indecis_tril4))
+
+        # check the input parameters
+        input_params = UE_dic['input_parameters']
+        self.assertEqual(input_params['pattern_hash'], pattern_hash)
+        self.assertEqual(input_params['bin_size'], bin_size)
+        self.assertEqual(input_params['win_size'], win_size)
+        self.assertEqual(input_params['win_step'], win_step)
+        self.assertEqual(input_params['method'], 'analytic_TrialByTrial')
+        self.assertEqual(input_params['t_start'], 0 * pq.s)
+        self.assertEqual(input_params['t_stop'], 200 * pq.ms)
 
     @staticmethod
     def load_gdf2Neo(fname, trigger, t_pre, t_post):

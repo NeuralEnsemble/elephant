@@ -746,7 +746,7 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
     Returns
     -------
     dict
-        The values of each key have the shape of
+        The values of the following keys have the shape of
           * different pattern hash --> 0-axis
           * different window --> 1-axis
 
@@ -760,6 +760,8 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
           The expected number of each pattern.
         'rate_avg': list of float
           The average firing rate of each neuron.
+
+        Additionally, 'input_parameters' key stores the input parameters.
 
     Raises
     ------
@@ -802,6 +804,11 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
         warnings.warn(f"The ratio between the win_step ({win_step}) and the "
                       f"bin_size ({bin_size}) is not an integer")
 
+    input_parameters = dict(pattern_hash=pattern_hash, bin_size=bin_size,
+                            win_size=win_size, win_step=win_step,
+                            method=method, t_start=t_start, t_stop=t_stop,
+                            n_surrogates=n_surrogates)
+
     n_trials, n_neurons = np.shape(spiketrains)[:2]
 
     n_bins = int((t_stop - t_start) / bin_size)
@@ -832,4 +839,5 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
     for key in indices_win.keys():
         indices_win[key] = np.hstack(indices_win[key])
     return {'Js': Js_win, 'indices': indices_win, 'n_emp': n_emp_win,
-            'n_exp': n_exp_win, 'rate_avg': rate_avg / bin_size}
+            'n_exp': n_exp_win, 'rate_avg': rate_avg / bin_size,
+            'input_parameters': input_parameters}
