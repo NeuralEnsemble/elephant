@@ -380,6 +380,17 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         analog_signal_y_with_trial = \
             np.full([self.num_trials, self.num_time_points],
                     np.random.uniform(-np.pi, np.pi, self.num_time_points))
+
+        # version_0: as_x/y_neo has shape (signal x & y, trial, phases)
+        # self.as_x_neo = [AnalogSignal(
+        #     signal=analog_signal_x_with_trial * pq.rad, units=pq.rad,
+        #     sampling_rate=self.num_time_points / (2 * pq.s))]
+        # self.as_y_neo = [AnalogSignal(
+        #     signal=analog_signal_y_with_trial * pq.rad, units=pq.rad,
+        #     sampling_rate=self.num_time_points / (2 * pq.s))]
+        # reshape not needed
+
+        # version_1: as_x/y_neo has shape (trial, signal x & y, phases)
         self.as_x_neo = \
             [AnalogSignal(signal=i * pq.rad, units=pq.rad,
                           sampling_rate=self.num_time_points / (2 * pq.s))
@@ -388,15 +399,26 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
             [AnalogSignal(signal=i * pq.rad, units=pq.rad,
                           sampling_rate=self.num_time_points / (2 * pq.s))
              for i in analog_signal_y_with_trial]
-        self.phase_data = np.vstack((self.as_x_neo, self.as_y_neo))
+        self.as_x_neo = np.reshape(
+            self.as_x_neo, (self.num_trials, 1, self.num_time_points))
+        self.as_y_neo = np.reshape(
+            self.as_y_neo, (self.num_trials, 1, self.num_time_points))
 
     def testPhaseLockingValue_AnalogSignal_identical_signals(self):
         """
-        Test if the PLV's for to identical AnalogSignals are 1.
+        Test if the PLV's are 1, when 2 identical AnalogSignals with identical
+        trials are passed. PLV's needed to be 1, due to the constant phase
+        difference of 0 across trials at each time-point.
         """
+        # version_0: phase_data has shape(signal x & y, trial, phases)
+        # phase_data = np.vstack((self.as_x_neo, self.as_x_neo))
+
+        # version_1: phase_data has shape(trial, signal x & y, phases)
+        phase_data = np.hstack((self.as_x_neo, self.as_x_neo))
+
         list_plv_t = \
             elephant.phase_analysis.phase_locking_value_analog_signal(
-                self.phase_data)
+                phase_data)
         target_plv_r_is_one = np.ones_like(list_plv_t)
         np.testing.assert_allclose(list_plv_t, target_plv_r_is_one,
                                    self.tolerance)

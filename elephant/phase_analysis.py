@@ -248,15 +248,53 @@ def phase_locking_value(phases_x, phases_y):
 # draft for phase_locking_value() with list of neo.AnalogSignal as input
 def phase_locking_value_analog_signal(phase_data):
     """
+    Calculates the phase locking value (PLV).
 
-    Parameters
-    ----------
-    phase_data
+    This function expects joined phase_data of two signals (with multiple
+    trials). For each trial-pair it calculates the phase difference at each
+    given time-point. Than it calculates the mean vectors of those phase
+    differences across all trials for each given time-point. The PLV at time
+    t is the length of the corresponding mean vector.
 
-    Returns
-    -------
+    Parameters:
+    -----------
+    phases_data: list of neo.AnalogSignals objects with multiple trials
+        time-series of two signals with n trials each
+        # version_0:
+        axis: 0 -> signal x/y, 1 -> trial, 2 -> phases
+        # version_1:
+        axis: 0 -> trial, 1 -> signal x/y, 2 -> phases
 
+    Returns:
+    --------
+    plv: array-like object
+        phase-locking value (float)
+        range: [0, 1]
+
+    Notes
+    -----
+    This implementation is based on the formula taken from [1] (pp. 195).
+
+    PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * theta(t, n)} ) )
+
+    where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n).
+
+    References:
+    -----------
+    [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
+    and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
+    Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
+    # version_0: phase_data has shape(signal x & y, trial, phases)
+    # phase_diff = phase_difference(phase_data[0], phase_data[1])
+
+    # version_1: phase_data has shape(trial, signal x & y, phases)
+    phase_diff = phase_difference(
+        np.asarray([signal[0] for signal in phase_data]),
+        np.asarray([signal[1] for signal in phase_data]))
+
+    theta, r = mean_vector(phase_diff, axis=0)
+    return r
 
 
 def mean_vector(phases, axis=0):
