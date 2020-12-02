@@ -236,7 +236,7 @@ class UETestCase(unittest.TestCase):
         n_exp_anal = ue.n_exp_mat_sum_trial(
             mat, pattern_hash, method='analytic_TrialAverage')
         n_exp_surr = ue.n_exp_mat_sum_trial(
-            mat, pattern_hash, method='surrogate_TrialByTrial', n_surr=1000)
+            mat, pattern_hash, method='surrogate_TrialByTrial', n_surrogates=1000)
         self.assertLess(
             a=np.abs(n_exp_anal[0] - np.mean(n_exp_surr)) / n_exp_anal[0],
             b=0.1)
@@ -309,7 +309,7 @@ class UETestCase(unittest.TestCase):
                 mat,
                 pattern_hash,
                 method='surrogate_TrialByTrial',
-                n_surr=100)
+                n_surrogates=100)
         _, rate_avg, _, n_emp, indices =\
             ue._UE(mat, pattern_hash, method='analytic_TrialByTrial')
         self.assertTrue(np.allclose(n_emp, n_emp_surr))
@@ -329,8 +329,11 @@ class UETestCase(unittest.TestCase):
         bin_size = 5 * pq.ms
         winstep = 20 * pq.ms
         pattern_hash = [3]
-        UE_dic = ue.jointJ_window_analysis(
-            data, bin_size, winsize, winstep, pattern_hash)
+        UE_dic = ue.jointJ_window_analysis(spiketrains=data,
+                                           pattern_hash=pattern_hash,
+                                           bin_size=bin_size,
+                                           win_size=winsize,
+                                           win_step=winstep)
         expected_Js = np.array(
             [0.57953708, 0.47348757, 0.1729669,
              0.01883295, -0.21934742, -0.80608759])
@@ -453,9 +456,12 @@ class UETestCase(unittest.TestCase):
         t_winpos = ue._winpos(t_start, t_stop, winsize, winstep)
         significance_level = 0.05
 
-        UE = ue.jointJ_window_analysis(
-            spiketrain, bin_size, winsize, winstep,
-            pattern_hash, method='analytic_TrialAverage')
+        UE = ue.jointJ_window_analysis(spiketrain,
+                                       pattern_hash=pattern_hash,
+                                       bin_size=bin_size,
+                                       win_size=winsize,
+                                       win_step=winstep,
+                                       method='analytic_TrialAverage')
         # load extracted data from figure 2 of Riehle et al 1997
         extracted_data = np.load(
             os.path.join(local_test_dir, 'extracted_data.npy'),
