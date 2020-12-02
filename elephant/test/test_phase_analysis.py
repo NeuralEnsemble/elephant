@@ -354,7 +354,7 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         # different numbers of trails
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.phase_locking_value,
-            self.simple_x, self.signal_y)
+            self.simple_x, self.simple_y)
 
     def testPhaseLockingValue_raise_Error_if_trial_lengths_are_different(self):
         """
@@ -374,19 +374,31 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         self.num_time_points = 2000  # in total;; 1000 per second
 
         # create two random uniform distributions (all trials are identical)
-        analog_signal_x_with_trial = \
+        signal_x = \
             np.full([self.num_trials, self.num_time_points],
                     np.random.uniform(-np.pi, np.pi, self.num_time_points))
-        analog_signal_y_with_trial = \
+        signal_y = \
             np.full([self.num_trials, self.num_time_points],
                     np.random.uniform(-np.pi, np.pi, self.num_time_points))
 
+        # create two random uniform distributions, where all trails are random
+        random_x = np.random.uniform(
+            -np.pi, np.pi, (1000, self.num_time_points))
+        random_y = np.random.uniform(
+            -np.pi, np.pi, (1000, self.num_time_points))
+
         # version_0: as_x/y_neo has shape (signal x & y, trial, phases)
         # self.as_x_neo = [AnalogSignal(
-        #     signal=analog_signal_x_with_trial * pq.rad, units=pq.rad,
+        #     signal=signal_x * pq.rad, units=pq.rad,
         #     sampling_rate=self.num_time_points / (2 * pq.s))]
         # self.as_y_neo = [AnalogSignal(
-        #     signal=analog_signal_y_with_trial * pq.rad, units=pq.rad,
+        #     signal=signal_y * pq.rad, units=pq.rad,
+        #     sampling_rate=self.num_time_points / (2 * pq.s))]
+        # self.as_random_x_neo = [AnalogSignal(
+        #     signal=random_x * pq.rad, units=pq.rad,
+        #     sampling_rate=self.num_time_points / (2 * pq.s))]
+        # self.as_random_y_neo = [AnalogSignal(
+        #     signal=random_y * pq.rad, units=pq.rad,
         #     sampling_rate=self.num_time_points / (2 * pq.s))]
         # reshape not needed
 
@@ -394,17 +406,29 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         self.as_x_neo = \
             [AnalogSignal(signal=i * pq.rad, units=pq.rad,
                           sampling_rate=self.num_time_points / (2 * pq.s))
-             for i in analog_signal_x_with_trial]
+             for i in signal_x]
         self.as_y_neo = \
             [AnalogSignal(signal=i * pq.rad, units=pq.rad,
                           sampling_rate=self.num_time_points / (2 * pq.s))
-             for i in analog_signal_y_with_trial]
-        self.as_x_neo = np.reshape(
-            self.as_x_neo, (self.num_trials, 1, self.num_time_points))
-        self.as_y_neo = np.reshape(
-            self.as_y_neo, (self.num_trials, 1, self.num_time_points))
+             for i in signal_y]
+        self.as_random_x_neo = \
+            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
+                          sampling_rate=self.num_time_points / (2 * pq.s))
+             for i in random_x]
+        self.as_random_y_neo = \
+            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
+                          sampling_rate=self.num_time_points / (2 * pq.s))
+             for i in random_y]
+        self.as_x_neo = np.reshape(self.as_x_neo,
+                                   (self.num_trials, 1, self.num_time_points))
+        self.as_y_neo = np.reshape(self.as_y_neo,
+                                   (self.num_trials, 1, self.num_time_points))
+        self.as_random_x_neo = np.reshape(self.as_random_x_neo,
+                                          (1000, 1, self.num_time_points))
+        self.as_random_y_neo = np.reshape(self.as_random_y_neo,
+                                          (1000, 1, self.num_time_points))
 
-    def testPhaseLockingValue_AnalogSignal_identical_signals(self):
+    def testPLV_AnalogSignal_identical_signals(self):
         """
         Test if the PLV's are 1, when 2 identical AnalogSignals with identical
         trials are passed. PLV's needed to be 1, due to the constant phase
@@ -422,6 +446,93 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         target_plv_r_is_one = np.ones_like(list_plv_t)
         np.testing.assert_allclose(list_plv_t, target_plv_r_is_one,
                                    self.tolerance)
+
+    def testPLV_AnalogSignal_different_signals_both_identical_trials(self):
+        """
+        Test if the PLV's are 1, when 2 different signals are passed, where
+        within each signal the trials are identical. PLV's needed to be 1,
+        due to a constant phase difference across trials, which may vary for
+        different time-points.
+        """
+        # version_0: phase_data has shape(signal x & y, trial, phases)
+        # phase_data = np.vstack((self.as_x_neo, self.as_y_neo))
+
+        # version_1: phase_data has shape(trial, signal x & y, phases)
+        phase_data = np.hstack((self.as_x_neo, self.as_y_neo))
+
+        list2_plv_t = \
+            elephant.phase_analysis.phase_locking_value_analog_signal(
+                phase_data)
+        target_plv_r_is_one = np.ones_like(list2_plv_t)
+        np.testing.assert_allclose(list2_plv_t, target_plv_r_is_one,
+                                   atol=3e-15)
+
+    def testPLV_AnalogSignal_different_signals_both_different_trials(self):
+        """
+        Test if the PLV's are close to 0, when 2 different signals are passed,
+        where both have different trials, which are all randomly distributed.
+        The PLV's needed to be close to 0, do to a random
+        phase difference across trials for each time-point.
+        """
+        # version_0: phase_data has shape(signal x & y, trial, phases)
+        # phase_data = np.vstack((self.as_random_x_neo, self.as_random_y_neo))
+
+        # version_1: phase_data has shape(trial, signal x & y, phases)
+        phase_data = np.hstack((self.as_random_x_neo, self.as_random_y_neo))
+
+        list3_plv_t = \
+            elephant.phase_analysis.phase_locking_value_analog_signal(
+                phase_data)
+        target_plv_is_zero = np.zeros_like(list3_plv_t)
+        # use default value from np.allclose() for atol=1e-8 to prevent failure
+        np.testing.assert_allclose(list3_plv_t, target_plv_is_zero,
+                                   rtol=1e-2, atol=1e-1)
+
+    def testPLV_AnalogSignal_raise_Error_if_trial_number_is_different(self):
+        """
+        Test if a ValueError is raised, when the signals have different
+        number of trails.
+        """
+        # x = [[0, 1, 2], [0, 1, 2]]
+        # y = [[0, -1, -2], ]
+        # version_0: phase_data has shape(signal x & y, trial, phases)
+        # phase_data = [[[0, 1, 2], [0, 1, 2]],
+        #               [[0, -1, -2], ]]
+        # # different numbers of trails
+        # np.testing.assert_raises(
+        #     ValueError,
+        #     elephant.phase_analysis.phase_locking_value_analog_signal,
+        #     phase_data)
+
+        # version_1: phase_data has shape(trial, signal x & y, phases)
+        phase_data = [[[0, 1, 2], [0, -1, -2]],
+                      [[0, 1, 2], ]]
+        # different numbers of trails
+        np.testing.assert_raises(
+            IndexError,
+            elephant.phase_analysis.phase_locking_value_analog_signal,
+            phase_data)
+
+    def testPhaseLockingValue_raise_Error_if_trial_lengths_are_different(self):
+        """
+        Test if a ValueError is raised, when within a trail-pair of the signals
+        the trial-lengths are different.
+        """
+        # y = [[0, -1, -2], [0, -1, -2]]
+        # z = [[0, 0.5, 1, 2], [0, 0.5, 1, 2]]
+        # version_0: phase_data has shape(signal y & z, trial, phases)
+        # phase_data = [[[0, -1, -2], [0, -1, -2]],
+        #               [[0, 0.5, 1, 2], [0, 0.5, 1, 2]]]
+
+        # version_1: phase_data has shape(trial, signal y & z, phases)
+        phase_data = [[[0, -1, -2], [0, 0.5, 1, 2]],
+                      [[0, -1, -2], [0, 0.5, 1, 2]]]
+
+        # different lengths in a trail pair
+        np.testing.assert_raises(
+            ValueError,
+            elephant.phase_analysis.phase_locking_value_analog_signal,
+            phase_data)
 
 
 if __name__ == '__main__':
