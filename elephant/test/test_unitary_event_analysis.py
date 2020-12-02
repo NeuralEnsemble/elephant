@@ -15,6 +15,7 @@ from numpy.testing import assert_array_equal
 
 import elephant.unitary_event_analysis as ue
 from elephant.test.download import download, ELEPHANT_TMP_DIR
+from numpy.testing import assert_array_almost_equal
 
 
 class UETestCase(unittest.TestCase):
@@ -344,16 +345,14 @@ class UETestCase(unittest.TestCase):
              [0.02388889, 0.02055556]]) * pq.kHz
         expected_indecis_tril26 = [4., 4.]
         expected_indecis_tril4 = [1.]
-        self.assertTrue(np.allclose(UE_dic['Js'], expected_Js))
-        self.assertTrue(np.allclose(UE_dic['n_emp'], expected_n_emp))
-        self.assertTrue(np.allclose(UE_dic['n_exp'], expected_n_exp))
-        self.assertTrue(np.allclose(
-            UE_dic['rate_avg'].rescale('Hz').magnitude,
-            expected_rate.rescale('Hz').magnitude))
-        self.assertTrue(np.allclose(
-            UE_dic['indices']['trial26'], expected_indecis_tril26))
-        self.assertTrue(np.allclose(
-            UE_dic['indices']['trial4'], expected_indecis_tril4))
+        assert_array_almost_equal(UE_dic['Js'].squeeze(), expected_Js)
+        assert_array_almost_equal(UE_dic['n_emp'].squeeze(), expected_n_emp)
+        assert_array_almost_equal(UE_dic['n_exp'].squeeze(), expected_n_exp)
+        assert_array_almost_equal(UE_dic['rate_avg'].squeeze(), expected_rate)
+        assert_array_almost_equal(UE_dic['indices']['trial26'],
+                                  expected_indecis_tril26)
+        assert_array_almost_equal(UE_dic['indices']['trial4'],
+                                  expected_indecis_tril4)
 
         # check the input parameters
         input_params = UE_dic['input_parameters']

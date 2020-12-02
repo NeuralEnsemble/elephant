@@ -707,7 +707,7 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
           * 1-axis --> Neurons
 
           * 2-axis --> Spike times
-    pattern_hash : list of int
+    pattern_hash : int or list of int
         A list of interested patterns in hash values (see `hash_from_pattern`
         and `inverse_hash_from_pattern` functions).
     bin_size : pq.Quantity, optional
@@ -747,8 +747,9 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
     -------
     dict
         The values of the following keys have the shape of
-          * different pattern hash --> 0-axis
-          * different window --> 1-axis
+
+          * different window --> 0-axis
+          * different pattern hash --> 1-axis
 
         'Js': list of float
           JointSurprise of different given patterns within each window.
@@ -788,6 +789,9 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
     if t_stop is None:
         t_stop = spiketrains[0][0].t_stop.rescale('ms')
 
+    if isinstance(pattern_hash, int):
+        pattern_hash = [pattern_hash]
+
     # position of all windows (left edges)
     t_winpos = _winpos(t_start, t_stop, win_size, win_step,
                        position='left-edge')
@@ -823,9 +827,11 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
                 "The method works only with binary matrices at the moment")
         mat_tr_unit_spt[trial] = bs.to_bool_array()
 
-    num_win = len(t_winpos)
-    Js_win, n_exp_win, n_emp_win = np.zeros((3, num_win), dtype=np.float32)
-    rate_avg = np.zeros((num_win, n_neurons), dtype=np.float32)
+    n_windows = len(t_winpos)
+    n_hashes = len(pattern_hash)
+    Js_win, n_exp_win, n_emp_win = np.zeros((3, n_windows, n_hashes),
+                                            dtype=np.float32)
+    rate_avg = np.zeros((n_windows, n_hashes, n_neurons), dtype=np.float32)
     indices_win = defaultdict(list)
 
     for i, win_pos in enumerate(t_winpos_bintime):
