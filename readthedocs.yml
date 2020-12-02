@@ -14,8 +14,4 @@ conda:
 python:
     install:
         - method: pip
-          path: .
-          extra_requirements:
-              - docs
-              - extras
-              - tutorials
+          path: .[docs,extras,tutorials]
