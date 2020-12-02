@@ -245,6 +245,20 @@ def phase_locking_value(phases_x, phases_y):
     return r
 
 
+# draft for phase_locking_value() with list of neo.AnalogSignal as input
+def phase_locking_value_analog_signal(phase_data):
+    """
+
+    Parameters
+    ----------
+    phase_data
+
+    Returns
+    -------
+
+    """
+
+
 def mean_vector(phases, axis=0):
     """
     Calculates the mean vector of phases.

@@ -210,7 +210,7 @@ class MeanVectorTestCase(unittest.TestCase):
         self.lock_value_phi = np.random.uniform(-np.pi, np.pi, 1)
         self.dataset1 = np.ones(self.n_samples) * self.lock_value_phi
         # create a evenly spaced / uniform distribution
-        self.dataset2 = np.arange(0, 2*np.pi, (2*np.pi) / self.n_samples)
+        self.dataset2 = np.arange(0, 2 * np.pi, (2 * np.pi) / self.n_samples)
         # create a random distribution
         self.dataset3 = np.random.uniform(-np.pi, np.pi, self.n_samples)
 
@@ -283,7 +283,7 @@ class PhaseDifferenceTestCase(unittest.TestCase):
 class PhaseLockingValueTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
-        self.phase_shift = np.pi/4
+        self.phase_shift = np.pi / 4
         self.num_time_points = 1000
         self.num_trials = 100
 
@@ -309,7 +309,7 @@ class PhaseLockingValueTestCase(unittest.TestCase):
     def testPhaseLockingValue_identical_signals_both_identical_trials(self):
         """
         Test if the PLV's are 1, when 2 identical signals with identical
-        trials are passed. PLV's needed to be 1, due to the constant phase 
+        trials are passed. PLV's needed to be 1, due to the constant phase
         difference of 0 across trials at each time-point.
         """
         list1_plv_t = \
@@ -346,20 +346,60 @@ class PhaseLockingValueTestCase(unittest.TestCase):
         np.testing.assert_allclose(list3_plv_t, target_plv_is_zero,
                                    rtol=1e-2, atol=1e-1)
 
-    def testPhaseLockingValue_raise_Error_if_signal_shapes_are_different(self):
+    def testPhaseLockingValue_raise_Error_if_trial_number_is_different(self):
         """
-        Test if an ValueError is raised, when the signal has either different
-        numbers of trail or different lengths in a trail pair.
+        Test if a ValueError is raised, when the signals have different
+        number of trails.
         """
         # different numbers of trails
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.phase_locking_value,
             self.simple_x, self.signal_y)
 
+    def testPhaseLockingValue_raise_Error_if_trial_lengths_are_different(self):
+        """
+        Test if a ValueError is raised, when within a trail-pair of the signals
+        the trial-lengths are different.
+        """
         # different lengths in a trail pair
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.phase_locking_value,
             self.simple_y, self.simple_z)
+
+
+class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.num_trials = 100
+        self.num_time_points = 2000  # in total;; 1000 per second
+
+        # create two random uniform distributions (all trials are identical)
+        analog_signal_x_with_trial = \
+            np.full([self.num_trials, self.num_time_points],
+                    np.random.uniform(-np.pi, np.pi, self.num_time_points))
+        analog_signal_y_with_trial = \
+            np.full([self.num_trials, self.num_time_points],
+                    np.random.uniform(-np.pi, np.pi, self.num_time_points))
+        self.as_x_neo = \
+            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
+                          sampling_rate=self.num_time_points / (2 * pq.s))
+             for i in analog_signal_x_with_trial]
+        self.as_y_neo = \
+            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
+                          sampling_rate=self.num_time_points / (2 * pq.s))
+             for i in analog_signal_y_with_trial]
+        self.phase_data = np.vstack((self.as_x_neo, self.as_y_neo))
+
+    def testPhaseLockingValue_AnalogSignal_identical_signals(self):
+        """
+        Test if the PLV's for to identical AnalogSignals are 1.
+        """
+        list_plv_t = \
+            elephant.phase_analysis.phase_locking_value_analog_signal(
+                self.phase_data)
+        target_plv_r_is_one = np.ones_like(list_plv_t)
+        np.testing.assert_allclose(list_plv_t, target_plv_r_is_one,
+                                   self.tolerance)
 
 
 if __name__ == '__main__':
