@@ -5,22 +5,16 @@ Unit tests for the Unitary Events analysis
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import os
-import shutil
-import ssl
 import types
 import unittest
 
 import neo
 import numpy as np
 import quantities as pq
-from neo.test.rawiotest.tools import create_local_temp_dir
 from numpy.testing import assert_array_equal
 
-from urllib.request import urlopen
-
-
 import elephant.unitary_event_analysis as ue
+from elephant.test.download import download, ELEPHANT_TMP_DIR
 
 
 class UETestCase(unittest.TestCase):
@@ -438,20 +432,16 @@ class UETestCase(unittest.TestCase):
     def test_Riehle_et_al_97_UE(self):
         url = "http://raw.githubusercontent.com/ReScience-Archives/Rostami-" \
               "Ito-Denker-Gruen-2017/master/data"
-        shortname = "unitary_event_analysis_test_data"
-        local_test_dir = create_local_temp_dir(shortname)
-        files_to_download = ["extracted_data.npy", "winny131_23.gdf"]
-        context = ssl._create_unverified_context()
-        for filename in files_to_download:
-            url_file = "{url}/{filename}".format(url=url, filename=filename)
-            dist = urlopen(url_file, context=context)
-            localfile = os.path.join(local_test_dir, filename)
-            with open(localfile, 'wb') as f:
-                f.write(dist.read())
+        files_to_download = (
+            ("extracted_data.npy", "c4903666ce8a8a31274d6b11238a5ac3"),
+            ("winny131_23.gdf", "cc2958f7b4fb14dbab71e17bba49bd10")
+        )
+        for filename, checksum in files_to_download:
+            # The files will be downloaded to ELEPHANT_TMP_DIR
+            download(url=f"{url}/{filename}", checksum=checksum)
 
         # load spike data of figure 2 of Riehle et al 1997
-        spiketrain = self.load_gdf2Neo(os.path.join(local_test_dir,
-                                                    "winny131_23.gdf"),
+        spiketrain = self.load_gdf2Neo(ELEPHANT_TMP_DIR / "winny131_23.gdf",
                                        trigger='RS_4',
                                        t_pre=1799 * pq.ms,
                                        t_post=300 * pq.ms)
@@ -473,9 +463,8 @@ class UETestCase(unittest.TestCase):
                                        win_step=winstep,
                                        method='analytic_TrialAverage')
         # load extracted data from figure 2 of Riehle et al 1997
-        extracted_data = np.load(
-            os.path.join(local_test_dir, 'extracted_data.npy'),
-            encoding='latin1', allow_pickle=True).item()
+        extracted_data = np.load(ELEPHANT_TMP_DIR / 'extracted_data.npy',
+                                 encoding='latin1', allow_pickle=True).item()
         Js_sig = ue.jointJ(significance_level)
         sig_idx_win = np.where(UE['Js'] >= Js_sig)[0]
         diff_UE_rep = []
@@ -498,15 +487,8 @@ class UETestCase(unittest.TestCase):
                     diff_UE_rep = np.append(
                         diff_UE_rep, x_tmp - ue_trial)
                     y_cnt += +1
-        shutil.rmtree(local_test_dir)
         np.testing.assert_array_less(np.abs(diff_UE_rep), 0.3)
 
 
-def suite():
-    suite = unittest.makeSuite(UETestCase, 'test')
-    return suite
-
-
-if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+if __name__ == '__main__':
+    unittest.main()
