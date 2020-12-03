@@ -187,8 +187,8 @@ def inverse_hash_from_pattern(h, N, base=2):
     # value for N neurons with the given base
     powers = np.array([base ** x for x in range(N)])[::-1]
     if any(h > sum(powers)):
-        raise ValueError(
-            "hash value is not compatible with the number of neurons N")
+        raise ValueError(f"hash value {h} is not compatible with the number "
+                         f"of neurons {N}")
     m = h // np.expand_dims(powers, axis=1)
     m %= base  # m is a binary matrix now
     m = m.astype(int)  # convert object to int if the hash was > int64
@@ -643,7 +643,7 @@ def _bintime(t, bin_size):
     Change the real time to `bin_size` units.
     """
     t_dl = t.rescale('ms').magnitude
-    bin_size_dl = bin_size.rescale('ms').magnitude
+    bin_size_dl = bin_size.rescale('ms').item()
     return np.floor(np.array(t_dl) / bin_size_dl).astype(int)
 
 
@@ -651,10 +651,10 @@ def _winpos(t_start, t_stop, win_size, win_step, position='left-edge'):
     """
     Calculate the position of the analysis window.
     """
-    t_start_dl = t_start.rescale('ms').magnitude
-    t_stop_dl = t_stop.rescale('ms').magnitude
-    winsize_dl = win_size.rescale('ms').magnitude
-    winstep_dl = win_step.rescale('ms').magnitude
+    t_start_dl = t_start.rescale('ms').item()
+    t_stop_dl = t_stop.rescale('ms').item()
+    winsize_dl = win_size.rescale('ms').item()
+    winstep_dl = win_step.rescale('ms').item()
 
     # left side of the window time
     if position == 'left-edge':
@@ -689,10 +689,11 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surrogates=1):
 
 @deprecated_alias(data='spiketrains', binsize='bin_size', winsize='win_size',
                   winstep='win_step', n_surr='n_surrogates')
-def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
+def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                            win_size=100 * pq.ms, win_step=5 * pq.ms,
-                           method='analytic_TrialByTrial', t_start=None,
-                           t_stop=None, binary=True, n_surrogates=100):
+                           pattern_hash=None, method='analytic_TrialByTrial',
+                           t_start=None, t_stop=None, binary=True,
+                           n_surrogates=100):
     """
     Calculates the joint surprise in a sliding window fashion.
 
@@ -707,9 +708,6 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
           * 1-axis --> Neurons
 
           * 2-axis --> Spike times
-    pattern_hash : int or list of int
-        A list of interested patterns in hash values (see `hash_from_pattern`
-        and `inverse_hash_from_pattern` functions).
     bin_size : pq.Quantity, optional
         The size of bins for discretizing spike trains.
         Default: 5 ms
@@ -719,6 +717,11 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
     win_step : pq.Quantity, optional
         The size of the window step.
         Default: 5 ms
+    pattern_hash : int or list of int or None, optional
+        A list of interested patterns in hash values (see `hash_from_pattern`
+        and `inverse_hash_from_pattern` functions). If None, all neurons
+        are participated.
+        Default: None
     method : str, optional
         The method with which to compute the unitary events:
           * 'analytic_TrialByTrial': calculate the analytical expectancy
@@ -785,12 +788,17 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
             "1-axis units and 2-axis neo spike trains")
 
     if t_start is None:
-        t_start = spiketrains[0][0].t_start.rescale('ms')
+        t_start = spiketrains[0][0].t_start
     if t_stop is None:
-        t_stop = spiketrains[0][0].t_stop.rescale('ms')
+        t_stop = spiketrains[0][0].t_stop
 
-    if isinstance(pattern_hash, int):
-        pattern_hash = [pattern_hash]
+    n_trials = len(spiketrains)
+    n_neurons = len(spiketrains[0])
+    if pattern_hash is None:
+        pattern = list(range(n_neurons))
+        pattern_hash = hash_from_pattern(pattern)
+    if np.issubdtype(type(pattern_hash), np.integer):
+        pattern_hash = [int(pattern_hash)]
 
     # position of all windows (left edges)
     t_winpos = _winpos(t_start, t_stop, win_size, win_step,
@@ -813,9 +821,7 @@ def jointJ_window_analysis(spiketrains, pattern_hash, bin_size=5 * pq.ms,
                             method=method, t_start=t_start, t_stop=t_stop,
                             n_surrogates=n_surrogates)
 
-    n_trials, n_neurons = np.shape(spiketrains)[:2]
-
-    n_bins = int((t_stop - t_start) / bin_size)
+    n_bins = int(((t_stop - t_start) / bin_size).simplified.item())
 
     mat_tr_unit_spt = np.zeros((len(spiketrains), n_neurons, n_bins),
                                dtype=np.int32)
