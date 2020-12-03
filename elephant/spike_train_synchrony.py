@@ -335,27 +335,30 @@ class Synchrotool(Complexity):
             spiketrain_list[idx] = new_st
             if in_place:
                 segment = st.segment
+                if segment is None:
+                    continue
 
-                if segment is not None:
-                    # replace link to spiketrain in segment
-                    new_index = self._get_spiketrain_index(
-                        segment.spiketrains, st)
-                    segment.spiketrains[new_index] = new_st
+                # replace link to spiketrain in segment
+                new_index = self._get_spiketrain_index(
+                    segment.spiketrains, st)
+                segment.spiketrains[new_index] = new_st
 
-                    block = segment.block
-                    if block is not None:
-                        # replace link to spiketrain in groups
-                        for group in block.groups:
-                            try:
-                                idx = self._get_spiketrain_index(
-                                    group.spiketrains,
-                                    st)
-                            except ValueError:
-                                # st is not in this group, move to next group
-                                continue
+                block = segment.block
+                if block is None:
+                    continue
 
-                            # st found in group, replace with new_st
-                            group.spiketrains[idx] = new_st
+                # replace link to spiketrain in groups
+                for group in block.groups:
+                    try:
+                        idx = self._get_spiketrain_index(
+                            group.spiketrains,
+                            st)
+                    except ValueError:
+                        # st is not in this group, move to next group
+                        continue
+
+                    # st found in group, replace with new_st
+                    group.spiketrains[idx] = new_st
 
         return spiketrain_list
 
