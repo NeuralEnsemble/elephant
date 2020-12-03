@@ -16,6 +16,7 @@ from numpy.testing import assert_array_equal
 import elephant.unitary_event_analysis as ue
 from elephant.test.download import download, ELEPHANT_TMP_DIR
 from numpy.testing import assert_array_almost_equal
+from elephant.spike_train_generation import homogeneous_poisson_process
 
 
 class UETestCase(unittest.TestCase):
@@ -487,6 +488,54 @@ class UETestCase(unittest.TestCase):
                         diff_UE_rep, x_tmp - ue_trial)
                     y_cnt += +1
         np.testing.assert_array_less(np.abs(diff_UE_rep), 0.3)
+
+    def test_multiple_neurons(self):
+        np.random.seed(12)
+        spiketrains = [[homogeneous_poisson_process(
+            rate=50 * pq.Hz, t_stop=1 * pq.s)
+            for _ in range(5)] for neuron in range(3)]
+
+        spiketrains = np.stack(spiketrains, axis=1)
+        UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
+                                            win_size=300 * pq.ms,
+                                            win_step=100 * pq.ms)
+
+        js_expected = [[0.6081138], [0.17796665], [-1.2601125],
+                       [-0.2790147], [0.07804556], [0.7861176], [0.23452221],
+                       [0.11624397]]
+        indices_expected = {'trial2': [20, 30, 20, 30, 104, 104, 104],
+                            'trial3': [21, 21, 65, 65, 65, 128, 128, 128],
+                            'trial4': [8, 172, 172],
+                            'trial0': [104, 106, 104, 106, 104, 106],
+                            'trial1': [158, 158, 158, 188]}
+        n_emp_expected = [[4.], [4.], [1.], [4.], [4.], [5.], [3.], [3.]]
+        n_exp_expected = [[2.2858334], [3.2066667], [2.955], [4.485833],
+                          [3.4622223], [2.723611], [2.166111], [2.4122221]]
+        rate_expected = [[[0.04666667, 0.03266666, 0.04333333]],
+                         [[0.04733333, 0.03666667, 0.044]],
+                         [[0.04533333, 0.03466666, 0.046]],
+                         [[0.04933333, 0.04466667, 0.04933333]],
+                         [[0.04466667, 0.04266667, 0.046]],
+                         [[0.04133333, 0.04466667, 0.044]],
+                         [[0.04133333, 0.03666667, 0.04266667]],
+                         [[0.03933334, 0.03866667, 0.04666667]]] * 1 / pq.ms
+        input_parameters_expected = {'pattern_hash': [7],
+                                     'bin_size': 5 * pq.ms,
+                                     'win_size': 300 * pq.ms,
+                                     'win_step': 100 * pq.ms,
+                                     'method': 'analytic_TrialByTrial',
+                                     't_start': 0 * pq.s,
+                                     't_stop': 1 * pq.s, 'n_surrogates': 100}
+        assert_array_almost_equal(UE_dic['Js'], js_expected)
+        assert_array_almost_equal(UE_dic['n_emp'], n_emp_expected)
+        assert_array_almost_equal(UE_dic['n_exp'], n_exp_expected)
+        assert_array_almost_equal(UE_dic['rate_avg'], rate_expected)
+        self.assertEqual(sorted(UE_dic['indices'].keys()),
+                         sorted(indices_expected.keys()))
+        for trial_key in indices_expected.keys():
+            assert_array_equal(indices_expected[trial_key],
+                               UE_dic['indices'][trial_key])
+        self.assertEqual(UE_dic['input_parameters'], input_parameters_expected)
 
 
 if __name__ == '__main__':

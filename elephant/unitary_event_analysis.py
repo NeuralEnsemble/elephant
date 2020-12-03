@@ -795,7 +795,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
     n_trials = len(spiketrains)
     n_neurons = len(spiketrains[0])
     if pattern_hash is None:
-        pattern = list(range(n_neurons))
+        pattern = [1] * n_neurons
         pattern_hash = hash_from_pattern(pattern)
     if np.issubdtype(type(pattern_hash), np.integer):
         pattern_hash = [int(pattern_hash)]
