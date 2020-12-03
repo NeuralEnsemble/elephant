@@ -949,7 +949,8 @@ class ComplexityPdfTestCase(unittest.TestCase):
             spiketrain_a, spiketrain_b, spiketrain_c]
         # runs the previous function which will be deprecated
         targ = np.array([0.92, 0.01, 0.01, 0.06])
-        complexity_obj = statistics.Complexity(spiketrains, bin_size=0.1 * pq.s)
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               bin_size=0.1 * pq.s)
         pdf = complexity_obj.pdf()
         assert_array_equal(targ, complexity_obj.pdf().magnitude[:, 0])
         self.assertEqual(1, pdf.magnitude[:, 0].sum())
