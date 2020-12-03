@@ -232,7 +232,8 @@ class UETestCase(unittest.TestCase):
         n_exp_anal = ue.n_exp_mat_sum_trial(
             mat, pattern_hash, method='analytic_TrialAverage')
         n_exp_surr = ue.n_exp_mat_sum_trial(
-            mat, pattern_hash, method='surrogate_TrialByTrial', n_surrogates=1000)
+            mat, pattern_hash, method='surrogate_TrialByTrial',
+            n_surrogates=1000)
         self.assertLess(
             a=np.abs(n_exp_anal[0] - np.mean(n_exp_surr)) / n_exp_anal[0],
             b=0.1)
@@ -497,8 +498,8 @@ class UETestCase(unittest.TestCase):
 
         spiketrains = np.stack(spiketrains, axis=1)
         UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
-                                            win_size=300 * pq.ms,
-                                            win_step=100 * pq.ms)
+                                           win_size=300 * pq.ms,
+                                           win_step=100 * pq.ms)
 
         js_expected = [[0.6081138], [0.17796665], [-1.2601125],
                        [-0.2790147], [0.07804556], [0.7861176], [0.23452221],

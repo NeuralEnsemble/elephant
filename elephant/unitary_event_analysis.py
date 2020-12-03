@@ -407,7 +407,8 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
     >>> n_exp_anal = n_exp_mat(mat, pattern_hash, method='analytic')
     >>> n_exp_anal
     [ 0.5 1.5 ]
-    >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr', n_surrogates=5000)
+    >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr',
+    ...                        n_surrogates=5000)
     >>> print(n_exp_surr)
     [[ 1.  1.]
      [ 2.  0.]
@@ -425,7 +426,8 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
     if method == 'analytic':
         return _n_exp_mat_analytic(mat, pattern_hash)
     if method == 'surr':
-        return _n_exp_mat_surrogate(mat, pattern_hash, n_surrogates=n_surrogates)
+        return _n_exp_mat_surrogate(mat, pattern_hash,
+                                    n_surrogates=n_surrogates)
 
 
 def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
