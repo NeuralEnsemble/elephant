@@ -279,11 +279,11 @@ class Synchrotool(Complexity):
               * `deletion_threshold <= 1` leads to a ValueError, since this
               would delete/extract all spikes and there are definitely more
               efficient ways of doing so.
-        in_place : bool
+        in_place : bool, optional
             Determines whether the modification are made in place
             on ``self.input_spiketrains``.
             Default: False
-        mode : bool
+        mode : {'delete', 'extract'}, optional
             Inversion of the mask for deletion of synchronous events.
               * ``'delete'`` leads to the deletion of all spikes with
                 complexity >= `threshold`,
@@ -291,6 +291,13 @@ class Synchrotool(Complexity):
               * ``'extract'`` leads to the deletion of all spikes with
                 complexity < `threshold`, i.e. extracts synchronous spikes.
             Default: 'delete'
+
+        Raises
+        ------
+        ValueError
+            If `mode` is not one in {'delete', 'extract'}.
+
+            If `threshold <= 1`.
 
         Returns
         -------

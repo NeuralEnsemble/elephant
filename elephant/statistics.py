@@ -1003,17 +1003,20 @@ class Complexity(object):
         Spike trains with a common time axis (same `t_start` and `t_stop`)
     sampling_rate : pq.Quantity or None, optional
         Sampling rate of the spike trains with units of 1/time.
+        Used to shift the epoch edges in order to avoid rounding errors.
+        If None using the epoch to slice spike trains may introduce
+        rounding errors.
         Default: None
     bin_size : pq.Quantity or None, optional
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
-          * If no `bin_size` is specified and the `sampling_rate` is available
-            1/`sampling_rate` is used.
+          * If None and the `sampling_rate` is available
+          1/`sampling_rate` is used.
           * If both are given then `bin_size` is used.
         Default: None
     binary : bool, optional
-          * If `True` then the time histograms will be binary.
-          * If `False` the total number of synchronous spikes is counted in the
+          * If True then the time histograms will be binary.
+          * If False the total number of synchronous spikes is counted in the
             time histogram.
         Default: True
     spread : int, optional
@@ -1027,9 +1030,10 @@ class Complexity(object):
           * ``spread = n`` corresponds to counting spikes separated by exactly
             or less than `n - 1` empty bins.
         Default: 0
-    tolerance : float, optional
+    tolerance : float or None, optional
         Tolerance for rounding errors in the binning process and in the input
         data.
+        If None possible binning errors are not accounted for.
         Default: 1e-8
 
     Attributes
@@ -1073,6 +1077,12 @@ class Complexity(object):
         When `spiketrains` is not a list.
 
         When the elements in `spiketrains` are not instances of neo.SpikeTrain
+
+    Warns
+    -----
+    UserWarning
+        If no sampling rate is supplied which may lead to rounding errors
+        when using the epoch to slice spike trains.
 
     Notes
     -----
