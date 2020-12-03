@@ -374,16 +374,13 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         block = neo.Block()
 
-        channel_index = neo.ChannelIndex(name='Channel 1', index=1)
-        block.channel_indexes.append(channel_index)
-
-        unit = neo.Unit('Unit 1')
-        channel_index.units.append(unit)
-        unit.spiketrains.append(spiketrain)
-        spiketrain.unit = unit
+        group = neo.Group(name='Test Group')
+        block.groups.append(group)
+        group.spiketrains.append(spiketrain)
 
         segment = neo.Segment()
         block.segments.append(segment)
+        segment.block = block
         segment.spiketrains.append(spiketrain)
         spiketrain.segment = segment
 
@@ -417,6 +414,10 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         self.assertEqual(len(block.filter(objects=neo.SpikeTrain)), 1)
 
         cleaned_spiketrain = segment.spiketrains[0]
+
+        # Ensure that the spiketrain is also in the group
+        self.assertEqual(len(block.groups[0].spiketrains), 1)
+        self.assertIs(block.groups[0].spiketrains[0], cleaned_spiketrain)
 
         cleaned_annotations = cleaned_spiketrain.annotations
         cleaned_waveforms = cleaned_spiketrain.waveforms

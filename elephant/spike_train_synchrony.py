@@ -237,7 +237,7 @@ class Synchrotool(Complexity):
 
     The complexity is used to characterize synchronous events within the same
     spike train and across different spike trains in the `spiketrains` list.
-    Such that, synchronous events can be found both in multi-unit and
+    This way synchronous events can be found both in multi-unit and
     single-unit spike trains.
 
     This class inherits from :class:`elephant.statistics.Complexity`, see its
@@ -327,16 +327,28 @@ class Synchrotool(Complexity):
             new_st = st[mask]
             spiketrain_list[idx] = new_st
             if in_place:
-                unit = st.unit
                 segment = st.segment
-                if unit is not None:
-                    new_index = self._get_spiketrain_index(
-                        unit.spiketrains, st)
-                    unit.spiketrains[new_index] = new_st
+
                 if segment is not None:
+                    # replace link to spiketrain in segment
                     new_index = self._get_spiketrain_index(
                         segment.spiketrains, st)
                     segment.spiketrains[new_index] = new_st
+
+                    block = segment.block
+                    if block is not None:
+                        # replace link to spiketrain in groups
+                        for group in block.groups:
+                            try:
+                                idx = self._get_spiketrain_index(
+                                    group.spiketrains,
+                                    st)
+                            except ValueError:
+                                # st is not in this group, move to next group
+                                continue
+
+                            # st found in group, replace with new_st
+                            group.spiketrains[idx] = new_st
 
         return spiketrain_list
 
