@@ -26,6 +26,7 @@ Function Reference by Module
    reference/sta
    reference/statistics
    reference/unitary_event_analysis
+   reference/utils
    reference/waveform_features
 
 

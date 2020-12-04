@@ -27,7 +27,7 @@ import quantities as pq
 import scipy.sparse as sps
 
 from elephant.utils import is_binary, deprecated_alias, \
-    check_neo_consistency, get_common_start_stop_times
+    check_neo_consistency, get_common_start_stop_times, round_binning_errors
 
 __all__ = [
     "binarize",
@@ -183,18 +183,6 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 # number of bins
 #
 ###########################################################################
-
-
-def _detect_rounding_errors(values, tolerance):
-    """
-    Finds rounding errors in values that will be cast to int afterwards.
-    Returns True for values that are within tolerance of the next integer.
-    Works for both scalars and numpy arrays.
-    """
-    if tolerance is None or tolerance == 0:
-        return np.zeros_like(values, dtype=bool)
-    # same as '1 - (values % 1) <= tolerance' but faster
-    return 1 - tolerance <= values % 1
 
 
 class BinnedSpikeTrain(object):
@@ -417,12 +405,8 @@ class BinnedSpikeTrain(object):
             n_bins = (self._t_stop - self._t_start) / self._bin_size
             if isinstance(n_bins, pq.Quantity):
                 n_bins = n_bins.simplified.item()
-            if _detect_rounding_errors(n_bins, tolerance=tolerance):
-                warnings.warn('Correcting a rounding error in the calculation '
-                              'of n_bins by increasing n_bins by 1. '
-                              'You can set tolerance=None to disable this '
-                              'behaviour.')
-            return int(n_bins)
+            n_bins = round_binning_errors(n_bins, tolerance=tolerance)
+            return n_bins
 
         def check_n_bins_consistency():
             if self.n_bins != get_n_bins():
@@ -825,17 +809,7 @@ class BinnedSpikeTrain(object):
 
             # shift spikes that are very close
             # to the right edge into the next bin
-            rounding_error_indices = _detect_rounding_errors(
-                bins, tolerance=tolerance)
-            num_rounding_corrections = rounding_error_indices.sum()
-            if num_rounding_corrections > 0:
-                warnings.warn('Correcting {} rounding errors by shifting '
-                              'the affected spikes into the following bin. '
-                              'You can set tolerance=None to disable this '
-                              'behaviour.'.format(num_rounding_corrections))
-            bins[rounding_error_indices] += .5
-
-            bins = bins.astype(np.int32)
+            bins = round_binning_errors(bins, tolerance=tolerance)
             valid_bins = bins[bins < self.n_bins]
             n_discarded += len(bins) - len(valid_bins)
             f, c = np.unique(valid_bins, return_counts=True)

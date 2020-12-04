@@ -123,8 +123,8 @@ nbsphinx_allow_errors = False
 # the autosummary fields of each module.
 autosummary_generate = True
 
-# don't overwrite our custom toctree/*.rst
-autosummary_generate_overwrite = False
+# Set to False to not overwrite our custom toctree/*.rst
+autosummary_generate_overwrite = True
 
 # -- Options for HTML output ---------------------------------------------
 
@@ -344,7 +344,8 @@ epub_copyright = copyright
 
 # configuration for intersphinx: refer to Viziphant
 intersphinx_mapping = {
-    'viziphant': ('https://viziphant.readthedocs.io/en/latest/', None)
+    'viziphant': ('https://viziphant.readthedocs.io/en/latest/', None),
+    'numpy': ('https://numpy.org/doc/stable', None)
 }
 
 # Use more reliable mathjax source
