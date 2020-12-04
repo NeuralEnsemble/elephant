@@ -77,6 +77,9 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
     Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 
+    Visualization is covered in
+    :func:`viziphant.spike_train_synchrony.plot_spike_contrast`.
+
     Parameters
     ----------
     spiketrains : list of neo.SpikeTrain
