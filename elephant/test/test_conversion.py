@@ -417,12 +417,12 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         a = self.spiketrain_a
         b = neo.SpikeTrain([-2, -1] * pq.s, t_start=-2 * pq.s,
                            t_stop=-1 * pq.s)
-        self.assertRaises(ValueError, cv.BinnedSpikeTrain, [a, b], t_start=5,
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, [a, b], t_start=5,
                           t_stop=0, bin_size=pq.s, n_bins=10)
 
         b = neo.SpikeTrain([-7, -8, -9] * pq.s, t_start=-9 * pq.s,
                            t_stop=-7 * pq.s)
-        self.assertRaises(ValueError, cv.BinnedSpikeTrain, b, t_start=0,
+        self.assertRaises(TypeError, cv.BinnedSpikeTrain, b, t_start=None,
                           t_stop=10, bin_size=pq.s, n_bins=10)
         self.assertRaises(ValueError, cv.BinnedSpikeTrain, a, t_start=0 * pq.s,
                           t_stop=10 * pq.s, bin_size=3 * pq.s, n_bins=10)

@@ -89,10 +89,14 @@ class TestSpikeContrast(unittest.TestCase):
         spike_train_2 = stgen.homogeneous_poisson_process(rate=20 * Hz,
                                                           t_stop=1000. * ms)
         synchrony, trace = spike_contrast([spike_train_1, spike_train_2],
-                                              return_trace=True)
+                                          return_trace=True)
         self.assertEqual(synchrony, max(trace.synchrony))
         self.assertEqual(len(trace.contrast), len(trace.active_spiketrains))
         self.assertEqual(len(trace.active_spiketrains), len(trace.synchrony))
+        self.assertEqual(len(trace.bin_size), len(trace.synchrony))
+        self.assertIsInstance(trace.bin_size, pq.Quantity)
+        self.assertEqual(trace.bin_size[0], 500 * pq.ms)
+        self.assertAlmostEqual(trace.bin_size[-1], 10.1377798 * pq.ms)
 
     def test_invalid_data(self):
         # invalid spiketrains
