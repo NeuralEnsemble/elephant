@@ -412,14 +412,20 @@ class LVRTestCase(unittest.TestCase):
     def test_lvr_with_quantities(self):
         seq = pq.Quantity(self.test_seq, units='ms')
         assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+        seq = pq.Quantity(self.test_seq, units='ms').rescale('s')
+        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
 
     def test_lvr_with_plain_array(self):
         seq = np.array(self.test_seq)
-        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+        with self.assertWarns(UserWarning):
+            assert_array_almost_equal(statistics.lvr(seq),
+                                      self.target, decimal=9)
 
     def test_lvr_with_list(self):
         seq = self.test_seq
-        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+        with self.assertWarns(UserWarning):
+            assert_array_almost_equal(statistics.lvr(seq),
+                                      self.target, decimal=9)
 
     def test_lvr_raise_error(self):
         seq = self.test_seq
