@@ -461,11 +461,10 @@ class BinnedSpikeTrain(object):
         # At this point, all spiketrains share the same units.
         self.units = spiketrains[0].units
 
-        try:
-            self._t_start = self._t_start.rescale(self.units).item()
-            self._t_stop = self._t_stop.rescale(self.units).item()
-        except AttributeError:
-            raise ValueError("'t_start' and 't_stop' must be quantities")
+        # t_start and t_stop are checked to be time quantities in the
+        # check_neo_consistency call.
+        self._t_start = self._t_start.rescale(self.units).item()
+        self._t_stop = self._t_stop.rescale(self.units).item()
 
         start_shared, stop_shared = get_common_start_stop_times(spiketrains)
         start_shared = start_shared.rescale(self.units).item()
