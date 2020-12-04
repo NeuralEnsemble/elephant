@@ -501,7 +501,8 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     Parameters
     ----------
     time_intervals : pq.Quantity or np.ndarray or list
-        Vector of consecutive time intervals.
+        Vector of consecutive time intervals. Must have time units, if not unit
+        is passed `ms` are assumed.
     R : pq.Quantity or int or float
         Refractoriness constant (R >= 0). If no quantity is passed `ms` are
         assumed.
@@ -548,6 +549,13 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 
     if R < 0:
         raise ValueError('R must be >= 0')
+
+    # check units of intervals if available
+    if isinstance(time_intervals, pq.Quantity):
+        time_intervals = time_intervals.rescale('ms').magnitude
+    else:
+        warnings.warn('No units specified for time_intervals,'
+                      ' assuming milliseconds (ms)')
 
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
