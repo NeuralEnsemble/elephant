@@ -26,10 +26,10 @@ import numpy as np
 import quantities as pq
 
 from elephant.statistics import Complexity
-from elephant.utils import is_time_quantity
+from elephant.utils import is_time_quantity, check_same_units
 
 SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
-    "contrast", "active_spiketrains", "synchrony"))
+    "contrast", "active_spiketrains", "synchrony", "bin_size"))
 
 
 __all__ = [
@@ -111,6 +111,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     spike_contrast_trace : namedtuple
         If `return_trace` is set to True, a `SpikeContrastTrace` namedtuple is
         returned with the following attributes:
+
           `.contrast` - the average sum of differences of the number of spikes
           in subsuequent bins;
 
@@ -118,7 +119,10 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
           weighted by the number of spike trains containing at least one spike
           inside the bin;
 
-          `.synchrony` - the product of `contrast` and `active_spiketrains`.
+          `.synchrony` - the product of `contrast` and `active_spiketrains`;
+
+          `.bin_size` - the X axis, a list of bin sizes that correspond to
+          these traces.
 
     Raises
     ------
@@ -147,15 +151,13 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
     """
     if not 0. < bin_shrink_factor < 1.:
-        raise ValueError("'bin_shrink_factor' ({}) must be in range (0, 1)."
-                         .format(bin_shrink_factor))
+        raise ValueError(f"'bin_shrink_factor' ({bin_shrink_factor}) must be "
+                         "in range (0, 1).")
     if not len(spiketrains) > 1:
         raise ValueError("Spike contrast measure requires more than 1 input "
                          "spiketrain.")
-    if not all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
-        raise TypeError("Input spike trains must be a list of neo.SpikeTrain.")
-    if not is_time_quantity(t_start, allow_none=True) \
-            or not is_time_quantity(t_stop, allow_none=True):
+    check_same_units(spiketrains, object_type=neo.SpikeTrain)
+    if not is_time_quantity(t_start, t_stop, allow_none=True):
         raise TypeError("'t_start' and 't_stop' must be time quantities.")
     if not is_time_quantity(min_bin):
         raise TypeError("'min_bin' must be a time quantity.")
@@ -165,11 +167,12 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     if t_stop is None:
         t_stop = max(st.t_stop for st in spiketrains)
 
-    # convert everything to seconds
-    spiketrains = [st.simplified.magnitude for st in spiketrains]
-    t_start = t_start.simplified.item()
-    t_stop = t_stop.simplified.item()
-    min_bin = min_bin.simplified.item()
+    # convert everything to spiketrain units
+    units = spiketrains[0].units
+    spiketrains = [st.magnitude for st in spiketrains]
+    t_start = t_start.rescale(units).item()
+    t_stop = t_stop.rescale(units).item()
+    min_bin = min_bin.rescale(units).item()
 
     spiketrains = [times[(times >= t_start) & (times <= t_stop)]
                    for times in spiketrains]
@@ -194,8 +197,10 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     t_start = t_start - isi_min
     t_stop = t_stop + isi_min
 
+    bin_sizes = []
     bin_size = bin_max
     while bin_size >= bin_min:
+        bin_sizes.append(bin_size)
         # Calculate Theta and n
         theta_k, n_k = _get_theta_and_n_per_bin(spiketrains,
                                                 t_start=t_start,
@@ -223,7 +228,8 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         spike_contrast_trace = SpikeContrastTrace(
             contrast=contrast_list,
             active_spiketrains=active_spiketrains,
-            synchrony=synchrony_curve
+            synchrony=synchrony_curve,
+            bin_size=bin_sizes * units,
         )
         return synchrony, spike_contrast_trace
 

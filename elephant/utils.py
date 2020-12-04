@@ -5,6 +5,7 @@
     is_time_quantity
     get_common_start_stop_times
     check_neo_consistency
+    check_same_units
     round_binning_errors
 """
 
@@ -16,6 +17,16 @@ from functools import wraps
 import neo
 import numpy as np
 import quantities as pq
+
+
+__all__ = [
+    "is_binary",
+    "is_time_quantity",
+    "get_common_start_stop_times",
+    "check_neo_consistency",
+    "check_same_units",
+    "round_binning_errors"
+]
 
 
 def is_binary(array):
@@ -81,14 +92,15 @@ def _rename_kwargs(func_name, kwargs, aliases):
             kwargs[new] = kwargs.pop(old)
 
 
-def is_time_quantity(x, allow_none=False):
+def is_time_quantity(*quantities, allow_none=False):
     """
     Parameters
     ----------
-    x : array-like
-        A scalar or array-like to check for being a Quantity with time units.
-    allow_none : bool
-        Allow `x` to be None or not.
+    *quantities : pq.Quantity
+         A scalar or array-like to check for being a Quantity with time units.
+    allow_none : bool, optional
+        Allow the input to be None or not.
+        Default: False
 
     Returns
     -------
@@ -97,11 +109,14 @@ def is_time_quantity(x, allow_none=False):
         If the input is None and `allow_none` is set to True, returns True.
 
     """
-    if x is None and allow_none:
-        return True
-    if not isinstance(x, pq.Quantity):
-        return False
-    return x.dimensionality.simplified == pq.Quantity(1, "s").dimensionality
+    for quantity in quantities:
+        if allow_none and quantity is None:
+            continue
+        if not isinstance(quantity, pq.Quantity):
+            return False
+        if quantity.dimensionality.simplified != pq.s.dimensionality:
+            return False
+    return True
 
 
 def get_common_start_stop_times(neo_objects):
@@ -179,6 +194,8 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         stop = neo_objects[0].t_stop.item()
     except (IndexError, AttributeError):
         raise TypeError(f"The input must be a list of {object_type.__name__}")
+    if not is_time_quantity(t_start, t_stop, allow_none=True):
+        raise TypeError("'t_start' and 't_stop' must be time quantities.")
     if tolerance is None:
         tolerance = 0
     for neo_obj in neo_objects:
@@ -215,11 +232,16 @@ def check_same_units(quantities, object_type=pq.Quantity):
     """
     if not isinstance(quantities, (list, tuple)):
         quantities = [quantities]
+    try:
+        units = quantities[0].units
+    except (IndexError, AttributeError):
+        raise TypeError(f"The input must be a list of {object_type.__name__}")
     for quantity in quantities:
         if not isinstance(quantity, object_type):
-            raise TypeError("The input must be a list of {}. Got {}".format(
-                object_type.__name__, type(quantity).__name__))
-        if quantity.units != quantities[0].units:
+            raise TypeError(f"The input must be a list of "
+                            f"{object_type.__name__}. Got "
+                            f"{type(quantity).__name__}")
+        if quantity.units != units:
             raise ValueError("The input quantities must have the same units, "
                              "which is achieved with object.rescale('ms') "
                              "operation.")
