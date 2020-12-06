@@ -1162,8 +1162,8 @@ def _intersection_matrix(spiketrains, spiketrains_y, bin_size, t_start_x,
         t_start=t_start_y, t_stop=t_stop_y)
 
     # Compute imat by matrix multiplication
-    bsts_x = spiketrains_binned.to_sparse_array()
-    bsts_y = spiketrains_binned_y.to_sparse_array()
+    bsts_x = spiketrains_binned.sparse_matrix
+    bsts_y = spiketrains_binned_y.sparse_matrix
 
     # Compute the number of spikes in each bin, for both time axes
     # 'A1' property returns self as a flattened ndarray.

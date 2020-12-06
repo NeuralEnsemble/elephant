@@ -1,4 +1,3 @@
-import sys
 import unittest
 
 import numpy as np
@@ -8,8 +7,6 @@ from numpy.testing import assert_array_almost_equal
 from elephant.parallel import SingleProcess, ProcessPoolExecutor
 from elephant.spike_train_generation import homogeneous_poisson_process
 from elephant.statistics import mean_firing_rate
-
-python_version_major = sys.version_info.major
 
 
 class TestParallel(unittest.TestCase):
@@ -32,7 +29,6 @@ class TestParallel(unittest.TestCase):
         )
         cls.mean_fr = tuple(map(mean_firing_rate, cls.spiketrains))
 
-    @unittest.skipUnless(python_version_major == 3, "subTest requires 3.4")
     def test_mean_firing_rate(self):
         for executor_cls in self.executors_cls:
             with self.subTest(executor_cls=executor_cls):

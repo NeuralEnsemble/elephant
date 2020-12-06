@@ -6,7 +6,6 @@ Unit tests for the spike_train_correlation module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import sys
 import unittest
 
 import neo
@@ -19,8 +18,6 @@ import elephant.spike_train_correlation as sc
 from elephant.spike_train_generation import homogeneous_poisson_process,\
     homogeneous_gamma_process
 import math
-
-python_version_major = sys.version_info.major
 
 
 class CovarianceTestCase(unittest.TestCase):
@@ -248,7 +245,6 @@ class CorrCoefTestCase(unittest.TestCase):
             result, sc.correlation_coefficient(
                 binned_st, fast=True))
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
         '''
         Test whether a warning is yielded in case of empty spike train.
@@ -625,8 +621,16 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         '''
         self.assertEqual(sc.cross_correlation_histogram, sc.cch)
 
+    def test_annotations(self):
+        cch, _ = sc.cross_correlation_histogram(
+            self.binned_st1, self.binned_st2, kernel=np.ones(3))
+        target_dict = dict(window='full', border_correction=False,
+                           binary=False, kernel=True,
+                           normalization='counts')
+        self.assertIn('cch_parameters', cch.annotations)
+        self.assertEqual(cch.annotations['cch_parameters'], target_dict)
 
-@unittest.skipUnless(python_version_major == 3, "subTest requires 3.4")
+
 class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
 
     def _run_sub_tests(self, st1, st2, lags_true):
@@ -783,15 +787,11 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         timescale = 1 / (4 * nu)
         np.random.seed(35)
 
-        timescale_num = []
         for _ in range(10):
             spikes = homogeneous_gamma_process(2, 2 * nu, 0 * pq.ms, T)
             spikes_bin = conv.BinnedSpikeTrain(spikes, bin_size)
             timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
-            timescale_i.units = timescale.units
-            timescale_num.append(timescale_i.magnitude)
-        assert_array_almost_equal(timescale.magnitude, timescale_num,
-                                  decimal=3)
+            assert_array_almost_equal(timescale, timescale_i, decimal=3)
 
     def test_timescale_errors(self):
         spikes = neo.SpikeTrain([1, 5, 7, 8] * pq.ms, t_stop=10 * pq.ms)
@@ -808,8 +808,6 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         self.assertRaises(ValueError,
                           sc.spike_train_timescale, spikes_bin, tau_max)
 
-    @unittest.skipUnless(python_version_major == 3,
-                         "assertWarns requires python 3.2")
     def test_timescale_nan(self):
         st0 = neo.SpikeTrain([] * pq.ms, t_stop=10 * pq.ms)
         st1 = neo.SpikeTrain([1] * pq.ms, t_stop=10 * pq.ms)

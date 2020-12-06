@@ -6,7 +6,6 @@ Unit tests for the CUBIC analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import sys
 import unittest
 
 import neo
@@ -14,8 +13,6 @@ import numpy
 import quantities as pq
 
 import elephant.cubic as cubic
-
-python_version_major = sys.version_info.major
 
 
 class CubicTestCase(unittest.TestCase):
@@ -110,7 +107,6 @@ class CubicTestCase(unittest.TestCase):
         # Check the output for test_aborted
         self.assertEqual(test_aborted, False)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_cubic_ximax(self):
         # Test exceeding ximax
         with self.assertWarns(UserWarning):

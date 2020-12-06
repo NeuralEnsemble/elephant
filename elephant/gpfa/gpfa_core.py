@@ -203,7 +203,7 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
     seqs_latent : np.recarray
         a copy of the training data structure, augmented with the new
         fields:
-        xsm : np.ndarray of shape (#latent_vars x #bins)
+        latent_variable : np.ndarray of shape (#latent_vars x #bins)
             posterior mean of latent variables at each time bin
         Vsm : np.ndarray of shape (#latent_vars, #latent_vars, #bins)
             posterior covariance between latent variables at each
@@ -244,11 +244,12 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         sum_p_auto = np.zeros((x_dim, x_dim))
         for seq_latent in seqs_latent:
             sum_p_auto += seq_latent['Vsm'].sum(axis=2) \
-                + seq_latent['xsm'].dot(seq_latent['xsm'].T)
+                + seq_latent['latent_variable'].dot(
+                seq_latent['latent_variable'].T)
         y = np.hstack(seqs_train['y'])
-        xsm = np.hstack(seqs_latent['xsm'])
-        sum_yxtrans = y.dot(xsm.T)
-        sum_xall = xsm.sum(axis=1)[:, np.newaxis]
+        latent_variable = np.hstack(seqs_latent['latent_variable'])
+        sum_yxtrans = y.dot(latent_variable.T)
+        sum_xall = latent_variable.sum(axis=1)[:, np.newaxis]
         sum_yall = y.sum(axis=1)[:, np.newaxis]
 
         # term is (xDim+1) x (xDim+1)
@@ -262,8 +263,8 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
 
         # yCent must be based on the new d
         # yCent = bsxfun(@minus, [seq.y], currentParams.d);
-        # R = (yCent * yCent' - (yCent * [seq.xsm]') * currentParams.C')
-        #     / sum(T);
+        # R = (yCent * yCent' - (yCent * [seq.latent_variable]') * \
+        #     currentParams.C') / sum(T);
         c = params['C']
         d = params['d'][:, np.newaxis]
         if params['notes']['RforceDiagonal']:
@@ -344,7 +345,7 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
     seqs_latent : np.recarray
         a copy of the input data structure, augmented with the new
         fields:
-        xsm :  (#latent_vars, #bins) np.ndarray
+        latent_variable :  (#latent_vars, #bins) np.ndarray
               posterior mean of latent variables at each time bin
         Vsm :  (#latent_vars, #latent_vars, #bins) np.ndarray
               posterior covariance between latent variables at each
@@ -359,7 +360,7 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
 
     # copy the contents of the input data structure to output structure
     dtype_out = [(x, seqs[x].dtype) for x in seqs.dtype.names]
-    dtype_out.extend([('xsm', np.object), ('Vsm', np.object),
+    dtype_out.extend([('latent_variable', np.object), ('Vsm', np.object),
                       ('VsmGP', np.object)])
     seqs_latent = np.empty(len(seqs), dtype=dtype_out)
     for dtype_name in seqs.dtype.names:
@@ -424,12 +425,13 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
         blk_prod = k_big[:x_dim * t_half, :].dot(
             gpfa_util.fill_persymm(np.eye(x_dim * t_half, x_dim * t) -
                                    blk_prod, x_dim, t))
-        # xsmMat is (xDim*T) x length(nList)
-        xsm_mat = gpfa_util.fill_persymm(blk_prod, x_dim, t).dot(term1_mat)
+        # latent_variableMat is (xDim*T) x length(nList)
+        latent_variable_mat = gpfa_util.fill_persymm(
+            blk_prod, x_dim, t).dot(term1_mat)
 
         for i, n in enumerate(n_list):
-            seqs_latent[n]['xsm'] = xsm_mat[:, i].reshape((x_dim, t),
-                                                          order='F')
+            seqs_latent[n]['latent_variable'] = \
+                latent_variable_mat[:, i].reshape((x_dim, t), order='F')
             seqs_latent[n]['Vsm'] = vsm
             seqs_latent[n]['VsmGP'] = vsm_gp
 
@@ -536,7 +538,7 @@ def orthonormalize(params_est, seqs):
           number of timesteps
         y : np.ndarray of shape (#units, #bins)
           neural data
-        xsm : np.ndarray of shape (#latent_vars, #bins)
+        latent_variable : np.ndarray of shape (#latent_vars, #bins)
           posterior mean of latent variables at each time bin
         Vsm : np.ndarray of shape (#latent_vars, #latent_vars, #bins)
           posterior covariance between latent variables at each
@@ -550,13 +552,14 @@ def orthonormalize(params_est, seqs):
         Estimated model parameters, including `Corth`, obtained by
         orthonormalizing the columns of C.
     seqs : np.recarray
-        Training data structure that contains the new field `xorth`,
-        the orthonormalized neural trajectories.
+        Training data structure that contains the new field
+        `latent_variable_orth`, the orthonormalized neural trajectories.
     """
     C = params_est['C']
-    X = np.hstack(seqs['xsm'])
-    Xorth, Corth, _ = gpfa_util.orthonormalize(X, C)
-    seqs = gpfa_util.segment_by_trial(seqs, Xorth, 'xorth')
+    X = np.hstack(seqs['latent_variable'])
+    latent_variable_orth, Corth, _ = gpfa_util.orthonormalize(X, C)
+    seqs = gpfa_util.segment_by_trial(
+        seqs, latent_variable_orth, 'latent_variable_orth')
 
     params_est['Corth'] = Corth
 

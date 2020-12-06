@@ -7,16 +7,13 @@ Unit tests for the waveform_feature module.
 
 from __future__ import division
 
-import sys
 import unittest
 
-import neo
 import numpy as np
 import quantities as pq
+from numpy.testing import assert_array_almost_equal
 
 from elephant import waveform_features
-
-python_version_major = sys.version_info.major
 
 
 class WaveformWidthTestCase(unittest.TestCase):
@@ -64,36 +61,31 @@ class WaveformWidthTestCase(unittest.TestCase):
 
 
 class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
-    def setUp(self):
-        self.spiketrain_without_waveforms = neo.SpikeTrain(
-            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        self.spiketrain_with_zero_waveforms = neo.SpikeTrain(
-            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        self.spiketrain_with_zero_waveforms.waveforms = \
-            np.zeros((10, 1, 10)) * pq.uV
+    def test_zero_waveforms(self):
+        zero_waveforms = [np.zeros((5, 10)),
+                          np.zeros((5, 1, 10)),
+                          np.zeros((5, 3, 10))]
+        for zero_wf in zero_waveforms:
+            with self.assertWarns(UserWarning):
+                # expect np.nan result when waveform noise is zero.
+                result = waveform_features.waveform_snr(zero_wf)
+            self.assertTrue(np.all(np.isnan(result)))
 
-        self.spiketrain_with_waveforms = neo.SpikeTrain(
-            [0.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        self.spiketrain_with_waveforms.waveforms = \
-            np.arange(20).reshape((2, 1, 10)) * pq.uV
+    def test_waveforms_arange_single_spiketrain(self):
+        target_snr = 0.9
+        waveforms = np.arange(20).reshape((2, 1, 10))
+        snr_float = waveform_features.waveform_snr(waveforms)
+        self.assertIsInstance(snr_float, float)
+        self.assertEqual(snr_float, target_snr)
+        self.assertEqual(waveform_features.waveform_snr(np.squeeze(waveforms)),
+                         target_snr)
 
-    def test_without_wavefroms(self):
-        self.assertRaises(ValueError, waveform_features.waveform_snr,
-                          self.spiketrain_without_waveforms)
-
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
-    def test_with_zero_waveforms(self):
-        with self.assertWarns(UserWarning):
-            # expect np.nan result when spiketrain noise is zero.
-            result = waveform_features.waveform_snr(
-                self.spiketrain_with_zero_waveforms)
-        self.assertTrue(np.isnan(result))
-
-    def test_with_waveforms(self):
-        target_value = 0.9
-        result = waveform_features.waveform_snr(
-            self.spiketrain_with_waveforms)
-        self.assertEqual(result, target_value)
+    def test_waveforms_arange_multiple_spiketrains(self):
+        target_snr = [0.3, 0.3, 0.3]
+        waveforms = np.arange(60).reshape((2, 3, 10))
+        snr_arr = waveform_features.waveform_snr(waveforms)
+        self.assertIsInstance(snr_arr, np.ndarray)
+        assert_array_almost_equal(snr_arr, target_snr)
 
 
 if __name__ == '__main__':

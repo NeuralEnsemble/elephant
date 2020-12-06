@@ -53,7 +53,6 @@ Functions overview
 
 from __future__ import division, print_function, unicode_literals
 
-import sys
 import warnings
 
 import neo
@@ -179,11 +178,7 @@ def inverse_hash_from_pattern(h, N, base=2):
 
     """
     h = np.asarray(h)  # this will cast to object type if h > int64
-    if sys.version_info < (3,):
-        integer_types = (int, long)
-    else:
-        integer_types = (int,)
-    if not all(isinstance(v, integer_types) for v in h.tolist()):
+    if not all(isinstance(v, int) for v in h.tolist()):
         # .tolist() is necessary because np.int[64] is not int
         raise ValueError("hash values should be integers")
 
@@ -624,7 +619,10 @@ def jointJ(p_val):
 
     """
     p_arr = np.asarray(p_val)
-    Js = np.log10(1 - p_arr) - np.log10(p_arr)
+    with np.errstate(divide='ignore'):
+        # Ignore 'Division by zero' warning which happens when p_arr is 1.0 or
+        # 0.0 (no spikes).
+        Js = np.log10(1 - p_arr) - np.log10(p_arr)
     return Js
 
 

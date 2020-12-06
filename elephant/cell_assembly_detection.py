@@ -1200,7 +1200,7 @@ def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
     if max_spikes < 2:
         raise ValueError('maximal assembly order must be less than 2')
 
-    if binned_spiketrain.matrix_columns - max_lag < 100:
+    if binned_spiketrain.shape[1] - max_lag < 100:
         raise ValueError('The time series is too short, consider '
                          'taking a longer portion of spike train '
                          'or diminish the bin size to be tested')
