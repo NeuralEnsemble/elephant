@@ -23,7 +23,7 @@ steps:
        >>> xi, p_val, k = cubic(data, max_iterations=100, alpha=0.05,
        ... errorval=4.):
 
-:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 

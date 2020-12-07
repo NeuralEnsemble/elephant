@@ -1,7 +1,7 @@
 """
 Unit tests for the Unitary Events analysis
 
-:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

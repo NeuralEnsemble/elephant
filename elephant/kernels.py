@@ -33,7 +33,7 @@ Examples
 >>> kernel1 = GaussianKernel(sigma=100*pq.ms)
 >>> kernel2 = ExponentialKernel(sigma=8*pq.ms, invert=True)
 
-:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

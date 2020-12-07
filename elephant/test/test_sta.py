@@ -2,7 +2,7 @@
 """
 Tests for the function sta module
 
-:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

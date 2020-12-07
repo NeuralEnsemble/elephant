@@ -35,7 +35,7 @@ Coincident spike times generation
 Some functions are based on the NeuroTools stgen module, which was mostly
 written by Eilif Muller, or from the NeuroTools signals.analogs module.
 
-:copyright: Copyright 2015 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
