@@ -649,6 +649,7 @@ def _bintime(t, bin_size):
     return np.floor(np.array(t_dl) / bin_size_dl).astype(int)
 
 
+@deprecated_alias(winsize='win_size', winstep='win_step')
 def _winpos(t_start, t_stop, win_size, win_step, position='left-edge'):
     """
     Calculate the position of the analysis window.
