@@ -194,6 +194,31 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.bin_size = 1 * pq.s
         self.tolerance = 1e-8
 
+    def test_time_slice(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                  bin_size=self.bin_size)
+        bst_equal = bst.time_slice(t_start=-5*pq.s, t_stop=15 * pq.s)
+        self.assertEqual(bst_equal, bst)
+        bst_same = bst.time_slice(t_start=None, t_stop=None)
+        self.assertIs(bst_same, bst)
+        bst_copy = bst.time_slice(t_start=None, t_stop=None, copy=True)
+        self.assertIsNot(bst_copy, bst)
+        self.assertEqual(bst_copy, bst)
+        bst_empty = bst.time_slice(t_start=0.2 * pq.s, t_stop=0.3 * pq.s)
+        self.assertEqual(bst_empty.n_bins, 0)
+        t_range = np.arange(0, 10, self.bin_size.item()) * pq.s
+        for i, t_start in enumerate(t_range[:-1]):
+            for t_stop in t_range[i + 1:]:
+                bst_ij = bst.time_slice(t_start=t_start, t_stop=t_stop)
+                sts = [st.time_slice(t_start=t_start, t_stop=t_stop)
+                       for st in spiketrains]
+                bst_ref = cv.BinnedSpikeTrain(sts, bin_size=self.bin_size)
+                self.assertEqual(bst_ij, bst_ref)
+
+        # invalid input: not a quantity
+        self.assertRaises(TypeError, bst.time_slice, t_start=2)
+
     def test_to_spike_trains(self):
         np.random.seed(1)
         bst = cv.BinnedSpikeTrain(
@@ -210,6 +235,9 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                 self.assertEqual(st.t_start, bst.t_start)
                 self.assertEqual(st.t_stop, bst.t_stop)
             self.assertEqual(bst, bst2)
+
+        # invalid mode
+        self.assertRaises(ValueError, bst.to_spike_trains, spikes='right')
 
     def test_get_num_of_spikes(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
