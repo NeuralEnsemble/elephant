@@ -582,6 +582,103 @@ class BinnedSpikeTrain(object):
         spmat_copy.data = spmat_copy.data.astype(bool)
         return spmat_copy
 
+    def __eq__(self, other):
+        if not isinstance(other, BinnedSpikeTrain):
+            return False
+        if not (self.t_start == other.t_start
+                and self.t_stop == other.t_stop
+                and self.bin_size == other.bin_size
+                and self.n_bins == other.n_bins):
+            return False
+        sp1 = self.sparse_matrix
+        sp2 = other.sparse_matrix
+        return all([sp1.shape == sp2.shape,
+                   (sp1.data == sp2.data).all(),
+                   (sp1.indptr == sp2.indptr).all(),
+                   (sp1.indices == sp2.indices).all()])
+
+    def __iter_sparse_matrix(self):
+        # taken from csr_matrix.__iter__()
+        i0 = 0
+        for i1 in self.sparse_matrix.indptr[1:]:
+            indices = self.sparse_matrix.indices[i0:i1]
+            data = self.sparse_matrix.data[i0:i1]
+            yield indices, data
+            i0 = i1
+
+    def to_spike_trains(self, spikes="random", as_array=False,
+                        annotate_bins=False):
+        """
+        Generate spike trains from the binned spike train object. This function
+        is inverse to binning such that
+
+        .. code-block:: python
+
+            BinnedSpikeTrain(binned_st.to_spike_trains()) == binned_st
+
+        Parameters
+        ----------
+        spikes : {"left", "center", "random"}, optional
+            Specifies how to generate spikes inside bins.
+
+              * "left": align spikes from left to right to have equal inter-
+              spike interval;
+
+              * "center": align spikes around center to have equal inter-spike
+              interval;
+
+              * "random": generate spikes from a homogenous Poisson process;
+              it's the fastest mode.
+            Default: "random"
+        as_array : bool, optional
+            If True, numpy arrays are returned; otherwise, wrap the arrays in
+            `neo.SpikeTrain`.
+            Default: False
+        annotate_bins : bool, optional
+            If `as_array` is True, this flag allows to include the bin index
+            in resulting ``spiketrain.array_annotations['bins']``.
+            Default: False
+
+        Returns
+        -------
+        spiketrains : list of neo.SpikeTrain
+            A list of spike trains - one possible realisation of spiketrains
+            that could have been used as the input to `BinnedSpikeTrain`.
+        """
+        description = f"generated from {self.__class__.__name__}"
+        shift = 0
+        if spikes == "center":
+            shift = 1
+            spikes = "left"
+        spiketrains = []
+        for indices, spike_count in self.__iter_sparse_matrix():
+            bin_indices = np.repeat(indices, spike_count)
+            t_starts = bin_indices * self._bin_size
+            if spikes == "random":
+                spiketrain = np.random.uniform(low=0, high=self._bin_size,
+                                               size=spike_count.sum())
+                spiketrain += t_starts
+                spiketrain.sort()
+            elif spikes == "left":
+                spiketrain = [np.arange(shift, count + shift) / (count + shift)
+                              for count in spike_count]
+                spiketrain = np.hstack(spiketrain)
+                spiketrain += t_starts
+            else:
+                raise ValueError(f"Invalid 'spikes' mode: '{spikes}'")
+            if not as_array:
+                array_ants = None
+                if annotate_bins:
+                    array_ants = dict(bins=bin_indices)
+                spiketrain = neo.SpikeTrain(spiketrain, t_start=self._t_start,
+                                            t_stop=self._t_stop,
+                                            units=self.units, copy=False,
+                                            description=description,
+                                            array_annotations=array_ants,
+                                            bin_size=self.bin_size)
+            spiketrains.append(spiketrain)
+        return spiketrains
+
     def get_num_of_spikes(self, axis=None):
         """
         Compute the number of binned spikes.
@@ -634,10 +731,10 @@ class BinnedSpikeTrain(object):
 
         """
         spike_idx = []
-        for row in self.sparse_matrix:
+        for indices, spike_count in self.__iter_sparse_matrix():
             # Extract each non-zeros column index and how often it exists,
             # i.e., how many spikes fall in this column
-            n_cols = np.repeat(row.indices, row.data)
+            n_cols = np.repeat(indices, spike_count)
             spike_idx.append(n_cols)
         return spike_idx
 

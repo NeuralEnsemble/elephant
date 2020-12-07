@@ -194,6 +194,23 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.bin_size = 1 * pq.s
         self.tolerance = 1e-8
 
+    def test_to_spike_trains(self):
+        np.random.seed(1)
+        bst = cv.BinnedSpikeTrain(
+            spiketrains=[self.spiketrain_a, self.spiketrain_b],
+            bin_size=self.bin_size
+        )
+        for spikes in ("random", "left", "center"):
+            spiketrains_gen = bst.to_spike_trains(spikes=spikes,
+                                                  annotate_bins=True)
+            bst2 = cv.BinnedSpikeTrain(spiketrains_gen, bin_size=bst.bin_size)
+            for st, st_indices in zip(spiketrains_gen, bst.spike_indices):
+                assert_array_equal(st.array_annotations['bins'], st_indices)
+                self.assertEqual(st.annotations['bin_size'], bst.bin_size)
+                self.assertEqual(st.t_start, bst.t_start)
+                self.assertEqual(st.t_stop, bst.t_stop)
+            self.assertEqual(bst, bst2)
+
     def test_get_num_of_spikes(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
         for spiketrain in spiketrains:
