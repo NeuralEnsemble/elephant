@@ -11,6 +11,7 @@ An example is the representation of a spike train as a sequence of 0-1 values
     :toctree: toctree/conversion
 
     BinnedSpikeTrain
+    BinnedSpikeTrainView
     binarize
 
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
@@ -651,11 +652,14 @@ class BinnedSpikeTrain(object):
         spmat = self.sparse_matrix[:, start_index: stop_index]
         if copy:
             spmat = spmat.copy()
-        bst = BinnedSpikeTrainView(t_start=start_index * self._bin_size,
-                                   t_stop=stop_index * self._bin_size,
+        t_start = self._t_start + start_index * self._bin_size
+        t_stop = self._t_start + stop_index * self._bin_size
+        bst = BinnedSpikeTrainView(t_start=t_start,
+                                   t_stop=t_stop,
                                    bin_size=self._bin_size,
-                                   units=self.units.copy(),
-                                   sparse_matrix=spmat)
+                                   units=self.units,
+                                   sparse_matrix=spmat,
+                                   tolerance=self.tolerance)
         return bst
 
     def to_spike_trains(self, spikes="random", as_array=False,
@@ -909,8 +913,9 @@ class BinnedSpikeTrain(object):
         bst = BinnedSpikeTrainView(t_start=self._t_start,
                                    t_stop=self._t_stop,
                                    bin_size=self._bin_size,
-                                   units=self.units.copy(),
-                                   sparse_matrix=spmat)
+                                   units=self.units,
+                                   sparse_matrix=spmat,
+                                   tolerance=self.tolerance)
         return bst
 
     @property
@@ -980,14 +985,41 @@ class BinnedSpikeTrain(object):
 
 
 class BinnedSpikeTrainView(BinnedSpikeTrain):
+    """
+    A view of :class:`BinnedSpikeTrain`.
 
-    def __init__(self, t_start, t_stop, bin_size, units, sparse_matrix):
+    This class is used to avoid deep copies in several functions of a binned
+    spike train object like :meth:`BinnedSpikeTrain.binarize`,
+    :meth:`BinnedSpikeTrain.time_slice`, etc.
+
+    Parameters
+    ----------
+    t_start, t_stop : float
+        Unit-less start and stop times that share the same units.
+    bin_size : float
+        Unit-less bin size that was used used in binning the `sparse_matrix`.
+    units : pq.Quantity
+        The units of input spike trains.
+    sparse_matrix : scipy.sparse.csr_matrix
+        Binned sparse matrix.
+    tolerance : float or None, optional
+        The tolerance property of the original `BinnedSpikeTrain`.
+        Default: 1e-8
+
+    Warnings
+    --------
+    This class is an experimental feature.
+    """
+
+    def __init__(self, t_start, t_stop, bin_size, units, sparse_matrix,
+                 tolerance=1e-8):
         self._t_start = t_start
         self._t_stop = t_stop
         self._bin_size = bin_size
         self.n_bins = sparse_matrix.shape[1]
-        self.units = units
+        self.units = units.copy()
         self.sparse_matrix = sparse_matrix
+        self.tolerance = tolerance
 
 
 def _check_neo_spiketrain(matrix):

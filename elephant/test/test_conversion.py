@@ -211,6 +211,9 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         for i, t_start in enumerate(t_range[:-1]):
             for t_stop in t_range[i + 1:]:
                 bst_ij = bst.time_slice(t_start=t_start, t_stop=t_stop)
+                bst_ij2 = bst_ij.time_slice(t_start=t_start, t_stop=t_stop)
+                self.assertEqual(bst_ij2, bst_ij)
+                self.assertEqual(bst_ij2.tolerance, bst.tolerance)
                 sts = [st.time_slice(t_start=t_start, t_stop=t_stop)
                        for st in spiketrains]
                 bst_ref = cv.BinnedSpikeTrain(sts, bin_size=self.bin_size)
