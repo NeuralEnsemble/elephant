@@ -14,6 +14,46 @@ An example is the representation of a spike train as a sequence of 0-1 values
     BinnedSpikeTrainView
     binarize
 
+
+Examples
+--------
+>>> import neo
+>>> import quantities as pq
+>>> from elephant.conversion import BinnedSpikeTrain
+>>> spiketrains = [
+...   neo.SpikeTrain([0.5, 0.7, 1.2, 3.1, 4.3, 5.5, 6.7], t_stop=9, units='s'),
+...   neo.SpikeTrain([0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0], t_stop=9, units='s')
+... ]
+>>> bst = BinnedSpikeTrain(spiketrains, bin_size=1 * pq.s)
+>>> bst
+BinnedSpikeTrain(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, 9))
+>>> bst.to_array()
+array([[2, 1, 0, 1, 1, 1, 1, 0, 0],
+       [2, 1, 1, 0, 1, 1, 0, 0, 1]], dtype=int32)
+>>> bst.to_bool_array()
+array([[ True,  True, False,  True,  True,  True,  True, False, False],
+       [ True,  True,  True, False,  True,  True, False, False,  True]])
+
+Slicing.
+
+>>> bst.time_slice(t_stop=3.5 * pq.s)
+BinnedSpikeTrainView(t_start=0.0 s, t_stop=3.0 s, bin_size=1.0 s; shape=(2, 3))
+>>> bst[0, 1:-3]
+BinnedSpikeTrainView(t_start=1.0 s, t_stop=6.0 s, bin_size=1.0 s; shape=(1, 5))
+
+Generate a realisation of spike trains from the binned version.
+
+>>> bst.to_spike_trains(spikes='center')
+[<SpikeTrain(array([0.33333333, 0.66666667, 1.5       , 3.5       , 4.5       ,
+       5.5       , 6.5       ]) * s, [0.0 s, 9.0 s])>,
+<SpikeTrain(array([0.33333333, 0.66666667, 1.5       , 2.5       , 4.5       ,
+       5.5       , 8.5       ]) * s, [0.0 s, 9.0 s])>]
+
+Check the correctness of a spike trains realosation
+
+>>> BinnedSpikeTrain(bst.to_spike_trains(), bin_size=bst.bin_size) == bst
+True
+
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
@@ -289,7 +329,7 @@ class BinnedSpikeTrain(object):
         if isinstance(spiketrains, neo.SpikeTrain):
             spiketrains = [spiketrains]
 
-        # Set given parameters
+        # The input params will be rescaled later to unit-less floats
         self.tolerance = tolerance
         self._t_start = t_start
         self._t_stop = t_stop
@@ -331,11 +371,11 @@ class BinnedSpikeTrain(object):
     def __repr__(self):
         return "{klass}(t_start={t_start}, t_stop={t_stop}, " \
                "bin_size={bin_size}; shape={shape})".format(
-                     klass=type(self).__name__,
-                     t_start=self.t_start,
-                     t_stop=self.t_stop,
-                     bin_size=self.bin_size,
-                     shape=self.shape)
+                   klass=type(self).__name__,
+                   t_start=self.t_start,
+                   t_stop=self.t_stop,
+                   bin_size=self.bin_size,
+                   shape=self.shape)
 
     def rescale(self, units):
         """
@@ -595,10 +635,28 @@ class BinnedSpikeTrain(object):
             return False
         sp1 = self.sparse_matrix
         sp2 = other.sparse_matrix
-        return all([sp1.shape == sp2.shape,
-                   (sp1.data == sp2.data).all(),
-                   (sp1.indptr == sp2.indptr).all(),
-                   (sp1.indices == sp2.indices).all()])
+        if sp1.shape != sp2.shape or sp1.data.shape != sp2.data.shape:
+            return False
+        return (sp1.data == sp2.data).all() and \
+            (sp1.indptr == sp2.indptr).all() and \
+            (sp1.indices == sp2.indices).all()
+
+    def copy(self):
+        """
+        Copies the binned sparse matrix and returns a view. Any changes to
+        the copied object won't affect the original object.
+
+        Returns
+        -------
+        BinnedSpikeTrainView
+            A copied view of itself.
+        """
+        return BinnedSpikeTrainView(t_start=self._t_start,
+                                    t_stop=self._t_stop,
+                                    bin_size=self._bin_size,
+                                    units=self.units,
+                                    sparse_matrix=self.sparse_matrix.copy(),
+                                    tolerance=self.tolerance)
 
     def __iter_sparse_matrix(self):
         # taken from csr_matrix.__iter__()
@@ -608,6 +666,63 @@ class BinnedSpikeTrain(object):
             data = self.sparse_matrix.data[i0:i1]
             yield indices, data
             i0 = i1
+
+    def __getitem__(self, item):
+        """
+        Returns a binned slice view of itself; `t_start` and `t_stop` will be
+        set accordingly to the second slicing argument, if any.
+
+        Parameters
+        ----------
+        item : int or slice or tuple
+            Spike train and bin index slicing, passed to
+            ``self.sparse_matrix``.
+
+        Returns
+        -------
+        BinnedSpikeTrainView
+            A slice of itself that carry the original data. Any changes to
+            the returned binned sparse matrix will affect the original data.
+        """
+        # taken from csr_matrix.__getitem__
+        row, col = self.sparse_matrix._validate_indices(item)
+        spmat = self.sparse_matrix[item]
+        if np.isscalar(spmat):
+            # data with one element
+            spmat = sps.csr_matrix(([spmat], ([0], [0])), dtype=spmat.dtype)
+
+        if isinstance(col, (int, np.integer)):
+            start, stop, stride = col, col + 1, 1
+        elif isinstance(col, slice):
+            start, stop, stride = col.indices(self.n_bins)
+        else:
+            raise TypeError(f"The second slice argument ({col}), which "
+                            "corresponds to bin indices, must be either int "
+                            "or slice.")
+        t_start = self._t_start + start * self._bin_size
+        t_stop = self._t_start + stop * self._bin_size
+        bin_size = stride * self._bin_size
+        bst = BinnedSpikeTrainView(t_start=t_start,
+                                   t_stop=t_stop,
+                                   bin_size=bin_size,
+                                   units=self.units,
+                                   sparse_matrix=spmat,
+                                   tolerance=self.tolerance)
+        return bst
+
+    def __setitem__(self, key, value):
+        """
+        Changes the values of ``self.sparse_matrix`` according to `key` and
+        `value`. A shortcut to ``self.sparse_matrix[key] = value``.
+
+        Parameters
+        ----------
+        key : int or list or tuple or slice
+            The binned sparse matrix keys (axes slice) to change.
+        value : int or list or tuple or slice
+            New values of the sparse matrix selection.
+        """
+        self.sparse_matrix[key] = value
 
     def time_slice(self, t_start=None, t_stop=None, copy=False):
         """
@@ -672,6 +787,9 @@ class BinnedSpikeTrain(object):
 
             BinnedSpikeTrain(binned_st.to_spike_trains()) == binned_st
 
+        The object bin size is stored in resulting
+        ``spiketrain.annotations['bin_size']``.
+
         Parameters
         ----------
         spikes : {"left", "center", "random"}, optional
@@ -691,7 +809,7 @@ class BinnedSpikeTrain(object):
             `neo.SpikeTrain`.
             Default: False
         annotate_bins : bool, optional
-            If `as_array` is True, this flag allows to include the bin index
+            If `as_array` is False, this flag allows to include the bin index
             in resulting ``spiketrain.array_annotations['bins']``.
             Default: False
 
@@ -957,7 +1075,7 @@ class BinnedSpikeTrain(object):
         for idx, st in enumerate(spiketrains):
             times = st.magnitude
             times = times[(times >= self._t_start) & (
-                    times <= self._t_stop)] - self._t_start
+                times <= self._t_stop)] - self._t_start
             bins = times * scale_units
 
             # shift spikes that are very close

@@ -194,6 +194,34 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.bin_size = 1 * pq.s
         self.tolerance = 1e-8
 
+    def test_slice(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b,
+                       self.spiketrain_a, self.spiketrain_b]
+        bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                  bin_size=self.bin_size)
+        self.assertEqual(bst[:, :], bst)
+        self.assertEqual(bst[1:], cv.BinnedSpikeTrain(spiketrains[1:],
+                                                      bin_size=self.bin_size))
+        self.assertEqual(bst[:, :4], bst.time_slice(t_stop=4 * pq.s))
+        self.assertEqual(bst[:, 1:-1], cv.BinnedSpikeTrain(
+            spiketrains, bin_size=self.bin_size,
+            t_start=1 * pq.s, t_stop=9 * pq.s
+        ))
+        self.assertEqual(bst[0, 0], cv.BinnedSpikeTrain(
+            neo.SpikeTrain([0.5, 0.7], t_stop=1, units='s'),
+            bin_size=self.bin_size
+        ))
+
+        # 2-seconds stride: leave [0..1, 2..3, 4..5, 6..7] interval
+        self.assertEqual(bst[0, ::2], cv.BinnedSpikeTrain(
+            neo.SpikeTrain([0.5, 0.7, 4.3, 6.7], t_stop=10, units='s'),
+            bin_size=2 * self.bin_size
+        ))
+
+        bst_copy = bst.copy()
+        bst_copy[:] = 1
+        assert_array_equal(bst_copy.sparse_matrix.todense(), 1)
+
     def test_time_slice(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
         bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
