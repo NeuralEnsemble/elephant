@@ -628,10 +628,13 @@ class BinnedSpikeTrain(object):
     def __eq__(self, other):
         if not isinstance(other, BinnedSpikeTrain):
             return False
-        if not (self.t_start == other.t_start
-                and self.t_stop == other.t_stop
-                and self.bin_size == other.bin_size
-                and self.n_bins == other.n_bins):
+        if self.n_bins != other.n_bins:
+            return
+        dt_start = other.t_start.rescale(self.units).item() - self._t_start
+        dt_stop = other.t_stop.rescale(self.units).item() - self._t_stop
+        dbin_size = other.bin_size.rescale(self.units).item() - self._bin_size
+        tol = 0 if self.tolerance is None else self.tolerance
+        if any(abs(diff) > tol for diff in [dt_start, dt_stop, dbin_size]):
             return False
         sp1 = self.sparse_matrix
         sp2 = other.sparse_matrix
@@ -827,7 +830,7 @@ class BinnedSpikeTrain(object):
         spiketrains = []
         for indices, spike_count in self.__iter_sparse_matrix():
             bin_indices = np.repeat(indices, spike_count)
-            t_starts = bin_indices * self._bin_size
+            t_starts = self._t_start + bin_indices * self._bin_size
             if spikes == "random":
                 spiketrain = np.random.uniform(low=0, high=self._bin_size,
                                                size=spike_count.sum())
@@ -836,10 +839,12 @@ class BinnedSpikeTrain(object):
             elif spikes == "left":
                 spiketrain = [np.arange(shift, count + shift) / (count + shift)
                               for count in spike_count]
-                spiketrain = np.hstack(spiketrain)
+                spiketrain = np.hstack(spiketrain) * self._bin_size
                 spiketrain += t_starts
             else:
                 raise ValueError(f"Invalid 'spikes' mode: '{spikes}'")
+            # account for the last bin
+            spiketrain = spiketrain[spiketrain <= self._t_stop]
             if not as_array:
                 array_ants = None
                 if annotate_bins:
