@@ -260,8 +260,6 @@ def phase_locking_value_analog_signal(phase_data):
     -----------
     phases_data: list of neo.AnalogSignals objects with multiple trials
         time-series of two signals with n trials each
-        # version_0:
-        axis: 0 -> signal x/y, 1 -> trial, 2 -> phases
         # version_1:
         axis: 0 -> trial, 1 -> signal x/y, 2 -> phases
 
@@ -285,12 +283,6 @@ def phase_locking_value_analog_signal(phase_data):
     and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
     Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
-    # version_0: phase_data has shape(signal x & y, trial, phases)
-    # if np.shape(phase_data[0]) != np.shape(phase_data[1]):
-    #     raise ValueError("trial number and trial length of signal x and y "
-    #                      "must be equal")
-    # phase_diff = phase_difference(phase_data[0], phase_data[1])
-
     # version_1: phase_data has shape(trial, signal x & y, phases)
     try:
         if (np.shape(np.asarray([signal[0] for signal in phase_data])) !=

@@ -387,21 +387,6 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         random_y = np.random.uniform(
             -np.pi, np.pi, (1000, self.num_time_points))
 
-        # version_0: as_x/y_neo has shape (signal x & y, trial, phases)
-        # self.as_x_neo = [AnalogSignal(
-        #     signal=signal_x * pq.rad, units=pq.rad,
-        #     sampling_rate=self.num_time_points / (2 * pq.s))]
-        # self.as_y_neo = [AnalogSignal(
-        #     signal=signal_y * pq.rad, units=pq.rad,
-        #     sampling_rate=self.num_time_points / (2 * pq.s))]
-        # self.as_random_x_neo = [AnalogSignal(
-        #     signal=random_x * pq.rad, units=pq.rad,
-        #     sampling_rate=self.num_time_points / (2 * pq.s))]
-        # self.as_random_y_neo = [AnalogSignal(
-        #     signal=random_y * pq.rad, units=pq.rad,
-        #     sampling_rate=self.num_time_points / (2 * pq.s))]
-        # reshape not needed
-
         # version_1: as_x/y_neo has shape (trial, signal x & y, phases)
         self.as_x_neo = \
             [AnalogSignal(signal=i * pq.rad, units=pq.rad,
@@ -434,9 +419,6 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         trials are passed. PLV's needed to be 1, due to the constant phase
         difference of 0 across trials at each time-point.
         """
-        # version_0: phase_data has shape(signal x & y, trial, phases)
-        # phase_data = np.vstack((self.as_x_neo, self.as_x_neo))
-
         # version_1: phase_data has shape(trial, signal x & y, phases)
         phase_data = np.hstack((self.as_x_neo, self.as_x_neo))
 
@@ -454,9 +436,6 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         due to a constant phase difference across trials, which may vary for
         different time-points.
         """
-        # version_0: phase_data has shape(signal x & y, trial, phases)
-        # phase_data = np.vstack((self.as_x_neo, self.as_y_neo))
-
         # version_1: phase_data has shape(trial, signal x & y, phases)
         phase_data = np.hstack((self.as_x_neo, self.as_y_neo))
 
@@ -474,9 +453,6 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         The PLV's needed to be close to 0, do to a random
         phase difference across trials for each time-point.
         """
-        # version_0: phase_data has shape(signal x & y, trial, phases)
-        # phase_data = np.vstack((self.as_random_x_neo, self.as_random_y_neo))
-
         # version_1: phase_data has shape(trial, signal x & y, phases)
         phase_data = np.hstack((self.as_random_x_neo, self.as_random_y_neo))
 
@@ -495,14 +471,6 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         """
         # x = [[0, 1, 2], [0, 1, 2]]
         # y = [[0, -1, -2], ]
-        # version_0: phase_data has shape(signal x & y, trial, phases)
-        # phase_data = [[[0, 1, 2], [0, 1, 2]],
-        #               [[0, -1, -2], ]]
-        # # different numbers of trails
-        # np.testing.assert_raises(
-        #     ValueError,
-        #     elephant.phase_analysis.phase_locking_value_analog_signal,
-        #     phase_data)
 
         # version_1: phase_data has shape(trial, signal x & y, phases)
         phase_data = [[[0, 1, 2], [0, -1, -2]],
@@ -520,9 +488,6 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         """
         # y = [[0, -1, -2], [0, -1, -2]]
         # z = [[0, 0.5, 1, 2], [0, 0.5, 1, 2]]
-        # version_0: phase_data has shape(signal y & z, trial, phases)
-        # phase_data = [[[0, -1, -2], [0, -1, -2]],
-        #               [[0, 0.5, 1, 2], [0, 0.5, 1, 2]]]
 
         # version_1: phase_data has shape(trial, signal y & z, phases)
         phase_data = [[[0, -1, -2], [0, 0.5, 1, 2]],
