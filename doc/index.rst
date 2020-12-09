@@ -1,6 +1,6 @@
-*********************************************
+=============================================
 Elephant - Electrophysiology Analysis Toolkit
-*********************************************
+=============================================
 
 *Elephant* (Electrophysiology Analysis Toolkit) is an emerging open-source,
 community centered library for the analysis of electrophysiological data in
@@ -30,9 +30,9 @@ The API uses and extends the same structure as in Elephant to ensure intuitive
 usage for scientists that are used to Elephant.
 
 
-
+*****************
 Table of Contents
------------------
+*****************
 
 .. toctree::
     :maxdepth: 1

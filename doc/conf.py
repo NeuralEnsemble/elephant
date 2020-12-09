@@ -57,7 +57,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Elephant'
-authors = u'Elephant authors and contributors'
+authors = u'Elephant team'
 copyright = u"2014-{this_year}, {authors}".format(this_year=date.today().year,
                                                   authors=authors)
 

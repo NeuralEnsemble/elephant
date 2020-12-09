@@ -1,10 +1,10 @@
-*************
+=============
 Release Notes
-*************
+=============
 
 
 Elephant 0.9.0 release notes
-============================
+****************************
 
 This release is titled to accompany the [2nd Elephant User Workshop](https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/2nd-elephant-user-workshop/)
 
@@ -72,7 +72,7 @@ Bug fixes
 
 
 Elephant 0.8.0 release notes
-============================
+****************************
 
 New features
 ------------
@@ -99,7 +99,7 @@ Breaking changes
 * Naming convention changes (`binsize` -> `bin_size`, etc.) in almost all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
 
 Elephant 0.7.0 release notes
-============================
+****************************
 
 Breaking changes
 ----------------
@@ -145,7 +145,7 @@ Performance
 
 
 Elephant 0.6.4 release notes
-============================
+****************************
 
 This release has been made for the "1st Elephant User Workshop" (https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/1st-elephant-user-workshop-accelerate-structured-and-reproducibl).
 
@@ -177,7 +177,7 @@ Improvements
 
 
 Elephant 0.6.3 release notes
-============================
+****************************
 July 22nd 2019
 
 The release v0.6.3 is mostly about improving maintenance.
@@ -200,7 +200,7 @@ Other changes
 * Single VERSION file (https://github.com/NeuralEnsemble/elephant/pull/231)
 
 Elephant 0.6.2 release notes
-============================
+****************************
 April 23rd 2019
 
 New functions
@@ -215,7 +215,7 @@ Other changes
 
 
 Elephant 0.6.1 release notes
-============================
+****************************
 April 1st 2019
 
 New functions
@@ -233,7 +233,7 @@ Other changes
 
 
 Elephant 0.6.0 release notes
-============================
+****************************
 October 12th 2018
 
 New functions
@@ -251,7 +251,7 @@ Other changes
 
 
 Elephant 0.5.0 release notes
-============================
+****************************
 April 4nd 2018
 
 New functions
@@ -271,7 +271,7 @@ Other changes
 
 
 Elephant 0.4.3 release notes
-============================
+****************************
 March 2nd 2018
 
 Other changes
@@ -281,7 +281,7 @@ Other changes
 
 
 Elephant 0.4.2 release notes
-============================
+****************************
 March 1st 2018
 
 New functions
@@ -307,7 +307,7 @@ Other changes
 
 
 Elephant 0.4.1 release notes
-============================
+****************************
 March 23rd 2017
 
 Other changes
@@ -316,7 +316,7 @@ Other changes
 
 
 Elephant 0.4.0 release notes
-============================
+****************************
 March 22nd 2017
 
 New functions
@@ -342,7 +342,7 @@ Other changes
 
 
 Elephant 0.3.0 release notes
-============================
+****************************
 April 12st 2016
 
 New functions
@@ -371,7 +371,7 @@ Other changes
 
 
 Elephant 0.2.1 release notes
-============================
+****************************
 February 18th 2016
 
 Other changes
@@ -380,7 +380,7 @@ Minor bug fixes.
 
 
 Elephant 0.2.0 release notes
-============================
+****************************
 September 22nd 2015
 
 New functions
