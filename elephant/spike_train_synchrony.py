@@ -10,6 +10,7 @@ Synchrony Measures
     :toctree: toctree/spike_train_synchrony/
 
     spike_contrast
+    Synchrotool
 
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
@@ -18,15 +19,24 @@ Synchrony Measures
 from __future__ import division, print_function, unicode_literals
 
 from collections import namedtuple
+from copy import deepcopy
 
 import neo
 import numpy as np
 import quantities as pq
 
-from elephant.utils import is_time_quantity
+from elephant.statistics import Complexity
+from elephant.utils import is_time_quantity, check_same_units
 
 SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
-    "contrast", "active_spiketrains", "synchrony"))
+    "contrast", "active_spiketrains", "synchrony", "bin_size"))
+
+
+__all__ = [
+    "SpikeContrastTrace",
+    "spike_contrast",
+    "Synchrotool"
+]
 
 
 def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
@@ -67,6 +77,9 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
     Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 
+    Visualization is covered in
+    :func:`viziphant.spike_train_synchrony.plot_spike_contrast`.
+
     Parameters
     ----------
     spiketrains : list of neo.SpikeTrain
@@ -101,6 +114,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     spike_contrast_trace : namedtuple
         If `return_trace` is set to True, a `SpikeContrastTrace` namedtuple is
         returned with the following attributes:
+
           `.contrast` - the average sum of differences of the number of spikes
           in subsuequent bins;
 
@@ -108,7 +122,10 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
           weighted by the number of spike trains containing at least one spike
           inside the bin;
 
-          `.synchrony` - the product of `contrast` and `active_spiketrains`.
+          `.synchrony` - the product of `contrast` and `active_spiketrains`;
+
+          `.bin_size` - the X axis, a list of bin sizes that correspond to
+          these traces.
 
     Raises
     ------
@@ -137,15 +154,13 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
     """
     if not 0. < bin_shrink_factor < 1.:
-        raise ValueError("'bin_shrink_factor' ({}) must be in range (0, 1)."
-                         .format(bin_shrink_factor))
+        raise ValueError(f"'bin_shrink_factor' ({bin_shrink_factor}) must be "
+                         "in range (0, 1).")
     if not len(spiketrains) > 1:
         raise ValueError("Spike contrast measure requires more than 1 input "
                          "spiketrain.")
-    if not all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
-        raise TypeError("Input spike trains must be a list of neo.SpikeTrain.")
-    if not is_time_quantity(t_start, allow_none=True) \
-            or not is_time_quantity(t_stop, allow_none=True):
+    check_same_units(spiketrains, object_type=neo.SpikeTrain)
+    if not is_time_quantity(t_start, t_stop, allow_none=True):
         raise TypeError("'t_start' and 't_stop' must be time quantities.")
     if not is_time_quantity(min_bin):
         raise TypeError("'min_bin' must be a time quantity.")
@@ -155,11 +170,12 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     if t_stop is None:
         t_stop = max(st.t_stop for st in spiketrains)
 
-    # convert everything to seconds
-    spiketrains = [st.simplified.magnitude for st in spiketrains]
-    t_start = t_start.simplified.item()
-    t_stop = t_stop.simplified.item()
-    min_bin = min_bin.simplified.item()
+    # convert everything to spiketrain units
+    units = spiketrains[0].units
+    spiketrains = [st.magnitude for st in spiketrains]
+    t_start = t_start.rescale(units).item()
+    t_stop = t_stop.rescale(units).item()
+    min_bin = min_bin.rescale(units).item()
 
     spiketrains = [times[(times >= t_start) & (times <= t_stop)]
                    for times in spiketrains]
@@ -184,8 +200,10 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     t_start = t_start - isi_min
     t_stop = t_stop + isi_min
 
+    bin_sizes = []
     bin_size = bin_max
     while bin_size >= bin_min:
+        bin_sizes.append(bin_size)
         # Calculate Theta and n
         theta_k, n_k = _get_theta_and_n_per_bin(spiketrains,
                                                 t_start=t_start,
@@ -213,8 +231,174 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         spike_contrast_trace = SpikeContrastTrace(
             contrast=contrast_list,
             active_spiketrains=active_spiketrains,
-            synchrony=synchrony_curve
+            synchrony=synchrony_curve,
+            bin_size=bin_sizes * units,
         )
         return synchrony, spike_contrast_trace
 
     return synchrony
+
+
+class Synchrotool(Complexity):
+    """
+    Tool class to find, remove and/or annotate the presence of synchronous
+    spiking events across multiple spike trains.
+
+    The complexity is used to characterize synchronous events within the same
+    spike train and across different spike trains in the `spiketrains` list.
+    This way synchronous events can be found both in multi-unit and
+    single-unit spike trains.
+
+    This class inherits from :class:`elephant.statistics.Complexity`, see its
+    documentation for more details and input parameters description.
+
+    See also
+    --------
+    elephant.statistics.Complexity
+
+    """
+
+    def __init__(self, spiketrains,
+                 sampling_rate,
+                 bin_size=None,
+                 binary=True,
+                 spread=0,
+                 tolerance=1e-8):
+
+        self.annotated = False
+
+        super(Synchrotool, self).__init__(spiketrains=spiketrains,
+                                          bin_size=bin_size,
+                                          sampling_rate=sampling_rate,
+                                          binary=binary,
+                                          spread=spread,
+                                          tolerance=tolerance)
+
+    def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
+        """
+        Delete or extract synchronous spiking events.
+
+        Parameters
+        ----------
+        threshold : int
+            Threshold value for the deletion of spikes engaged in synchronous
+            activity.
+              * `deletion_threshold >= 2` leads to all spikes with a larger or
+                equal complexity value to be deleted/extracted.
+              * `deletion_threshold <= 1` leads to a ValueError, since this
+              would delete/extract all spikes and there are definitely more
+              efficient ways of doing so.
+        in_place : bool, optional
+            Determines whether the modification are made in place
+            on ``self.input_spiketrains``.
+            Default: False
+        mode : {'delete', 'extract'}, optional
+            Inversion of the mask for deletion of synchronous events.
+              * ``'delete'`` leads to the deletion of all spikes with
+                complexity >= `threshold`,
+                i.e. deletes synchronous spikes.
+              * ``'extract'`` leads to the deletion of all spikes with
+                complexity < `threshold`, i.e. extracts synchronous spikes.
+            Default: 'delete'
+
+        Raises
+        ------
+        ValueError
+            If `mode` is not one in {'delete', 'extract'}.
+
+            If `threshold <= 1`.
+
+        Returns
+        -------
+        list of neo.SpikeTrain
+            List of spiketrains where the spikes with
+            ``complexity >= threshold`` have been deleted/extracted.
+              * If ``in_place`` is True, the returned list is the same as
+                ``self.input_spiketrains``.
+              * If ``in_place`` is False, the returned list is a deepcopy of
+                ``self.input_spiketrains``.
+
+        """
+
+        if not self.annotated:
+            self.annotate_synchrofacts()
+
+        if mode not in ['delete', 'extract']:
+            raise ValueError(f"Invalid mode '{mode}'. Valid modes are: "
+                             f"'delete', 'extract'")
+
+        if threshold <= 1:
+            raise ValueError('A deletion threshold <= 1 would result '
+                             'in the deletion of all spikes.')
+
+        if in_place:
+            spiketrain_list = self.input_spiketrains
+        else:
+            spiketrain_list = deepcopy(self.input_spiketrains)
+
+        for idx, st in enumerate(spiketrain_list):
+            mask = st.array_annotations['complexity'] < threshold
+            if mode == 'extract':
+                mask = np.invert(mask)
+            new_st = st[mask]
+            spiketrain_list[idx] = new_st
+            if in_place:
+                segment = st.segment
+                if segment is None:
+                    continue
+
+                # replace link to spiketrain in segment
+                new_index = self._get_spiketrain_index(
+                    segment.spiketrains, st)
+                segment.spiketrains[new_index] = new_st
+
+                block = segment.block
+                if block is None:
+                    continue
+
+                # replace link to spiketrain in groups
+                for group in block.groups:
+                    try:
+                        idx = self._get_spiketrain_index(
+                            group.spiketrains,
+                            st)
+                    except ValueError:
+                        # st is not in this group, move to next group
+                        continue
+
+                    # st found in group, replace with new_st
+                    group.spiketrains[idx] = new_st
+
+        return spiketrain_list
+
+    def annotate_synchrofacts(self):
+        """
+        Annotate the complexity of each spike in the
+        ``self.epoch.array_annotations`` *in-place*.
+        """
+        epoch_complexities = self.epoch.array_annotations['complexity']
+        right_edges = (
+            self.epoch.times.magnitude.flatten()
+            + self.epoch.durations.rescale(
+                self.epoch.times.units).magnitude.flatten()
+        )
+
+        for idx, st in enumerate(self.input_spiketrains):
+
+            # all indices of spikes that are within the half-open intervals
+            # defined by the boundaries
+            # note that every second entry in boundaries is an upper boundary
+            spike_to_epoch_idx = np.searchsorted(
+                right_edges,
+                st.times.rescale(self.epoch.times.units).magnitude.flatten())
+            complexity_per_spike = epoch_complexities[spike_to_epoch_idx]
+
+            st.array_annotate(complexity=complexity_per_spike)
+
+        self.annotated = True
+
+    def _get_spiketrain_index(self, spiketrain_list, spiketrain):
+        for index, item in enumerate(spiketrain_list):
+            if item is spiketrain:
+                return index
+        raise ValueError("Spiketrain is not found in the list")
