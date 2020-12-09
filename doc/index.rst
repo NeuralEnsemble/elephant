@@ -40,10 +40,9 @@ Table of Contents
     install
     tutorials
     modules
-    developers_guide
-    authors
     release_notes
-    get_in_touch
+    contribute
+    authors
     acknowledgments
     citation
 

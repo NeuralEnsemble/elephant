@@ -917,15 +917,10 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 @deprecated_alias(binsize='bin_size')
 def complexity_pdf(spiketrains, bin_size):
     """
-<<<<<<< HEAD
     Complexity Distribution of a list of `neo.SpikeTrain` objects
     :cite:`statistics-Gruen2007_96`.
-=======
-    Deprecated in favor of the complexity class which has a pdf attribute.
-    Will be removed in the next release!
 
-    Complexity Distribution of a list of `neo.SpikeTrain` objects.
->>>>>>> master
+    Deprecated in favor of :meth:`Complexity.pdf`.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
@@ -952,9 +947,8 @@ def complexity_pdf(spiketrains, bin_size):
     --------
     elephant.conversion.BinnedSpikeTrain
     """
-    warnings.warn("complexity_pdf is deprecated in favor of the complexity "
-                  "class which has a pdf attribute. complexity_pdf will be "
-                  "removed in the next Elephant release.", DeprecationWarning)
+    warnings.warn("'complexity_pdf' is deprecated in favor of the Complexity "
+                  "class which has a 'pdf' method", DeprecationWarning)
 
     complexity = Complexity(spiketrains, bin_size=bin_size)
 

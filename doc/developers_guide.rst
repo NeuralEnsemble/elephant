@@ -74,6 +74,8 @@ Developers' Guide
    * improving the documentation;
    * adding a new functionality.
 
+   Refer to :ref:`contribute`.
+
 6. If it is a new functionality, please write:
 
    - documentation (refer to :ref:`documentation_guide`);
