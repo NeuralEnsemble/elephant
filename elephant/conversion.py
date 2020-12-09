@@ -68,7 +68,7 @@ import quantities as pq
 import scipy.sparse as sps
 
 from elephant.utils import is_binary, deprecated_alias, is_time_quantity, \
-    check_neo_consistency, get_common_start_stop_times, round_binning_errors
+    check_neo_consistency, round_binning_errors
 
 __all__ = [
     "binarize",
@@ -518,9 +518,8 @@ class BinnedSpikeTrain(object):
         self._t_start = self._t_start.rescale(self.units).item()
         self._t_stop = self._t_stop.rescale(self.units).item()
 
-        start_shared, stop_shared = get_common_start_stop_times(spiketrains)
-        start_shared = start_shared.rescale(self.units).item()
-        stop_shared = stop_shared.rescale(self.units).item()
+        start_shared = max(st.t_start.item() for st in spiketrains)
+        stop_shared = min(st.t_stop.item() for st in spiketrains)
 
         tolerance = self.tolerance
         if tolerance is None:
@@ -1064,7 +1063,9 @@ class BinnedSpikeTrain(object):
         float
         """
         num_nonzero = self.sparse_matrix.data.shape[0]
-        return num_nonzero / np.prod(self.sparse_matrix.shape)
+        shape = self.sparse_matrix.shape
+        size = shape[0] * shape[1]
+        return num_nonzero / size
 
     def _create_sparse_matrix(self, spiketrains):
         """
