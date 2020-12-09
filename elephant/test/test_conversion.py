@@ -15,6 +15,7 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal)
 
 import elephant.conversion as cv
 from elephant.utils import get_common_start_stop_times
+from elephant.spike_train_generation import homogeneous_poisson_process
 
 
 def get_nearest(times, time):
@@ -193,6 +194,92 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
             [0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
         self.bin_size = 1 * pq.s
         self.tolerance = 1e-8
+
+    def test_slice(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b,
+                       self.spiketrain_a, self.spiketrain_b]
+        bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                  bin_size=self.bin_size)
+        self.assertEqual(bst[:, :], bst)
+        self.assertEqual(bst[1:], cv.BinnedSpikeTrain(spiketrains[1:],
+                                                      bin_size=self.bin_size))
+        self.assertEqual(bst[:, :4], bst.time_slice(t_stop=4 * pq.s))
+        self.assertEqual(bst[:, 1:-1], cv.BinnedSpikeTrain(
+            spiketrains, bin_size=self.bin_size,
+            t_start=1 * pq.s, t_stop=9 * pq.s
+        ))
+        self.assertEqual(bst[0, 0], cv.BinnedSpikeTrain(
+            neo.SpikeTrain([0.5, 0.7], t_stop=1, units='s'),
+            bin_size=self.bin_size
+        ))
+
+        # 2-seconds stride: leave [0..1, 2..3, 4..5, 6..7] interval
+        self.assertEqual(bst[0, ::2], cv.BinnedSpikeTrain(
+            neo.SpikeTrain([0.5, 0.7, 4.3, 6.7], t_stop=10, units='s'),
+            bin_size=2 * self.bin_size
+        ))
+
+        bst_copy = bst.copy()
+        bst_copy[:] = 1
+        assert_array_equal(bst_copy.sparse_matrix.todense(), 1)
+
+    def test_time_slice(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                  bin_size=self.bin_size)
+        bst_equal = bst.time_slice(t_start=bst.t_start - 5 * pq.s,
+                                   t_stop=bst.t_stop + 5 * pq.s)
+        self.assertEqual(bst_equal, bst)
+        bst_same = bst.time_slice(t_start=None, t_stop=None)
+        self.assertIs(bst_same, bst)
+        bst_copy = bst.time_slice(t_start=None, t_stop=None, copy=True)
+        self.assertIsNot(bst_copy, bst)
+        self.assertEqual(bst_copy, bst)
+        bst_empty = bst.time_slice(t_start=0.2 * pq.s, t_stop=0.3 * pq.s)
+        self.assertEqual(bst_empty.n_bins, 0)
+        t_range = np.arange(0, 10, self.bin_size.item()) * pq.s
+        for i, t_start in enumerate(t_range[:-1]):
+            for t_stop in t_range[i + 1:]:
+                bst_ij = bst.time_slice(t_start=t_start, t_stop=t_stop)
+                bst_ij2 = bst_ij.time_slice(t_start=t_start, t_stop=t_stop)
+                self.assertEqual(bst_ij2, bst_ij)
+                self.assertEqual(bst_ij2.tolerance, bst.tolerance)
+                sts = [st.time_slice(t_start=t_start, t_stop=t_stop)
+                       for st in spiketrains]
+                bst_ref = cv.BinnedSpikeTrain(sts, bin_size=self.bin_size)
+                self.assertEqual(bst_ij, bst_ref)
+
+        # invalid input: not a quantity
+        self.assertRaises(TypeError, bst.time_slice, t_start=2)
+
+    def test_to_spike_trains(self):
+        np.random.seed(1)
+        bst1 = cv.BinnedSpikeTrain(
+            spiketrains=[self.spiketrain_a, self.spiketrain_b],
+            bin_size=self.bin_size
+        )
+        spiketrains = [homogeneous_poisson_process(rate=10 * pq.Hz,
+                                                   t_start=-1 * pq.s,
+                                                   t_stop=10 * pq.s)]
+        bst2 = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                   bin_size=300 * pq.ms)
+        for bst in (bst1, bst2):
+            for spikes in ("random", "left", "center"):
+                spiketrains_gen = bst.to_spike_trains(spikes=spikes,
+                                                      annotate_bins=True)
+                for st, indices in zip(spiketrains_gen, bst.spike_indices):
+                    # check sorted
+                    self.assertTrue((np.diff(st.magnitude) > 0).all())
+                    assert_array_equal(st.array_annotations['bins'], indices)
+                    self.assertEqual(st.annotations['bin_size'], bst.bin_size)
+                    self.assertEqual(st.t_start, bst.t_start)
+                    self.assertEqual(st.t_stop, bst.t_stop)
+                bst_same = cv.BinnedSpikeTrain(spiketrains_gen,
+                                               bin_size=bst.bin_size)
+                self.assertEqual(bst_same, bst)
+
+            # invalid mode
+            self.assertRaises(ValueError, bst.to_spike_trains, spikes='right')
 
     def test_get_num_of_spikes(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
