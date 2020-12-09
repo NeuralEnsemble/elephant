@@ -34,18 +34,26 @@ usage for scientists that are used to Elephant.
 Table of Contents
 *****************
 
+* :doc:`install`
+* :doc:`tutorials`
+* :doc:`modules`
+* :doc:`release_notes`
+* :doc:`contribute`
+* :doc:`acknowledgments`
+* :doc:`citation`
+
+
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
+    :hidden:
 
     install
     tutorials
     modules
     release_notes
     contribute
-    authors
     acknowledgments
     citation
-
 
 
 .. Indices and tables
