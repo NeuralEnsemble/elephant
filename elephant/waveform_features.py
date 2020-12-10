@@ -54,6 +54,12 @@ def waveform_width(waveform, cutoff=0.75):
 
         If `cutoff` is not in `[0, 1)` range.
 
+    Examples
+    --------
+    >>> from elephant.waveform_features import waveform_width
+    >>> waveform_width([20, 25, 10, -5, -2, 7, 15], cutoff=0.75)
+    3
+
     """
     waveform = np.squeeze(waveform)
     if np.ndim(waveform) != 1:
@@ -104,6 +110,13 @@ def waveform_snr(waveforms):
     The waveforms of a `neo.SpikeTrain` can be extracted as
     `spiketrain.waveforms`, if it's loaded from a file, in which case you need
     to set ``load_waveforms=True`` in ``neo.read_block()``.
+
+    Examples
+    --------
+    >>> from elephant.waveform_features import waveform_snr
+    >>> waveforms = [[20, 25, 10, -5, -2, 7, 15], [17, 29, 11, -4, 0, 5, 20]]
+    >>> waveform_snr(waveforms)
+    12.249999999999998
 
     """
     if isinstance(waveforms, neo.SpikeTrain):
