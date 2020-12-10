@@ -1,4 +1,4 @@
-.. _authors:
+:orphan:
 
 ************************
 Authors and contributors
