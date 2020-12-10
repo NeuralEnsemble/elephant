@@ -4,7 +4,7 @@ Functions to generate/extract spike trains from analog signals, or to generate
 random spike trains.
 
 Extract spike times from analog signals
----------------------------------------
+***************************************
 .. autosummary::
     :toctree: _toctree/spike_train_generation
 
@@ -14,7 +14,7 @@ Extract spike times from analog signals
 
 
 Random spike train processes
-----------------------------
+****************************
 .. autosummary::
     :toctree: _toctree/spike_train_generation
 
@@ -25,7 +25,7 @@ Random spike train processes
 
 
 Coincident spike times generation
----------------------------------
+*********************************
 .. autosummary::
     :toctree: _toctree/spike_train_generation
 
@@ -34,6 +34,16 @@ Coincident spike times generation
 
 Some functions are based on the NeuroTools stgen module, which was mostly
 written by Eilif Muller, or from the NeuroTools signals.analogs module.
+
+
+References
+----------
+
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: gen
+   :keyprefix: generation-
+   :style: unsrt
+
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.

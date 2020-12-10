@@ -15,7 +15,7 @@ An example is the representation of a spike train as a sequence of 0-1 values
     binarize
 
 Examples
---------
+********
 >>> import neo
 >>> import quantities as pq
 >>> from elephant.conversion import BinnedSpikeTrain

@@ -6,7 +6,7 @@ firing rate estimation.
 
 
 Symmetric kernels
-~~~~~~~~~~~~~~~~~
+*****************
 
 .. autosummary::
     :toctree: _toctree/kernels/
@@ -18,7 +18,7 @@ Symmetric kernels
     LaplacianKernel
 
 Asymmetric kernels
-~~~~~~~~~~~~~~~~~~
+******************
 
 .. autosummary::
     :toctree: _toctree/kernels/
@@ -28,7 +28,7 @@ Asymmetric kernels
 
 
 Examples
---------
+********
 >>> import quantities as pq
 >>> kernel1 = GaussianKernel(sigma=100*pq.ms)
 >>> kernel2 = ExponentialKernel(sigma=8*pq.ms, invert=True)

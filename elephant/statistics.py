@@ -3,25 +3,8 @@
 Statistical measures of spike trains (e.g., Fano factor) and functions to
 estimate firing rates.
 
-Tutorial
---------
-
-:doc:`View tutorial <../tutorials/statistics>`
-
-Run tutorial interactively:
-
-.. image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
-            ?filepath=doc/tutorials/statistics.ipynb
-
-
-.. current_module elephant.statistics
-
-Functions overview
-------------------
-
 Rate estimation
-~~~~~~~~~~~~~~~
+***************
 
 .. autosummary::
     :toctree: _toctree/statistics/
@@ -33,7 +16,7 @@ Rate estimation
 
 
 Spike interval statistics
-~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************
 
 .. autosummary::
     :toctree: _toctree/statistics/
@@ -46,7 +29,7 @@ Spike interval statistics
 
 
 Statistics across spike trains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+******************************
 
 .. autosummary::
     :toctree: _toctree/statistics/
@@ -54,6 +37,28 @@ Statistics across spike trains
     fanofactor
     complexity_pdf
     Complexity
+
+
+Tutorial
+********
+
+:doc:`View tutorial <../tutorials/statistics>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/statistics.ipynb
+
+
+References
+----------
+
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: st
+   :keyprefix: statistics-
+   :style: unsrt
+
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.

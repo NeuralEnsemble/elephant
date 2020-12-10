@@ -37,8 +37,6 @@ Run tutorial interactively:
             ?filepath=doc/tutorials/unitary_event_analysis.ipynb
 
 
-.. current_module elephant.unitary_event_analysis
-
 Functions overview
 ------------------
 
