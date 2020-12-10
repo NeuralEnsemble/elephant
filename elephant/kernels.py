@@ -29,9 +29,43 @@ Asymmetric kernels
 
 Examples
 ********
+
+Example 1. Gaussian kernel
+
+>>> import neo
 >>> import quantities as pq
->>> kernel1 = GaussianKernel(sigma=100*pq.ms)
->>> kernel2 = ExponentialKernel(sigma=8*pq.ms, invert=True)
+>>> from elephant import kernels
+>>> kernel = kernels.GaussianKernel(sigma=300 * pq.ms)
+>>> kernel
+GaussianKernel(sigma=300.0 ms, invert=False)
+>>> spiketrain = neo.SpikeTrain([-1, 0, 1], t_start=-1, t_stop=1, units='s')
+>>> convolved = kernel(spiketrain)
+>>> convolved
+array([0.00514093, 1.3298076 , 0.00514093]) * 1/s
+
+Cumulative Distribution Function
+
+>>> kernel.cdf(0 * pq.s)
+0.5
+>>> kernel.cdf(1 * pq.s)
+0.9995709396668032
+
+Inverse Cumulative Distribution Function
+
+>>> kernel.icdf(0.5)
+array(0.) * ms
+>>> kernel.icdf(0.9)
+array(384.46546966) * ms
+
+Example 2. Alpha kernel
+
+>>> kernel = kernels.AlphaKernel(sigma=1 * pq.s)
+>>> kernel(spiketrain)
+array([-0.        ,  0.        ,  0.48623347]) * 1/s
+>>> kernel.cdf(0 * pq.s)
+0.0
+>>> kernel.icdf(0.5)
+array(1.18677054) * s
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
