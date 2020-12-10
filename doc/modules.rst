@@ -26,8 +26,8 @@ Spike trains
     :maxdepth: 2
 
     reference/statistics
-    reference/spike_train_generation
     reference/_spike_train_processing
+    reference/spike_train_generation
 
 .. toctree::
     :maxdepth: 1

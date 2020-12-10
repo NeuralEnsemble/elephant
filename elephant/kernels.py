@@ -39,8 +39,8 @@ Example 1. Gaussian kernel
 >>> kernel
 GaussianKernel(sigma=300.0 ms, invert=False)
 >>> spiketrain = neo.SpikeTrain([-1, 0, 1], t_start=-1, t_stop=1, units='s')
->>> convolved = kernel(spiketrain)
->>> convolved
+>>> kernel_pdf = kernel(spiketrain)
+>>> kernel_pdf
 array([0.00514093, 1.3298076 , 0.00514093]) * 1/s
 
 Cumulative Distribution Function

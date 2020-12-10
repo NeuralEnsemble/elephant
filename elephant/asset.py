@@ -96,6 +96,9 @@ The ASSET found 2 sequences of synchronous events:
    >>> pprint(sses)
    {1: {(9, 3): {0, 3, 6}, (10, 4): {1, 4, 7}, (11, 5): {8, 2, 5}}}
 
+To visualize them, refer to Viziphant documentation and an example plot
+:func:`viziphant.asset.plot_synchronous_event`.
+
 """
 from __future__ import division, print_function, unicode_literals
 
