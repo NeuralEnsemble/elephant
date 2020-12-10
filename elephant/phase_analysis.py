@@ -10,6 +10,7 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import quantities as pq
+import neo
 
 __all__ = [
     "spike_triggered_phase"
@@ -285,18 +286,19 @@ def phase_locking_value_analog_signal(phase_data):
     """
     # version_1: phase_data has shape(trial, signal x & y, phases)
     try:
-        if (np.shape(np.asarray([signal[0] for signal in phase_data])) !=
-                np.shape(np.asarray([signal[1] for signal in phase_data]))):
-            raise ValueError("trial number and trial length of signal x and y "
-                             "must be equal")
-    except IndexError as ie:
-        raise ie
-    phase_diff = phase_difference(
-        np.asarray([signal[0] for signal in phase_data]),
-        np.asarray([signal[1] for signal in phase_data]))
-
-    theta, r = mean_vector(phase_diff, axis=0)
-    return r
+        srate = phase_data[0][0].sampling_rate
+        data_as_array = np.asarray(phase_data)
+        phases_x, phases_y = np.split(data_as_array, 2, axis=1)
+    except IndexError:
+        raise ValueError("trial number and trial length of signal x and y "
+                         "must be equal")
+    if np.shape(phases_x) != np.shape(phases_y):
+        raise ValueError("trial number and trial length of signal x and y "
+                         "must be equal")
+    plv = phase_locking_value(np.squeeze(phases_x), np.squeeze(phases_y))
+    plv_analog_signal = neo.AnalogSignal(signal=plv, units=pq.dimensionless,
+                                         sampling_rate=srate)
+    return plv_analog_signal
 
 
 def mean_vector(phases, axis=0):
