@@ -833,16 +833,16 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     `[-dt, +dt]` of a spike of the other train.
 
     This is a Python implementation compatible with the elephant library of
-    the original code by C. Cutts written in C and avaiable at:
-    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/
-    blob/master/spike_time_tiling_coefficient.c)
+    the original code by C. Cutts written in C and available `here
+    <https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/
+    blob/master/spike_time_tiling_coefficient.c>`_:
 
     Parameters
     ----------
-    spiketrain_i, spiketrain_j: neo.SpikeTrain
+    spiketrain_i, spiketrain_j : neo.SpikeTrain
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
-    dt: pq.Quantity.
+    dt : pq.Quantity.
         The synchronicity window is used for both: the quantification of the
         proportion of total recording time that lies `[-dt, +dt]` of each spike
         in each train and the proportion of spikes in `spiketrain_i` that lies
@@ -851,7 +851,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
 
     Returns
     -------
-    index:  float or np.nan
+    index : float or np.nan
         The spike time tiling coefficient (STTC). Returns np.nan if any spike
         train is empty.
 
