@@ -1830,21 +1830,21 @@ def _calculate_single_stability_parameter(intent, extent,
 
     Parameters
     ----------
-    extent: np.array
+    extent : np.array
         2nd element of concept
-    intent: np.array
+    intent : np.array
         1st element of concept
-    n_subsets: int
+    n_subsets : int
         See approximate_stabilty
-    rel_matrix: sparse.coo_matrix
+    rel_matrix : sparse.coo_matrix
         See approximate_stabilty
-    look_at: {'extent', 'intent'}
+    look_at : {'extent', 'intent'}
         whether to determine stability for extent or intent.
         Default: 'intent'
 
     Returns
     -------
-    stability: float
+    stability : float
         Stability parameter for given extent, intent depending on which to look
     """
     if look_at == 'intent':
@@ -1890,9 +1890,9 @@ def _select_random_subsets(element_1, n_subsets):
 
     Parameters
     ----------
-    element_1: np.array
+    element_1 : np.array
         intent or extent
-    n_subsets: int
+    n_subsets : int
         see approximate_stability
 
     Returns
@@ -2241,17 +2241,17 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
 
     Parameters
     ----------
-    concepts: tuple
+    concepts : tuple
         Each element of the tuple corresponds to a pattern which it turn is a
         tuple of (spikes in the pattern, occurrences of the patterns)
-    winlen: int
+    winlen : int
         Length (in bins) of the sliding window used for the analysis.
-    bin_size: pq.Quantity
+    bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
-    pv_spec: None or tuple
+    pv_spec : None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all p-values are set to -1.
-    spectrum: {'#', '3d#'}
+    spectrum : {'#', '3d#'}
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrences)
         '3d#': pattern spectrum using the as signature the triplets:
@@ -2259,7 +2259,7 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
             and first spike of the pattern)
 
         Default: '#'
-    t_start: pq.Quantity
+    t_start : pq.Quantity
         t_start of the analyzed spike trains
 
     Returns

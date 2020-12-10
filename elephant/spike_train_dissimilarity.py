@@ -78,14 +78,14 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains to calculate pairwise distance.
-    cost_factor: pq.Quantity
+    cost_factor : pq.Quantity, optional
         A cost factor :math:`q` for spike shifts as inverse time scalar.
         Extreme values :math:`q=0` meaning no cost for any shift of
         spikes, or :math: `q=np.inf` meaning infinite cost for any
         spike shift and hence exclusion of spike shifts, are explicitly
         allowed. If `kernel` is not `None`, :math:`q` will be ignored.
         Default: 1.0 * pq.Hz
-    kernel: kernels.Kernel
+    kernel : elephant.kernels.Kernel or None, optional
         Kernel to use in the calculation of the distance. If `kernel` is
         `None`, an unnormalized triangular kernel with standard deviation
         of :math:'2.0/(q * sqrt(6.0))' corresponding to a half width of
@@ -94,12 +94,12 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         the suitable width. The choice of another kernel is enabled, but
         this leaves the framework of Victor-Purpura distances.
         Default: None
-    sort: bool
+    sort : bool, optional
         Spike trains with sorted spike times will be needed for the
         calculation. You can set `sort` to `False` if you know that your
         spike trains are already sorted to decrease calculation time.
         Default: True
-    algorithm: string
+    algorithm : str, optional
         Allowed values are 'fast' or 'intuitive', each selecting an
         algorithm with which to calculate the pairwise Victor-Purpura distance.
         Typically 'fast' should be used, because while giving always the

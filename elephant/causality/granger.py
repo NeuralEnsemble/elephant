@@ -136,11 +136,11 @@ def _lag_covariances(signals, dimension, max_lag):
 
     Parameters
     ----------
-    signals: np.ndarray
+    signals : np.ndarray
         time series data
     dimension : int
         number of time series
-    max_lag: int
+    max_lag : int
         maximal time lag to be considered
 
     Returns
@@ -262,7 +262,7 @@ def _vector_arm(signals, dimension, order):
 
     Returns
     -------
-    coeffs: np.ndarray
+    coeffs : np.ndarray
         coefficients of the autoregressive model
         ry
     covar_mat : np.ndarray
@@ -314,7 +314,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
 
     Returns
     -------
-    optimal_coeffs: np.ndarray
+    optimal_coeffs : np.ndarray
         coefficients of the autoregressive model
     optimal_cov_mat : np.ndarray
         covariance matrix of

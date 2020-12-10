@@ -555,9 +555,9 @@ def _assert_same_pattern(item_candidate, existing_patterns, max_lag):
     item_candidate : list of list with two components
         in the first component there are the neurons involved in the assembly,
         in the second there are the correspondent lags
-    existing_patterns: list
+    existing_patterns : list
         list of the already significant patterns
-    max_lag: int
+    max_lag : int
         maximum lag to be tested
 
     Returns
@@ -598,9 +598,9 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
         on variance estimation)
     reference_lag : int
         lag of reference; if zero or negative reference lag=-l
-    existing_patterns: list
+    existing_patterns : list
         list of the already significant patterns
-    same_configuration_pruning: bool
+    same_configuration_pruning : bool
         if True (not present in the original code and more
         efficient), does not test assemblies already formed
         if they appear in the very same configuration
@@ -1138,7 +1138,7 @@ def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
     ----------
     binned_spiketrain : BinnedSpikeTrain object
         binned spike trains containing data to be analysed
-    max_lag: int
+    max_lag : int
         maximal lag to be tested. For a binning dimension of bin_size the
         method will test all pairs configurations with a time
         shift between -max_lag and max_lag

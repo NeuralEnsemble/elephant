@@ -34,7 +34,7 @@ def is_binary(array):
     """
     Parameters
     ----------
-    array: np.ndarray or list
+    array : np.ndarray or list
 
     Returns
     -------
@@ -52,7 +52,7 @@ def deprecated_alias(**aliases):
 
     Parameters
     ----------
-    aliases: str
+    **aliases
         The key-value pairs of mapping old --> new argument names of a
         function.
 

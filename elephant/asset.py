@@ -1835,7 +1835,7 @@ class ASSET(object):
 
         Parameters
         ----------
-        cmat: (n,n) np.ndarray
+        cmat : (n,n) np.ndarray
             The cluster matrix, the output of
             :func:`ASSET.cluster_matrix_entries`.
         ids : list, optional

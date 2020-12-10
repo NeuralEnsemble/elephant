@@ -786,7 +786,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     t_start : pq.Quantity, optional
         Single common start time of each output SpikeTrain. Must be < t_stop.
         Default: 0 * pq.ms
-    n_spiketrains: int, optional
+    n_spiketrains : int, optional
         If rate is a single pq.Quantity value, n specifies the number of
         SpikeTrains to be generated. If rate is an array, n is ignored and the
         number of SpikeTrains is equal to len(rate).
@@ -900,7 +900,7 @@ def single_interaction_process(
 
     Returns
     -------
-    output: list
+    output : list
         Realization of a SIP consisting of `n_spiketrains` Poisson processes
         characterized by synchronous events (with the given jitter).
         If `return_coinc` is `True`, the coincidence times are returned as a
@@ -1079,9 +1079,9 @@ def _pool_spiketrains(spiketrains, extremes='inner'):
 
     Parameters
     ----------
-    spiketrains: list of neo.SpikeTrain
+    spiketrains : list of neo.SpikeTrain
         A list of spiketrains to merge.
-    extremes: str, optional
+    extremes : str, optional
         Only spikes of a and b in the specified extremes are considered.
         * 'inner': pool all spikes from min(a.t_start b.t_start) to
            max(a.t_stop, b.t_stop)

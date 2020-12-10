@@ -810,7 +810,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         end of the signal is padded with zeros to accomodate the final,
         overextending bin.
         Default: None
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         Time to start the algorithm.
         If None, starts at the beginning of `signal`.
         Default: None
@@ -922,7 +922,7 @@ def derivative(signal):
 
     Returns
     -------
-    derivative_sig: neo.AnalogSignal
+    derivative_sig : neo.AnalogSignal
         The returned object is a `neo.AnalogSignal` containing the differences
         between each successive sample value of the input signal divided by
         the sampling period. Times are centered between the successive samples
