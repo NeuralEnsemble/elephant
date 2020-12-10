@@ -24,6 +24,7 @@ import quantities as pq
 import scipy.signal
 from scipy import integrate
 
+from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias
 
 __all__ = [
@@ -556,9 +557,9 @@ def cross_correlation_histogram(
 
     Parameters
     ----------
-    binned_spiketrain_i, binned_spiketrain_j :
-        elephant.conversion.BinnedSpikeTrain
-        Binned spike trains of lengths N and M to cross-correlate. The input
+    binned_spiketrain_i, binned_spiketrain_j : BinnedSpikeTrain
+        Binned spike trains of lengths N and M to cross-correlate - the output
+        of :class:`elephant.conversion.BinnedSpikeTrain`. The input
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
         ‘full’: This returns the cross-correlation at each point of overlap,
