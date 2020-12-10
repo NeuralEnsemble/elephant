@@ -6,7 +6,7 @@ random spike trains.
 Extract spike times from analog signals
 ---------------------------------------
 .. autosummary::
-    :toctree: toctree/spike_train_generation
+    :toctree: _toctree/spike_train_generation
 
     spike_extraction
     threshold_detection
@@ -16,7 +16,7 @@ Extract spike times from analog signals
 Random spike train processes
 ----------------------------
 .. autosummary::
-    :toctree: toctree/spike_train_generation
+    :toctree: _toctree/spike_train_generation
 
     homogeneous_poisson_process
     inhomogeneous_poisson_process
@@ -27,7 +27,7 @@ Random spike train processes
 Coincident spike times generation
 ---------------------------------
 .. autosummary::
-    :toctree: toctree/spike_train_generation
+    :toctree: _toctree/spike_train_generation
 
     single_interaction_process
     compound_poisson_process

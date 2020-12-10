@@ -3,7 +3,7 @@
 Methods for performing phase analysis.
 
 .. autosummary::
-    :toctree: toctree/phase_analysis
+    :toctree: _toctree/phase_analysis
 
     spike_triggered_phase
 

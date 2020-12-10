@@ -26,7 +26,7 @@ Each listed method has some advantages. The KCSD methods, for instance, can
 handle broken or irregular electrode configurations electrode.
 
 .. autosummary::
-    :toctree: toctree/current_source_density
+    :toctree: _toctree/current_source_density
 
     estimate_csd
     generate_lfp

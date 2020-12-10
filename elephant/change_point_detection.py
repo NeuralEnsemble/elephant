@@ -19,7 +19,7 @@ on asymptotic considerations. The procedure is repeated for an arbitrary set of
 windows with different sizes `h`.
 
 .. autosummary::
-    :toctree: toctree/change_point_detection
+    :toctree: _toctree/change_point_detection
 
     multiple_filter_test
     empirical_parameters

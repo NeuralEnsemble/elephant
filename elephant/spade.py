@@ -6,7 +6,7 @@ sequences (spatio-temporal patterns, STP).
 
 
 .. autosummary::
-    :toctree: toctree/spade
+    :toctree: _toctree/spade
 
     spade
     concepts_mining

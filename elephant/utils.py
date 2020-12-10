@@ -1,6 +1,6 @@
 """
 .. autosummary::
-    :toctree: toctree/utils
+    :toctree: _toctree/utils
 
     is_time_quantity
     get_common_start_stop_times

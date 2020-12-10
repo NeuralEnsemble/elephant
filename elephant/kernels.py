@@ -9,7 +9,7 @@ Symmetric kernels
 ~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: toctree/kernels/
+    :toctree: _toctree/kernels/
 
     RectangularKernel
     TriangularKernel
@@ -21,7 +21,7 @@ Asymmetric kernels
 ~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: toctree/kernels/
+    :toctree: _toctree/kernels/
 
     ExponentialKernel
     AlphaKernel

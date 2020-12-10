@@ -3,7 +3,7 @@
 Bridge to the pandas library.
 
 .. autosummary::
-    :toctree: toctree/pandas_bridge
+    :toctree: _toctree/pandas_bridge
 
     spiketrain_to_dataframe
     event_to_dataframe

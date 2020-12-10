@@ -11,7 +11,7 @@ mathematical sense and time-scale dependent.
 
 
 .. autosummary::
-    :toctree: toctree/spike_train_dissimilarity
+    :toctree: _toctree/spike_train_dissimilarity
 
     victor_purpura_distance
     van_rossum_distance

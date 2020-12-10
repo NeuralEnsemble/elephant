@@ -8,7 +8,7 @@ An example is the representation of a spike train as a sequence of 0-1 values
 
 
 .. autosummary::
-    :toctree: toctree/conversion
+    :toctree: _toctree/conversion
 
     BinnedSpikeTrain
     BinnedSpikeTrainView

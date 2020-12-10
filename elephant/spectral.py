@@ -4,7 +4,7 @@ Identification of spectral properties in analog signals (e.g., the power
 spectrum).
 
 .. autosummary::
-    :toctree: toctree/spectral
+    :toctree: _toctree/spectral
 
     welch_psd
     welch_coherence

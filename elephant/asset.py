@@ -8,7 +8,7 @@ ASSET analysis class object of finding patterns
 -----------------------------------------------
 
 .. autosummary::
-    :toctree: toctree/asset/
+    :toctree: _toctree/asset/
 
     ASSET
 
@@ -17,7 +17,7 @@ Patterns post-exploration
 -------------------------
 
 .. autosummary::
-    :toctree: toctree/asset/
+    :toctree: _toctree/asset/
 
     synchronous_events_intersection
     synchronous_events_difference

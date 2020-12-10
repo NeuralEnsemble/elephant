@@ -3,7 +3,7 @@
 Tools to manipulate Neo objects.
 
 .. autosummary::
-    :toctree: toctree/neo_tools
+    :toctree: _toctree/neo_tools
 
     extract_neo_attributes
     get_all_spiketrains

@@ -5,7 +5,7 @@ correlations in parallel spike trains based on the analysis of the
 cumulants of the population count.
 
 .. autosummary::
-    :toctree: toctree/cubic
+    :toctree: _toctree/cubic
 
     cubic
 

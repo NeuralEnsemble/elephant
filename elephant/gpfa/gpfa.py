@@ -35,7 +35,7 @@ visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
 
 
 .. autosummary::
-    :toctree: toctree/gpfa
+    :toctree: _toctree/gpfa
 
     GPFA
 

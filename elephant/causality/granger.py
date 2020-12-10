@@ -42,7 +42,7 @@ Time-series Granger causality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: toctree/causality/
+    :toctree: _toctree/causality/
 
     pairwise_granger
     conditional_granger

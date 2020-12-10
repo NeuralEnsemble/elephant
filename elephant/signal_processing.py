@@ -4,7 +4,7 @@ Basic processing procedures for analog signals (e.g., performing a z-score of a
 signal, or filtering a signal).
 
 .. autosummary::
-    :toctree: toctree/signal_processing
+    :toctree: _toctree/signal_processing
 
     zscore
     cross_correlation_function

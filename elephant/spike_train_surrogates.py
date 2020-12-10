@@ -9,7 +9,7 @@ Different methods destroy different features of the original data.
 Main function
 -------------
 .. autosummary::
-    :toctree: toctree/spike_train_surrogates
+    :toctree: _toctree/spike_train_surrogates
 
     surrogates
 
@@ -17,7 +17,7 @@ Main function
 Surrogate types
 ---------------
 .. autosummary::
-    :toctree: toctree/spike_train_surrogates
+    :toctree: _toctree/spike_train_surrogates
 
     JointISI
     dither_spikes

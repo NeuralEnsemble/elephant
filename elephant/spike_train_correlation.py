@@ -3,7 +3,7 @@
 This modules provides functions to calculate correlations between spike trains.
 
 .. autosummary::
-    :toctree: toctree/spike_train_correlation
+    :toctree: _toctree/spike_train_correlation
 
     covariance
     correlation_coefficient
@@ -549,12 +549,10 @@ def cross_correlation_histogram(
         cross_correlation_coefficient=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
-    trains `binned_spiketrain_i` and `binned_spiketrain_j`. Cross-correlation
-    coefficient is computed according to :cite:`correlation-Eggermont2010_77`.
+    trains `binned_spiketrain_i` and `binned_spiketrain_j`.
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
-
 
     Parameters
     ----------

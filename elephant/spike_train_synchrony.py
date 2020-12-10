@@ -7,7 +7,7 @@ Synchrony Measures
 ------------------
 
 .. autosummary::
-    :toctree: toctree/spike_train_synchrony/
+    :toctree: _toctree/spike_train_synchrony/
 
     spike_contrast
     Synchrotool

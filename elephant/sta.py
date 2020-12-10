@@ -4,7 +4,7 @@ Functions to calculate spike-triggered average and spike-field coherence of
 analog signals.
 
 .. autosummary::
-    :toctree: toctree/sta
+    :toctree: _toctree/sta
 
     spike_triggered_average
     spike_field_coherence

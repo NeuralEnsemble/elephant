@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 .. autosummary::
-    :toctree: toctree/waveform_features
+    :toctree: _toctree/waveform_features
 
     waveform_width
     waveform_snr

@@ -18,7 +18,7 @@ applied as demonstrated in this short toy example of 5 parallel spike trains
 that exhibit fully synchronous events of order 5.
 
 .. autosummary::
-    :toctree: toctree/cell_assembly_detection
+    :toctree: _toctree/cell_assembly_detection
 
     cell_assembly_detection
 
