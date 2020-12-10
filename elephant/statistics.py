@@ -133,6 +133,12 @@ def isi(spiketrain, axis=-1):
         When the input array is not sorted, negative intervals are returned
         with a warning.
 
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.isi([0.3, 4.5, 6.7, 9.3])
+    array([4.2, 2.2, 2.6])
+
     """
     if isinstance(spiketrain, neo.SpikeTrain):
         intervals = np.diff(spiketrain.magnitude, axis=axis)
@@ -200,6 +206,12 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         `t_start` or `t_stop` is not `pq.Quantity`.
     ValueError
         If the input spiketrain is empty.
+
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
+    0.4301075268817204
 
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
@@ -300,6 +312,18 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     The check for the equal duration of the input spike trains is performed
     only if the input is of type`neo.SpikeTrain`: if you pass a numpy array,
     please make sure that they all have the same duration manually.
+
+    Examples
+    --------
+    >>> import neo
+    >>> from elephant import statistics
+    >>> spiketrains = [
+    ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
+    ...     neo.SpikeTrain([1.4, 3.3, 8.2], t_stop=10, units='s')
+    ... ]
+    >>> statistics.fanofactor(spiketrains)
+    0.07142857142857142
+
     """
     # Build array of spike counts (one per spike train)
     spike_counts = np.array([len(st) for st in spiketrains])
@@ -395,6 +419,13 @@ def cv2(time_intervals, with_nan=False):
     UserWarning
         If `with_nan` is True and `cv2` is calculated for a sequence with less
         than two entries, generating a np.NaN.
+
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
+    0.8226190476190478
+
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -456,6 +487,13 @@ def lv(time_intervals, with_nan=False):
     UserWarning
         If `with_nan` is True and the Lv is calculated for a spike train
         with less than two spikes, generating a np.NaN.
+
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
+    0.8306154336734695
+
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -523,6 +561,12 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
         If `with_nan` is True and the `lvr` is calculated for a spike train
         with less than two spikes, generating a np.NaN.
         If R is passed without any units attached milliseconds are assumed.
+
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005)
+    0.833907445980624
     """
     if isinstance(R, pq.Quantity):
         R = R.rescale('ms').magnitude
@@ -665,13 +709,50 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Examples
     --------
+    Example 1. Automatic kernel estimation.
+
+    >>> import neo
     >>> import quantities as pq
+    >>> from elephant import statistics
+    >>> spiketrain = neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s')
+    >>> rate = statistics.instantaneous_rate(spiketrain,
+    ...                                      sampling_period=10 * pq.ms,
+    ...                                      kernel='auto')
+    >>> rate
+    AnalogSignal with 1 channels of length 1000; units Hz; datatype float64
+    annotations: {'t_stop': array(10.) * s,
+      'kernel': {'type': 'GaussianKernel',
+       'sigma': '7.273225922958104 s',
+       'invert': False}}
+    sampling rate: 0.1 1/ms
+    time: 0.0 s to 10.0 s
+
+    Example 2. Manually set kernel.
+
     >>> from elephant import kernels
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> spiketrain = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=5*pq.s)
-    >>> kernel = kernels.AlphaKernel(sigma=0.05*pq.s, invert=True)
-    >>> rate = instantaneous_rate(spiketrain, sampling_period=2*pq.ms,
-    ...        kernel=kernel)
+    >>> spiketrain = neo.SpikeTrain([0], t_stop=1, units='s')
+    >>> kernel = kernels.GaussianKernel(sigma=300 * pq.ms)
+    >>> rate = statistics.instantaneous_rate(spiketrain,
+    ...        sampling_period=200 * pq.ms, kernel=kernel, t_start=-1 * pq.s)
+    >>> rate
+    AnalogSignal with 1 channels of length 10; units Hz; datatype float64
+    annotations: {'t_stop': array(1.) * s,
+      'kernel': {'type': 'GaussianKernel',
+       'sigma': '300.0 ms',
+       'invert': False}}
+    sampling rate: 0.005 1/ms
+    time: -1.0 s to 1.0 s
+    >>> rate.magnitude
+    array([[0.01007419],
+       [0.05842767],
+       [0.22928759],
+       [0.60883028],
+       [1.0938699 ],
+       [1.3298076 ],
+       [1.0938699 ],
+       [0.60883028],
+       [0.22928759],
+       [0.05842767]])
 
     """
     def optimal_kernel(st):
@@ -889,6 +970,24 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     --------
     elephant.conversion.BinnedSpikeTrain
 
+    Examples
+    --------
+    >>> import neo
+    >>> import quantities as pq
+    >>> from elephant import statistics
+    >>> spiketrains = [
+    ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
+    ...     neo.SpikeTrain([0.7, 4.3, 8.2], t_stop=10, units='s')
+    ... ]
+    >>> hist = statistics.time_histogram(spiketrains, bin_size=1 * pq.s)
+    >>> hist
+    AnalogSignal with 1 channels of length 10; units dimensionless; datatype int64
+    annotations: {'normalization': 'counts'}
+    sampling rate: 1.0 1/s
+    time: 0.0 s to 10.0 s
+    >>> hist.magnitude.flatten()
+    array([2, 0, 0, 0, 2, 0, 1, 0, 1, 1])
+
     """
     # Bin the spike trains and sum across columns
     bs = BinnedSpikeTrain(spiketrains, t_start=t_start, t_stop=t_stop,
@@ -963,13 +1062,13 @@ def complexity_pdf(spiketrains, bin_size):
 class Complexity(object):
     """
     Class for complexity distribution (i.e. number of synchronous spikes found)
-    of a list of `neo.SpikeTrain` objects.
+    :cite:`statistics-Gruen2007_96` of a list of `neo.SpikeTrain` objects.
 
     Complexity is calculated by counting the number of spikes (i.e. non-empty
     bins) that occur separated by `spread - 1` or less empty bins, within and
     across spike trains in the `spiketrains` list.
 
-    Implementation (without spread) is based on [1]_.
+    Implementation (without spread) is based on the cited above paper.
 
     Parameters
     ----------
@@ -1071,27 +1170,19 @@ class Complexity(object):
     elephant.conversion.BinnedSpikeTrain
     elephant.spike_train_synchrony.Synchrotool
 
-    References
-    ----------
-    .. [1] S. Gruen, M. Abeles, & M. Diesmann, "Impact of higher-order
-           correlations on coincidence distributions of massively parallel
-           data," In "Dynamic Brain - from Neural Spikes to Behaviors",
-           pp. 96-114, Springer Berlin Heidelberg, 2008.
-
     Examples
     --------
     >>> import neo
     >>> import quantities as pq
     >>> from elephant.statistics import Complexity
 
-    >>> sr = 1/pq.ms
-
+    >>> sampling_rate = 1/pq.ms
     >>> st1 = neo.SpikeTrain([1, 4, 6] * pq.ms, t_stop=10.0 * pq.ms)
     >>> st2 = neo.SpikeTrain([1, 5, 8] * pq.ms, t_stop=10.0 * pq.ms)
     >>> sts = [st1, st2]
 
     >>> # spread = 0, a simple bincount
-    >>> cpx = Complexity(sts, sampling_rate=sr)
+    >>> cpx = Complexity(sts, sampling_rate=sampling_rate)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [5 4 1]
@@ -1101,7 +1192,7 @@ class Complexity(object):
     [0. 1. 2. 3. 4. 5. 6. 7. 8. 9.] ms
 
     >>> # spread = 1, consecutive spikes
-    >>> cpx = Complexity(sts, sampling_rate=sr, spread=1)
+    >>> cpx = Complexity(sts, sampling_rate=sampling_rate, spread=1)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [5 4 1]
@@ -1109,12 +1200,22 @@ class Complexity(object):
     [0 2 0 0 3 3 3 0 1 0] dimensionless
 
     >>> # spread = 2, consecutive spikes and separated by 1 empty bin
-    >>> cpx = Complexity(sts, sampling_rate=sr, spread=2)
+    >>> cpx = Complexity(sts, sampling_rate=sampling_rate, spread=2)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [4 0 1 0 1]
     >>> print(cpx.time_histogram.flatten())
     [0 2 0 0 4 4 4 4 4 0] dimensionless
+    >>> pdf = cpx.pdf()
+    >>> pdf
+    AnalogSignal with 1 channels of length 3; units dimensionless;
+    datatype float64
+    sampling rate: 1.0 dimensionless
+    time: 0.0 dimensionless to 3.0 dimensionless
+    >>> pdf.magnitude
+    array([[0.5],
+           [0.4],
+           [0.1]])
     """
 
     def __init__(self, spiketrains,

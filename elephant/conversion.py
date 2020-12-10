@@ -29,9 +29,19 @@ BinnedSpikeTrain(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, 9))
 >>> bst.to_array()
 array([[2, 1, 0, 1, 1, 1, 1, 0, 0],
        [2, 1, 1, 0, 1, 1, 0, 0, 1]], dtype=int32)
+
+Binarizing the binned matrix.
+
 >>> bst.to_bool_array()
 array([[ True,  True, False,  True,  True,  True,  True, False, False],
        [ True,  True,  True, False,  True,  True, False, False,  True]])
+
+>>> bst_binary = bst.binarize()
+>>> bst_binary
+BinnedSpikeTrainView(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, 9))
+>>> bst_binary.to_array()
+array([[1, 1, 0, 1, 1, 1, 1, 0, 0],
+       [1, 1, 1, 0, 1, 1, 0, 0, 1]], dtype=int32)
 
 Slicing.
 
