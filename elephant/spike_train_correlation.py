@@ -346,19 +346,21 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     Examples
     --------
-    Generate two Poisson spike trains
+    Covariance matrix of two Poisson spike train processes.
 
     >>> import neo
-    >>> from quantities import s, Hz, ms
+    >>> import numpy as np
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> st1 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
-    >>> print(cov_matrix[0, 1])
-    -0.001668334167083546
+    >>> from elephant.spike_train_correlation import covariance
+
+    >>> np.random.seed(1)
+    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
+    >>> cov_matrix
+    array([[ 0.05432316, -0.00152276],
+       [-0.00152276,  0.04917234]])
 
     """
     if binary:
@@ -449,21 +451,22 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     Examples
     --------
-    Generate two Poisson spike trains
+    Correlation coefficient of two Poisson spike train processes.
 
     >>> import neo
-    >>> from quantities import s, Hz, ms
+    >>> import numpy as np
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> st1 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cc_matrix = correlation_coefficient(BinnedSpikeTrain([st1, st2],
-    ... bin_size=5*ms))
-    >>> print(cc_matrix[0, 1])
-    0.015477320222075359
+    >>> from elephant.spike_train_correlation import correlation_coefficient
 
+    >>> np.random.seed(1)
+    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
+    ...     bin_size=5*pq.ms))
+    >>> corrcoef
+    array([[ 1.        , -0.02946313],
+           [-0.02946313,  1.        ]])
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -657,31 +660,34 @@ def cross_correlation_histogram(
     Plot the cross-correlation histogram between two Poisson spike trains
 
     >>> import elephant
-    >>> import matplotlib.pyplot as plt
     >>> import quantities as pq
+    >>> import numpy as np
+    >>> from elephant.conversion import BinnedSpikeTrain
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_correlation import \
+    ... cross_correlation_histogram
 
-    >>> binned_spiketrain_i = elephant.conversion.BinnedSpikeTrain(
-    ...        elephant.spike_train_generation.homogeneous_poisson_process(
+    >>> np.random.seed(1)
+    >>> binned_spiketrain_i = BinnedSpikeTrain(
+    ...        homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
     ...        bin_size=5. * pq.ms)
-    >>> binned_spiketrain_j = elephant.conversion.BinnedSpikeTrain(
-    ...        elephant.spike_train_generation.homogeneous_poisson_process(
+    >>> binned_spiketrain_j = BinnedSpikeTrain(
+    ...        homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
     ...        bin_size=5. * pq.ms)
 
-    >>> cc_hist = \
-    ...    elephant.spike_train_correlation.cross_correlation_histogram(
-    ...        binned_spiketrain_i, binned_spiketrain_j, window=[-30,30],
+    >>> cc_hist, lags = cross_correlation_histogram(
+    ...        binned_spiketrain_i, binned_spiketrain_j, window=[-10, 10],
     ...        border_correction=False,
-    ...        binary=False, kernel=None, method='memory')
-
-    >>> plt.bar(left=cc_hist[0].times.magnitude,
-    ...         height=cc_hist[0][:, 0].magnitude,
-    ...         width=cc_hist[0].sampling_period.magnitude)
-    >>> plt.xlabel('time (' + str(cc_hist[0].times.units) + ')')
-    >>> plt.ylabel('cross-correlation histogram')
-    >>> plt.axis('tight')
-    >>> plt.show()
+    ...        binary=False, kernel=None)
+    >>> print(cc_hist.flatten())
+    [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
+      1.  2.  4.  2. -0.  3.  3.] dimensionless
+    >>> lags
+    array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
+         0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
+        10], dtype=int32)
 
     """
 
@@ -858,6 +864,21 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     Notes
     -----
     Alias: `sttc`
+
+    Examples
+    --------
+    >>> import neo
+    >>> import quantities as pq
+    >>> from elephant.spike_train_correlation import \
+    ...    spike_time_tiling_coefficient
+
+    >>> spiketrain1 = neo.SpikeTrain([1.3, 7.56, 15.87, 28.23, 30.9, 34.2,
+    ...     38.2, 43.2], units='ms', t_stop=50)
+    >>> spiketrain2 = neo.SpikeTrain([1.02, 2.71, 18.82, 28.46, 28.79, 43.6],
+    ...     units='ms', t_stop=50)
+    >>> spike_time_tiling_coefficient(spiketrain1, spiketrain2)
+    0.4958601655933762
+
     """
 
     def run_P(spiketrain_i, spiketrain_j):
@@ -1001,6 +1022,19 @@ def spike_train_timescale(binned_spiketrain, max_tau):
     * The bin size of `binned_spiketrain` is another critical parameter as it
       defines the discretization of the integral :math:`d\tau`. If it is too
       big, the numerical approximation of the integral is inaccurate.
+
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.spike_train_correlation import spike_train_timescale
+    >>> from elephant.conversion import BinnedSpikeTrain
+    >>> spiketrain = neo.SpikeTrain([1, 5, 7, 8], units='ms', t_stop=10*pq.ms)
+    >>> bst = BinnedSpikeTrain(spiketrain, bin_size=1 * pq.ms)
+    >>> spike_train_timescale(bst, max_tau=5 * pq.ms)
+    array(14.11111111) * ms
+
     """
     if binned_spiketrain.get_num_of_spikes() < 2:
         warnings.warn("Spike train contains less than 2 spikes! "
