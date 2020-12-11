@@ -173,6 +173,28 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     scipy.signal.welch
     welch_cohere
 
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.spectral import welch_psd
+    >>> signal = neo.AnalogSignal(np.cos(np.linspace(0, 2 * np.pi, num=100)),
+    ...     sampling_rate=20 * pq.Hz, units='mV')
+
+    Sampling frequency will be taken as `signal.sampling_rate`.
+
+    >>> freq, psd = welch_psd(signal)
+    >>> freq
+    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,
+            3.63636364,  4.54545455,  5.45454545,  6.36363636,
+            7.27272727,  8.18181818,  9.09090909, 10.        ]) * Hz
+    >>> psd
+    array([[1.09566410e-03, 2.33607943e-02, 1.35436832e-03,
+        6.74408723e-05, 1.00810196e-05, 2.40079315e-06,
+        7.35821437e-07, 2.58361700e-07, 9.44183422e-08,
+        3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
+
     """
 
     # initialize a parameter dict (to be given to scipy.signal.welch()) with
@@ -379,6 +401,27 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     --------
     welch_psd
 
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.spectral import welch_coherence
+    >>> signal = neo.AnalogSignal(np.cos(np.linspace(0, 2 * np.pi, num=100)),
+    ...     sampling_rate=20 * pq.Hz, units='mV')
+
+    Sampling frequency will be taken as `signal.sampling_rate`.
+
+    >>> freq, coherency, phase_lag = welch_coherence(signal, signal)
+    >>> freq
+    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,
+            3.63636364,  4.54545455,  5.45454545,  6.36363636,
+            7.27272727,  8.18181818,  9.09090909, 10.        ]) * Hz
+    >>> coherency.flatten()
+    array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
+    >>> phase_lag.flatten()
+    array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) * rad
+
     """
 
     # TODO: code duplication with welch_psd()
@@ -464,3 +507,4 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
+    return welch_coherence(*args, **kwargs)
