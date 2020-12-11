@@ -153,13 +153,6 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st, 2.1 * pq.s, 5, 100,
                                        time_step=0.5 * pq.s)
-        assert_array_almost_equal(res, target, decimal=9)
-
-    def test_MultipleFilterAlgorithm_with_plain_array_h05(self):
-        st = self.test_array
-        target = [self.targ_h05_dt05]
-        res = mft.multiple_filter_test([0.5] * pq.s, st * pq.s, 2.1 * pq.s, 5,
-                                       100, time_step=0.5 * pq.s)
         self.assertNotIsInstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
 

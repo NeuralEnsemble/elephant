@@ -218,12 +218,22 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     ...
     >>> # Generate correlated data and bin it with a bin_size of 10ms
     >>> sts = elephant.spike_train_generation.cpp(
-    >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
+    >>>     rate=15*pq.Hz, A=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=10*pq.s)
     >>> bin_size = 10*pq.ms
     >>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
     ...
     >>> # Call of the method
-    >>> patterns = cad.cell_assembly_detection(spM=spM, max_lag=2)[0]
+    >>> patterns = cad.cell_assembly_detection(spM, max_lag=2)[0]
+    >>> patterns
+    {'neurons': [0, 1, 2],
+     'lags': [0, 0],
+     'pvalue': [1.956590760924396e-09, 1.7400048777320958e-30],
+     'times': array([ 19,  26,  98, 135, 147, 171, 188, 207, 230, 252,
+            299, 302, 308, 315, 334, 348, 358, 374, 419, 420,
+            426, 473, 488, 500, 504, 523, 543, 561, 575, 613,
+            618, 619, 622, 637, 672, 689, 717, 774, 809, 867,
+            881, 887, 918, 957]),
+     'signature': [[1, 165], [2, 53.0], [3, 45.0]]}
 
     """
     initial_time = time.time()
