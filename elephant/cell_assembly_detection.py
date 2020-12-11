@@ -29,10 +29,12 @@ Visualization of CAD method is covered in Viziphant
 :func:`viziphant.patterns.plot_patterns`
 
 
+See Also
+--------
+elephant.spade.spade : advanced synchronous patterns detection
+
 Examples
 --------
->>> import matplotlib.pyplot as plt
->>> import elephant.spike_train_generation
 >>> import quantities as pq
 >>> import numpy as np
 >>> from elephant.cell_assembly_detection import cell_assembly_detection
@@ -43,13 +45,14 @@ Generate correlated data and bin it with a bin_size of 10ms.
 
 >>> np.random.seed(30)
 >>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
-...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=10*pq.s)
+...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
 >>> bst = BinnedSpikeTrain(spiketrains, bin_size=10 * pq.ms)
+>>> bst.rescale('ms')
 
 Call of the method.
 
->>> patterns = cell_assembly_detection(bst, max_lag=2)[0]
->>> patterns
+>>> patterns = cell_assembly_detection(bst, max_lag=2)
+>>> patterns[0]
 {'neurons': [0, 2],
  'lags': array([0.]) * ms,
  'pvalue': [5.3848138041122556e-05],
@@ -57,6 +60,8 @@ Call of the method.
         1480., 1650., 2030., 2220., 2570., 3130., 3430., 3480., 3610.,
         3800., 3830., 3930., 4080., 4560., 4600., 4670.]) * ms,
  'signature': [[1, 83], [2, 25.0]]}
+
+Refer to Viziphant documentation to check the visualization of this example.
 
 """
 

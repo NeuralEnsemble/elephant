@@ -33,46 +33,54 @@ imported (only available for linux OS) SPADE will make use of a python
 implementation of the fast fca algorithm contained in
 `elephant/spade_src/fast_fca.py`, which is about 10 times slower.
 
+See Also
+--------
+elephant.cell_assembly_detection.cell_assembly_detection : another synchronous
+patterns detection
+
+
 Examples
 --------
 Given a list of Neo Spiketrain objects, assumed to be recorded in parallel, the
 SPADE analysis can be applied as demonstrated in this short toy example of 10
 artificial spike trains of exhibiting fully synchronous events of order 10.
 
->>> from elephant.spade import spade
->>> import elephant.spike_train_generation
 >>> import quantities as pq
+>>> import numpy as np
+>>> from elephant.spike_train_generation import compound_poisson_process
+>>> from elephant.spade import spade
 
 Generate correlated spiketrains.
 
->>> spiketrains = elephant.spike_train_generation.cpp(
-...    rate=5*pq.Hz, A=[0]+[0.99]+[0]*9+[0.01], t_stop=10*pq.s)
+>>> np.random.seed(30)
+>>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
+...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
 
 Mining patterns with SPADE using a `bin_size` of 1 ms and a window length of 1
 bin (i.e., detecting only synchronous patterns).
 
->>> patterns = spade(
-...        spiketrains=spiketrains, bin_size=1*pq.ms, winlen=1, dither=5*pq.ms,
-...        min_spikes=10, n_surr=10, psr_param=[0,0,3],
-...        output_format='patterns')['patterns'][0]
+>>> patterns = spade(spiketrains, bin_size=10 * pq.ms, winlen=1,
+...                  dither=5 * pq.ms, min_spikes=6, n_surr=10,
+...                  psr_param=[0, 0, 3])['patterns']
+>>> patterns[0]
+{'itemset': (4, 3, 0, 2, 5, 1),
+ 'windows_ids': (9,
+  16,
+  55,
+  91,
+  ...,
+  393,
+  456,
+  467),
+ 'neurons': [4, 3, 0, 2, 5, 1],
+ 'lags': array([0., 0., 0., 0., 0.]) * ms,
+ 'times': array([  90.,  160.,  550.,  910.,  930., 1420., 1480., 1650., 2570.,
+        3130., 3430., 3480., 3610., 3800., 3830., 3930., 4560., 4670.]) * ms,
+ 'signature': (6, 18),
+ 'pvalue': 0.0}
 
->>> import matplotlib.pyplot as plt
->>> for neu in patterns['neurons']:
-...     label = 'pattern' if neu == 0 else None
-...     plt.plot(patterns['times'], [neu]*len(patterns['times']), 'ro',
-...              label=label)
 
-Raster plot of the spiketrains.
-
->>> for st_idx, spiketrain in enumerate(spiketrains):
-...     label = 'pattern' if st_idx == 0 else None
-...     plt.plot(spiketrain.rescale(pq.ms), [st_idx] * len(spiketrain),
-...              'k.', label=label)
->>> plt.ylim([-1, len(spiketrains)])
->>> plt.xlabel('time (ms)')
->>> plt.ylabel('neurons ids')
->>> plt.legend()
->>> plt.show()
+Refer to Viziphant documentation to check how to visualzie such patterns.
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
