@@ -26,20 +26,12 @@ windows with different sizes `h`.
 
 Examples
 --------
-The following applies multiple_filter_test to a spike trains.
-
->>> import neo
 >>> import quantities as pq
 >>> from elephant.change_point_detection import multiple_filter_test
->>> test_array = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95]
->>> st = neo.SpikeTrain(test_array, units='s', t_stop = 2.1)
->>> window_size = [0.5] * pq.s
->>> t_fin = 2.1 * pq.s
->>> alpha = 5.0
->>> num_surrogates = 10000
->>> change_points = multiple_filter_test(window_size, st, t_fin, alpha,
-...                 num_surrogates, time_step=0.5 * pq.s)
->>> change_points
+>>> spike_times = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.9, 1.95] * pq.s
+>>> change_points = multiple_filter_test(window_sizes=[0.5] * pq.s,
+...     spiketrain=spike_times, t_final=2.1 * pq.s, alpha=5, n_surrogates=100,
+...     time_step=0.1 * pq.s)
 [[array(1.5) * s]]
 
 Original code
@@ -115,15 +107,6 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         does not include previously detected cps (with smaller window h) are
         added to the list.
 
-    Examples
-    --------
-    >>> import quantities as pq
-    >>> from elephant.change_point_detection import multiple_filter_test
-    >>> spike_times = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.9, 1.95] * pq.s
-    >>> multiple_filter_test(window_sizes=[0.5] * pq.s, spiketrain=spike_times,
-    ...                      t_final=2.1 * pq.s, alpha=5, n_surrogates=100,
-    ...                      time_step=0.1 * pq.s)
-    [[array(1.5) * s]]
     """
 
     if test_quantile is None and test_param is None:
