@@ -22,61 +22,41 @@ that exhibit fully synchronous events of order 5.
 
     cell_assembly_detection
 
+
+Visualization
+-------------
+Visualization of CAD method is covered in Viziphant
+:func:`viziphant.patterns.plot_patterns`
+
+
 Examples
 --------
 >>> import matplotlib.pyplot as plt
->>> import elephant.conversion as conv
 >>> import elephant.spike_train_generation
 >>> import quantities as pq
 >>> import numpy as np
->>> import elephant.cell_assembly_detection as cad
+>>> from elephant.cell_assembly_detection import cell_assembly_detection
+>>> from elephant.spike_train_generation import compound_poisson_process
+>>> from elephant.conversion import BinnedSpikeTrain
 
 Generate correlated data and bin it with a bin_size of 10ms.
 
 >>> np.random.seed(30)
->>> sts = elephant.spike_train_generation.cpp(
->>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
->>> bin_size = 10*pq.ms
->>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
+>>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
+...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=10*pq.s)
+>>> bst = BinnedSpikeTrain(spiketrains, bin_size=10 * pq.ms)
 
 Call of the method.
 
->>> patterns = cad.cell_assembly_detection(spM, max_lag=2)[0]
+>>> patterns = cell_assembly_detection(bst, max_lag=2)[0]
 >>> patterns
-{'neurons': [0, 1, 2],
- 'lags': [0, 0],
- 'pvalue': [1.956590760924396e-09, 1.7400048777320958e-30],
- 'times': array([ 19,  26,  98, 135, 147, 171, 188, 207, 230, 252,
-        299, 302, 308, 315, 334, 348, 358, 374, 419, 420,
-        426, 473, 488, 500, 504, 523, 543, 561, 575, 613,
-        618, 619, 622, 637, 672, 689, 717, 774, 809, 867,
-        881, 887, 918, 957]),
- 'signature': [[1, 165], [2, 53.0], [3, 45.0]]}
-
-Plotting.
-
->>> plt.figure()
->>> for neu in patterns['neurons']:
->>>     if neu == 0:
->>>         plt.plot(
->>>             patterns['times']*bin_size, [neu]*len(patterns['times']),
->>>             'ro', label='pattern')
->>>     else:
->>>         plt.plot(
->>>             patterns['times']*bin_size, [neu] * len(patterns['times']),
->>>             'ro')
->>> # Raster plot of the data
->>> for st_idx, st in enumerate(sts):
->>>     if st_idx == 0:
->>>         plt.plot(st.rescale(pq.ms), [st_idx] * len(st), 'k.',
->>>                  label='spikes')
->>>     else:
->>>         plt.plot(st.rescale(pq.ms), [st_idx] * len(st), 'k.')
->>> plt.ylim([-1, len(sts)])
->>> plt.xlabel('time (ms)')
->>> plt.ylabel('neurons ids')
->>> plt.legend()
->>> plt.show()
+{'neurons': [0, 2],
+ 'lags': array([0.]) * ms,
+ 'pvalue': [5.3848138041122556e-05],
+ 'times': array([  90.,  160.,  170.,  550.,  790.,  910.,  930., 1420., 1470.,
+        1480., 1650., 2030., 2220., 2570., 3130., 3430., 3480., 3610.,
+        3800., 3830., 3930., 4080., 4560., 4600., 4670.]) * ms,
+ 'signature': [[1, 83], [2, 25.0]]}
 
 """
 
@@ -85,6 +65,7 @@ from __future__ import division, print_function, unicode_literals
 import copy
 import math
 import time
+import warnings
 
 import numpy as np
 from scipy.stats import f
@@ -105,7 +86,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             max_spikes=np.inf, significance_pruning=True,
                             subgroup_pruning=True,
                             same_configuration_pruning=False,
-                            bool_times_format=False, verbose=False):
+                            bool_times_format=None, verbose=False):
 
     """
     Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
@@ -171,12 +152,10 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         if they appear in the very same configuration.
         Default: False
     bool_times_format : bool, optional
-        If True, the activation time series is a list of 0/1 elements, where
-        1 indicates the first spike of the pattern.
-        Otherwise, the activation times of the assemblies are indicated by the
-        indices of the bins in which the first spike of the pattern
-        is happening.
-        Default: False
+        .. deprecated:: 0.10.0
+        Has no effect, the returning 'times' are always a quantity array
+        specifying the pattern spike times.
+        Default: None
     verbose : bool, optional
         Regulates the number of prints given by the method. If true all prints
         are given, otherwise the method does give any prints.
@@ -191,7 +170,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         'neurons' : list
             Vector of units taking part to the assembly (unit order correspond
             to the agglomeration order).
-        'lag' : list
+        'lag' : pq.Quantity
             Vector of time lags.
             `lag[z]` is the activation delay between `neurons[1]` and
             `neurons[z+1]`.
@@ -199,12 +178,8 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
             Vector containing p-values.
             `pvalue[z]` is the p-value of the statistical test between
             performed adding `neurons[z+1]` to the `neurons[1:z]`.
-        'times' : list
-            Assembly activation time. It reports how many times the
-            complete assembly activates in that bin. Time always refers to the
-            activation of the first listed assembly element (`neurons[1]`),
-            that doesn't necessarily corresponds to the first unit firing.
-            The format is  identified by the variable `bool_times_format`.
+        'times' : pq.Quantity
+            Assembly activation times in the units of `binned_spiketrain`.
         'signature' : list of list
             Array of two entries `(z,c)`. The first is the number of neurons
             participating in the assembly (size), and the second is number of
@@ -214,42 +189,13 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     ------
     TypeError
         If `binned_spiketrain` is not an instance of
-        `elephant.conv.BinnedSpikeTrain`.
+        `elephant.conversion.BinnedSpikeTrain`.
     ValueError
         If the parameters are out of bounds.
 
     Notes
     -----
     Alias: cad
-
-    Examples
-    --------
-    >>> import elephant.conversion as conv
-    >>> import elephant.spike_train_generation
-    >>> import quantities as pq
-    >>> import numpy as np
-    >>> import elephant.cell_assembly_detection as cad
-    ...
-    >>> np.random.seed(30)
-    ...
-    >>> # Generate correlated data and bin it with a bin_size of 10ms
-    >>> sts = elephant.spike_train_generation.cpp(
-    >>>     rate=15*pq.Hz, A=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=10*pq.s)
-    >>> bin_size = 10*pq.ms
-    >>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
-    ...
-    >>> # Call of the method
-    >>> patterns = cad.cell_assembly_detection(spM, max_lag=2)[0]
-    >>> patterns
-    {'neurons': [0, 1, 2],
-     'lags': [0, 0],
-     'pvalue': [1.956590760924396e-09, 1.7400048777320958e-30],
-     'times': array([ 19,  26,  98, 135, 147, 171, 188, 207, 230, 252,
-            299, 302, 308, 315, 334, 348, 358, 374, 419, 420,
-            426, 473, 488, 500, 504, 523, 543, 561, 575, 613,
-            618, 619, 622, 637, 672, 689, 717, 774, 809, 867,
-            881, 887, 918, 957]),
-     'signature': [[1, 165], [2, 53.0], [3, 45.0]]}
 
     """
     initial_time = time.time()
@@ -261,6 +207,15 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                   min_occurrences=min_occurrences,
                   size_chunks=size_chunks,
                   max_spikes=max_spikes)
+
+    if bool_times_format is not None:
+        warnings.warn("'bool_times_format' is deprecated and has no effect; "
+                      "the returning 'times' are always a quantity array "
+                      "specifying the pattern spike times. Set this parameter "
+                      "to None.", DeprecationWarning)
+
+    bin_size = binned_spiketrain.bin_size
+    t_start = binned_spiketrain.t_start
 
     # transform the binned spiketrain into array
     binned_spiketrain = binned_spiketrain.to_array()
@@ -360,9 +315,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     # the algorithm will return assemblies composed by
     # maximum max_spikes elements
     if verbose:
-        print()
-        print('Testing on higher order assemblies...')
-        print()
+        print('\nTesting on higher order assemblies...\n')
 
     # keep the count of the current size of the assembly
     current_size_agglomeration = 2
@@ -478,15 +431,14 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         assembly = _subgroup_pruning_step(pre_pruning_assembly=assembly)
 
     # Reformat of the activation times
-    if not bool_times_format:
-        for pattern in assembly:
-            pattern['times'] = np.where(pattern['times'] > 0)[0]
+    for pattern in assembly:
+        times = np.where(pattern['times'] > 0)[0] * bin_size + t_start
+        pattern['times'] = times
+        pattern['lags'] = pattern['lags'] * bin_size
 
     # Give as output only the maximal groups
     if verbose:
-        print()
-        print('Giving outputs of the method...')
-        print()
+        print('\nGiving outputs of the method...\n')
         print('final_assembly')
         for item in assembly:
             print(item['neurons'],
@@ -495,8 +447,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
     # Time needed for the computation
     if verbose:
-        print()
-        print('time', time.time() - initial_time)
+        print('\ntime', time.time() - initial_time)
 
     return assembly
 

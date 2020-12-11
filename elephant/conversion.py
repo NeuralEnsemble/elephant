@@ -63,6 +63,13 @@ Check the correctness of a spike trains realosation
 >>> BinnedSpikeTrain(bst.to_spike_trains(), bin_size=bst.bin_size) == bst
 True
 
+Rescale the units of a binned spike train without changing the data.
+
+>>> bst.rescale('ms')
+>>> bst
+BinnedSpikeTrain(t_start=0.0 ms, t_stop=9000.0 ms, bin_size=1000.0 ms;
+shape=(2, 9))
+
 :copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
