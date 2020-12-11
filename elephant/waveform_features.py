@@ -120,8 +120,8 @@ def waveform_snr(waveforms):
 
     """
     if isinstance(waveforms, neo.SpikeTrain):
-        warnings.warn("spiketrain input is deprecated; "
-                      "pass 'spiketrain.waveforms' directly.")
+        warnings.warn("spiketrain input is deprecated; pass "
+                      "'spiketrain.waveforms' directly.", DeprecationWarning)
         waveforms = waveforms.waveforms
     # asarray removes quantities, if present
     waveforms = np.squeeze(np.asarray(waveforms))
