@@ -92,6 +92,7 @@ def zscore(signal, inplace=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
+    >>> from elephant.signal_processing import zscore
     ...
     >>> a = neo.AnalogSignal(
     ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1) * pq.mV,
@@ -279,7 +280,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     >>> import neo
     >>> import quantities as pq
     >>> import matplotlib.pyplot as plt
-    ...
+    >>> from elephant.signal_processing import cross_correlation_function
     >>> dt = 0.02
     >>> N = 2018
     >>> f = 0.5
@@ -287,8 +288,9 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     >>> x = np.zeros((N,2))
     >>> x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
     >>> x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
-    ...
-    >>> # Generate neo.AnalogSignals from x and find cross-correlation
+
+    Generate neo.AnalogSignals from x and find cross-correlation
+
     >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
     >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
     >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
@@ -445,6 +447,30 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
 
         If both `highpass_frequency` and `lowpass_frequency` are None.
 
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.signal_processing import butter
+    >>> noise = neo.AnalogSignal(np.random.normal(size=5000),
+    ...     sampling_rate=1000 * pq.Hz, units='mV')
+    >>> filtered_noise = butter(noise, highpass_frequency=250.0 * pq.Hz)
+    >>> filtered_noise
+    AnalogSignal with 1 channels of length 5000; units mV; datatype float64
+    sampling rate: 1000.0 Hz
+    time: 0.0 s to 5.0 s
+
+    Let's check that the normal noise power spectrum at zero frequency is close
+    to zero.
+
+    >>> from elephant.spectral import welch_psd
+    >>> freq, psd = welch_psd(filtered_noise, fs=1000.0)
+    >>> psd.shape
+    (1, 556)
+    >>> freq[0], psd[0, 0]
+    (array(0.) * Hz, array(7.21464674e-08) * mV**2/Hz)
+
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
     if filter_function not in available_filters:
@@ -591,6 +617,28 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     `n_cycles` is related to the wavelet number :math:`w` as
     :math:`w \sim 2 \pi \frac{n_{\text{cycles}}}{6}` as defined in
     :cite:`signal-Le2001_83`.
+
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.signal_processing import wavelet_transform
+    >>> noise = neo.AnalogSignal(np.random.normal(size=7),
+    ...     sampling_rate=11 * pq.Hz, units='mV')
+
+    The wavelet frequency must be less than the half of the sampling rate;
+    picking at 5 Hz.
+
+    >>> wavelet_transform(noise, frequency=5)
+    array([[-1.00890049+3.003473j  ],
+       [-1.43664254-2.8389273j ],
+       [ 3.02499511+0.96534578j],
+       [-2.79543976+1.4581079j ],
+       [ 0.94387304-2.98159518j],
+       [ 1.41476471+2.77389985j],
+       [-2.95996766-0.9872236j ]])
+
     """
     def _morlet_wavelet_ft(freq, n_cycles, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
@@ -713,11 +761,11 @@ def hilbert(signal, padding='nextpow'):
     Create a sine signal at 5 Hz with increasing amplitude and calculate the
     instantaneous phases:
 
+    >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> import neo
     >>> import matplotlib.pyplot as plt
-    ...
+    >>> from elephant.signal_processing import hilbert
     >>> t = np.arange(0, 5000) * pq.ms
     >>> f = 5. * pq.Hz
     >>> a = neo.AnalogSignal(
@@ -847,6 +895,17 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     --------
     neo.AnalogSignal.time_slice : how `t_start` and `t_stop` are used
 
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.signal_processing import rauc
+    >>> signal = neo.AnalogSignal(np.arange(10), sampling_rate=20 * pq.Hz,
+    ...     units='mV')
+    >>> rauc(signal)
+    array(2.025) * mV/Hz
+
     """
 
     if not isinstance(signal, neo.AnalogSignal):
@@ -934,6 +993,19 @@ def derivative(signal):
     TypeError
         If `signal` is not a `neo.AnalogSignal`.
 
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.signal_processing import derivative
+    >>> signal = neo.AnalogSignal([0, 3, 4, 11, -1], sampling_rate=1 * pq.Hz,
+    ...     units='mV')
+    >>> print(derivative(signal))
+    [[  3.]
+     [  1.]
+     [  7.]
+     [-12.]] mV*Hz
     """
 
     if not isinstance(signal, neo.AnalogSignal):
