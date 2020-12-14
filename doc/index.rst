@@ -37,8 +37,8 @@ Table of Contents
 * :doc:`install`
 * :doc:`tutorials`
 * :doc:`modules`
-* :doc:`release_notes`
 * :doc:`contribute`
+* :doc:`release_notes`
 * :doc:`acknowledgments`
 * :doc:`citation`
 

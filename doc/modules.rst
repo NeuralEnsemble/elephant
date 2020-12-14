@@ -26,20 +26,25 @@ Spike trains
     :maxdepth: 2
 
     reference/statistics
-    reference/_spike_train_processing
     reference/spike_train_generation
 
 .. toctree::
     :maxdepth: 1
 
     reference/spike_train_surrogates
-    reference/cell_assembly_detection
+
+.. toctree::
+    :maxdepth: 2
+
+    reference/_spike_train_processing
+    reference/_spike_train_patterns
+
+.. toctree::
+    :maxdepth: 1
+
     reference/change_point_detection
     reference/cubic
     reference/gpfa
-    reference/unitary_event_analysis
-    reference/spade
-    reference/asset
 
 
 *******************************
