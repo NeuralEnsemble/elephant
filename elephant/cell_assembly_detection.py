@@ -59,7 +59,7 @@ Call of the method.
  'times': array([  90.,  160.,  170.,  550.,  790.,  910.,  930., 1420., 1470.,
         1480., 1650., 2030., 2220., 2570., 3130., 3430., 3480., 3610.,
         3800., 3830., 3930., 4080., 4560., 4600., 4670.]) * ms,
- 'signature': [[1, 83], [2, 25.0]]}
+ 'signature': [[1, 83], [2, 25]]}
 
 Refer to Viziphant documentation to check the visualization of this example.
 
@@ -185,7 +185,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
             performed adding `neurons[z+1]` to the `neurons[1:z]`.
         'times' : pq.Quantity
             Assembly activation times in the units of `binned_spiketrain`.
-        'signature' : list of list
+        'signature' : np.ndarray
             Array of two entries `(z,c)`. The first is the number of neurons
             participating in the assembly (size), and the second is number of
             assembly occurrences.
@@ -440,6 +440,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         times = np.where(pattern['times'] > 0)[0] * bin_size + t_start
         pattern['times'] = times
         pattern['lags'] = pattern['lags'] * bin_size
+        pattern['signature'] = np.array(pattern['signature'], dtype=np.int32)
 
     # Give as output only the maximal groups
     if verbose:
