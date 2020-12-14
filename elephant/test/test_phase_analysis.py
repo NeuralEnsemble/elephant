@@ -220,7 +220,8 @@ class MeanVectorTestCase(unittest.TestCase):
         for a sample with all phases equal to phi on the unit circle.
 
         """
-        theta_bar_1, r_1 = elephant.phase_analysis.mean_vector(self.dataset1)
+        theta_bar_1, r_1 = elephant.phase_analysis.mean_phase_vector(
+            self.dataset1)
         # mean direction must be phi
         self.assertAlmostEqual(theta_bar_1, self.lock_value_phi,
                                delta=self.tolerance)
@@ -232,7 +233,8 @@ class MeanVectorTestCase(unittest.TestCase):
         Test if the mean vector length  is 0 for a evenly spaced distribution
         on the unit circle.
         """
-        theta_bar_2, r_2 = elephant.phase_analysis.mean_vector(self.dataset2)
+        theta_bar_2, r_2 = elephant.phase_analysis.mean_phase_vector(
+            self.dataset2)
         # mean vector length must be almost equal 0
         self.assertAlmostEqual(r_2, 0, delta=self.tolerance)
 
@@ -242,7 +244,8 @@ class MeanVectorTestCase(unittest.TestCase):
         and is within (-pi, pi].
         Test if the range of the mean vector length is within [0, 1].
         """
-        theta_bar_3, r_3 = elephant.phase_analysis.mean_vector(self.dataset3)
+        theta_bar_3, r_3 = elephant.phase_analysis.mean_phase_vector(
+            self.dataset3)
         # mean vector direction
         self.assertTrue(-np.pi < theta_bar_3 <= np.pi)
         # mean vector length
@@ -371,40 +374,26 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
         self.num_trials = 100
-        self.num_time_points = 2000  # in total;; 1000 per second
-
-        # create two random uniform distributions (all trials are identical)
-        signal_x = \
-            np.full([self.num_trials, self.num_time_points],
-                    np.random.uniform(-np.pi, np.pi, self.num_time_points))
-        signal_y = \
-            np.full([self.num_trials, self.num_time_points],
-                    np.random.uniform(-np.pi, np.pi, self.num_time_points))
-
-        # create two random uniform distributions, where all trails are random
-        random_x = np.random.uniform(
-            -np.pi, np.pi, (1000, self.num_time_points))
-        random_y = np.random.uniform(
-            -np.pi, np.pi, (1000, self.num_time_points))
+        self.trial_length = 2000
+        self.srate = 1000*pq.Hz
 
         # version_1: as_x/y_neo has shape (trial, signal x & y, phases)
-        self.as_x_neo = \
-            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
-                          sampling_rate=self.num_time_points / (2 * pq.s))
-             for i in signal_x]
-
-        self.as_y_neo = \
-            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
-                          sampling_rate=self.num_time_points / (2 * pq.s))
-             for i in signal_y]
-        self.as_random_x_neo = \
-            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
-                          sampling_rate=self.num_time_points / (2 * pq.s))
-             for i in random_x]
-        self.as_random_y_neo = \
-            [AnalogSignal(signal=i * pq.rad, units=pq.rad,
-                          sampling_rate=self.num_time_points / (2 * pq.s))
-             for i in random_y]
+        # create two random uniform distributions (all trials are identical)
+        trial_x = np.random.uniform(-np.pi, np.pi, self.trial_length)
+        trial_y = np.random.uniform(-np.pi, np.pi, self.trial_length)
+        self.as_x_neo = [AnalogSignal(signal=trial_x, units=pq.rad,
+                                      sampling_rate=self.srate)
+                         for _ in range(self.num_trials)]
+        self.as_y_neo = [AnalogSignal(signal=trial_y, units=pq.rad,
+                                      sampling_rate=self.srate)
+                         for _ in range(self.num_trials)]
+        # create two random uniform distributions, where all trails are random
+        self.as_random_x_neo = [AnalogSignal(
+            signal=np.random.uniform(-np.pi, np.pi, self.trial_length),
+            units=pq.rad, sampling_rate=self.srate) for _ in range(1000)]
+        self.as_random_y_neo = [AnalogSignal(
+            signal=np.random.uniform(-np.pi, np.pi, self.trial_length),
+            units=pq.rad, sampling_rate=self.srate) for _ in range(1000)]
 
 
     def testPLV_AnalogSignal_identical_signals(self):
@@ -465,9 +454,10 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         Test if a ValueError is raised, when the signals have different
         number of trails.
         """
-        x = [AnalogSignal([0, 1, 2], units=pq.rad, sampling_rate=3/pq.s),
-             AnalogSignal([0, 1, 2], units=pq.rad, sampling_rate=3/pq.s)]
-        y = [AnalogSignal([0, -1, -2], units=pq.rad, sampling_rate=3/pq.s)]
+        x = [AnalogSignal(np.random.uniform(-np.pi, np.pi, 1000), units=pq.rad,
+                          sampling_rate=1000*pq.Hz) for _ in range(2)]
+        y = [AnalogSignal(np.random.uniform(-np.pi, np.pi, 1000), units=pq.rad,
+                          sampling_rate=1000*pq.Hz)]
 
         # version_1: phase_data has shape(trial, signal x & y, phases)
         phase_data = []
@@ -484,15 +474,13 @@ class PhaseLockingValueAnalogSignalTestCase(unittest.TestCase):
         Test if a ValueError is raised, when within a trail-pair of the signals
         the trial-lengths are different.
         """
-        y = [AnalogSignal([0, -1, -2], units=pq.rad, sampling_rate=3/pq.s),
-             AnalogSignal([0, -1, -2], units=pq.rad, sampling_rate=3/pq.s)]
-        z = [AnalogSignal([0, 0.5, 1, 2], units=pq.rad, sampling_rate=4/pq.s),
-             AnalogSignal([0, 0.5, 1, 2], units=pq.rad, sampling_rate=4/pq.s)]
+        y = [AnalogSignal(np.random.uniform(-np.pi, np.pi, 1000), units=pq.rad,
+                          sampling_rate=1000*pq.Hz) for _ in range(2)]
+        z = [AnalogSignal(np.random.uniform(-np.pi, np.pi, 1001), units=pq.rad,
+                          sampling_rate=1000*pq.Hz) for _ in range(2)]
 
         # version_1: phase_data has shape(trial, signal y & z, phases)
-        phase_data = []
-        phase_data.append([y[0], z[0]])
-        phase_data.append([y[1], z[1]])
+        phase_data = [[y[i], z[i]] for i in range(2)]
         # different lengths in a trail pair
         np.testing.assert_raises(
             ValueError,

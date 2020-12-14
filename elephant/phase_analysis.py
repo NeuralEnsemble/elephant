@@ -242,7 +242,7 @@ def phase_locking_value(phases_x, phases_y):
     # with discrete values/phases
 
     phase_diff = phase_difference(phases_x, phases_y)
-    theta, r = mean_vector(phase_diff, axis=0)
+    theta, r = mean_phase_vector(phase_diff, axis=0)
     return r
 
 
@@ -285,23 +285,26 @@ def phase_locking_value_analog_signal(phase_data):
     Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
     # version_1: phase_data has shape(trial, signal x & y, phases)
-    try:
-        srate = phase_data[0][0].sampling_rate
-        data_as_array = np.asarray(phase_data)
-        phases_x, phases_y = np.split(data_as_array, 2, axis=1)
-    except IndexError:
-        raise ValueError("trial number and trial length of signal x and y "
-                         "must be equal")
+    if not isinstance(phase_data[0][0], neo.AnalogSignal):
+        raise ValueError(
+            "structure of the data is not correct: 0-axis should be trials, "
+            "1-axis units and 2-axis neo AnalogSignals")
+    data_as_array = np.squeeze(np.asarray(phase_data))
+    for i in range(len(phase_data)):
+        if np.size(data_as_array[i], axis=0) != 2:
+            raise ValueError("trial number of signal x and y must be equal")
+    phases_x, phases_y = np.split(data_as_array, 2, axis=1)
     if np.shape(phases_x) != np.shape(phases_y):
-        raise ValueError("trial number and trial length of signal x and y "
-                         "must be equal")
+        raise ValueError("trial length within signal x and y must be equal")
+
+    srate = phase_data[0][0].sampling_rate
     plv = phase_locking_value(np.squeeze(phases_x), np.squeeze(phases_y))
     plv_analog_signal = neo.AnalogSignal(signal=plv, units=pq.dimensionless,
                                          sampling_rate=srate)
     return plv_analog_signal
 
 
-def mean_vector(phases, axis=0):
+def mean_phase_vector(phases, axis=0):
     """
     Calculates the mean vector of phases.
 
