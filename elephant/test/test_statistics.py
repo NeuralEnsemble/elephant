@@ -387,10 +387,8 @@ class LVTestCase(unittest.TestCase):
     def test_2short_spike_train(self):
         seq = [1]
         with self.assertWarns(UserWarning):
-            """
-            Catches UserWarning: Input size is too small. Please provide
-            an input with more than 1 entry.
-            """
+            # Catches UserWarning: Input size is too small. Please provide
+            # an input with more than 1 entry.
             self.assertTrue(math.isnan(statistics.lv(seq, with_nan=True)))
 
 
