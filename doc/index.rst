@@ -40,6 +40,7 @@ Table of Contents
 * :doc:`contribute`
 * :doc:`release_notes`
 * :doc:`acknowledgments`
+* :doc:`authors`
 * :doc:`citation`
 
 
@@ -53,6 +54,7 @@ Table of Contents
     contribute
     release_notes
     acknowledgments
+    authors
     citation
 
 

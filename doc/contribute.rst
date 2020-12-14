@@ -285,10 +285,4 @@ documentation:
 
 
 
-************************
-Authors and contributors
-************************
-
-See :doc:`authors`.
-
 .. _Issue tracker: https://github.com/NeuralEnsemble/elephant/issues
