@@ -42,62 +42,77 @@ Run tutorial interactively:
 
 Examples
 --------
+In this example we
 
-0) Create `ASSET` class object that holds spike trains.
+  * simulate two noisy synfire chains;
+  * shuffle the neurons to destroy visual appearance;
+  * run ASSET analysis to recover the original neurons arrangement.
+
+1. Simulate two noise synfire chains, shuffle the neurons to destroy the
+   pattern visually, and store shuffled activations in neo.SpikeTrains.
+
+   >>> import neo
+   >>> import numpy as np
+   >>> import quantities as pq
+   >>> np.random.seed(10)
+   >>> spiketrain = np.linspace(0, 50, num=10)
+   >>> np.random.shuffle(spiketrain)
+   >>> spiketrains = np.c_[spiketrain, spiketrain + 100]
+   >>> spiketrains += np.random.random_sample(spiketrains.shape) * 5
+   >>> spiketrains = [neo.SpikeTrain(st, units='ms', t_stop=1 * pq.s)
+   ...                for st in spiketrains]
+
+2. Create `ASSET` class object that holds spike trains.
 
    `ASSET` requires at least one argument - a list of spike trains. If
    `spiketrains_y` is not provided, the same spike trains are used to build an
    intersection matrix with.
 
-   >>> import neo
-   >>> import numpy as np
-   >>> import quantities as pq
    >>> from elephant import asset
+   >>> asset_obj = asset.ASSET(spiketrains, bin_size=3*pq.ms)
 
-   >>> spiketrains = [
-   ...      neo.SpikeTrain([start, start + 6] * (3 * pq.ms) + 10 * pq.ms,
-   ...                     t_stop=60 * pq.ms)
-   ...      for _ in range(3)
-   ...      for start in range(3)
-   ... ]
-   >>> asset_obj = asset.ASSET(spiketrains, bin_size=3*pq.ms, verbose=False)
-
-1) Build the intersection matrix `imat`:
+3. Build the intersection matrix `imat`:
 
    >>> imat = asset_obj.intersection_matrix()
 
-2) Estimate the probability matrix `pmat`, using the analytical method:
+4. Estimate the probability matrix `pmat`, using the analytical method:
 
    >>> pmat = asset_obj.probability_matrix_analytical(imat,
-   ...                                                kernel_width=9*pq.ms)
+   ...                                                kernel_width=50*pq.ms)
 
-3) Compute the joint probability matrix `jmat`, using a suitable filter:
+5. Compute the joint probability matrix `jmat`, using a suitable filter:
 
    >>> jmat = asset_obj.joint_probability_matrix(pmat, filter_shape=(5, 1),
    ...                                           n_largest=3)
 
-4) Create the masked version of the intersection matrix, `mmat`, from `pmat`
+6. Create the masked version of the intersection matrix, `mmat`, from `pmat`
    and `jmat`:
 
    >>> mmat = asset_obj.mask_matrices([pmat, jmat], thresholds=.9)
 
-5) Cluster significant elements of imat into diagonal structures:
+7. Cluster significant elements of imat into diagonal structures:
 
-   >>> cmat = asset_obj.cluster_matrix_entries(mmat, max_distance=3,
+   >>> cmat = asset_obj.cluster_matrix_entries(mmat, max_distance=11,
    ...                                         min_neighbors=3, stretch=5)
 
-6) Extract sequences of synchronous events:
+9. Extract sequences of synchronous events:
 
    >>> sses = asset_obj.extract_synchronous_events(cmat)
 
-The ASSET found 2 sequences of synchronous events:
+The ASSET found the following sequences of synchronous events:
 
-   >>> from pprint import pprint
-   >>> pprint(sses)
-   {1: {(9, 3): {0, 3, 6}, (10, 4): {1, 4, 7}, (11, 5): {8, 2, 5}}}
+>>> sses
+{1: {(36, 2): {5},
+  (37, 4): {1},
+  (40, 6): {4},
+  (41, 7): {8},
+  (43, 9): {2},
+  (47, 14): {7},
+  (48, 15): {0},
+  (50, 17): {9}}}
 
 To visualize them, refer to Viziphant documentation and an example plot
-:func:`viziphant.asset.plot_synchronous_event`.
+:func:`viziphant.asset.plot_synchronous_events`.
 
 """
 from __future__ import division, print_function, unicode_literals
