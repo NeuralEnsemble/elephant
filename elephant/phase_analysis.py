@@ -2,6 +2,12 @@
 """
 Methods for performing phase analysis.
 
+.. autosummary::
+    :toctree: toctree/phase_analysis
+
+    spike_triggered_phase
+    pairwise_phase_consistency
+
 :copyright: Copyright 2014-2018 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
@@ -12,7 +18,8 @@ import numpy as np
 import quantities as pq
 
 __all__ = [
-    "spike_triggered_phase"
+    "spike_triggered_phase",
+    "pairwise_phase_consistency"
 ]
 
 
@@ -185,62 +192,70 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
 
 def pairwise_phase_consistency(phases):
-    """
-    The Pairwise Phase Consistency is an improved measure of phase consistency/phase locking value,
-    accounting for bias due to low trial counts.
+    r"""
+    The Pairwise Phase Consistency (PPC) :cite:`phase-Vinck2010_51` is an
+    improved measure of phase consistency/phase locking value, accounting for
+    bias due to low trial counts.
 
-    Published in Vinck et al., 2010 (https://www.sciencedirect.com/science/article/pii/S1053811910000959).
+    The PPC is computed according to Eq. 14 and 15 of the cited paper.
+
+    .. math::
+        \text{PPC} = \frac{2}{N(N-1)} \sum_{j=1}^{N-1} \sum_{k=j+1}^N
+        f(\theta_j, \theta_k)
+
+    wherein the function :math:`f` computes the dot product between two unit
+    vectors and is defined by
+
+    .. math::
+        f(\phi, \omega) = \cos(\phi) \cos(\omega) + \sin(\phi) \sin(\omega)
 
     Parameters
     ----------
     phases : np.ndarray or list of np.ndarray
-        Spike-triggered phases (output from spike_triggered_phase). PPC is computed per array
+        Spike-triggered phases (output from :func:`spike_triggered_phase`).
+        PPC is computed per array.
 
     Returns
     -------
-    PPC : np.float or list of np.float
+    result_ppc : list of float
         Pairwise Phase Consistency
 
     """
-
     # Convert inputs to lists
     if not isinstance(phases, list):
-        assert isinstance(phases, np.ndarray), 'Input should be an 1D np.array with phases'
         phases = [phases]
 
     # Check if all elements are arrays
-    for p in phases:
-        assert isinstance(p, np.ndarray), 'Input should be an 1D np.array with phases or a list of those'
-        assert p.ndim == 1, 'Phase arrays should be 1D (use .flatten())'
+    if not isinstance(phases, (list, tuple)):
+        raise TypeError("Input must be a list of 1D numpy arrays with phases")
+    for phase_array in phases:
+        if not isinstance(phase_array, np.ndarray):
+            raise TypeError("Each entry of the input list must be an 1D "
+                            "numpy array with phases")
+        if phase_array.ndim != 1:
+            raise ValueError("Phase arrays must be 1D (use .flatten())")
 
     result_ppc = []
 
-    for p in phases:
-        n = p.shape[0]  # nr of trials
+    for phase_array in phases:
+        n_trials = phase_array.shape[0]
 
         # Compute the distance between each pair of phases using dot product
-        # Optimize computation time using array multiplications instead of for loops
-        p_cos = np.cos(p)
-        p_cos_2d = np.empty((n, n), np.float32)  # Note: don't think we need 64 precision
-        np.copyto(p_cos_2d, p_cos)
+        # Optimize computation time using array multiplications instead of for
+        # loops
+        p_cos_2d = np.tile(np.cos(phase_array), reps=(n_trials, 1))
+        p_sin_2d = np.tile(np.sin(phase_array), reps=(n_trials, 1))
 
-        p_sin = np.sin(p)
-        p_sin_2d = np.empty((n, n), np.float32)
-        np.copyto(p_sin_2d, p_sin)
+        # By doing the element-wise multiplication of this matrix with its
+        # transpose, we get the distance between phases for all possible pairs
+        # of elements in 'phase'
+        dot_prod = np.multiply(p_cos_2d, p_cos_2d.T) + \
+            np.multiply(p_sin_2d, p_sin_2d.T)
 
-        # By doing the elementwise multiplication of this matrix with its transpose, we get
-        # the distance between phases for all possible pairs of elements in p
-        temp_result = np.multiply(p_cos_2d, p_cos_2d.T) + np.multiply(p_sin_2d, p_sin_2d.T)
-
-        # Now average over all elements in temp_results (the diagonal are 1 and should not be
-        # included)
-        di = np.diag_indices(n)
-        temp_result[di] = 0
-
-        ppc = np.sum(temp_result) / (n*n - n)
-
+        # Now average over all elements in temp_results (the diagonal are 1
+        # and should not be included)
+        np.fill_diagonal(dot_prod, 0)
+        ppc = 2 / (n_trials * n_trials - n_trials) * np.sum(dot_prod)
         result_ppc.append(ppc)
 
     return result_ppc
-
-
