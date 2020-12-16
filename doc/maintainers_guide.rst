@@ -8,21 +8,12 @@ This guide is for Elephant maintainers only.
 Python 3
 --------
 
-Elephant should work with Python 2.7 and Python 3.
-
-So far, we have managed to write code that works with both Python 2 and 3.
-Mainly this involves and putting
+Backward compatibility is achieved by putting a few future imports at the
+beginning of each source file:
 
 .. code-block:: python
 
     from __future__ import division, print_function, unicode_literals
-
-at the beginning of each source file. The most important thing to remember is
-to run tests with at least one version of Python 2 and at least one version of
-Python 3.
-
-If in doubt, `Porting to Python 3 <http://python3porting.com/>`_ by Lennart
-Regebro is an excellent resource.
 
 All code should conform as much as possible to
 `PEP 8 <http://www.python.org/dev/peps/pep-0008/>`_.
@@ -128,10 +119,12 @@ Making a release
    :file:`doc/modules.rst` and make a file with a short description in
    :file:`doc/reference/<modulename>.rst`.
 
-5. Remove :file:`elephant/spade_src/fim.so`. Otherwise, it'll be included in
+5. Push the commit with release notes and version updated to github.
+
+6. Remove :file:`elephant/spade_src/fim.so`. Otherwise, it'll be included in
    the built package (it should be downloaded at pip install).
 
-6. Build a source package and upload it to PyPi.
+7. Build a source package and upload it to PyPi.
 
    Build a source package (see `Packaging Python Projects
    <https://packaging.python.org/tutorials/packaging-projects/#generating-distribution-archives>`_)::
@@ -144,7 +137,7 @@ Making a release
 
     $ python -m twine upload dist/elephant-X.Y.Z.tar.gz
 
-7. Finally, make a release on GitHub UI page and copy-paste the release notes.
+8. Finally, make a release on GitHub UI page and copy-paste the release notes.
    Then tag the release in the Git repository and push it::
 
     $ git tag <version>

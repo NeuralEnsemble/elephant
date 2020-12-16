@@ -9,6 +9,13 @@ of spike train dissimilarity measures are the Victor-Purpura distance and the
 Van Rossum distance implemented in this module, which both are metrics in the
 mathematical sense and time-scale dependent.
 
+
+.. autosummary::
+    :toctree: toctree/spike_train_dissimilarity
+
+    victor_purpura_distance
+    van_rossum_distance
+
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """

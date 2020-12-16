@@ -6,6 +6,7 @@ Function Reference by Module
    :maxdepth: 1
 
    reference/asset
+   reference/causality
    reference/cell_assembly_detection
    reference/change_point_detection
    reference/conversion
@@ -20,11 +21,16 @@ Function Reference by Module
    reference/signal_processing
    reference/spade
    reference/spectral
-   reference/spike_train_correlation
-   reference/spike_train_dissimilarity
    reference/spike_train_generation
    reference/spike_train_surrogates
    reference/sta
    reference/statistics
    reference/unitary_event_analysis
+   reference/utils
    reference/waveform_features
+
+
+.. toctree::
+   :maxdepth: 2
+
+   reference/_spike_train_processing

@@ -9,7 +9,6 @@ Unit tests for the spike_train_generation module.
 from __future__ import division
 
 import os
-import sys
 import unittest
 import warnings
 
@@ -23,8 +22,6 @@ from scipy.stats import kstest, poisson
 import elephant.spike_train_generation as stgen
 from elephant.statistics import isi, instantaneous_rate
 from elephant import kernels
-
-python_version_major = sys.version_info.major
 
 
 def pdiff(a, b):
@@ -393,7 +390,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
                     sampling_period=sampling_period,
                     kernel=kernel,
                     t_start=t_start,
-                    t_stop=t_stop, trim=True) / n_trials
+                    t_stop=t_stop, trim=True).sum(axis=1) / n_trials
 
                 rate_recovered = rate_recovered.flatten().magnitude
                 trim = (rate_profile.shape[0] - rate_recovered.shape[0]) // 2
