@@ -226,9 +226,9 @@ Now you're ready to share the code publicly.
 
     .. code-block:: sh
 
-        $ git add .
-        $ git commit -m "informative commit message"
-        $ git push
+        git add .
+        git commit -m "informative commit message"
+        git push
 
     If this is your first commitment to Elephant, please add your name and
     affiliation/employer in :file:`doc/authors.rst`
@@ -266,23 +266,64 @@ The documentation in :file:`doc/` folder is written in `reStructuredText
 documentation:
 
 1. Install requirements-docs.txt and requirements-tutorials.txt the same way
-   it's explained in :ref:`set_up_an_environment` step 3::
+   it's explained in :ref:`set_up_an_environment` step 3:
 
-    $ pip install -r requirements/requirements-docs.txt
-    $ pip install -r requirements/requirements-tutorials.txt
+   .. code-block:: sh
 
-2. Build the documentation::
+        pip install -r requirements/requirements-docs.txt
+        pip install -r requirements/requirements-tutorials.txt
 
-    $ cd doc
-    $ export PYTHONPATH=.:../..  # to find elephant package
-    $ make html
+2. Build the documentation:
+
+
+   .. code-block:: sh
+
+        cd doc
+        export PYTHONPATH=${PYTHONPATH}.:../..
+        make html
+
+   ``PYTHONPATH`` environmental variable is set in order to find elephant
+   package while executing jupyter notebooks that are part of the documentation.
+   You may also need to install LaTex support:
+
+   .. code-block:: sh
+
+        sudo apt-get install texlive-full
 
 3. Open :file:`_build/html/index.html` in your browser.
 
-4. (Optional) To check that all URLs in the documentation are correct, run::
+4. (Optional) To check that all URLs in the documentation are correct, run:
 
-    $ make linkcheck
+   .. code-block:: sh
+
+        make linkcheck
 
 
+Citations
+---------
+
+The citations are in BibTex format, stored in `doc/bib/elephant.bib
+<https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_.
+
+To cite Elephant, refer to :doc:`citation`.
+
+Each module in ``doc/reference`` folder ends with the reference section:
+
+.. code-block:: rst
+
+    References
+    ----------
+
+    .. bibliography:: ../bib/elephant.bib
+       :labelprefix: <module name shortcut>
+       :keyprefix: <module name>-
+       :style: unsrt
+
+where ``<module name>`` is (by convention) the Python source file name, and
+``<module name shortcut>`` is what will be displayed to the users.
+
+For example, ``:cite:'spade-Torre2013_132'`` will be rendered as ``sp1`` in
+the built HTML documentation, if ``<module name shortcut>`` is set to ``sp``
+and ``<module name>`` - to ``spade``.
 
 .. _Issue tracker: https://github.com/NeuralEnsemble/elephant/issues
