@@ -182,3 +182,65 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     for i, entry in enumerate(result_times):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
     return result_phases, result_amps, result_times
+
+
+def pairwise_phase_consistency(phases):
+    """
+    The Pairwise Phase Consistency is an improved measure of phase consistency/phase locking value,
+    accounting for bias due to low trial counts.
+
+    Published in Vinck et al., 2010 (https://www.sciencedirect.com/science/article/pii/S1053811910000959).
+
+    Parameters
+    ----------
+    phases : np.ndarray or list of np.ndarray
+        Spike-triggered phases (output from spike_triggered_phase). PPC is computed per array
+
+    Returns
+    -------
+    PPC : np.float or list of np.float
+        Pairwise Phase Consistency
+
+    """
+
+    # Convert inputs to lists
+    if not isinstance(phases, list):
+        assert isinstance(phases, np.ndarray), 'Input should be an 1D np.array with phases'
+        phases = [phases]
+
+    # Check if all elements are arrays
+    for p in phases:
+        assert isinstance(p, np.ndarray), 'Input should be an 1D np.array with phases or a list of those'
+        assert p.ndim == 1, 'Phase arrays should be 1D (use .flatten())'
+
+    result_ppc = []
+
+    for p in phases:
+        n = p.shape[0]  # nr of trials
+
+        # Compute the distance between each pair of phases using dot product
+        # Optimize computation time using array multiplications instead of for loops
+        p_cos = np.cos(p)
+        p_cos_2d = np.empty((n, n), np.float32)  # Note: don't think we need 64 precision
+        np.copyto(p_cos_2d, p_cos)
+
+        p_sin = np.sin(p)
+        p_sin_2d = np.empty((n, n), np.float32)
+        np.copyto(p_sin_2d, p_sin)
+
+        # By doing the elementwise multiplication of this matrix with its transpose, we get
+        # the distance between phases for all possible pairs of elements in p
+        temp_result = np.multiply(p_cos_2d, p_cos_2d.T) + np.multiply(p_sin_2d, p_sin_2d.T)
+
+        # Now average over all elements in temp_results (the diagonal are 1 and should not be
+        # included)
+        di = np.diag_indices(n)
+        temp_result[di] = 0
+
+        ppc = np.sum(temp_result) / (n*n - n)
+
+        result_ppc.append(ppc)
+
+    return result_ppc
+
+
