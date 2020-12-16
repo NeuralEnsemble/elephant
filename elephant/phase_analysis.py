@@ -13,7 +13,10 @@ import quantities as pq
 import neo
 
 __all__ = [
-    "spike_triggered_phase"
+    "spike_triggered_phase",
+    "phase_locking_value",
+    "mean_phase_vector",
+    "phase_difference"
 ]
 
 
@@ -193,8 +196,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     return result_phases, result_amps, result_times
 
 
-def phase_locking_value(phases_x, phases_y):
-    """
+def phase_locking_value(phases_i, phases_j):
+    r"""
     Calculates the phase locking value (PLV).
 
     This function expects the phases of two signals (each containing multiple
@@ -205,20 +208,20 @@ def phase_locking_value(phases_x, phases_y):
 
     Parameters
     ----------
-    phases_x, phases_y : (t, n) array-like object
+    phases_i, phases_j : (t, n) np.ndarray
         Time-series of the first and second signals, with `t` time points and
         `n` trials.
 
     Returns
     -------
-    plv : (t,) array-like object
+    plv : (t,) np.ndarray
         Vector of floats with the phase-locking value at each time point.
         Range: [0, 1].
 
     Raises
     ------
     ValueError
-        If the shapes of `phases_x` and `phases_y` are different.
+        If the shapes of `phases_i` and `phases_j` are different.
 
     Notes
     -----
@@ -236,7 +239,7 @@ def phase_locking_value(phases_x, phases_y):
     and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
     Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
-    if np.shape(phases_x) != np.shape(phases_y):
+    if np.shape(phases_i) != np.shape(phases_j):
         raise ValueError("trial number and trial length of signal x and y "
                          "must be equal")
 
@@ -244,7 +247,7 @@ def phase_locking_value(phases_x, phases_y):
     # version 0.2: signal x and y have multiple trials
     # with discrete values/phases
 
-    phase_diff = phase_difference(phases_x, phases_y)
+    phase_diff = phase_difference(phases_i, phases_j)
     theta, r = mean_phase_vector(phase_diff, axis=0)
     return r
 
@@ -308,7 +311,7 @@ def phase_locking_value_analog_signal(phase_data):
 
 
 def mean_phase_vector(phases, axis=0):
-    """
+    r"""
     Calculates the mean vector of phases.
 
     This function expects phases (in radians) and uses their representation as
@@ -317,7 +320,7 @@ def mean_phase_vector(phases, axis=0):
 
     Parameters
     ----------
-    phases : array-like object
+    phases : np.ndarray
         Phases in radians.
     axis : int, optional
         Axis along which the mean vector will be calculated.
@@ -326,10 +329,10 @@ def mean_phase_vector(phases, axis=0):
 
     Returns
     -------
-    z_mean_theta : array-like object
+    z_mean_theta : np.ndarray
         Angle of the mean vector.
         range: (:math:`-\pi`, :math:`\pi`]
-    z_mean_r : array-like object
+    z_mean_r : np.ndarray
         Length of the mean vector.
         Range: [0, 1]
     """
@@ -343,21 +346,21 @@ def mean_phase_vector(phases, axis=0):
 
 
 def phase_difference(alpha, beta):
-    """
+    r"""
     Calculates the difference between a pair of phases.
 
     The output is in range from :math:`-\pi` to :math:`pi`.
 
     Parameters
     ----------
-    alpha : array-like object
+    alpha : np.ndarray
         Phases in radians.
-    beta : array-like object
+    beta : np.ndarray
         Phases in radians.
 
     Returns
     -------
-    phase_diff : float
+    phase_diff : np.ndarray
         Difference between phases `alpha` and `beta`.
         Range: [:math:`-\pi`, :math:`pi`].
 
