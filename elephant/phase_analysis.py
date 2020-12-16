@@ -197,38 +197,41 @@ def phase_locking_value(phases_x, phases_y):
     """
     Calculates the phase locking value (PLV).
 
-    This function expects phases of two signals (with multiple trials).
-    For each trial-pair it calculates the phase difference at each given
-    time-point. Than it calculates the mean vectors of those phase differences
-    across all trials for each given time-point.
-    The PLV at time t is the length of the corresponding mean vector.
+    This function expects the phases of two signals (each containing multiple
+    trials). For each trial pair, it calculates the phase difference at each
+    time point. Then it calculates the mean vectors of those phase differences
+    across all trials. The PLV at time `t` is the length of the corresponding
+    mean vector.
 
-    Parameters:
-    -----------
-    phases_x, phases_y: array-like object
-        time-series of signal x and signal y with n trials each
+    Parameters
+    ----------
+    phases_x, phases_y : (t, n) array-like object
+        Time-series of the first and second signals, with `t` time points and
+        `n` trials.
 
-    Returns:
-    --------
-    plv: array-like object
-        phase-locking value (float)
-        range: [0, 1]
-
-    Raises:
+    Returns
     -------
-    ValueError:
-        if shapes of phases x and y are different
+    plv : (t,) array-like object
+        Vector of floats with the phase-locking value at each time point.
+        Range: [0, 1].
+
+    Raises
+    ------
+    ValueError
+        If the shapes of `phases_x` and `phases_y` are different.
 
     Notes
     -----
-    This implementation is based on the formula taken from [1] (pp. 195).
+    This implementation is based on the formula taken from [1] (pp. 195):
 
-    PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * theta(t, n)} ) )
+    .. math::
+        PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * \theta(t, n)} ) )
 
-    where theta(t, n) is the phase difference phi_x(t, n) - phi_y(t, n).
+    where :math:`\theta(t, n)` is the phase difference
+    :math:`\phi_x(t, n) - \phi_y(t, n)`.
 
-    References:
-    -----------
+    References
+    ----------
     [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
     and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
     Human Brain Mapping, vol 8, pp. 194-208, 1999.
@@ -309,27 +312,26 @@ def mean_phase_vector(phases, axis=0):
     Calculates the mean vector of phases.
 
     This function expects phases (in radians) and uses their representation as
-    complex numbers to calculate the direction 'theta' and the length 'r'
-    of the mean vector.
+    complex numbers to calculate the direction :math:'\theta' and the length
+    'r' of the mean vector.
 
     Parameters
     ----------
-    phases: array-like object
-        phases in radians
-    axis: {0, 1, None}
-        axis along which the mean_vector will be calculated
-        - None: across flattened array
-        - 0: across columns of array (default)
-        - 1: across rows of array
+    phases : array-like object
+        Phases in radians.
+    axis : int, optional
+        Axis along which the mean vector will be calculated.
+        If None, it will be computed across the flattened array.
+        Default: 0
 
     Returns
     -------
-    z_mean_theta: array-like object
-        angle of the mean vector
-        range: (-pi, pi]
-    z_mean_r: array-like object
-        length of the mean vector
-        range: [0, 1]
+    z_mean_theta : array-like object
+        Angle of the mean vector.
+        range: (:math:`-\pi`, :math:`\pi`]
+    z_mean_r : array-like object
+        Length of the mean vector.
+        Range: [0, 1]
     """
     # use complex number representation
     # z_phases = np.cos(phases) + 1j * np.sin(phases)
@@ -342,26 +344,27 @@ def mean_phase_vector(phases, axis=0):
 
 def phase_difference(alpha, beta):
     """
-    Calculates the difference between a pair of phases. The output is in range
-    of -pi to pi.
+    Calculates the difference between a pair of phases.
+
+    The output is in range from :math:`-\pi` to :math:`pi`.
 
     Parameters
     ----------
-    alpha: array-like object
-        phases in radians
-    beta: array-like object
-        phases in radians
+    alpha : array-like object
+        Phases in radians.
+    beta : array-like object
+        Phases in radians.
 
     Returns
     -------
-    phase_diff: float
-        phase difference between alpha and beta
-        range: [-pi, pi]
+    phase_diff : float
+        Difference between phases `alpha` and `beta`.
+        Range: [:math:`-\pi`, :math:`pi`].
 
     Notes
     -----
-    The usage of arctan2 assures that the range of the phase difference
-    is [-pi, pi] and is located in the correct quadrant.
+    The usage of `np.arctan2` ensures that the range of the phase difference
+    is [:math:`-\pi`, :math:`pi`] and is located in the correct quadrant.
     """
     delta = alpha - beta
     phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
