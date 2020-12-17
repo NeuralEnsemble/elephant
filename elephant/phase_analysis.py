@@ -137,8 +137,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Find index into signal for each spike
         ind_at_spike = (
-            (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
-            hilbert_transform[phase_i].sampling_period). \
+                (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
+                hilbert_transform[phase_i].sampling_period). \
             simplified.magnitude.astype(int)
 
         # Append new list to the results for this spiketrain
@@ -149,19 +149,19 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         # Step through all spikes
         for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
 
-            if interpolate and ind_at_spike_j+1 < len(times):
+            if interpolate and ind_at_spike_j + 1 < len(times):
                 # Get relative spike occurrence between the two closest signal
                 # sample points
                 # if z->0 spike is more to the left sample
                 # if z->1 more to the right sample
-                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) /\
+                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) / \
                     hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
                 interpolation = (1 - z) * np.exp(np.complex(0, p1)) \
-                                    + z * np.exp(np.complex(0, p2))
+                                + z * np.exp(np.complex(0, p2))
                 p12 = np.angle([interpolation])
                 result_phases[spiketrain_i].append(p12)
 
@@ -191,13 +191,19 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     return result_phases, result_amps, result_times
 
 
-def pairwise_phase_consistency(phases):
+def pairwise_phase_consistency(phases, method='ppc0'):
     r"""
-    The Pairwise Phase Consistency (PPC) :cite:`phase-Vinck2010_51` is an
+    The Pairwise Phase Consistency (PPC0) :cite:`phase-Vinck2010_51` is an
     improved measure of phase consistency/phase locking value, accounting for
     bias due to low trial counts.
 
-    The PPC is computed according to Eq. 14 and 15 of the cited paper.
+    PPC0 is computed according to Eq. 14 and 15 of the cited paper.
+
+    An improved version of the PPC (PPC1) :cite: `PMID:22187161` computes angular
+    difference ony between pairs of spikes within trials.
+
+    PPC1 is not implemented yet
+
 
     .. math::
         \text{PPC} = \frac{2}{N(N-1)} \sum_{j=1}^{N-1} \sum_{k=j+1}^N
@@ -213,7 +219,10 @@ def pairwise_phase_consistency(phases):
     ----------
     phases : np.ndarray or list of np.ndarray
         Spike-triggered phases (output from :func:`spike_triggered_phase`).
-        PPC is computed per array.
+        If phases is a list of arrays, each array is considered a trial
+
+    method : str
+        'ppc0' - compute PPC between all pairs of spikes
 
     Returns
     -------
@@ -235,27 +244,35 @@ def pairwise_phase_consistency(phases):
         if phase_array.ndim != 1:
             raise ValueError("Phase arrays must be 1D (use .flatten())")
 
-    result_ppc = []
+    if method not in ['ppc0']:
+        raise ValueError('For method choose out of: ["ppc0"]')
 
-    for phase_array in phases:
-        n_trials = phase_array.shape[0]
+    phase_array = np.hstack(phases)
+    n_trials = phase_array.shape[0]  # 'spikes' are 'trials' as in paper
 
-        # Compute the distance between each pair of phases using dot product
-        # Optimize computation time using array multiplications instead of for
-        # loops
-        p_cos_2d = np.tile(np.cos(phase_array), reps=(n_trials, 1))
-        p_sin_2d = np.tile(np.sin(phase_array), reps=(n_trials, 1))
+    # Compute the distance between each pair of phases using dot product
+    # Optimize computation time using array multiplications instead of for
+    # loops
+    p_cos_2d = np.tile(np.cos(phase_array), reps=(n_trials, 1))  # TODO: optimize memory usage
+    p_sin_2d = np.tile(np.sin(phase_array), reps=(n_trials, 1))
 
-        # By doing the element-wise multiplication of this matrix with its
-        # transpose, we get the distance between phases for all possible pairs
-        # of elements in 'phase'
-        dot_prod = np.multiply(p_cos_2d, p_cos_2d.T) + \
-            np.multiply(p_sin_2d, p_sin_2d.T)
+    # By doing the element-wise multiplication of this matrix with its
+    # transpose, we get the distance between phases for all possible pairs
+    # of elements in 'phase'
+    dot_prod = np.multiply(p_cos_2d, p_cos_2d.T) + \
+               np.multiply(p_sin_2d, p_sin_2d.T)
 
-        # Now average over all elements in temp_results (the diagonal are 1
-        # and should not be included)
-        np.fill_diagonal(dot_prod, 0)
-        ppc = 2 / (n_trials * n_trials - n_trials) * np.sum(dot_prod)
-        result_ppc.append(ppc)
+    # Now average over all elements in temp_results (the diagonal are 1
+    # and should not be included)
+    np.fill_diagonal(dot_prod, 0)
 
-    return result_ppc
+    if method == 'ppc0':
+        # Note: each pair i,j is computed twice in dot_prod. do not
+        # multiply by 2. n_trial * n_trials - n_trials = nr of filled elements
+        # in dot_prod
+        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)
+        return ppc
+
+    elif method == 'ppc1':
+        # TODO: remove all indices from the same trial
+        return

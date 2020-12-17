@@ -51,6 +51,7 @@ Do you want to contribute to Elephant? Please refer to the
 * Regimantas Jurkus [1]
 * Philipp Steigerwald [12]
 * Manuel Ciba [12]
+* Thijs Ruikes [13]
 
 1. Institute of Neuroscience and Medicine (INM-6), Computational and Systems Neuroscience & Institute for Advanced Simulation (IAS-6), Theoretical Neuroscience, Jülich Research Centre and JARA, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
@@ -64,5 +65,5 @@ Do you want to contribute to Elephant? Please refer to the
 10. Instituto de Neurobiología, Universidad Nacional Autónoma de México, Mexico City, Mexico
 11. Case Western Reserve University (CWRU), Cleveland, OH, USA
 12. BioMEMS Lab, TH Aschaffenburg University of applied sciences, Germany
-
+13. Cognitive and Systems Neuroscience (CSN) group, University of Amsterdam, Amsterdam, Netherlands
 If we've somehow missed you off the list we're very sorry - please let us know.
