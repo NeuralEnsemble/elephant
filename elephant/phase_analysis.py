@@ -208,7 +208,7 @@ def phase_locking_value(phases_i, phases_j):
     -------
     plv : (t,) np.ndarray
         Vector of floats with the phase-locking value at each time point.
-        Range: [0, 1].
+        Range: `[0, 1]`
 
     Raises
     ------
@@ -219,11 +219,12 @@ def phase_locking_value(phases_i, phases_j):
     -----
     This implementation is based on the formula taken from [1] (pp. 195):
 
-    .. math::
-        PLV_t = 1/N * abs(sum_n=1_to_N(exp{i * \theta(t, n)} ) )
+    ..math::
 
-    where :math:`\theta(t, n)` is the phase difference
-    :math:`\phi_x(t, n) - \phi_y(t, n)`.
+    PLV_t = \frac{1}{N} * \lvert \sum_{n=1}^N \exp(i * \theta(t, n)) \rvert \\
+
+    where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
+    is the phase difference at time t for trial n.
 
     References
     ----------
@@ -265,10 +266,10 @@ def mean_phase_vector(phases, axis=0):
     -------
     z_mean_theta : np.ndarray
         Angle of the mean vector.
-        range: (:math:`-\pi`, :math:`\pi`]
+        Range: :math:`(-\pi, \pi]`
     z_mean_r : np.ndarray
         Length of the mean vector.
-        Range: [0, 1]
+        Range: `[0, 1]`
     """
     # use complex number representation
     # z_phases = np.cos(phases) + 1j * np.sin(phases)
@@ -283,7 +284,7 @@ def phase_difference(alpha, beta):
     r"""
     Calculates the difference between a pair of phases.
 
-    The output is in range from :math:`-\pi` to :math:`pi`.
+    The output is in range from :math:`-\pi to pi`.
 
     Parameters
     ----------
@@ -296,12 +297,12 @@ def phase_difference(alpha, beta):
     -------
     phase_diff : np.ndarray
         Difference between phases `alpha` and `beta`.
-        Range: [:math:`-\pi`, :math:`pi`].
+        Range: :math:`[-\pi, \pi]`
 
     Notes
     -----
     The usage of `np.arctan2` ensures that the range of the phase difference
-    is [:math:`-\pi`, :math:`pi`] and is located in the correct quadrant.
+    is :math:`[-\pi, \pi]` and is located in the correct quadrant.
     """
     delta = alpha - beta
     phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
