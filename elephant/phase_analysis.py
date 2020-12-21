@@ -253,14 +253,14 @@ def pairwise_phase_consistency(phases, method='ppc0'):
     # Compute the distance between each pair of phases using dot product
     # Optimize computation time using array multiplications instead of for
     # loops
-    p_cos_2d = np.tile(np.cos(phase_array), reps=(n_trials, 1))  # TODO: optimize memory usage
-    p_sin_2d = np.tile(np.sin(phase_array), reps=(n_trials, 1))
+    p_cos_2d = np.broadcast_to(np.cos(phase_array), (n_trials, n_trials))
+    p_sin_2d = np.broadcast_to(np.sin(phase_array), (n_trials, n_trials))
 
     # By doing the element-wise multiplication of this matrix with its
     # transpose, we get the distance between phases for all possible pairs
     # of elements in 'phase'
-    dot_prod = np.multiply(p_cos_2d, p_cos_2d.T) + \
-               np.multiply(p_sin_2d, p_sin_2d.T)
+    dot_prod = np.multiply(p_cos_2d, p_cos_2d.T, dtype=np.float32) + \
+               np.multiply(p_sin_2d, p_sin_2d.T, dtype=np.float32)  # TODO: agree on using this precision  or not
 
     # Now average over all elements in temp_results (the diagonal are 1
     # and should not be included)
@@ -270,7 +270,7 @@ def pairwise_phase_consistency(phases, method='ppc0'):
         # Note: each pair i,j is computed twice in dot_prod. do not
         # multiply by 2. n_trial * n_trials - n_trials = nr of filled elements
         # in dot_prod
-        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)
+        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)  # TODO: handle nan's
         return ppc
 
     elif method == 'ppc1':
