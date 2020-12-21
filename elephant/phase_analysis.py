@@ -208,7 +208,7 @@ def phase_locking_value(phases_i, phases_j):
     -------
     plv : (t,) np.ndarray
         Vector of floats with the phase-locking value at each time point.
-        Range: `[0, 1]`
+        Range: :math:`[0, 1]`
 
     Raises
     ------
@@ -219,12 +219,12 @@ def phase_locking_value(phases_i, phases_j):
     -----
     This implementation is based on the formula taken from [1] (pp. 195):
 
-    ..math::
-
-    PLV_t = \frac{1}{N} * \lvert \sum_{n=1}^N \exp(i * \theta(t, n)) \rvert \\
+    .. math::
+        PLV_t = \frac{1}{N} \left |
+        \sum_{n=1}^N \exp(i \cdot \theta(t, n)) \right | \\
 
     where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
-    is the phase difference at time t for trial n.
+    is the phase difference at time `t` for trial `n`.
 
     References
     ----------
@@ -250,8 +250,8 @@ def mean_phase_vector(phases, axis=0):
     Calculates the mean vector of phases.
 
     This function expects phases (in radians) and uses their representation as
-    complex numbers to calculate the direction :math:'\theta' and the length
-    'r' of the mean vector.
+    complex numbers to calculate the direction :math:`\theta` and the length
+    `r` of the mean vector.
 
     Parameters
     ----------
@@ -269,7 +269,7 @@ def mean_phase_vector(phases, axis=0):
         Range: :math:`(-\pi, \pi]`
     z_mean_r : np.ndarray
         Length of the mean vector.
-        Range: `[0, 1]`
+        Range: :math:`[0, 1]`
     """
     # use complex number representation
     # z_phases = np.cos(phases) + 1j * np.sin(phases)
@@ -284,7 +284,7 @@ def phase_difference(alpha, beta):
     r"""
     Calculates the difference between a pair of phases.
 
-    The output is in range from :math:`-\pi to pi`.
+    The output is in range from :math:`-\pi` to :math:`\pi`.
 
     Parameters
     ----------
