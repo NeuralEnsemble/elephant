@@ -14,19 +14,19 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                               title=edge_title, type='function',
                               params=analysis_step.params)
                 if input_obj is not None:
-                    self.add_edge(input_obj, function_edge, type='input',
+                    self.add_edge(input_obj.hash, function_edge, type='input',
                                   **attrs)
-                self.add_edge(function_edge, output_obj, type='output',
+                self.add_edge(function_edge, output_obj.hash, type='output',
                               **attrs)
             else:
-                self.add_edge(input_obj, output_obj, label=edge_label,
+                self.add_edge(input_obj.hash, output_obj.hash, label=edge_label,
                               title=edge_title, params=analysis_step.params,
                               type='static', **attrs)
 
         if input_obj is not None:
             obj_type = input_obj.type
             obj_label = obj_type.split(".")[-1]
-            self.add_node(input_obj, label=obj_label, title=obj_type,
+            self.add_node(input_obj.hash, label=obj_label, title=obj_type,
                           type='data')
 
         if multi_output:
@@ -64,7 +64,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         for key, obj in analysis_step.output.items():
             obj_type = obj.type
             obj_label = obj_type.split(".")[-1]
-            self.add_node(obj, label=obj_label, title=obj_type, type='data')
+            self.add_node(obj.hash, label=obj_label, title=obj_type, type='data')
         multi_output = len(list(analysis_step.output.keys())) > 1
 
         edge_label, edge_title, function_edge = \
