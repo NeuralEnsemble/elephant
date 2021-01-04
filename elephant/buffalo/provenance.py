@@ -109,10 +109,11 @@ class Provenance(object):
     source_name = None
     code_analyzer = None
 
-    def __init__(self, inputs):
+    def __init__(self, inputs, container_output=False):
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
+        self.container_output = container_output
 
     def _insert_static_information(self, tree):
         # Use a NodeVisitor to find the Call node that corresponds to the
@@ -152,6 +153,10 @@ class Provenance(object):
                             frame = frame.f_back
                             frame_info = inspect.getframeinfo(frame)
                             function_name = frame_info.function
+                    elif function_name == 'wrapper':
+                        frame = frame.f_back
+                        frame_info = inspect.getframeinfo(frame)
+                        function_name = frame_info.function
 
                     if (frame_info.filename == self.source_file and
                             frame_info.function == self.source_name):
@@ -190,8 +195,12 @@ class Provenance(object):
                     # 3. Extract function name and information
                     # TODO: fetch version information
 
+                    try:
+                        module = function.__module__
+                    except:
+                        module = None
                     function_name = FunctionDefinition(
-                        function.__name__, function.__module__, None)
+                        function.__name__, module, None)
 
                     # 4. Extract parameters passed to the function and store
                     # in `input_data` dictionary. Two separate lists with the
@@ -247,6 +256,7 @@ class Provenance(object):
                     parameters = {}
                     inputs = {}
                     for key, input_value in input_data.items():
+                        print(function_name, key, self.inputs)
                         if key in self.inputs:
                             if isinstance(input_value, VarArgs):
                                 var_input_list = []
