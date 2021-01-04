@@ -60,11 +60,11 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     plot_time_histogram(time_hist_count, title="neo.AnalogSignal - counts",
                         time_unit=time_unit)
 
-    plt.subplot(2, 2, 2)
+    plt.subplot(2, 2, 3)
     plot_time_histogram(time_hist_mean, title="neo.AnalogSignal - mean",
                         time_unit=time_unit)
 
-    plt.subplot(2, 2, 3)
+    plt.subplot(2, 2, 2)
     plot_time_histogram_object(time_hist_obj_count,
                                title="AnalysisObject - counts",
                                time_unit=time_unit)
@@ -85,6 +85,6 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
 if __name__ == "__main__":
     firing_rate = 10 * pq.Hz
     n_spiketrains = 100
-    bin_size = 5 * pq.ms
+    bin_size = 20 * pq.ms
     show_plot = True
     main(firing_rate, n_spiketrains, bin_size=bin_size, show_plot=show_plot)

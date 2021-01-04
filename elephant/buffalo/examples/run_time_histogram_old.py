@@ -94,6 +94,6 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
 if __name__ == "__main__":
     firing_rate = 10 * pq.Hz
     n_spiketrains = 100
-    bin_size = 5 * pq.ms
+    bin_size = 10 * pq.ms
     show_plot = True
     main(firing_rate, n_spiketrains, bin_size=bin_size, show_plot=show_plot)

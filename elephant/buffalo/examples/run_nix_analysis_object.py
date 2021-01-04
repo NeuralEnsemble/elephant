@@ -42,8 +42,16 @@ def main(sampling_rate=30000*pq.Hz, sampling_time=10*pq.s):
     print("\n\nAfter setting annotations")
     print(test[:5], test.annotations)
 
+    nix_ticks = np.array(test.dimensions[0].axis(len(test)))
+
     print("\n\nTime axis information")
     print(test.times[:5], test.sampling_period)
+    print(np.all(test.times.magnitude == nix_ticks))
+
+    non_matched = np.where(test.times.magnitude != nix_ticks)
+    print(test.times[non_matched])
+    print(nix_ticks[non_matched])
+    print(len(non_matched[0]))
 
     plt.plot(test.dimensions[0].axis(len(test)), test)
     plt.xlabel(f"{test.dimensions[0].label} ({test.dimensions[0].unit})")
