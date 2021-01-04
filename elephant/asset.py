@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-ASSET is a statistical method :cite:`asset-torre2016asset` for the detection of
-repeating sequences of synchronous spiking events in parallel spike trains.
+ASSET is a statistical method :cite:`asset-Torre16_e1004939` for the detection
+of repeating sequences of synchronous spiking events in parallel spike trains.
 
 
 ASSET analysis class object of finding patterns
@@ -124,6 +124,17 @@ except ImportError:
     size = 1
     rank = 0
 
+
+__all__ = [
+    "ASSET",
+    "synchronous_events_intersection",
+    "synchronous_events_difference",
+    "synchronous_events_identical",
+    "synchronous_events_no_overlap",
+    "synchronous_events_contained_in",
+    "synchronous_events_contains_all",
+    "synchronous_events_overlap"
+]
 
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
@@ -1117,8 +1128,8 @@ def _intersection_matrix(spiketrains, spiketrains_y, bin_size, t_start_x,
         t_start=t_start_y, t_stop=t_stop_y)
 
     # Compute imat by matrix multiplication
-    bsts_x = spiketrains_binned.to_sparse_array()
-    bsts_y = spiketrains_binned_y.to_sparse_array()
+    bsts_x = spiketrains_binned.sparse_matrix
+    bsts_y = spiketrains_binned_y.sparse_matrix
 
     # Compute the number of spikes in each bin, for both time axes
     # 'A1' property returns self as a flattened ndarray.

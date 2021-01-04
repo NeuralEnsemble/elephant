@@ -7,21 +7,20 @@ Unit tests for the statistics module.
 """
 from __future__ import division
 
+import itertools
 import math
-import sys
 import unittest
 
 import neo
 import numpy as np
 import quantities as pq
 import scipy.integrate as spint
-from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal, \
+    assert_array_less
 
 import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import homogeneous_poisson_process
-
-python_version_major = sys.version_info.major
 
 
 class isi_TestCase(unittest.TestCase):
@@ -79,6 +78,12 @@ class isi_TestCase(unittest.TestCase):
         res = statistics.isi(st, axis=1)
         assert not isinstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
+
+    def test_unsorted_array(self):
+        np.random.seed(0)
+        array = np.random.rand(100)
+        with self.assertWarns(UserWarning):
+            isi = statistics.isi(array)
 
 
 class isi_cv_TestCase(unittest.TestCase):
@@ -334,6 +339,17 @@ class FanoFactorTestCase(unittest.TestCase):
         lst = [self.test_list[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
+    def test_fanofactor_different_durations(self):
+        st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        st2 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4.5 * pq.s)
+        self.assertWarns(UserWarning, statistics.fanofactor, (st1, st2))
+
+    def test_fanofactor_wrong_type(self):
+        # warn_tolerance is not a quantity
+        st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        self.assertRaises(TypeError, statistics.fanofactor, [st1],
+                          warn_tolerance=1e-4)
+
 
 class LVTestCase(unittest.TestCase):
     def setUp(self):
@@ -368,7 +384,6 @@ class LVTestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.lv, 1)
         self.assertRaises(ValueError, statistics.lv, np.array([seq, seq]))
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_2short_spike_train(self):
         seq = [1]
         with self.assertWarns(UserWarning):
@@ -377,6 +392,60 @@ class LVTestCase(unittest.TestCase):
             an input with more than 1 entry.
             """
             self.assertTrue(math.isnan(statistics.lv(seq, with_nan=True)))
+
+
+class LVRTestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_seq = [1, 28, 4, 47, 5, 16, 2, 5, 21, 12,
+                         4, 12, 59, 2, 4, 18, 33, 25, 2, 34,
+                         4, 1, 1, 14, 8, 1, 10, 1, 8, 20,
+                         5, 1, 6, 5, 12, 2, 8, 8, 2, 8,
+                         2, 10, 2, 1, 1, 2, 15, 3, 20, 6,
+                         11, 6, 18, 2, 5, 17, 4, 3, 13, 6,
+                         1, 18, 1, 16, 12, 2, 52, 2, 5, 7,
+                         6, 25, 6, 5, 3, 15, 4, 3, 16, 3,
+                         6, 5, 24, 21, 3, 3, 4, 8, 4, 11,
+                         5, 7, 5, 6, 8, 11, 33, 10, 7, 4]
+
+        self.target = 2.1845363464753134
+
+    def test_lvr_with_quantities(self):
+        seq = pq.Quantity(self.test_seq, units='ms')
+        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+        seq = pq.Quantity(self.test_seq, units='ms').rescale('s')
+        assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
+
+    def test_lvr_with_plain_array(self):
+        seq = np.array(self.test_seq)
+        with self.assertWarns(UserWarning):
+            assert_array_almost_equal(statistics.lvr(seq),
+                                      self.target, decimal=9)
+
+    def test_lvr_with_list(self):
+        seq = self.test_seq
+        with self.assertWarns(UserWarning):
+            assert_array_almost_equal(statistics.lvr(seq),
+                                      self.target, decimal=9)
+
+    def test_lvr_raise_error(self):
+        seq = self.test_seq
+        self.assertRaises(ValueError, statistics.lvr, [])
+        self.assertRaises(ValueError, statistics.lvr, 1)
+        self.assertRaises(ValueError, statistics.lvr, np.array([seq, seq]))
+        self.assertRaises(ValueError, statistics.lvr, seq, -1 * pq.ms)
+
+    def test_lvr_refractoriness_kwarg(self):
+        seq = np.array(self.test_seq)
+        with self.assertWarns(UserWarning):
+            assert_array_almost_equal(statistics.lvr(seq, R=5),
+                                      self.target, decimal=9)
+
+    def test_2short_spike_train(self):
+        seq = [1]
+        with self.assertWarns(UserWarning):
+            # Catches UserWarning: Input size is too small. Please provide
+            # an input with more than 1 entry.
+            self.assertTrue(math.isnan(statistics.lvr(seq, with_nan=True)))
 
 
 class CV2TestCase(unittest.TestCase):
@@ -413,7 +482,7 @@ class CV2TestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.cv2, np.array([seq, seq]))
 
 
-class RateEstimationTestCase(unittest.TestCase):
+class InstantaneousRateTest(unittest.TestCase):
 
     def setUp(self):
         # create a poisson spike train:
@@ -438,7 +507,6 @@ class RateEstimationTestCase(unittest.TestCase):
         # generation of a multiply used specific kernel
         self.kernel = kernels.TriangularKernel(sigma=0.03 * pq.s)
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_instantaneous_rate_and_warnings(self):
         st = self.spike_train
         sampling_period = 0.01 * pq.s
@@ -457,20 +525,20 @@ class RateEstimationTestCase(unittest.TestCase):
     def test_error_instantaneous_rate(self):
         self.assertRaises(
             TypeError, statistics.instantaneous_rate,
-            spiketrain=[1, 2, 3] * pq.s,
+            spiketrains=[1, 2, 3] * pq.s,
             sampling_period=0.01 * pq.ms, kernel=self.kernel)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=[1, 2, 3],
+            TypeError, statistics.instantaneous_rate, spiketrains=[1, 2, 3],
             sampling_period=0.01 * pq.ms, kernel=self.kernel)
         st = self.spike_train
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01, kernel=self.kernel)
         self.assertRaises(
-            ValueError, statistics.instantaneous_rate, spiketrain=st,
+            ValueError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=-0.01 * pq.ms, kernel=self.kernel)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel='NONE')
         self.assertRaises(TypeError, statistics.instantaneous_rate,
                           self.spike_train,
@@ -479,19 +547,24 @@ class RateEstimationTestCase(unittest.TestCase):
                           t_stop=self.st_tr[1] * pq.s,
                           trim=False)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel,
             cutoff=20 * pq.ms)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel, t_start=2)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel,
             t_stop=20 * pq.mV)
         self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrain=st,
+            TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel, trim=1)
+
+        # cannot estimate a kernel for a list of spiketrains
+        self.assertRaises(ValueError, statistics.instantaneous_rate,
+                          spiketrains=[st, st], sampling_period=10 * pq.ms,
+                          kernel='auto')
 
     def test_rate_estimation_consistency(self):
         """
@@ -520,8 +593,8 @@ class RateEstimationTestCase(unittest.TestCase):
                     center_kernel=center_kernel)
                 num_spikes = len(self.spike_train)
                 auc = spint.cumtrapz(
-                    y=rate_estimate.magnitude.squeeze(),
-                    x=rate_estimate.times.simplified.magnitude)[-1]
+                    y=rate_estimate.magnitude[:, 0],
+                    x=rate_estimate.times.rescale('s').magnitude)[-1]
                 self.assertAlmostEqual(num_spikes, auc,
                                        delta=0.01 * num_spikes)
 
@@ -549,16 +622,39 @@ class RateEstimationTestCase(unittest.TestCase):
                                                  t_start=0 * pq.s,
                                                  t_stop=10 * pq.s)
         kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
+        # check that instantaneous_rate "works" for kernels with small sigma
+        # without triggering an incomprehensible error
         rate = statistics.instantaneous_rate(spiketrain,
                                              sampling_period=sampling_period,
                                              kernel=kernel)
         self.assertEqual(
             len(rate), (spiketrain.t_stop / sampling_period).simplified.item())
 
-        # 3 Hz is not a target - it's meant to test the non-negativity of the
-        # result rate; ideally, for smaller sampling rates, the integral
-        # should match the num. of spikes in the spiketrain
-        self.assertGreater(rate.mean(), 3 * pq.Hz)
+    def test_small_kernel_sigma(self):
+        # Test that the instantaneous rate is overestimated when
+        # kernel.sigma << sampling_period and center_kernel is True.
+        # The setup is set to match the issue 288.
+        np.random.seed(9)
+        sampling_period = 200 * pq.ms
+        sigma = 5 * pq.ms
+        rate_expected = 10 * pq.Hz
+        spiketrain = homogeneous_poisson_process(rate_expected,
+                                                 t_start=0 * pq.s,
+                                                 t_stop=10 * pq.s)
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.Kernel) and
+            kern_cls is not kernels.Kernel and
+            kern_cls is not kernels.SymmetricKernel)
+        for kern_cls, invert in itertools.product(kernel_types, (False, True)):
+            kernel = kern_cls(sigma=sigma, invert=invert)
+            with self.subTest(kernel=kernel):
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=sampling_period,
+                    kernel=kernel, center_kernel=True)
+                self.assertGreater(rate.mean(), rate_expected)
 
     def test_spikes_on_edges(self):
         # this test demonstrates that the trimming (convolve valid mode)
@@ -636,11 +732,11 @@ class RateEstimationTestCase(unittest.TestCase):
             [self.spike_train, spike_train2],
             sampling_period=0.01 * pq.s,
             kernel=self.kernel)
-        summed_rate = st_rate_1 + st_rate_2  # equivalent for identical kernels
+        rate_concat = np.c_[st_rate_1, st_rate_2]
         # 'time_vector.dtype' in instantaneous_rate() is changed from float64
         # to float32 which results in 3e-6 abs difference
         assert_array_almost_equal(combined_rate.magnitude,
-                                  summed_rate.magnitude, decimal=5)
+                                  rate_concat.magnitude, decimal=5)
 
     # Regression test for #144
     def test_instantaneous_rate_regression_144(self):
@@ -679,6 +775,74 @@ class RateEstimationTestCase(unittest.TestCase):
             spiketrain, 10 * pq.ms, kernel='auto')
 
         assert_array_almost_equal(result_target, result_automatic)
+
+    def test_instantaneous_rate_grows_with_sampling_period(self):
+        np.random.seed(0)
+        rate_expected = 10 * pq.Hz
+        spiketrain = homogeneous_poisson_process(rate=rate_expected,
+                                                 t_stop=10 * pq.s)
+        kernel = kernels.GaussianKernel(sigma=100 * pq.ms)
+        rates_mean = []
+        for sampling_period in np.linspace(1, 1000, num=10) * pq.ms:
+            with self.subTest(sampling_period=sampling_period):
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=sampling_period,
+                    kernel=kernel)
+                rates_mean.append(rate.mean())
+        # rate means are greater or equal the expected rate
+        assert_array_less(rate_expected, rates_mean)
+        # check sorted
+        self.assertTrue(np.all(rates_mean[:-1] < rates_mean[1:]))
+
+    # Regression test for #360
+    def test_centered_at_origin(self):
+        # Skip RectangularKernel because it doesn't have a strong peak.
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.SymmetricKernel) and
+            kern_cls not in (kernels.SymmetricKernel,
+                             kernels.RectangularKernel))
+        kernels_symmetric = [kern_cls(sigma=50 * pq.ms, invert=False)
+                             for kern_cls in kernel_types]
+
+        # first part: a symmetric spiketrain with a symmetric kernel
+        spiketrain = neo.SpikeTrain(np.array([-0.0001, 0, 0.0001]) * pq.s,
+                                    t_start=-1,
+                                    t_stop=1)
+        for kernel in kernels_symmetric:
+            rate = statistics.instantaneous_rate(spiketrain,
+                                                 sampling_period=20 * pq.ms,
+                                                 kernel=kernel)
+            # the peak time must be centered at origin
+            self.assertEqual(rate.times[np.argmax(rate)], 0)
+
+        # second part: a single spike at t=0
+        periods = [2 ** c for c in range(-3, 6)]
+        for period in periods:
+            with self.subTest(period=period):
+                spiketrain = neo.SpikeTrain(np.array([0]) * pq.s,
+                                            t_start=-period * 10 * pq.ms,
+                                            t_stop=period * 10 * pq.ms)
+                for kernel in kernels_symmetric:
+                    rate = statistics.instantaneous_rate(
+                        spiketrain,
+                        sampling_period=period * pq.ms,
+                        kernel=kernel)
+                    self.assertEqual(rate.times[np.argmax(rate)], 0)
+
+    def test_annotations(self):
+        spiketrain = neo.SpikeTrain([1, 2], t_stop=2 * pq.s, units=pq.s)
+        kernel = kernels.AlphaKernel(sigma=100 * pq.ms)
+        rate = statistics.instantaneous_rate(spiketrain,
+                                             sampling_period=10 * pq.ms,
+                                             kernel=kernel)
+        kernel_annotation = dict(type=type(kernel).__name__,
+                                 sigma=str(kernel.sigma),
+                                 invert=kernel.invert)
+        self.assertIn('kernel', rate.annotations)
+        self.assertEqual(rate.annotations['kernel'], kernel_annotation)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
@@ -745,33 +909,199 @@ class TimeHistogramTestCase(unittest.TestCase):
                           self.spiketrains,
                           bin_size=pq.s, output=' ')
 
+    def test_annotations(self):
+        np.random.seed(1)
+        spiketrains = [homogeneous_poisson_process(
+            rate=10 * pq.Hz, t_stop=10 * pq.s) for _ in range(10)]
+        for output in ("counts", "mean", "rate"):
+            histogram = statistics.time_histogram(spiketrains,
+                                                  bin_size=3 * pq.ms,
+                                                  output=output)
+            self.assertIn('normalization', histogram.annotations)
+            self.assertEqual(histogram.annotations['normalization'], output)
+
 
 class ComplexityPdfTestCase(unittest.TestCase):
-    def setUp(self):
-        self.spiketrain_a = neo.SpikeTrain(
+    def test_complexity_pdf_deprecated(self):
+        spiketrain_a = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
-        self.spiketrain_b = neo.SpikeTrain(
+        spiketrain_b = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
-        self.spiketrain_c = neo.SpikeTrain(
+        spiketrain_c = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
-        self.spiketrains = [
-            self.spiketrain_a, self.spiketrain_b, self.spiketrain_c]
-
-    def tearDown(self):
-        del self.spiketrain_a
-        self.spiketrain_a = None
-        del self.spiketrain_b
-        self.spiketrain_b = None
-
-    def test_complexity_pdf(self):
+        spiketrains = [
+            spiketrain_a, spiketrain_b, spiketrain_c]
+        # runs the previous function which will be deprecated
         targ = np.array([0.92, 0.01, 0.01, 0.06])
-        complexity = statistics.complexity_pdf(self.spiketrains,
-                                               bin_size=0.1 * pq.s)
+        complexity = statistics.complexity_pdf(spiketrains, binsize=0.1*pq.s)
         assert_array_equal(targ, complexity.magnitude[:, 0])
         self.assertEqual(1, complexity.magnitude[:, 0].sum())
-        self.assertEqual(len(self.spiketrains) + 1, len(complexity))
+        self.assertEqual(len(spiketrains)+1, len(complexity))
         self.assertIsInstance(complexity, neo.AnalogSignal)
         self.assertEqual(complexity.units, 1 * pq.dimensionless)
+
+    def test_complexity_pdf(self):
+        spiketrain_a = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
+        spiketrain_b = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        spiketrain_c = neo.SpikeTrain(
+            [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
+        spiketrains = [
+            spiketrain_a, spiketrain_b, spiketrain_c]
+        # runs the previous function which will be deprecated
+        targ = np.array([0.92, 0.01, 0.01, 0.06])
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               bin_size=0.1 * pq.s)
+        pdf = complexity_obj.pdf()
+        assert_array_equal(targ, complexity_obj.pdf().magnitude[:, 0])
+        self.assertEqual(1, pdf.magnitude[:, 0].sum())
+        self.assertEqual(len(spiketrains)+1, len(pdf))
+        self.assertIsInstance(pdf, neo.AnalogSignal)
+        self.assertEqual(pdf.units, 1*pq.dimensionless)
+
+    def test_complexity_histogram_spread_0(self):
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                      t_stop=20*pq.s)]
+
+        correct_histogram = np.array([10, 8, 2])
+
+        correct_time_histogram = np.array([0, 2, 0, 0, 1, 1, 0, 0, 1, 1,
+                                           0, 1, 1, 0, 0, 0, 2, 0, 1, 1])
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=0)
+
+        assert_array_equal(complexity_obj.complexity_histogram,
+                           correct_histogram)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
+
+    def test_complexity_epoch_spread_0(self):
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                      t_stop=20*pq.s),
+                       neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                      t_stop=20*pq.s)]
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=0)
+
+        self.assertIsInstance(complexity_obj.epoch,
+                              neo.Epoch)
+
+    def test_complexity_histogram_spread_1(self):
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([0, 1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_histogram = np.array([9, 5, 1, 2])
+
+        correct_time_histogram = np.array([3, 3, 0, 0, 2, 2, 0, 1, 0, 1, 0,
+                                           3, 3, 3, 0, 0, 1, 0, 1, 0, 1])
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=1)
+
+        assert_array_equal(complexity_obj.complexity_histogram,
+                           correct_histogram)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
+
+    def test_complexity_histogram_spread_2(self):
+
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        correct_histogram = np.array([5, 0, 1, 1, 0, 0, 0, 1])
+
+        correct_time_histogram = np.array([0, 2, 0, 0, 7, 7, 7, 7, 7, 7, 7,
+                                           7, 7, 7, 0, 0, 3, 3, 3, 3, 3])
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=2)
+
+        assert_array_equal(complexity_obj.complexity_histogram,
+                           correct_histogram)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
+
+    def test_wrong_input_errors(self):
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        self.assertRaises(ValueError,
+                          statistics.Complexity,
+                          spiketrains)
+
+        self.assertRaises(ValueError,
+                          statistics.Complexity,
+                          spiketrains,
+                          sampling_rate=1*pq.s,
+                          spread=-7)
+
+    def test_sampling_rate_warning(self):
+        spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21*pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
+                                      t_stop=21*pq.s)]
+
+        with self.assertWarns(UserWarning):
+            statistics.Complexity(spiketrains,
+                                  bin_size=1*pq.s,
+                                  spread=1)
+
+    def test_binning_for_input_with_rounding_errors(self):
+
+        # a test with inputs divided by 30000 which leads to rounding errors
+        # these errors have to be accounted for by proper binning;
+        # check if we still get the correct result
+
+        sampling_rate = 333 / pq.s
+
+        spiketrains = [neo.SpikeTrain(np.arange(1000, step=2) * pq.s / 333,
+                                      t_stop=30.33333333333 * pq.s),
+                       neo.SpikeTrain(np.arange(2000, step=4) * pq.s / 333,
+                                      t_stop=30.33333333333 * pq.s)]
+
+        correct_time_histogram = np.zeros(10101)
+        correct_time_histogram[:1000:2] = 1
+        correct_time_histogram[:2000:4] += 1
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               spread=1)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
 
 
 if __name__ == '__main__':

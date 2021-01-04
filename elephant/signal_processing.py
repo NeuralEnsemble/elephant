@@ -14,7 +14,17 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import deprecated_alias
+from elephant.utils import deprecated_alias, check_same_units
+
+__all__ = [
+    "zscore",
+    "cross_correlation_function",
+    "butter",
+    "wavelet_transform",
+    "hilbert",
+    "rauc",
+    "derivative"
+]
 
 
 def zscore(signal, inplace=True):
@@ -44,9 +54,9 @@ def zscore(signal, inplace=True):
         Signals for which to calculate the z-score.
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
-        z-transformed signal.
+        z-transformed signal, if possible, i.e when the signal type is float.
         If False, a copy of the original `signal` is returned.
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -122,29 +132,32 @@ def zscore(signal, inplace=True):
 
     """
     # Transform input to a list
-    if not isinstance(signal, list):
+    if isinstance(signal, neo.AnalogSignal):
         signal = [signal]
+    check_same_units(signal, object_type=neo.AnalogSignal)
 
     # Calculate mean and standard deviation
-    signal_stacked = np.vstack(signal)
-    m = np.mean(signal_stacked, axis=0)
-    s = np.std(signal_stacked, axis=0)
+    signal_stacked = np.vstack(signal).magnitude
+    mean = signal_stacked.mean(axis=0)
+    std = signal_stacked.std(axis=0)
 
     signal_ztransofrmed = []
     for sig in signal:
-        sig_normalized = sig.magnitude - m.magnitude
-        sig_normalized = np.divide(sig_normalized, s.magnitude,
-                                   out=np.zeros_like(sig_normalized),
-                                   where=s.magnitude != 0)
-        if inplace:
-            sig[:] = pq.Quantity(sig_normalized, units=sig.units)
-            sig_normalized = sig
-        else:
-            sig_normalized = sig.duplicate_with_new_data(sig_normalized)
-            # todo use flag once is fixed
-            #      https://github.com/NeuralEnsemble/python-neo/issues/752
-            sig_normalized.array_annotate(**sig.array_annotations)
-        sig_dimless = sig_normalized / sig.units
+        sig_normalized = sig.magnitude.astype(mean.dtype, copy=not inplace)
+        sig_normalized -= mean
+        # items where std is zero are already zero
+        np.divide(sig_normalized, std, out=sig_normalized, where=std != 0)
+        sig_dimless = neo.AnalogSignal(signal=sig_normalized,
+                                       units=pq.dimensionless,
+                                       dtype=sig_normalized.dtype,
+                                       copy=False,
+                                       t_start=sig.t_start,
+                                       sampling_rate=sig.sampling_rate,
+                                       name=sig.name,
+                                       file_origin=sig.file_origin,
+                                       description=sig.description,
+                                       array_annotations=sig.array_annotations,
+                                       **sig.annotations)
         signal_ztransofrmed.append(sig_dimless)
 
     # Return single object, or list of objects
@@ -303,7 +316,10 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 
     # z-score analog signal and store channel time series in different arrays
     # Cross-correlation will be calculated between xsig and ysig
-    z_transformed = zscore(signal, inplace=False).magnitude
+    z_transformed = signal.magnitude - signal.magnitude.mean(axis=0)
+    z_transformed = np.divide(z_transformed, signal.magnitude.std(axis=0),
+                              out=z_transformed,
+                              where=z_transformed != 0)
     # transpose (nch, xy, nt) -> (xy, nt, nch)
     xsig, ysig = np.transpose(z_transformed.T[pairs], (1, 2, 0))
 

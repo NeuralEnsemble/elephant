@@ -6,7 +6,6 @@ Unit tests for the GPFA analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import sys
 import unittest
 
 import neo
@@ -24,8 +23,6 @@ try:
     HAVE_SKLEARN = True
 except ImportError:
     HAVE_SKLEARN = False
-
-python_version_major = sys.version_info.major
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
@@ -91,17 +88,19 @@ class GPFATestCase(unittest.TestCase):
     def test_data1(self):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa.fit(self.data1)
-        xorth = gpfa.transform(self.data1)
+        latent_variable_orth = gpfa.transform(self.data1)
         self.assertAlmostEqual(gpfa.transform_info['log_likelihood'],
                                -8172.004695554373, places=5)
         # Since data1 is inherently 2 dimensional, only the first two
-        # dimensions of xorth should have finite power.
+        # dimensions of latent_variable_orth should have finite power.
         for i in [0, 1]:
-            self.assertNotEqual(xorth[0][i].mean(), 0)
-            self.assertNotEqual(xorth[0][i].var(), 0)
+            self.assertNotEqual(latent_variable_orth[0][i].mean(), 0)
+            self.assertNotEqual(latent_variable_orth[0][i].var(), 0)
         for i in [2, 3]:
-            self.assertAlmostEqual(xorth[0][i].mean(), 0, places=2)
-            self.assertAlmostEqual(xorth[0][i].var(), 0, places=2)
+            self.assertAlmostEqual(latent_variable_orth[0][i].mean(), 0,
+                                   places=2)
+            self.assertAlmostEqual(latent_variable_orth[0][i].var(), 0,
+                                   places=2)
 
     def test_transform_testing_data(self):
         # check if the num. of neurons in the test data matches the
@@ -111,8 +110,6 @@ class GPFATestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             gpfa1.transform(self.data2)
 
-    @unittest.skipUnless(python_version_major == 3,
-                         "sklearn py2 has a bug in cross_val_score")
     def test_cross_validation(self):
         # If GPFA.__init__ is decorated, sklearn signature function parsing
         # magic throws the error
@@ -169,12 +166,14 @@ class GPFATestCase(unittest.TestCase):
         gpfa1 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
                      em_max_iters=self.n_iters)
         gpfa1.fit(self.data1)
-        xorth1 = gpfa1.transform(self.data1)
-        xorth2 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
-                      em_max_iters=self.n_iters).fit_transform(self.data1)
+        latent_variable_orth1 = gpfa1.transform(self.data1)
+        latent_variable_orth2 = GPFA(
+            bin_size=self.bin_size, x_dim=self.x_dim,
+            em_max_iters=self.n_iters).fit_transform(self.data1)
         for i in range(len(self.data1)):
             for j in range(self.x_dim):
-                assert_array_almost_equal(xorth1[i][j], xorth2[i][j])
+                assert_array_almost_equal(latent_variable_orth1[i][j],
+                                          latent_variable_orth2[i][j])
 
     def test_get_seq_sqrt(self):
         data = [self.data2[0]]
@@ -200,7 +199,6 @@ class GPFATestCase(unittest.TestCase):
         seqs_cut = gpfa_util.cut_trials(seqs, seg_length=seg_length)
         assert_array_almost_equal(seqs[0]['y'], seqs_cut[0]['y'])
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_cut_trials_larger_length(self):
         data = [self.data2[0]]
         seqs = gpfa_util.get_seqs(data, bin_size=self.bin_size)

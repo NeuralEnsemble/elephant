@@ -761,8 +761,8 @@ class ExponentialKernel(Kernel):
 
     .. math::
         K(t) = \left\{\begin{array}{ll} (1 / \tau) \exp{(-t / \tau)},
-        & t > 0 \\
-        0, & t \leq 0 \end{array} \right.
+        & t \geq 0 \\
+        0, & t < 0 \end{array} \right.
 
     with :math:`\tau = \sigma`.
 
