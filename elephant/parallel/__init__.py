@@ -17,7 +17,8 @@ Tutorial
 Run tutorial interactively:
 
 .. image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/parallel.ipynb
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/parallel.ipynb
 
 
 Available Executors
@@ -45,3 +46,10 @@ except ImportError:
     # mpi4py is missing
     warnings.warn("mpi4py package is missing. Please run 'pip install mpi4py' "
                   "in a terminal to activate MPI features.")
+
+__all__ = [
+    "ProcessPoolExecutor",
+    "SingleProcess",
+    "MPIPoolExecutor",
+    "MPICommExecutor"
+]

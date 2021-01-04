@@ -15,8 +15,10 @@ import quantities as pq
 import scipy as sp
 
 from elephant.conversion import BinnedSpikeTrain
+from elephant.utils import deprecated_alias
 
 
+@deprecated_alias(binsize='bin_size')
 def get_seqs(data, bin_size, use_sqrt=True):
     """
     Converts the data into a rec array using internally BinnedSpikeTrain.
@@ -59,13 +61,13 @@ def get_seqs(data, bin_size, use_sqrt=True):
     seqs = []
     for dat in data:
         sts = dat
-        binned_sts = BinnedSpikeTrain(sts, binsize=bin_size)
+        binned_spiketrain = BinnedSpikeTrain(sts, bin_size=bin_size)
         if use_sqrt:
-            binned = np.sqrt(binned_sts.to_array())
+            binned = np.sqrt(binned_spiketrain.to_array())
         else:
-            binned = binned_sts.to_array()
+            binned = binned_spiketrain.to_array()
         seqs.append(
-            (binned_sts.num_bins, binned))
+            (binned_spiketrain.n_bins, binned))
     seqs = np.array(seqs, dtype=[('T', np.int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width
@@ -421,8 +423,8 @@ def make_precomp(seqs, xDim):
             # Loop once for each trial (each of nList)
             for n in precomp[i]['Tu'][j]['nList']:
                 precomp[i]['Tu'][j]['PautoSUM'] += seqs[n]['VsmGP'][:, :, i] \
-                    + np.outer(
-                    seqs[n]['xsm'][i, :], seqs[n]['xsm'][i, :])
+                    + np.outer(seqs[n]['latent_variable'][i, :],
+                               seqs[n]['latent_variable'][i, :])
     return precomp
 
 
@@ -510,7 +512,7 @@ def orthonormalize(x, l):
 
     Returns
     -------
-    Xorth : (xDim, T) np.ndarray
+    latent_variable_orth : (xDim, T) np.ndarray
         Orthonormalized latent variables
     Lorth : (yDim, xDim) np.ndarray
         Orthonormalized loading matrix
@@ -521,15 +523,15 @@ def orthonormalize(x, l):
     if xDim == 1:
         TT = np.sqrt(np.dot(l.T, l))
         Lorth = rdiv(l, TT)
-        Xorth = np.dot(TT, x)
+        latent_variable_orth = np.dot(TT, x)
     else:
         UU, DD, VV = sp.linalg.svd(l, full_matrices=False)
         # TT is transform matrix
         TT = np.dot(np.diag(DD), VV)
 
         Lorth = UU
-        Xorth = np.dot(TT, x)
-    return Xorth, Lorth, TT
+        latent_variable_orth = np.dot(TT, x)
+    return latent_variable_orth, Lorth, TT
 
 
 def segment_by_trial(seqs, x, fn):

@@ -9,17 +9,33 @@ of spike train dissimilarity measures are the Victor-Purpura distance and the
 Van Rossum distance implemented in this module, which both are metrics in the
 mathematical sense and time-scale dependent.
 
+
+.. autosummary::
+    :toctree: toctree/spike_train_dissimilarity
+
+    victor_purpura_distance
+    van_rossum_distance
+
 :copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 from __future__ import division, print_function, unicode_literals
 
-import quantities as pq
+import warnings
+
 import numpy as np
+import quantities as pq
 import scipy as sp
-import elephant.kernels as kernels
 from neo.core import SpikeTrain
+
+import elephant.kernels as kernels
+from elephant.utils import deprecated_alias
+
+__all__ = [
+    "victor_purpura_distance",
+    "van_rossum_distance"
+]
 
 
 def _create_matrix_from_indexed_function(
@@ -35,8 +51,9 @@ def _create_matrix_from_indexed_function(
     return mat
 
 
-def victor_purpura_dist(
-        trains, q=1.0 * pq.Hz, kernel=None, sort=True, algorithm='fast'):
+@deprecated_alias(trains='spiketrains', q='cost_factor')
+def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
+                            sort=True, algorithm='fast'):
     """
     Calculates the Victor-Purpura's (VP) distance. It is often denoted as
     :math:`D^{\\text{spike}}[q]`.
@@ -59,16 +76,16 @@ def victor_purpura_dist(
 
     Parameters
     ----------
-    trains : Sequence of :class:`neo.core.SpikeTrain` objects of
-        which the distance will be calculated pairwise.
-    q: Quantity scalar
-        Cost factor for spike shifts as inverse time scalar.
+    spiketrains : list of neo.SpikeTrain
+        Spike trains to calculate pairwise distance.
+    cost_factor: pq.Quantity
+        A cost factor :math:`q` for spike shifts as inverse time scalar.
         Extreme values :math:`q=0` meaning no cost for any shift of
         spikes, or :math: `q=np.inf` meaning infinite cost for any
         spike shift and hence exclusion of spike shifts, are explicitly
         allowed. If `kernel` is not `None`, :math:`q` will be ignored.
         Default: 1.0 * pq.Hz
-    kernel: :class:`.kernels.Kernel`
+    kernel: kernels.Kernel
         Kernel to use in the calculation of the distance. If `kernel` is
         `None`, an unnormalized triangular kernel with standard deviation
         of :math:'2.0/(q * sqrt(6.0))' corresponding to a half width of
@@ -98,37 +115,39 @@ def victor_purpura_dist(
     Examples
     --------
     >>> import quantities as pq
-    >>> from elephant.spike_train_dissimilarity import victor_purpura_dist
+    >>> from elephant.spike_train_dissimilarity import victor_purpura_distance
     >>> q = 1.0 / (10.0 * pq.ms)
     >>> st_a = SpikeTrain([10, 20, 30], units='ms', t_stop= 1000.0)
     >>> st_b = SpikeTrain([12, 24, 30], units='ms', t_stop= 1000.0)
-    >>> vp_f = victor_purpura_dist([st_a, st_b], q)[0, 1]
-    >>> vp_i = victor_purpura_dist([st_a, st_b], q,
+    >>> vp_f = victor_purpura_distance([st_a, st_b], q)[0, 1]
+    >>> vp_i = victor_purpura_distance([st_a, st_b], q,
     ...        algorithm='intuitive')[0, 1]
     """
-    for train in trains:
+    for train in spiketrains:
         if not (isinstance(train, (pq.quantity.Quantity, SpikeTrain)) and
                 train.dimensionality.simplified ==
                 pq.Quantity(1, "s").dimensionality.simplified):
             raise TypeError("Spike trains must have a time unit.")
 
-    if not (isinstance(q, pq.quantity.Quantity) and
-            q.dimensionality.simplified ==
+    if not (isinstance(cost_factor, pq.quantity.Quantity) and
+            cost_factor.dimensionality.simplified ==
             pq.Quantity(1, "Hz").dimensionality.simplified):
-        raise TypeError("q must be a rate quantity.")
+        raise TypeError("cost_factor must be a rate quantity.")
 
     if kernel is None:
-        if q == 0.0:
-            num_spikes = np.atleast_2d([st.size for st in trains])
+        if cost_factor == 0.0:
+            num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return np.absolute(num_spikes.T - num_spikes)
-        elif q == np.inf:
-            num_spikes = np.atleast_2d([st.size for st in trains])
+        elif cost_factor == np.inf:
+            num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return num_spikes.T + num_spikes
         else:
-            kernel = kernels.TriangularKernel(2.0 / (np.sqrt(6.0) * q))
+            kernel = kernels.TriangularKernel(
+                sigma=2.0 / (np.sqrt(6.0) * cost_factor))
 
     if sort:
-        trains = [np.sort(st.view(type=pq.Quantity)) for st in trains]
+        spiketrains = [np.sort(st.view(type=pq.Quantity))
+                       for st in spiketrains]
 
     def compute(i, j):
         if i == j:
@@ -136,19 +155,25 @@ def victor_purpura_dist(
         else:
             if algorithm == 'fast':
                 return _victor_purpura_dist_for_st_pair_fast(
-                    trains[i], trains[j], kernel)
+                    spiketrains[i], spiketrains[j], kernel)
             elif algorithm == 'intuitive':
                 return _victor_purpura_dist_for_st_pair_intuitive(
-                    trains[i], trains[j], q)
+                    spiketrains[i], spiketrains[j], cost_factor)
             else:
                 raise NameError("algorithm must be either 'fast' "
                                 "or 'intuitive'.")
 
     return _create_matrix_from_indexed_function(
-        (len(trains), len(trains)), compute, kernel.is_symmetric())
+        (len(spiketrains), len(spiketrains)), compute, kernel.is_symmetric())
 
 
-def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
+def victor_purpura_dist(*args, **kwargs):
+    warnings.warn("'victor_purpura_dist' funcion is deprecated; "
+                  "use 'victor_purpura_distance'", DeprecationWarning)
+    return victor_purpura_distance(*args, **kwargs)
+
+
+def _victor_purpura_dist_for_st_pair_fast(spiketrain_a, spiketrain_b, kernel):
     """
     The algorithm used is based on the one given in
 
@@ -186,7 +211,7 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
 
     Parameters
     ----------
-    train_a, train_b : :class:`neo.core.SpikeTrain` objects of
+    spiketrain_a, spiketrain_b : :class:`neo.core.SpikeTrain` objects of
         which the Victor-Purpura distance will be calculated pairwise.
     kernel: :class:`.kernels.Kernel`
         Kernel to use in the calculation of the distance.
@@ -197,17 +222,17 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
         The Victor-Purpura distance of train_a and train_b
     """
 
-    if train_a.size <= 0 or train_b.size <= 0:
-        return max(train_a.size, train_b.size)
+    if spiketrain_a.size <= 0 or spiketrain_b.size <= 0:
+        return max(spiketrain_a.size, spiketrain_b.size)
 
-    if train_a.size < train_b.size:
-        train_a, train_b = train_b, train_a
+    if spiketrain_a.size < spiketrain_b.size:
+        spiketrain_a, spiketrain_b = spiketrain_b, spiketrain_a
 
-    min_dim, max_dim = train_b.size, train_a.size + 1
+    min_dim, max_dim = spiketrain_b.size, spiketrain_a.size + 1
     cost = np.asfortranarray(np.tile(np.arange(float(max_dim)), (2, 1)))
     decreasing_sequence = np.asfortranarray(cost[:, ::-1])
-    kern = kernel((np.atleast_2d(train_a).T.view(type=pq.Quantity) -
-                   train_b.view(type=pq.Quantity)))
+    kern = kernel((np.atleast_2d(spiketrain_a).T.view(type=pq.Quantity) -
+                   spiketrain_b.view(type=pq.Quantity)))
     as_fortran = np.asfortranarray(
         ((np.sqrt(6.0) * kernel.sigma) * kern).simplified)
     k = 1 - 2 * as_fortran
@@ -215,8 +240,8 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
     for i in range(min_dim):
         # determine G[i, i] == accumulated_min[:, 0]
         accumulated_min = cost[:, :-i - 1] + k[i:, i]
-        accumulated_min[1, :train_b.size - i] = \
-            cost[1, :train_b.size - i] + k[i, i:]
+        accumulated_min[1, :spiketrain_b.size - i] = \
+            cost[1, :spiketrain_b.size - i] + k[i, i:]
         accumulated_min = np.minimum(
             accumulated_min,  # shift
             cost[:, 1:max_dim - i])  # insert
@@ -230,8 +255,8 @@ def _victor_purpura_dist_for_st_pair_fast(train_a, train_b, kernel):
     return cost[0, -min_dim - 1]
 
 
-def _victor_purpura_dist_for_st_pair_intuitive(
-                                             train_a, train_b, q=1.0 * pq.Hz):
+def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
+                                               cost_factor=1.0 * pq.Hz):
     """
     Function to calculate the Victor-Purpura distance between two spike trains
     described in *J. D. Victor and K. P. Purpura, Nature and precision of
@@ -254,9 +279,9 @@ def _victor_purpura_dist_for_st_pair_intuitive(
 
     Parameters
     ----------
-    train_a, train_b : :class:`neo.core.SpikeTrain` objects of
+    spiketrain_a, spiketrain_b : :class:`neo.core.SpikeTrain` objects of
         which the Victor-Purpura distance will be calculated pairwise.
-    q : Quantity scalar of rate dimension
+    cost_factor : Quantity scalar of rate dimension
         The cost parameter.
         Default: 1.0 * pq.Hz
 
@@ -265,8 +290,8 @@ def _victor_purpura_dist_for_st_pair_intuitive(
     float
         The Victor-Purpura distance of train_a and train_b
     """
-    nspk_a = len(train_a)
-    nspk_b = len(train_b)
+    nspk_a = len(spiketrain_a)
+    nspk_b = len(spiketrain_b)
     scr = np.zeros((nspk_a+1, nspk_b+1))
     scr[:, 0] = range(0, nspk_a+1)
     scr[0, :] = range(0, nspk_b+1)
@@ -275,19 +300,22 @@ def _victor_purpura_dist_for_st_pair_intuitive(
         for i in range(1, nspk_a+1):
             for j in range(1, nspk_b+1):
                 scr[i, j] = min(scr[i-1, j]+1, scr[i, j-1]+1)
-                scr[i, j] = min(scr[i, j], scr[i-1, j-1] + np.float64((
-                               q*abs(train_a[i-1]-train_b[j-1])).simplified))
+                scr[i, j] = min(scr[i, j], scr[i-1, j-1] +
+                                np.float64((
+                                    cost_factor * abs(
+                                        spiketrain_a[i - 1] -
+                                        spiketrain_b[j - 1])).simplified))
     return scr[nspk_a, nspk_b]
 
 
-def van_rossum_dist(trains, tau=1.0 * pq.s, sort=True):
+@deprecated_alias(trains='spiketrains', tau='time_constant')
+def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     """
     Calculates the van Rossum distance.
 
     It is defined as Euclidean distance of the spike trains convolved with a
     causal decaying exponential smoothing filter. A detailed description can
-    be found in *Rossum, M. C. W. (2001). A novel spike distance. Neural
-    Computation, 13(4), 751-763.* This implementation is normalized to yield
+    be found in [1]_. This implementation is normalized to yield
     a distance of 1.0 for the distance between an empty spike train and a
     spike train with a single spike. Divide the result by sqrt(2.0) to get
     the normalization used in the cited paper.
@@ -297,13 +325,14 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, sort=True):
 
     Parameters
     ----------
-    trains : Sequence of :class:`neo.core.SpikeTrain` objects of
+    spiketrains : Sequence of :class:`neo.core.SpikeTrain` objects of
         which the van Rossum distance will be calculated pairwise.
-    tau : Quantity scalar
+    time_constant : Quantity scalar
         Decay rate of the exponential function as time scalar. Controls for
-        which time scale the metric will be sensitive. This parameter will
-        be ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
-        which will lead to only measuring differences in spike count.
+        which time scale the metric will be sensitive. Denoted as :math:`t_c`
+        in [1]_. This parameter will be ignored if `kernel` is not `None`.
+        May also be :const:`scipy.inf` which will lead to only measuring
+        differences in spike count.
         Default: 1.0 * pq.s
     sort : bool
         Spike trains with sorted spike times might be needed for the
@@ -317,39 +346,51 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, sort=True):
         2-D Matrix containing the van Rossum distances for all pairs of
         spike trains.
 
+    References
+    ----------
+    [1] Rossum, M. V. (2001). A novel spike distance. Neural computation,
+        13(4), 751-763.
+
     Examples
     --------
-    >>> from elephant.spike_train_dissimilarity import van_rossum_dist
+    >>> from elephant.spike_train_dissimilarity import van_rossum_distance
     >>> tau = 10.0 * pq.ms
     >>> st_a = SpikeTrain([10, 20, 30], units='ms', t_stop= 1000.0)
     >>> st_b = SpikeTrain([12, 24, 30], units='ms', t_stop= 1000.0)
-    >>> vr = van_rossum_dist([st_a, st_b], tau)[0, 1]
+    >>> vr = van_rossum_distance([st_a, st_b], tau)[0, 1]
     """
-    for train in trains:
+    for train in spiketrains:
         if not (isinstance(train, (pq.quantity.Quantity, SpikeTrain)) and
                 train.dimensionality.simplified ==
                 pq.Quantity(1, "s").dimensionality.simplified):
             raise TypeError("Spike trains must have a time unit.")
 
-    if not (isinstance(tau, pq.quantity.Quantity) and
-            tau.dimensionality.simplified ==
+    if not (isinstance(time_constant, pq.quantity.Quantity) and
+            time_constant.dimensionality.simplified ==
             pq.Quantity(1, "s").dimensionality.simplified):
         raise TypeError("tau must be a time quantity.")
 
-    if tau == 0:
-        spike_counts = [st.size for st in trains]
+    if time_constant == 0:
+        spike_counts = [st.size for st in spiketrains]
         return np.sqrt(spike_counts + np.atleast_2d(spike_counts).T)
-    elif tau == np.inf:
-        spike_counts = [st.size for st in trains]
+    elif time_constant == np.inf:
+        spike_counts = [st.size for st in spiketrains]
         return np.absolute(spike_counts - np.atleast_2d(spike_counts).T)
 
     k_dist = _summed_dist_matrix(
-        [st.view(type=pq.Quantity) for st in trains], tau, not sort)
+        [st.view(type=pq.Quantity)
+         for st in spiketrains], time_constant, not sort)
     vr_dist = np.empty_like(k_dist)
     for i, j in np.ndindex(k_dist.shape):
         vr_dist[i, j] = (
             k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
     return sp.sqrt(vr_dist)
+
+
+def van_rossum_dist(*args, **kwargs):
+    warnings.warn("'van_rossum_dist' function is deprecated; "
+                  "use 'van_rossum_distance'", DeprecationWarning)
+    return van_rossum_distance(*args, **kwargs)
 
 
 def _summed_dist_matrix(spiketrains, tau, presorted=False):

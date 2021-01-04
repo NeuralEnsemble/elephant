@@ -2,6 +2,102 @@
 Release Notes
 *************
 
+
+Elephant 0.9.0 release notes
+============================
+
+This release is titled to accompany the [2nd Elephant User Workshop](https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/2nd-elephant-user-workshop/)
+
+Viziphant
+---------
+Meet Viziphant, the visualization of Elephant analysis methods, at https://viziphant.readthedocs.io/en/latest/. This package provides support to easily plot and visualize the output of Elephant functions in a few lines of code.
+
+Provenance tracking
+-------------------
+Provenance is becoming a separate direction in Elephant. Many things are still to come, and we started with annotating `time_histogram`, `instantaneous_rate` and `cross_correlation_histogram` outputs to carry the information about the parameters these functions used. This allowed Viziphant, the visualization of Elephant analyses, to look for the `.annotations` dictionary of the output of these function to "understand" how the object has been generated and label the plot axes accordingly.
+
+New functionality and features
+------------------------------
+* Time-domain pairwise and conditional pairwise Granger causality measures (https://github.com/NeuralEnsemble/elephant/pull/332, https://github.com/NeuralEnsemble/elephant/pull/359)
+* Spike contrast function that measures the synchrony of spike trains (https://github.com/NeuralEnsemble/elephant/pull/354; thanks to @Broxy7 for bringing this in Elephant).
+* Revised local variability LvR (https://github.com/NeuralEnsemble/elephant/pull/346) as an alternative to the LV measure.
+* Three surrogate methods: Trial-shifting, Bin Shuffling, ISI dithering (https://github.com/NeuralEnsemble/elephant/pull/343).
+* Added a new function to generate spike trains: `inhomogeneous_gamma_process` (https://github.com/NeuralEnsemble/elephant/pull/339).
+* The output of `instantaneous_rate` function is now a 2D matrix of shape `(time, len(spiketrains))` (https://github.com/NeuralEnsemble/elephant/issues/363). Not only can the users assess the averaged instantaneous rate (`rates.mean(axis=1)`) but also explore how much the instantaneous rate deviates from trial to trial (`rates.std(axis=1)`) (originally asked in https://github.com/NeuralEnsemble/elephant/issues/363).
+
+Python 3 only
+-------------
+* Python 2.7 and 3.5 support is dropped. You can still however enjoy the features of Elephant v0.9.0 with Python 2.7 or 3.5 by installing Elephant from [this](https://github.com/NeuralEnsemble/elephant/tree/295c6bd7fea196cf9665a78649fafedab5840cfa) commit `pip install git+https://github.com/NeuralEnsemble/elephant@295c6bd7fea196cf9665a78649fafedab5840cfa#egg=elephant[extras]`
+* Added Python 3.9 support.
+
+Optimization
+------------
+* You have been asking for direct numpy support for years. Added `_t_start`, `_t_stop`, and `_bin_size` attributes of BinnedSpikeTrain are guaranteed to be of the same units and hence are unitless (https://github.com/NeuralEnsemble/elephant/pull/378). It doesn't mean though that you need to care about units on your own: `t_start`, `t_stop`, and `bin_size` properties are still quantities with units. The `.rescale()` method of a BinnedSpikeTrain rescales the internal units to new ones in-place. The following Elephant functions are optimized with unitless BinnedSpikeTrain:
+  - cross_correlation_histogram
+  - bin_shuffling (one of the surrogate methods)
+  - spike_train_timescale
+* X4 faster binning and overall BinnedSpikeTrain object creation (https://github.com/NeuralEnsemble/elephant/pull/368).
+* `instantaneous_rate` function is vectorized to work with a list of spike train trials rather than computing them in a loop (previously, `for spiketrain in spiketrains; do compute instantaneous_rate(spiketrain); done`), which brought X25 speedup (https://github.com/NeuralEnsemble/elephant/pull/362; thanks to @gyyang for the idea and original implementation).
+* Memory-efficient `zscore` function (https://github.com/NeuralEnsemble/elephant/pull/372).
+* Don't sort the input array in ISI function (https://github.com/NeuralEnsemble/elephant/pull/371), which reduces function algorithmic time complexity from `O(N logN)` to linear `O(N)`. Now, when the input time array is not sorted, a warning is shown.
+* Vectorized Current Source Density `generate_lfp` function (https://github.com/NeuralEnsemble/elephant/pull/358).
+
+Breaking changes
+----------------
+* mpi4py package is removed from the extra requirements to allow `pip install elephant[extras]` on machines without MPI installed system-wide. Refer to [MPI support](https://elephant.readthedocs.io/en/latest/install.html#mpi-support) installation page in elephant.
+* BinnedSpikeTrain (https://github.com/NeuralEnsemble/elephant/pull/368, https://github.com/NeuralEnsemble/elephant/pull/377):
+  - previously, when t_start/stop, if set manually, was outside of the shared time interval, only the shared [t_start_shared=max(t_start), t_stop_shared=min(t_stop)] interval was implicitly considered without any warnings. Now an error is thrown with a description on how to fix it.
+  - removed `lst_input`, `input_spiketrains`, `matrix_columns`, `matrix_rows` (in favor of the new attribute - `shape`), `tolerance`, `is_spiketrain`, `is_binned` attributes from BinnedSpikeTrain class. Part of them are confusing (e.g., `is_binned` was just the opposite of `is_spiketrain`, but one can erroneously think that it's data is clipped to 0 and 1), and part of them - `lst_input`, `input_spiketrains` input data - should not have been saved as attributes of an object in the first place because the input spike trains are not used after the sparse matrix is created.
+  - now the users can directly access `.sparse_matrix` attribute of BinnedSpikeTrain to do efficient (yet unsafe in general) operations. For this reason, `to_sparse_array()` function, which does not make a copy, as one could think of, is deprecated.
+* `instantaneous_rate` function (https://github.com/NeuralEnsemble/elephant/pull/362):
+  - in case of multiple input spike trains, the output of the instantaneous rate function is (always) a 2D matrix of shape `(time, len(spiketrains))` instead of a pseudo 1D array (previous behavior) of shape `(time, 1)` that contained the instantaneous rate summed across input spike trains;
+  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/latest/get_in_touch.html).
+
+Other changes
+-------------
+* `waveform_snr` function now directly takes a 2D or 3D waveforms matrix rather than a spike train (deprecated behavior).
+* Added a warning in fanofactor function when the input spiketrains vary in their durations (https://github.com/NeuralEnsemble/elephant/pull/341).
+* SPADE: New way to count patterns for multiple testing (https://github.com/NeuralEnsemble/elephant/pull/347)
+* GPFA renamed 'xsm' -> 'latent_variable' and 'xorth' -> 'latent_variable_orth'
+
+Bug fixes
+---------
+* Instantaneous rate arrays were not centered at the origin for spike trains that are symmetric at t=0 with `center_kernel=True` option (https://github.com/NeuralEnsemble/elephant/pull/362).
+* The number of discarded spikes that fall into the last bin of a BinnedSpikeTrain object was incorrectly calculated (https://github.com/NeuralEnsemble/elephant/pull/368).
+* Fixed index selection in `spike_triggered_phase` (https://github.com/NeuralEnsemble/elephant/pull/382)
+* Fixed surrogates bugs:
+  - `joint-ISI` and `shuffle ISI` output spike trains were not sorted in time (https://github.com/NeuralEnsemble/elephant/pull/364);
+  - surrogates get arbitrary sampling_rate (https://github.com/NeuralEnsemble/elephant/pull/353), which relates to the provenance tracking issue;
+
+
+
+Elephant 0.8.0 release notes
+============================
+
+New features
+------------
+* The `parallel` module is a new experimental module (https://github.com/NeuralEnsemble/elephant/pull/307) to run python functions concurrently. Supports native (pythonic) ProcessPollExecutor and MPI. Not limited to Elephant functional.
+* Added an optional `refractory_period` argument, set to None by default, to `dither_spikes` function (https://github.com/NeuralEnsemble/elephant/pull/297).
+* Added `cdf` and `icdf` functions in Kernel class to correctly estimate the median index, needed for `instantaneous_rate` function in statistics.py (https://github.com/NeuralEnsemble/elephant/pull/313).
+* Added an optional `center_kernel` argument, set to True by default (to behave as in Elephant <0.8.0 versions) to `instantaneous_rate` function in statistics.py (https://github.com/NeuralEnsemble/elephant/pull/313).
+
+New tutorials
+-------------
+* Analysis of Sequences of Synchronous EvenTs (ASSET) tutorial: https://elephant.readthedocs.io/en/latest/tutorials/asset.html
+* Parallel module tutorial: https://elephant.readthedocs.io/en/latest/tutorials/parallel.html
+
+Optimization
+------------
+* Optimized ASSET runtime by a factor of 10 and more (https://github.com/NeuralEnsemble/elephant/pull/259, https://github.com/NeuralEnsemble/elephant/pull/333).
+
+Python 2.7 and 3.5 deprecation
+------------------------------
+Python 2.7 and 3.5 are deprecated and will not be maintained by the end of 2020. Switch to Python 3.6+.
+
+Breaking changes
+----------------
+* Naming convention changes (`binsize` -> `bin_size`, etc.) in almost all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
+
 Elephant 0.7.0 release notes
 ============================
 

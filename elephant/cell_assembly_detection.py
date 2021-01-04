@@ -16,7 +16,7 @@ The method was published in Russo et al. 2017 [1]. The original
 code is in Matlab language.
 
 Given a list of discretized (binned) spike trains by a given temporal
-scale (binsize), assumed to be recorded in parallel, the CAD analysis can be
+scale (bin_size), assumed to be recorded in parallel, the CAD analysis can be
 applied as demonstrated in this short toy example of 5 parallel spike trains
 that exhibit fully synchronous events of order 5.
 
@@ -29,23 +29,23 @@ Examples
 >>> import numpy as np
 >>> import elephant.cell_assembly_detection as cad
 >>> np.random.seed(30)
->>> # Generate correlated data and bin it with a binsize of 10ms
+>>> # Generate correlated data and bin it with a bin_size of 10ms
 >>> sts = elephant.spike_train_generation.cpp(
 >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
->>> binsize = 10*pq.ms
->>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
+>>> bin_size = 10*pq.ms
+>>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
 >>> # Call of the method
->>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
+>>> patterns = cad.cell_assembly_detection(spM=spM, max_lag=2)[0]
 >>> # Plotting
 >>> plt.figure()
 >>> for neu in patterns['neurons']:
 >>>     if neu == 0:
 >>>         plt.plot(
->>>             patterns['times']*binsize, [neu]*len(patterns['times']),
+>>>             patterns['times']*bin_size, [neu]*len(patterns['times']),
 >>>             'ro', label='pattern')
 >>>     else:
 >>>         plt.plot(
->>>             patterns['times']*binsize, [neu] * len(patterns['times']),
+>>>             patterns['times']*bin_size, [neu] * len(patterns['times']),
 >>>             'ro')
 >>> # Raster plot of the data
 >>> for st_idx, st in enumerate(sts):
@@ -70,27 +70,38 @@ Elife, 6.
 
 from __future__ import division, print_function, unicode_literals
 
-import numpy as np
 import copy
 import math
-import elephant.conversion as conv
-from scipy.stats import f
 import time
 
+import numpy as np
+from scipy.stats import f
 
-def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
-                            min_occ=1, size_chunks=100, max_spikes=np.inf,
-                            significance_pruning=True, subgroup_pruning=True,
-                            same_config_cut=False, bool_times_format=False,
-                            verbose=False):
+import elephant.conversion as conv
+from elephant.utils import deprecated_alias
+
+__all__ = [
+    "cell_assembly_detection"
+]
+
+
+@deprecated_alias(data='binned_spiketrain', maxlag='max_lag',
+                  min_occ='min_occurrences',
+                  same_config_cut='same_configuration_pruning')
+def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
+                            alpha=0.05, min_occurrences=1, size_chunks=100,
+                            max_spikes=np.inf, significance_pruning=True,
+                            subgroup_pruning=True,
+                            same_configuration_pruning=False,
+                            bool_times_format=False, verbose=False):
 
     """
     The function performs the CAD analysis for the binned (discretized) spike
     trains given in input. The method looks for candidate
     significant patterns with lags (number of bins between successive spikes
-    in the pattern) going from `-maxlag` to `maxlag` (second parameter of the
+    in the pattern) going from `-max_lag` to `max_lag` (second parameter of the
     function). Thus, between two successive spikes in the pattern there can
-    be at most `maxlag`*`binsize` units of time.
+    be at most `max_lag`*`bin_size` units of time.
 
     The method agglomerates pairs of units (or a unit and a preexisting
     assembly), tests their significance by a statistical test
@@ -107,12 +118,12 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
 
     Parameters
     ----------
-    data : elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : elephant.conversion.BinnedSpikeTrain
         Binned spike trains containing data to be analyzed.
-    maxlag : int
-        Maximal lag to be tested. For a binning dimension of binsize the
+    max_lag : int
+        Maximal lag to be tested. For a binning dimension of bin_size the
         method will test all pairs configurations with a time
-        shift between '-maxlag' and 'maxlag'.
+        shift between '-max_lag' and 'max_lag'.
     reference_lag : int, optional
         Reference lag (in bins) for the non-stationarity correction in the
         statistical test.
@@ -120,7 +131,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     alpha : float, optional
         Significance level for the statistical test.
         Default: 0.05.
-    min_occ : int, optional
+    min_occurrences : int, optional
         Minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
@@ -142,7 +153,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
         If True, the method performs subgroup pruning among
         the detected assemblies.
         Default: True.
-    same_config_cut : bool, optional
+    same_configuration_pruning : bool, optional
         If True, performs pruning (not present in the original code and more
         efficient), not testing assemblies already formed
         if they appear in the very same configuration.
@@ -190,7 +201,8 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     Raises
     ------
     TypeError
-        If `data` is not an `elephant.conv.BinnedSpikeTrain` object.
+        If `binned_spiketrain` is not an instance of
+        `elephant.conv.BinnedSpikeTrain`.
     ValueError
         If the parameters are out of bounds.
 
@@ -213,31 +225,31 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     ...
     >>> np.random.seed(30)
     ...
-    >>> # Generate correlated data and bin it with a binsize of 10ms
+    >>> # Generate correlated data and bin it with a bin_size of 10ms
     >>> sts = elephant.spike_train_generation.cpp(
     >>>     rate=15*pq.Hz, A=[0]+[0.95]+[0]*4+[0.05], t_stop=10*pq.s)
-    >>> binsize = 10*pq.ms
-    >>> spM = conv.BinnedSpikeTrain(sts, binsize=binsize)
+    >>> bin_size = 10*pq.ms
+    >>> spM = conv.BinnedSpikeTrain(sts, bin_size=bin_size)
     ...
     >>> # Call of the method
-    >>> patterns = cad.cell_assembly_detection(spM=spM, maxlag=2)[0]
+    >>> patterns = cad.cell_assembly_detection(spM=spM, max_lag=2)[0]
 
     """
     initial_time = time.time()
 
     # check parameter input and raise errors if necessary
-    _raise_errors(data=data,
-                  maxlag=maxlag,
+    _raise_errors(binned_spiketrain=binned_spiketrain,
+                  max_lag=max_lag,
                   alpha=alpha,
-                  min_occ=min_occ,
+                  min_occurrences=min_occurrences,
                   size_chunks=size_chunks,
                   max_spikes=max_spikes)
 
     # transform the binned spiketrain into array
-    data = data.to_array()
+    binned_spiketrain = binned_spiketrain.to_array()
 
     # zero order
-    n_neurons = len(data)
+    n_neurons = len(binned_spiketrain)
 
     # initialize empty assembly
 
@@ -254,15 +266,15 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
         assembly_in[w1]['neurons'] = [w1]
         assembly_in[w1]['lags'] = []
         assembly_in[w1]['pvalue'] = []
-        assembly_in[w1]['times'] = data[w1]
-        assembly_in[w1]['signature'] = [[1, sum(data[w1])]]
+        assembly_in[w1]['times'] = binned_spiketrain[w1]
+        assembly_in[w1]['signature'] = [[1, sum(binned_spiketrain[w1])]]
 
     # first order = test over pairs
 
     # denominator of the Bonferroni correction
     # divide alpha by the number of tests performed in the first
     # pairwise testing loop
-    number_test_performed = n_neurons * (n_neurons - 1) * (2 * maxlag + 1)
+    number_test_performed = n_neurons * (n_neurons - 1) * (2 * max_lag + 1)
     alpha = alpha * 2 / float(number_test_performed)
     if verbose:
         print('actual significance_level', alpha)
@@ -284,20 +296,21 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     # for loop for the pairwise testing
     for w1 in range(n_neurons - 1):
         for w2 in range(w1 + 1, n_neurons):
-            spiketrain2 = data[w2]
+            spiketrain2 = binned_spiketrain[w2]
             n2 = w2
             assembly_flag = 0
 
             # call of the function that does the pairwise testing
-            call_tp = _test_pair(ensemble=assembly_in[w1],
-                                 spiketrain2=spiketrain2,
-                                 n2=n2,
-                                 maxlag=maxlag,
-                                 size_chunks=size_chunks,
-                                 reference_lag=reference_lag,
-                                 existing_patterns=existing_patterns,
-                                 same_config_cut=same_config_cut)
-            if same_config_cut:
+            call_tp = _test_pair(
+                ensemble=assembly_in[w1],
+                spiketrain2=spiketrain2,
+                n2=n2,
+                max_lag=max_lag,
+                size_chunks=size_chunks,
+                reference_lag=reference_lag,
+                existing_patterns=existing_patterns,
+                same_configuration_pruning=same_configuration_pruning)
+            if same_configuration_pruning:
                 assem_tp = call_tp[0]
             else:
                 assem_tp = call_tp
@@ -305,13 +318,13 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
             # if the assembly given in output is significant and the number
             # of occurrences is higher than the minimum requested number
             if assem_tp['pvalue'][-1] < alpha and \
-                    assem_tp['signature'][-1][1] > min_occ:
+                    assem_tp['signature'][-1][1] > min_occurrences:
                 # save the assembly in the output
                 assembly.append(assem_tp)
                 sign_pairs_matrix[w1][w2] = 1
                 assembly_flag = 1  # flag : it is indeed an assembly
                 # put the item_candidate into the existing_patterns list
-                if same_config_cut:
+                if same_configuration_pruning:
                     item_candidate = call_tp[1]
                     if not existing_patterns:
                         existing_patterns = [item_candidate]
@@ -372,25 +385,26 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
         if w2_to_test:
 
             # bonferroni correction only for the tests actually performed
-            alpha = alpha / float(len(w2_to_test) * n_as * (2 * maxlag + 1))
+            alpha = alpha / float(len(w2_to_test) * n_as * (2 * max_lag + 1))
 
             # testing for the element in w2_to_test
             for ww2 in range(len(w2_to_test)):
                 w2 = w2_to_test[ww2]
-                spiketrain2 = data[w2]
+                spiketrain2 = binned_spiketrain[w2]
                 assembly_flag = 0
                 pop_flag = max(assembly_flag, 0)
                 # testing for the assembly and the new neuron
 
-                call_tp = _test_pair(ensemble=assembly[w1],
-                                     spiketrain2=spiketrain2,
-                                     n2=w2,
-                                     maxlag=maxlag,
-                                     size_chunks=size_chunks,
-                                     reference_lag=reference_lag,
-                                     existing_patterns=existing_patterns,
-                                     same_config_cut=same_config_cut)
-                if same_config_cut:
+                call_tp = _test_pair(
+                    ensemble=assembly[w1],
+                    spiketrain2=spiketrain2,
+                    n2=w2,
+                    max_lag=max_lag,
+                    size_chunks=size_chunks,
+                    reference_lag=reference_lag,
+                    existing_patterns=existing_patterns,
+                    same_configuration_pruning=same_configuration_pruning)
+                if same_configuration_pruning:
                     assem_tp = call_tp[0]
                 else:
                     assem_tp = call_tp
@@ -399,7 +413,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
                 # the number of occurrences is sufficient and
                 # the length of the assembly is less than the input limit
                 if assem_tp['pvalue'][-1] < alpha and \
-                        assem_tp['signature'][-1][1] > min_occ and \
+                        assem_tp['signature'][-1][1] > min_occurrences and \
                         assem_tp['signature'][-1][0] <= max_spikes:
                     # the assembly is saved in the output list of
                     # assemblies
@@ -418,7 +432,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
                             assembly, n_filtered_assemblies = \
                                 _significance_pruning_step(
                                     pre_pruning_assembly=assembly)
-                    if same_config_cut:
+                    if same_configuration_pruning:
                         item_candidate = call_tp[1]
                         existing_patterns.append(item_candidate)
                 if assembly_flag:
@@ -470,7 +484,7 @@ def cell_assembly_detection(data, maxlag, reference_lag=2, alpha=0.05,
     return assembly
 
 
-def _chunking(binned_pair, size_chunks, maxlag, best_lag):
+def _chunking(binned_pair, size_chunks, max_lag, best_lag):
     """
     Chunking the object binned_pair into parts with the same bin length
 
@@ -480,8 +494,8 @@ def _chunking(binned_pair, size_chunks, maxlag, best_lag):
         vector of the binned spike trains for the pair being analyzed
     size_chunks : int
         size of chunks desired
-    maxlag : int
-        max number of lags for the binsize chosen
+    max_lag : int
+        max number of lags for the bin_size chosen
     best_lag : int
         lag with the higher number of coincidences
 
@@ -496,10 +510,10 @@ def _chunking(binned_pair, size_chunks, maxlag, best_lag):
     length = len(binned_pair[0], )
 
     # number of chunks
-    n_chunks = math.ceil((length - maxlag) / size_chunks)
+    n_chunks = math.ceil((length - max_lag) / size_chunks)
 
     # new chunk size, this is to have all chunks of roughly the same size
-    size_chunks = math.floor((length - maxlag) / n_chunks)
+    size_chunks = math.floor((length - max_lag) / n_chunks)
 
     n_chunks = np.int(n_chunks)
     size_chunks = np.int(size_chunks)
@@ -508,21 +522,21 @@ def _chunking(binned_pair, size_chunks, maxlag, best_lag):
 
     # cut the time series according to best_lag
 
-    binned_pair_cut = np.array([np.zeros(length - maxlag, dtype=np.int),
-                                np.zeros(length - maxlag, dtype=np.int)])
+    binned_pair_cut = np.array([np.zeros(length - max_lag, dtype=np.int),
+                                np.zeros(length - max_lag, dtype=np.int)])
 
     # choose which entries to consider according to the best lag chosen
     if best_lag == 0:
-        binned_pair_cut[0] = binned_pair[0][0:length - maxlag]
-        binned_pair_cut[1] = binned_pair[1][0:length - maxlag]
+        binned_pair_cut[0] = binned_pair[0][0:length - max_lag]
+        binned_pair_cut[1] = binned_pair[1][0:length - max_lag]
     elif best_lag > 0:
-        binned_pair_cut[0] = binned_pair[0][0:length - maxlag]
+        binned_pair_cut[0] = binned_pair[0][0:length - max_lag]
         binned_pair_cut[1] = binned_pair[1][
-                             best_lag:length - maxlag + best_lag]
+                             best_lag:length - max_lag + best_lag]
     else:
         binned_pair_cut[0] = binned_pair[0][
-                             -best_lag:length - maxlag - best_lag]
-        binned_pair_cut[1] = binned_pair[1][0:length - maxlag]
+                             -best_lag:length - max_lag - best_lag]
+        binned_pair_cut[1] = binned_pair[1][0:length - max_lag]
 
     # put the cut data into the chunked object
     for iii in range(n_chunks - 1):
@@ -540,7 +554,7 @@ def _chunking(binned_pair, size_chunks, maxlag, best_lag):
     return chunked, n_chunks
 
 
-def _assert_same_pattern(item_candidate, existing_patterns, maxlag):
+def _assert_same_pattern(item_candidate, existing_patterns, max_lag):
     """
     Tests if a particular pattern has already been tested and retrieved as
     significant.
@@ -552,7 +566,7 @@ def _assert_same_pattern(item_candidate, existing_patterns, maxlag):
         in the second there are the correspondent lags
     existing_patterns: list
         list of the already significant patterns
-    maxlag: int
+    max_lag: int
         maximum lag to be tested
 
     Returns
@@ -562,16 +576,16 @@ def _assert_same_pattern(item_candidate, existing_patterns, maxlag):
     """
     # unique representation of pattern in term of lags, maxlag and neurons
     # participating
-    item_candidate = sorted(item_candidate[0] * 2 * maxlag +
-                            item_candidate[1] + maxlag)
+    item_candidate = sorted(item_candidate[0] * 2 * max_lag +
+                            item_candidate[1] + max_lag)
     if item_candidate in existing_patterns:
         return True
     else:
         return False
 
 
-def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
-               existing_patterns, same_config_cut):
+def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
+               existing_patterns, same_configuration_pruning):
     """
     Tests if two spike trains have repetitive patterns occurring more
     frequently than chance.
@@ -585,7 +599,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
         (candidate to be a new assembly member)
     n2 : int
         new unit tested
-    maxlag : int
+    max_lag : int
         maximum lag to be tested
     size_chunks : int
         size (in bins) of chunks in which the spike trains is divided
@@ -595,7 +609,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
         lag of reference; if zero or negative reference lag=-l
     existing_patterns: list
         list of the already significant patterns
-    same_config_cut: bool
+    same_configuration_pruning: bool
         if True (not present in the original code and more
         efficient), does not test assemblies already formed
         if they appear in the very same configuration
@@ -628,7 +642,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     # list with the binned spike trains of the two neurons
     binned_pair = [ensemble['times'], spiketrain2]
 
-    # For large binsizes, the binned spike counts may potentially fluctuate
+    # For large bin_sizes, the binned spike counts may potentially fluctuate
     # around a high mean level and never fall below some minimum count
     # considerably larger than zero for the whole time series.
     # Entries up to this minimum count would contribute
@@ -662,23 +676,25 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     # we select the one corresponding to the highest count
 
     # structure with the coincidence counts for each lag
-    fwd_coinc_count = np.array([0 for _ in range(maxlag + 1)])
-    bwd_coinc_count = np.array([0 for _ in range(maxlag + 1)])
+    fwd_coinc_count = np.array([0 for _ in range(max_lag + 1)])
+    bwd_coinc_count = np.array([0 for _ in range(max_lag + 1)])
 
-    for l in range(maxlag + 1):
+    for lag in range(max_lag + 1):
         time_fwd_cc = np.array([binned_pair[0][
-                                0:len(binned_pair[0]) - maxlag],
+                                0:len(binned_pair[0]) - max_lag],
                                 binned_pair[1][
-                                l:len(binned_pair[1]) - maxlag + l]])
+                                lag:len(binned_pair[1]) - max_lag + lag]])
 
         time_bwd_cc = np.array([binned_pair[0][
-                                l:len(binned_pair[0]) - maxlag + l],
+                                lag:len(binned_pair[0]) - max_lag + lag],
                                 binned_pair[1][
-                                0:len(binned_pair[1]) - maxlag]])
+                                0:len(binned_pair[1]) - max_lag]])
 
         # taking the minimum, place by place for the coincidences
-        fwd_coinc_count[l] = np.sum(np.minimum(time_fwd_cc[0], time_fwd_cc[1]))
-        bwd_coinc_count[l] = np.sum(np.minimum(time_bwd_cc[0], time_bwd_cc[1]))
+        fwd_coinc_count[lag] = np.sum(np.minimum(time_fwd_cc[0],
+                                                 time_fwd_cc[1]))
+        bwd_coinc_count[lag] = np.sum(np.minimum(time_bwd_cc[0],
+                                                 time_bwd_cc[1]))
 
     # choice of the best lag, taking into account the reference lag
     if reference_lag <= 0:
@@ -698,7 +714,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
         # reverse the ctAB_ object and not take into account the first entry
         bwd_coinc_count_rev = bwd_coinc_count[1:len(bwd_coinc_count)][::-1]
         hab_l = np.append(bwd_coinc_count_rev, fwd_coinc_count)
-        lags = range(-maxlag, maxlag + 1)
+        lags = range(-max_lag, max_lag + 1)
         max_coinc_count = np.amax(hab_l)
         best_lag = lags[np.argmax(hab_l)]
         if best_lag < 0:
@@ -728,26 +744,25 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
     lags_candidate = list(lags_candidate)
     item_candidate = [[pattern_candidate], [lags_candidate]]
 
-    if same_config_cut:
+    if same_configuration_pruning:
         if _assert_same_pattern(item_candidate=item_candidate,
                                 existing_patterns=existing_patterns,
-                                maxlag=maxlag):
-                en_neurons = copy.copy(ensemble['neurons'])
-                en_neurons.append(n2)
-                en_lags = copy.copy(ensemble['lags'])
-                en_lags.append(np.inf)
-                en_pvalue = copy.copy(ensemble['pvalue'])
-                en_pvalue.append(1)
-                en_n_occ = copy.copy(ensemble['signature'])
-                en_n_occ.append([0, 0])
-                item_candidate = []
-                assembly = {'neurons': en_neurons,
-                            'lags': en_lags,
-                            'pvalue': en_pvalue,
-                            'times': [],
-                            'signature': en_n_occ}
-                return assembly, item_candidate
-
+                                max_lag=max_lag):
+            en_neurons = copy.copy(ensemble['neurons'])
+            en_neurons.append(n2)
+            en_lags = copy.copy(ensemble['lags'])
+            en_lags.append(np.inf)
+            en_pvalue = copy.copy(ensemble['pvalue'])
+            en_pvalue.append(1)
+            en_n_occ = copy.copy(ensemble['signature'])
+            en_n_occ.append([0, 0])
+            item_candidate = []
+            assembly = {'neurons': en_neurons,
+                        'lags': en_lags,
+                        'pvalue': en_pvalue,
+                        'times': [],
+                        'signature': en_n_occ}
+            return assembly, item_candidate
     else:
         # I go on with the testing
 
@@ -770,7 +785,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
                         'pvalue': en_pvalue,
                         'times': [],
                         'signature': en_n_occ}
-            if same_config_cut:
+            if same_configuration_pruning:
                 item_candidate = []
                 return assembly, item_candidate
             else:
@@ -857,7 +872,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
 
         chunked, nch = _chunking(binned_pair=binned_pair,
                                  size_chunks=size_chunks,
-                                 maxlag=maxlag,
+                                 max_lag=max_lag,
                                  best_lag=best_lag)
 
         marginal_counts = np.zeros((nch, maxrate, 2), dtype=np.int)
@@ -902,7 +917,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
 
         # calculation of variance for each chunk
 
-        n = ntp - maxlag  # used in the calculation of the p-value
+        n = ntp - max_lag  # used in the calculation of the p-value
         var_x = [np.zeros((2, 2)) for _ in range(nch)]
         var_tot = 0
         cov_abab = [0 for _ in range(nch)]
@@ -1012,7 +1027,7 @@ def _test_pair(ensemble, spiketrain2, n2, maxlag, size_chunks, reference_lag,
                     'pvalue': en_pvalue,
                     'times': activation_series,
                     'signature': en_n_occ}
-        if same_config_cut:
+        if same_configuration_pruning:
             return assembly, item_candidate
         else:
             return assembly
@@ -1123,21 +1138,22 @@ def _subgroup_pruning_step(pre_pruning_assembly):
     return assembly
 
 
-def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
+def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
+                  size_chunks, max_spikes):
     """
     Returns errors if the parameters given in input are not correct.
 
     Parameters
     ----------
-    data : BinnedSpikeTrain object
+    binned_spiketrain : BinnedSpikeTrain object
         binned spike trains containing data to be analysed
-    maxlag: int
-        maximal lag to be tested. For a binning dimension of binsize the
+    max_lag: int
+        maximal lag to be tested. For a binning dimension of bin_size the
         method will test all pairs configurations with a time
-        shift between -maxlag and maxlag
+        shift between -max_lag and max_lag
     alpha : float
         alpha level.
-    min_occ : int
+    min_occurrences : int
         minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
@@ -1164,17 +1180,17 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
 
     """
 
-    if not isinstance(data, conv.BinnedSpikeTrain):
+    if not isinstance(binned_spiketrain, conv.BinnedSpikeTrain):
         raise TypeError(
             'data must be in BinnedSpikeTrain format')
 
-    if maxlag < 2:
-        raise ValueError('maxlag value cant be less than 2')
+    if max_lag < 2:
+        raise ValueError('max_lag value cant be less than 2')
 
     if alpha < 0 or alpha > 1:
         raise ValueError('significance level has to be in interval [0,1]')
 
-    if min_occ < 1:
+    if min_occurrences < 1:
         raise ValueError('minimal number of occurrences for an assembly '
                          'must be at least 1')
 
@@ -1184,7 +1200,7 @@ def _raise_errors(data, maxlag, alpha, min_occ, size_chunks, max_spikes):
     if max_spikes < 2:
         raise ValueError('maximal assembly order must be less than 2')
 
-    if data.matrix_columns - maxlag < 100:
+    if binned_spiketrain.shape[1] - max_lag < 100:
         raise ValueError('The time series is too short, consider '
                          'taking a longer portion of spike train '
                          'or diminish the bin size to be tested')

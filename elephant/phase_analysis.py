@@ -11,6 +11,10 @@ from __future__ import division, print_function, unicode_literals
 import numpy as np
 import quantities as pq
 
+__all__ = [
+    "spike_triggered_phase"
+]
+
 
 def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
@@ -121,14 +125,14 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         sttimeind = np.where(np.logical_and(
             spiketrain >= start[phase_i], spiketrain < stop[phase_i]))[0]
 
+        # Extract times for speed reasons
+        times = hilbert_transform[phase_i].times
+
         # Find index into signal for each spike
-        ind_at_spike = np.round(
+        ind_at_spike = (
             (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
             hilbert_transform[phase_i].sampling_period). \
             simplified.magnitude.astype(int)
-
-        # Extract times for speed reasons
-        times = hilbert_transform[phase_i].times
 
         # Append new list to the results for this spiketrain
         result_phases.append([])
@@ -137,15 +141,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Step through all spikes
         for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
-            # Difference vector between actual spike time and sample point,
-            # positive if spike time is later than sample point
-            dv = spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]
 
-            # Make sure ind_at_spike is to the left of the spike time
-            if dv < 0 and ind_at_spike_j > 0:
-                ind_at_spike_j = ind_at_spike_j - 1
-
-            if interpolate:
+            if interpolate and ind_at_spike_j+1 < len(times):
                 # Get relative spike occurrence between the two closest signal
                 # sample points
                 # if z->0 spike is more to the left sample
@@ -156,10 +153,10 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                 # Save hilbert_transform (interpolate on circle)
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
-                result_phases[spiketrain_i].append(
-                    np.angle(
-                        (1 - z) * np.exp(np.complex(0, p1)) +
-                        z * np.exp(np.complex(0, p2))))
+                interpolation = (1 - z) * np.exp(np.complex(0, p1)) \
+                                    + z * np.exp(np.complex(0, p2))
+                p12 = np.angle([interpolation])
+                result_phases[spiketrain_i].append(p12)
 
                 # Save amplitude
                 result_amps[spiketrain_i].append(
@@ -184,5 +181,4 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
         result_amps[i] = pq.Quantity(entry, units=entry[0].units).flatten()
     for i, entry in enumerate(result_times):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
-
     return result_phases, result_amps, result_times

@@ -8,7 +8,6 @@ Unit tests for the Unitary Events analysis
 import os
 import shutil
 import ssl
-import sys
 import types
 import unittest
 
@@ -18,15 +17,10 @@ import quantities as pq
 from neo.test.rawiotest.tools import create_local_temp_dir
 from numpy.testing import assert_array_equal
 
-try:
-    from urllib2 import urlopen
-except ImportError:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 
 
 import elephant.unitary_event_analysis as ue
-
-python_version_major = sys.version_info.major
 
 
 class UETestCase(unittest.TestCase):
@@ -114,17 +108,6 @@ class UETestCase(unittest.TestCase):
                                     [[1, 1, 1, 1, 1],
                                      [0, 1, 1, 1, 1],
                                      [1, 1, 0, 1, 0]]])
-
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
-    def test_deprecated_N(self):
-        n_patterns = 10
-        m = np.random.randint(low=0, high=2, size=(n_patterns, 2))
-        with self.assertWarns(DeprecationWarning):
-            # check *args
-            h = ue.hash_from_pattern(m, n_patterns)
-        with self.assertWarns(DeprecationWarning):
-            # check **kwargs
-            h = ue.hash_from_pattern(m, N=n_patterns)
 
     def test_hash_default(self):
         m = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0],
@@ -284,9 +267,9 @@ class UETestCase(unittest.TestCase):
 
     def test__bintime(self):
         t = 13 * pq.ms
-        binsize = 3 * pq.ms
+        bin_size = 3 * pq.ms
         expected = 4
-        self.assertTrue(np.allclose(expected, ue._bintime(t, binsize)))
+        self.assertTrue(np.allclose(expected, ue._bintime(t, bin_size)))
 
     def test__winpos(self):
         t_start = 10 * pq.ms
@@ -343,11 +326,11 @@ class UETestCase(unittest.TestCase):
         sts2 = self.sts2_neo
         data = np.vstack((sts1, sts2)).T
         winsize = 100 * pq.ms
-        binsize = 5 * pq.ms
+        bin_size = 5 * pq.ms
         winstep = 20 * pq.ms
         pattern_hash = [3]
         UE_dic = ue.jointJ_window_analysis(
-            data, binsize, winsize, winstep, pattern_hash)
+            data, bin_size, winsize, winstep, pattern_hash)
         expected_Js = np.array(
             [0.57953708, 0.47348757, 0.1729669,
              0.01883295, -0.21934742, -0.80608759])
@@ -462,7 +445,7 @@ class UETestCase(unittest.TestCase):
 
         # calculating UE ...
         winsize = 100 * pq.ms
-        binsize = 5 * pq.ms
+        bin_size = 5 * pq.ms
         winstep = 5 * pq.ms
         pattern_hash = [3]
         t_start = spiketrain[0][0].t_start
@@ -471,7 +454,7 @@ class UETestCase(unittest.TestCase):
         significance_level = 0.05
 
         UE = ue.jointJ_window_analysis(
-            spiketrain, binsize, winsize, winstep,
+            spiketrain, bin_size, winsize, winstep,
             pattern_hash, method='analytic_TrialAverage')
         # load extracted data from figure 2 of Riehle et al 1997
         extracted_data = np.load(
@@ -489,11 +472,11 @@ class UETestCase(unittest.TestCase):
                 indices_unique_significant = []
                 for j in sig_idx_win:
                     significant = indices_unique[np.where(
-                        (indices_unique * binsize >= t_winpos[j]) &
-                        (indices_unique * binsize < t_winpos[j] + winsize))]
+                        (indices_unique * bin_size >= t_winpos[j]) &
+                        (indices_unique * bin_size < t_winpos[j] + winsize))]
                     indices_unique_significant.extend(significant)
                 x_tmp = np.unique(indices_unique_significant) * \
-                    binsize.magnitude
+                    bin_size.magnitude
                 if len(x_tmp) > 0:
                     ue_trial = np.sort(extracted_data['ue'][y_cnt])
                     diff_UE_rep = np.append(

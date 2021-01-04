@@ -13,7 +13,7 @@ import pandas as pd
 import warnings
 import quantities as pq
 
-from elephant.neo_tools import (extract_neo_attrs, get_all_epochs,
+from elephant.neo_tools import (extract_neo_attributes, get_all_epochs,
                                 get_all_events, get_all_spiketrains)
 
 
@@ -95,8 +95,8 @@ def _extract_neo_attrs_safe(obj, parents=True, child_first=True):
         the values are the corresponding annotation or attribute value.
 
     """
-    res = extract_neo_attrs(obj, skip_array=True, skip_none=True,
-                            parents=parents, child_first=child_first)
+    res = extract_neo_attributes(obj, skip_array=True, skip_none=True,
+                                 parents=parents, child_first=child_first)
     for key, value in res.items():
         res[key] = _convert_value_safe(value)
         key2 = _convert_value_safe(key)

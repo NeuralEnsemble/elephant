@@ -1,7 +1,7 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
-[#f1]_ for neural trajectory visualization of parallel spike trains. GPFA applies
-factor analysis (FA) to time-binned spike count data to reduce the
+[#f1]_ for neural trajectory visualization of parallel spike trains. GPFA
+applies factor analysis (FA) to time-binned spike count data to reduce the
 dimensionality and at the same time smoothes the resulting low-dimensional
 trajectories by fitting a Gaussian process (GP) model to them.
 
@@ -33,6 +33,31 @@ provided as input (c.f., `gpfa_core.em()`)
 3) orthonormalization of the matrix C and the corresponding subspace, for
 visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
 
+
+.. autosummary::
+    :toctree: toctree/gpfa
+
+    GPFA
+
+
+Visualization
+-------------
+Visualization of GPFA transforms is covered in Viziphant:
+https://viziphant.readthedocs.io/en/latest/modules.html
+
+
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/gpfa>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/gpfa.ipynb
+
+
 References
 ----------
 The code was ported from the MATLAB code based on Byron Yu's implementation.
@@ -53,8 +78,15 @@ import neo
 import numpy as np
 import quantities as pq
 import sklearn
+import warnings
 
 from elephant.gpfa import gpfa_core, gpfa_util
+from elephant.utils import deprecated_alias
+
+
+__all__ = [
+    "GPFA"
+]
 
 
 class GPFA(sklearn.base.BaseEstimator):
@@ -196,15 +228,19 @@ class GPFA(sklearn.base.BaseEstimator):
     ...
     >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
     >>> gpfa.fit(data)
-    >>> results = gpfa.transform(data, returned_data=['xorth', 'xsm'])
-    >>> xorth = results['xorth']; xsm = results['xsm']
+    >>> results = gpfa.transform(data, returned_data=['latent_variable_orth',
+    ...                                               'latent_variable'])
+    >>> latent_variable_orth = results['latent_variable_orth']
+    >>> latent_variable = results['latent_variable']
 
     or simply
 
     >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,
-    ...                returned_data=['xorth', 'xsm'])
+    ...                returned_data=['latent_variable_orth',
+    ...                               'latent_variable'])
     """
 
+    @deprecated_alias(binsize='bin_size')
     def __init__(self, bin_size=20 * pq.ms, x_dim=3, min_var_frac=0.01,
                  tau_init=100.0 * pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
                  em_max_iters=500, freq_ll=5, verbose=False):
@@ -216,7 +252,12 @@ class GPFA(sklearn.base.BaseEstimator):
         self.em_tol = em_tol
         self.em_max_iters = em_max_iters
         self.freq_ll = freq_ll
-        self.valid_data_names = ('xorth', 'xsm', 'Vsm', 'VsmGP', 'y')
+        self.valid_data_names = (
+            'latent_variable_orth',
+            'latent_variable',
+            'Vsm',
+            'VsmGP',
+            'y')
         self.verbose = verbose
 
         if not isinstance(self.bin_size, pq.Quantity):
@@ -228,6 +269,11 @@ class GPFA(sklearn.base.BaseEstimator):
         self.params_estimated = dict()
         self.fit_info = dict()
         self.transform_info = dict()
+
+    @property
+    def binsize(self):
+        warnings.warn("'binsize' is deprecated; use 'bin_size'")
+        return self.bin_size
 
     def fit(self, spiketrains):
         """
@@ -309,7 +355,7 @@ class GPFA(sklearn.base.BaseEstimator):
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return seqs
 
-    def transform(self, spiketrains, returned_data=['xorth']):
+    def transform(self, spiketrains, returned_data=['latent_variable_orth']):
         """
         Obtain trajectories of neural activity in a low-dimensional latent
         variable space by inferring the posterior mean of the obtained GPFA
@@ -330,9 +376,10 @@ class GPFA(sklearn.base.BaseEstimator):
             The dimensionality reduction transform generates the following
             resultant data:
 
-               'xorth': orthonormalized posterior mean of latent variable
+               'latent_variable_orth': orthonormalized posterior mean of latent
+               variable
 
-               'xsm': posterior mean of latent variable before
+               'latent_variable': posterior mean of latent variable before
                orthonormalization
 
                'Vsm': posterior covariance between latent variables
@@ -344,7 +391,7 @@ class GPFA(sklearn.base.BaseEstimator):
             `returned_data` specifies the keys by which the data dict is
             returned.
 
-            Default is ['xorth'].
+            Default is ['latent_variable_orth'].
 
         Returns
         -------
@@ -359,9 +406,9 @@ class GPFA(sklearn.base.BaseEstimator):
             shape, specific to each data type, containing the corresponding
             data for the n-th trial:
 
-                `xorth`: (#latent_vars, #bins) np.ndarray
+                `latent_variable_orth`: (#latent_vars, #bins) np.ndarray
 
-                `xsm`:  (#latent_vars, #bins) np.ndarray
+                `latent_variable`:  (#latent_vars, #bins) np.ndarray
 
                 `y`:  (#units, #bins) np.ndarray
 
@@ -402,7 +449,8 @@ class GPFA(sklearn.base.BaseEstimator):
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self, spiketrains, returned_data=['xorth']):
+    def fit_transform(self, spiketrains, returned_data=[
+                      'latent_variable_orth']):
         """
         Fit the model with `spiketrains` data and apply the dimensionality
         reduction on `spiketrains`.

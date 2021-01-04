@@ -53,9 +53,7 @@ Functions overview
 
 from __future__ import division, print_function, unicode_literals
 
-import sys
 import warnings
-from functools import wraps
 
 import neo
 import numpy as np
@@ -65,27 +63,19 @@ import scipy
 import elephant.conversion as conv
 from elephant.utils import is_binary
 
-
-def decorate_deprecated_N(func):
-    @wraps(func)
-    def decorated_func(*args, **kwargs):
-        N = None
-        if 'N' in kwargs:
-            N = kwargs.pop('N')
-        elif len(args) > 1 and isinstance(args[1], int):
-            args = list(args)
-            N = args.pop(1)
-        if N is not None:
-            warnings.warn("'N' is deprecated in '{func_name}' and will be "
-                          "removed in the next Elephant release. Now 'N' is "
-                          "extracted from the data shape.".format(
-                              func_name=func.__name__), DeprecationWarning)
-        return func(*args, **kwargs)
-
-    return decorated_func
+__all__ = [
+    "hash_from_pattern",
+    "inverse_hash_from_pattern",
+    "n_emp_mat",
+    "n_emp_mat_sum_trial",
+    "n_exp_mat",
+    "n_exp_mat_sum_trial",
+    "gen_pval_anal",
+    "jointJ",
+    "jointJ_window_analysis"
+]
 
 
-@decorate_deprecated_N
 def hash_from_pattern(m, base=2):
     """
     Calculate for a spike pattern or a matrix of spike patterns
@@ -188,11 +178,7 @@ def inverse_hash_from_pattern(h, N, base=2):
 
     """
     h = np.asarray(h)  # this will cast to object type if h > int64
-    if sys.version_info < (3,):
-        integer_types = (int, long)
-    else:
-        integer_types = (int,)
-    if not all(isinstance(v, integer_types) for v in h.tolist()):
+    if not all(isinstance(v, int) for v in h.tolist()):
         # .tolist() is necessary because np.int[64] is not int
         raise ValueError("hash values should be integers")
 
@@ -208,7 +194,6 @@ def inverse_hash_from_pattern(h, N, base=2):
     return m
 
 
-@decorate_deprecated_N
 def n_emp_mat(mat, pattern_hash, base=2):
     """
     Count the occurrences of spike coincidence patterns in the given spike
@@ -267,7 +252,6 @@ def n_emp_mat(mat, pattern_hash, base=2):
     return N_emp, indices
 
 
-@decorate_deprecated_N
 def n_emp_mat_sum_trial(mat, pattern_hash):
     """
     Calculate empirical number of observed patterns, summed across trials.
@@ -336,7 +320,6 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     return N_emp, idx_trials
 
 
-@decorate_deprecated_N
 def _n_exp_mat_analytic(mat, pattern_hash):
     """
     Calculates the expected joint probability for each spike pattern
@@ -357,7 +340,6 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 
-@decorate_deprecated_N
 def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
     """
     Calculates the expected joint probability for each spike pattern with spike
@@ -374,7 +356,6 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
     return N_exp_array
 
 
-@decorate_deprecated_N
 def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
     """
     Calculates the expected joint probability for each spike pattern.
@@ -638,7 +619,10 @@ def jointJ(p_val):
 
     """
     p_arr = np.asarray(p_val)
-    Js = np.log10(1 - p_arr) - np.log10(p_arr)
+    with np.errstate(divide='ignore'):
+        # Ignore 'Division by zero' warning which happens when p_arr is 1.0 or
+        # 0.0 (no spikes).
+        Js = np.log10(1 - p_arr) - np.log10(p_arr)
     return Js
 
 
@@ -653,13 +637,13 @@ def _rate_mat_avg_trial(mat):
     return psth / (n_bins * n_trials)
 
 
-def _bintime(t, binsize):
+def _bintime(t, bin_size):
     """
-    Change the real time to `binsize` units.
+    Change the real time to `bin_size` units.
     """
     t_dl = t.rescale('ms').magnitude
-    binsize_dl = binsize.rescale('ms').magnitude
-    return np.floor(np.array(t_dl) / binsize_dl).astype(int)
+    bin_size_dl = bin_size.rescale('ms').magnitude
+    return np.floor(np.array(t_dl) / bin_size_dl).astype(int)
 
 
 def _winpos(t_start, t_stop, winsize, winstep, position='left-edge'):
@@ -682,7 +666,6 @@ def _winpos(t_start, t_stop, winsize, winstep, position='left-edge'):
     return ts_winpos
 
 
-@decorate_deprecated_N
 def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
     """
     Return the default results of unitary events analysis
@@ -704,7 +687,7 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
 
 
 def jointJ_window_analysis(
-        data, binsize, winsize, winstep, pattern_hash,
+        data, bin_size, winsize, winstep, pattern_hash,
         method='analytic_TrialByTrial', t_start=None,
         t_stop=None, binary=True, n_surr=100):
     """
@@ -721,7 +704,7 @@ def jointJ_window_analysis(
             1-axis --> Neurons
 
             2-axis --> Spike times
-    binsize : pq.Quantity
+    bin_size : pq.Quantity
         The size of bins for discretizing spike trains.
     winsize : pq.Quantity
         The size of the window of analysis.
@@ -784,7 +767,7 @@ def jointJ_window_analysis(
     Warns
     -----
     UserWarning
-        The ratio between `winsize` or `winstep` and `binsize` is not an
+        The ratio between `winsize` or `winstep` and `bin_size` is not an
         integer.
 
     """
@@ -800,30 +783,32 @@ def jointJ_window_analysis(
 
     # position of all windows (left edges)
     t_winpos = _winpos(t_start, t_stop, winsize, winstep, position='left-edge')
-    t_winpos_bintime = _bintime(t_winpos, binsize)
+    t_winpos_bintime = _bintime(t_winpos, bin_size)
 
-    winsize_bintime = _bintime(winsize, binsize)
-    winstep_bintime = _bintime(winstep, binsize)
+    winsize_bintime = _bintime(winsize, bin_size)
+    winstep_bintime = _bintime(winstep, bin_size)
 
-    if winsize_bintime * binsize != winsize:
-        warnings.warn(
-            "The ratio between winsize ({winsize}) and binsize ({binsize}) is "
-            "not an integer".format(winsize=winsize, binsize=binsize))
+    if winsize_bintime * bin_size != winsize:
+        warnings.warn("The ratio between the winsize ({winsize}) and the "
+                      "bin_size ({bin_size}) is not an integer".format(
+                          winsize=winsize,
+                          bin_size=bin_size))
 
-    if winstep_bintime * binsize != winstep:
-        warnings.warn(
-            "The ratio between winstep ({winstep}) and binsize ({binsize}) is "
-            "not an integer".format(winstep=winstep, binsize=binsize))
+    if winstep_bintime * bin_size != winstep:
+        warnings.warn("The ratio between the winstep ({winstep}) and the "
+                      "bin_size ({bin_size}) is not an integer".format(
+                          winstep=winstep,
+                          bin_size=bin_size))
 
     num_tr, N = np.shape(data)[:2]
 
-    n_bins = int((t_stop - t_start) / binsize)
+    n_bins = int((t_stop - t_start) / bin_size)
 
     mat_tr_unit_spt = np.zeros((len(data), N, n_bins))
     for tr, sts in enumerate(data):
         sts = list(sts)
         bs = conv.BinnedSpikeTrain(
-            sts, t_start=t_start, t_stop=t_stop, binsize=binsize)
+            sts, t_start=t_start, t_stop=t_stop, bin_size=bin_size)
         if binary is True:
             mat = bs.to_bool_array()
         else:
@@ -853,4 +838,4 @@ def jointJ_window_analysis(
                     'trial' + str(j)] = np.append(
                     indices_win['trial' + str(j)], indices_lst[j][0] + win_pos)
     return {'Js': Js_win, 'indices': indices_win, 'n_emp': n_emp_win,
-            'n_exp': n_exp_win, 'rate_avg': rate_avg / binsize}
+            'n_exp': n_exp_win, 'rate_avg': rate_avg / bin_size}
