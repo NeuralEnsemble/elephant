@@ -280,7 +280,9 @@ class Provenance(object):
 
                     # 7. Analyze AST and fetch static relationships in the
                     # input/output and other variables/objects in the script
-                    self._insert_static_information(ast_tree)
+                    self._insert_static_information(ast_tree,
+                                                    function_name.name,
+                                                    time_stamp)
 
                     # 8. Create tuple with the analysis step information.
                     step = AnalysisStep(function_name,
