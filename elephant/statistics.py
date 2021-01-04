@@ -779,7 +779,10 @@ def time_histogram(spiketrains, binsize, t_start=None, t_stop=None,
                                 t_start=t_start,
                                 warnings_raised=warnings_raised)
 
-    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
+    object_class = elephant.buffalo.objects._OBJECT_DISPATCHER[
+        elephant.buffalo.USE_NIX][TimeHistogramObject]
+
+    return object_class(bin_hist.reshape(bin_hist.size, 1), binsize,
                                units=bin_hist.units, histogram_type=output,
                                t_start=t_start, t_stop=t_stop, binary=binary,
                                warnings_raised=warnings_raised)
@@ -849,10 +852,13 @@ def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
                          "Please set the flag"
                          "`elephant.buffalo.USE_ANALYSIS_OBJECTS` to True.")
 
+    object_class = elephant.buffalo.objects._OBJECT_DISPATCHER[
+        elephant.buffalo.USE_NIX][PSTHObject]
+
     histogram = time_histogram(spiketrains, binsize, t_start=t_start,
                                t_stop=t_stop, output=output,
                                binary=binary)
-    return PSTHObject.from_time_histogram(histogram, event_time,
+    return object_class.from_time_histogram(histogram, event_time,
                                           event_label=event_label)
 
 

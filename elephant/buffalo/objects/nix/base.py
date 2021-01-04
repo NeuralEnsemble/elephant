@@ -1,3 +1,5 @@
+import io
+
 from nixio.data_array import DataArray
 from nixio.compression import Compression
 from nixio.section import Section
