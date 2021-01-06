@@ -182,8 +182,8 @@ class TestSpikeContrast(unittest.TestCase):
         filepath_zip = download(url=izhikevich_url,
                                 checksum="70e848500c1d9c6403b66de8c741d849")
         unzip(filepath_zip)
-        filepath = filepath_zip.replace(".zip", ".json")
-        with open(filepath) as read_file:
+        filepath_json = filepath_zip.with_suffix(".json")
+        with open(filepath_json) as read_file:
             data = json.load(read_file)
 
         # for the sake of compute time, take the first 5 networks

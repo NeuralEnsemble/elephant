@@ -54,6 +54,13 @@ Advanced
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/asset.ipynb
 
+* Granger causality
+
+  :doc:`View the notebook <../tutorials/granger_causality>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/granger_causality.ipynb
+
 
 Additional
 ----------

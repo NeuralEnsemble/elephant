@@ -1,13 +1,12 @@
 import hashlib
-import os
 import tempfile
+from pathlib import Path
+from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 from tqdm import tqdm
 
-from urllib.request import urlretrieve
-
-ELEPHANT_TMP_DIR = os.path.join(tempfile.gettempdir(), "elephant")
+ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 
 
 class TqdmUpTo(tqdm):
@@ -31,31 +30,30 @@ class TqdmUpTo(tqdm):
         self.update(b * bsize - self.n)  # will also set self.n = b * bsize
 
 
-def calculate_md5(fpath, chunk_size=1024 * 1024):
+def calculate_md5(filepath, chunk_size=1024 * 1024):
     md5 = hashlib.md5()
-    with open(fpath, 'rb') as f:
+    with open(filepath, 'rb') as f:
         for chunk in iter(lambda: f.read(chunk_size), b''):
             md5.update(chunk)
     return md5.hexdigest()
 
 
-def check_integrity(fpath, md5):
-    if not os.path.exists(fpath) or md5 is None:
+def check_integrity(filepath, md5):
+    if not Path(filepath).exists() or md5 is None:
         return False
-    return calculate_md5(fpath) == md5
+    return calculate_md5(filepath) == md5
 
 
 def download(url, filepath=None, checksum=None, verbose=True):
     if filepath is None:
         filename = url.split('/')[-1]
-        filepath = os.path.join(ELEPHANT_TMP_DIR, filename)
+        filepath = ELEPHANT_TMP_DIR / filename
+    filepath = Path(filepath)
     if check_integrity(filepath, md5=checksum):
         return filepath
-    folder = os.path.dirname(os.path.abspath(filepath))
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    desc = "Downloading '{url}' to '{filepath}'".format(url=url,
-                                                        filepath=filepath)
+    folder = filepath.absolute().parent
+    folder.mkdir(exist_ok=True)
+    desc = f"Downloading {url} to '{filepath}'"
     with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1,
                   desc=desc, disable=not verbose) as t:
         urlretrieve(url, filename=filepath, reporthook=t.update_to)
@@ -66,5 +64,4 @@ def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):
     with ZipFile(filepath) as zfile:
         zfile.extractall(path=outdir)
     if verbose:
-        print("Extracted {filepath} to {outdir}".format(filepath=filepath,
-                                                        outdir=outdir))
+        print(f"Extracted {filepath} to {outdir}")

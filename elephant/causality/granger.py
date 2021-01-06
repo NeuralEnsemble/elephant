@@ -43,6 +43,18 @@ Time-series Granger causality
     pairwise_granger
     conditional_granger
 
+
+Tutorial
+--------
+
+:doc:`View tutorial <../tutorials/granger_causality>`
+
+Run tutorial interactively:
+
+.. image:: https://mybinder.org/badge.svg
+   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+            ?filepath=doc/tutorials/granger_causality.ipynb
+
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
