@@ -750,7 +750,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         duration = 0
         times_concat = []
         for st in spiketrains:
-            times_concat.append(st.magnitude + duration)
+            times_concat.append(st.magnitude - st.t_start.item() + duration)
             duration += st.duration.item()
         times_concat = np.concatenate(times_concat)
         kernel = optimal_kernel(times_concat, units=spiketrains[0].units)
