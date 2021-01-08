@@ -1070,6 +1070,10 @@ class BinnedSpikeTrain(object):
             sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
             return sparse_matrix
 
+        # Get dtype from largest index
+        shape = (len(spiketrains), self.n_bins)
+        numtype = sps.sputils.get_index_dtype(maxval=max(shape))
+
         row_ids, column_ids = [], []
         # data
         counts = []
@@ -1089,21 +1093,24 @@ class BinnedSpikeTrain(object):
             valid_bins = bins[bins < self.n_bins]
             n_discarded += len(bins) - len(valid_bins)
             f, c = np.unique(valid_bins, return_counts=True)
+            c = c.astype(numtype)
             column_ids.append(f)
             counts.append(c)
-            row_ids.append(np.repeat(idx, repeats=len(f)))
+            row_ids.append(np.repeat(idx, repeats=len(f)).astype(numtype))
+            del f, c
 
         if n_discarded > 0:
             warnings.warn("Binning discarded {} last spike(s) of the "
                           "input spiketrain".format(n_discarded))
 
-        counts = np.hstack(counts)
-        row_ids = np.hstack(row_ids)
-        column_ids = np.hstack(column_ids)
+        # Stack arrays and ensure dtype
+        counts = np.hstack(counts).astype(np.int32)
+        column_ids = np.hstack(column_ids).astype(numtype)
+        row_ids = np.hstack(row_ids).astype(numtype)
 
         sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
-                                       shape=(len(spiketrains), self.n_bins),
-                                       dtype=np.int32, copy=False)
+                                       shape=shape, dtype=np.int32, copy=False)
+
         return sparse_matrix
 
 
