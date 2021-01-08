@@ -697,19 +697,17 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     ...        kernel=kernel)
 
     """
-    def optimal_kernel(st):
+    def optimal_kernel(spike_times, units):
         width_sigma = None
-        if len(st) > 0:
+        if len(spike_times) > 0:
             width_sigma = optimal_kernel_bandwidth(
-                st.magnitude, times=None, bootstrap=False)['optw']
+                spike_times, times=None, bootstrap=False)['optw']
         if width_sigma is None:
             raise ValueError("Unable to calculate optimal kernel width for "
                              "instantaneous rate from input data.")
-        return kernels.GaussianKernel(width_sigma * st.units)
+        return kernels.GaussianKernel(width_sigma * units)
 
     if isinstance(spiketrains, neo.SpikeTrain):
-        if kernel == 'auto':
-            kernel = optimal_kernel(spiketrains)
         spiketrains = [spiketrains]
     elif not isinstance(spiketrains, (list, tuple)):
         raise TypeError(
@@ -747,12 +745,15 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                           object_type=neo.SpikeTrain,
                           t_start=t_start, t_stop=t_stop)
     if kernel == 'auto':
-        if len(spiketrains) == 1:
-            kernel = optimal_kernel(spiketrains[0])
-        else:
-            raise ValueError("Cannot estimate a kernel for a list of spike "
-                             "trains. Please provide a kernel explicitly "
-                             "rather than 'auto'.")
+        # Superimpose input spike trains - the first step of the optimal
+        # kernel estimation.
+        duration = 0
+        times_concat = []
+        for st in spiketrains:
+            times_concat.append(st.magnitude + duration)
+            duration += st.duration.item()
+        times_concat = np.concatenate(times_concat)
+        kernel = optimal_kernel(times_concat, units=spiketrains[0].units)
 
     if t_start is None:
         t_start = spiketrains[0].t_start

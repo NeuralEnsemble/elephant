@@ -561,10 +561,16 @@ class InstantaneousRateTest(unittest.TestCase):
             TypeError, statistics.instantaneous_rate, spiketrains=st,
             sampling_period=0.01 * pq.ms, kernel=self.kernel, trim=1)
 
-        # cannot estimate a kernel for a list of spiketrains
-        self.assertRaises(ValueError, statistics.instantaneous_rate,
-                          spiketrains=[st, st], sampling_period=10 * pq.ms,
-                          kernel='auto')
+    def test_auto_kernel_multispiketrains(self):
+        sampling_period = 10 * pq.ms
+        rate1 = statistics.instantaneous_rate(self.spike_train,
+                                              sampling_period=sampling_period,
+                                              kernel='auto')
+        rate2 = statistics.instantaneous_rate(
+            [self.spike_train, self.spike_train],
+            sampling_period=sampling_period, kernel='auto')
+        # check the mean firing rate
+        self.assertAlmostEqual(rate1.mean(), rate2.mean(), places=2)
 
     def test_rate_estimation_consistency(self):
         """
