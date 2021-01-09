@@ -1065,12 +1065,17 @@ class BinnedSpikeTrain(object):
             Spike trains to bin.
 
         """
+
+        data_dtype = np.int32
+
         if not _check_neo_spiketrain(spiketrains):
             # a binned numpy array
-            sparse_matrix = sps.csr_matrix(spiketrains, dtype=np.int32)
+            sparse_matrix = sps.csr_matrix(spiketrains, dtype=data_dtype)
             return sparse_matrix
 
-        # Get dtype from largest index
+        # Get index dtype that can accomodate the largest index
+        # (this is the same dtype that will be used for the index arrays of the
+        #  sparse matrix, so already using it here avoids array duplication)
         shape = (len(spiketrains), self.n_bins)
         numtype = sps.sputils.get_index_dtype(maxval=max(shape))
 
@@ -1093,7 +1098,9 @@ class BinnedSpikeTrain(object):
             valid_bins = bins[bins < self.n_bins]
             n_discarded += len(bins) - len(valid_bins)
             f, c = np.unique(valid_bins, return_counts=True)
-            c = c.astype(numtype)
+            # f inherits the dtype np.int32 from bins, but c is created in
+            # np.unique with the default int dtype (usually np.int64)
+            c = c.astype(data_dtype)
             column_ids.append(f)
             counts.append(c)
             row_ids.append(np.repeat(idx, repeats=len(f)).astype(numtype))
@@ -1104,12 +1111,13 @@ class BinnedSpikeTrain(object):
                           "input spiketrain".format(n_discarded))
 
         # Stack arrays and ensure dtype
-        counts = np.hstack(counts).astype(np.int32)
+        counts = np.hstack(counts).astype(data_dtype)
         column_ids = np.hstack(column_ids).astype(numtype)
         row_ids = np.hstack(row_ids).astype(numtype)
 
         sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
-                                       shape=shape, dtype=np.int32, copy=False)
+                                       shape=shape, dtype=data_dtype,
+                                       copy=False)
 
         return sparse_matrix
 
