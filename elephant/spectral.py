@@ -288,7 +288,7 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
     else:
         freqs = freqs_complete[:length_signal//2]
 
-    if num_taper == 'auto':
+    if num_tapers == 'auto':
         num_tapers = 2 * NW - 1
 
     slepain_fcts = scipy.signal.windows.dpss(M=x_length,
@@ -296,10 +296,10 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
                                              Kmax=num_tapers)
 
     # calculate approximately independent spectrum estimates
-    spectrum_estimates = np.abs(np.fft.rfft(x * slepain_fcts, axis=1))**2
+    spectrum_estimates = np.abs(np.fft.rfft(signal * slepain_fcts, axis=1))**2
 
     # average to obtain Multitaper PSD estimate
-    multitaper_psd = np.mean(spectra, axis=0)
+    multitaper_psd = np.mean(spectrum_estimates, axis=0)
 
     return freqs, multitaper_psd
 
