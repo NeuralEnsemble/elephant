@@ -283,10 +283,13 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
 
     freqs_complete = np.fft.fftfreq(length_signal, d=fs)
 
-    if x_length % 2:
+    if length_signal % 2:
         freqs = freqs_complete[:x_length//2 + 1]
     else:
         freqs = freqs_complete[:x_length//2]
+
+    if num_taper == 'auto':
+        num_tapers = 2 * NW - 1
 
     slepain_fcts = scipy.signal.windows.dpss(M=x_length,
                                              NW=NW,
