@@ -242,6 +242,65 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     return freqs, psd
 
 
+def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
+    """
+    Estimates power spectrum density (PDF) of a given 'neo.AnalogSignal'
+    using Multitaper method
+
+    The PSD is obtained through the following steps:
+
+    1. Calculate 'num_tapers' approximately independent estimates of the
+       spectrum by multiplying the signal with the discrete prolate spheroidal
+       functions (also known as Slepian function) and calculate the PSD of the
+       products
+
+    2. Average the approximately independent estimates to decrease overall
+       variance of the estimates
+
+    Parameters
+    ----------
+    signal : neo.AnalogSignal
+        Time series data of which PSD is estimated. When `signal` is np.ndarray
+        sampling frequency should be given through keyword argument `fs`.
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+    NW : float, optional
+        Time bandwidth product
+    num_tapers : int, optional
+        Number of tapers used in 1. to obtain estimate of PSD. By default 2*NW
+        - 1 is chosen.
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with power estimate in `psd`
+    psd : np.ndarray
+        PSD estimate of the time series in `signal`
+    """
+
+    # number of data points in time series
+    length_signal = np.size(signal)
+
+    freqs_complete = np.fft.fftfreq(length_signal, d=fs)
+
+    if x_length % 2:
+        freqs = freqs_complete[:x_length//2 + 1]
+    else:
+        freqs = freqs_complete[:x_length//2]
+
+    slepain_fcts = scipy.signal.windows.dpss(M=x_length,
+                                             NW=NW,
+                                             Kmax=num_tapers)
+
+    # calculate approximately independent spectrum estimates
+    spectrum_estimates = np.abs(np.fft.rfft(x * slepain_fcts, axis=1))**2
+
+    # average to obtain Multitaper PSD estimate
+    multitaper_psd = np.mean(spectra, axis=0)
+
+    return freqs, multitaper_psd
+
+
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
                   len_seg='len_segment', freq_res='frequency_resolution')
 def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -458,3 +517,6 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
+
+if __main__ == '__main__':
+
