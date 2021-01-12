@@ -54,6 +54,7 @@ Functions overview
 from __future__ import division, print_function, unicode_literals
 
 import warnings
+from collections import defaultdict
 
 import neo
 import numpy as np
@@ -61,7 +62,7 @@ import quantities as pq
 import scipy
 
 import elephant.conversion as conv
-from elephant.utils import is_binary
+from elephant.utils import is_binary, deprecated_alias
 
 __all__ = [
     "hash_from_pattern",
@@ -92,7 +93,7 @@ def hash_from_pattern(m, base=2):
         Rows and columns correspond to patterns and neurons, respectively.
     base: integer
         The base for hashes calculation.
-        Default is 2.
+        Default: 2
 
     Returns
     -------
@@ -149,7 +150,7 @@ def inverse_hash_from_pattern(h, N, base=2):
         The number of neurons.
     base: integer
         The base, used to generate the hash values.
-        Default is 2.
+        Default: 2
 
     Returns
     -------
@@ -186,8 +187,8 @@ def inverse_hash_from_pattern(h, N, base=2):
     # value for N neurons with the given base
     powers = np.array([base ** x for x in range(N)])[::-1]
     if any(h > sum(powers)):
-        raise ValueError(
-            "hash value is not compatible with the number of neurons N")
+        raise ValueError(f"hash value {h} is not compatible with the number "
+                         f"of neurons {N}")
     m = h // np.expand_dims(powers, axis=1)
     m %= base  # m is a binary matrix now
     m = m.astype(int)  # convert object to int if the hash was > int64
@@ -209,7 +210,7 @@ def n_emp_mat(mat, pattern_hash, base=2):
         of which occurrences are counted.
     base: integer
         The base, used to generate the hash values.
-        Default is 2.
+        Default: 2
 
     Returns
     -------
@@ -340,15 +341,15 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 
-def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
+def _n_exp_mat_surrogate(mat, pattern_hash, n_surrogates=1):
     """
     Calculates the expected joint probability for each spike pattern with spike
     time randomization surrogate
     """
     if len(pattern_hash) > 1:
         raise ValueError('surrogate method works only for one pattern!')
-    N_exp_array = np.zeros(n_surr)
-    for rz_idx, rz in enumerate(np.arange(n_surr)):
+    N_exp_array = np.zeros(n_surrogates)
+    for rz_idx, rz in enumerate(np.arange(n_surrogates)):
         # row-wise shuffling all elements of zero-one matrix
         mat_surr = np.copy(mat)
         [np.random.shuffle(row) for row in mat_surr]
@@ -356,7 +357,7 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surr=1):
     return N_exp_array
 
 
-def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
+def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
     """
     Calculates the expected joint probability for each spike pattern.
 
@@ -376,11 +377,11 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
          The method with which the expectation is calculated.
          'analytic' -- > analytically
          'surr' -- > with surrogates (spike time randomization)
-         Default is 'analytic'.
-    n_surr: int
+         Default: 'analytic'
+    n_surrogates: int
          number of surrogates for constructing the distribution of expected
          joint probability.
-         Default is 1 and this number is needed only when method = 'surr'
+         Default: 1 and this number is needed only when method = 'surr'
 
     Returns
     -------
@@ -406,7 +407,8 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
     >>> n_exp_anal = n_exp_mat(mat, pattern_hash, method='analytic')
     >>> n_exp_anal
     [ 0.5 1.5 ]
-    >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr', n_surr=5000)
+    >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr',
+    ...                        n_surrogates=5000)
     >>> print(n_exp_surr)
     [[ 1.  1.]
      [ 2.  0.]
@@ -424,11 +426,12 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surr=1):
     if method == 'analytic':
         return _n_exp_mat_analytic(mat, pattern_hash)
     if method == 'surr':
-        return _n_exp_mat_surrogate(mat, pattern_hash, n_surr=n_surr)
+        return _n_exp_mat_surrogate(mat, pattern_hash,
+                                    n_surrogates=n_surrogates)
 
 
 def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
-                        n_surr=1):
+                        n_surrogates=1):
     """
     Calculates the expected joint probability for each spike pattern sum over
     trials.
@@ -456,10 +459,10 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
          'surrogate_TrialByTrial' -- > calculate the distribution
          of expected coincidences by spike time randomzation in
          each trial and sum over trials.
-         Default is 'analytic_trialByTrial'.
-    n_surr: int, optional
+         Default: 'analytic_trialByTrial'.
+    n_surrogates: int, optional
          The number of surrogate to be used.
-         Default is 1.
+         Default: 1
 
     Returns
     -------
@@ -496,10 +499,10 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
             np.mean(mat, axis=0), pattern_hash,
             method='analytic') * mat.shape[0]
     elif method == 'surrogate_TrialByTrial':
-        n_exp = np.zeros(n_surr)
+        n_exp = np.zeros(n_surrogates)
         for mat_tr in mat:
             n_exp += n_exp_mat(mat_tr, pattern_hash,
-                               method='surr', n_surr=n_surr)
+                               method='surr', n_surrogates=n_surrogates)
     else:
         raise ValueError(
             "The method only works on the zero_one matrix at the moment")
@@ -507,7 +510,7 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
 
 
 def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
-                  n_surr=1):
+                  n_surrogates=1):
     """
     Compute the expected coincidences and a function to calculate the
     p-value for the given empirical coincidences.
@@ -536,11 +539,11 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
          (analytically) on each trial, then sum over all trials.
          ''analytic_TrialAverage' -- > calculate the expectency
          by averaging over trials.
-         Default is 'analytic_trialByTrial'
+         Default: 'analytic_trialByTrial'
          (cf. Gruen et al. 2003)
-    n_surr: integer, optional
+    n_surrogates: integer, optional
          number of surrogate to be used
-         Default is 1
+         Default: 1
 
     Returns
     --------
@@ -577,7 +580,7 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
             return p
     elif method == 'surrogate_TrialByTrial':
         n_exp = n_exp_mat_sum_trial(
-            mat, pattern_hash, method=method, n_surr=n_surr)
+            mat, pattern_hash, method=method, n_surrogates=n_surrogates)
 
         def pval(n_emp):
             hist = np.bincount(np.int64(n_exp))
@@ -603,7 +606,7 @@ def jointJ(p_val):
 
     Parameters
     ----------
-    p_val: list of float
+    p_val : float or list of float
         List of p-values of statistical tests for different pattern.
 
     Returns
@@ -642,18 +645,19 @@ def _bintime(t, bin_size):
     Change the real time to `bin_size` units.
     """
     t_dl = t.rescale('ms').magnitude
-    bin_size_dl = bin_size.rescale('ms').magnitude
+    bin_size_dl = bin_size.rescale('ms').item()
     return np.floor(np.array(t_dl) / bin_size_dl).astype(int)
 
 
-def _winpos(t_start, t_stop, winsize, winstep, position='left-edge'):
+@deprecated_alias(winsize='win_size', winstep='win_step')
+def _winpos(t_start, t_stop, win_size, win_step, position='left-edge'):
     """
     Calculate the position of the analysis window.
     """
-    t_start_dl = t_start.rescale('ms').magnitude
-    t_stop_dl = t_stop.rescale('ms').magnitude
-    winsize_dl = winsize.rescale('ms').magnitude
-    winstep_dl = winstep.rescale('ms').magnitude
+    t_start_dl = t_start.rescale('ms').item()
+    t_stop_dl = t_stop.rescale('ms').item()
+    winsize_dl = win_size.rescale('ms').item()
+    winstep_dl = win_step.rescale('ms').item()
 
     # left side of the window time
     if position == 'left-edge':
@@ -666,7 +670,7 @@ def _winpos(t_start, t_stop, winsize, winstep, position='left-edge'):
     return ts_winpos
 
 
-def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
+def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surrogates=1):
     """
     Return the default results of unitary events analysis
     (Surprise, empirical coincidences and index of where it happened
@@ -676,7 +680,7 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
     n_emp, indices = n_emp_mat_sum_trial(mat, pattern_hash)
     if method == 'surrogate_TrialByTrial':
         dist_exp, n_exp = gen_pval_anal(
-            mat, pattern_hash, method, n_surr=n_surr)
+            mat, pattern_hash, method, n_surrogates=n_surrogates)
         n_exp = np.mean(n_exp)
     elif method == 'analytic_TrialByTrial' or \
             method == 'analytic_TrialAverage':
@@ -686,10 +690,13 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surr=1):
     return Js, rate_avg, n_exp, n_emp, indices
 
 
-def jointJ_window_analysis(
-        data, bin_size, winsize, winstep, pattern_hash,
-        method='analytic_TrialByTrial', t_start=None,
-        t_stop=None, binary=True, n_surr=100):
+@deprecated_alias(data='spiketrains', binsize='bin_size', winsize='win_size',
+                  winstep='win_step', n_surr='n_surrogates')
+def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
+                           win_size=100 * pq.ms, win_step=5 * pq.ms,
+                           pattern_hash=None, method='analytic_TrialByTrial',
+                           t_start=None, t_stop=None, binary=True,
+                           n_surrogates=100):
     """
     Calculates the joint surprise in a sliding window fashion.
 
@@ -697,64 +704,71 @@ def jointJ_window_analysis(
 
     Parameters
     ----------
-    data : list
+    spiketrains : list
         A list of spike trains (`neo.SpikeTrain` objects) in different trials:
-            0-axis --> Trials
+          * 0-axis --> Trials
 
-            1-axis --> Neurons
+          * 1-axis --> Neurons
 
-            2-axis --> Spike times
-    bin_size : pq.Quantity
+          * 2-axis --> Spike times
+    bin_size : pq.Quantity, optional
         The size of bins for discretizing spike trains.
-    winsize : pq.Quantity
+        Default: 5 ms
+    win_size : pq.Quantity, optional
         The size of the window of analysis.
-    winstep : pq.Quantity
+        Default: 100 ms
+    win_step : pq.Quantity, optional
         The size of the window step.
-    pattern_hash : list of int
-        list of interested patterns in hash values
-        (see `hash_from_pattern` and `inverse_hash_from_pattern` functions)
-    method : str
-        The method with which the unitary events whould be computed
-          'analytic_TrialByTrial' -- > calculate the expectency
-          (analytically) on each trial, then sum over all trials.
+        Default: 5 ms
+    pattern_hash : int or list of int or None, optional
+        A list of interested patterns in hash values (see `hash_from_pattern`
+        and `inverse_hash_from_pattern` functions). If None, all neurons
+        are participated.
+        Default: None
+    method : str, optional
+        The method with which to compute the unitary events:
+          * 'analytic_TrialByTrial': calculate the analytical expectancy
+            on each trial, then sum over all trials;
 
-          'analytic_TrialAverage' -- > calculate the expectency
-          by averaging over trials (cf. Gruen et al. 2003).
+          * 'analytic_TrialAverage': calculate the expectancy by averaging over
+            trials (cf. Gruen et al. 2003);
 
-          'surrogate_TrialByTrial' -- > calculate the distribution
-          of expected coincidences by spike time randomzation in
-          each trial and sum over trials.
-        Default is 'analytic_trialByTrial'
-    t_start : float or pq.Quantity, optional
-        The start time to use for the time points.
-        If not specified, retrieved from the `t_start` attribute of
-        spiketrains.
-    t_stop : float or pq.Quantity, optional
-        The start time to use for the time points.
-        If not specified, retrieved from the `t_stop` attribute of
-        spiketrains.
-    n_surr : int, optional
+          * 'surrogate_TrialByTrial': calculate the distribution of expected
+            coincidences by spike time randomization in each trial and sum over
+            trials.
+        Default: 'analytic_trialByTrial'
+    t_start, t_stop : float or pq.Quantity, optional
+        The start and stop times to use for the time points.
+        If not specified, retrieved from the `t_start` and `t_stop` attributes
+        of the input spiketrains.
+    binary : bool, optional
+        Binarize the binned spike train objects (True) or not. Only the binary
+        matrices are supported at the moment.
+        Default: True
+    n_surrogates : int, optional
         The number of surrogates to be used.
-        Default is 100.
+        Default: 100
 
     Returns
     -------
     dict
-        The values of each key has the shape of
-          different pattern hash --> 0-axis
+        The values of the following keys have the shape of
 
-          different window --> 1-axis
-        Js: list of float
+          * different window --> 0-axis
+          * different pattern hash --> 1-axis
+
+        'Js': list of float
           JointSurprise of different given patterns within each window.
-        indices: list of list of int
+        'indices': list of list of int
           A list of indices of pattern within each window.
-        n_emp: list of int
+        'n_emp': list of int
           The empirical number of each observed pattern.
-        n_exp: list of float
+        'n_exp': list of float
           The expected number of each pattern.
-        rate_avg: list of float
+        'rate_avg': list of float
           The average firing rate of each neuron.
 
+        Additionally, 'input_parameters' key stores the input parameters.
 
     Raises
     ------
@@ -771,71 +785,74 @@ def jointJ_window_analysis(
         integer.
 
     """
-    if not isinstance(data[0][0], neo.SpikeTrain):
+    if not isinstance(spiketrains[0][0], neo.SpikeTrain):
         raise ValueError(
             "structure of the data is not correct: 0-axis should be trials, "
             "1-axis units and 2-axis neo spike trains")
 
     if t_start is None:
-        t_start = data[0][0].t_start.rescale('ms')
+        t_start = spiketrains[0][0].t_start
     if t_stop is None:
-        t_stop = data[0][0].t_stop.rescale('ms')
+        t_stop = spiketrains[0][0].t_stop
+
+    n_trials = len(spiketrains)
+    n_neurons = len(spiketrains[0])
+    if pattern_hash is None:
+        pattern = [1] * n_neurons
+        pattern_hash = hash_from_pattern(pattern)
+    if np.issubdtype(type(pattern_hash), np.integer):
+        pattern_hash = [int(pattern_hash)]
 
     # position of all windows (left edges)
-    t_winpos = _winpos(t_start, t_stop, winsize, winstep, position='left-edge')
+    t_winpos = _winpos(t_start, t_stop, win_size, win_step,
+                       position='left-edge')
     t_winpos_bintime = _bintime(t_winpos, bin_size)
 
-    winsize_bintime = _bintime(winsize, bin_size)
-    winstep_bintime = _bintime(winstep, bin_size)
+    winsize_bintime = _bintime(win_size, bin_size)
+    winstep_bintime = _bintime(win_step, bin_size)
 
-    if winsize_bintime * bin_size != winsize:
-        warnings.warn("The ratio between the winsize ({winsize}) and the "
-                      "bin_size ({bin_size}) is not an integer".format(
-                          winsize=winsize,
-                          bin_size=bin_size))
+    if winsize_bintime * bin_size != win_size:
+        warnings.warn(f"The ratio between the win_size ({win_size}) and the "
+                      f"bin_size ({bin_size}) is not an integer")
 
-    if winstep_bintime * bin_size != winstep:
-        warnings.warn("The ratio between the winstep ({winstep}) and the "
-                      "bin_size ({bin_size}) is not an integer".format(
-                          winstep=winstep,
-                          bin_size=bin_size))
+    if winstep_bintime * bin_size != win_step:
+        warnings.warn(f"The ratio between the win_step ({win_step}) and the "
+                      f"bin_size ({bin_size}) is not an integer")
 
-    num_tr, N = np.shape(data)[:2]
+    input_parameters = dict(pattern_hash=pattern_hash, bin_size=bin_size,
+                            win_size=win_size, win_step=win_step,
+                            method=method, t_start=t_start, t_stop=t_stop,
+                            n_surrogates=n_surrogates)
 
-    n_bins = int((t_stop - t_start) / bin_size)
+    n_bins = int(((t_stop - t_start) / bin_size).simplified.item())
 
-    mat_tr_unit_spt = np.zeros((len(data), N, n_bins))
-    for tr, sts in enumerate(data):
-        sts = list(sts)
-        bs = conv.BinnedSpikeTrain(
-            sts, t_start=t_start, t_stop=t_stop, bin_size=bin_size)
-        if binary is True:
-            mat = bs.to_bool_array()
-        else:
+    mat_tr_unit_spt = np.zeros((len(spiketrains), n_neurons, n_bins),
+                               dtype=np.int32)
+    for trial, sts in enumerate(spiketrains):
+        bs = conv.BinnedSpikeTrain(list(sts), t_start=t_start, t_stop=t_stop,
+                                   bin_size=bin_size)
+        if not binary:
             raise NotImplementedError(
                 "The method works only with binary matrices at the moment")
-        mat_tr_unit_spt[tr] = mat
+        mat_tr_unit_spt[trial] = bs.to_bool_array()
 
-    num_win = len(t_winpos)
-    Js_win, n_exp_win, n_emp_win = (np.zeros(num_win) for _ in range(3))
-    rate_avg = np.zeros((num_win, N))
-    indices_win = {}
-    for i in range(num_tr):
-        indices_win['trial' + str(i)] = []
+    n_windows = len(t_winpos)
+    n_hashes = len(pattern_hash)
+    Js_win, n_exp_win, n_emp_win = np.zeros((3, n_windows, n_hashes),
+                                            dtype=np.float32)
+    rate_avg = np.zeros((n_windows, n_hashes, n_neurons), dtype=np.float32)
+    indices_win = defaultdict(list)
 
     for i, win_pos in enumerate(t_winpos_bintime):
         mat_win = mat_tr_unit_spt[:, :, win_pos:win_pos + winsize_bintime]
-        if method == 'surrogate_TrialByTrial':
-            Js_win[i], rate_avg[i], n_exp_win[i], n_emp_win[
-                i], indices_lst = _UE(
-                mat_win, pattern_hash, method, n_surr=n_surr)
-        else:
-            Js_win[i], rate_avg[i], n_exp_win[i], n_emp_win[
-                i], indices_lst = _UE(mat_win, pattern_hash, method)
-        for j in range(num_tr):
+        Js_win[i], rate_avg[i], n_exp_win[i], n_emp_win[
+            i], indices_lst = _UE(mat_win, pattern_hash=pattern_hash,
+                                  method=method, n_surrogates=n_surrogates)
+        for j in range(n_trials):
             if len(indices_lst[j][0]) > 0:
-                indices_win[
-                    'trial' + str(j)] = np.append(
-                    indices_win['trial' + str(j)], indices_lst[j][0] + win_pos)
+                indices_win[f"trial{j}"].append(indices_lst[j][0] + win_pos)
+    for key in indices_win.keys():
+        indices_win[key] = np.hstack(indices_win[key])
     return {'Js': Js_win, 'indices': indices_win, 'n_emp': n_emp_win,
-            'n_exp': n_exp_win, 'rate_avg': rate_avg / bin_size}
+            'n_exp': n_exp_win, 'rate_avg': rate_avg / bin_size,
+            'input_parameters': input_parameters}

@@ -52,6 +52,7 @@ Do you want to contribute to Elephant? Please refer to the
 * Philipp Steigerwald [12]
 * Manuel Ciba [12]
 * Thijs Ruikes [13]
+* Maximilian Kramer [1]
 
 1. Institute of Neuroscience and Medicine (INM-6), Computational and Systems Neuroscience & Institute for Advanced Simulation (IAS-6), Theoretical Neuroscience, Jülich Research Centre and JARA, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France

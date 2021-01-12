@@ -5,22 +5,18 @@ Unit tests for the Unitary Events analysis
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import os
-import shutil
-import ssl
 import types
 import unittest
 
 import neo
 import numpy as np
 import quantities as pq
-from neo.test.rawiotest.tools import create_local_temp_dir
 from numpy.testing import assert_array_equal
 
-from urllib.request import urlopen
-
-
 import elephant.unitary_event_analysis as ue
+from elephant.test.download import download, ELEPHANT_TMP_DIR
+from numpy.testing import assert_array_almost_equal
+from elephant.spike_train_generation import homogeneous_poisson_process
 
 
 class UETestCase(unittest.TestCase):
@@ -236,7 +232,8 @@ class UETestCase(unittest.TestCase):
         n_exp_anal = ue.n_exp_mat_sum_trial(
             mat, pattern_hash, method='analytic_TrialAverage')
         n_exp_surr = ue.n_exp_mat_sum_trial(
-            mat, pattern_hash, method='surrogate_TrialByTrial', n_surr=1000)
+            mat, pattern_hash, method='surrogate_TrialByTrial',
+            n_surrogates=1000)
         self.assertLess(
             a=np.abs(n_exp_anal[0] - np.mean(n_exp_surr)) / n_exp_anal[0],
             b=0.1)
@@ -309,7 +306,7 @@ class UETestCase(unittest.TestCase):
                 mat,
                 pattern_hash,
                 method='surrogate_TrialByTrial',
-                n_surr=100)
+                n_surrogates=100)
         _, rate_avg, _, n_emp, indices =\
             ue._UE(mat, pattern_hash, method='analytic_TrialByTrial')
         self.assertTrue(np.allclose(n_emp, n_emp_surr))
@@ -325,12 +322,15 @@ class UETestCase(unittest.TestCase):
         sts1 = self.sts1_neo
         sts2 = self.sts2_neo
         data = np.vstack((sts1, sts2)).T
-        winsize = 100 * pq.ms
+        win_size = 100 * pq.ms
         bin_size = 5 * pq.ms
-        winstep = 20 * pq.ms
+        win_step = 20 * pq.ms
         pattern_hash = [3]
-        UE_dic = ue.jointJ_window_analysis(
-            data, bin_size, winsize, winstep, pattern_hash)
+        UE_dic = ue.jointJ_window_analysis(spiketrains=data,
+                                           pattern_hash=pattern_hash,
+                                           bin_size=bin_size,
+                                           win_size=win_size,
+                                           win_step=win_step)
         expected_Js = np.array(
             [0.57953708, 0.47348757, 0.1729669,
              0.01883295, -0.21934742, -0.80608759])
@@ -347,16 +347,24 @@ class UETestCase(unittest.TestCase):
              [0.02388889, 0.02055556]]) * pq.kHz
         expected_indecis_tril26 = [4., 4.]
         expected_indecis_tril4 = [1.]
-        self.assertTrue(np.allclose(UE_dic['Js'], expected_Js))
-        self.assertTrue(np.allclose(UE_dic['n_emp'], expected_n_emp))
-        self.assertTrue(np.allclose(UE_dic['n_exp'], expected_n_exp))
-        self.assertTrue(np.allclose(
-            UE_dic['rate_avg'].rescale('Hz').magnitude,
-            expected_rate.rescale('Hz').magnitude))
-        self.assertTrue(np.allclose(
-            UE_dic['indices']['trial26'], expected_indecis_tril26))
-        self.assertTrue(np.allclose(
-            UE_dic['indices']['trial4'], expected_indecis_tril4))
+        assert_array_almost_equal(UE_dic['Js'].squeeze(), expected_Js)
+        assert_array_almost_equal(UE_dic['n_emp'].squeeze(), expected_n_emp)
+        assert_array_almost_equal(UE_dic['n_exp'].squeeze(), expected_n_exp)
+        assert_array_almost_equal(UE_dic['rate_avg'].squeeze(), expected_rate)
+        assert_array_almost_equal(UE_dic['indices']['trial26'],
+                                  expected_indecis_tril26)
+        assert_array_almost_equal(UE_dic['indices']['trial4'],
+                                  expected_indecis_tril4)
+
+        # check the input parameters
+        input_params = UE_dic['input_parameters']
+        self.assertEqual(input_params['pattern_hash'], pattern_hash)
+        self.assertEqual(input_params['bin_size'], bin_size)
+        self.assertEqual(input_params['win_size'], win_size)
+        self.assertEqual(input_params['win_step'], win_step)
+        self.assertEqual(input_params['method'], 'analytic_TrialByTrial')
+        self.assertEqual(input_params['t_start'], 0 * pq.s)
+        self.assertEqual(input_params['t_stop'], 200 * pq.ms)
 
     @staticmethod
     def load_gdf2Neo(fname, trigger, t_pre, t_post):
@@ -425,20 +433,16 @@ class UETestCase(unittest.TestCase):
     def test_Riehle_et_al_97_UE(self):
         url = "http://raw.githubusercontent.com/ReScience-Archives/Rostami-" \
               "Ito-Denker-Gruen-2017/master/data"
-        shortname = "unitary_event_analysis_test_data"
-        local_test_dir = create_local_temp_dir(shortname)
-        files_to_download = ["extracted_data.npy", "winny131_23.gdf"]
-        context = ssl._create_unverified_context()
-        for filename in files_to_download:
-            url_file = "{url}/{filename}".format(url=url, filename=filename)
-            dist = urlopen(url_file, context=context)
-            localfile = os.path.join(local_test_dir, filename)
-            with open(localfile, 'wb') as f:
-                f.write(dist.read())
+        files_to_download = (
+            ("extracted_data.npy", "c4903666ce8a8a31274d6b11238a5ac3"),
+            ("winny131_23.gdf", "cc2958f7b4fb14dbab71e17bba49bd10")
+        )
+        for filename, checksum in files_to_download:
+            # The files will be downloaded to ELEPHANT_TMP_DIR
+            download(url=f"{url}/{filename}", checksum=checksum)
 
         # load spike data of figure 2 of Riehle et al 1997
-        spiketrain = self.load_gdf2Neo(os.path.join(local_test_dir,
-                                                    "winny131_23.gdf"),
+        spiketrain = self.load_gdf2Neo(ELEPHANT_TMP_DIR / "winny131_23.gdf",
                                        trigger='RS_4',
                                        t_pre=1799 * pq.ms,
                                        t_post=300 * pq.ms)
@@ -453,13 +457,15 @@ class UETestCase(unittest.TestCase):
         t_winpos = ue._winpos(t_start, t_stop, winsize, winstep)
         significance_level = 0.05
 
-        UE = ue.jointJ_window_analysis(
-            spiketrain, bin_size, winsize, winstep,
-            pattern_hash, method='analytic_TrialAverage')
+        UE = ue.jointJ_window_analysis(spiketrain,
+                                       pattern_hash=pattern_hash,
+                                       bin_size=bin_size,
+                                       win_size=winsize,
+                                       win_step=winstep,
+                                       method='analytic_TrialAverage')
         # load extracted data from figure 2 of Riehle et al 1997
-        extracted_data = np.load(
-            os.path.join(local_test_dir, 'extracted_data.npy'),
-            encoding='latin1', allow_pickle=True).item()
+        extracted_data = np.load(ELEPHANT_TMP_DIR / 'extracted_data.npy',
+                                 encoding='latin1', allow_pickle=True).item()
         Js_sig = ue.jointJ(significance_level)
         sig_idx_win = np.where(UE['Js'] >= Js_sig)[0]
         diff_UE_rep = []
@@ -482,15 +488,56 @@ class UETestCase(unittest.TestCase):
                     diff_UE_rep = np.append(
                         diff_UE_rep, x_tmp - ue_trial)
                     y_cnt += +1
-        shutil.rmtree(local_test_dir)
         np.testing.assert_array_less(np.abs(diff_UE_rep), 0.3)
 
+    def test_multiple_neurons(self):
+        np.random.seed(12)
+        spiketrains = [[homogeneous_poisson_process(
+            rate=50 * pq.Hz, t_stop=1 * pq.s)
+            for _ in range(5)] for neuron in range(3)]
 
-def suite():
-    suite = unittest.makeSuite(UETestCase, 'test')
-    return suite
+        spiketrains = np.stack(spiketrains, axis=1)
+        UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
+                                           win_size=300 * pq.ms,
+                                           win_step=100 * pq.ms)
+
+        js_expected = [[0.6081138], [0.17796665], [-1.2601125],
+                       [-0.2790147], [0.07804556], [0.7861176], [0.23452221],
+                       [0.11624397]]
+        indices_expected = {'trial2': [20, 30, 20, 30, 104, 104, 104],
+                            'trial3': [21, 21, 65, 65, 65, 128, 128, 128],
+                            'trial4': [8, 172, 172],
+                            'trial0': [104, 106, 104, 106, 104, 106],
+                            'trial1': [158, 158, 158, 188]}
+        n_emp_expected = [[4.], [4.], [1.], [4.], [4.], [5.], [3.], [3.]]
+        n_exp_expected = [[2.2858334], [3.2066667], [2.955], [4.485833],
+                          [3.4622223], [2.723611], [2.166111], [2.4122221]]
+        rate_expected = [[[0.04666667, 0.03266666, 0.04333333]],
+                         [[0.04733333, 0.03666667, 0.044]],
+                         [[0.04533333, 0.03466666, 0.046]],
+                         [[0.04933333, 0.04466667, 0.04933333]],
+                         [[0.04466667, 0.04266667, 0.046]],
+                         [[0.04133333, 0.04466667, 0.044]],
+                         [[0.04133333, 0.03666667, 0.04266667]],
+                         [[0.03933334, 0.03866667, 0.04666667]]] * 1 / pq.ms
+        input_parameters_expected = {'pattern_hash': [7],
+                                     'bin_size': 5 * pq.ms,
+                                     'win_size': 300 * pq.ms,
+                                     'win_step': 100 * pq.ms,
+                                     'method': 'analytic_TrialByTrial',
+                                     't_start': 0 * pq.s,
+                                     't_stop': 1 * pq.s, 'n_surrogates': 100}
+        assert_array_almost_equal(UE_dic['Js'], js_expected)
+        assert_array_almost_equal(UE_dic['n_emp'], n_emp_expected)
+        assert_array_almost_equal(UE_dic['n_exp'], n_exp_expected)
+        assert_array_almost_equal(UE_dic['rate_avg'], rate_expected)
+        self.assertEqual(sorted(UE_dic['indices'].keys()),
+                         sorted(indices_expected.keys()))
+        for trial_key in indices_expected.keys():
+            assert_array_equal(indices_expected[trial_key],
+                               UE_dic['indices'][trial_key])
+        self.assertEqual(UE_dic['input_parameters'], input_parameters_expected)
 
 
-if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+if __name__ == '__main__':
+    unittest.main()
