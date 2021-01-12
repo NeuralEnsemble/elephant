@@ -1066,6 +1066,7 @@ class BinnedSpikeTrain(object):
 
         """
 
+        # The data type for numeric values
         data_dtype = np.int32
 
         if not _check_neo_spiketrain(spiketrains):
@@ -1077,7 +1078,9 @@ class BinnedSpikeTrain(object):
         # (this is the same dtype that will be used for the index arrays of the
         #  sparse matrix, so already using it here avoids array duplication)
         shape = (len(spiketrains), self.n_bins)
-        numtype = sps.sputils.get_index_dtype(maxval=max(shape))
+        numtype = np.int32
+        if max(shape) > np.iinfo(numtype).max:
+            numtype = np.int64
 
         row_ids, column_ids = [], []
         # data
@@ -1088,9 +1091,9 @@ class BinnedSpikeTrain(object):
         scale_units = 1 / self._bin_size
         for idx, st in enumerate(spiketrains):
             times = st.magnitude
-            times = times[(times >= self._t_start) & (
+            bins = times[(times >= self._t_start) & (
                 times <= self._t_stop)] - self._t_start
-            bins = times * scale_units
+            bins *= scale_units
 
             # shift spikes that are very close
             # to the right edge into the next bin
@@ -1104,16 +1107,18 @@ class BinnedSpikeTrain(object):
             column_ids.append(f)
             counts.append(c)
             row_ids.append(np.repeat(idx, repeats=len(f)).astype(numtype))
-            del f, c
 
         if n_discarded > 0:
             warnings.warn("Binning discarded {} last spike(s) of the "
                           "input spiketrain".format(n_discarded))
 
-        # Stack arrays and ensure dtype
-        counts = np.hstack(counts).astype(data_dtype)
-        column_ids = np.hstack(column_ids).astype(numtype)
-        row_ids = np.hstack(row_ids).astype(numtype)
+        # Stacking preserves the data type. In any case, while creating
+        # the sparse matrix, a copy is performed even if we set 'copy' to False
+        # explicitly (however, this might change in future scipy versions -
+        # this depends on scipy csr matrix initialization implementation).
+        counts = np.hstack(counts)
+        column_ids = np.hstack(column_ids)
+        row_ids = np.hstack(row_ids)
 
         sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
                                        shape=shape, dtype=data_dtype,
