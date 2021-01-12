@@ -1091,9 +1091,9 @@ class BinnedSpikeTrain(object):
         scale_units = 1 / self._bin_size
         for idx, st in enumerate(spiketrains):
             times = st.magnitude
-            bins = times[(times >= self._t_start) & (
+            times = times[(times >= self._t_start) & (
                 times <= self._t_stop)] - self._t_start
-            bins *= scale_units
+            bins = times * scale_units
 
             # shift spikes that are very close
             # to the right edge into the next bin
