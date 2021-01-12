@@ -199,8 +199,8 @@ def pairwise_phase_consistency(phases, method='ppc0'):
 
     PPC0 is computed according to Eq. 14 and 15 of the cited paper.
 
-    An improved version of the PPC (PPC1) :cite: `PMID:22187161` computes angular
-    difference ony between pairs of spikes within trials.
+    An improved version of the PPC (PPC1) :cite:`phase-Vinck2012_33` computes
+    angular difference ony between pairs of spikes within trials.
 
     PPC1 is not implemented yet
 
@@ -230,13 +230,11 @@ def pairwise_phase_consistency(phases, method='ppc0'):
         Pairwise Phase Consistency
 
     """
-    # Convert inputs to lists
-    if not isinstance(phases, list):
+    if isinstance(phases, np.ndarray):
         phases = [phases]
-
-    # Check if all elements are arrays
     if not isinstance(phases, (list, tuple)):
         raise TypeError("Input must be a list of 1D numpy arrays with phases")
+
     for phase_array in phases:
         if not isinstance(phase_array, np.ndarray):
             raise TypeError("Each entry of the input list must be an 1D "
@@ -260,7 +258,7 @@ def pairwise_phase_consistency(phases, method='ppc0'):
     # transpose, we get the distance between phases for all possible pairs
     # of elements in 'phase'
     dot_prod = np.multiply(p_cos_2d, p_cos_2d.T, dtype=np.float32) + \
-               np.multiply(p_sin_2d, p_sin_2d.T, dtype=np.float32)  # TODO: agree on using this precision  or not
+        np.multiply(p_sin_2d, p_sin_2d.T, dtype=np.float32)
 
     # Now average over all elements in temp_results (the diagonal are 1
     # and should not be included)
@@ -270,7 +268,7 @@ def pairwise_phase_consistency(phases, method='ppc0'):
         # Note: each pair i,j is computed twice in dot_prod. do not
         # multiply by 2. n_trial * n_trials - n_trials = nr of filled elements
         # in dot_prod
-        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)  # TODO: handle nan's
+        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)
         return ppc
 
     elif method == 'ppc1':
