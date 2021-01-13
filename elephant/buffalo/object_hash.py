@@ -47,7 +47,7 @@ class BuffaloObjectHash(object):
         self.id, self.type, self.value = self._get_object_info(obj)
 
     def __hash__(self):
-        return hash((self.id, self.type, joblib.hash(self.value)))
+        return hash((self.type, joblib.hash(self.value)))
 
     def __eq__(self, other):
         if isinstance(other, BuffaloObjectHash):
@@ -57,8 +57,8 @@ class BuffaloObjectHash(object):
             if value is self.value:
                 return True
             else:
-                return (object_id, class_name, value) == (
-                    self.id, self.type, self.value
+                return (class_name, value) == (
+                    self.type, self.value
                 )
 
     def __repr__(self):
