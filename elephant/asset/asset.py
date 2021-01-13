@@ -631,6 +631,11 @@ class _JSFUniformOrderStat3D(object):
                 print(stdout)
                 print(stderr, file=sys.stderr)
             P_total = np.genfromtxt(P_total_path)
+
+        # Large number of floating-point additions can result in values
+        # outside of the valid range [0, 1].
+        P_total = np.clip(P_total, a_min=0., a_max=1.)
+
         return P_total
 
     def _choose_backend(self):
