@@ -8,6 +8,8 @@ import numpy as np
 from elephant.statistics import isi, mean_firing_rate, fanofactor
 from elephant.buffalo import provenance
 
+from neo_utils import cut_segment_by_epoch
+
 
 SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
 
