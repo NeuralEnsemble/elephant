@@ -127,7 +127,7 @@ class SourceCodeAnalyzer(object):
     def __init__(self, source_code, ast_tree, start_line, source_name):
         self.source_code = source_code
         self.ast_tree = ast_tree
-        self.start_line = start_line
+        self.start_line = start_line - 1   #TODO: check offsets in first line
         self._offset = 0 if source_name == '<module>' else 1
         self.iteration_blocks = IterationBlocks()
         self.statement_lines = self._build_line_map(ast_tree)
