@@ -174,6 +174,7 @@ class Provenance(object):
                     source_line = \
                         self.code_analyzer.extract_multiline_statement(lineno)
                     ast_tree = ast.parse(source_line)
+                    print(source_line)
 
                     # 2. Check if there is an assignment to one or more
                     # variables. This will be used to identify if there are
@@ -255,7 +256,6 @@ class Provenance(object):
                     parameters = {}
                     inputs = {}
                     for key, input_value in input_data.items():
-                        print(function_name, key, self.inputs)
                         if key in self.inputs:
                             if isinstance(input_value, VarArgs):
                                 var_input_list = []
