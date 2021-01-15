@@ -84,23 +84,52 @@ class BuffaloObjectHash(object):
         reference.
     """
 
-    @staticmethod
-    def _get_object_info(obj):
+    def _get_object_package(self, obj):
+        module = inspect.getmodule(obj)
+        package = ""
+        if module is not None:
+            package = module.__package__.split(".")[0]
+        return package
+
+    def _get_object_info(self, obj):
+        package = self._get_object_package(obj)
         class_name = "{}.{}".format(type(obj).__module__,
                                     type(obj).__name__)
-        return id(obj), class_name, obj
+        return id(obj), class_name, obj, package
 
     def __init__(self, obj):
-        self.id, self.type, self.value = self._get_object_info(obj)
+        self.id, self.type, self.value, self.package = \
+            self._get_object_info(obj)
 
     def __hash__(self):
-        return hash((self.type, joblib.hash(self.value)))
+        # For matplotlib objects, we need to use the builtin hashing function
+        # instead of the joblib's
+        # Multiple objects are generated, since each time something is plotted
+        # the object changes.
+        # We also have to use an exception for NumPy arrays with Axes objects,
+        # as those also change when the plot changes. These are usually return
+        # by the `plt.subplots()` call
+
+        array_of_matplotlib = False
+        if (isinstance(self.value, np.ndarray) and
+            self.value.dtype == 'O' and
+            self._get_object_package(self.value) == 'matplotlib'):
+                array_of_matplotlib = True
+
+        if self.package in ['matplotlib']:
+            value_hash = hash(self.value)
+        elif array_of_matplotlib:
+            value_hash = id(self.value)
+        else:
+            value_hash = joblib.hash(self.value)
+
+        return hash((self.type, value_hash))
 
     def __eq__(self, other):
         if isinstance(other, BuffaloObjectHash):
             return hash(self) == hash(other)
         else:
-            object_id, class_name, value = self._get_object_info(other)
+            object_id, class_name, value, package = self._get_object_info(other)
             if value is self.value:
                 return True
             else:
