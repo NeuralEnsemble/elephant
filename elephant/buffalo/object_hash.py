@@ -4,8 +4,12 @@ class decorator to track unique objects during the script execution.
 """
 
 import joblib
+import hashlib
 from dill._dill import save_function
 from collections import namedtuple
+from pathlib import Path
+import inspect
+import numpy as np
 
 
 # Need to use `dill` pickling function to support lambdas
@@ -14,6 +18,49 @@ joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
 
 ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
+FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path', 'details'))
+
+
+class BuffaloFileHash(object):
+
+    HASH_TYPES = {'md5': hashlib.md5,
+                  'sha256': hashlib.sha256}
+
+    def _get_file_hash(self, file_path, hash_type='sha256',
+                       block_size=4096*1024):
+        file_hash = self.HASH_TYPES[hash_type]()
+
+        with open(file_path, 'rb') as file:
+            for block in iter(lambda: file.read(block_size), b""):
+                file_hash.update(block)
+
+        return file_hash.hexdigest(), hash_type
+
+    def __init__(self, file_path):
+        if not Path.is_file(file_path):
+            raise ValueError(f"{file_path} is not a file!")
+
+        self._file_path = file_path
+        self._hash, self._hash_type = self._get_file_hash(file_path)
+        self._details = {}
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        if isinstance(other, BuffaloFileHash):
+            return hash(self) == hash(other) and \
+                   self._hash_type == other._hash_type
+        else:
+            raise TypeError("Cannot compare different objects")
+
+    def __repr__(self):
+        return "{}: [{}] {}".format(Path(self._file_path).name,
+                                    self._hash_type, self._hash)
+
+    def info(self):
+        return FileInfo(self._hash, self._hash_type,
+                        self._file_path, self._details)
 
 
 class BuffaloObjectHash(object):
