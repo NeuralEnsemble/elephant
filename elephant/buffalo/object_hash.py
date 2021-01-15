@@ -37,9 +37,6 @@ class BuffaloFileHash(object):
         return file_hash.hexdigest(), hash_type
 
     def __init__(self, file_path):
-        if not Path.is_file(file_path):
-            raise ValueError(f"{file_path} is not a file!")
-
         self._file_path = file_path
         self._hash, self._hash_type = self._get_file_hash(file_path)
         self._details = {}

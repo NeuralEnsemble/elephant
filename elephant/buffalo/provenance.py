@@ -12,7 +12,7 @@ import ast
 from collections import namedtuple
 import datetime
 
-from elephant.buffalo.object_hash import BuffaloObjectHash
+from elephant.buffalo.object_hash import BuffaloObjectHash, BuffaloFileHash
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import CallAST
 from elephant.buffalo.code_lines import SourceCodeAnalyzer
@@ -21,6 +21,7 @@ from os.path import splitext
 
 from pprint import pprint
 import pickle
+import dill
 
 # Python 2.7 compatibility
 if 'signature' in dir(inspect):
@@ -101,6 +102,8 @@ class Provenance(object):
     active = False
     history = []
     inputs = None
+    file_inputs = None
+    file_outputs = None
 
     calling_frame = None
     source_code = None
@@ -110,9 +113,19 @@ class Provenance(object):
     source_name = None
     code_analyzer = None
 
-    def __init__(self, inputs, container_output=False):
+    def __init__(self, inputs, file_input=None, file_output=None,
+                 container_output=False):
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
+
+        self.file_inputs = list()
+        self.file_outputs = list()
+
+        for arg, file_list in zip((file_input, file_output),
+                                  (self.file_inputs, self.file_outputs)):
+            if arg is not None:
+                file_list.extend(arg)
+
         self.inputs = inputs
         self.container_output = container_output
         self.initialized = False
@@ -279,7 +292,9 @@ class Provenance(object):
                     # function, are transformed in the hashable type
                     # `BuffaloObjectHash`. Inputs are defined by the parameter
                     # `inputs` when initializing the class, and stored as the
-                    # class attribute `inputs`.
+                    # class attribute `inputs`. If one parameter is defined
+                    # as a `file_input` when initializing the class, a hash
+                    # to the file is obtained using the `BuffaloFileHash`.
 
                     parameters = {}
                     inputs = {}
@@ -294,6 +309,8 @@ class Provenance(object):
                             else:
                                 inputs[key] = \
                                     BuffaloObjectHash(input_value).info()
+                        elif key in self.file_inputs:
+                            inputs[key] = BuffaloFileHash(input_value).info()
                         else:
                             parameters[key] = input_value
 
@@ -306,6 +323,13 @@ class Provenance(object):
                                 outputs[index] = BuffaloObjectHash(item).info()
                         else:
                             outputs[0] = BuffaloObjectHash(function_output).info()
+
+                    # If there is a file output as defined in the class
+                    # initialization, create the hash and add as output,
+                    # using `BuffaloFileHash`
+                    if len(self.file_outputs):
+                        for idx, file_output in enumerate(self.file_outputs):
+                            outputs[f"file.{idx}"] = BuffaloFileHash(input_data[file_output]).info()
 
                     # 7. Analyze AST and fetch static relationships in the
                     # input/output and other variables/objects in the script
