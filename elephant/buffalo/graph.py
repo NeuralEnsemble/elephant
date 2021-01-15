@@ -153,6 +153,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                       if key in edge_attr}
             net.add_edge(hash(v), hash(u), **labels)
 
+        net.show_buttons()
         net.save_graph(filename)
         if show:
             net.show(name=filename)
