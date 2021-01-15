@@ -114,6 +114,8 @@ class Provenance(object):
             raise ValueError("`inputs` must be a list")
         self.inputs = inputs
         self.container_output = container_output
+        self.initialized = False
+        self.has_return = True
 
     def _insert_static_information(self, tree, function, time_stamp):
         # Use a NodeVisitor to find the Call node that corresponds to the
@@ -122,6 +124,24 @@ class Provenance(object):
         # function
         ast_visitor = CallAST(self, function, time_stamp)
         ast_visitor.visit(tree)
+
+    def _analyze_function(self, function):
+        try:
+            source_code = inspect.getsourcelines(function)[0]
+            source_code = source_code[1:]    # Strip decorator
+            code_string = "".join(source_code)
+            ast_tree = ast.parse(code_string)
+
+            has_return = False
+            for node in ast.walk(ast_tree):
+                if isinstance(node, ast.Return):
+                    has_return = True
+                    break
+        except:
+            has_return = True
+
+        print(function, has_return)
+        return True, has_return
 
     def __call__(self, function):
 
@@ -134,6 +154,13 @@ class Provenance(object):
 
             # If capturing provenance...
             if Provenance.active:
+
+                # In the first run, analyze the function code to check if there
+                # are returns. If no return, we won't track the output as this
+                # is automatically the None object
+                if not self.initialized:
+                    self.initialized, self.has_return = \
+                        self._analyze_function(function)
 
                 # For functions that are used inside other decorated functions,
                 # or recursively, check if the calling frame is the one being
@@ -272,11 +299,12 @@ class Provenance(object):
                     # 6. Create hashable `BuffaloObjectHash` for the output
                     # objects to follow individual returns
                     outputs = {}
-                    if len(return_targets) > 1:
-                        for index, item in enumerate(function_output):
-                            outputs[index] = BuffaloObjectHash(item).info()
-                    else:
-                        outputs[0] = BuffaloObjectHash(function_output).info()
+                    if self.has_return:
+                        if len(return_targets) > 1:
+                            for index, item in enumerate(function_output):
+                                outputs[index] = BuffaloObjectHash(item).info()
+                        else:
+                            outputs[0] = BuffaloObjectHash(function_output).info()
 
                     # 7. Analyze AST and fetch static relationships in the
                     # input/output and other variables/objects in the script
