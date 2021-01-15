@@ -20,6 +20,7 @@ from elephant.buffalo.code_lines import SourceCodeAnalyzer
 from os.path import splitext
 
 from pprint import pprint
+import pickle
 
 # Python 2.7 compatibility
 if 'signature' in dir(inspect):
@@ -367,14 +368,21 @@ class Provenance(object):
         raise NotImplementedError
 
     @classmethod
-    def get_graph(cls):
+    def get_graph(cls, history=None):
+        if history is None:
+            history = Provenance.history
         graph = BuffaloProvenanceGraph()
-        for step in Provenance.history:
+
+        for step in history:
             graph.add_step(step)
         return graph
 
     @classmethod
-    def save_graph(cls, filename, show=False):
+    def dump_history(cls, filename):
+        pickle.dump(Provenance.history, open(filename, "wb"))
+
+    @classmethod
+    def save_graph(cls, filename, source=None, show=False):
         """
         Save an interactive graph with the provenance track.
 
@@ -397,10 +405,12 @@ class Provenance(object):
             raise ValueError("Filename must have HTML extension (.html, "
                              ".htm)!")
 
-        print("Getting graph")
-        graph = cls.get_graph()
+        if source is None:
+            print("Getting graph")
+            source = cls.get_graph()
+
         print("Converting graph")
-        graph.to_pyvis(filename, show=show)
+        source.to_pyvis(filename, show=show)
 
     @classmethod
     def get_script_variable(cls, name):
@@ -436,7 +446,7 @@ def print_history():
     pprint(Provenance.history)
 
 
-def save_graph(filename, show=False):
+def save_graph(filename, source=None, show=False):
     """
     Saves an interactive graph to disk.
 
@@ -448,8 +458,13 @@ def save_graph(filename, show=False):
         If True, displays the graph in the browser after saving.
         Default: False.
     """
-    Provenance.save_graph(filename, show=show)
+    Provenance.save_graph(filename, source=None, show=show)
 
 
-def get_graph():
-    return Provenance.get_graph()
+def get_graph(history=None):
+    return Provenance.get_graph(history)
+
+
+def dump_provenance(filename):
+    Provenance.dump_history(filename)
+
