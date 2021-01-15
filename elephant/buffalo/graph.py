@@ -16,8 +16,9 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                 if input_obj is not None:
                     self.add_edge(input_obj.hash, function_edge, type='input',
                                   **attrs)
-                self.add_edge(function_edge, output_obj.hash, type='output',
-                              **attrs)
+                if output_obj is not None:
+                    self.add_edge(function_edge, output_obj.hash, type='output',
+                                  **attrs)
             else:
                 self.add_edge(input_obj.hash, output_obj.hash, label=edge_label,
                               title=edge_title, params=analysis_step.params,
@@ -33,7 +34,11 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             for output_key, output_obj in analysis_step.output.items():
                 _connect_edge(input_obj, output_obj, function_edge)
         else:
-            _connect_edge(input_obj, analysis_step.output[0], function_edge)
+            if len(analysis_step.output):
+                output_obj = analysis_step.output[0]
+            else:
+                output_obj = None
+            _connect_edge(input_obj, output_obj, function_edge)
 
     @staticmethod
     def _get_edge_attrs_and_labels(analysis_step):
