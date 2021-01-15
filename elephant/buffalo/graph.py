@@ -59,7 +59,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             if analysis_step.function.module:
                 edge_title = analysis_step.function.module + "." + edge_title
             edge_label = edge_title.split(".")[-1]
-            function_edge = uuid.uuid4()
+            function_edge = hash(str(uuid.uuid4()))
 
         return edge_label, edge_title, function_edge
 
