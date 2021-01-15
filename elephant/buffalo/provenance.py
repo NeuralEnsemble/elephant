@@ -367,6 +367,13 @@ class Provenance(object):
         raise NotImplementedError
 
     @classmethod
+    def get_graph(cls):
+        graph = BuffaloProvenanceGraph()
+        for step in Provenance.history:
+            graph.add_step(step)
+        return graph
+
+    @classmethod
     def save_graph(cls, filename, show=False):
         """
         Save an interactive graph with the provenance track.
@@ -390,9 +397,9 @@ class Provenance(object):
             raise ValueError("Filename must have HTML extension (.html, "
                              ".htm)!")
 
-        graph = BuffaloProvenanceGraph()
-        for step in Provenance.history:
-            graph.add_step(step)
+        print("Getting graph")
+        graph = cls.get_graph()
+        print("Converting graph")
         graph.to_pyvis(filename, show=show)
 
     @classmethod
@@ -442,3 +449,7 @@ def save_graph(filename, show=False):
         Default: False.
     """
     Provenance.save_graph(filename, show=show)
+
+
+def get_graph():
+    return Provenance.get_graph()
