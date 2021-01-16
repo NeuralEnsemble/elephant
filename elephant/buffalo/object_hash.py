@@ -9,6 +9,7 @@ from dill._dill import save_function
 from collections import namedtuple
 from pathlib import Path
 import inspect
+
 import numpy as np
 
 
@@ -20,6 +21,22 @@ joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
 FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path', 'details'))
 
+
+class HashMemoization(object):
+
+    def __init__(self):
+        self.items = dict()
+
+    def memoize(self, object, value):
+        self.items[id(object)] = value
+
+    def check(self, object):
+        return self.items.get(id(object))
+
+    def clear(self):
+        self.items.clear()
+
+hash_memoizer = HashMemoization()
 
 class BuffaloFileHash(object):
 
@@ -107,10 +124,15 @@ class BuffaloObjectHash(object):
         # as those also change when the plot changes. These are usually return
         # by the `plt.subplots()` call
 
+        memoized = hash_memoizer.check(self.value)
+        if memoized is not None:
+            return memoized
+
         array_of_matplotlib = False
         if (isinstance(self.value, np.ndarray) and
-            self.value.dtype == 'O' and
-            self._get_object_package(self.value) == 'matplotlib'):
+            self.value.dtype == np.dtype('object')):
+            if (len(self.value) and
+                self._get_object_package(self.value.flat[0]) == 'matplotlib'):
                 array_of_matplotlib = True
 
         if self.package in ['matplotlib']:
@@ -120,7 +142,9 @@ class BuffaloObjectHash(object):
         else:
             value_hash = joblib.hash(self.value)
 
-        return hash((self.type, value_hash))
+        object_hash = hash((self.type, value_hash))
+        hash_memoizer.memoize(self.value, object_hash)
+        return object_hash
 
     def __eq__(self, other):
         if isinstance(other, BuffaloObjectHash):
@@ -149,4 +173,14 @@ class BuffaloObjectHash(object):
         details = {}
         if hasattr(self.value, '__dict__'):
             details = self.value.__dict__
-        return ObjectInfo(hash(self), self.type, self.id, details)
+
+        # Store specific attributes that are relevant for arrays, quantities
+        # and Neo objects
+        for attr in ('units', 'shape', 'dtype', 't_start', 't_stop',
+                     'id', 'nix_name'):
+            if hasattr(self.value, attr):
+                details[attr] = getattr(self.value, attr)
+
+        info = ObjectInfo(hash(self), self.type, self.id, details)
+        print("get info" , self.type, self.id, "duration:", datetime.datetime.now() - start)
+        return info
