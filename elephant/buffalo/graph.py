@@ -3,6 +3,88 @@ from pyvis.network import Network
 import uuid
 
 
+class ObjectDescription(object):
+
+    annotations = None
+    array_annotations = None
+    attributes = None
+    converters = {}
+
+    @classmethod
+    def _add_line(cls, key, value):
+        converter = cls.converters.get(key)
+        value = converter(value) if converter is not None else value
+        return f"<br><font size=\"0.5\"><i>{key}</i>={value}</font>"
+
+    @classmethod
+    def build_title(cls, object_details, array_summary=True):
+        title = ""
+
+        # Get values of the selected attributes
+        if cls.attributes is not None:
+            attributes = list(object_details.keys()) if \
+                cls.attributes == 'all' else cls.attributes
+            for attr in attributes:
+                if attr in object_details:
+                    title += cls._add_line(attr, object_details[attr])
+
+        # Get values of the selected annotations
+        if cls.annotations is not None and 'annotations' in object_details:
+            annotations_dict = object_details['annotations']
+            for attr in cls.annotations:
+                if attr in annotations_dict:
+                    title += cls._add_line(attr, annotations_dict[attr])
+
+        if (cls.array_annotations is not None and
+                'array_annotations' in object_details):
+            annotations_dict = object_details['array_annotations']
+            for attr in cls.array_annotations:
+                if attr in annotations_dict:
+                    value = annotations_dict[attr]
+                    if array_summary:
+                        value = set(value)
+                    title += cls._add_line(attr, value)
+
+        return title
+
+
+class FunctionParameters(ObjectDescription):
+    attributes = 'all'
+
+
+class ArrayDescription(ObjectDescription):
+    attributes = ('shape', 'dtype')
+
+
+
+
+def _convert_units(value):
+    return value.dimensionality
+
+
+class NeoDescription(ObjectDescription):
+    attributes = ('shape', 'units', 't_start', 't_stop', 'name')
+    array_annotations = ('channel_names')
+    converters = {'units': _convert_units}
+
+
+
+class MatplotlibDescription(ObjectDescription):
+    attributes = ('title')
+
+
+DESCRIPTION_MAP = {
+    'neo.core.event.Event': NeoDescription,
+    'neo.core.block.Block': NeoDescription,
+    'neo.core.segment.Segment': NeoDescription,
+    'neo.core.epoch.Epoch': NeoDescription,
+    'neo.core.analogsignal.AnalogSignal': NeoDescription,
+    'neo.core.spiketrain.SpikeTrain': NeoDescription,
+    'quantities.quantity.Quantity': NeoDescription,
+    'numpy.ndarray': ArrayDescription
+}
+
+
 class BuffaloProvenanceGraph(nx.DiGraph):
 
     def _add_input_to_output(self, analysis_step, input_obj, edge_label,
@@ -10,8 +92,9 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         def _connect_edge(input_obj, output_obj, function_edge):
             if function_edge:
+                title = FunctionParameters.build_title(analysis_step.params)
                 self.add_node(function_edge, label=edge_label,
-                              title=edge_title, type='function',
+                              title=edge_title+title, type='function',
                               params=analysis_step.params)
                 if input_obj is not None:
                     self.add_edge(input_obj.hash, function_edge, type='input',
@@ -25,20 +108,33 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                               type='static', **attrs)
 
         if input_obj is not None:
-            obj_type = input_obj.type
-            obj_label = obj_type.split(".")[-1]
+            obj_type, obj_label, node_type = self._get_type_and_label(input_obj)
             self.add_node(input_obj.hash, label=obj_label, title=obj_type,
-                          type='data')
+                          type=node_type)
 
         if multi_output:
             for output_key, output_obj in analysis_step.output.items():
                 _connect_edge(input_obj, output_obj, function_edge)
         else:
             if len(analysis_step.output):
-                output_obj = analysis_step.output[0]
+                index = next(iter(analysis_step.output))
+                output_obj = analysis_step.output[index]
             else:
                 output_obj = None
             _connect_edge(input_obj, output_obj, function_edge)
+
+    @staticmethod
+    def _get_type_and_label(obj):
+        from elephant.buffalo.object_hash import ObjectInfo
+        if isinstance(obj, ObjectInfo):
+            obj_type = obj.type
+            obj_label = obj_type.split(".")[-1]
+            title = ""
+            if obj_type in DESCRIPTION_MAP:
+                title = DESCRIPTION_MAP[obj_type].build_title(obj.details)
+            return obj_type + title, obj_label, "data"
+        else:
+            return f"{obj.path}<br>[{obj.hash_type}:{obj.hash}]", "<File>", "file"
 
     @staticmethod
     def _get_edge_attrs_and_labels(analysis_step):
@@ -52,7 +148,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                 edge_label = ".{}".format(edge_attr['name'])
             elif edge_label == 'subscript':
                 if 'slice' in edge_attr:
-                    edge_label = str(edge_attr['slice'])
+                    edge_label = "[{}]".format(str(edge_attr['slice']))
                 else:
                     edge_label = "[{}]".format(edge_attr['index'])
         else:
@@ -64,12 +160,12 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         return edge_label, edge_title, function_edge
 
     def add_step(self, analysis_step, **attr):
+
         from elephant.buffalo.provenance import VarArgs
 
         for key, obj in analysis_step.output.items():
-            obj_type = obj.type
-            obj_label = obj_type.split(".")[-1]
-            self.add_node(obj.hash, label=obj_label, title=obj_type, type='data')
+            obj_type, obj_label, node_type = self._get_type_and_label(obj)
+            self.add_node(obj.hash, label=obj_label, title=obj_type, type=node_type)
         multi_output = len(list(analysis_step.output.keys())) > 1
 
         edge_label, edge_title, function_edge = \
@@ -93,7 +189,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                                       edge_title, multi_output,
                                       function_edge, **attr)
 
-    def to_pyvis(self, filename, show=False, layout=True):
+    def to_pyvis(self, filename, show=False, layout=False):
         """
         This method takes an exisitng Networkx graph and translates
         it to a PyVis graph format that can be accepted by the VisJs
@@ -112,18 +208,34 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         """
 
-        def add_node(node_id):
+        def _get_color_json(highlight, grayscale):
+            if not grayscale:
+                return highlight
+            else:
+                return {
+                        "background": "rgba(192, 192, 192, 1)",
+                        "border": "rgba(192, 192, 192, 1)",
+                            "highlight": {
+                                "background": highlight,
+                                "border": highlight,
+                            }
+                        }
+
+        def add_node(node_id, grayscale=True):
             attr = nodes[node_id]
             level = attr.get('level', None)
             node_type = attr.get('type', 'unknown')
+            physics = False
             shape = shape_types[node_type]
-            color = color_types[node_type]
-            net.add_node(hash(node_id), level=level, shape=shape,
-                         color=color, label=attr['label'], title=attr['title'])
+            color = _get_color_json(color_types[node_type], grayscale)
 
-        shape_types = {'data': 'dot', 'function': 'square',
-                       'unknown': 'triangle'}
-        color_types = {'data': 'blue', 'function': 'red', 'unknown': 'green'}
+            net.add_node(hash(node_id), level=level, shape=shape,
+                         color=color, label=attr['label'], title=attr['title'],
+                         physics=physics)
+
+        shape_types = {'data': 'ellipse', 'function': 'box',
+                       'file': 'database'}
+        color_types = {'data': 'blue', 'function': 'red', 'file': 'green'}
 
         edges = self.edges.data()
         nodes = self.nodes
@@ -153,7 +265,14 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                       if key in edge_attr}
             net.add_edge(hash(v), hash(u), **labels)
 
+        net.options.edges.arrowStrikethrough = False
+        net.options.physics.enabled = False
+        net.options.interaction.multiselect = True
+        net.options.interaction.tooltipDelay = 0
+        net.options.navigationButons = True
+
         net.show_buttons()
+
         net.save_graph(filename)
         if show:
             net.show(name=filename)
