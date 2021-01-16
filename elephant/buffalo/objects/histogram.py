@@ -80,6 +80,8 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
                 histogram_type='counts', t_start=None, t_stop=None,
                 binary=None, warnings_raised=False):
 
+        if t_start is None:
+            t_start = 0 * pq.s
         analysis_object = HistogramObject.__new__(HistogramObject)
         signal_object = neo.AnalogSignal.__new__(cls,
                                                  signal=bins,

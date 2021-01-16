@@ -405,7 +405,7 @@ class Provenance(object):
 
     @classmethod
     def dump_history(cls, filename):
-        pickle.dump(Provenance.history, open(filename, "wb"))
+        dill.dump(Provenance.history, open(filename, "wb"))
 
     @classmethod
     def save_graph(cls, filename, source=None, show=False):

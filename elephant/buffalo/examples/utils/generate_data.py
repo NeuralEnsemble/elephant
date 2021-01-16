@@ -2,6 +2,9 @@
 This module generates Poisson spike trains that are used in the example
 scripts.
 """
+import numpy as np
+import quantities as pq
+import neo
 
 from elephant.spike_train_generation import homogeneous_poisson_process
 
@@ -26,3 +29,18 @@ def get_spike_trains(firing_rate, n_spiketrains, t_stop):
     """
     return [homogeneous_poisson_process(firing_rate, t_stop=t_stop)
             for _ in range(n_spiketrains)]
+
+import matplotlib.pyplot as plt
+
+def get_analog_signal(frequency, n_channels, t_stop, amplitude, sampling_rate):
+    end_time = t_stop.rescale(pq.s).magnitude
+    period = 1/sampling_rate.rescale(pq.Hz).magnitude
+    freq = frequency.rescale(pq.Hz).magnitude
+
+    samples = np.arange(0, end_time, period)
+    base_signal = np.sin(2*np.pi*freq*samples) * amplitude.magnitude
+
+    signal = np.tile(base_signal, (n_channels, 1))
+
+    return neo.AnalogSignal(signal.T, units=amplitude.units,
+                            sampling_rate=sampling_rate)

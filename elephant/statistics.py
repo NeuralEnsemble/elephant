@@ -964,7 +964,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                                 t_start=bs.t_start, normalization=output,
                                 copy=False)
 
-    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
+    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), bin_size,
                                units=bin_hist.units, histogram_type=output,
                                t_start=t_start, t_stop=t_stop, binary=binary,
                                warnings_raised=warnings_raised)
@@ -1038,7 +1038,7 @@ def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
                                t_stop=t_stop, output=output,
                                binary=binary)
     return PSTHObject.from_time_histogram(histogram, event_time,
-
+                                          event_label=event_label)
 
 @deprecated_alias(binsize='bin_size')
 @Provenance(inputs=["spiketrains"])

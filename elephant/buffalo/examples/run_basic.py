@@ -12,7 +12,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pickle
 
-SOURCE_DIR = "/home/koehler/datafiles/multielectrode_grasp/datasets"
+SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
 
 np.array = provenance.Provenance(inputs=[0])(np.array)
 
@@ -27,18 +27,19 @@ def load_data(session_filename, channels):
     nsx_to_load = int(ext[-1])
     file_path = os.path.dirname(session_filename)
 
-    session = ReachGraspIO(file, nsx_to_load=nsx_to_load,
+    session = ReachGraspIO(file,
                            odml_directory=file_path,
                            verbose=False)
 
-    block = session.read_block(load_waveforms=False, lazy=True)
+    block = session.read_block(load_waveforms=False, load_events=True,
+                               nsx_to_load=None)
 
     assert len(block.segments) == 1
     return block
 
+
 @provenance.Provenance(inputs=['data'])
 def test(data):
-    print(data.array_annotations)
     print(data)
     print(data.annotations)
 
@@ -53,7 +54,7 @@ def main(session_id):
     session_filename = os.path.join(SOURCE_DIR, session_id)
     block = load_data(session_filename + ".ns6", channels)
 
-    test(block.segments[0].analogsignals[0])
+    test(block)
 
     # ISI times (first spike train of the segment)
     # sts = block.segments[0].spiketrains

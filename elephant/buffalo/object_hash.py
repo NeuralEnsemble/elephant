@@ -11,7 +11,9 @@ from pathlib import Path
 import inspect
 
 import numpy as np
+import quantities as pq
 
+import datetime
 
 # Need to use `dill` pickling function to support lambdas
 # The dispatch table of the `joblib.Hasher` object is updated
@@ -124,9 +126,9 @@ class BuffaloObjectHash(object):
         # as those also change when the plot changes. These are usually return
         # by the `plt.subplots()` call
 
-        memoized = hash_memoizer.check(self.value)
-        if memoized is not None:
-            return memoized
+        # memoized = hash_memoizer.check(self.value)
+        # if memoized is not None:
+        #     return memoized
 
         array_of_matplotlib = False
         if (isinstance(self.value, np.ndarray) and
@@ -143,7 +145,7 @@ class BuffaloObjectHash(object):
             value_hash = joblib.hash(self.value)
 
         object_hash = hash((self.type, value_hash))
-        hash_memoizer.memoize(self.value, object_hash)
+        # hash_memoizer.memoize(self.value, object_hash)
         return object_hash
 
     def __eq__(self, other):
@@ -168,6 +170,8 @@ class BuffaloObjectHash(object):
         return "{}:{}:{}".format(namespace, self.type, hash(self))
 
     def info(self):
+        start = datetime.datetime.now()
+
         # Here we can extract specific metadata to record
         # Currently fetching the whole class dictionary
         details = {}
