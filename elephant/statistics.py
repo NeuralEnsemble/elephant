@@ -95,6 +95,8 @@ __all__ = [
 ]
 from elephant.buffalo.provenance import Provenance
 from elephant.utils import is_time_quantity
+from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
+import elephant.buffalo
 
 cv = Provenance(inputs=["a"])(scipy.stats.variation)
 
@@ -898,10 +900,15 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     Returns
     -------
-    neo.AnalogSignal
-        A `neo.AnalogSignal` object containing the histogram values.
+    neo.AnalogSignal or buffalo.objects.TimeHistogramObject
+        If `elephant.buffalo.USE_ANALYSIS_OBJECTS` flag is False, returns a
+        `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
+
+        If `elephant.buffalo.USE_ANALYSIS_OBJECTS` is True, returns a
+        `buffalo.objects.TimeHistogramObject`, that contains the histogram and
+        allows access to basic histogram properties.
 
     Raises
     ------
@@ -916,12 +923,19 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         If `t_stop` is None and the objects in `spiketrains` have different
         `t_stop` values.
 
+    Notes
+    -----
+    If the output is `neo.AnalogSignal`, an annotation `warnings_raised` is
+    added to the object to record if any warning was raised.
+
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
+    buffalo.objects.TimeHistogramObject
 
     """
     # Bin the spike trains and sum across columns
+    warnings_raised = False
     bs = BinnedSpikeTrain(spiketrains, t_start=t_start, t_stop=t_stop,
                           bin_size=bin_size)
 
@@ -944,10 +958,86 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     else:
         raise ValueError(f'Parameter output ({output}) is not valid.')
 
-    return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
-                            sampling_period=bin_size, units=bin_hist.units,
-                            t_start=bs.t_start, normalization=output,
-                            copy=False)
+    if not elephant.buffalo.USE_ANALYSIS_OBJECTS:
+        return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
+                                sampling_period=bin_size, units=bin_hist.units,
+                                t_start=bs.t_start, normalization=output,
+                                copy=False)
+
+    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), binsize,
+                               units=bin_hist.units, histogram_type=output,
+                               t_start=t_start, t_stop=t_stop, binary=binary,
+                               warnings_raised=warnings_raised)
+
+
+def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
+         t_stop=None, output='counts', binary=False):
+    """
+    Peristimulus Time Histogram of a list of `neo.SpikeTrain` objects.
+
+    Parameters
+    ----------
+    spiketrains : list of neo.SpikeTrain
+        `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
+    binsize : pq.Quantity
+        Width of the histogram's time bins.
+    event_time: pq.Quantity
+        Time point between spike trains `t_start` and `t_stop` attribute that
+        corresponds to the event.
+    event_label : str, optional
+        Label of the event defined at `event_time`.
+        Default: None.
+    t_start : pq.Quantity, optional
+        Start time of the histogram. Only events in `spiketrains` falling
+        between `t_start` and `t_stop` (both included) are considered in the
+        histogram.
+        If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
+        `t_start`.
+        Default: None.
+    t_stop : pq.Quantity, optional
+        Stop time of the histogram. Only events in `spiketrains` falling
+        between `t_start` and `t_stop` (both included) are considered in the
+        histogram.
+        If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
+        `t_stop`.
+        Default: None.
+    output : {'counts', 'mean', 'rate'}, optional
+        Normalization of the histogram. Can be one of:
+        * 'counts': spike counts at each bin (as integer numbers)
+        * 'mean': mean spike counts per spike train
+        * 'rate': mean spike rate per spike train. Like 'mean', but the
+          counts are additionally normalized by the bin width.
+        Default: 'counts'.
+    binary : bool, optional
+        If True, indicates whether all `neo.SpikeTrain` objects should first
+        be binned to a binary representation (using the
+        `conversion.BinnedSpikeTrain` class) and the calculation of the
+        histogram is based on this representation.
+        Note that the output is not binary, but a histogram of the converted,
+        binary representation.
+        Default: False.
+
+    Returns
+    -------
+    buffalo.objects.PSTHObject
+        Returns a object containing the histogram and event details, which
+        allows access to basic histogram properties.
+
+    Raises
+    ------
+    ValueError
+        If `elephant.buffalo.USE_ANALYSIS_OBJECTS` is not True.
+
+    """
+    if not elephant.buffalo.USE_ANALYSIS_OBJECTS:
+        raise ValueError("This function works with `AnalysisObject` classes. "
+                         "Please set the flag"
+                         "`elephant.buffalo.USE_ANALYSIS_OBJECTS` to True.")
+
+    histogram = time_histogram(spiketrains, binsize, t_start=t_start,
+                               t_stop=t_stop, output=output,
+                               binary=binary)
+    return PSTHObject.from_time_histogram(histogram, event_time,
 
 
 @deprecated_alias(binsize='bin_size')

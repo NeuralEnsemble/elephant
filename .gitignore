@@ -88,3 +88,5 @@ ignored/
 
 /elephant/buffalo/examples/*.png
 /elephant/buffalo/examples/*.htm*
+
+/elephant/buffalo/examples/*.png
