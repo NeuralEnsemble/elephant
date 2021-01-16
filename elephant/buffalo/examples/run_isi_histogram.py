@@ -160,13 +160,14 @@ def main(session_id):
     # Do plotting
     figure, axes = plot_isi_histograms((3, 1), *(isi_times, isi_times2,
                                                  isi_times3), titles=titles)
-    plt.show()
+    # plt.show()
 
     figure.savefig('isi.png')
 
-    provenance.print_history()
+    # provenance.print_history()
 
-    provenance.save_graph("isi_histogram.html", show=True)
+    # provenance.save_graph("isi_histogram.html", show=True)
+    # provenance.dump_provenance("isi_dump.pkl")
 
 
 if __name__ == "__main__":

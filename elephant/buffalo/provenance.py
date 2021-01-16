@@ -12,7 +12,7 @@ import ast
 from collections import namedtuple
 import datetime
 
-from elephant.buffalo.object_hash import BuffaloObjectHash, BuffaloFileHash
+from elephant.buffalo.object_hash import BuffaloObjectHash, BuffaloFileHash, hash_memoizer
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import CallAST
 from elephant.buffalo.code_lines import SourceCodeAnalyzer
@@ -113,8 +113,7 @@ class Provenance(object):
     source_name = None
     code_analyzer = None
 
-    def __init__(self, inputs, file_input=None, file_output=None,
-                 container_output=False):
+    def __init__(self, inputs, file_input=None, file_output=None):
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
 
@@ -127,7 +126,6 @@ class Provenance(object):
                 file_list.extend(arg)
 
         self.inputs = inputs
-        self.container_output = container_output
         self.initialized = False
         self.has_return = True
 
@@ -154,7 +152,6 @@ class Provenance(object):
         except:
             has_return = True
 
-        print(function, has_return)
         return True, has_return
 
     def __call__(self, function):
@@ -168,6 +165,9 @@ class Provenance(object):
 
             # If capturing provenance...
             if Provenance.active:
+
+                # Clear previous memoizations
+                hash_memoizer.clear()
 
                 # In the first run, analyze the function code to check if there
                 # are returns. If no return, we won't track the output as this
@@ -311,11 +311,12 @@ class Provenance(object):
                                     BuffaloObjectHash(input_value).info()
                         elif key in self.file_inputs:
                             inputs[key] = BuffaloFileHash(input_value).info()
-                        else:
+                        elif not key in self.file_outputs:
                             parameters[key] = input_value
 
                     # 6. Create hashable `BuffaloObjectHash` for the output
-                    # objects to follow individual returns
+                    # objects to follow individual returns, if the function
+                    # is not returning None
                     outputs = {}
                     if self.has_return:
                         if len(return_targets) > 1:
@@ -329,7 +330,8 @@ class Provenance(object):
                     # using `BuffaloFileHash`
                     if len(self.file_outputs):
                         for idx, file_output in enumerate(self.file_outputs):
-                            outputs[f"file.{idx}"] = BuffaloFileHash(input_data[file_output]).info()
+                            outputs[f"file.{idx}"] = \
+                                BuffaloFileHash(input_data[file_output]).info()
 
                     # 7. Analyze AST and fetch static relationships in the
                     # input/output and other variables/objects in the script

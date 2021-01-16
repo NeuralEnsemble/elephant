@@ -1,5 +1,6 @@
 import sys
-sys.path.append("/home/koehler/PycharmProjects/reach_to_grasp/python")
+sys.path.remove('/home/koehler/PycharmProjects/reach_to_grasp/python')
+print(sys.path)
 
 import os
 from reachgraspio.reachgraspio import ReachGraspIO
@@ -7,37 +8,39 @@ import numpy as np
 
 from elephant.statistics import isi, mean_firing_rate, fanofactor
 from elephant.buffalo import provenance
+import networkx as nx
+import matplotlib.pyplot as plt
+import pickle
 
-from neo_utils import cut_segment_by_epoch
-
-
-SOURCE_DIR = "/home/koehler/PycharmProjects/multielectrode_grasp/datasets"
+SOURCE_DIR = "/home/koehler/datafiles/multielectrode_grasp/datasets"
 
 np.array = provenance.Provenance(inputs=[0])(np.array)
 
 
-@provenance.Provenance(inputs=[])
-def load_data(session_id, channels):
+@provenance.Provenance(inputs=[], file_input=['session_filename'])
+def load_data(session_filename, channels):
     """
     Loads R2G data using the custom BlackRockIO object ReachGraspIO.
     Sessions are stored in SOURCE_DIR.
     """
-    session_filename = os.path.join(SOURCE_DIR, session_id)
-    session = ReachGraspIO(session_filename)
+    file, ext = os.path.splitext(session_filename)
+    nsx_to_load = int(ext[-1])
+    file_path = os.path.dirname(session_filename)
 
-    block_parameters = dict()
-    block_parameters['units'] = 'all'
-    block_parameters['load_events'] = True
-    block_parameters['load_waveforms'] = False
-    block_parameters['scaling'] = 'voltage'
-    block_parameters['correct_filter_shifts'] = True
-    block_parameters['nsx_to_load'] = None
-    block_parameters['channels'] = channels
+    session = ReachGraspIO(file, nsx_to_load=nsx_to_load,
+                           odml_directory=file_path,
+                           verbose=False)
 
-    block = session.read_block(**block_parameters)
-    block.create_relationship()
+    block = session.read_block(load_waveforms=False, lazy=True)
+
     assert len(block.segments) == 1
     return block
+
+@provenance.Provenance(inputs=['data'])
+def test(data):
+    print(data.array_annotations)
+    print(data)
+    print(data.annotations)
 
 
 def main(session_id):
@@ -46,8 +49,11 @@ def main(session_id):
     # Load data using any custom function.
     # Should track data provenance at some point
 
-    channels = [10]
-    block = load_data(session_id, channels)
+    channels = [10, 11, 12]
+    session_filename = os.path.join(SOURCE_DIR, session_id)
+    block = load_data(session_filename + ".ns6", channels)
+
+    test(block.segments[0].analogsignals[0])
 
     # ISI times (first spike train of the segment)
     # sts = block.segments[0].spiketrains
@@ -68,8 +74,21 @@ def main(session_id):
     # Analyze provenance track
 
     print("\n\n")
-    provenance.print_history()
+    # provenance.print_history()
+    # graph = provenance.get_graph()
+    # plot_bokeh(graph)
+    # # nx.draw_networkx(graph)
+    # # plt.show()
+    # # print("Done")
     provenance.save_graph("basic.html", show=True)
+
+    # provenance.dump_provenance("test.pkl")
+    #
+    # history = pickle.load(open("test.pkl", 'rb'))
+    # graph = provenance.get_graph(history)
+    # provenance.save_graph("basic2.html", source=graph, show=True)
+
+
 
 
 if __name__ == "__main__":
