@@ -78,7 +78,7 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
 
     def __new__(cls, bins, bin_size, units=pq.dimensionless,
                 histogram_type='counts', t_start=None, t_stop=None,
-                binary=None, warnings_raised=False):
+                binary=None, copy=True, warnings_raised=False):
 
         if t_start is None:
             t_start = 0 * pq.s
@@ -86,13 +86,14 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
         signal_object = neo.AnalogSignal.__new__(cls,
                                                  signal=bins,
                                                  sampling_period=bin_size,
-                                                 units=units, t_start=t_start)
+                                                 units=units, t_start=t_start,
+                                                 copy=copy)
         signal_object.__dict__.update(deepcopy(analysis_object.__dict__))
         return signal_object
 
     def __init__(self, bins, bin_size, units=pq.dimensionless,
                  histogram_type='counts', t_start=None, t_stop=None,
-                 binary=None, warnings_raised=False, **kwargs):
+                 binary=None, copy=True, warnings_raised=False, **kwargs):
 
         self._histogram_type = histogram_type
         self._binary = binary
@@ -104,7 +105,8 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
         # function returns
         super(TimeHistogramObject, self).__init__(signal=bins,
                                                   sampling_period=bin_size,
-                                                  units=units, t_start=t_start)
+                                                  units=units, t_start=t_start,
+                                                  copy=copy)
 
     # Properties that depend on the function parameters/execution
 

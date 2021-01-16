@@ -17,6 +17,9 @@ import scipy.signal
 
 from elephant.utils import deprecated_alias
 
+from elephant.buffalo.objects.spectral import PSDObject
+import elephant.buffalo
+
 __all__ = [
     "welch_psd",
     "welch_coherence"
@@ -239,6 +242,10 @@ def welch_psd(signal, n_segments=8, len_segment=None,
             psd = psd * signal.units * signal.units / pq.Hz
         freqs = freqs * pq.Hz
 
+    if elephant.buffalo.USE_ANALYSIS_OBJECTS:
+        params.pop('x')
+        psd_object = PSDObject(freqs, psd, method='welch', params=params)
+        return psd_object
     return freqs, psd
 
 

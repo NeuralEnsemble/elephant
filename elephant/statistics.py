@@ -962,11 +962,12 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                                 sampling_period=bin_size, units=bin_hist.units,
                                 t_start=bs.t_start, normalization=output,
-                                copy=False)
+                                copy=False,
+                                warnings_raised=warnings_raised)
 
-    return TimeHistogramObject(bin_hist.reshape(bin_hist.size, 1), bin_size,
+    return TimeHistogramObject(np.expand_dims(bin_hist, axis=1), bin_size,
                                units=bin_hist.units, histogram_type=output,
-                               t_start=t_start, t_stop=t_stop, binary=binary,
+                               t_start=bs.t_start, binary=binary, copy=False,
                                warnings_raised=warnings_raised)
 
 

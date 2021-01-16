@@ -15,3 +15,4 @@ __version__ = '0.0.2'
 
 
 USE_ANALYSIS_OBJECTS = False
+USE_NIX = False
