@@ -294,7 +294,7 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
     spectrum_estimates = np.abs(np.fft.rfft(signal * slepain_fcts, axis=1))**2
 
     # average to obtain Multitaper PSD estimate
-    multitaper_psd = np.mean(spectrum_estimates, axis=0)
+    multitaper_psd = np.mean(spectrum_estimates, axis=0) / fs
 
     return freqs, multitaper_psd
 
@@ -598,14 +598,34 @@ if __name__ == '__main__':
     # Choose parameters, coeffs as in nitime
     length = 2**10
     coeffs = np.array([2.7607, -3.8106, 2.6535, -0.9238])
-    variance = 1
+    variance = 1.
     fs = 10
 
-    times, time_series, freqs, psd_time_series = generate_data(length,
-                                                               coeffs,
-                                                               variance,
-                                                               fs)
+    times, time_series, freqs, psd_time_series = generate_data(
+        length=length,
+        coeffs=coeffs,
+        variance=variance,
+        fs=fs)
 
+    freqs_multi, psd_multitaper = multitaper_psd(signal=time_series,
+                                                 fs=fs,
+                                                 NW=4)
 
-    import IPython
-    IPython.embed()
+    freqs_welch, psd_welch = welch_psd(signal=time_series,
+                                       n_segments=8,
+                                       fs=fs,
+                                       len_segment=length)
+
+    from matplotlib import pyplot as plt
+
+    plt.figure(figsize=(10, 10))
+    plt.yscale('log')
+
+    plt.plot(freqs, psd_time_series, color='blue', label='Ground truth')
+    plt.plot(freqs, psd_multitaper, color='orange',
+             label='Multitaper estimate')
+    plt.plot(freqs, psd_welch, color='black', label='Welch estimate')
+
+    plt.legend()
+
+    plt.show()
