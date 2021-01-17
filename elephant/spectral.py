@@ -281,12 +281,7 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
     # number of data points in time series
     length_signal = np.size(signal)
 
-    freqs_complete = np.fft.fftfreq(length_signal, d=1/fs)
-
-    if length_signal % 2:
-        freqs = freqs_complete[:length_signal//2 + 1]
-    else:
-        freqs = freqs_complete[:length_signal//2]
+    freqs = np.fft.rfftfreq(length_signal, d=1/fs)
 
     if num_tapers == 'auto':
         num_tapers = 2 * NW - 1
