@@ -281,7 +281,7 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
     # number of data points in time series
     length_signal = np.size(signal)
 
-    freqs_complete = np.fft.fftfreq(length_signal, d=fs)
+    freqs_complete = np.fft.fftfreq(length_signal, d=1/fs)
 
     if length_signal % 2:
         freqs = freqs_complete[:length_signal//2 + 1]
@@ -521,5 +521,96 @@ def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
 
-if __main__ == '__main__':
 
+if __name__ == '__main__':
+
+    def generate_data(length, coeffs, variance, fs, transients=10):
+        '''
+        Generate model data to test PSD prediction
+
+        Parameters
+        ----------
+
+        length : int
+            length of generated time series
+
+        coeffs : np.array
+            coefficients of auto-regressive model used to generate time series.
+            coeffs need to be 1D
+
+        variance : float
+            variance of noise used to generate time series from auto-regressive
+            model
+
+        fs : float
+            smapling frequency of time series data
+
+        transients : int
+             number of data points dropped from begining of time series
+
+        Returns
+        -------
+
+        times : np.array
+            time axis of generated data
+
+        time_series : np.array
+            generated time series data
+
+        freqs : np.array
+            frequencies of PSD of generated data
+
+        psd_time_series : np.array
+            PSD of generated time series data
+        '''
+
+        # generate time axis for data to be generated
+        times = np.linspace(0, 1 / fs, length)
+
+        # determine order of auto-regressive model to generate data
+        order = np.size(coeffs)
+
+        # array to store generated data
+        time_series_ = np.zeros(length + transients)
+
+        # generate noise
+        noise = np.random.normal(0, variance, length + transients)
+
+        # generate time series data from autoregressive model
+        for i in range(length + transients):
+            for j in range(order):
+                time_series_[i] += time_series_[i - j - 1] * coeffs[j]
+            time_series_[i] += noise[i]
+
+        # get rid off transients to finalize generated time series
+        time_series = time_series_[transients:]
+
+        # generate frequencies for PSD
+        freqs = np.fft.rfftfreq(length, d=1 / fs)
+
+        # generate PSD of generated time series
+        arguments = np.arange(1, order + 1, 1)
+
+        prod_f_arg = np.outer(freqs, arguments)
+
+        exps = np.exp(-2 * np.pi * 1j * prod_f_arg / fs)
+        sum_exps = np.matmul(exps, coeffs)
+
+        psd_time_series = variance / (fs * np.abs(1 - sum_exps)**2)
+
+        return times, time_series, freqs, psd_time_series
+
+    # Choose parameters, coeffs as in nitime
+    length = 2**10
+    coeffs = np.array([2.7607, -3.8106, 2.6535, -0.9238])
+    variance = 1
+    fs = 10
+
+    times, time_series, freqs, psd_time_series = generate_data(length,
+                                                               coeffs,
+                                                               variance,
+                                                               fs)
+
+
+    import IPython
+    IPython.embed()
