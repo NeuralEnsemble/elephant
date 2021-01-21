@@ -1004,7 +1004,7 @@ class JointISI(object):
                 diagonal = np.diagonal(
                     rotated_jisih, offset=-self.n_bins + double_index + 1)
                 jisih_cum = self._normalize_cumulative_distribution(
-                    np.cumsum(diagonal))
+                    np.r_[0., np.cumsum(diagonal)])
                 self._jisih_cumulatives.append(jisih_cum)
             self._jisih_cumulatives = np.array(
                 self._jisih_cumulatives, dtype=object)
@@ -1045,15 +1045,15 @@ class JointISI(object):
             right_padding = jisih_diag_cums.shape[1] - \
                 len(anti_diagonal) - self._max_change_index
 
-            padded_anti_diagonal = np.pad(
-                anti_diagonal,
+            cumulated_diagonal = np.cumsum(anti_diagonal)
+
+            padded_cumulated_diagonal = np.pad(
+                cumulated_diagonal,
                 pad_width=(self._max_change_index, right_padding),
                 mode='constant',
-                constant_values=(0., 0.))
+                constant_values=(0., cumulated_diagonal[-1]))
 
-            cumulated_diagonal = np.cumsum(padded_anti_diagonal)
-
-            jisih_diag_cums[double_index] = cumulated_diagonal
+            jisih_diag_cums[double_index] = padded_cumulated_diagonal
 
         return jisih_diag_cums
 
@@ -1067,8 +1067,6 @@ class JointISI(object):
         sampling_rhythm = self.alternate + 1
         number_of_isis = len(dithered_isi)
 
-        steps = []
-
         for start in range(sampling_rhythm):
             dithered_isi_indices = self._isi_to_index(dithered_isi)
             for i in range(start, number_of_isis - 1,
@@ -1079,15 +1077,6 @@ class JointISI(object):
                     i)
                 dithered_isi[i] += step
                 dithered_isi[i + 1] -= step
-                steps.append(step)
-
-        if len(steps) > 100:
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.hist(steps, bins=np.arange(-0.015, 0.015, 0.0001))
-            plt.show()
-            print(max(steps))
-            print(min(steps))
 
         return dithered_isi
 
@@ -1102,7 +1091,7 @@ class JointISI(object):
             if self.method == 'fast':
                 cum_dist_func = self._jisih_cumulatives[
                     double_index]
-                compare_isi = self._index_to_isi(curr_isi_id)
+                compare_isi = self._index_to_isi(curr_isi_id + 1)
             else:
                 cum_dist_func = self._jisih_cumulatives[
                     curr_isi_id][next_isi_id]
@@ -1111,23 +1100,9 @@ class JointISI(object):
             if cum_dist_func[-1] > 0.:
                 # when the method is 'fast', new_isi_id is where the current
                 # ISI id should go to.
-                random_number = random.random()
-                new_isi_id = np.searchsorted(cum_dist_func, random_number)
-                remainder_index = \
-                    (random_number - cum_dist_func[new_isi_id-1])\
-                    / (cum_dist_func[new_isi_id] - cum_dist_func[new_isi_id-1])
-                step = self._index_to_isi(new_isi_id - remainder_index)\
+                new_isi_id = np.searchsorted(cum_dist_func, random.random())
+                step = self._index_to_isi(new_isi_id)\
                     - compare_isi
-                old_step = self._index_to_isi(new_isi_id)\
-                    - compare_isi
-                return old_step
-                # if i<5:
-                #     print(f'{cum_dist_func=}')
-                #     print(f'{random_number=}')
-                #     print(f'{new_isi_id=}')
-                #     print(f'{remainder_index=}')
-                #     print(f'{step=}')
-                #     print(f'{old_step=}')
                 return step
 
         return self._uniform_dither_not_jisi_movable_spikes(
