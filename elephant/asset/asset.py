@@ -146,9 +146,9 @@ def _is_cuda_available():
     # a silly way to check for CUDA support
     # experimental: should not be public API
     try:
-        subprocess.check_call(["nvcc", "-V"],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+        subprocess.run(["nvcc", "-V"],
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE).check_returncode()
         available = True
     except (OSError, subprocess.CalledProcessError):
         available = False
@@ -618,18 +618,20 @@ class _JSFUniformOrderStat3D(object):
             if self.precision == 'double' and get_cuda_capability_major() >= 6:
                 # atomicAdd(double) requires compute capability 6.x
                 compile_cmd.extend(['-arch', 'sm_60'])
-            subprocess.check_call(
+            compile_status = subprocess.run(
                 compile_cmd,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.txt")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.txt")
             np.savetxt(log_du_path, log_du, fmt="%.10f")
-            stdout, stderr = subprocess.Popen(
+            run_status = subprocess.run(
                 [asset_bin_path, log_du_path, P_total_path],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
-                print(stdout)
-                print(stderr, file=sys.stderr)
+                print(run_status.stdout.decode())
+                print(run_status.stderr.decode(), file=sys.stderr)
+            run_status.check_returncode()
             P_total = np.genfromtxt(P_total_path)
 
         # Large number of floating-point additions can result in values
