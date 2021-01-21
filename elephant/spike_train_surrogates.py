@@ -1039,19 +1039,21 @@ class JointISI(object):
         # double_index corresponds to the sum of the indices for the previous
         # and the subsequent ISI.
         for double_index in range(self.n_bins):
-            cum_diag = np.cumsum(np.diagonal(rotated_jisih,
-                                             - self.n_bins
-                                             + double_index + 1))
+            anti_diagonal = np.diagonal(
+                rotated_jisih, - self.n_bins + double_index + 1)
 
             right_padding = jisih_diag_cums.shape[1] - \
-                len(cum_diag) - self._max_change_index
+                len(anti_diagonal) - self._max_change_index
 
-            jisih_diag_cums[double_index] = np.pad(
-                cum_diag,
+            padded_anti_diagonal = np.pad(
+                anti_diagonal,
                 pad_width=(self._max_change_index, right_padding),
                 mode='constant',
-                constant_values=(cum_diag[0], cum_diag[-1])
-            )
+                constant_values=(0., 0.))
+
+            cumulated_diagonal = np.cumsum(padded_anti_diagonal)
+
+            jisih_diag_cums[double_index] = cumulated_diagonal
 
         return jisih_diag_cums
 
@@ -1116,8 +1118,9 @@ class JointISI(object):
                     / (cum_dist_func[new_isi_id] - cum_dist_func[new_isi_id-1])
                 step = self._index_to_isi(new_isi_id - remainder_index)\
                     - compare_isi
-                # old_step = self._index_to_isi(new_isi_id)\
-                #     - compare_isi
+                old_step = self._index_to_isi(new_isi_id)\
+                    - compare_isi
+                return old_step
                 # if i<5:
                 #     print(f'{cum_dist_func=}')
                 #     print(f'{random_number=}')
