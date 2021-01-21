@@ -10,9 +10,13 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import quantities as pq
+import neo
 
 __all__ = [
-    "spike_triggered_phase"
+    "spike_triggered_phase",
+    "phase_locking_value",
+    "mean_phase_vector",
+    "phase_difference"
 ]
 
 
@@ -182,3 +186,124 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     for i, entry in enumerate(result_times):
         result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
     return result_phases, result_amps, result_times
+
+
+def phase_locking_value(phases_i, phases_j):
+    r"""
+    Calculates the phase locking value (PLV).
+
+    This function expects the phases of two signals (each containing multiple
+    trials). For each trial pair, it calculates the phase difference at each
+    time point. Then it calculates the mean vectors of those phase differences
+    across all trials. The PLV at time `t` is the length of the corresponding
+    mean vector.
+
+    Parameters
+    ----------
+    phases_i, phases_j : (t, n) np.ndarray
+        Time-series of the first and second signals, with `t` time points and
+        `n` trials.
+
+    Returns
+    -------
+    plv : (t,) np.ndarray
+        Vector of floats with the phase-locking value at each time point.
+        Range: :math:`[0, 1]`
+
+    Raises
+    ------
+    ValueError
+        If the shapes of `phases_i` and `phases_j` are different.
+
+    Notes
+    -----
+    This implementation is based on the formula taken from [1] (pp. 195):
+
+    .. math::
+        PLV_t = \frac{1}{N} \left |
+        \sum_{n=1}^N \exp(i \cdot \theta(t, n)) \right | \\
+
+    where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
+    is the phase difference at time `t` for trial `n`.
+
+    References
+    ----------
+    [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
+    and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
+    Human Brain Mapping, vol 8, pp. 194-208, 1999.
+    """
+    if np.shape(phases_i) != np.shape(phases_j):
+        raise ValueError("trial number and trial length of signal x and y "
+                         "must be equal")
+
+    # trial by trial and time-resolved
+    # version 0.2: signal x and y have multiple trials
+    # with discrete values/phases
+
+    phase_diff = phase_difference(phases_i, phases_j)
+    theta, r = mean_phase_vector(phase_diff, axis=0)
+    return r
+
+
+def mean_phase_vector(phases, axis=0):
+    r"""
+    Calculates the mean vector of phases.
+
+    This function expects phases (in radians) and uses their representation as
+    complex numbers to calculate the direction :math:`\theta` and the length
+    `r` of the mean vector.
+
+    Parameters
+    ----------
+    phases : np.ndarray
+        Phases in radians.
+    axis : int, optional
+        Axis along which the mean vector will be calculated.
+        If None, it will be computed across the flattened array.
+        Default: 0
+
+    Returns
+    -------
+    z_mean_theta : np.ndarray
+        Angle of the mean vector.
+        Range: :math:`(-\pi, \pi]`
+    z_mean_r : np.ndarray
+        Length of the mean vector.
+        Range: :math:`[0, 1]`
+    """
+    # use complex number representation
+    # z_phases = np.cos(phases) + 1j * np.sin(phases)
+    z_phases = np.exp(1j * np.asarray(phases))
+    z_mean = np.mean(z_phases, axis=axis)
+    z_mean_theta = np.angle(z_mean)
+    z_mean_r = np.abs(z_mean)
+    return z_mean_theta, z_mean_r
+
+
+def phase_difference(alpha, beta):
+    r"""
+    Calculates the difference between a pair of phases.
+
+    The output is in range from :math:`-\pi` to :math:`\pi`.
+
+    Parameters
+    ----------
+    alpha : np.ndarray
+        Phases in radians.
+    beta : np.ndarray
+        Phases in radians.
+
+    Returns
+    -------
+    phase_diff : np.ndarray
+        Difference between phases `alpha` and `beta`.
+        Range: :math:`[-\pi, \pi]`
+
+    Notes
+    -----
+    The usage of `np.arctan2` ensures that the range of the phase difference
+    is :math:`[-\pi, \pi]` and is located in the correct quadrant.
+    """
+    delta = alpha - beta
+    phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
+    return phase_diff
