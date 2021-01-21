@@ -1065,6 +1065,8 @@ class JointISI(object):
         sampling_rhythm = self.alternate + 1
         number_of_isis = len(dithered_isi)
 
+        steps = []
+
         for start in range(sampling_rhythm):
             dithered_isi_indices = self._isi_to_index(dithered_isi)
             for i in range(start, number_of_isis - 1,
@@ -1075,6 +1077,15 @@ class JointISI(object):
                     i)
                 dithered_isi[i] += step
                 dithered_isi[i + 1] -= step
+                steps.append(step)
+
+        if len(steps) > 100:
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.hist(steps, bins=np.arange(-0.015, 0.015, 0.0001))
+            plt.show()
+            print(max(steps))
+            print(min(steps))
 
         return dithered_isi
 
@@ -1098,8 +1109,22 @@ class JointISI(object):
             if cum_dist_func[-1] > 0.:
                 # when the method is 'fast', new_isi_id is where the current
                 # ISI id should go to.
-                new_isi_id = np.searchsorted(cum_dist_func, random.random())
-                step = self._index_to_isi(new_isi_id) - compare_isi
+                random_number = random.random()
+                new_isi_id = np.searchsorted(cum_dist_func, random_number)
+                remainder_index = \
+                    (random_number - cum_dist_func[new_isi_id-1])\
+                    / (cum_dist_func[new_isi_id] - cum_dist_func[new_isi_id-1])
+                step = self._index_to_isi(new_isi_id - remainder_index)\
+                    - compare_isi
+                # old_step = self._index_to_isi(new_isi_id)\
+                #     - compare_isi
+                # if i<5:
+                #     print(f'{cum_dist_func=}')
+                #     print(f'{random_number=}')
+                #     print(f'{new_isi_id=}')
+                #     print(f'{remainder_index=}')
+                #     print(f'{step=}')
+                #     print(f'{old_step=}')
                 return step
 
         return self._uniform_dither_not_jisi_movable_spikes(
