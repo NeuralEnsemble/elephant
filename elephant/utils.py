@@ -1,3 +1,14 @@
+"""
+.. autosummary::
+    :toctree: toctree/utils
+
+    is_time_quantity
+    get_common_start_stop_times
+    check_neo_consistency
+    check_same_units
+    round_binning_errors
+"""
+
 from __future__ import division, print_function, unicode_literals
 
 import warnings
@@ -6,6 +17,16 @@ from functools import wraps
 import neo
 import numpy as np
 import quantities as pq
+
+
+__all__ = [
+    "is_binary",
+    "is_time_quantity",
+    "get_common_start_stop_times",
+    "check_neo_consistency",
+    "check_same_units",
+    "round_binning_errors"
+]
 
 
 def is_binary(array):
@@ -71,14 +92,15 @@ def _rename_kwargs(func_name, kwargs, aliases):
             kwargs[new] = kwargs.pop(old)
 
 
-def is_time_quantity(x, allow_none=False):
+def is_time_quantity(*quantities, allow_none=False):
     """
     Parameters
     ----------
-    x : array-like
-        A scalar or array-like to check for being a Quantity with time units.
-    allow_none : bool
-        Allow `x` to be None or not.
+    *quantities : pq.Quantity
+         A scalar or array-like to check for being a Quantity with time units.
+    allow_none : bool, optional
+        Allow the input to be None or not.
+        Default: False
 
     Returns
     -------
@@ -87,16 +109,19 @@ def is_time_quantity(x, allow_none=False):
         If the input is None and `allow_none` is set to True, returns True.
 
     """
-    if x is None and allow_none:
-        return True
-    if not isinstance(x, pq.Quantity):
-        return False
-    return x.dimensionality.simplified == pq.Quantity(1, "s").dimensionality
+    for quantity in quantities:
+        if allow_none and quantity is None:
+            continue
+        if not isinstance(quantity, pq.Quantity):
+            return False
+        if quantity.dimensionality.simplified != pq.s.dimensionality:
+            return False
+    return True
 
 
 def get_common_start_stop_times(neo_objects):
     """
-    Extracts the `t_start`and the `t_stop` from the input neo objects.
+    Extracts the common `t_start` and the `t_stop` from the input neo objects.
 
     If a single neo object is given, its `t_start` and `t_stop` is returned.
     Otherwise, the aligned times are returned: the maximal `t_start` and
@@ -136,7 +161,7 @@ def get_common_start_stop_times(neo_objects):
 
 
 def check_neo_consistency(neo_objects, object_type, t_start=None,
-                          t_stop=None, tolerance=1e-6):
+                          t_stop=None, tolerance=1e-8):
     """
     Checks that all input neo objects share the same units, t_start, and
     t_stop.
@@ -167,9 +192,10 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         units = neo_objects[0].units
         start = neo_objects[0].t_start.item()
         stop = neo_objects[0].t_stop.item()
-    except AttributeError:
-        raise TypeError("The input must be a list of {}. Got {}".format(
-                object_type.__name__, type(neo_objects[0]).__name__))
+    except (IndexError, AttributeError):
+        raise TypeError(f"The input must be a list of {object_type.__name__}")
+    if not is_time_quantity(t_start, t_stop, allow_none=True):
+        raise TypeError("'t_start' and 't_stop' must be time quantities.")
     if tolerance is None:
         tolerance = 0
     for neo_obj in neo_objects:
@@ -206,11 +232,69 @@ def check_same_units(quantities, object_type=pq.Quantity):
     """
     if not isinstance(quantities, (list, tuple)):
         quantities = [quantities]
+    try:
+        units = quantities[0].units
+    except (IndexError, AttributeError):
+        raise TypeError(f"The input must be a list of {object_type.__name__}")
     for quantity in quantities:
         if not isinstance(quantity, object_type):
-            raise TypeError("The input must be a list of {}. Got {}".format(
-                object_type.__name__, type(quantity).__name__))
-        if quantity.units != quantities[0].units:
+            raise TypeError(f"The input must be a list of "
+                            f"{object_type.__name__}. Got "
+                            f"{type(quantity).__name__}")
+        if quantity.units != units:
             raise ValueError("The input quantities must have the same units, "
                              "which is achieved with object.rescale('ms') "
                              "operation.")
+
+
+def round_binning_errors(values, tolerance=1e-8):
+    """
+    Round the input `values` in-place due to the machine floating point
+    precision errors.
+
+    Parameters
+    ----------
+    values : np.ndarray or float
+        An input array or a scalar.
+    tolerance : float or None, optional
+        The precision error absolute tolerance; acts as ``atol`` in
+        :func:`numpy.isclose` function. If None, no rounding is performed.
+        Default: 1e-8
+
+    Returns
+    -------
+    values : np.ndarray or int
+        Corrected integer values.
+
+    Examples
+    --------
+    >>> from elephant.utils import round_binning_errors
+    >>> round_binning_errors(0.999999, tolerance=None)
+    0
+    >>> round_binning_errors(0.999999, tolerance=1e-6)
+    1
+    """
+    if tolerance is None or tolerance == 0:
+        if isinstance(values, np.ndarray):
+            return values.astype(np.int32)
+        return int(values)  # a scalar
+
+    # same as '1 - (values % 1) <= tolerance' but faster
+    correction_mask = 1 - tolerance <= values % 1
+    if isinstance(values, np.ndarray):
+        num_corrections = correction_mask.sum()
+        if num_corrections > 0:
+            warnings.warn(f'Correcting {num_corrections} rounding errors by '
+                          f'shifting the affected spikes into the following '
+                          f'bin. You can set tolerance=None to disable this '
+                          'behaviour.')
+            values[correction_mask] += 0.5
+        return values.astype(np.int32)
+
+    if correction_mask:
+        warnings.warn('Correcting a rounding error in the calculation '
+                      'of the number of bins by incrementing the value by 1. '
+                      'You can set tolerance=None to disable this '
+                      'behaviour.')
+        values += 0.5
+    return int(values)

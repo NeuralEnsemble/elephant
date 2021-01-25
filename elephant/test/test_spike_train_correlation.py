@@ -6,7 +6,6 @@ Unit tests for the spike_train_correlation module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import sys
 import unittest
 
 import neo
@@ -19,8 +18,6 @@ import elephant.spike_train_correlation as sc
 from elephant.spike_train_generation import homogeneous_poisson_process,\
     homogeneous_gamma_process
 import math
-
-python_version_major = sys.version_info.major
 
 
 class CovarianceTestCase(unittest.TestCase):
@@ -248,7 +245,6 @@ class CorrCoefTestCase(unittest.TestCase):
             result, sc.correlation_coefficient(
                 binned_st, fast=True))
 
-    @unittest.skipUnless(python_version_major == 3, "assertWarns requires 3.2")
     def test_empty_spike_train(self):
         '''
         Test whether a warning is yielded in case of empty spike train.
@@ -635,7 +631,6 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
         self.assertEqual(cch.annotations['cch_parameters'], target_dict)
 
 
-@unittest.skipUnless(python_version_major == 3, "subTest requires 3.4")
 class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
 
     def _run_sub_tests(self, st1, st2, lags_true):
@@ -813,8 +808,6 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         self.assertRaises(ValueError,
                           sc.spike_train_timescale, spikes_bin, tau_max)
 
-    @unittest.skipUnless(python_version_major == 3,
-                         "assertWarns requires python 3.2")
     def test_timescale_nan(self):
         st0 = neo.SpikeTrain([] * pq.ms, t_stop=10 * pq.ms)
         st1 = neo.SpikeTrain([1] * pq.ms, t_stop=10 * pq.ms)

@@ -4,15 +4,9 @@ import os
 import platform
 import struct
 import sys
+from urllib.request import urlretrieve
 
 from setuptools import setup
-
-python_version_major = sys.version_info.major
-
-if python_version_major == 2:
-    from urllib import urlretrieve
-else:
-    from urllib.request import urlretrieve
 
 with open(os.path.join(os.path.dirname(__file__),
                        "elephant", "VERSION")) as version_file:
@@ -43,10 +37,9 @@ def download_spade_fim():
     if os.path.exists(fim_lib_path):
         return
 
-    arch_bits = struct.calcsize("P") * 8
-    url_fim = "http://www.borgelt.net/bin{arch}/py{py_ver}/{filename}". \
-        format(arch=arch_bits, py_ver=python_version_major,
-               filename=fim_filename)
+    arch = struct.calcsize("P") * 8
+    py_ver = sys.version_info.major
+    url_fim = f"http://www.borgelt.net/bin{arch}/py{py_ver}/{fim_filename}"
     try:
         urlretrieve(url_fim, filename=fim_lib_path)
         print("Successfully downloaded fim lib to {}".format(fim_lib_path))
