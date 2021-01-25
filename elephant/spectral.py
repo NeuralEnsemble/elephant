@@ -242,7 +242,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     return freqs, psd
 
 
-def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
+def multitaper_psd(signal, fs=1, nw=4, num_tapers='auto'):
     """
     Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
     using Multitaper method
@@ -284,10 +284,10 @@ def multitaper_psd(signal, fs=1, NW=4, num_tapers='auto'):
     freqs = np.fft.rfftfreq(length_signal, d=1/fs)
 
     if num_tapers == 'auto':
-        num_tapers = 2 * NW - 1
+        num_tapers = 2 * nw - 1
 
     slepain_fcts = scipy.signal.windows.dpss(M=length_signal,
-                                             NW=NW,
+                                             NW=nw,
                                              Kmax=num_tapers)
 
     # calculate approximately independent spectrum estimates
