@@ -45,6 +45,7 @@ Time-series Granger causality
     :toctree: toctree/causality/
 
     pairwise_granger
+    conditional_granger
 
 
 References
@@ -71,7 +72,8 @@ from neo.core import AnalogSignal
 
 __all__ = (
     "Causality",
-    "pairwise_granger"
+    "pairwise_granger",
+    "conditional_granger"
 )
 
 
@@ -348,7 +350,6 @@ def _optimal_vector_arm(signals, dimension, max_order,
             raise ValueError("The specified information criterion is not"
                              "available. Please use 'aic' or 'bic'.")
 
-
         if temp_ic < optimal_ic:
             optimal_ic = temp_ic
             optimal_order = order
@@ -526,3 +527,75 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         directional_causality_y_x=directional_causality_y_x_round.item(),
         instantaneous_causality=instantaneous_causality_round.item(),
         total_interdependence=total_interdependence_round.item())
+
+
+def conditional_granger(signals, max_order, information_criterion='aic'):
+    r"""
+    Determine conditional Granger Causality of the second time series on the
+    first time series, given the third time series. In other words, for time
+    series X_t, Y_t and Z_t, this function tests if Y_t influences X_t via Z_t.
+
+    Parameters
+    ----------
+    signals : (N, 3) np.ndarray or neo.AnalogSignal
+        A matrix with three time series (second dimension) that have N time
+        points (first dimension). The time series to be conditioned on is the
+        third.
+    max_order : int
+        Maximal order of autoregressive model.
+    information_criterion : {'aic', 'bic'}, optional
+        A function to compute the information criterion:
+            `bic` for Bayesian information_criterion,
+            `aic` for Akaike information criterion,
+        Default: 'aic'.
+
+    Returns
+    -------
+    conditional_causality_xy_z_round : float
+        The value of conditional causality of Y_t on X_t given Z_t. Zero value
+        indicates that causality of Y_t on X_t is solely dependent on Z_t.
+
+    Raises
+    ------
+    ValueError
+        If the provided signal does not have a shape of Nx3.
+
+    Notes
+    -----
+    The formulas used in this implementation follows
+    :cite:`granger-Ding06_0608035`. Specifically, the Eq 35.
+    """
+    if isinstance(signals, AnalogSignal):
+        signals = signals.magnitude
+
+    if not (signals.ndim == 2 and signals.shape[1] == 3):
+        raise ValueError("The input 'signals' must be of dimensions Nx3.")
+
+    # transpose (N,3) -> (3,N) for mathematical convenience
+    signals = signals.T
+
+    # signal_x, signal_y and signal_z are (1, N) arrays
+    signal_x, signal_y, signal_z = np.expand_dims(signals, axis=1)
+
+    signals_xz = np.vstack([signal_x, signal_z])
+
+    coeffs_xz, cov_xz, p_1 = _optimal_vector_arm(
+        signals_xz, dimension=2, max_order=max_order,
+        information_criterion=information_criterion)
+    coeffs_xyz, cov_xyz, p_2 = _optimal_vector_arm(
+        signals, dimension=3, max_order=max_order,
+        information_criterion=information_criterion)
+
+    conditional_causality_xy_z = np.log(cov_xz[0, 0]) - np.log(cov_xyz[0, 0])
+
+    # Round conditional GC according to following scheme:
+    #     Note that standard error scales as 1/sqrt(sample_size)
+    #     Calculate  significant figures according to standard error
+    length = np.size(signal_x)
+    asymptotic_std_error = 1/np.sqrt(length)
+    est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
+
+    conditional_causality_xy_z_round = np.around(conditional_causality_xy_z,
+                                                 est_sig_figures)
+
+    return conditional_causality_xy_z_round

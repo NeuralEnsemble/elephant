@@ -255,93 +255,85 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
        The potentials created by the csd profile at the electrode positions.
        The electrode positions are attached as RecordingChannel's coordinate.
     """
+
     def integrate_1D(x0, csd_x, csd, h):
-        m = np.sqrt((csd_x - x0)**2 + h**2) - abs(csd_x - x0)
+        m = np.sqrt((csd_x - x0) ** 2 + h ** 2) - abs(csd_x - x0)
         y = csd * m
         I = simps(y, csd_x)
         return I
 
     def integrate_2D(x, y, xlin, ylin, csd, h, X, Y):
-        Ny = ylin.shape[0]
-        m = np.sqrt((x - X)**2 + (y - Y)**2)
-        m[m < 0.0000001] = 0.0000001
+        x = np.reshape(x, (1, 1, len(x)))
+        y = np.reshape(y, (1, 1, len(y)))
+        X = np.expand_dims(X, axis=2)
+        Y = np.expand_dims(Y, axis=2)
+        csd = np.expand_dims(csd, axis=2)
+        m = np.sqrt((x - X) ** 2 + (y - Y) ** 2)
+        np.clip(m, a_min=0.0000001, a_max=None, out=m)
         y = np.arcsinh(2 * h / m) * csd
-        I = np.zeros(Ny)
-        for i in range(Ny):
-            I[i] = simps(y[:, i], ylin)
+        I = simps(y.T, ylin)
         F = simps(I, xlin)
         return F
 
-    def integrate_3D(x, y, z, xlim, ylim, zlim, csd, xlin, ylin, zlin,
-                     X, Y, Z):
-        Nz = zlin.shape[0]
-        Ny = ylin.shape[0]
-        m = np.sqrt((x - X)**2 + (y - Y)**2 + (z - Z)**2)
-        m[m < 0.0000001] = 0.0000001
+    def integrate_3D(x, y, z, csd, xlin, ylin, zlin, X, Y, Z):
+        m = np.sqrt((x - X) ** 2 + (y - Y) ** 2 + (z - Z) ** 2)
+        np.clip(m, a_min=0.0000001, a_max=None, out=m)
         z = csd / m
-        Iy = np.zeros(Ny)
-        for j in range(Ny):
-            Iz = np.zeros(Nz)
-            for i in range(Nz):
-                Iz[i] = simps(z[:, j, i], zlin)
-            Iy[j] = simps(Iz, ylin)
+        Iy = simps(np.transpose(z, (1, 0, 2)), zlin)
+        Iy = simps(Iy, ylin)
         F = simps(Iy, xlin)
         return F
+
     dim = 1
     if z_positions is not None:
         dim = 3
     elif y_positions is not None:
         dim = 2
+
     x = np.linspace(x_limits[0], x_limits[1], resolution)
-    if dim >= 2:
-        y = np.linspace(y_limits[0], y_limits[1], resolution)
-    if dim == 3:
-        z = np.linspace(z_limits[0], z_limits[1], resolution)
     sigma = 1.0
     h = 50.
-    pots = np.zeros(len(x_positions))
     if dim == 1:
-        chrg_x = np.linspace(x_limits[0], x_limits[1], resolution)
+        chrg_x = x
         csd = csd_profile(chrg_x)
-        for ii in range(len(x_positions)):
-            pots[ii] = integrate_1D(x_positions[ii], chrg_x, csd, h)
+        pots = integrate_1D(x_positions, chrg_x, csd, h)
         pots /= 2. * sigma  # eq.: 26 from Potworowski et al
         ele_pos = x_positions
     elif dim == 2:
-        chrg_x, chrg_y = np.mgrid[
-                         x_limits[0]:x_limits[1]:np.complex(0, resolution),
-                         y_limits[0]:y_limits[1]:np.complex(0, resolution)]
+        y = np.linspace(y_limits[0], y_limits[1], resolution)
+        chrg_x = np.expand_dims(x, axis=1)
+        chrg_y = np.expand_dims(y, axis=0)
         csd = csd_profile(chrg_x, chrg_y)
-        for ii in range(len(x_positions)):
-            pots[ii] = integrate_2D(x_positions[ii], y_positions[ii],
-                                    x, y, csd, h, chrg_x, chrg_y)
+        pots = integrate_2D(x_positions, y_positions,
+                            x, y,
+                            csd, h,
+                            chrg_x, chrg_y)
         pots /= 2 * np.pi * sigma
         ele_pos = np.vstack((x_positions, y_positions)).T
     elif dim == 3:
+        y = np.linspace(y_limits[0], y_limits[1], resolution)
+        z = np.linspace(z_limits[0], z_limits[1], resolution)
         chrg_x, chrg_y, chrg_z = np.mgrid[
-            x_limits[0]:x_limits[1]:np.complex(0, resolution),
-            y_limits[0]:y_limits[1]:np.complex(0, resolution),
-            z_limits[0]:z_limits[1]:np.complex(0, resolution)
+            x_limits[0]: x_limits[1]: np.complex(0, resolution),
+            y_limits[0]: y_limits[1]: np.complex(0, resolution),
+            z_limits[0]: z_limits[1]: np.complex(0, resolution)
         ]
+
         csd = csd_profile(chrg_x, chrg_y, chrg_z)
-        xlin = chrg_x[:, 0, 0]
-        ylin = chrg_y[0, :, 0]
-        zlin = chrg_z[0, 0, :]
+
+        pots = np.zeros(len(x_positions))
         for ii in range(len(x_positions)):
             pots[ii] = integrate_3D(x_positions[ii], y_positions[ii],
                                     z_positions[ii],
-                                    x_limits, y_limits, z_limits, csd,
-                                    xlin, ylin, zlin,
+                                    csd,
+                                    x, y, z,
                                     chrg_x, chrg_y, chrg_z)
         pots /= 4 * np.pi * sigma
         ele_pos = np.vstack((x_positions, y_positions, z_positions)).T
-    pots = np.reshape(pots, (-1, 1)) * pq.mV
     ele_pos = ele_pos * pq.mm
-    lfp = []
     ch = neo.ChannelIndex(index=range(len(pots)))
-    for ii in range(len(pots)):
-        lfp.append(pots[ii])
-    asig = neo.AnalogSignal(np.array(lfp).T, sampling_rate=pq.kHz, units='mV')
+    asig = neo.AnalogSignal(np.expand_dims(pots, axis=0),
+                            sampling_rate=pq.kHz, units='mV')
     ch.coordinates = ele_pos
     ch.analogsignals.append(asig)
     ch.create_relationship()

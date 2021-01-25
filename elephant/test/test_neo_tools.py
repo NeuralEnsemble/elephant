@@ -861,13 +861,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.channel_indexes[0]
         unit = self.block.channel_indexes[0].units[0]
 
         targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('ChannelIndex',
-                                    seed=rcg.annotations['seed']))
-        targ['channel_names'] = rcg.channel_names
         targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('SpikeTrain',
@@ -880,14 +876,11 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res01 = nt.extract_neo_attributes(obj, parents=True)
         res11 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
 
-        del res00['i']
-        del res10['i']
-        del res01['i']
-        del res11['i']
-        del res00['j']
-        del res10['j']
-        del res01['j']
-        del res11['j']
+        ignore_annotations = ('i', 'j', 'channel_names',
+                              'channel_ids', 'coordinates')
+        for res in (res00, res01, res10, res11):
+            for attr in ignore_annotations:
+                del res[attr]
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -912,14 +905,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res01 = nt.extract_neo_attributes(obj, parents=True)
         res11 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
 
-        del res00['i']
-        del res10['i']
-        del res01['i']
-        del res11['i']
-        del res00['j']
-        del res10['j']
-        del res01['j']
-        del res11['j']
+        ignore_annotations = ('i', 'j')
+        for res in (res00, res01, res10, res11):
+            for attr in ignore_annotations:
+                del res[attr]
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -960,31 +949,24 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.channel_indexes[0]
         unit = self.block.channel_indexes[0].units[0]
 
         targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
         targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
         targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('ChannelIndex',
-                                    seed=rcg.annotations['seed']))
         targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
         del targ['times']
         del targ['index']
-        del targ['channel_names']
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                          child_first=False)
         res1 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
 
-        del res0['i']
-        del res1['i']
-        del res0['j']
-        del res1['j']
-        del res0['index']
-        del res1['index']
-        del res0['channel_names']
-        del res1['channel_names']
+        ignore_annotations = ('i', 'j', 'index', 'channel_names',
+                              'channel_ids', 'coordinates')
+        for res in (res0, res1):
+            for attr in ignore_annotations:
+                del res[attr]
 
         self.assert_dicts_equal(targ, res0)
         self.assert_dicts_equal(targ, res1)
