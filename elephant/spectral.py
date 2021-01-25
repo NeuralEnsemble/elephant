@@ -609,7 +609,7 @@ if __name__ == '__main__':
 
     freqs_multi, psd_multitaper = multitaper_psd(signal=time_series,
                                                  fs=fs,
-                                                 NW=4)
+                                                 nw=4)
 
     freqs_welch, psd_welch = welch_psd(signal=time_series,
                                        n_segments=8,
