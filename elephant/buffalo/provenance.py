@@ -20,8 +20,7 @@ from elephant.buffalo.code_lines import SourceCodeAnalyzer
 from os.path import splitext
 
 from pprint import pprint
-import pickle
-import dill
+
 
 # Python 2.7 compatibility
 if 'signature' in dir(inspect):
@@ -30,6 +29,7 @@ else:
     import funcsigs
     signature = funcsigs.signature
 
+import dill
 
 AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'input',
@@ -40,7 +40,8 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'call_ast',
                                            'code_statement',
                                            'time_stamp',
-                                           'return_targets'))
+                                           'return_targets',
+                                           'vis'))
 
 
 FunctionDefinition = namedtuple('FunctionDefinition', ('name',
@@ -113,6 +114,9 @@ class Provenance(object):
     source_name = None
     code_analyzer = None
 
+    call_order = list()
+    call_count = dict()
+
     def __init__(self, inputs, file_input=None, file_output=None):
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
@@ -152,7 +156,13 @@ class Provenance(object):
         except:
             has_return = True
 
-        return True, has_return
+        return has_return
+
+    def _capture_provenance(self, lineno):
+        pass
+
+    def _get_calling_line_number(self, frame, frameinfo):
+        pass
 
     def __call__(self, function):
 
@@ -173,8 +183,8 @@ class Provenance(object):
                 # are returns. If no return, we won't track the output as this
                 # is automatically the None object
                 if not self.initialized:
-                    self.initialized, self.has_return = \
-                        self._analyze_function(function)
+                    self.has_return = self._analyze_function(function)
+                    self.initialized = True
 
                 # For functions that are used inside other decorated functions,
                 # or recursively, check if the calling frame is the one being
@@ -199,7 +209,7 @@ class Provenance(object):
                         function_name = frame_info.function
 
                     if (frame_info.filename == self.source_file and
-                            frame_info.function == self.source_name):
+                            function_name == self.source_name):
                         lineno = frame.f_lineno
                 finally:
                     del frame_info
@@ -254,13 +264,21 @@ class Provenance(object):
                     input_kwargs_names = []
 
                     try:
-                        func_parameters = \
-                            inspect.signature(function).bind(*args, **kwargs)
+                        fn_sig = inspect.signature(function)
+                        func_parameters = fn_sig.bind(*args, **kwargs)
+
+                        # Get default arguments in case they were not passed
+                        default_args = {k: v.default
+                                for k, v in fn_sig.parameters.items()
+                                if v.default is not inspect.Parameter.empty}
 
                         for arg_name, arg_value in \
                                 func_parameters.arguments.items():
                             cur_parameter = \
                                 func_parameters.signature.parameters[arg_name]
+
+                            if arg_name in default_args:
+                                default_args.pop(arg_name)
 
                             if cur_parameter.kind != VAR_POSITIONAL:
                                 input_data[arg_name] = arg_value
@@ -273,6 +291,9 @@ class Provenance(object):
                                 input_kwargs_names.append(arg_name)
                             else:
                                 input_args_names.append(arg_name)
+
+                        # Add default arguments to kwargs
+                        input_kwargs_names.extend(list(default_args.keys()))
 
                     except ValueError:
                         # Can't inspect signature. Append args/kwargs by
@@ -287,6 +308,8 @@ class Provenance(object):
                             input_data[kwarg_index] = kwarg
                             input_kwargs_names.append(kwarg_index)
 
+                        default_args = {}
+
                     # 5. Create parameters/input descriptions for the graph.
                     # Here the inputs, but not the parameters passed to the
                     # function, are transformed in the hashable type
@@ -296,7 +319,10 @@ class Provenance(object):
                     # as a `file_input` when initializing the class, a hash
                     # to the file is obtained using the `BuffaloFileHash`.
 
-                    parameters = {}
+                    # Initialize parameter list with all default arguments
+                    # that were not passed to the function
+                    parameters = default_args
+
                     inputs = {}
                     for key, input_value in input_data.items():
                         if key in self.inputs:
@@ -339,6 +365,17 @@ class Provenance(object):
                                                     function_name.name,
                                                     time_stamp)
 
+
+                    # Use a call counter to organize the nodes in the output
+                    # graph
+                    if not function_name.name in self.call_order:
+                        self.call_order.append(function_name.name)
+                        self.call_count[function_name.name] = 0
+
+                    self.call_count[function_name.name] += 1
+                    vis_position = (self.call_count[function_name.name],
+                                    self.call_order.index(function_name.name))
+
                     # 8. Create tuple with the analysis step information.
                     step = AnalysisStep(function_name,
                                         inputs,
@@ -346,7 +383,7 @@ class Provenance(object):
                                         outputs,
                                         input_args_names, input_kwargs_names,
                                         ast_tree, source_line, time_stamp,
-                                        return_targets)
+                                        return_targets, vis_position)
 
                     # 9. Add to the history.
                     # The history will be the base to generate the graph and
@@ -386,29 +423,31 @@ class Provenance(object):
                                                cls.source_name)
 
     @classmethod
-    def get_prov_graph(cls, **kwargs):
+    def get_prov_info(cls, **kwargs):
         """
-        Returns the W3C PROV graph representation of the captured provenance
+        Returns the W3C PROV representation of the captured provenance
         information.
         """
         raise NotImplementedError
 
     @classmethod
-    def get_graph(cls, history=None):
-        if history is None:
-            history = Provenance.history
-        graph = BuffaloProvenanceGraph()
+    def get_graph(cls):
+        """
+        Get the Networkx graph of the provenance history.
 
-        for step in history:
-            graph.add_step(step)
-        return graph
+        Returns
+        -------
+        BuffaloProvenanceGraph
+            Provenance graph.
+        """
+        return BuffaloProvenanceGraph(cls.history)
 
     @classmethod
     def dump_history(cls, filename):
         dill.dump(Provenance.history, open(filename, "wb"))
 
     @classmethod
-    def save_graph(cls, filename, source=None, show=False):
+    def save_graph(cls, filename, show=False):
         """
         Save an interactive graph with the provenance track.
 
@@ -431,15 +470,24 @@ class Provenance(object):
             raise ValueError("Filename must have HTML extension (.html, "
                              ".htm)!")
 
-        if source is None:
-            print("Getting graph")
-            source = cls.get_graph()
-
-        print("Converting graph")
+        source = cls.get_graph()
         source.to_pyvis(filename, show=show)
 
     @classmethod
     def get_script_variable(cls, name):
+        """
+        Access to variable values in the tracked frame by name.
+
+        Parameters
+        ----------
+        name : str
+            Name of the variable.
+
+        Returns
+        -------
+        object
+            Python object stored in variable `name`.
+        """
         return cls.calling_frame.f_locals[name]
 
 
@@ -472,7 +520,7 @@ def print_history():
     pprint(Provenance.history)
 
 
-def save_graph(filename, source=None, show=False):
+def save_graph(filename, show=False):
     """
     Saves an interactive graph to disk.
 
@@ -484,7 +532,7 @@ def save_graph(filename, source=None, show=False):
         If True, displays the graph in the browser after saving.
         Default: False.
     """
-    Provenance.save_graph(filename, source=None, show=show)
+    Provenance.save_graph(filename, show=show)
 
 
 def get_graph(history=None):

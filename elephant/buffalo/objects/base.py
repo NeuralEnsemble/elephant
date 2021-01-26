@@ -26,9 +26,9 @@ class AnalysisObject(object):
         self._warnings_raised = False
 
         # If base class does not have annotations, we store them in this class
-        if not hasattr(self, 'annotations'):
-            self._annotations = dict()
-            self.annotations = property(self._get_annotations)
+        # if not hasattr(self, 'annotations'):
+        #     self._annotations = dict()
+        #     self.annotations = property(self._get_annotations)
 
     def _get_annotations(self):
         return self._annotations
