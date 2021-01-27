@@ -359,6 +359,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
         raise ValueError("trial number and trial length of signal i and j "
                          "must be equal")
 
+    # LOOP-approach
     wpli_num = 0
     wpli_den = 0
     for trial_i, trial_j in zip(signal_i, signal_j):
@@ -376,5 +377,21 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
     freqs = freqs[1:int(len(freqs) / 2)]
     # WPLI
     wpli = np.abs(wpli_num / len(signal_i)) / (wpli_den / len(signal_i))
+
+    # ARRAY-approach
+    # # calculate Fourier transforms
+    # fft1 = np.fft.fft(signal_i)
+    # fft2 = np.fft.fft(signal_j)
+    # freqs = np.fft.fftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
+    # # remove negative frequencies of FFT-vectors
+    # fft1 = fft1[:, 1:int(np.shape(fft1)[1] / 2)]
+    # fft2 = fft2[:, 1:int(np.shape(fft2)[1] / 2)]
+    # freqs = freqs[1:int(len(freqs) / 2)]
+    # # obtain cross-spectrum
+    # cs = fft1 * np.conjugate(fft2)
+    # # calculate WPLI
+    # wpli_num = np.abs(np.mean(np.abs(np.imag(cs)) * np.sign(np.imag(cs)), axis=0))
+    # wpli_den = np.mean(np.abs(np.imag(cs)), axis=0)
+    # wpli = wpli_num / wpli_den
 
     return wpli, freqs
