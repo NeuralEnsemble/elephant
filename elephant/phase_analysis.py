@@ -359,7 +359,8 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
         raise ValueError("trial number and trial length of signal i and j "
                          "must be equal")
 
-    first_run = True
+    wpli_num = 0
+    wpli_den = 0
     for trial_i, trial_j in zip(signal_i, signal_j):
         # X Fourier transforms
         fft1 = np.fft.fft(trial_i)
@@ -371,26 +372,11 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
         freqs = freqs[1:int(len(freqs) / 2)]
 
         # sum across trials
-        if first_run:
-            ps1 = fft1 * np.conjugate(fft1)
-            ps2 = fft2 * np.conjugate(fft2)
-            cs = fft1 * np.conjugate(fft2)
-            wpli_num = np.abs(np.imag(cs)) * np.sign(np.imag(cs))
-            wpli_den = np.abs(np.imag(cs))
-            first_run = False
-        else:
-            ps1 = ps1 + fft1 * np.conjugate(fft1)
-            ps2 = ps2 + fft2 * np.conjugate(fft2)
-            cs = cs + fft1 * np.conjugate(fft2)
-            temp_cs = fft1 * np.conjugate(fft2)
-            wpli_num = wpli_num + np.abs(np.imag(temp_cs)) * np.sign(
-                np.imag(temp_cs))
-            wpli_den = wpli_den + np.abs(np.imag(temp_cs))
-    # Average
-    cs = cs / len(signal_i)
-    ps1 = ps1 / len(signal_i)
-    ps2 = ps2 / len(signal_i)
+        temp_cs = fft1 * np.conjugate(fft2)
+        wpli_num += np.abs(np.imag(temp_cs)) * np.sign(
+            np.imag(temp_cs))
+        wpli_den += np.abs(np.imag(temp_cs))
     # WPLI
     wpli = np.abs(wpli_num / len(signal_i)) / (wpli_den / len(signal_i))
 
-    return wpli, freqs#, ps1, ps2, cs, fft1, fft2
+    return wpli, freqs
