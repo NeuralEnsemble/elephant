@@ -341,7 +341,6 @@ class Synchrotool(Complexity):
             if mode == 'extract':
                 mask = np.invert(mask)
             new_st = st[mask]
-            spiketrain_list[idx] = new_st
             if in_place:
                 segment = st.segment
                 if segment is None:
@@ -368,6 +367,7 @@ class Synchrotool(Complexity):
 
                     # st found in group, replace with new_st
                     group.spiketrains[idx] = new_st
+            spiketrain_list[idx] = new_st
 
         return spiketrain_list
 

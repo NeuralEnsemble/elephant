@@ -283,6 +283,30 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                             spread=0, mode='delete', in_place=True,
                             deletion_threshold=2)
 
+    def test_spiketrains_findable(self):
+
+        # same test as `test_spread_0` with the addition of
+        # a neo structure: we must not overwrite the spiketrain
+        # list of the segment before determining the index
+
+        sampling_rate = 1 / pq.s
+
+        segment = neo.Segment()
+
+        segment.spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                              t_stop=20*pq.s),
+                               neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                              t_stop=20*pq.s)]
+
+        segment.create_relationship()
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        self._test_template(segment.spiketrains, correct_annotations,
+                            sampling_rate, spread=0, mode='delete',
+                            in_place=True, deletion_threshold=2)
+
     def test_spread_1(self):
 
         # test synchrofact search taking into account adjacent bins
