@@ -370,5 +370,80 @@ class PhaseLockingValueTestCase(unittest.TestCase):
             self.simple_y, self.simple_z)
 
 
+class WeightedPhaseLagIndexTestCase(unittest.TestCase):
+    def setUp(self):
+        self.ntrials = 100
+        self.srate = 250 * pq.Hz
+        self.tlength = 500 * pq.ms
+        self.freq = 16 * pq.Hz
+        self.amp = 1 * pq.mV
+        self.phase = 0
+        self.tolerance = 1e-15
+
+        # time-vector
+        self.t = np.arange(0, self.tlength.magnitude,
+            1. / self.srate.rescale(1. / self.tlength.units).magnitude)
+
+        # signal sampels
+        self.one_trial_x = 16 * self.amp.units + self.amp * np.sin(
+            2 * np.pi * self.freq.rescale(1. / self.tlength.units).magnitude
+            * self.t + self.phase)
+        self.signal_x = np.full((self.ntrials, len(self.one_trial_x)),
+                                self.one_trial_x)
+        # constant phase lag of pi/3
+        self.one_trial_y = 16 * self.amp.units + self.amp * np.sin(
+            2 * np.pi * self.freq.rescale(1. / self.tlength.units).magnitude
+            * self.t + np.pi/3)
+        self.signal_y = np.full((self.ntrials, len(self.one_trial_y)),
+                                self.one_trial_y)
+        # equal distributed phase lags of pi/2 and 1.5*pi across trials
+        self.signal_z = np.empty((self.ntrials, len(self.one_trial_y)))
+        for i in range(self.ntrials):
+            if i < self.ntrials/2:
+                phase = np.pi/2
+            else:
+                phase = 1.5 * np.pi
+            self.signal_z[i] = 16 * self.amp.units + self.amp * np.sin(
+                2 * np.pi * self.freq.rescale(1. / self.tlength.units)
+                .magnitude * self.t + phase)
+
+        # simple samples of different shapes to assert ErrorRaising
+        self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
+        self.simple_y = np.array([0, -np.pi, np.pi])
+        self.simple_z = np.array([0, np.pi, np.pi / 2, -np.pi])
+
+    def test_WPLI_is_zero(self):  # for: f = 16Hz
+        wpli, freq = elephant.phase_analysis.weighted_phase_lag_index(
+            self.signal_x, self.signal_z, self.srate)
+        # print(f"WPLI_zero: \n{wpli}\n\n Frequency: \n{freq}")
+        np.testing.assert_almost_equal(wpli[np.where(freq == self.freq)], 0, 15)
+
+    def test_WPLI_is_one(self):  # for: f = 16Hz
+        wpli, freq = elephant.phase_analysis.weighted_phase_lag_index(
+            self.signal_x, self.signal_y, self.srate)
+        # print(f"WPLI_one: \n{wpli}\n\n Frequency: \n{freq}")
+        np.testing.assert_almost_equal(wpli[np.where(freq == self.freq)], 1, 15)
+
+    def test_WPLI_raise_error_if_trial_number_is_different(self):
+        """
+        Test if a ValueError is raised, when the signals have different
+        number of trails.
+        """
+        # different numbers of trails
+        np.testing.assert_raises(
+            ValueError, elephant.phase_analysis.weighted_phase_lag_index,
+            self.simple_x, self.simple_y, self.srate)
+
+    def test_WPLI_raise_error_if_trial_lengths_are_different(self):
+        """
+        Test if a ValueError is raised, when within a trail-pair of the signals
+        the trial-lengths are different.
+        """
+        # different lengths in a trail pair
+        np.testing.assert_raises(
+            ValueError, elephant.phase_analysis.weighted_phase_lag_index,
+            self.simple_y, self.simple_z, self.srate)
+
+
 if __name__ == '__main__':
     unittest.main()

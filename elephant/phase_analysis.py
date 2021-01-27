@@ -307,3 +307,90 @@ def phase_difference(alpha, beta):
     delta = alpha - beta
     phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
     return phase_diff
+
+
+def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
+    r"""
+    Calculates the Weigthed Phase-Lag Index (WPLI)
+
+    This function expects the two signals (each containing multiple trials).
+    It Fourier-transforms the signals and for each trial pair, it calculates
+    the cross-spectrum. With that the WPLI is calculated.
+
+    Parameters
+    ----------
+    signal_i, signal_j: (t, n) np.array
+        Time-series of the first and second signals,
+        with `t` time points and `n` trials.
+    sampling_frequency: quantity/ scaler
+        Sampling frequency of the signals in Hz.
+
+    Returns
+    -------
+    wpli: float
+        Weighted phase-lag index of signal_i and signal_j across trials.
+        Range: :math: `[0, 1]`
+
+    Notes
+    -----
+    This implementation is base on the formula taken from [1] (pp.1550):
+    .. math::
+        WPLI = \frac{| E( |Im(X)| * sgn(Im(X)) ) |}{E( |Im(X)| )}
+
+    with:
+    E{...} : expected value operator
+    Im{X} : imaginary component of the cross-spectrum
+    X = Z_1 * Z_2_conjugate : as cross-spectrum
+    X = R * exp(i * theta) : R = magnitude and theta = relative phase
+    Z = A * Y
+    where
+    A: real-valued matrix with frequency dependent coefficients
+    Y: complex-valued vector, representing the Fourier spectra
+    of a particular frequency
+
+    References
+    ----------
+    [1] "An improved index of phase-synchronization for electrophysiological
+    data in the presence of volume-conduction, noise and sample-size bias"
+    by Martin Vinck, Robert Oostenveld, Marijn van Wingerden,
+    Franscesco Battaglia, Cyriel M.A. Pennartz
+    """
+    if np.shape(signal_i) != np.shape(signal_j):
+        raise ValueError("trial number and trial length of signal i and j "
+                         "must be equal")
+
+    first_run = True
+    for trial_i, trial_j in zip(signal_i, signal_j):
+        # X Fourier transforms
+        fft1 = np.fft.fft(trial_i)
+        fft2 = np.fft.fft(trial_j)
+        freqs = np.fft.fftfreq(len(fft1), d=1.0 / sampling_frequency)
+        # Remove negative frequencies
+        fft1 = fft1[1:int(len(fft1) / 2)]
+        fft2 = fft2[1:int(len(fft2) / 2)]
+        freqs = freqs[1:int(len(freqs) / 2)]
+
+        # sum across trials
+        if first_run:
+            ps1 = fft1 * np.conjugate(fft1)
+            ps2 = fft2 * np.conjugate(fft2)
+            cs = fft1 * np.conjugate(fft2)
+            wpli_num = np.abs(np.imag(cs)) * np.sign(np.imag(cs))
+            wpli_den = np.abs(np.imag(cs))
+            first_run = False
+        else:
+            ps1 = ps1 + fft1 * np.conjugate(fft1)
+            ps2 = ps2 + fft2 * np.conjugate(fft2)
+            cs = cs + fft1 * np.conjugate(fft2)
+            temp_cs = fft1 * np.conjugate(fft2)
+            wpli_num = wpli_num + np.abs(np.imag(temp_cs)) * np.sign(
+                np.imag(temp_cs))
+            wpli_den = wpli_den + np.abs(np.imag(temp_cs))
+    # Average
+    cs = cs / len(signal_i)
+    ps1 = ps1 / len(signal_i)
+    ps2 = ps2 / len(signal_i)
+    # WPLI
+    wpli = np.abs(wpli_num / len(signal_i)) / (wpli_den / len(signal_i))
+
+    return wpli, freqs#, ps1, ps2, cs, fft1, fft2
