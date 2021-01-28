@@ -648,6 +648,66 @@ def bin_shuffling(
     return surrogate_spiketrains
 
 
+def continuous_bin_shuffling(
+        spiketrain, max_displacement, bin_size, n_surrogates=1):
+    """
+
+    Parameters
+    ----------
+    spiketrain : neo.SpikeTrain
+    max_displacement : int
+        number of bins that a single spike can be displaced
+    bin_size : pq.Quantity, optional
+        Default
+    n_surrogates : int, optional
+        Default : 1
+
+    Returns
+    -------
+    list of neo.SpikeTrain
+    """
+    bin_size_mag = bin_size.simplified.magnitude
+    spiketrain_mag = spiketrain.simplified.magnitude
+
+    binned_t_start = \
+        (spiketrain.t_start.simplified.magnitude // bin_size_mag).astype(int)
+    binned_t_stop = \
+        (spiketrain.t_stop.simplified.magnitude // bin_size_mag).astype(int)
+
+    bin_remainders = spiketrain_mag % bin_size_mag
+    bin_indices = (spiketrain_mag // bin_size_mag).astype(int)
+
+    surrogate_spiketrains = []
+
+    for surrogate_id in range(n_surrogates):
+        for window_start in range(binned_t_start, binned_t_stop,
+                                  displacement_window):
+            random_indices = np.random.permutation(displacement_window)
+            condition = np.all(
+                (bin_indices >= window_start,
+                 bin_indices < window_start + displacement_window),
+                axis=0)
+
+            sliced_bin_indices = bin_indices[condition]
+            sliced_bin_indices = \
+                random_indices[sliced_bin_indices - window_start] \
+                + window_start
+
+            bin_indices[condition] = sliced_bin_indices
+
+        surrogate_spiketrain = \
+            (bin_indices * bin_size_mag + bin_remainders) * pq.s
+        surrogate_spiketrain = surrogate_spiketrain.rescale(spiketrain.units)
+
+        surrogate_spiketrain = neo.SpikeTrain(
+            surrogate_spiketrain,
+            t_start=spiketrain.t_start,
+            t_stop=spiketrain.t_stop)
+
+        surrogate_spiketrains.append(surrogate_spiketrain)
+    return surrogate_spiketrains
+
+
 class JointISI(object):
     r"""
     The class :class:`JointISI` is implemented for Joint-ISI dithering
