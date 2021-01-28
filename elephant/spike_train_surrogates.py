@@ -1407,7 +1407,7 @@ def surrogates(
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
-        'bin_shuffling': bin_shuffling,
+        'bin_shuffling': continuous_bin_shuffling,
         'trial_shifting': trial_shifting,
         'joint_isi_dithering': lambda n: JointISI(
             spiketrain, **kwargs).dithering(n),
@@ -1438,23 +1438,10 @@ def surrogates(
         return _trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
-        binned_spiketrain = conv.BinnedSpikeTrain(
-            spiketrain, bin_size=kwargs['bin_size'])
-        bin_size = binned_spiketrain._bin_size
-        # bin_centers share the same units as bin_size
-        bin_grid = binned_spiketrain.bin_centers.magnitude
         max_displacement = int(
-            dt.rescale(binned_spiketrain.units).item() / bin_size)
-        binned_surrogates = bin_shuffling(binned_spiketrain,
-                                          max_displacement=max_displacement,
-                                          n_surrogates=n_surrogates)
-        surrogate_spiketrains = \
-            [neo.SpikeTrain(bin_grid[binned_surr.sparse_matrix.nonzero()[1]],
-                            t_start=spiketrain.t_start,
-                            t_stop=spiketrain.t_stop,
-                            units=binned_spiketrain.units,
-                            sampling_rate=spiketrain.sampling_rate)
-             for binned_surr in binned_surrogates]
-        return surrogate_spiketrains
+            dt.simplified.magnitude / kwargs['bin_size'].simplified.magnitude)
+        return method(
+            spiketrain, max_displacement=max_displacement,
+            bin_size=kwargs['bin_size'], n_surrogates=n_surrogates)
     # surr_method is 'joint_isi_dithering' or isi_dithering:
     return method(n_surrogates)
