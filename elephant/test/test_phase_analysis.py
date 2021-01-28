@@ -12,6 +12,8 @@ import unittest
 from neo import SpikeTrain, AnalogSignal
 import numpy as np
 import quantities as pq
+import os.path
+import scipy
 
 import elephant.phase_analysis
 
@@ -412,13 +414,48 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.simple_y = np.array([0, -np.pi, np.pi])
         self.simple_z = np.array([0, np.pi, np.pi / 2, -np.pi])
 
+        ### check for ground truth consistency with LFP-dataset
+        # Load first & second data file
+        self.filename1 = os.path.sep.join(['lfp_dataset1.mat'])
+        self.dataset1 = scipy.io.loadmat(self.filename1, squeeze_me=True)
+        self.filename2 = os.path.sep.join(['lfp_dataset2.mat'])
+        self.dataset2 = scipy.io.loadmat(self.filename2, squeeze_me=True)
+        # get the relevant values
+        self.lfps1 = self.dataset1['lfp_matrix'] * pq.uV
+        self.sf1 = self.dataset1['sf'] * pq.Hz
+        self.lfps2 = self.dataset2['lfp_matrix'] * pq.uV
+        self.sf2 = self.dataset2['sf'] * pq.Hz
+        # load ground-truth
+        self.wpli_ground_truth = np.loadtxt(
+            'ground_truth_WPLI.csv', delimiter=',', dtype=np.float64)
+
+    def test_WPLI_is_consistent_with_ground_truth_from_LFP_dataset(self):
+        """
+        Test if the WPLI is consistent with the ground truth generated from
+        the LFP-datasets from the ICN lecture 10: 'The Local Field Potential'.
+        """
+        wpli_from_lfp_dataset, freq_from_lfp_dataset = \
+            elephant.phase_analysis.weighted_phase_lag_index(
+                self.lfps1, self.lfps2, self.sf1)
+        np.testing.assert_allclose(
+            wpli_from_lfp_dataset, self.wpli_ground_truth,
+            atol=1e-14, rtol=1e-12)
+
     def test_WPLI_is_zero(self):  # for: f = 16Hz
+        """
+        Test if WPLI is zero at frequency f=16Hz, which is the frequency
+        of this artificial test-data sinusoid.
+        """
         wpli, freq = elephant.phase_analysis.weighted_phase_lag_index(
             self.signal_x, self.signal_z, self.srate)
         # print(f"WPLI_zero: \n{wpli}\n\n Frequency: \n{freq}")
         np.testing.assert_almost_equal(wpli[np.where(freq == self.freq)], 0, 15)
 
     def test_WPLI_is_one(self):  # for: f = 16Hz
+        """
+        Test if WPLI is one at frequency f=16Hz, which is the frequency
+        of this artificial test-data sinusoid.
+        """
         wpli, freq = elephant.phase_analysis.weighted_phase_lag_index(
             self.signal_x, self.signal_y, self.srate)
         # print(f"WPLI_one: \n{wpli}\n\n Frequency: \n{freq}")
