@@ -1091,7 +1091,7 @@ class JointISI(object):
                 diagonal = np.diagonal(
                     rotated_jisih, offset=-self.n_bins + double_index + 1)
                 jisih_cum = self._normalize_cumulative_distribution(
-                    np.cumsum(diagonal))
+                    np.r_[0., np.cumsum(diagonal)])
                 self._jisih_cumulatives.append(jisih_cum)
             self._jisih_cumulatives = np.array(
                 self._jisih_cumulatives, dtype=object)
@@ -1126,19 +1126,21 @@ class JointISI(object):
         # double_index corresponds to the sum of the indices for the previous
         # and the subsequent ISI.
         for double_index in range(self.n_bins):
-            cum_diag = np.cumsum(np.diagonal(rotated_jisih,
-                                             - self.n_bins
-                                             + double_index + 1))
+            anti_diagonal = np.diagonal(
+                rotated_jisih, - self.n_bins + double_index + 1)
 
             right_padding = jisih_diag_cums.shape[1] - \
-                len(cum_diag) - self._max_change_index
+                len(anti_diagonal) - self._max_change_index
 
-            jisih_diag_cums[double_index] = np.pad(
-                cum_diag,
+            cumulated_diagonal = np.cumsum(anti_diagonal)
+
+            padded_cumulated_diagonal = np.pad(
+                cumulated_diagonal,
                 pad_width=(self._max_change_index, right_padding),
                 mode='constant',
-                constant_values=(cum_diag[0], cum_diag[-1])
-            )
+                constant_values=(0., cumulated_diagonal[-1]))
+
+            jisih_diag_cums[double_index] = padded_cumulated_diagonal
 
         return jisih_diag_cums
 
@@ -1176,7 +1178,7 @@ class JointISI(object):
             if self.method == 'fast':
                 cum_dist_func = self._jisih_cumulatives[
                     double_index]
-                compare_isi = self._index_to_isi(curr_isi_id)
+                compare_isi = self._index_to_isi(curr_isi_id + 1)
             else:
                 cum_dist_func = self._jisih_cumulatives[
                     curr_isi_id][next_isi_id]
@@ -1186,7 +1188,8 @@ class JointISI(object):
                 # when the method is 'fast', new_isi_id is where the current
                 # ISI id should go to.
                 new_isi_id = np.searchsorted(cum_dist_func, random.random())
-                step = self._index_to_isi(new_isi_id) - compare_isi
+                step = self._index_to_isi(new_isi_id)\
+                    - compare_isi
                 return step
 
         return self._uniform_dither_not_jisi_movable_spikes(
