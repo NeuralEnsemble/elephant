@@ -697,9 +697,10 @@ def continuous_bin_shuffling(
 
             bin_indices[condition] = sliced_bin_indices
 
+        surrogate_spiketrain = bin_indices * bin_size_mag + bin_remainders
+        surrogate_spiketrain.sort()
         surrogate_spiketrain = \
-            (bin_indices * bin_size_mag + bin_remainders) * pq.s
-        surrogate_spiketrain = surrogate_spiketrain.rescale(spiketrain.units)
+            (surrogate_spiketrain * pq.s).rescale(spiketrain.units)
 
         surrogate_spiketrain = neo.SpikeTrain(
             surrogate_spiketrain,
