@@ -18,6 +18,7 @@ Synchrony Measures
 """
 from __future__ import division, print_function, unicode_literals
 
+import warnings
 from collections import namedtuple
 from copy import deepcopy
 
@@ -344,10 +345,18 @@ class Synchrotool(Complexity):
             if in_place and st.segment is not None:
                 segment = st.segment
 
-                # replace link to spiketrain in segment
-                new_index = self._get_spiketrain_index(
-                    segment.spiketrains, st)
-                segment.spiketrains[new_index] = new_st
+                try:
+                    # replace link to spiketrain in segment
+                    new_index = self._get_spiketrain_index(
+                        segment.spiketrains, st)
+                    segment.spiketrains[new_index] = new_st
+                except ValueError:
+                    # st is not in this segment even though it points to it
+                    warnings.warn(f"The SpikeTrain at index {idx} of the "
+                                  "input list spiketrains has a "
+                                  "unidirectional uplink to a segment in "
+                                  "whose segment.spiketrains list it does not "
+                                  "appear.")
 
                 block = segment.block
                 if block is not None:

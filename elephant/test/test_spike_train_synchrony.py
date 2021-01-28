@@ -307,6 +307,35 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                             sampling_rate, spread=0, mode='delete',
                             in_place=True, deletion_threshold=2)
 
+    def test_unidirectional_uplinks(self):
+
+        # same test as `test_spiketrains_findable` but the spiketrains
+        # are rescaled first
+        # the rescaled spiketrains have a unidirectional uplink to segment
+        # check that this does not cause an error
+        # check that a UserWarning is issued in this case
+
+        sampling_rate = 1 / pq.s
+
+        segment = neo.Segment()
+
+        segment.spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                              t_stop=20*pq.s),
+                               neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                              t_stop=20*pq.s)]
+
+        segment.create_relationship()
+
+        spiketrains = [st.rescale(pq.s) for st in segment.spiketrains]
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        with self.assertWarns(UserWarning):
+            self._test_template(spiketrains, correct_annotations,
+                                sampling_rate, spread=0, mode='delete',
+                                in_place=True, deletion_threshold=2)
+
     def test_spread_1(self):
 
         # test synchrofact search taking into account adjacent bins
