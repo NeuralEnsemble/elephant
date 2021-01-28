@@ -719,10 +719,12 @@ def _continuous_time_bin_shuffling(
             surrogate_spiketrain,
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop)
-        if surrogate_spiketrain[-1] > spiketrain.t_stop:
+        if len(surrogate_spiketrain) > 0 and \
+                surrogate_spiketrain[-1] > spiketrain.t_stop:
             surrogate_spiketrain[-1] = spiketrain.t_stop
 
-        if surrogate_spiketrain[0] < spiketrain.t_start:
+        if len(surrogate_spiketrain) > 0 and \
+                surrogate_spiketrain[0] < spiketrain.t_start:
             surrogate_spiketrain[0] = spiketrain.t_start
 
         surrogate_spiketrains.append(surrogate_spiketrain)
