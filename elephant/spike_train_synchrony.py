@@ -341,10 +341,8 @@ class Synchrotool(Complexity):
             if mode == 'extract':
                 mask = np.invert(mask)
             new_st = st[mask]
-            if in_place:
+            if in_place and st.segment is not None:
                 segment = st.segment
-                if segment is None:
-                    continue
 
                 # replace link to spiketrain in segment
                 new_index = self._get_spiketrain_index(
@@ -352,21 +350,19 @@ class Synchrotool(Complexity):
                 segment.spiketrains[new_index] = new_st
 
                 block = segment.block
-                if block is None:
-                    continue
+                if block is not None:
+                    # replace link to spiketrain in groups
+                    for group in block.groups:
+                        try:
+                            idx = self._get_spiketrain_index(
+                                group.spiketrains,
+                                st)
+                        except ValueError:
+                            # st is not in this group, move to next group
+                            continue
 
-                # replace link to spiketrain in groups
-                for group in block.groups:
-                    try:
-                        idx = self._get_spiketrain_index(
-                            group.spiketrains,
-                            st)
-                    except ValueError:
-                        # st is not in this group, move to next group
-                        continue
-
-                    # st found in group, replace with new_st
-                    group.spiketrains[idx] = new_st
+                        # st found in group, replace with new_st
+                        group.spiketrains[idx] = new_st
             spiketrain_list[idx] = new_st
 
         return spiketrain_list
