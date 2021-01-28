@@ -584,7 +584,8 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
 
 
 def bin_shuffling(
-        binned_spiketrain, max_displacement, n_surrogates=1, sliding=False):
+        spiketrain, max_displacement, bin_size=None, n_surrogates=1,
+        sliding=False):
     """
     Bin shuffling surrogate generation.
 
@@ -594,10 +595,13 @@ def bin_shuffling(
 
     Parameters
     ----------
-    binned_spiketrain : conv.BinnedSpikeTrain
-        The binned spiketrain to create surrogates of.
+    spiketrain : conv.BinnedSpikeTrain or neo.SpikeTrain
+        The binned spike train to create surrogates of.
     max_displacement : int
         Number of bins that a single spike can be displaced.
+    bin_size : pq.Quantity or None
+        the bin size needs to be specified only if a not-binned spike train 
+        is passed to the method
     n_surrogates : int, optional
         Number of surrogates to create.
         Default: 1.
@@ -607,12 +611,21 @@ def bin_shuffling(
 
     Returns
     -------
-    binned_surrogates : list of conv.BinnedSpikeTrain
-        Each entry of the list is a binned surrogate spiketrain.
+    binned_surrogates : list of conv.BinnedSpikeTrain or list of neo.SpikeTrain
+        Each entry of the list is a surrogate spike train either binned or in
+        continuous time.
     """
+    if isinstance(spiketrain, neo.SpikeTrain):
+        if bin_size is None:
+            raise ValueError(
+                'If you want to create surrogates from neo.SpikeTrain objects,'
+                'you need to specify the bin_size')
+        return _continuous_time_bin_shuffling(
+            spiketrain, max_displacement, bin_size, n_surrogates=1)
+
     displacement_window = 2 * max_displacement
 
-    binned_spiketrain_bool = binned_spiketrain.to_bool_array()[0]
+    binned_spiketrain_bool = spiketrain.to_bool_array()[0]
     st_length = len(binned_spiketrain_bool)
 
     surrogate_spiketrains = []
@@ -642,13 +655,13 @@ def bin_shuffling(
         surrogate_spiketrains.append(
             conv.BinnedSpikeTrain(
                 surrogate_spiketrain,
-                bin_size=binned_spiketrain.bin_size,
-                t_start=binned_spiketrain.t_start,
-                t_stop=binned_spiketrain.t_stop))
+                bin_size=spiketrain.bin_size,
+                t_start=spiketrain.t_start,
+                t_stop=spiketrain.t_stop))
     return surrogate_spiketrains
 
 
-def continuous_bin_shuffling(
+def _continuous_time_bin_shuffling(
         spiketrain, max_displacement, bin_size, n_surrogates=1):
     """
 
@@ -706,6 +719,11 @@ def continuous_bin_shuffling(
             surrogate_spiketrain,
             t_start=spiketrain.t_start,
             t_stop=spiketrain.t_stop)
+        if surrogate_spiketrain[-1] > spiketrain.t_stop:
+            surrogate_spiketrain[-1] = spiketrain.t_stop
+
+        if surrogate_spiketrain[0] < spiketrain.t_start:
+            surrogate_spiketrain[0] = spiketrain.t_start
 
         surrogate_spiketrains.append(surrogate_spiketrain)
     return surrogate_spiketrains
@@ -1407,7 +1425,7 @@ def surrogates(
         'jitter_spikes': jitter_spikes,
         'randomise_spikes': randomise_spikes,
         'shuffle_isis': shuffle_isis,
-        'bin_shuffling': continuous_bin_shuffling,
+        'bin_shuffling': bin_shuffling,
         'trial_shifting': trial_shifting,
         'joint_isi_dithering': lambda n: JointISI(
             spiketrain, **kwargs).dithering(n),
