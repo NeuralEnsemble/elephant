@@ -715,20 +715,16 @@ def _continuous_time_bin_shuffling(
             bin_indices[condition] = sliced_bin_indices
 
         surrogate_spiketrain = bin_indices * bin_size_mag + bin_remainders
-        surrogate_spiketrain.sort()
         surrogate_spiketrain = \
             (surrogate_spiketrain * pq.s).rescale(spiketrain.units)
 
-        # ensure last and first spike being inside the boundaries
-        while len(surrogate_spiketrain) > 0 and \
-                surrogate_spiketrain[-1] > spiketrain.t_stop:
-            surrogate_spiketrain[-1] = spiketrain.t_stop - 0.01 * bin_size
-            surrogate_spiketrain.sort()
+        surrogate_spiketrain = surrogate_spiketrain[
+            np.all((surrogate_spiketrain > spiketrain.t_start,
+                    surrogate_spiketrain < spiketrain.t_stop),
+                   axis=0)]
+        surrogate_spiketrain.sort()
 
-        while len(surrogate_spiketrain) > 0 and \
-                surrogate_spiketrain[0] < spiketrain.t_start:
-            surrogate_spiketrain[0] = spiketrain.t_start + 0.01 * bin_size
-            surrogate_spiketrain.sort()
+        # ensure last and first spike being inside the boundaries
 
         surrogate_spiketrain = neo.SpikeTrain(
             surrogate_spiketrain,
