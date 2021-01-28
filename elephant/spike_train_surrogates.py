@@ -666,6 +666,8 @@ def continuous_bin_shuffling(
     -------
     list of neo.SpikeTrain
     """
+    displacement_window = 2 * max_displacement
+
     bin_size_mag = bin_size.simplified.magnitude
     spiketrain_mag = spiketrain.simplified.magnitude
 
