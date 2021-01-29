@@ -628,7 +628,8 @@ def bin_shuffling(
                 ' on continuos time spike trains. Results are given for'
                 ' sliding=False.', UserWarning)
         return _continuous_time_bin_shuffling(
-            spiketrain, max_displacement, bin_size, n_surrogates=n_surrogates)
+            spiketrain, max_displacement=max_displacement, bin_size=bin_size,
+            n_surrogates=n_surrogates)
 
     displacement_window = 2 * max_displacement
 
@@ -668,8 +669,8 @@ def bin_shuffling(
     return surrogate_spiketrains
 
 
-def _continuous_time_bin_shuffling(
-        spiketrain, max_displacement, bin_size, n_surrogates=1):
+def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
+                                   n_surrogates=1):
     """
 
     Parameters
@@ -677,8 +678,7 @@ def _continuous_time_bin_shuffling(
     spiketrain : neo.SpikeTrain
     max_displacement : int
         number of bins that a single spike can be displaced
-    bin_size : pq.Quantity, optional
-        Default
+    bin_size : pq.Quantity
     n_surrogates : int, optional
         Default : 1
 
@@ -686,15 +686,15 @@ def _continuous_time_bin_shuffling(
     -------
     list of neo.SpikeTrain
     """
-    bin_size_mag = bin_size.simplified.magnitude
-    t_start_mag = spiketrain.t_start.simplified.magnitude
-    t_stop_mag = spiketrain.t_stop.simplified.magnitude
+    units = spiketrain.units
+    bin_size = bin_size.rescale(units).item()
+    t_start = spiketrain.t_start.item()
+    t_stop = spiketrain.t_stop.item()
+    spiketrain_shifted = spiketrain.magnitude - t_start
 
-    spiketrain_mag = spiketrain.simplified.magnitude - t_start_mag
+    binned_duration = int((t_stop - t_start) // bin_size)
 
-    binned_duration = int((t_stop_mag - t_start_mag) // bin_size_mag)
-
-    bin_indices = (spiketrain_mag // bin_size_mag).astype(int)
+    bin_indices = (spiketrain_shifted // bin_size).astype(int)
 
     surrogate_spiketrains = []
 
@@ -718,26 +718,26 @@ def _continuous_time_bin_shuffling(
 
             bin_indices[condition] = sliced_bin_indices
 
-        bin_remainders = bin_size_mag * np.random.random(len(spiketrain))
+        bin_remainders = bin_size * np.random.random(len(spiketrain))
 
         surrogate_spiketrain = \
-            bin_indices * bin_size_mag + bin_remainders + t_start_mag
+            bin_indices * bin_size + bin_remainders + t_start
 
         # ensure last and first spike being inside the boundaries
         surrogate_spiketrain = surrogate_spiketrain[
-            np.all((surrogate_spiketrain > t_start_mag,
-                    surrogate_spiketrain < t_stop_mag),
+            np.all((surrogate_spiketrain > t_start,
+                    surrogate_spiketrain < t_stop),
                    axis=0)]
 
         surrogate_spiketrain.sort()
 
-        surrogate_spiketrain = \
-            (surrogate_spiketrain * pq.s).rescale(spiketrain.units)
-
         surrogate_spiketrain = neo.SpikeTrain(
             surrogate_spiketrain,
-            t_start=spiketrain.t_start,
-            t_stop=spiketrain.t_stop)
+            units=units,
+            t_start=t_start,
+            t_stop=t_stop,
+            copy=False,
+        )
 
         surrogate_spiketrains.append(surrogate_spiketrain)
     return surrogate_spiketrains
