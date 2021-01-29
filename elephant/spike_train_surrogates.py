@@ -1275,7 +1275,7 @@ def _trial_shifting(spiketrains, dither, t_starts, t_stops, n_surrogates):
     """
     surrogate_spiketrains = []
     for surrogate_id in range(n_surrogates):
-        copied_spiketrain = copy.copy(spiketrains)
+        copied_spiketrain = copy.deepcopy(spiketrains)
         surrogate_spiketrain = []
         # looping over all trials
         for trial_id, single_trial_st in enumerate(copied_spiketrain):
