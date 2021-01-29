@@ -621,6 +621,11 @@ def bin_shuffling(
             raise ValueError(
                 'If you want to create surrogates from neo.SpikeTrain objects,'
                 'you need to specify the bin_size')
+        if sliding:
+            warnings.warn(
+                'The sliding option is not implemented yet for bin shuffling'
+                ' on continuos time spike trains. Results are given for'
+                ' sliding=False.', UserWarning)
         return _continuous_time_bin_shuffling(
             spiketrain, max_displacement, bin_size, n_surrogates=n_surrogates)
 
