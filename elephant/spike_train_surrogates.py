@@ -601,7 +601,7 @@ def bin_shuffling(
     max_displacement : int
         Number of bins that a single spike can be displaced.
     bin_size : pq.Quantity or None
-        the bin size needs to be specified only if a not-binned spike train 
+        the bin size needs to be specified only if a not-binned spike train
         is passed to the method
     n_surrogates : int, optional
         Number of surrogates to create.
