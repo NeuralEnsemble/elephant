@@ -366,15 +366,15 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
         # X Fourier transforms
         fft1 = np.fft.fft(trial_i)
         fft2 = np.fft.fft(trial_j)
+        freqs = np.fft.fftfreq(len(fft1), d=1.0 / sampling_frequency)
         # Remove negative frequencies
         fft1 = fft1[1:int(len(fft1) / 2)]
         fft2 = fft2[1:int(len(fft2) / 2)]
+        freqs = freqs[1:int(len(freqs) / 2)]
         # sum across trials
         temp_cs = fft1 * np.conjugate(fft2)
         wpli_num += np.abs(np.imag(temp_cs)) * np.sign(np.imag(temp_cs))
         wpli_den += np.abs(np.imag(temp_cs))
-    freqs = np.fft.fftfreq(len(fft1), d=1.0 / sampling_frequency)
-    freqs = freqs[1:int(len(freqs) / 2)]
     # WPLI
     wpli = np.abs(wpli_num / len(signal_i)) / (wpli_den / len(signal_i))
 
