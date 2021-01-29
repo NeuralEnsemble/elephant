@@ -607,7 +607,8 @@ def bin_shuffling(
         Number of surrogates to create.
         Default: 1.
     sliding : bool, optional
-        If True, the window is slided bin by bin.
+        If True, the window is slided bin by bin
+        (only implemented for binned spike trains).
         Default: False.
 
     Returns
