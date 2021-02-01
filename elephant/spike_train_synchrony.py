@@ -356,7 +356,11 @@ class Synchrotool(Complexity):
                                   "input list spiketrains has a "
                                   "unidirectional uplink to a segment in "
                                   "whose segment.spiketrains list it does not "
-                                  "appear.")
+                                  "appear. Only the spiketrains in the input "
+                                  "list will be replaced. You can suppress "
+                                  "this warning by setting "
+                                  "spiketrain.segment=None for the input "
+                                  "spiketrains.")
 
                 block = segment.block
                 if block is not None:
