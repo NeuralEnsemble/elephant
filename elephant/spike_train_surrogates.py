@@ -712,6 +712,7 @@ def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
                                          dtype=np.ndarray)
         for i, bin_indices_slice in enumerate(bin_indices):
             window_start = i*displacement_window
+
             # ensure last window is not too long
             if window_start + displacement_window > binned_duration:
                 displacement_window = binned_duration - window_start
@@ -1143,9 +1144,15 @@ class JointISI(object):
 
             right_padding = jisih_diag_cums.shape[1] - \
                 len(anti_diagonal) - self._max_change_index
+<<<<<<< HEAD
 
             cumulated_diagonal = np.cumsum(anti_diagonal)
 
+=======
+
+            cumulated_diagonal = np.cumsum(anti_diagonal)
+
+>>>>>>> master
             padded_cumulated_diagonal = np.pad(
                 cumulated_diagonal,
                 pad_width=(self._max_change_index, right_padding),

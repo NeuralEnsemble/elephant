@@ -99,6 +99,10 @@ The ASSET found 2 sequences of synchronous events:
 """
 from __future__ import division, print_function, unicode_literals
 
+import os
+import subprocess
+import sys
+import tempfile
 import warnings
 
 import neo
@@ -111,6 +115,7 @@ from tqdm import trange, tqdm
 
 import elephant.conversion as conv
 from elephant import spike_train_surrogates
+from elephant.utils import get_cuda_capability_major
 
 try:
     from mpi4py import MPI
@@ -135,6 +140,20 @@ __all__ = [
     "synchronous_events_contains_all",
     "synchronous_events_overlap"
 ]
+
+
+def _is_cuda_available():
+    # a silly way to check for CUDA support
+    # experimental: should not be public API
+    try:
+        subprocess.run(["nvcc", "-V"],
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE).check_returncode()
+        available = True
+    except (OSError, subprocess.CalledProcessError):
+        available = False
+    return available
+
 
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
@@ -410,224 +429,247 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
     return interpolated_signal
 
 
-def _num_iterations(n, d):
-    if d > n:
-        return 0
-    if d == 1:
-        return n
-    if d == 2:
-        # equivalent to np.sum(count_matrix)
-        return n * (n + 1) // 2 - 1
+class _JSFUniformOrderStat3D(object):
+    def __init__(self, n, d, precision='double', verbose=False,
+                 cuda_threads=64, cuda_cwr_loops=32):
+        if d > n:
+            raise ValueError("d ({d}) must be less or equal n ({n})".format(
+                d=d, n=n))
+        self.n = n
+        self.d = d
+        self.precision = precision
+        self.verbose = verbose and rank == 0
+        self.cuda_threads = cuda_threads
+        self.cuda_cwr_loops = cuda_cwr_loops
+        self.map_iterations = self._create_iteration_table()
 
-    # Create square matrix with diagonal values equal to 2 to `n`.
-    # Start from row/column with index == 2 to facilitate indexing.
-    count_matrix = np.zeros((n + 1, n + 1), dtype=int)
-    np.fill_diagonal(count_matrix, np.arange(n + 1))
-    count_matrix[1, 1] = 0
+    @property
+    def num_iterations(self):
+        # map_iterations table is populated with element indices, not counts;
+        # therefore, we add 1
+        return self.map_iterations[:, -1].sum() + 1
 
-    # Accumulate counts of all the iterations where the first index
-    # is in the interval `d` to `n`.
-    #
-    # The counts for every level is obtained by accumulating the
-    # `count_matrix`, which is the count of iterations with the first
-    # index between `d` and `n`, when `d` == 2.
-    #
-    # For every value from 3 to `d`...
-    # 1. Define each row `n` in the count matrix as the sum of all rows
-    #    equal or above.
-    # 2. Set all rows above the current value of `d` with zeros.
-    #
-    # Example for `n` = 6 and `d` = 4:
-    #
-    #  d = 2 (start)                d = 3
-    #        count                        count
-    #  n                            n
-    #  2     2  0  0  0  0
-    #  3     0  3  0  0  0    ==>   3     2  3  0  0  0    ==>
-    #  4     0  0  4  0  0          4     2  3  4  0  0
-    #  5     0  0  0  5  0          5     2  3  4  5  0
-    #  6     0  0  0  0  6          6     2  3  4  5  6
-    #
-    #  d = 4
-    #        count
-    #  n
-    #
-    #  4     4  6  4  0  0
-    #  5     6  9  8  5  0
-    #  6     8  12 12 10 6
-    #
-    #  The total number is the sum of the `count_matrix` when `d` has
-    #  the value passed to the function.
-    #
+    def _create_iteration_table(self):
+        # do not use numpy arrays - they are limited to uint64
+        map_iterations = [list(range(self.n))]
+        for row_id in range(1, self.d):
+            prev_row = map_iterations[row_id - 1]
+            curr_row = [0] * (row_id + 1)
+            for col_id in range(row_id + 1, self.n):
+                cumsum = prev_row[col_id] + curr_row[-1]
+                curr_row.append(cumsum)
+            map_iterations.append(curr_row)
+        # here we can wrap the resulting array in numpy:
+        # if at least one item is greater than 2<<63 - 1,
+        # the data type will be set to 'object'
+        map_iterations = np.vstack(map_iterations)
+        return map_iterations
 
-    for cur_d in range(3, d + 1):
-        for cur_n in range(n, 2, -1):
-            count_matrix[cur_n, :] = np.sum(count_matrix[:cur_n + 1, :],
-                                            axis=0)
-        # Set previous `d` level to zeros
-        count_matrix[cur_d - 1, :] = 0
-    return np.sum(count_matrix)
+    def _next_sequence_sorted(self, iteration):
+        # an alternative implementation to naive for-loop iteration when the
+        # MPI size is large. However, it's not clear under which circumstances,
+        # if any, there is a benefit. That's why this function is not used.
+        sequence_sorted = []
+        element = self.n - 1
+        for row in range(self.d - 1, -1, -1):
+            map_row = self.map_iterations[row]
+            while element > row and iteration < map_row[element]:
+                element -= 1
+            iteration -= map_row[element]
+            sequence_sorted.append(element + 1)
+        return tuple(sequence_sorted)
 
+    def _combinations_with_replacement(self):
+        # Generate sequences of {a_i} such that
+        #   a_0 >= a_1 >= ... >= a_(d-1) and
+        #   d-i <= a_i <= n, for each i in [0, d-1].
+        #
+        # Almost equivalent to
+        # list(itertools.combinations_with_replacement(range(n, 0, -1), r=d))
+        # [::-1]
+        #
+        # Example:
+        #   _combinations_with_replacement(n=13, d=3) -->
+        #   (3, 2, 1), (3, 2, 2), (3, 3, 1), ... , (13, 13, 12), (13, 13, 13).
+        #
+        # The implementation follows the insertion sort algorithm:
+        #   insert a new element a_i from right to left to keep the reverse
+        #   sorted order. Now substitute increment operation for insert.
+        if self.d > self.n:
+            return
+        if self.d == 1:
+            for matrix_entry in range(1, self.n + 1):
+                yield (matrix_entry,)
+            return
+        sequence_sorted = list(range(self.d, 0, -1))
+        input_order = tuple(sequence_sorted)  # fixed
+        while sequence_sorted[0] != self.n + 1:
+            for last_element in range(1, sequence_sorted[-2] + 1):
+                sequence_sorted[-1] = last_element
+                yield tuple(sequence_sorted)
+            increment_id = self.d - 2
+            while increment_id > 0 and sequence_sorted[increment_id - 1] == \
+                    sequence_sorted[increment_id]:
+                increment_id -= 1
+            sequence_sorted[increment_id + 1:] = input_order[increment_id + 1:]
+            sequence_sorted[increment_id] += 1
 
-def _combinations_with_replacement(n, d):
-    # Generate sequences of {a_i} such that
-    #   a_0 >= a_1 >= ... >= a_(d-1) and
-    #   d-i <= a_i <= n, for each i in [0, d-1].
-    #
-    # Almost equivalent to
-    # list(itertools.combinations_with_replacement(range(n, 0, -1), r=d))[::-1]
-    #
-    # Example:
-    #   _combinations_with_replacement(n=13, d=3) -->
-    #   (3, 2, 1), (3, 2, 2), (3, 3, 1), ... , (13, 13, 12), (13, 13, 13).
-    #
-    # The implementation follows the insertion sort algorithm:
-    #   insert a new element a_i from right to left to keep the reverse sorted
-    #   order. Now substitute increment operation for insert.
-    if d > n:
-        return
-    if d == 1:
-        for matrix_entry in range(1, n + 1):
-            yield (matrix_entry,)
-        return
-    sequence_sorted = list(range(d, 0, -1))
-    input_order = tuple(sequence_sorted)  # fixed
-    while sequence_sorted[0] != n + 1:
-        for last_element in range(1, sequence_sorted[-2] + 1):
-            sequence_sorted[-1] = last_element
-            yield tuple(sequence_sorted)
-        increment_id = d - 2
-        while increment_id > 0 and sequence_sorted[increment_id - 1] == \
-                sequence_sorted[increment_id]:
-            increment_id -= 1
-        sequence_sorted[increment_id + 1:] = input_order[increment_id + 1:]
-        sequence_sorted[increment_id] += 1
+    def cpu(self, log_du):
+        log_1 = np.log(1.)
+        # Compute the log of the integral's coefficient
+        logK = np.sum(np.log(np.arange(1, self.n + 1)))
+        # Add to the 3D matrix u a bottom layer equal to 0 and a
+        # top layer equal to 1. Then compute the difference du along
+        # the first dimension.
 
+        # prepare arrays for usage inside the loop
+        di_scratch = np.empty_like(log_du, dtype=np.int32)
+        log_du_scratch = np.empty_like(log_du)
 
-def _jsf_uniform_orderstat_3d(u, n, verbose=False):
-    r"""
-    Considered n independent random variables X1, X2, ..., Xn all having
-    uniform distribution in the interval (0, 1):
+        # precompute log(factorial)s
+        # pad with a zero to get 0! = 1
+        log_factorial = np.hstack((0, np.cumsum(np.log(range(1, self.n + 1)))))
 
-    .. centered::  Xi ~ Uniform(0, 1),
+        # compute the probabilities for each unique row of du
+        # only loop over the indices and do all du entries at once
+        # using matrix algebra
+        # initialise probabilities to 0
+        P_total = np.zeros(
+            log_du.shape[0],
+            dtype=np.float32 if self.precision == 'float' else np.float64
+        )
 
-    given a 2D matrix U = (u_ij) where each U_i is an array of length d:
-    U_i = [u0, u1, ..., u_{d-1}] of quantiles, with u1 <= u2 <= ... <= un,
-    computes the joint survival function (jsf) of the d highest order
-    statistics (U_{n-d+1}, U_{n-d+2}, ..., U_n),
-    where U_k := "k-th highest X's" at each u_i, i.e.:
+        for iter_id, matrix_entries in enumerate(
+                tqdm(self._combinations_with_replacement(),
+                     total=self.num_iterations,
+                     desc="Joint survival function",
+                     disable=not self.verbose)):
+            # if we are running with MPI
+            if mpi_accelerated and iter_id % size != rank:
+                continue
+            # we only need the differences of the indices:
+            di = -np.diff((self.n,) + matrix_entries + (0,))
 
-    .. centered::  jsf(u_i) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
+            # reshape the matrix to be compatible with du
+            di_scratch[:, range(len(di))] = di
 
-    Parameters
-    ----------
-    u : (A,d) np.ndarray
-        2D matrix of floats between 0 and 1.
-        Each row `u_i` is an array of length `d`, considered a set of
-        `d` largest order statistics extracted from a sample of `n` random
-        variables whose cdf is `F(x) = x` for each `x`.
-        The routine computes the joint cumulative probability of the `d`
-        values in `u_ij`, for each `i` and `j`.
-    n : int
-        Size of the sample where the `d` largest order statistics `u_ij` are
-        assumed to have been sampled from.
-    verbose : bool
-        If True, print messages during the computation.
-        Default: False.
+            # use precomputed factorials
+            sum_log_di_factorial = log_factorial[di].sum()
 
-    Returns
-    -------
-    P_total : (A,) np.ndarray
-        Matrix of joint survival probabilities. `s_ij` is the joint survival
-        probability of the values `{u_ijk, k=0, ..., d-1}`.
-        Note: the joint probability matrix computed for the ASSET analysis
-        is `1 - S`.
-    """
-    num_p_vals, d = u.shape
+            # Compute for each i,j the contribution to the probability
+            # given by this step, and add it to the total probability
 
-    # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
-    # used to compute the integral as a sum over all possibilities
-    it_todo = _num_iterations(n, d)
+            # Use precomputed log
+            np.copyto(log_du_scratch, log_du)
 
-    log_1 = np.log(1.)
-    # Compute the log of the integral's coefficient
-    logK = np.sum(np.log(np.arange(1, n + 1)))
-    # Add to the 3D matrix u a bottom layer equal to 0 and a
-    # top layer equal to 1. Then compute the difference du along
-    # the first dimension.
-    du = np.diff(u, prepend=0, append=1, axis=1)
+            # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace du with 1
+            # whenever di_scratch = 0, so that du ** di_scratch = 1 (this
+            # avoids nans when both du and di_scratch are 0, and is
+            # mathematically correct)
+            log_du_scratch[di_scratch == 0] = log_1
 
-    # precompute logarithms
-    # ignore warnings about infinities, see inside the loop:
-    # we replace 0 * ln(0) by 1 to get exp(0 * ln(0)) = 0 ** 0 = 1
-    # the remaining infinities correctly evaluate to
-    # exp(ln(0)) = exp(-inf) = 0
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', RuntimeWarning)
-        log_du = np.log(du)
+            di_log_du = di_scratch * log_du_scratch
+            sum_di_log_du = di_log_du.sum(axis=1)
+            logP = sum_di_log_du - sum_log_di_factorial
 
-    # prepare arrays for usage inside the loop
-    di_scratch = np.empty_like(du, dtype=np.int32)
-    log_du_scratch = np.empty_like(log_du)
+            P_total += np.exp(logP + logK)
 
-    # precompute log(factorial)s
-    # pad with a zero to get 0! = 1
-    log_factorial = np.hstack((0, np.cumsum(np.log(range(1, n + 1)))))
+        if mpi_accelerated:
+            totals = np.zeros_like(P_total)
 
-    # compute the probabilities for each unique row of du
-    # only loop over the indices and do all du entries at once
-    # using matrix algebra
-    # initialise probabilities to 0
-    P_total = np.zeros(du.shape[0], dtype=np.float32)
-    for iter_id, matrix_entries in enumerate(
-            tqdm(_combinations_with_replacement(n, d=d),
-                 total=it_todo,
-                 desc="Joint survival function",
-                 disable=not verbose)):
-        # if we are running with MPI
-        if mpi_accelerated and iter_id % size != rank:
-            continue
+            # exchange all the results
+            mpi_float_type = MPI.FLOAT \
+                if self.precision == 'float' else MPI.DOUBLE
+            comm.Allreduce(
+                [P_total, mpi_float_type],
+                [totals, mpi_float_type],
+                op=MPI.SUM)
 
-        # we only need the differences of the indices:
-        di = -np.diff((n,) + matrix_entries + (0,))
+            # We need to return the collected totals instead of the local
+            # P_total
+            P_total = totals
 
-        # reshape the matrix to be compatible with du
-        di_scratch[:, range(len(di))] = di
+        return P_total
 
-        # use precomputed factorials
-        sum_log_di_factorial = log_factorial[di].sum()
+    def _compile_cuda_template(self, u_length):
+        from jinja2 import Template
+        cu_template_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "asset.template.cu")
+        with open(cu_template_path) as f:
+            cu_template = Template(f.read())
+        asset_cu = cu_template.render(
+            ASSET_DEBUG=int(self.verbose),
+            precision=self.precision,
+            N_THREADS=self.cuda_threads,
+            CWR_LOOPS=self.cuda_cwr_loops,
+            L=u_length, N=self.n, D=self.d)
+        return asset_cu
 
-        # Compute for each i,j the contribution to the probability
-        # given by this step, and add it to the total probability
+    def cuda(self, log_du):
+        asset_cu = self._compile_cuda_template(u_length=log_du.shape[0])
+        with tempfile.TemporaryDirectory() as asset_tmp_folder:
+            asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
+            asset_bin_path = os.path.join(asset_tmp_folder, 'asset.o')
+            with open(asset_cu_path, 'w') as f:
+                f.write(asset_cu)
+            # -O3 optimization flag is for the host code only;
+            # by default, GPU device code is optimized with -O3
+            compile_cmd = ['nvcc', '-O3', '-o', asset_bin_path, asset_cu_path]
+            if self.precision == 'double' and get_cuda_capability_major() >= 6:
+                # atomicAdd(double) requires compute capability 6.x
+                compile_cmd.extend(['-arch', 'sm_60'])
+            compile_status = subprocess.run(
+                compile_cmd,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            compile_status.check_returncode()
+            log_du_path = os.path.join(asset_tmp_folder, "log_du.txt")
+            P_total_path = os.path.join(asset_tmp_folder, "P_total.txt")
+            np.savetxt(log_du_path, log_du, fmt="%.10f")
+            run_status = subprocess.run(
+                [asset_bin_path, log_du_path, P_total_path],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if self.verbose:
+                print(run_status.stdout.decode())
+                print(run_status.stderr.decode(), file=sys.stderr)
+            run_status.check_returncode()
+            P_total = np.genfromtxt(P_total_path)
 
-        # Use precomputed log
-        np.copyto(log_du_scratch, log_du)
+        # Large number of floating-point additions can result in values
+        # outside of the valid range [0, 1].
+        P_total = np.clip(P_total, a_min=0., a_max=1.)
 
-        # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace du with 1
-        # whenever di_scratch = 0, so that du ** di_scratch = 1 (this avoids
-        # nans when both du and di_scratch are 0, and is mathematically
-        # correct)
-        log_du_scratch[di_scratch == 0] = log_1
+        return P_total
 
-        di_log_du = di_scratch * log_du_scratch
-        sum_di_log_du = di_log_du.sum(axis=1)
-        logP = sum_di_log_du - sum_log_di_factorial
+    def _choose_backend(self):
+        if int(os.getenv("ELEPHANT_USE_CUDA", '1')) == 0:
+            # don't use CUDA
+            return self.cpu
+        if not _is_cuda_available():
+            return self.cpu
+        if self.d < 3 or self.n <= 10:
+            return self.cpu
+        return self.cuda
 
-        P_total += np.exp(logP + logK)
+    def compute(self, u):
+        if u.shape[1] != self.d:
+            raise ValueError("Invalid input data shape axis 1: expected {}, "
+                             "got {}".format(self.d, u.shape[1]))
+        du = np.diff(u, prepend=0, append=1, axis=1)
 
-    if mpi_accelerated:
-        totals = np.zeros(du.shape[0], dtype=np.float32)
+        # precompute logarithms
+        # ignore warnings about infinities, see inside the loop:
+        # we replace 0 * ln(0) by 1 to get exp(0 * ln(0)) = 0 ** 0 = 1
+        # the remaining infinities correctly evaluate to
+        # exp(ln(0)) = exp(-inf) = 0
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            log_du = np.log(du)
 
-        # exchange all the results
-        comm.Allreduce(
-            [P_total, MPI.FLOAT],
-            [totals, MPI.FLOAT],
-            op=MPI.SUM)
+        jsf_backend = self._choose_backend()
 
-        # We need to return the collected totals instead of the local P_total
-        return totals
+        P_total = jsf_backend(log_du)
 
-    return P_total
+        return P_total
 
 
 def _pmat_neighbors(mat, filter_shape, n_largest):
@@ -964,12 +1006,11 @@ def synchronous_events_no_overlap(sse1, sse2):
         return False
 
     common_pixels = set(sse11.keys()).intersection(set(sse22.keys()))
-    if common_pixels == set([]):
+    if len(common_pixels) == 0:
         return True
-    elif all(sse11[p].isdisjoint(sse22[p]) for p in common_pixels):
+    if all(sse11[p].isdisjoint(sse22[p]) for p in common_pixels):
         return True
-    else:
-        return False
+    return False
 
 
 def synchronous_events_contained_in(sse1, sse2):
@@ -1020,7 +1061,7 @@ def synchronous_events_contained_in(sse1, sse2):
     for pixel1, link1 in sse11.items():
         if pixel1 not in sse22.keys():
             return False
-        elif not link1.issubset(sse22[pixel1]):
+        if not link1.issubset(sse22[pixel1]):
             return False
 
     # Check that sse1 is a STRICT subset of sse2, i.e. that sse2 contains at
@@ -1226,7 +1267,7 @@ class ASSET(object):
             spiketrains_j,
             t_start=t_start_j,
             t_stop=t_stop_j)
-        self.verbose = verbose
+        self.verbose = verbose and rank == 0
 
         msg = 'The time intervals for x and y need to be either identical ' \
               'or fully disjoint, but they are:\n' \
@@ -1604,7 +1645,8 @@ class ASSET(object):
         return pmat
 
     def joint_probability_matrix(self, pmat, filter_shape, n_largest,
-                                 min_p_value=1e-5):
+                                 min_p_value=1e-5, precision='double',
+                                 cuda_threads=64, cuda_cwr_loops=32):
         """
         Map a probability matrix `pmat` to a joint probability matrix `jmat`,
         where `jmat[i, j]` is the joint p-value of the largest neighbors of
@@ -1636,12 +1678,40 @@ class ASSET(object):
             `min(pmat[i, j], 1-p_value_min)` to avoid that a single highly
             significant value in `pmat` (extreme case: `pmat[i, j] = 1`) yields
             joint significance of itself and its neighbors.
-            Default: 1e-5.
+            Default: 1e-5
+        precision : {'float', 'double'}, optional
+            The floating-point precision of the resulting `jmat` matrix.
+              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
+
+              * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
+            Default: 'float'
+        cuda_threads : int, optional
+            The number of CUDA threads per block (in X axis) between 1 and
+            1024 and is used only if CUDA backend is enabled.
+            For performance reasons, it should be a multiple of 32.
+            Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
+            than 64 while new series (Tesla T4) with capabilities 6.x and more
+            work best with 32 threads.
+            Default: 64
+        cuda_cwr_loops : int, optional
+            CUDA optimization parameter, a positive integer that defines the
+            number of fast 'combinations_with_replacement' loops to run to
+            reduce branch divergence. This parameter influences the performance
+            when the number of iterations is huge (`>1e8`).
+            Default: 32
 
         Returns
         -------
         jmat : np.ndarray
             The joint probability matrix associated to `pmat`.
+
+        Notes
+        -----
+        By default, if a GPU is detected, CUDA implementations is used for
+        large arrays. To turn off CUDA features, set the environment flag
+        `ELEPHANT_USE_CUDA=0` either in python or via the command line:
+
+          ``ELEPHANT_USE_CUDA=0 python /path/to/script``
 
         """
         l, w = filter_shape
@@ -1664,8 +1734,12 @@ class ASSET(object):
         # Compute the joint p-value matrix jpvmat
         n = l * (1 + 2 * w) - w * (
                 w + 1)  # number of entries covered by kernel
-        jpvmat = _jsf_uniform_orderstat_3d(pmat_neighb, n,
-                                           verbose=self.verbose)
+        jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
+                                     precision=precision,
+                                     verbose=self.verbose,
+                                     cuda_threads=cuda_threads,
+                                     cuda_cwr_loops=cuda_cwr_loops)
+        jpvmat = jsf.compute(u=pmat_neighb)
 
         # restore the original shape using the stored indices
         jpvmat = jpvmat[pmat_neighb_indices].reshape(pmat.shape)

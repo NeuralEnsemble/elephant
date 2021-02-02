@@ -18,6 +18,7 @@ Synchrony Measures
 """
 from __future__ import division, print_function, unicode_literals
 
+import warnings
 from collections import namedtuple
 from copy import deepcopy
 
@@ -341,33 +342,41 @@ class Synchrotool(Complexity):
             if mode == 'extract':
                 mask = np.invert(mask)
             new_st = st[mask]
-            spiketrain_list[idx] = new_st
-            if in_place:
+            if in_place and st.segment is not None:
                 segment = st.segment
-                if segment is None:
-                    continue
 
-                # replace link to spiketrain in segment
-                new_index = self._get_spiketrain_index(
-                    segment.spiketrains, st)
-                segment.spiketrains[new_index] = new_st
+                try:
+                    # replace link to spiketrain in segment
+                    new_index = self._get_spiketrain_index(
+                        segment.spiketrains, st)
+                    segment.spiketrains[new_index] = new_st
+                except ValueError:
+                    # st is not in this segment even though it points to it
+                    warnings.warn(f"The SpikeTrain at index {idx} of the "
+                                  "input list spiketrains has a "
+                                  "unidirectional uplink to a segment in "
+                                  "whose segment.spiketrains list it does not "
+                                  "appear. Only the spiketrains in the input "
+                                  "list will be replaced. You can suppress "
+                                  "this warning by setting "
+                                  "spiketrain.segment=None for the input "
+                                  "spiketrains.")
 
                 block = segment.block
-                if block is None:
-                    continue
+                if block is not None:
+                    # replace link to spiketrain in groups
+                    for group in block.groups:
+                        try:
+                            idx = self._get_spiketrain_index(
+                                group.spiketrains,
+                                st)
+                        except ValueError:
+                            # st is not in this group, move to next group
+                            continue
 
-                # replace link to spiketrain in groups
-                for group in block.groups:
-                    try:
-                        idx = self._get_spiketrain_index(
-                            group.spiketrains,
-                            st)
-                    except ValueError:
-                        # st is not in this group, move to next group
-                        continue
-
-                    # st found in group, replace with new_st
-                    group.spiketrains[idx] = new_st
+                        # st found in group, replace with new_st
+                        group.spiketrains[idx] = new_st
+            spiketrain_list[idx] = new_st
 
         return spiketrain_list
 

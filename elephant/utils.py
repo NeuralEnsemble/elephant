@@ -11,6 +11,7 @@
 
 from __future__ import division, print_function, unicode_literals
 
+import ctypes
 import warnings
 from functools import wraps
 
@@ -298,3 +299,41 @@ def round_binning_errors(values, tolerance=1e-8):
                       'behaviour.')
         values += 0.5
     return int(values)
+
+
+def get_cuda_capability_major():
+    """
+    Extracts CUDA capability major version of the first available Nvidia GPU
+    card, if detected. Otherwise, return 0.
+
+    Returns
+    -------
+    int
+        CUDA capability major version.
+    """
+    CUDA_SUCCESS = 0
+    for libname in ('libcuda.so', 'libcuda.dylib', 'cuda.dll'):
+        try:
+            cuda = ctypes.CDLL(libname)
+        except OSError:
+            continue
+        else:
+            break
+    else:
+        # not found
+        return 0
+    result = cuda.cuInit(0)
+    if result != CUDA_SUCCESS:
+        return 0
+    device = ctypes.c_int()
+    # parse the first GPU card only
+    result = cuda.cuDeviceGet(ctypes.byref(device), 0)
+    if result != CUDA_SUCCESS:
+        return 0
+
+    cc_major = ctypes.c_int()
+    cc_minor = ctypes.c_int()
+    cuda.cuDeviceComputeCapability(ctypes.byref(cc_major),
+                                   ctypes.byref(cc_minor),
+                                   device)
+    return cc_major.value
