@@ -1144,15 +1144,9 @@ class JointISI(object):
 
             right_padding = jisih_diag_cums.shape[1] - \
                 len(anti_diagonal) - self._max_change_index
-<<<<<<< HEAD
 
             cumulated_diagonal = np.cumsum(anti_diagonal)
 
-=======
-
-            cumulated_diagonal = np.cumsum(anti_diagonal)
-
->>>>>>> master
             padded_cumulated_diagonal = np.pad(
                 cumulated_diagonal,
                 pad_width=(self._max_change_index, right_padding),
