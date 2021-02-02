@@ -707,15 +707,11 @@ def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
 
     surrogate_spiketrains = []
     for surrogate_id in range(n_surrogates):
-        displacement_window = 2 * max_displacement
         surrogate_bin_indices = np.empty(shape=len(bin_indices),
                                          dtype=np.ndarray)
         for i, bin_indices_slice in enumerate(bin_indices):
             window_start = i*displacement_window
 
-            # ensure last window is not too long
-            if window_start + displacement_window > binned_duration:
-                displacement_window = binned_duration - window_start
             random_indices = np.random.permutation(displacement_window)
             surrogate_bin_indices[i] = \
                 random_indices[bin_indices_slice - window_start] \
