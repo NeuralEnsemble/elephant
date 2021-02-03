@@ -691,37 +691,38 @@ def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
     t_start = spiketrain.t_start.item()
     t_stop = spiketrain.t_stop.item()
     spiketrain_shifted = spiketrain.magnitude - t_start
+    displacement_window = 2 * max_displacement
 
     binned_duration = int((t_stop - t_start) // bin_size)
 
     bin_indices = (spiketrain_shifted // bin_size).astype(int)
 
+    split_indices = np.searchsorted(
+        bin_indices,
+        np.arange(displacement_window, binned_duration, displacement_window))
+
+    bin_indices = np.split(
+        bin_indices,
+        split_indices)
+
     surrogate_spiketrains = []
-
     for surrogate_id in range(n_surrogates):
-        displacement_window = 2 * max_displacement
-        for window_start in range(
-                0, binned_duration - displacement_window, displacement_window):
-            # ensure last window is not too long
-            if window_start + displacement_window > binned_duration:
-                displacement_window = binned_duration - window_start
-            random_indices = np.random.permutation(displacement_window)
-            condition = np.all(
-                (bin_indices >= window_start,
-                 bin_indices < window_start + displacement_window),
-                axis=0)
+        surrogate_bin_indices = np.empty(shape=len(bin_indices),
+                                         dtype=np.ndarray)
+        for i, bin_indices_slice in enumerate(bin_indices):
+            window_start = i*displacement_window
 
-            sliced_bin_indices = bin_indices[condition]
-            sliced_bin_indices = \
-                random_indices[sliced_bin_indices - window_start] \
+            random_indices = np.random.permutation(displacement_window)
+            surrogate_bin_indices[i] = \
+                random_indices[bin_indices_slice - window_start] \
                 + window_start
 
-            bin_indices[condition] = sliced_bin_indices
+        surrogate_bin_indices = np.concatenate(surrogate_bin_indices)
 
         bin_remainders = bin_size * np.random.random(len(spiketrain))
 
         surrogate_spiketrain = \
-            bin_indices * bin_size + bin_remainders + t_start
+            surrogate_bin_indices * bin_size + bin_remainders + t_start
 
         # ensure last and first spike being inside the boundaries
         surrogate_spiketrain = surrogate_spiketrain[
