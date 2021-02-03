@@ -309,7 +309,7 @@ def phase_difference(alpha, beta):
     return phase_diff
 
 
-def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
+def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency, approach_type):
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI)
 
@@ -359,39 +359,41 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency):
         raise ValueError("trial number and trial length of signal i and j "
                          "must be equal")
 
-    # LOOP-approach
-    wpli_num = 0
-    wpli_den = 0
-    for trial_i, trial_j in zip(signal_i, signal_j):
-        # X Fourier transforms
-        fft1 = np.fft.fft(trial_i)
-        fft2 = np.fft.fft(trial_j)
-        freqs = np.fft.fftfreq(len(fft1), d=1.0 / sampling_frequency)
-        # Remove negative frequencies
-        fft1 = fft1[1:int(len(fft1) / 2)]
-        fft2 = fft2[1:int(len(fft2) / 2)]
+    if approach_type.upper() == "LOOP":
+        # LOOP-approach
+        wpli_num = 0
+        wpli_den = 0
+        for trial_i, trial_j in zip(signal_i, signal_j):
+            # X Fourier transforms
+            fft1 = np.fft.fft(trial_i)
+            fft2 = np.fft.fft(trial_j)
+            freqs = np.fft.fftfreq(len(fft1), d=1.0 / sampling_frequency)
+            # Remove negative frequencies
+            fft1 = fft1[1:int(len(fft1) / 2)]
+            fft2 = fft2[1:int(len(fft2) / 2)]
+            freqs = freqs[1:int(len(freqs) / 2)]
+            # sum across trials
+            temp_cs = fft1 * np.conjugate(fft2)
+            wpli_num += np.abs(np.imag(temp_cs)) * np.sign(np.imag(temp_cs))
+            wpli_den += np.abs(np.imag(temp_cs))
+        # WPLI
+        wpli = np.abs(wpli_num / len(signal_i)) / (wpli_den / len(signal_i))
+
+    elif approach_type.upper() == "ARRAY":
+        # ARRAY-approach
+        # calculate Fourier transforms
+        fft1 = np.fft.fft(signal_i)
+        fft2 = np.fft.fft(signal_j)
+        freqs = np.fft.fftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
+        # remove negative frequencies of FFT-vectors
+        fft1 = fft1[:, 1:int(np.shape(fft1)[1] / 2)]
+        fft2 = fft2[:, 1:int(np.shape(fft2)[1] / 2)]
         freqs = freqs[1:int(len(freqs) / 2)]
-        # sum across trials
-        temp_cs = fft1 * np.conjugate(fft2)
-        wpli_num += np.abs(np.imag(temp_cs)) * np.sign(np.imag(temp_cs))
-        wpli_den += np.abs(np.imag(temp_cs))
-    # WPLI
-    wpli = np.abs(wpli_num / len(signal_i)) / (wpli_den / len(signal_i))
+        # obtain cross-spectrum
+        cs = fft1 * np.conjugate(fft2)
+        # calculate WPLI
+        wpli_num = np.abs(np.mean(np.abs(np.imag(cs)) * np.sign(np.imag(cs)), axis=0))
+        wpli_den = np.mean(np.abs(np.imag(cs)), axis=0)
+        wpli = wpli_num / wpli_den
 
-    # ARRAY-approach
-    # # calculate Fourier transforms
-    # fft1 = np.fft.fft(signal_i)
-    # fft2 = np.fft.fft(signal_j)
-    # freqs = np.fft.fftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
-    # # remove negative frequencies of FFT-vectors
-    # fft1 = fft1[:, 1:int(np.shape(fft1)[1] / 2)]
-    # fft2 = fft2[:, 1:int(np.shape(fft2)[1] / 2)]
-    # freqs = freqs[1:int(len(freqs) / 2)]
-    # # obtain cross-spectrum
-    # cs = fft1 * np.conjugate(fft2)
-    # # calculate WPLI
-    # wpli_num = np.abs(np.mean(np.abs(np.imag(cs)) * np.sign(np.imag(cs)), axis=0))
-    # wpli_den = np.mean(np.abs(np.imag(cs)), axis=0)
-    # wpli = wpli_num / wpli_den
-
-    return wpli, freqs
+    return freqs, wpli

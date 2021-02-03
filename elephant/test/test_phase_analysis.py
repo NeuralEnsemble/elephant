@@ -14,6 +14,7 @@ import numpy as np
 import quantities as pq
 import os.path
 import scipy
+import matplotlib.pyplot as plt
 
 import elephant.phase_analysis
 
@@ -375,27 +376,24 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def setUp(self):
         self.ntrials = 100
-        self.srate = 250 * pq.Hz
-        self.tlength = 500 * pq.ms
-        self.freq = 16 * pq.Hz
-        self.amp = 1 * pq.mV
+        self.srate = 250        # Hz
+        self.tlength = 500      # ms
+        self.freq = 16          # Hz
+        self.amp = 1            # mV
         self.phase = 0
         self.tolerance = 1e-15
 
         # time-vector
-        self.t = np.arange(0, self.tlength.magnitude,
-            1. / self.srate.rescale(1. / self.tlength.units).magnitude)
+        self.t = np.arange(0, self.tlength, 1. / (self.srate / 1000))
 
-        # signal sampels
-        self.one_trial_x = 16 * self.amp.units + self.amp * np.sin(
-            2 * np.pi * self.freq.rescale(1. / self.tlength.units).magnitude
-            * self.t + self.phase)
+        # # signal sampels
+        self.one_trial_x = 16 + self.amp * np.sin(
+            2 * np.pi * (self.freq / 1000) * self.t + self.phase)
         self.signal_x = np.full((self.ntrials, len(self.one_trial_x)),
                                 self.one_trial_x)
         # constant phase lag of pi/3
-        self.one_trial_y = 16 * self.amp.units + self.amp * np.sin(
-            2 * np.pi * self.freq.rescale(1. / self.tlength.units).magnitude
-            * self.t + np.pi/3)
+        self.one_trial_y = 16 + self.amp * np.sin(
+            2 * np.pi * (self.freq / 1000) * self.t + np.pi/3)
         self.signal_y = np.full((self.ntrials, len(self.one_trial_y)),
                                 self.one_trial_y)
         # equal distributed phase lags of pi/2 and 1.5*pi across trials
@@ -405,9 +403,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 phase = np.pi/2
             else:
                 phase = 1.5 * np.pi
-            self.signal_z[i] = 16 * self.amp.units + self.amp * np.sin(
-                2 * np.pi * self.freq.rescale(1. / self.tlength.units)
-                .magnitude * self.t + phase)
+            self.signal_z[i] = 16 + self.amp * np.sin(
+                2 * np.pi * (self.freq / 1000) * self.t + phase)
 
         # simple samples of different shapes to assert ErrorRaising
         self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
@@ -434,32 +431,58 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         Test if the WPLI is consistent with the ground truth generated from
         the LFP-datasets from the ICN lecture 10: 'The Local Field Potential'.
         """
-        wpli_from_lfp_dataset, freq_from_lfp_dataset = \
+        freq_from_lfp_dataset, wpli_from_lfp_dataset = \
             elephant.phase_analysis.weighted_phase_lag_index(
-                self.lfps1, self.lfps2, self.sf1)
+                self.lfps1, self.lfps2, self.sf1, "ARRAY")
         np.testing.assert_allclose(
             wpli_from_lfp_dataset, self.wpli_ground_truth,
             atol=1e-14, rtol=1e-12)
+
+        # just temporarily for visualization
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8), num=1)
+        fig.suptitle("Weighted Phase Lag Index - Ground Truth Consistency", size=20)
+        ax.plot(freq_from_lfp_dataset, wpli_from_lfp_dataset, label="WPLI")
+        ax.set_xlabel('f (Hz)', size=16)
+        ax.legend(fontsize=16, framealpha=0)
+        plt.show()
 
     def test_WPLI_is_zero(self):  # for: f = 16Hz
         """
         Test if WPLI is zero at frequency f=16Hz, which is the frequency
         of this artificial test-data sinusoid.
         """
-        wpli, freq = elephant.phase_analysis.weighted_phase_lag_index(
-            self.signal_x, self.signal_z, self.srate)
+        freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
+            self.signal_x, self.signal_z, self.srate, "ARRAY")
         # print(f"WPLI_zero: \n{wpli}\n\n Frequency: \n{freq}")
         np.testing.assert_almost_equal(wpli[np.where(freq == self.freq)], 0, 15)
+
+        # just temporarily for visualization
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8), num=2)
+        fig.suptitle("Weighted Phase Lag Index - equal zero at f=16Hz", size=20)
+        ax.stem(freq, wpli, label="WPLI")
+        ax.axvline(16, 0, 1, color="r", label="16Hz", linestyle=":")
+        ax.set_xlabel('f (Hz)', size=16)
+        ax.legend(fontsize=16, framealpha=0)
+        plt.show()
 
     def test_WPLI_is_one(self):  # for: f = 16Hz
         """
         Test if WPLI is one at frequency f=16Hz, which is the frequency
         of this artificial test-data sinusoid.
         """
-        wpli, freq = elephant.phase_analysis.weighted_phase_lag_index(
-            self.signal_x, self.signal_y, self.srate)
+        freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+            self.signal_x, self.signal_y, self.srate, "ARRAY")
         # print(f"WPLI_one: \n{wpli}\n\n Frequency: \n{freq}")
         np.testing.assert_almost_equal(wpli[np.where(freq == self.freq)], 1, 15)
+
+        # just temporarily for visualization
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8), num=3)
+        fig.suptitle("Weighted Phase Lag Index - equal one for f=16Hz", size=20)
+        ax.stem(freq, wpli, label="WPLI")
+        ax.axvline(16, 0, 1, color="r", label="16Hz", linestyle=":")
+        ax.set_xlabel('f (Hz)', size=16)
+        ax.legend(fontsize=16, framealpha=0)
+        plt.show()
 
     def test_WPLI_raise_error_if_trial_number_is_different(self):
         """
@@ -469,7 +492,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # different numbers of trails
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            self.simple_x, self.simple_y, self.srate)
+            self.simple_x, self.simple_y, self.srate, "ARRAY")
 
     def test_WPLI_raise_error_if_trial_lengths_are_different(self):
         """
@@ -479,7 +502,35 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # different lengths in a trail pair
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            self.simple_y, self.simple_z, self.srate)
+            self.simple_y, self.simple_z, self.srate, "ARRAY")
+
+    def test_WPLI_compare_array_and_loop_approach(self):
+        """
+        Test if both approaches are equally precise and compare the exectuion time.
+        """
+        ### Compare Execution Time
+        from timeit import default_timer as timer
+        start1 = timer()
+        freqs_loop, wpli_loop = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1, self.lfps2, self.sf1, "LOOP")
+        end1 = timer()
+
+        start2 = timer()
+        freqs_array, wpli_array = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1, self.lfps2, self.sf1, "ARRAY")
+        end2 = timer()
+
+        print("Compare Execution Time:")
+        print(f"LOOPs: {end1 - start1} in seconds")
+        print(f"ARRAYs:  {end2 - start2} in seconds")
+
+        ### Compare Preciseness
+        atol = 1e-15
+        rtol = 1e-15
+        np.testing.assert_allclose(wpli_array, wpli_loop, rtol=rtol, atol=atol)
+        print("Compare Preciseness:")
+        print(f"All close: {np.allclose(wpli_array, wpli_loop, atol=atol, rtol=rtol)}"
+              f" with absolut tolerance: {atol} and relative tolerance: {rtol}")
 
 
 if __name__ == '__main__':
