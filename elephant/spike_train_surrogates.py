@@ -584,7 +584,8 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
 
 
 def bin_shuffling(
-        binned_spiketrain, max_displacement, n_surrogates=1, sliding=False):
+        spiketrain, max_displacement, bin_size=None, n_surrogates=1,
+        sliding=False):
     """
     Bin shuffling surrogate generation.
 
@@ -594,25 +595,45 @@ def bin_shuffling(
 
     Parameters
     ----------
-    binned_spiketrain : conv.BinnedSpikeTrain
-        The binned spiketrain to create surrogates of.
+    spiketrain : conv.BinnedSpikeTrain or neo.SpikeTrain
+        The binned spike train or a continuous time spike train
+        to create surrogates of.
     max_displacement : int
         Number of bins that a single spike can be displaced.
+    bin_size : pq.Quantity or None
+        the bin size needs to be specified only if a not-binned spike train
+        is passed to the method
     n_surrogates : int, optional
         Number of surrogates to create.
         Default: 1.
     sliding : bool, optional
-        If True, the window is slided bin by bin.
+        If True, the window is slided bin by bin
+        (only implemented for binned spike trains).
         Default: False.
 
     Returns
     -------
-    binned_surrogates : list of conv.BinnedSpikeTrain
-        Each entry of the list is a binned surrogate spiketrain.
+    binned_surrogates : list of conv.BinnedSpikeTrain or list of neo.SpikeTrain
+        Each entry of the list is a surrogate spike train either binned or in
+        continuous time.
     """
+    if isinstance(spiketrain, neo.SpikeTrain):
+        if bin_size is None:
+            raise ValueError(
+                'If you want to create surrogates from neo.SpikeTrain objects,'
+                'you need to specify the bin_size')
+        if sliding:
+            warnings.warn(
+                'The sliding option is not implemented yet for bin shuffling'
+                ' on continuos time spike trains. Results are given for'
+                ' sliding=False.', UserWarning)
+        return _continuous_time_bin_shuffling(
+            spiketrain, max_displacement=max_displacement, bin_size=bin_size,
+            n_surrogates=n_surrogates)
+
     displacement_window = 2 * max_displacement
 
-    binned_spiketrain_bool = binned_spiketrain.to_bool_array()[0]
+    binned_spiketrain_bool = spiketrain.to_bool_array()[0]
     st_length = len(binned_spiketrain_bool)
 
     surrogate_spiketrains = []
@@ -642,9 +663,84 @@ def bin_shuffling(
         surrogate_spiketrains.append(
             conv.BinnedSpikeTrain(
                 surrogate_spiketrain,
-                bin_size=binned_spiketrain.bin_size,
-                t_start=binned_spiketrain.t_start,
-                t_stop=binned_spiketrain.t_stop))
+                bin_size=spiketrain.bin_size,
+                t_start=spiketrain.t_start,
+                t_stop=spiketrain.t_stop))
+    return surrogate_spiketrains
+
+
+def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
+                                   n_surrogates=1):
+    """
+
+    Parameters
+    ----------
+    spiketrain : neo.SpikeTrain
+    max_displacement : int
+        number of bins that a single spike can be displaced
+    bin_size : pq.Quantity
+    n_surrogates : int, optional
+        Default : 1
+
+    Returns
+    -------
+    list of neo.SpikeTrain
+    """
+    units = spiketrain.units
+    bin_size = bin_size.rescale(units).item()
+    t_start = spiketrain.t_start.item()
+    t_stop = spiketrain.t_stop.item()
+    spiketrain_shifted = spiketrain.magnitude - t_start
+    displacement_window = 2 * max_displacement
+
+    binned_duration = int((t_stop - t_start) // bin_size)
+
+    bin_indices = (spiketrain_shifted // bin_size).astype(int)
+
+    split_indices = np.searchsorted(
+        bin_indices,
+        np.arange(displacement_window, binned_duration, displacement_window))
+
+    bin_indices = np.split(
+        bin_indices,
+        split_indices)
+
+    surrogate_spiketrains = []
+    for surrogate_id in range(n_surrogates):
+        surrogate_bin_indices = np.empty(shape=len(bin_indices),
+                                         dtype=np.ndarray)
+        for i, bin_indices_slice in enumerate(bin_indices):
+            window_start = i*displacement_window
+
+            random_indices = np.random.permutation(displacement_window)
+            surrogate_bin_indices[i] = \
+                random_indices[bin_indices_slice - window_start] \
+                + window_start
+
+        surrogate_bin_indices = np.concatenate(surrogate_bin_indices)
+
+        bin_remainders = bin_size * np.random.random(len(spiketrain))
+
+        surrogate_spiketrain = \
+            surrogate_bin_indices * bin_size + bin_remainders + t_start
+
+        # ensure last and first spike being inside the boundaries
+        surrogate_spiketrain = surrogate_spiketrain[
+            np.all((surrogate_spiketrain > t_start,
+                    surrogate_spiketrain < t_stop),
+                   axis=0)]
+
+        surrogate_spiketrain.sort()
+
+        surrogate_spiketrain = neo.SpikeTrain(
+            surrogate_spiketrain,
+            units=units,
+            t_start=t_start,
+            t_stop=t_stop,
+            copy=False,
+        )
+
+        surrogate_spiketrains.append(surrogate_spiketrain)
     return surrogate_spiketrains
 
 
@@ -1180,7 +1276,7 @@ def _trial_shifting(spiketrains, dither, t_starts, t_stops, n_surrogates):
     """
     surrogate_spiketrains = []
     for surrogate_id in range(n_surrogates):
-        copied_spiketrain = copy.copy(spiketrains)
+        copied_spiketrain = copy.deepcopy(spiketrains)
         surrogate_spiketrain = []
         # looping over all trials
         for trial_id, single_trial_st in enumerate(copied_spiketrain):
@@ -1378,19 +1474,10 @@ def surrogates(
         return _trial_shifting_of_concatenated_spiketrain(
             spiketrain, dither=dt, n_surrogates=n_surrogates, **kwargs)
     if method is bin_shuffling:
-        binned_spiketrain = conv.BinnedSpikeTrain(
-            spiketrain, bin_size=kwargs['bin_size'])
-        bin_grid = binned_spiketrain.bin_centers.simplified.magnitude
         max_displacement = int(
             dt.simplified.magnitude / kwargs['bin_size'].simplified.magnitude)
-        binned_surrogates = method(
-            binned_spiketrain, max_displacement, n_surrogates=n_surrogates)
-        surrogate_spiketrains = [neo.SpikeTrain(
-            bin_grid[binned_surrogate.to_bool_array()[0]] * pq.s,
-            t_start=spiketrain.t_start,
-            t_stop=spiketrain.t_stop,
-            units=spiketrain.units)
-            for binned_surrogate in binned_surrogates]
-        return surrogate_spiketrains
+        return method(
+            spiketrain, max_displacement=max_displacement,
+            bin_size=kwargs['bin_size'], n_surrogates=n_surrogates)
     # surr_method is 'joint_isi_dithering' or isi_dithering:
     return method(n_surrogates)
