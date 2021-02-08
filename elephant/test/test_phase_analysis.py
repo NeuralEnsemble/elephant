@@ -202,5 +202,173 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         self.assertEqual(len(phases_noint[0]), 2)
 
 
+class MeanVectorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.n_samples = 200
+        # create a sample with all values equal to a random phase-lock phi
+        self.lock_value_phi = np.random.uniform(-np.pi, np.pi, 1)
+        self.dataset1 = np.ones(self.n_samples) * self.lock_value_phi
+        # create a evenly spaced / uniform distribution
+        self.dataset2 = np.arange(0, 2 * np.pi, (2 * np.pi) / self.n_samples)
+        # create a random distribution
+        self.dataset3 = np.random.uniform(-np.pi, np.pi, self.n_samples)
+
+    def testMeanVector_direction_is_phi_and_length_is_1(self):
+        """
+        Test if the mean vector length is 1 and if the mean direction is phi
+        for a sample with all phases equal to phi on the unit circle.
+
+        """
+        theta_bar_1, r_1 = elephant.phase_analysis.mean_phase_vector(
+            self.dataset1)
+        # mean direction must be phi
+        self.assertAlmostEqual(theta_bar_1, self.lock_value_phi,
+                               delta=self.tolerance)
+        # mean vector length must be almost equal 1
+        self.assertAlmostEqual(r_1, 1, delta=self.tolerance)
+
+    def testMeanVector_length_is_0(self):
+        """
+        Test if the mean vector length  is 0 for a evenly spaced distribution
+        on the unit circle.
+        """
+        theta_bar_2, r_2 = elephant.phase_analysis.mean_phase_vector(
+            self.dataset2)
+        # mean vector length must be almost equal 0
+        self.assertAlmostEqual(r_2, 0, delta=self.tolerance)
+
+    def testMeanVector_ranges_of_direction_and_length(self):
+        """
+        Test if the range of the mean vector direction follows numpy standard
+        and is within (-pi, pi].
+        Test if the range of the mean vector length is within [0, 1].
+        """
+        theta_bar_3, r_3 = elephant.phase_analysis.mean_phase_vector(
+            self.dataset3)
+        # mean vector direction
+        self.assertTrue(-np.pi < theta_bar_3 <= np.pi)
+        # mean vector length
+        self.assertTrue(0 <= r_3 <= 1)
+
+
+class PhaseDifferenceTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.n_samples = 200
+
+    def testPhaseDifference_in_range_minus_pi_to_pi(self):
+        """
+        Test if the range of the phase difference is within [-pi, pi] for
+        random pairs of alpha and beta.
+        """
+        alpha = np.random.uniform(-np.pi, np.pi, self.n_samples)
+        beta = np.random.uniform(-np.pi, np.pi, self.n_samples)
+
+        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
+        self.assertTrue((-np.pi <= phase_diff).all()
+                        and (phase_diff <= np.pi).all())
+
+    def testPhaseDifference_is_delta(self):
+        """
+        Test if the phase difference is random delta for random pairs of
+        alpha and beta, where beta is a copy of alpha shifted by delta.
+        """
+        delta = np.random.uniform(-np.pi, np.pi, self.n_samples)
+        alpha = np.random.uniform(-np.pi, np.pi, self.n_samples)
+        _beta = alpha - delta
+        beta = np.arctan2(np.sin(_beta), np.cos(_beta))
+
+        phase_diff = elephant.phase_analysis.phase_difference(alpha, beta)
+        np.testing.assert_allclose(phase_diff, delta, atol=1e-10)
+
+
+class PhaseLockingValueTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tolerance = 1e-15
+        self.phase_shift = np.pi / 4
+        self.num_time_points = 1000
+        self.num_trials = 100
+
+        # create two random uniform distributions (all trials are identical)
+        self.signal_x = \
+            np.full([self.num_trials, self.num_time_points],
+                    np.random.uniform(-np.pi, np.pi, self.num_time_points))
+        self.signal_y = \
+            np.full([self.num_trials, self.num_time_points],
+                    np.random.uniform(-np.pi, np.pi, self.num_time_points))
+
+        # create two random uniform distributions, where all trails are random
+        self.random_x = np.random.uniform(
+            -np.pi, np.pi, (1000, self.num_time_points))
+        self.random_y = np.random.uniform(
+            -np.pi, np.pi, (1000, self.num_time_points))
+
+        # simple samples of different shapes to assert ErrorRaising
+        self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
+        self.simple_y = np.array([0, -np.pi, np.pi])
+        self.simple_z = np.array([0, np.pi, np.pi / 2, -np.pi])
+
+    def testPhaseLockingValue_identical_signals_both_identical_trials(self):
+        """
+        Test if the PLV's are 1, when 2 identical signals with identical
+        trials are passed. PLV's needed to be 1, due to the constant phase
+        difference of 0 across trials at each time-point.
+        """
+        list1_plv_t = \
+            elephant.phase_analysis.phase_locking_value(self.signal_x,
+                                                        self.signal_x)
+        target_plv_r_is_one = np.ones_like(list1_plv_t)
+        np.testing.assert_allclose(list1_plv_t, target_plv_r_is_one,
+                                   self.tolerance)
+
+    def testPhaseLockingValue_different_signals_both_identical_trials(self):
+        """
+        Test if the PLV's are 1, when 2 different signals are passed, where
+        within each signal the trials are identical. PLV's needed to be 1,
+        due to a constant phase difference across trials, which may vary for
+        different time-points.
+        """
+        list2_plv_t = elephant.phase_analysis.phase_locking_value(
+            self.signal_x, self.signal_y)
+        target_plv_r_is_one = np.ones_like(list2_plv_t)
+        np.testing.assert_allclose(list2_plv_t, target_plv_r_is_one,
+                                   atol=3e-15)
+
+    def testPhaseLockingValue_different_signals_both_different_trials(self):
+        """
+        Test if the PLV's are close to 0, when 2 different signals are passed,
+        where both have different trials, which are all randomly distributed.
+        The PLV's needed to be close to 0, do to a random
+        phase difference across trials for each time-point.
+        """
+        list3_plv_t = elephant.phase_analysis.phase_locking_value(
+            self.random_x, self.random_y)
+        target_plv_is_zero = np.zeros_like(list3_plv_t)
+        # use default value from np.allclose() for atol=1e-8 to prevent failure
+        np.testing.assert_allclose(list3_plv_t, target_plv_is_zero,
+                                   rtol=1e-2, atol=1.1e-1)
+
+    def testPhaseLockingValue_raise_Error_if_trial_number_is_different(self):
+        """
+        Test if a ValueError is raised, when the signals have different
+        number of trails.
+        """
+        # different numbers of trails
+        np.testing.assert_raises(
+            ValueError, elephant.phase_analysis.phase_locking_value,
+            self.simple_x, self.simple_y)
+
+    def testPhaseLockingValue_raise_Error_if_trial_lengths_are_different(self):
+        """
+        Test if a ValueError is raised, when within a trail-pair of the signals
+        the trial-lengths are different.
+        """
+        # different lengths in a trail pair
+        np.testing.assert_raises(
+            ValueError, elephant.phase_analysis.phase_locking_value,
+            self.simple_y, self.simple_z)
+
+
 if __name__ == '__main__':
     unittest.main()
