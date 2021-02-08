@@ -387,17 +387,17 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.t = np.arange(0, self.tlength, 1. / (self.srate / 1000))
 
         # # signal sampels
-        self.one_trial_x = 16 + self.amp * np.sin(
+        self.trials_x = [16 + self.amp * np.sin(
             2 * np.pi * (self.freq / 1000) * self.t + self.phase)
-        self.signal_x = np.full((self.ntrials, len(self.one_trial_x)),
-                                self.one_trial_x)
+                         for _ in range(self.ntrials)]
+        self.signal_x = np.stack(self.trials_x, axis=0)
         # constant phase lag of pi/3
-        self.one_trial_y = 16 + self.amp * np.sin(
+        self.trials_y = [16 + self.amp * np.sin(
             2 * np.pi * (self.freq / 1000) * self.t + np.pi/3)
-        self.signal_y = np.full((self.ntrials, len(self.one_trial_y)),
-                                self.one_trial_y)
+                         for _ in range(self.ntrials)]
+        self.signal_y = np.stack(self.trials_y, axis=0)
         # equal distributed phase lags of pi/2 and 1.5*pi across trials
-        self.signal_z = np.empty((self.ntrials, len(self.one_trial_y)))
+        self.signal_z = np.empty((self.ntrials, len(self.t)))
         for i in range(self.ntrials):
             if i < self.ntrials/2:
                 phase = np.pi/2
