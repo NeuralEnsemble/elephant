@@ -1,49 +1,70 @@
 """
 This module implements classes to extract and work with the information
 obtained from the nodes of an Abstract Syntax Tree describing the code
-associated with a given execution line of the script.
+associated with a given function call within the script.
 """
 
 import ast
 import itertools
 
-from elephant.buffalo.static_code import (AttributeStep, NameStep,
-                                          SubscriptStep)
+from elephant.buffalo.static_code import (_AttributeStep, _NameStep,
+                                          _SubscriptStep)
 from elephant.buffalo.object_hash import BuffaloObjectHash
 
 
-class NameAST(ast.NodeTransformer):
+class _NameAST(ast.NodeTransformer):
     """
     NodeTransformer to find all root variables that are loaded in an
-    Abstract Syntax Tree tree.
+    Abstract Syntax Tree.
 
-    The reference to the actual Python object is stored in the new node, and
-    a hash to the object is added to the `Provenance` class decorator internal
-    index.
+    The reference to the actual Python object is stored in the new node as
+    the :attr:`instance`, and the object hash is stored in the
+    :attr:`object_hash` attribute.
+
+    Parameters
+    ----------
+    provenance_tracker : elephant.buffalo.Provenance
+        Reference to the provenance tracker decorator.
     """
 
-    provenance = None
+    provenance_tracker = None
 
-    def __init__(self, provenance):
-        super(NameAST, self).__init__()
-        self.provenance = provenance
+    def __init__(self, provenance_tracker):
+        super(_NameAST, self).__init__()
+        self.provenance_tracker = provenance_tracker
 
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
-            instance = self.provenance.get_script_variable(node.id)
+            # If this is a node where the variable is accessed, get the
+            # actual object from the tracked frame, and store the object
+            # reference and hash
+            instance = self.provenance_tracker.get_script_variable(node.id)
             setattr(node, 'instance', instance)
             setattr(node, 'object_hash', BuffaloObjectHash(instance).info())
             return node
         return node
 
 
-class CallAST(ast.NodeVisitor):
+class _CallAST(ast.NodeVisitor):
+    """
+    NodeVisitor to inspect and fetch subscript/attribute relationships
+    in the call to the function that is being tracked.
+
+    Parameters
+    ----------
+    provenance_tracker : elephant.buffalo.Provenance
+        Reference to the provenance tracker decorator.
+    function : str
+        Name of the function being tracked.
+    time_stamp : datetime
+        Timestamp of the current function execution.
+    """
 
     provenance_tracker = None
     function = None
 
     def __init__(self, provenance_tracker, function, time_stamp):
-        super(CallAST, self).__init__()
+        super(_CallAST, self).__init__()
         self.provenance_tracker = provenance_tracker
         self.function = function
         self.time_stamp = time_stamp
@@ -74,15 +95,15 @@ def _fetch_object_tree(node, time_stamp):
 
     def _extract(node, child=None):
         if isinstance(node, ast.Subscript):
-            subscript = SubscriptStep(node, time_stamp, child)
+            subscript = _SubscriptStep(node, time_stamp, child)
             _extract(node.value, subscript)
             return subscript
         elif isinstance(node, ast.Attribute):
-            attribute = AttributeStep(node, time_stamp, child)
+            attribute = _AttributeStep(node, time_stamp, child)
             _extract(node.value, attribute)
             return attribute
         elif isinstance(node, ast.Name):
-            name = NameStep(node, time_stamp, child)
+            name = _NameStep(node, time_stamp, child)
             return name
 
     return _extract(node)
@@ -114,7 +135,7 @@ def _build_object_tree_provenance(object_tree, provenance_tracker):
 def _process_subscript_or_attribute(node, provenance_tracker, time_stamp):
     # Find root variable, hash it and include reference in the
     # node
-    name_visitor = NameAST(provenance_tracker)
+    name_visitor = _NameAST(provenance_tracker)
     name_visitor.visit(node.value)
 
     # Fetch object references from syntax

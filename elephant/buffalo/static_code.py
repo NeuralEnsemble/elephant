@@ -6,10 +6,9 @@ the child/parent relationships between the objects.
 """
 
 import ast
-import datetime
 
 
-class StaticStep(object):
+class _StaticStep(object):
     """
     Base class for analysis steps extracted from static code analysis.
 
@@ -33,7 +32,7 @@ class StaticStep(object):
     object_hash : BuffaloObjectHash
         Hash object describing the Python object associated with this
         `StaticStep` instance.
-    parent : StaticStep
+    parent : _StaticStep
         `StaticStep` object that owns this instance.
     value : object
         Reference to the actual Python object associated with this
@@ -86,12 +85,12 @@ class StaticStep(object):
         output_object = self.object_hash
 
         return provenance.AnalysisStep(
-            provenance.FunctionDefinition(self._operation, '', ''),
+            provenance.FunctionInfo(self._operation, '', ''),
             {0: input_object}, params, {0:output_object}, None, None,
             self._node, None, self.time_stamp, [], (None, None))
 
 
-class NameStep(StaticStep):
+class _NameStep(_StaticStep):
     """
     Analysis step that represents an `ast.Name` Abstract Syntax Tree node.
 
@@ -108,7 +107,7 @@ class NameStep(StaticStep):
     _node_type = ast.Name
 
     def __init__(self, node, time_stamp, child=None):
-        super(NameStep, self).__init__(node, time_stamp, child)
+        super(_NameStep, self).__init__(node, time_stamp, child)
         self.object_hash = node.object_hash
 
     @property
@@ -119,7 +118,7 @@ class NameStep(StaticStep):
         return None
 
 
-class SubscriptStep(StaticStep):
+class _SubscriptStep(_StaticStep):
     """
     Analysis step that represents an `ast.Subscript` Abstract Syntax Tree node.
 
@@ -130,7 +129,7 @@ class SubscriptStep(StaticStep):
     _node_type = ast.Subscript
 
     def __init__(self, node, time_stamp, child):
-        super(SubscriptStep, self).__init__(node, time_stamp, child)
+        super(_SubscriptStep, self).__init__(node, time_stamp, child)
         self._slice, self._params = self._get_slice(node.slice)
 
     @staticmethod
@@ -196,7 +195,7 @@ class SubscriptStep(StaticStep):
         return self.parent.value[self._slice]
 
 
-class AttributeStep(StaticStep):
+class _AttributeStep(_StaticStep):
     """
      Analysis step that represents an `ast.Attribute` Abstract Syntax Tree
      node.
@@ -209,7 +208,7 @@ class AttributeStep(StaticStep):
     _node_type = ast.Attribute
 
     def __init__(self, node, time_stamp, child=None):
-        super(AttributeStep, self).__init__(node, time_stamp, child)
+        super(_AttributeStep, self).__init__(node, time_stamp, child)
 
     def _get_params(self):
         return {'name': self._node.attr}

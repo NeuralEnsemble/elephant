@@ -30,7 +30,6 @@ def get_spike_trains(firing_rate, n_spiketrains, t_stop):
     return [homogeneous_poisson_process(firing_rate, t_stop=t_stop)
             for _ in range(n_spiketrains)]
 
-import matplotlib.pyplot as plt
 
 def get_analog_signal(frequency, n_channels, t_stop, amplitude, sampling_rate):
     end_time = t_stop.rescale(pq.s).magnitude
@@ -42,5 +41,7 @@ def get_analog_signal(frequency, n_channels, t_stop, amplitude, sampling_rate):
 
     signal = np.tile(base_signal, (n_channels, 1))
 
+    array_annotations = {'channel_names': np.array([f"chan{ch+1}" for ch in range(n_channels)])}
     return neo.AnalogSignal(signal.T, units=amplitude.units,
-                            sampling_rate=sampling_rate)
+                            sampling_rate=sampling_rate,
+                            array_annotations=array_annotations)

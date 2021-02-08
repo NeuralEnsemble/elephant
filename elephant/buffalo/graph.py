@@ -66,8 +66,6 @@ class ArrayDescription(ObjectDescription):
     attributes = ('shape', 'dtype')
 
 
-
-
 def _convert_units(value):
     return value.dimensionality
 
@@ -108,9 +106,11 @@ class NeoDescription(ObjectDescription):
 def _convert_params(value):
     return "<br>".join(textwrap.wrap(f"{value}", 60))
 
+
 class AnalysisObjectDescription(ObjectDescription):
     attributes = ('pid', 'create_time', 'name', 'params', 'method')
     converters = {'params': _convert_params}
+
 
 
 class MatplotlibDescription(ObjectDescription):
@@ -265,6 +265,11 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                                       edge_title, multi_output,
                                       function_edge, **attr)
 
+    def _adjust_node_positions(self):
+        nodes = nx.algorithms.topological_sort(self)
+        for idx, node in enumerate(nodes):
+            self.nodes[node]['y'] = idx
+
     def to_pyvis(self, filename, show=False, grayscale=True):
         """
         This method takes an existing Networkx graph and translates
@@ -333,6 +338,8 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         color_types = {'data': 'blue',
                        'function': 'red',
                        'file': 'green'}
+
+        self._adjust_node_positions()
 
         edges = self.edges.data()
         nodes = self.nodes
