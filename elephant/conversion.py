@@ -596,7 +596,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        scipy.sparse.csr_matrix
+        scipy.sparse.csr_matrix or scipy.sparse.csc_matrix
             Sparse matrix, version with spike counts.
 
         See also
@@ -617,7 +617,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        scipy.sparse.csr_matrix
+        scipy.sparse.csr_matrix or scipy.sparse.csc_matrix
             Sparse matrix, binary, boolean version.
 
         See also
@@ -1019,7 +1019,7 @@ class BinnedSpikeTrain(object):
             array = array.astype(dtype)
         return array
 
-    def binarize(self, copy=None):
+    def binarize(self, copy=True):
         """
         Clip the internal array (no. of spikes in a bin) to `0` (no spikes) or
         `1` (at least one spike) values only.
@@ -1027,29 +1027,31 @@ class BinnedSpikeTrain(object):
         Parameters
         ----------
         copy : bool, optional
-            Deprecated parameter. It has no effect.
+            If True, a view of `BinnedSpikeTrain` is returned with the copied
+            data. Otherwise, the binarization (clipping) is done in-place.
+            Default: True
 
         Returns
         -------
-        bst : BinnedSpikeTrainView
-            A view of `BinnedSpikeTrain` with a sparse matrix containing
-            data clipped to `0`s and `1`s.
+        bst : BinnedSpikeTrain or BinnedSpikeTrainView
+            A (view of) `BinnedSpikeTrain` with the sparse matrix data clipped
+            to `0`s and `1`s.
 
         """
-        if copy is not None:
-            warnings.warn("'copy' parameter is deprecated - a view is always "
-                          "returned; set this parameter to None.",
-                          DeprecationWarning)
         spmat = self.sparse_matrix
-        spmat = sps.csr_matrix(
-            (spmat.data.clip(max=1), spmat.indices, spmat.indptr),
-            shape=spmat.shape, copy=False)
-        bst = BinnedSpikeTrainView(t_start=self._t_start,
-                                   t_stop=self._t_stop,
-                                   bin_size=self._bin_size,
-                                   units=self.units,
-                                   sparse_matrix=spmat,
-                                   tolerance=self.tolerance)
+        if copy:
+            spmat = spmat.copy()
+            spmat.data[:] = 1
+            bst = BinnedSpikeTrainView(t_start=self._t_start,
+                                       t_stop=self._t_stop,
+                                       bin_size=self._bin_size,
+                                       units=self.units,
+                                       sparse_matrix=spmat,
+                                       tolerance=self.tolerance)
+        else:
+            spmat.data[:] = 1
+            bst = self
+
         return bst
 
     @property
@@ -1066,9 +1068,9 @@ class BinnedSpikeTrain(object):
 
     def _create_sparse_matrix(self, spiketrains, sparse_format):
         """
-        Converts `neo.SpikeTrain` objects to a sparse matrix
-        (`scipy.sparse.csr_matrix`), which contains the binned spike times, and
-        stores it in :attr:`_sparse_mat_u`.
+        Converts `neo.SpikeTrain` objects to a scipy sparse matrix, which
+        contains the binned spike times, and
+        stores it in :attr:`sparse_matrix`.
 
         Parameters
         ----------
@@ -1080,9 +1082,15 @@ class BinnedSpikeTrain(object):
         # The data type for numeric values
         data_dtype = np.int32
 
+        if sparse_format == 'csr':
+            sparse_format = sps.csr_matrix
+        else:
+            # csc
+            sparse_format = sps.csc_matrix
+
         if not _check_neo_spiketrain(spiketrains):
             # a binned numpy array
-            sparse_matrix = sps.csr_matrix(spiketrains, dtype=data_dtype)
+            sparse_matrix = sparse_format(spiketrains, dtype=data_dtype)
             return sparse_matrix
 
         # Get index dtype that can accomodate the largest index
@@ -1130,12 +1138,6 @@ class BinnedSpikeTrain(object):
         counts = np.hstack(counts)
         column_ids = np.hstack(column_ids)
         row_ids = np.hstack(row_ids)
-
-        if sparse_format == 'csr':
-            sparse_format = sps.csr_matrix
-        else:
-            # csc
-            sparse_format = sps.csc_matrix
 
         sparse_matrix = sparse_format((counts, (row_ids, column_ids)),
                                       shape=shape, dtype=data_dtype,

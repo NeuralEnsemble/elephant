@@ -195,6 +195,19 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         self.bin_size = 1 * pq.s
         self.tolerance = 1e-8
 
+    def test_binarize(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b,
+                       self.spiketrain_a, self.spiketrain_b]
+        for sparse_format in ("csr", "csc"):
+            bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                      bin_size=self.bin_size,
+                                      sparse_format=sparse_format)
+            bst_bin = bst.binarize(copy=True)
+            bst_copy = bst.copy()
+            assert_array_equal(bst_bin.to_array(), bst.to_bool_array())
+            bst_copy.sparse_matrix.data[:] = 1
+            self.assertEqual(bst_bin, bst_copy)
+
     def test_slice(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b,
                        self.spiketrain_a, self.spiketrain_b]
