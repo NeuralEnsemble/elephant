@@ -274,6 +274,10 @@ class BinnedSpikeTrain(object):
         Tolerance for rounding errors in the binning process and in the input
         data
         Default: 1e-8
+    sparse_format : {'csr', 'csc'}, optional
+        The sparse matrix format. By default, CSR format is used to perform
+        slicing and computations efficiently.
+        Default: 'csr'
 
     Raises
     ------
@@ -323,7 +327,11 @@ class BinnedSpikeTrain(object):
 
     @deprecated_alias(binsize='bin_size', num_bins='n_bins')
     def __init__(self, spiketrains, bin_size=None, n_bins=None, t_start=None,
-                 t_stop=None, tolerance=1e-8):
+                 t_stop=None, tolerance=1e-8, sparse_format="csr"):
+        if sparse_format not in ("csr", "csc"):
+            raise ValueError(f"Invalid 'sparse_format': {sparse_format}. "
+                             "Available: 'csr' and 'csc'")
+
         # Converting spiketrains to a list, if spiketrains is one
         # SpikeTrain object
         if isinstance(spiketrains, neo.SpikeTrain):
@@ -339,7 +347,8 @@ class BinnedSpikeTrain(object):
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains)
         # Now create the sparse matrix
-        self.sparse_matrix = self._create_sparse_matrix(spiketrains)
+        self.sparse_matrix = self._create_sparse_matrix(
+            spiketrains, sparse_format=sparse_format)
 
     @property
     def shape(self):
@@ -369,13 +378,10 @@ class BinnedSpikeTrain(object):
         return self.n_bins
 
     def __repr__(self):
-        return "{klass}(t_start={t_start}, t_stop={t_stop}, " \
-               "bin_size={bin_size}; shape={shape})".format(
-                   klass=type(self).__name__,
-                   t_start=self.t_start,
-                   t_stop=self.t_stop,
-                   bin_size=self.bin_size,
-                   shape=self.shape)
+        return f"{type(self).__name__}(t_start={self.t_start}, " \
+               f"t_stop={self.t_stop}, bin_size={self.bin_size}; " \
+               f"shape={self.shape}, " \
+               f"format={self.sparse_matrix.__class__.__name__})"
 
     def rescale(self, units):
         """
@@ -638,7 +644,8 @@ class BinnedSpikeTrain(object):
             return False
         sp1 = self.sparse_matrix
         sp2 = other.sparse_matrix
-        if sp1.shape != sp2.shape or sp1.data.shape != sp2.data.shape:
+        if sp1.__class__ is not sp2.__class__ or sp1.shape != sp2.shape \
+                or sp1.data.shape != sp2.data.shape:
             return False
         return (sp1.data == sp2.data).all() and \
             (sp1.indptr == sp2.indptr).all() and \
@@ -662,11 +669,18 @@ class BinnedSpikeTrain(object):
                                     tolerance=self.tolerance)
 
     def __iter_sparse_matrix(self):
+        spmat = self.sparse_matrix
+        if isinstance(spmat, sps.csc_matrix):
+            warnings.warn("The sparse matrix format is CSC. For better "
+                          "performance, specify the CSR format while "
+                          "constructing a "
+                          "BinnedSpikeTrain(sparse_format='csr')")
+            spmat = spmat.tocsr()
         # taken from csr_matrix.__iter__()
         i0 = 0
-        for i1 in self.sparse_matrix.indptr[1:]:
-            indices = self.sparse_matrix.indices[i0:i1]
-            data = self.sparse_matrix.data[i0:i1]
+        for i1 in spmat.indptr[1:]:
+            indices = spmat.indices[i0:i1]
+            data = spmat.data[i0:i1]
             yield indices, data
             i0 = i1
 
@@ -1000,13 +1014,10 @@ class BinnedSpikeTrain(object):
         scipy.sparse.csr_matrix.toarray
 
         """
-        spmat = self.sparse_matrix
-        if dtype is not None and dtype != spmat.data.dtype:
-            # avoid a copy
-            spmat = sps.csr_matrix(
-                (spmat.data.astype(dtype), spmat.indices, spmat.indptr),
-                shape=spmat.shape)
-        return spmat.toarray()
+        array = self.sparse_matrix.toarray()
+        if dtype is not None:
+            array = array.astype(dtype)
+        return array
 
     def binarize(self, copy=None):
         """
@@ -1053,7 +1064,7 @@ class BinnedSpikeTrain(object):
         num_nonzero = self.sparse_matrix.data.shape[0]
         return num_nonzero / np.prod(self.sparse_matrix.shape)
 
-    def _create_sparse_matrix(self, spiketrains):
+    def _create_sparse_matrix(self, spiketrains, sparse_format):
         """
         Converts `neo.SpikeTrain` objects to a sparse matrix
         (`scipy.sparse.csr_matrix`), which contains the binned spike times, and
@@ -1120,9 +1131,15 @@ class BinnedSpikeTrain(object):
         column_ids = np.hstack(column_ids)
         row_ids = np.hstack(row_ids)
 
-        sparse_matrix = sps.csr_matrix((counts, (row_ids, column_ids)),
-                                       shape=shape, dtype=data_dtype,
-                                       copy=False)
+        if sparse_format == 'csr':
+            sparse_format = sps.csr_matrix
+        else:
+            # csc
+            sparse_format = sps.csc_matrix
+
+        sparse_matrix = sparse_format((counts, (row_ids, column_ids)),
+                                      shape=shape, dtype=data_dtype,
+                                      copy=False)
 
         return sparse_matrix
 
