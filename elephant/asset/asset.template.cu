@@ -82,6 +82,16 @@ __device__ double atomicAdd(double* address, double val)
 }
 #endif
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 
 /**
  * Builds the next sequence_sorted, given the absolute iteration ID.
@@ -230,9 +240,9 @@ ULL create_iteration_table() {
     // values greater than ULONG_MAX are not supported by CUDA
     assert(it_todo_double <= ULONG_MAX);
 
-    cudaMemcpyToSymbol(iteration_table, m, sizeof(ULL) * D * N);
+    gpuErrchk( cudaMemcpyToSymbol(iteration_table, m, sizeof(ULL) * D * N) );
 
-    cudaMemcpyToSymbol((const void*) &ITERATIONS_TODO, (const void*) &it_todo, sizeof(ULL));
+    gpuErrchk( cudaMemcpyToSymbol((const void*) &ITERATIONS_TODO, (const void*) &it_todo, sizeof(ULL)) );
 
     free(m);
 
@@ -300,11 +310,11 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
         log_factorial_host[i] = logK_host;
     }
 
-    cudaMemcpyToSymbol((const void*) &logK, (const void*) &logK_host, sizeof(asset_float));
-    cudaMemcpyToSymbol(log_factorial, log_factorial_host, sizeof(asset_float) * (N + 1));
+    gpuErrchk( cudaMemcpyToSymbol((const void*) &logK, (const void*) &logK_host, sizeof(asset_float)) );
+    gpuErrchk( cudaMemcpyToSymbol(log_factorial, log_factorial_host, sizeof(asset_float) * (N + 1)) );
 
     cudaDeviceProp device_prop;
-    cudaGetDeviceProperties(&device_prop, 0);
+    gpuErrchk( cudaGetDeviceProperties(&device_prop, 0) );
     const unsigned int max_l_block = device_prop.sharedMemPerBlock / (sizeof(asset_float) * (D + 2));
 
     /**
@@ -318,18 +328,10 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
         n_threads -= n_threads % device_prop.warpSize;
     }
     const unsigned int l_block = min_macros(n_threads, L);
-    cudaMemcpyToSymbol((const void*) &L_BLOCK, (const void*) &l_block, sizeof(l_block));
+    gpuErrchk( cudaMemcpyToSymbol((const void*) &L_BLOCK, (const void*) &l_block, sizeof(l_block)) );
 
     const ULL l_num_blocks = (ULL) ceil(L * 1.f / l_block);
-    cudaMemcpyToSymbol((const void*) &L_NUM_BLOCKS, (const void*) &l_num_blocks, sizeof(ULL));
-
-    asset_float *P_total_device;
-
-    // Initialize P_total_device with zeros.
-    // Note that values other than 0x00 or 0xFF (NaN) won't work
-    // with cudaMemset when the data type is float or double.
-    cudaMalloc((void**)&P_total_device, sizeof(asset_float) * L);
-    cudaMemset(P_total_device, 0, sizeof(asset_float) * L);
+    gpuErrchk( cudaMemcpyToSymbol((const void*) &L_NUM_BLOCKS, (const void*) &l_num_blocks, sizeof(ULL)) );
 
     ULL grid_size = (ULL) ceil(it_todo * 1.f / (n_threads * CWR_LOOPS));
     grid_size = min_macros(grid_size, device_prop.maxGridSize[0]);
@@ -341,11 +343,20 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
         grid_size = l_num_blocks;
     }
 
-    printf(">>> it_todo=%llu, grid_size=%llu, N_THREADS=%u\n\n", it_todo, grid_size, n_threads);
+    printf(">>> it_todo=%llu, grid_size=%llu, L_BLOCK=%u, N_THREADS=%u\n\n", it_todo, grid_size, l_block, n_threads);
 
     float *log_du_device;
-    cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1));
-    cudaMemcpy(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice);
+    gpuErrchk( cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1)) );
+    gpuErrchk( cudaMemcpy(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice) );
+
+    asset_float *P_total_device;
+
+    // Initialize P_total_device with zeros.
+    // Note that values other than 0x00 or 0xFF (NaN) won't work
+    // with cudaMemset when the data type is float or double.
+    gpuErrchk( cudaMalloc((void**)&P_total_device, sizeof(asset_float) * L) );
+    gpuErrchk( cudaMemset(P_total_device, 0, sizeof(asset_float) * L) );
+
 
 #if ASSET_DEBUG
     print_constants();
@@ -353,17 +364,21 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
 
     // Wait for asynchronous memory copies to finish.
     // Don't know if this call is needed.
-    cudaDeviceSynchronize();
+    gpuErrchk( cudaDeviceSynchronize() );
 
     // Executing kernel
     const unsigned long shared_mem_used = sizeof(asset_float) * l_block + sizeof(float) * l_block * (D + 1);
     jsf_uniform_orderstat_3d_kernel<<<grid_size, n_threads, shared_mem_used>>>(P_total_device, log_du_device);
 
-    // Transfer data back to host memory
-    cudaMemcpy(P_total_host, P_total_device, sizeof(asset_float) * L, cudaMemcpyDeviceToHost);
+    // Check for invalid launch argument.
+    gpuErrchk( cudaPeekAtLastError() );
 
+    // Transfer data back to host memory.
+    // If the exit code is non-zero, the kernel failed to complete the task.
+    cudaError_t cuda_completed_status = cudaMemcpy(P_total_host, P_total_device, sizeof(asset_float) * L, cudaMemcpyDeviceToHost);
     cudaFree(P_total_device);
     cudaFree(log_du_device);
+    gpuErrchk( cuda_completed_status );
 }
 
 
