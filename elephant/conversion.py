@@ -1027,21 +1027,28 @@ class BinnedSpikeTrain(object):
         Parameters
         ----------
         copy : bool, optional
-            If True, a view of `BinnedSpikeTrain` is returned with the copied
-            data. Otherwise, the binarization (clipping) is done in-place.
+            If True, a **shallow** copy - a view of `BinnedSpikeTrain` - is
+            returned with the data array filled with zeros and ones. Otherwise,
+            the binarization (clipping) is done in-place. A shallow copy
+            means that :attr:`indices` and :attr:`indptr` of a sparse matrix
+            is shared with the original sparse matrix. Only the data is copied.
+            If you want to perform a deep copy, call
+            :func:`BinnedSpikeTrain.copy` prior to binarizing.
             Default: True
 
         Returns
         -------
         bst : BinnedSpikeTrain or BinnedSpikeTrainView
             A (view of) `BinnedSpikeTrain` with the sparse matrix data clipped
-            to `0`s and `1`s.
+            to zeros and ones.
 
         """
         spmat = self.sparse_matrix
         if copy:
-            spmat = spmat.copy()
-            spmat.data[:] = 1
+            data = np.ones(len(spmat.data), dtype=spmat.data.dtype)
+            spmat = spmat.__class__(
+                (data, spmat.indices, spmat.indptr),
+                shape=spmat.shape, copy=False)
             bst = BinnedSpikeTrainView(t_start=self._t_start,
                                        t_stop=self._t_stop,
                                        bin_size=self._bin_size,
