@@ -9,6 +9,7 @@
 #include <math.h>
 #include <assert.h>
 #include <float.h>
+#include <limits.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -38,6 +39,13 @@
  */
 #define CWR_LOOPS         {{CWR_LOOPS}}
 
+/**
+ * It's not necessary to match N_THREADS with the final L_BLOCK. Alternatively,
+ * the desired L_BLOCK can be another parameter specified by the user. But
+ * the optimal L_BLOCK on average matches N_THREADS, therefore, to avoid
+ * the user thinking too much, we take care of the headache by setting
+ * L_BLOCK = N_THREADS.
+ */
 #define L_BLOCK_SUPREMUM  min_macros(N_THREADS, L)
 
 typedef {{precision}} asset_float;
