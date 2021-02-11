@@ -621,6 +621,9 @@ class _JSFUniformOrderStat3D(object):
             compile_status = subprocess.run(
                 compile_cmd,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if self.verbose:
+                print(compile_status.stdout.decode())
+                print(compile_status.stderr.decode(), file=sys.stderr)
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.txt")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.txt")

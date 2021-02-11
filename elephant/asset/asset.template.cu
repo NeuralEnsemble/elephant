@@ -18,6 +18,10 @@
 #define N {{N}}
 #define D {{D}}
 
+#if D > N
+#error "D must be less or equal N"
+#endif
+
 #define min_macros(a,b)   (a < b ? a : b)
 
 #define ASSET_DEBUG       {{ASSET_DEBUG}}
@@ -291,6 +295,37 @@ void print_constants() {
 }
 
 
+float* copy2cuda_log_du(asset_float *buffer, FILE *log_du_file) {
+    float *log_du_device;
+    gpuErrchk( cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1)) );
+
+#if L * (D + 1) < 100000000LL
+    // For arrays of size <100 Mb, allocate host memory for log_du
+    float *log_du_host = (float*) malloc(sizeof(float) * L * (D + 1));
+    ULL pos;
+    for (pos = 0; pos < L * (D + 1); pos++) {
+        fscanf(log_du_file, "%f", log_du_host + pos);
+    }
+    gpuErrchk( cudaMemcpyAsync(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice) );
+    free(log_du_host);
+#else
+    // Use P_total buffer to read log_du and copy batches to the GPU card
+    float *log_du_host = (float*) buffer;
+    ULL col, row;
+    for (col = 0; col <= D; col++) {
+        for (row = 0; row < L; row++) {
+            fscanf(log_du_file, "%f", log_du_host + row);
+        }
+        gpuErrchk( cudaMemcpyAsync(log_du_device + col * L, log_du_host, sizeof(float) * L, cudaMemcpyHostToDevice) );
+    }
+#endif
+
+    fclose(log_du_file);
+
+    return log_du_device;
+}
+
+
 /**
  * ASSET jsf_uniform_orderstat_3d host function to calculate P_total.
  * The result of a calculation is saved in P_total_host array.
@@ -298,7 +333,17 @@ void print_constants() {
  * @param P_total_host a pointer to P_total array to be calculated
  * @param log_du_host  input flattened L*(D+1) matrix of log_du values
  */
-void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_host) {
+int jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
+    float *log_du_device = copy2cuda_log_du(P_total_host, log_du_file);
+
+    asset_float *P_total_device;
+
+    // Initialize P_total_device with zeros.
+    // Note that values other than 0x00 or 0xFF (NaN) won't work
+    // with cudaMemset when the data type is float or double.
+    gpuErrchk( cudaMalloc((void**)&P_total_device, sizeof(asset_float) * L) );
+    gpuErrchk( cudaMemsetAsync(P_total_device, 0, sizeof(asset_float) * L) );
+
     ULL it_todo = create_iteration_table();
 
     asset_float logK_host = 0.f;
@@ -345,28 +390,14 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
 
     printf(">>> it_todo=%llu, grid_size=%llu, L_BLOCK=%u, N_THREADS=%u\n\n", it_todo, grid_size, l_block, n_threads);
 
-    float *log_du_device;
-    gpuErrchk( cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1)) );
-    gpuErrchk( cudaMemcpy(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice) );
-
-    asset_float *P_total_device;
-
-    // Initialize P_total_device with zeros.
-    // Note that values other than 0x00 or 0xFF (NaN) won't work
-    // with cudaMemset when the data type is float or double.
-    gpuErrchk( cudaMalloc((void**)&P_total_device, sizeof(asset_float) * L) );
-    gpuErrchk( cudaMemset(P_total_device, 0, sizeof(asset_float) * L) );
-
+    // Wait for asynchronous memory copies to finish.
+    gpuErrchk( cudaDeviceSynchronize() );
 
 #if ASSET_DEBUG
     print_constants();
 #endif
 
-    // Wait for asynchronous memory copies to finish.
-    // Don't know if this call is needed.
-    gpuErrchk( cudaDeviceSynchronize() );
-
-    // Executing kernel
+    // Executing the kernel
     const unsigned long shared_mem_used = sizeof(asset_float) * l_block + sizeof(float) * l_block * (D + 1);
     jsf_uniform_orderstat_3d_kernel<<<grid_size, n_threads, shared_mem_used>>>(P_total_device, log_du_device);
 
@@ -376,9 +407,13 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, const float *log_du_hos
     // Transfer data back to host memory.
     // If the exit code is non-zero, the kernel failed to complete the task.
     cudaError_t cuda_completed_status = cudaMemcpy(P_total_host, P_total_device, sizeof(asset_float) * L, cudaMemcpyDeviceToHost);
+
     cudaFree(P_total_device);
     cudaFree(log_du_device);
+
     gpuErrchk( cuda_completed_status );
+
+    return 0;
 }
 
 
@@ -399,29 +434,23 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    float log_du_host[L * (D + 1)];
-    uint32_t row, col, pos;
-    for (row = 0; row < L; row++) {
-        for (col = 0; col <= D; col++) {
-            pos = row * (D + 1) + col;
-            int read_floats = fscanf(log_du_file, "%f", log_du_host + pos);
-            assert(read_floats == 1);
-        }
-    }
-    fclose(log_du_file);
+    asset_float *P_total = (asset_float*) malloc(sizeof(asset_float) * L);
 
-    asset_float P_total[L];
-    jsf_uniform_orderstat_3d(P_total, (const float*) log_du_host);
+    jsf_uniform_orderstat_3d(P_total, log_du_file);
 
     FILE *P_total_file = fopen(P_total_path, "w");
     if (P_total_file == NULL) {
+        free(P_total);
         fprintf(stderr, "Could not open '%s' for writing.\n", P_total_path);
         return 1;
     }
+    ULL col;
     for (col = 0; col < L; col++) {
         fprintf(P_total_file, "%f\n", P_total[col]);
     }
     fclose(P_total_file);
+
+    free(P_total);
 
     return 0;
 }
