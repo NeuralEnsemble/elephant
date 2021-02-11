@@ -22,7 +22,7 @@
 #error "D must be less or equal N"
 #endif
 
-#define min_macros(a,b)   (a < b ? a : b)
+#define min_macros(a,b)   ((a) < (b) ? (a) : (b))
 
 #define ASSET_DEBUG       {{ASSET_DEBUG}}
 #define ULL               unsigned long long
@@ -57,7 +57,7 @@ typedef {{precision}} asset_float;
 __constant__ asset_float log_factorial[N + 1];
 __constant__ asset_float logK;
 __constant__ ULL ITERATIONS_TODO;
-__constant__ unsigned int L_BLOCK;
+__constant__ ULL L_BLOCK;
 __constant__ ULL L_NUM_BLOCKS;
 __constant__ ULL iteration_table[D][N];  /* Maps the iteration ID to the entries
                                             of a sequence_sorted array */
@@ -136,13 +136,14 @@ __device__ void combinations_with_replacement(int *sequence_sorted) {
  * @param log_du_device   input log_du flattened matrix of size L*(D+1)
  */
 __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, float *log_du_device) {
-    unsigned int i, row;
+    unsigned int i;
+    ULL row;
 
     // the row shift of log_du and P_total in the number of elements, between 0 and L
-    const unsigned int l_shift = (blockIdx.x % L_NUM_BLOCKS) * L_BLOCK;
+    const ULL l_shift = (blockIdx.x % L_NUM_BLOCKS) * L_BLOCK;
 
     // account for the last block width that can be less than L_BLOCK
-    const unsigned int block_width = (L - l_shift < L_BLOCK) ? (L - l_shift) : L_BLOCK;
+    const ULL block_width = (L - l_shift < L_BLOCK) ? (L - l_shift) : L_BLOCK;
 
     extern __shared__ float shared_mem[];
     asset_float *P_total = (asset_float*) shared_mem;  // L_BLOCK floats
@@ -273,9 +274,9 @@ void print_constants() {
     cudaMemcpyFromSymbol((void*)&it_todo_host, (const void*)&ITERATIONS_TODO, sizeof(ULL));
     printf(">>> ITERATIONS_TODO = %llu\n", it_todo_host);
 
-    unsigned int l_block;
-    cudaMemcpyFromSymbol((void*)&l_block, (const void*)&L_BLOCK, sizeof(l_block));
-    printf(">>> L_BLOCK = %u\n", l_block);
+    ULL l_block;
+    cudaMemcpyFromSymbol((void*)&l_block, (const void*)&L_BLOCK, sizeof(ULL));
+    printf(">>> L_BLOCK = %llu\n", l_block);
 
     ULL l_num_blocks;
     cudaMemcpyFromSymbol((void*)&l_num_blocks, (const void*)&L_NUM_BLOCKS, sizeof(ULL));
@@ -299,7 +300,7 @@ float* copy2cuda_log_du(asset_float *buffer, FILE *log_du_file) {
     float *log_du_device;
     gpuErrchk( cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1)) );
 
-#if L * (D + 1) < 100000000LL
+#if L * (D + 1) < 100000000LLU
     // For arrays of size <100 Mb, allocate host memory for log_du
     float *log_du_host = (float*) malloc(sizeof(float) * L * (D + 1));
     ULL pos;
@@ -360,20 +361,20 @@ int jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
 
     cudaDeviceProp device_prop;
     gpuErrchk( cudaGetDeviceProperties(&device_prop, 0) );
-    const unsigned int max_l_block = device_prop.sharedMemPerBlock / (sizeof(asset_float) * (D + 2));
+    const ULL max_l_block = device_prop.sharedMemPerBlock / (sizeof(asset_float) * (D + 2));
 
     /**
      * It's important to match the width (tile) of
      * a block with N_THREADS, if N_THREADS < L.
      */
-    unsigned int n_threads = min_macros(N_THREADS, min_macros(max_l_block, device_prop.maxThreadsPerBlock));
+    unsigned int n_threads = (unsigned int) min_macros(N_THREADS, min_macros(max_l_block, device_prop.maxThreadsPerBlock));
     if (n_threads > device_prop.warpSize) {
         // It's more efficient to make the number of threads
         // a multiple of the warp size (32).
         n_threads -= n_threads % device_prop.warpSize;
     }
-    const unsigned int l_block = min_macros(n_threads, L);
-    gpuErrchk( cudaMemcpyToSymbol((const void*) &L_BLOCK, (const void*) &l_block, sizeof(l_block)) );
+    const ULL l_block = min_macros(n_threads, L);
+    gpuErrchk( cudaMemcpyToSymbol((const void*) &L_BLOCK, (const void*) &l_block, sizeof(ULL)) );
 
     const ULL l_num_blocks = (ULL) ceil(L * 1.f / l_block);
     gpuErrchk( cudaMemcpyToSymbol((const void*) &L_NUM_BLOCKS, (const void*) &l_num_blocks, sizeof(ULL)) );
@@ -398,7 +399,7 @@ int jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
 #endif
 
     // Executing the kernel
-    const unsigned long shared_mem_used = sizeof(asset_float) * l_block + sizeof(float) * l_block * (D + 1);
+    const ULL shared_mem_used = sizeof(asset_float) * l_block + sizeof(float) * l_block * (D + 1);
     jsf_uniform_orderstat_3d_kernel<<<grid_size, n_threads, shared_mem_used>>>(P_total_device, log_du_device);
 
     // Check for invalid launch argument.

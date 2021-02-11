@@ -602,7 +602,7 @@ class _JSFUniformOrderStat3D(object):
             precision=self.precision,
             N_THREADS=self.cuda_threads,
             CWR_LOOPS=self.cuda_cwr_loops,
-            L=u_length, N=self.n, D=self.d)
+            L=f"{u_length}LLU", N=self.n, D=self.d)
         return asset_cu
 
     def cuda(self, log_du):
@@ -613,8 +613,10 @@ class _JSFUniformOrderStat3D(object):
             with open(asset_cu_path, 'w') as f:
                 f.write(asset_cu)
             # -O3 optimization flag is for the host code only;
-            # by default, GPU device code is optimized with -O3
-            compile_cmd = ['nvcc', '-O3', '-o', asset_bin_path, asset_cu_path]
+            # by default, GPU device code is optimized with -O3.
+            # -w to ignore warnings.
+            compile_cmd = ['nvcc', '-w', '-O3', '-o', asset_bin_path,
+                           asset_cu_path]
             if self.precision == 'double' and get_cuda_capability_major() >= 6:
                 # atomicAdd(double) requires compute capability 6.x
                 compile_cmd.extend(['-arch', 'sm_60'])
