@@ -629,7 +629,7 @@ class _JSFUniformOrderStat3D(object):
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.txt")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.txt")
-            np.savetxt(log_du_path, log_du, fmt="%.10f")
+            np.savetxt(log_du_path, log_du, fmt="%.6f")
             run_status = subprocess.run(
                 [asset_bin_path, log_du_path, P_total_path],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
