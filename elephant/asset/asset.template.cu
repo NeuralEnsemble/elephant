@@ -389,7 +389,7 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
         grid_size = l_num_blocks;
     }
 
-    printf(">>> it_todo=%llu, grid_size=%llu, L_BLOCK=%u, N_THREADS=%u\n\n", it_todo, grid_size, l_block, n_threads);
+    printf(">>> it_todo=%llu, grid_size=%llu, L_BLOCK=%llu, N_THREADS=%u\n\n", it_todo, grid_size, l_block, n_threads);
 
     // Wait for asynchronous memory copies to finish.
     gpuErrchk( cudaDeviceSynchronize() );
