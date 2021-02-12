@@ -583,8 +583,8 @@ def save_graph(filename, show=False):
     Provenance.save_graph(filename, show=show)
 
 
-def get_graph(history=None):
-    return Provenance.get_graph(history)
+def get_graph():
+    return Provenance.get_graph()
 
 
 def dump_provenance(filename):
