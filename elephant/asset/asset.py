@@ -682,7 +682,6 @@ class _JSFUniformOrderStat3D(object):
                                         block=(n_threads, 1, 1))
 
         P_total = P_total_gpu.get()
-        P_total_gpu.free()
 
         # Large number of floating-point additions can result in values
         # outside of the valid range [0, 1].
