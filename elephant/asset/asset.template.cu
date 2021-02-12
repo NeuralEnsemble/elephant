@@ -43,13 +43,6 @@
  */
 #define CWR_LOOPS         {{CWR_LOOPS}}
 
-/**
- * It's not necessary to match N_THREADS with the final L_BLOCK. Alternatively,
- * the desired L_BLOCK can be another parameter specified by the user. But
- * the optimal L_BLOCK on average matches N_THREADS, therefore, to avoid
- * the user thinking too much, we take care of the headache by setting
- * L_BLOCK = N_THREADS.
- */
 #define L_BLOCK_SUPREMUM  min_macros(N_THREADS, L)
 
 typedef {{precision}} asset_float;
@@ -364,8 +357,11 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
     const ULL max_l_block = device_prop.sharedMemPerBlock / (sizeof(asset_float) * (D + 2));
 
     /**
-     * It's important to match the width (tile) of
-     * a block with N_THREADS, if N_THREADS < L.
+     * It's not necessary to match N_THREADS with the final L_BLOCK. Alternatively,
+     * the desired L_BLOCK can be another parameter specified by the user. But
+     * the optimal L_BLOCK on average matches N_THREADS, therefore, to avoid
+     * the user thinking too much, we take care of the headache by setting
+     * L_BLOCK = N_THREADS.
      */
     unsigned int n_threads = (unsigned int) min_macros(N_THREADS, min_macros(max_l_block, device_prop.maxThreadsPerBlock));
     if (n_threads > device_prop.warpSize) {

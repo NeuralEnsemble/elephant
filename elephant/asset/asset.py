@@ -99,6 +99,7 @@ The ASSET found 2 sequences of synchronous events:
 """
 from __future__ import division, print_function, unicode_literals
 
+import math
 import os
 import subprocess
 import sys
@@ -433,8 +434,7 @@ class _JSFUniformOrderStat3D(object):
     def __init__(self, n, d, precision='double', verbose=False,
                  cuda_threads=64, cuda_cwr_loops=32):
         if d > n:
-            raise ValueError("d ({d}) must be less or equal n ({n})".format(
-                d=d, n=n))
+            raise ValueError(f"d ({d}) must be less or equal n ({n})")
         self.n = n
         self.d = d
         self.precision = precision
@@ -442,6 +442,8 @@ class _JSFUniformOrderStat3D(object):
         self.cuda_threads = cuda_threads
         self.cuda_cwr_loops = cuda_cwr_loops
         self.map_iterations = self._create_iteration_table()
+        bits = 32 if precision == "float" else 64
+        self.dtype = np.dtype(f"float{bits}")
 
     @property
     def num_iterations(self):
@@ -591,22 +593,110 @@ class _JSFUniformOrderStat3D(object):
 
         return P_total
 
-    def _compile_cuda_template(self, u_length):
+    def _compile_cuda_template(self, u_length, template_name, **kwargs):
         from jinja2 import Template
         cu_template_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "asset.template.cu")
+            os.path.dirname(os.path.abspath(__file__)), template_name)
         with open(cu_template_path) as f:
             cu_template = Template(f.read())
         asset_cu = cu_template.render(
-            ASSET_DEBUG=int(self.verbose),
             precision=self.precision,
-            N_THREADS=self.cuda_threads,
             CWR_LOOPS=self.cuda_cwr_loops,
-            L=f"{u_length}LLU", N=self.n, D=self.d)
+            L=f"{u_length}LLU", N=self.n, D=self.d, **kwargs)
         return asset_cu
 
-    def cuda(self, log_du):
-        asset_cu = self._compile_cuda_template(u_length=log_du.shape[0])
+    def pycuda(self, log_du):
+        try:
+            import pycuda.autoinit
+            import pycuda.gpuarray as gpuarray
+            import pycuda.driver as drv
+            from pycuda.compiler import SourceModule
+        except ImportError as err:
+            raise ImportError(f"{err}. Install pycuda with "
+                              "'pip install pycuda'")
+
+        it_todo = self.num_iterations
+        u_length = log_du.shape[0]
+
+        dev = pycuda.autoinit.device
+
+        max_l_block = dev.MAX_SHARED_MEMORY_PER_BLOCK / (
+                    self.dtype.itemsize * (self.d + 2))
+        n_threads = min(self.cuda_threads, max_l_block,
+                        dev.MAX_THREADS_PER_BLOCK)
+        if n_threads > dev.WARP_SIZE:
+            # It's more efficient to make the number of threads
+            # a multiple of the warp size (32).
+            n_threads -= n_threads % dev.WARP_SIZE
+        l_block = min(n_threads, u_length)
+        l_num_blocks = math.ceil(u_length / l_block)
+        grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
+        grid_size = min(grid_size, dev.MAX_GRID_DIM_X)
+        if grid_size > l_num_blocks:
+            # make grid_size divisible by l_num_blocks
+            grid_size -= grid_size % l_num_blocks
+        else:
+            # grid_size must be at least l_num_blocks
+            grid_size = l_num_blocks
+        floats = int(self.dtype.itemsize / np.dtype("float32").itemsize)
+        shared_mem_size = floats * l_block + l_block * (self.d + 1)
+
+        if self.verbose:
+            print(f"[Joint prob. matrix] it_todo={it_todo}, "
+                  f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                  f"N_THREADS={n_threads}")
+
+        log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
+        log_factorial = log_factorial.astype(self.dtype)
+        logK = log_factorial[-1]
+        asset_cu = self._compile_cuda_template(
+            u_length=u_length,
+            template_name="asset.pycuda.cu",
+            logK=f"{logK:.10f}f",
+            L_BLOCK=l_block,
+            L_NUM_BLOCKS=l_num_blocks,
+            ITERATIONS_TODO=f"{it_todo}LLU",
+            SHARED_MEM_SIZE=shared_mem_size
+        )
+
+        module = SourceModule(asset_cu)
+
+        iteration_table_gpu, _ = module.get_global("iteration_table")
+        iteration_table = self.map_iterations.astype(np.uint64)
+        drv.memcpy_htod(iteration_table_gpu, iteration_table)
+
+        log_factorial_gpu, _ = module.get_global("log_factorial")
+        drv.memcpy_htod(log_factorial_gpu, log_factorial)
+
+        P_total_gpu = gpuarray.zeros(u_length, dtype=self.dtype)
+
+        jsf_uniform_orderstat_3d_kernel = module.get_function(
+            "jsf_uniform_orderstat_3d_kernel")
+        jsf_uniform_orderstat_3d_kernel(P_total_gpu.gpudata, drv.In(log_du),
+                                        grid=(grid_size, 1),
+                                        block=(n_threads, 1, 1))
+
+        P_total = P_total_gpu.get()
+
+        # Large number of floating-point additions can result in values
+        # outside of the valid range [0, 1].
+        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
+
+        return P_total
+
+    def _cuda(self, log_du):
+        # Compile a self-contained asset.template.cu file and run it
+        # in a terminal. Having this function is useful to debug ASSET CUDA
+        # application because it's self-contained and the logic is documented.
+        # Don't use this backend when the 'log_du' arrays are huge because
+        # of the disk I/O operations.
+        # A note to developers: remove this backend in half a year once the
+        # pycuda backend proves to be stable.
+
+        asset_cu = self._compile_cuda_template(
+            u_length=log_du.shape[0], template_name="asset.template.cu",
+            ASSET_DEBUG=int(self.verbose), N_THREADS=self.cuda_threads,
+        )
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
             asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
             asset_bin_path = os.path.join(asset_tmp_folder, 'asset.o')
@@ -641,7 +731,7 @@ class _JSFUniformOrderStat3D(object):
 
         # Large number of floating-point additions can result in values
         # outside of the valid range [0, 1].
-        P_total = np.clip(P_total, a_min=0., a_max=1.)
+        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
         return P_total
 
@@ -653,7 +743,7 @@ class _JSFUniformOrderStat3D(object):
             return self.cpu
         if self.d < 3 or self.n <= 10:
             return self.cpu
-        return self.cuda
+        return self.pycuda
 
     def compute(self, u):
         if u.shape[1] != self.d:
@@ -668,7 +758,7 @@ class _JSFUniformOrderStat3D(object):
         # exp(ln(0)) = exp(-inf) = 0
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
-            log_du = np.log(du)
+            log_du = np.log(du, dtype=np.float32)
 
         jsf_backend = self._choose_backend()
 
