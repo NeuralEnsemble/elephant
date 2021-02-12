@@ -242,7 +242,8 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     return freqs, psd
 
 
-def multitaper_psd(signal, fs=1, nw=4, num_tapers='auto'):
+def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
+                   frequency_resolution=None):
     """
     Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
     using Multitaper method
@@ -264,11 +265,19 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers='auto'):
         sampling frequency should be given through keyword argument `fs`.
     fs : float, optional
         Specifies the sampling frequency of the input time series
+        Default: 1.0
     NW : float, optional
         Time bandwidth product
+        Default: 4.0
     num_tapers : int, optional
-        Number of tapers used in 1. to obtain estimate of PSD. By default 2*NW
-        - 1 is chosen.
+        Number of tapers used in 1. to obtain estimate of PSD. By default
+        [2*NW] - 1 is chosen.
+        Default: 'auto'
+    frequency_resolution : float, optional
+        Desired frequency resolution of the obtained PSD estimate. When given
+        as a `float`, it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None.
 
     Returns
     -------
@@ -278,25 +287,53 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers='auto'):
         PSD estimate of the time series in `signal`
     """
 
-    # number of data points in time series
+    # When the input is AnalogSignal, the data is added after rolling the axis
+    # for time index to the last
+    data = np.asarray(signal)
+    if isinstance(signal, neo.AnalogSignal):
+        data = np.rollaxis(data, 0, len(data.shape))
+
+    # Number of data points in time series
     length_signal = np.size(signal)
 
+    # Determine time-halfbandwidth product from given parameters
+    if frequency_resolution is not None:
+        if frequency_resolution <= 0:
+            raise ValueError("frequency_resolution must be positive")
+        else:
+            nw = length_signal * frequency_resolution / 2
+
+    if num_tapers is None:
+        num_tapers = 2*np.floor(nw).astype(int) - 1
+    else:
+        if not isinstance(num_tapers, int):
+            raise TypeError("num_tapers must be integer")
+        elif num_tapers <= 0:
+            raise ValueError("num_tapers must be positive")
+
+    print(f'Number of tapers: {num_tapers}')
+
+    # Generate frequencies
     freqs = np.fft.rfftfreq(length_signal, d=1/fs)
+    freqs_low_res = np.arange(0, fs/2 + frequency_resolution,
+                              frequency_resolution)
 
-    if num_tapers == 'auto':
-        num_tapers = 2 * nw - 1
-
+    # Fetch slepian functions
     slepain_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
-                                             Kmax=num_tapers)
+                                             Kmax=num_tapers,
+                                             sym='False')
 
-    # calculate approximately independent spectrum estimates
+    # Calculate approximately independent spectrum estimates
     spectrum_estimates = np.abs(np.fft.rfft(signal * slepain_fcts, axis=1))**2
 
     # average to obtain Multitaper PSD estimate
     multitaper_psd = np.mean(spectrum_estimates, axis=0) / fs
 
-    return freqs, multitaper_psd
+    step = int(frequency_resolution/freqs[1])
+    multitaper_psd_low_res = multitaper_psd[::step][:len(freqs_low_res)]
+
+    return freqs, multitaper_psd, freqs_low_res, multitaper_psd_low_res
 
 
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
@@ -596,10 +633,10 @@ if __name__ == '__main__':
         return times, time_series, freqs, psd_time_series
 
     # Choose parameters, coeffs as in nitime
-    length = 2**10
+    length = 2**11
     coeffs = np.array([2.7607, -3.8106, 2.6535, -0.9238])
     variance = 1.
-    fs = 10
+    fs = 1
 
     times, time_series, freqs, psd_time_series = generate_data(
         length=length,
@@ -607,12 +644,16 @@ if __name__ == '__main__':
         variance=variance,
         fs=fs)
 
-    freqs_multi, psd_multitaper = multitaper_psd(signal=time_series,
-                                                 fs=fs,
-                                                 nw=4)
+    freqs_multi, psd_multitaper, freqs_low_res, psd_multitaper_low_res = \
+            multitaper_psd(signal=time_series, fs=fs,
+                           frequency_resolution=0.005)
+
+    print(np.max(psd_time_series))
+    print(np.max(psd_multitaper))
+
 
     freqs_welch, psd_welch = welch_psd(signal=time_series,
-                                       n_segments=8,
+                                       frequency_resolution=0.005,
                                        fs=fs,
                                        len_segment=length)
 
@@ -622,10 +663,13 @@ if __name__ == '__main__':
     plt.yscale('log')
 
     plt.plot(freqs, psd_time_series, color='blue', label='Ground truth')
-    plt.plot(freqs, psd_multitaper, color='orange',
+    plt.plot(freqs_low_res, psd_multitaper_low_res, color='orange',
              label='Multitaper estimate')
-    plt.plot(freqs, psd_welch, color='black', label='Welch estimate')
+    #plt.plot(freqs_multi, psd_multitaper, color='orange',
+    #         label='Multitaper estimate')
+    plt.plot(freqs_welch, psd_welch, color='black', label='Welch estimate')
 
     plt.legend()
 
     plt.show()
+
