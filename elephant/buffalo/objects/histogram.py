@@ -51,23 +51,26 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
         Size of the bin.
     units : pq.Quantity, optional
         Unit of `bins`.
-        Default: pq.dimensionless.
+        Default: pq.dimensionless
     histogram_type : {'counts', 'mean', 'rate'}, optional
         Type of histogram that bins represent.
-        Default: 'counts'.
+        Default: 'counts'
     t_start : pq.Quantity, optional
         Starting time of the histogram.
-        Default: None.
+        Default: None
     t_stop : pq.Quantity, optional
         End time of the histogram.
-        Default: None.
+        Default: None
     binary : bool, optional
         If source spike trains were binned.
-        Default: None.
+        Default: None
+    copy : bool, optional
+        If True, copy the data in `bins`.
+        Default: True
     warnings_raised : bool, optional
         True if `elephant.statistics.time_histogram` raised warnings,
         False otherwise.
-        Default: False.
+        Default: False
 
     See Also
     --------
@@ -97,7 +100,6 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
 
         self._histogram_type = histogram_type
         self._binary = binary
-        self._t_stop = t_stop
         self._time_units = None
         self._warn_raised = warnings_raised
 
@@ -121,14 +123,6 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
     @property
     def bin_size(self):
         return self.sampling_period
-
-    @property
-    def time_start(self):
-        return self.t_start
-
-    @property
-    def time_stop(self):
-        return self._t_stop
 
     # Interface properties
 
