@@ -606,6 +606,8 @@ class _JSFUniformOrderStat3D(object):
         return asset_cu
 
     def pycuda(self, log_du):
+        # PyCuda should not be in requirements-extra because CPU limited
+        # users won't be able to install Elephant.
         try:
             import pycuda.autoinit
             import pycuda.gpuarray as gpuarray
@@ -619,6 +621,9 @@ class _JSFUniformOrderStat3D(object):
         u_length = log_du.shape[0]
 
         dev = pycuda.autoinit.device
+
+        log_du_gpu = drv.mem_alloc_like(log_du)
+        drv.memcpy_htod_async(log_du_gpu, log_du)
 
         max_l_block = dev.MAX_SHARED_MEMORY_PER_BLOCK / (
                     self.dtype.itemsize * (self.d + 2))
@@ -646,6 +651,8 @@ class _JSFUniformOrderStat3D(object):
                   f"grid_size={grid_size}, L_BLOCK={l_block}, "
                   f"N_THREADS={n_threads}")
 
+        P_total_gpu = gpuarray.zeros(u_length, dtype=self.dtype)
+
         log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
         log_factorial = log_factorial.astype(self.dtype)
         logK = log_factorial[-1]
@@ -668,15 +675,14 @@ class _JSFUniformOrderStat3D(object):
         log_factorial_gpu, _ = module.get_global("log_factorial")
         drv.memcpy_htod(log_factorial_gpu, log_factorial)
 
-        P_total_gpu = gpuarray.zeros(u_length, dtype=self.dtype)
-
         jsf_uniform_orderstat_3d_kernel = module.get_function(
             "jsf_uniform_orderstat_3d_kernel")
-        jsf_uniform_orderstat_3d_kernel(P_total_gpu.gpudata, drv.In(log_du),
+        jsf_uniform_orderstat_3d_kernel(P_total_gpu.gpudata, log_du_gpu,
                                         grid=(grid_size, 1),
                                         block=(n_threads, 1, 1))
 
         P_total = P_total_gpu.get()
+        P_total_gpu.free()
 
         # Large number of floating-point additions can result in values
         # outside of the valid range [0, 1].
