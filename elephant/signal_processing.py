@@ -15,6 +15,7 @@ import quantities as pq
 import scipy.signal
 
 from elephant.utils import deprecated_alias, check_same_units
+from elephant.buffalo.provenance import Provenance
 
 __all__ = [
     "zscore",
@@ -365,6 +366,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 @deprecated_alias(highpass_freq='highpass_frequency',
                   lowpass_freq='lowpass_frequency',
                   fs='sampling_frequency')
+@Provenance(inputs=['signal'])
 def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
            filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
     """

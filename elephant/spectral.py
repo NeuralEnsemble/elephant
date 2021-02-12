@@ -18,6 +18,7 @@ import scipy.signal
 from elephant.utils import deprecated_alias
 
 from elephant.buffalo.objects.spectral import PSDObject
+from elephant.buffalo.provenance import Provenance
 import elephant.buffalo
 
 __all__ = [
@@ -28,6 +29,7 @@ __all__ = [
 
 @deprecated_alias(num_seg='n_segments', len_seg='len_segment',
                   freq_res='frequency_resolution')
+@Provenance(inputs=['signal'])
 def welch_psd(signal, n_segments=8, len_segment=None,
               frequency_resolution=None, overlap=0.5, fs=1.0, window='hanning',
               nfft=None, detrend='constant', return_onesided=True,
@@ -244,7 +246,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     if elephant.buffalo.USE_ANALYSIS_OBJECTS:
         params.pop('x')
-        psd_object = PSDObject(freqs, psd, method='welch', params=params)
+        psd_object = PSDObject(freqs, psd, method='scipy.signal.welch', params=params)
         return psd_object
     return freqs, psd
 
