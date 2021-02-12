@@ -17,7 +17,7 @@ with open("README.md") as f:
 with open('requirements/requirements.txt') as fp:
     install_requires = fp.read().splitlines()
 extras_require = {}
-for extra in ['extras', 'docs', 'tests', 'tutorials']:
+for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda']:
     with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
 
