@@ -158,6 +158,34 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertTrue(np.all(psd_neo_1dim == psd_neo[0]))
 
 
+class MultitaperPSDTestCase(unittest.TestCase):
+    def test_multitaper_psd_errors(self):
+        # generate a dummy data
+        signal = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                              units='mV')
+        fs = 1000 * pq.Hz
+        nw = 3
+
+        # check for invalid parameter values
+        # - number of tapers
+        self.assertRaises(ValueError, elephant.spectral.multitaper_psd, signal,
+                          fs, nw, num_tapers=-5)
+        self.assertRaises(TypeError, elephant.spectral.multitaper_psd, signal,
+                          fs, nw, num_tapers=-5.0)
+        # - frequency resolution
+        self.assertRaises(ValueError, elephant.spectral.multitaper_psd, signal,
+                          fs, nw, frequency_resolution=-1)
+
+    def test_multitaper_psd_behavior(self):
+        pass
+
+    def test_multitaper_psd_input_types(self):
+        pass
+
+    def test_multitaper_psd_multidim_input(self):
+        pass
+
+
 class WelchCohereTestCase(unittest.TestCase):
     def test_welch_cohere_errors(self):
         # generate a dummy data
