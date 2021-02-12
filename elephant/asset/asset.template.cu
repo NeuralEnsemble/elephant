@@ -334,7 +334,7 @@ float* copy2cuda_log_du(asset_float *buffer, FILE *log_du_file) {
  * @param P_total_host a pointer to P_total array to be calculated
  * @param log_du_host  input flattened L*(D+1) matrix of log_du values
  */
-int jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
+void jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
     float *log_du_device = copy2cuda_log_du(P_total_host, log_du_file);
 
     asset_float *P_total_device;
@@ -413,8 +413,6 @@ int jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
     cudaFree(log_du_device);
 
     gpuErrchk( cuda_completed_status );
-
-    return 0;
 }
 
 
