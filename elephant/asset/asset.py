@@ -653,7 +653,6 @@ class _JSFUniformOrderStat3D(object):
         iteration_table_str = ", ".join(f"{val}" for val in
                                         self.map_iterations.flatten())
         iteration_table_str = "{%s}" % iteration_table_str
-        iteration_table_str = "{5}"
 
         log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
         logK = log_factorial[-1]
@@ -663,8 +662,8 @@ class _JSFUniformOrderStat3D(object):
             u_length=u_length,
             template_name="asset.pyopencl.cl",
             logK=f"{logK:.10f}f",
-            iteration_table=iteration_table_str,
-            log_factorial=log_factorial_str,
+            # iteration_table=iteration_table_str,
+            # log_factorial=log_factorial_str,
             L_BLOCK=l_block,
             L_NUM_BLOCKS=l_num_blocks,
             ITERATIONS_TODO=f"{it_todo}LLU",
@@ -672,12 +671,16 @@ class _JSFUniformOrderStat3D(object):
 
         program = cl.Program(context, asset_cl).build()
 
+        iteration_table_gpu = cl_array.to_device(queue, self.map_iterations.flatten().astype(np.uint64))
+        log_factorial_gpu = cl_array.to_device(queue, log_factorial.astype(self.dtype))
+
         # synchronize
         cl.enqueue_barrier(queue)
 
         kernel = program.jsf_uniform_orderstat_3d_kernel
         kernel(queue, (grid_size,), (n_threads,),
-               P_total_gpu.data, log_du_gpu.data, g_times_l=True)
+               P_total_gpu.data, log_du_gpu.data, iteration_table_gpu.data,
+               log_factorial_gpu.data, g_times_l=True)
 
         P_total = P_total_gpu.get()
 
