@@ -832,14 +832,16 @@ class _JSFUniformOrderStat3D(object):
         return P_total
 
     def _choose_backend(self):
-        if int(os.getenv("ELEPHANT_USE_CUDA", '1')) == 0:
-            # don't use CUDA
-            return self.cpu
-        if not _is_cuda_available():
-            return self.cpu
-        if self.d < 3 or self.n <= 10:
-            return self.cpu
-        return self.pycuda
+        # If CUDA is detected, always use CUDA.
+        # If OpenCL is detected, don't use it by default to avoid the system
+        # becoming unresponsive until the program terminates.
+        use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
+        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '0'))
+        if use_cuda and _is_cuda_available():
+            return self.pycuda
+        if use_opencl:
+            return self.pyopencl
+        return self.cpu
 
     def compute(self, u):
         if u.shape[1] != self.d:
