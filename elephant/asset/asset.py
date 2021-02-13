@@ -593,7 +593,7 @@ class _JSFUniformOrderStat3D(object):
 
         return P_total
 
-    def _compile_cuda_template(self, u_length, template_name, **kwargs):
+    def _compile_template(self, u_length, template_name, **kwargs):
         from jinja2 import Template
         cu_template_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), template_name)
@@ -604,6 +604,88 @@ class _JSFUniformOrderStat3D(object):
             CWR_LOOPS=self.cuda_cwr_loops,
             L=f"{u_length}LLU", N=self.n, D=self.d, **kwargs)
         return asset_cu
+
+    def pyopencl(self, log_du, device_id=0):
+        import pyopencl as cl
+        import pyopencl.array as cl_array
+
+        it_todo = self.num_iterations
+        u_length = log_du.shape[0]
+
+        if it_todo > np.iinfo(np.uint64).max:
+            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
+                             " Only Python backend is supported.")
+
+        context = cl.create_some_context()
+        if self.verbose:
+            print("Available OpenCL devices:\n", context.devices)
+        device = context.devices[device_id]
+
+        # A queue bounded to the device
+        queue = cl.CommandQueue(context)
+        log_du_gpu = cl_array.to_device(queue, log_du, async_=True)
+
+        max_l_block = device.local_mem_size / (
+                self.dtype.itemsize * (self.d + 2))
+        n_threads = min(self.cuda_threads, max_l_block,
+                        device.max_work_group_size)
+        if n_threads > 32:
+            # It's more efficient to make the number of threads
+            # a multiple of the warp size (32).
+            n_threads -= n_threads % 32
+        l_block = min(n_threads, u_length)
+        l_num_blocks = math.ceil(u_length / l_block)
+        grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
+        if grid_size > l_num_blocks:
+            # make grid_size divisible by l_num_blocks
+            grid_size -= grid_size % l_num_blocks
+        else:
+            # grid_size must be at least l_num_blocks
+            grid_size = l_num_blocks
+
+        if self.verbose:
+            print(f"[Joint prob. matrix] it_todo={it_todo}, "
+                  f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                  f"N_THREADS={n_threads}")
+
+        P_total_gpu = cl_array.zeros(queue, shape=u_length, dtype=self.dtype)
+
+        iteration_table_str = ", ".join(f"{val}" for val in
+                                        self.map_iterations.flatten())
+        iteration_table_str = "{%s}" % iteration_table_str
+        iteration_table_str = "{5}"
+
+        log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
+        logK = log_factorial[-1]
+        log_factorial_str = ", ".join(f"{val:.6f}" for val in log_factorial)
+        log_factorial_str = "{%s}" % log_factorial_str
+        asset_cl = self._compile_template(
+            u_length=u_length,
+            template_name="asset.pyopencl.cl",
+            logK=f"{logK:.10f}f",
+            iteration_table=iteration_table_str,
+            log_factorial=log_factorial_str,
+            L_BLOCK=l_block,
+            L_NUM_BLOCKS=l_num_blocks,
+            ITERATIONS_TODO=f"{it_todo}LLU",
+        )
+
+        program = cl.Program(context, asset_cl).build()
+
+        # synchronize
+        cl.enqueue_barrier(queue)
+
+        kernel = program.jsf_uniform_orderstat_3d_kernel
+        kernel(queue, (grid_size,), (n_threads,),
+               P_total_gpu.data, log_du_gpu.data, g_times_l=True)
+
+        P_total = P_total_gpu.get()
+
+        # Large number of floating-point additions can result in values
+        # outside of the valid range [0, 1].
+        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
+
+        return P_total
 
     def pycuda(self, log_du):
         # PyCuda should not be in requirements-extra because CPU limited
@@ -620,31 +702,33 @@ class _JSFUniformOrderStat3D(object):
         it_todo = self.num_iterations
         u_length = log_du.shape[0]
 
-        dev = pycuda.autoinit.device
+        if it_todo > np.iinfo(np.uint64).max:
+            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
+                             " Only Python backend is supported.")
+
+        device = pycuda.autoinit.device
 
         log_du_gpu = drv.mem_alloc_like(log_du)
         drv.memcpy_htod_async(log_du_gpu, log_du)
 
-        max_l_block = dev.MAX_SHARED_MEMORY_PER_BLOCK / (
+        max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK / (
                     self.dtype.itemsize * (self.d + 2))
         n_threads = min(self.cuda_threads, max_l_block,
-                        dev.MAX_THREADS_PER_BLOCK)
-        if n_threads > dev.WARP_SIZE:
+                        device.MAX_THREADS_PER_BLOCK)
+        if n_threads > device.WARP_SIZE:
             # It's more efficient to make the number of threads
             # a multiple of the warp size (32).
-            n_threads -= n_threads % dev.WARP_SIZE
+            n_threads -= n_threads % device.WARP_SIZE
         l_block = min(n_threads, u_length)
         l_num_blocks = math.ceil(u_length / l_block)
         grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
-        grid_size = min(grid_size, dev.MAX_GRID_DIM_X)
+        grid_size = min(grid_size, device.MAX_GRID_DIM_X)
         if grid_size > l_num_blocks:
             # make grid_size divisible by l_num_blocks
             grid_size -= grid_size % l_num_blocks
         else:
             # grid_size must be at least l_num_blocks
             grid_size = l_num_blocks
-        floats = int(self.dtype.itemsize / np.dtype("float32").itemsize)
-        shared_mem_size = floats * l_block + l_block * (self.d + 1)
 
         if self.verbose:
             print(f"[Joint prob. matrix] it_todo={it_todo}, "
@@ -656,14 +740,13 @@ class _JSFUniformOrderStat3D(object):
         log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
         log_factorial = log_factorial.astype(self.dtype)
         logK = log_factorial[-1]
-        asset_cu = self._compile_cuda_template(
+        asset_cu = self._compile_template(
             u_length=u_length,
             template_name="asset.pycuda.cu",
             logK=f"{logK:.10f}f",
             L_BLOCK=l_block,
             L_NUM_BLOCKS=l_num_blocks,
             ITERATIONS_TODO=f"{it_todo}LLU",
-            SHARED_MEM_SIZE=shared_mem_size
         )
 
         module = SourceModule(asset_cu)
@@ -675,11 +758,11 @@ class _JSFUniformOrderStat3D(object):
         log_factorial_gpu, _ = module.get_global("log_factorial")
         drv.memcpy_htod(log_factorial_gpu, log_factorial)
 
-        jsf_uniform_orderstat_3d_kernel = module.get_function(
-            "jsf_uniform_orderstat_3d_kernel")
-        jsf_uniform_orderstat_3d_kernel(P_total_gpu.gpudata, log_du_gpu,
-                                        grid=(grid_size, 1),
-                                        block=(n_threads, 1, 1))
+        drv.Context.synchronize()
+
+        kernel = module.get_function("jsf_uniform_orderstat_3d_kernel")
+        kernel(P_total_gpu.gpudata, log_du_gpu, grid=(grid_size, 1),
+               block=(n_threads, 1, 1))
 
         P_total = P_total_gpu.get()
 
@@ -698,7 +781,12 @@ class _JSFUniformOrderStat3D(object):
         # A note to developers: remove this backend in half a year once the
         # pycuda backend proves to be stable.
 
-        asset_cu = self._compile_cuda_template(
+        it_todo = self.num_iterations
+        if it_todo > np.iinfo(np.uint64).max:
+            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
+                             " Only Python backend is supported.")
+
+        asset_cu = self._compile_template(
             u_length=log_du.shape[0], template_name="asset.template.cu",
             ASSET_DEBUG=int(self.verbose), N_THREADS=self.cuda_threads,
         )

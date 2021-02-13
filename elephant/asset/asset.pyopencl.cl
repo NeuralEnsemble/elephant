@@ -22,33 +22,20 @@
 
 typedef {{precision}} asset_float;
 
-__constant__ asset_float log_factorial[N + 1];
-__constant__ ULL iteration_table[D][N];  /* Maps the iteration ID to the entries
-                                            of a sequence_sorted array */
+__constant asset_float log_factorial[] = {{log_factorial}};
+__constant ULL iteration_table[] = {{iteration_table}};
 
-/**
- * Compute capabilities lower than 6.0 don't have hardware support for
- * double-precision atomicAdd. This software implementation is taken from
- * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
- */
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
-__device__ double atomicAdd(double* address, double val)
+inline void atomicAdd_global_f(__global float* address, float value)
 {
-    ULL* address_as_ull = (ULL*)address;
-    ULL old = *address_as_ull, assumed;
-
-    do {
-        assumed = old;
-        old = atomicCAS(address_as_ull, assumed,
-                        __double_as_longlong(val +
-                               __longlong_as_double(assumed)));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-    } while (assumed != old);
-
-    return __longlong_as_double(old);
+    float old = value;
+    while ((old = atomic_xchg(address, atomic_xchg(address, 0.0f)+old))!=0.0f);
 }
-#endif
+
+inline void atomicAdd_local_f(__local float* address, float value)
+{
+    float old = value;
+    while ((old = atomic_xchg(address, atomic_xchg(address, 0.0f)+old))!=0.0f);
+}
 
 
 /**
@@ -58,13 +45,13 @@ __device__ double atomicAdd(double* address, double val)
  * @param sequence_sorted the output sequence_sorted array of size D
  * @param iteration       the global iteration ID
  */
-__device__ void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
+void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
     int row, element = N - 1;
     for (row = D - 1; row >= 0; row--) {
-        while (element > row && iteration < iteration_table[row][element]) {
+        while (element > row && iteration < iteration_table[row * N + element]) {
             element--;
         }
-        iteration -= iteration_table[row][element];
+        iteration -= iteration_table[row * N + element];
         sequence_sorted[D - 1 - row] = element + 1;
     }
 }
@@ -73,7 +60,7 @@ __device__ void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
 /**
  * Set 'sequence_sorted' to the next valid sequence of indices in-place.
  */
-__device__ void combinations_with_replacement(int *sequence_sorted) {
+void combinations_with_replacement(int *sequence_sorted) {
     int increment_id = D - 1;
     while (increment_id > 0 && sequence_sorted[increment_id - 1] == sequence_sorted[increment_id]) {
       sequence_sorted[increment_id] = D - increment_id;
@@ -89,27 +76,34 @@ __device__ void combinations_with_replacement(int *sequence_sorted) {
  * @param P_out           P_total output array of size L
  * @param log_du_device   input log_du flattened matrix of size L*(D+1)
  */
-__global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, const float *log_du_device) {
+__kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __global const float *log_du_device) {
     unsigned int i;
     ULL row;
 
+    const int threadIdx_x = get_local_id(0);
+    const int blockDim_x = get_local_size(0);
+
+    // blockIdx_x and gridDim_x are upperbounded by 2^31 - 1.
+    const ULL blockIdx_x = get_group_id(0);
+    const ULL gridDim_x = get_global_size(0) / blockDim_x;
+
     // the row shift of log_du and P_total in the number of elements, between 0 and L
-    const ULL l_shift = (blockIdx.x % L_NUM_BLOCKS) * L_BLOCK;
+    const ULL l_shift = (blockIdx_x % L_NUM_BLOCKS) * L_BLOCK;
 
     // account for the last block width that can be less than L_BLOCK
     const ULL block_width = (L - l_shift < L_BLOCK) ? (L - l_shift) : L_BLOCK;
 
-    __shared__ asset_float P_total[L_BLOCK];
-    __shared__ float log_du[L_BLOCK * (D + 1)];
+    __local asset_float P_total[L_BLOCK];
+    __local float log_du[L_BLOCK * (D + 1)];
 
-    for (row = threadIdx.x; row < block_width; row += blockDim.x) {
+    for (row = threadIdx_x; row < block_width; row += blockDim_x) {
         P_total[row] = 0;
         for (i = 0; i <= D; i++) {
             log_du[row * (D + 1) + i] = log_du_device[(row + l_shift) * (D + 1) + i];
         }
     }
 
-    __syncthreads();
+    barrier(CLK_LOCAL_MEM_FENCE);
 
     int di[D + 1];
     int sequence_sorted[D];
@@ -118,12 +112,16 @@ __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, const float 
         P_thread[row] = 0;
     }
 
-    const ULL burnout = (blockIdx.x / L_NUM_BLOCKS) * blockDim.x * CWR_LOOPS + threadIdx.x * CWR_LOOPS;
-    const ULL stride = (gridDim.x / L_NUM_BLOCKS) * blockDim.x * CWR_LOOPS;
+    for (i = 0; i < D; i++) {
+        sequence_sorted[i] = D - i;
+    }
+
+    const ULL burnout = (blockIdx_x / L_NUM_BLOCKS) * blockDim_x * CWR_LOOPS + threadIdx_x * CWR_LOOPS;
+    const ULL stride = (gridDim_x / L_NUM_BLOCKS) * blockDim_x * CWR_LOOPS;
 
     ULL iteration, cwr_loop;
     for (iteration = burnout; iteration < ITERATIONS_TODO; iteration += stride) {
-        next_sequence_sorted(sequence_sorted, iteration);
+        //next_sequence_sorted(sequence_sorted, iteration);
 
         for (cwr_loop = 0; (cwr_loop < CWR_LOOPS) && (sequence_sorted[0] != N + 1); cwr_loop++) {
             int prev = N;
@@ -140,30 +138,28 @@ __global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, const float 
 
             asset_float colsum;
             const asset_float colsum_base = logK - sum_log_di_factorial;
-            const float *log_du_row = log_du;
             for (row = 0; row < block_width; row++) {
                 colsum = colsum_base;
                 for (i = 0; i <= D; i++) {
                     if (di[i] != 0) {
-                        colsum += di[i] * log_du_row[i];
+                        colsum += di[i] * log_du[row * (D + 1) + i];
                     }
                 }
                 P_thread[row] += exp(colsum);
-                log_du_row += D + 1;
             }
 
             combinations_with_replacement(sequence_sorted);
         }
     }
 
-    for (row = threadIdx.x; row < block_width + threadIdx.x; row++) {
-        // Reduce atomicAdd conflicts by adding threadIdx.x to each row
-        atomicAdd(P_total + row % block_width, P_thread[row % block_width]);
+    for (row = threadIdx_x; row < block_width + threadIdx_x; row++) {
+        // Reduce atomicAdd conflicts by adding threadIdx_x to each row
+        //atomicAdd_local_f(P_total + row % block_width, P_thread[row % block_width]);
     }
 
-    __syncthreads();
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-    for (row = threadIdx.x; row < block_width; row += blockDim.x) {
-        atomicAdd(P_out + row + l_shift, P_total[row]);
+    for (row = threadIdx_x; row < block_width; row += blockDim_x) {
+        //atomicAdd_global_f(P_out + row + l_shift, P_total[row]);
     }
 }

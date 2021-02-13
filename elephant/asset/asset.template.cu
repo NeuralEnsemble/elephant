@@ -128,7 +128,7 @@ __device__ void combinations_with_replacement(int *sequence_sorted) {
  * @param P_out           P_total output array of size L
  * @param log_du_device   input log_du flattened matrix of size L*(D+1)
  */
-__global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, float *log_du_device) {
+__global__ void jsf_uniform_orderstat_3d_kernel(asset_float *P_out, const float *log_du_device) {
     unsigned int i;
     ULL row;
 
