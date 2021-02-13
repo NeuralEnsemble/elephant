@@ -603,6 +603,12 @@ class _JSFUniformOrderStat3D(object):
             raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
                              " Only Python backend is supported.")
 
+        if self.precision == "double":
+            # Probably due to not officially supported atomic add instructions
+            # for doubles. Single floating point precision works fine.
+            warnings.warn("PyOpenCL backend is slow and unstable with double "
+                          "floating point precision.")
+
         context = cl.create_some_context()
         if self.verbose:
             print("Available OpenCL devices:\n", context.devices)
