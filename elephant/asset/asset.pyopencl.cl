@@ -11,7 +11,7 @@
 #error "D must be less or equal N"
 #endif
 
-#define ULL               unsigned long long
+#define ULL               unsigned long
 
 /**
  * To reduce branch divergence in 'next_sequence_sorted' function
@@ -85,7 +85,7 @@ __kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __glo
 
     // blockIdx_x and gridDim_x are upperbounded by 2^31 - 1.
     const ULL blockIdx_x = get_group_id(0);
-    const ULL gridDim_x = get_global_size(0) / blockDim_x;
+    const ULL gridDim_x = get_num_groups(0);
 
     // the row shift of log_du and P_total in the number of elements, between 0 and L
     const ULL l_shift = (blockIdx_x % L_NUM_BLOCKS) * L_BLOCK;

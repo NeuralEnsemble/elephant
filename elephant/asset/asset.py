@@ -593,7 +593,7 @@ class _JSFUniformOrderStat3D(object):
 
         return P_total
 
-    def _compile_template(self, u_length, template_name, **kwargs):
+    def _compile_template(self, template_name, **kwargs):
         from jinja2 import Template
         cu_template_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), template_name)
@@ -602,7 +602,7 @@ class _JSFUniformOrderStat3D(object):
         asset_cu = cu_template.render(
             precision=self.precision,
             CWR_LOOPS=self.cuda_cwr_loops,
-            L=f"{u_length}LLU", N=self.n, D=self.d, **kwargs)
+            N=self.n, D=self.d, **kwargs)
         return asset_cu
 
     def pyopencl(self, log_du, device_id=0):
@@ -659,14 +659,14 @@ class _JSFUniformOrderStat3D(object):
         log_factorial_str = ", ".join(f"{val:.6f}" for val in log_factorial)
         log_factorial_str = "{%s}" % log_factorial_str
         asset_cl = self._compile_template(
-            u_length=u_length,
             template_name="asset.pyopencl.cl",
+            L=f"{u_length}LU",
+            L_BLOCK=l_block,
+            L_NUM_BLOCKS=l_num_blocks,
+            ITERATIONS_TODO=f"{it_todo}LU",
             logK=f"{logK:.10f}f",
             # iteration_table=iteration_table_str,
             # log_factorial=log_factorial_str,
-            L_BLOCK=l_block,
-            L_NUM_BLOCKS=l_num_blocks,
-            ITERATIONS_TODO=f"{it_todo}LLU",
         )
 
         program = cl.Program(context, asset_cl).build()
@@ -686,7 +686,7 @@ class _JSFUniformOrderStat3D(object):
 
         # Large number of floating-point additions can result in values
         # outside of the valid range [0, 1].
-        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
+        # P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
         return P_total
 
@@ -744,12 +744,12 @@ class _JSFUniformOrderStat3D(object):
         log_factorial = log_factorial.astype(self.dtype)
         logK = log_factorial[-1]
         asset_cu = self._compile_template(
-            u_length=u_length,
             template_name="asset.pycuda.cu",
-            logK=f"{logK:.10f}f",
+            L=f"{log_du.shape[0]}LLU",
             L_BLOCK=l_block,
             L_NUM_BLOCKS=l_num_blocks,
             ITERATIONS_TODO=f"{it_todo}LLU",
+            logK=f"{logK:.10f}f",
         )
 
         module = SourceModule(asset_cu)
@@ -790,8 +790,10 @@ class _JSFUniformOrderStat3D(object):
                              " Only Python backend is supported.")
 
         asset_cu = self._compile_template(
-            u_length=log_du.shape[0], template_name="asset.template.cu",
-            ASSET_DEBUG=int(self.verbose), N_THREADS=self.cuda_threads,
+            template_name="asset.template.cu",
+            L=f"{log_du.shape[0]}LLU",
+            N_THREADS=self.cuda_threads,
+            ASSET_DEBUG=int(self.verbose)
         )
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
             asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
