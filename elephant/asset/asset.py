@@ -143,19 +143,6 @@ __all__ = [
 ]
 
 
-def _is_cuda_available():
-    # a silly way to check for CUDA support
-    # experimental: should not be public API
-    try:
-        subprocess.run(["nvcc", "-V"],
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE).check_returncode()
-        available = True
-    except (OSError, subprocess.CalledProcessError):
-        available = False
-    return available
-
-
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================
@@ -837,7 +824,8 @@ class _JSFUniformOrderStat3D(object):
         # becoming unresponsive until the program terminates.
         use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
         use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '0'))
-        if use_cuda and _is_cuda_available():
+        cuda_detected = get_cuda_capability_major() != 0
+        if use_cuda and cuda_detected:
             return self.pycuda
         if use_opencl:
             return self.pyopencl

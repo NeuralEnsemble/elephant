@@ -311,7 +311,7 @@ def get_cuda_capability_major():
     int
         CUDA capability major version.
     """
-    CUDA_SUCCESS = 0
+    cuda_success = 0
     for libname in ('libcuda.so', 'libcuda.dylib', 'cuda.dll'):
         try:
             cuda = ctypes.CDLL(libname)
@@ -323,12 +323,12 @@ def get_cuda_capability_major():
         # not found
         return 0
     result = cuda.cuInit(0)
-    if result != CUDA_SUCCESS:
+    if result != cuda_success:
         return 0
     device = ctypes.c_int()
     # parse the first GPU card only
     result = cuda.cuDeviceGet(ctypes.byref(device), 0)
-    if result != CUDA_SUCCESS:
+    if result != cuda_success:
         return 0
 
     cc_major = ctypes.c_int()
