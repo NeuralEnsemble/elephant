@@ -609,7 +609,7 @@ class _JSFUniformOrderStat3D(object):
             warnings.warn("PyOpenCL backend is slow and unstable with double "
                           "floating point precision.")
 
-        context = cl.create_some_context()
+        context = cl.create_some_context(interactive=False)
         if self.verbose:
             print("Available OpenCL devices:\n", context.devices)
         device = context.devices[device_id]
