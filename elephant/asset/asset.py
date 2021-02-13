@@ -684,7 +684,7 @@ class _JSFUniformOrderStat3D(object):
 
         # Large number of floating-point additions can result in values
         # outside of the valid range [0, 1].
-        # P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
+        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
         return P_total
 
