@@ -637,13 +637,13 @@ class _JSFUniformOrderStat3D(object):
 
         P_total_gpu = cl_array.zeros(queue, shape=u_length, dtype=self.dtype)
 
-        iteration_table_str = ", ".join(f"{val}" for val in
+        iteration_table_str = ", ".join(f"{val}LU" for val in
                                         self.map_iterations.flatten())
         iteration_table_str = "{%s}" % iteration_table_str
 
         log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
         logK = log_factorial[-1]
-        log_factorial_str = ", ".join(f"{val:.6f}" for val in log_factorial)
+        log_factorial_str = ", ".join(f"{val:.10f}" for val in log_factorial)
         log_factorial_str = "{%s}" % log_factorial_str
         atomic_int = 'int' if self.precision == 'float' else 'long'
         asset_cl = self._compile_template(
