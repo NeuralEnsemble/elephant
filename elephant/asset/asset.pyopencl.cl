@@ -1,3 +1,7 @@
+// Enables atomicAdd(double*) features. Not sure if needed.
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
+#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+
 #define L {{L}}
 #define N {{N}}
 #define D {{D}}
@@ -11,7 +15,15 @@
 #error "D must be less or equal N"
 #endif
 
+/**
+ * OpenCL spec. defines unsigned long as uint64.
+ */
 #define ULL               unsigned long
+
+/**
+ * Convert float or double to uint32 or uint64 accordingly.
+ */
+#define ATOMIC_UINT       {{ATOMIC_UINT}}
 
 /**
  * To reduce branch divergence in 'next_sequence_sorted' function
@@ -25,16 +37,39 @@ typedef {{precision}} asset_float;
 __constant asset_float log_factorial[] = {{log_factorial}};
 __constant ULL iteration_table[] = {{iteration_table}};
 
-inline void atomicAdd_global_f(__global float* address, float value)
+void atomicAdd_global(__global asset_float* source, const asset_float operand)
 {
-    float old = value;
-    while ((old = atomic_xchg(address, atomic_xchg(address, 0.0f)+old))!=0.0f);
+    union {
+        ATOMIC_UINT intVal;
+        asset_float floatVal;
+    } newVal;
+    union {
+        ATOMIC_UINT intVal;
+        asset_float floatVal;
+    } prevVal;
+
+    do {
+        prevVal.floatVal = *source;
+        newVal.floatVal = prevVal.floatVal + operand;
+    } while (atom_cmpxchg((volatile global ATOMIC_UINT *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
 }
 
-inline void atomicAdd_local_f(__local float* address, float value)
+void atomicAdd_local(__local asset_float* source, const asset_float operand)
 {
-    float old = value;
-    while ((old = atomic_xchg(address, atomic_xchg(address, 0.0f)+old))!=0.0f);
+    union {
+        ATOMIC_UINT intVal;
+        asset_float floatVal;
+    } newVal;
+
+    union {
+        ATOMIC_UINT intVal;
+        asset_float floatVal;
+    } prevVal;
+
+    do {
+        prevVal.floatVal = *source;
+        newVal.floatVal = prevVal.floatVal + operand;
+    } while (atom_cmpxchg((volatile local ATOMIC_UINT *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
 }
 
 
@@ -150,12 +185,12 @@ __kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __glo
 
     for (row = threadIdx_x; row < block_width + threadIdx_x; row++) {
         // Reduce atomicAdd conflicts by adding threadIdx_x to each row
-        atomicAdd_local_f(P_total + row % block_width, P_thread[row % block_width]);
+        atomicAdd_local(P_total + row % block_width, P_thread[row % block_width]);
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for (row = threadIdx_x; row < block_width; row += blockDim_x) {
-        atomicAdd_global_f(P_out + row + l_shift, P_total[row]);
+        atomicAdd_global(P_out + row + l_shift, P_total[row]);
     }
 }

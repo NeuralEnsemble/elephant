@@ -658,6 +658,7 @@ class _JSFUniformOrderStat3D(object):
         logK = log_factorial[-1]
         log_factorial_str = ", ".join(f"{val:.6f}" for val in log_factorial)
         log_factorial_str = "{%s}" % log_factorial_str
+        atomic_int = 'int' if self.precision == 'float' else 'long'
         asset_cl = self._compile_template(
             template_name="asset.pyopencl.cl",
             L=f"{u_length}LU",
@@ -667,6 +668,7 @@ class _JSFUniformOrderStat3D(object):
             logK=f"{logK:.10f}f",
             iteration_table=iteration_table_str,
             log_factorial=log_factorial_str,
+            ATOMIC_UINT=f"unsigned {atomic_int}"
         )
 
         program = cl.Program(context, asset_cl).build()
