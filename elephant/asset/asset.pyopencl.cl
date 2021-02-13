@@ -22,8 +22,8 @@
 
 typedef {{precision}} asset_float;
 
-//__constant asset_float log_factorial[] = {{log_factorial}};
-//__constant ULL iteration_table[] = {{iteration_table}};
+__constant asset_float log_factorial[] = {{log_factorial}};
+__constant ULL iteration_table[] = {{iteration_table}};
 
 inline void atomicAdd_global_f(__global float* address, float value)
 {
@@ -45,7 +45,7 @@ inline void atomicAdd_local_f(__local float* address, float value)
  * @param sequence_sorted the output sequence_sorted array of size D
  * @param iteration       the global iteration ID
  */
-void next_sequence_sorted(int *sequence_sorted, ULL iteration, __local ULL *iteration_table) {
+void next_sequence_sorted(int *sequence_sorted, ULL iteration) {
     int row, element = N - 1;
     for (row = D - 1; row >= 0; row--) {
         while (element > row && iteration < iteration_table[row * N + element]) {
@@ -76,7 +76,7 @@ void combinations_with_replacement(int *sequence_sorted) {
  * @param P_out           P_total output array of size L
  * @param log_du_device   input log_du flattened matrix of size L*(D+1)
  */
-__kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __global float *log_du_device, __global ULL *iteration_table_device, __global asset_float *log_factorial_device) {
+__kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __global const float *log_du_device) {
     unsigned int i;
     ULL row;
 
@@ -95,22 +95,12 @@ __kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __glo
 
     __local asset_float P_total[L_BLOCK];
     __local float log_du[L_BLOCK * (D + 1)];
-    __local ULL iteration_table[D * N];
-    __local asset_float log_factorial[N + 1];
 
     for (row = threadIdx_x; row < block_width; row += blockDim_x) {
         P_total[row] = 0;
         for (i = 0; i <= D; i++) {
             log_du[row * (D + 1) + i] = log_du_device[(row + l_shift) * (D + 1) + i];
         }
-    }
-
-    for (row = threadIdx_x; row < D * N; row += blockDim_x) {
-        iteration_table[row] = iteration_table_device[row];
-    }
-
-    for (row = threadIdx_x; row <= N; row += blockDim_x) {
-        log_factorial[row] = log_factorial_device[row];
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
@@ -127,7 +117,7 @@ __kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __glo
 
     ULL iteration, cwr_loop;
     for (iteration = burnout; iteration < ITERATIONS_TODO; iteration += stride) {
-        next_sequence_sorted(sequence_sorted, iteration, iteration_table);
+        next_sequence_sorted(sequence_sorted, iteration);
 
         for (cwr_loop = 0; (cwr_loop < CWR_LOOPS) && (sequence_sorted[0] != N + 1); cwr_loop++) {
             int prev = N;
@@ -160,12 +150,12 @@ __kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __glo
 
     for (row = threadIdx_x; row < block_width + threadIdx_x; row++) {
         // Reduce atomicAdd conflicts by adding threadIdx_x to each row
-        //atomicAdd_local_f(P_total + row % block_width, P_thread[row % block_width]);
+        atomicAdd_local_f(P_total + row % block_width, P_thread[row % block_width]);
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for (row = threadIdx_x; row < block_width; row += blockDim_x) {
-        //atomicAdd_global_f(P_out + row + l_shift, P_total[row]);
+        atomicAdd_global_f(P_out + row + l_shift, P_total[row]);
     }
 }
