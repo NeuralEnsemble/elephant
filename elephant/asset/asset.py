@@ -419,7 +419,7 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
 
 class _JSFUniformOrderStat3D(object):
     def __init__(self, n, d, precision='double', verbose=False,
-                 cuda_threads=64, cuda_cwr_loops=32):
+                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5):
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
         self.n = n
@@ -431,6 +431,7 @@ class _JSFUniformOrderStat3D(object):
         self.map_iterations = self._create_iteration_table()
         bits = 32 if precision == "float" else 64
         self.dtype = np.dtype(f"float{bits}")
+        self.tolerance = tolerance
 
     @property
     def num_iterations(self):
@@ -603,11 +604,15 @@ class _JSFUniformOrderStat3D(object):
             raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
                              " Only Python backend is supported.")
 
-        if self.precision == "double":
-            # Probably due to not officially supported atomic add instructions
-            # for doubles. Single floating point precision works fine.
-            warnings.warn("PyOpenCL backend is slow and unstable with double "
-                          "floating point precision.")
+        # Probably due to not officially supported atomic add instructions
+        # for floats and doubles. Floats are "more stable" than doubles but
+        # they give up after >1e9 iterations. The credibility of PyOpenCL
+        # backend results is left for the users to judge.
+        warnings.warn("PyOpenCL backend is unstable, especially with double "
+                      "floating-point precision. PyOpenCL backend with a "
+                      "single floating-point precision is fast and useful "
+                      "to explore the data, but the final result must be run "
+                      "on either Python or CUDA backend.")
 
         context = cl.create_some_context(interactive=False)
         if self.verbose:
@@ -674,10 +679,6 @@ class _JSFUniformOrderStat3D(object):
                P_total_gpu.data, log_du_gpu.data, g_times_l=True)
 
         P_total = P_total_gpu.get()
-
-        # Large number of floating-point additions can result in values
-        # outside of the valid range [0, 1].
-        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
         return P_total
 
@@ -760,10 +761,6 @@ class _JSFUniformOrderStat3D(object):
 
         P_total = P_total_gpu.get()
 
-        # Large number of floating-point additions can result in values
-        # outside of the valid range [0, 1].
-        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
-
         return P_total
 
     def _cuda(self, log_du):
@@ -818,10 +815,6 @@ class _JSFUniformOrderStat3D(object):
             run_status.check_returncode()
             P_total = np.genfromtxt(P_total_path)
 
-        # Large number of floating-point additions can result in values
-        # outside of the valid range [0, 1].
-        P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
-
         return P_total
 
     def _choose_backend(self):
@@ -855,6 +848,16 @@ class _JSFUniformOrderStat3D(object):
         jsf_backend = self._choose_backend()
 
         P_total = jsf_backend(log_du)
+
+        outside = P_total[(P_total < -self.tolerance) |
+                          (P_total > 1 + self.tolerance)]
+        if len(outside) > 0:
+            # A watchdog for unexpected results.
+            warnings.warn(f"{len(outside)}/{P_total.shape[0]} values of the "
+                          f"computed joint prob. matrix lie outside of the "
+                          f"valid [0, 1] interval:\n{outside}\n"
+                          "Clipping to 0 and 1.")
+            P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
         return P_total
 
@@ -1832,7 +1835,8 @@ class ASSET(object):
 
     def joint_probability_matrix(self, pmat, filter_shape, n_largest,
                                  min_p_value=1e-5, precision='double',
-                                 cuda_threads=64, cuda_cwr_loops=32):
+                                 cuda_threads=64, cuda_cwr_loops=32,
+                                 tolerance=1e-5):
         """
         Map a probability matrix `pmat` to a joint probability matrix `jmat`,
         where `jmat[i, j]` is the joint p-value of the largest neighbors of
@@ -1866,25 +1870,33 @@ class ASSET(object):
             joint significance of itself and its neighbors.
             Default: 1e-5
         precision : {'float', 'double'}, optional
-            The floating-point precision of the resulting `jmat` matrix.
+            Single or double floating-point precision for the resulting `jmat`
+            matrix.
               * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
 
               * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
-            Default: 'float'
+            Default: 'double'
         cuda_threads : int, optional
-            The number of CUDA threads per block (in X axis) between 1 and
-            1024 and is used only if CUDA backend is enabled.
+            The number of CUDA/OpenCL threads per block (in X axis) between 1
+            and 1024 and is used only if CUDA or OpenCL backend is enabled.
             For performance reasons, it should be a multiple of 32.
             Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
             than 64 while new series (Tesla T4) with capabilities 6.x and more
             work best with 32 threads.
             Default: 64
         cuda_cwr_loops : int, optional
-            CUDA optimization parameter, a positive integer that defines the
-            number of fast 'combinations_with_replacement' loops to run to
+            CUDA/OpenCL optimization parameter, a positive integer that defines
+            the number of fast 'combinations_with_replacement' loops to run to
             reduce branch divergence. This parameter influences the performance
             when the number of iterations is huge (`>1e8`).
             Default: 32
+        tolerance : float, optional
+            Tolerance is used to catch unexpected behavior of billions of
+            floating point additions, when the number of iterations is huge
+            or the data arrays are large. A warning is thrown when the
+            resulting joint prob. matrix values are outside of the acceptable
+            range ``[-tolerance, 1.0 + tolerance]``.
+            Default: 1e-5
 
         Returns
         -------
@@ -1924,7 +1936,8 @@ class ASSET(object):
                                      precision=precision,
                                      verbose=self.verbose,
                                      cuda_threads=cuda_threads,
-                                     cuda_cwr_loops=cuda_cwr_loops)
+                                     cuda_cwr_loops=cuda_cwr_loops,
+                                     tolerance=tolerance)
         jpvmat = jsf.compute(u=pmat_neighb)
 
         # restore the original shape using the stored indices
