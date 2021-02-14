@@ -579,7 +579,46 @@ class _JSFUniformOrderStat3D(object):
             N=self.n, D=self.d, **kwargs)
         return asset_cu
 
-    def pyopencl(self, log_du, device_id=0):
+    def pyopencl(self, log_du, device_id=0, debug=False):
+        """
+        If `debug` is set to True, the output array will contain integers
+        that count the number of performed atomic additions. If all the
+        counts are the same (the value does not matter), as they should be,
+        the PyOpenCL backend is considered to be stable and you can work with
+        the output followed by setting `debug` back to False. As long as at
+        least one entry differs from the rest, the output array is no longer
+        valid - it may look valid because:
+        1) PyOpenCL becomes unstable when the number of iterations is large
+        2) when the num. of iterations is large (e.g., a million), each entry
+           being added is on average equal to ``1 / 1e6``
+        3) if you miss several floats of values ``~1e-6``, you won't notice
+           this in the overall picture simply because floats are not
+           associative: (a + b) + c != a + (b + c). Therefore, each run may
+           output slightly different result, and all small deviations will
+           be eaten up by the :attr:`tolerance`.
+
+        Moreover, when L (``log_du.shape[0]``) is > 1e8, the program becomes
+        also unstable even with the small number of iterations.
+
+        Typically, you don't need to worry about the `debug` flag - a watchdog
+        will catch unexpected result outside of the valid range ``[0, 1]``,
+        which is very likely to happen when the backend is unstable.
+
+        Notes
+        -----
+        PyCUDA backend is stable for any input data and set of parameters.
+
+        Examples
+        --------
+        In this example (L=1_000_000, N=15, D=5) all values are equal to 64.
+        Therefore, PyOpenCL backend is assumed to be stable for a given set of
+        parameters - L, N, and D.
+        >>> jsf = _JSFUniformOrderStat3D(n=15, d=5, precision='float')
+        >>> jsf.pyopencl(log_du=np.zeros((1_000_000, 5+1), dtype=np.float32),
+        ...              debug=True)
+        [64. 64. 64. ... 64. 64. 64.]
+
+        """
         import pyopencl as cl
         import pyopencl.array as cl_array
 
@@ -653,7 +692,8 @@ class _JSFUniformOrderStat3D(object):
             logK=f"{logK:.10f}f",
             iteration_table=iteration_table_str,
             log_factorial=log_factorial_str,
-            ATOMIC_UINT=f"unsigned {atomic_int}"
+            ATOMIC_UINT=f"unsigned {atomic_int}",
+            ASSET_DEBUG=int(debug)
         )
 
         program = cl.Program(context, asset_cl).build()
@@ -812,6 +852,9 @@ class _JSFUniformOrderStat3D(object):
         # Doing so wastes memory for nothing.
         if log_du.dtype != np.float32:
             raise ValueError("'log_du' must be a float32 array")
+        if log_du.shape[1] != self.d + 1:
+            raise ValueError(f"log_du.shape[1] ({log_du.shape[1]}) must be "
+                             f"equal to D+1 ({self.d + 1})")
 
     def _choose_backend(self):
         # If CUDA is detected, always use CUDA.
@@ -830,7 +873,12 @@ class _JSFUniformOrderStat3D(object):
         if u.shape[1] != self.d:
             raise ValueError("Invalid input data shape axis 1: expected {}, "
                              "got {}".format(self.d, u.shape[1]))
-        du = np.diff(u, prepend=0, append=1, axis=1)
+        # A faster and memory efficient implementation of
+        # du = np.diff(u, prepend=0, append=1, axis=1).astype(np.float32)
+        du = np.empty((u.shape[0], u.shape[1] + 1), dtype=np.float32)
+        du[:, 1:-1] = u[:, 1:] - u[:, :-1]
+        du[:, 0] = u[:, 0]
+        du[:, -1] = 1 - u[:, -1]
 
         # precompute logarithms
         # ignore warnings about infinities, see inside the loop:
@@ -839,7 +887,7 @@ class _JSFUniformOrderStat3D(object):
         # exp(ln(0)) = exp(-inf) = 0
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
-            log_du = np.log(du, dtype=np.float32)
+            log_du = np.log(du, out=du)
 
         jsf_backend = self._choose_backend()
 
