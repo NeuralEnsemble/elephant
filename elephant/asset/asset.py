@@ -455,20 +455,6 @@ class _JSFUniformOrderStat3D(object):
         map_iterations = np.vstack(map_iterations)
         return map_iterations
 
-    def _next_sequence_sorted(self, iteration):
-        # an alternative implementation to naive for-loop iteration when the
-        # MPI size is large. However, it's not clear under which circumstances,
-        # if any, there is a benefit. That's why this function is not used.
-        sequence_sorted = []
-        element = self.n - 1
-        for row in range(self.d - 1, -1, -1):
-            map_row = self.map_iterations[row]
-            while element > row and iteration < map_row[element]:
-                element -= 1
-            iteration -= map_row[element]
-            sequence_sorted.append(element + 1)
-        return tuple(sequence_sorted)
-
     def _combinations_with_replacement(self):
         # Generate sequences of {a_i} such that
         #   a_0 >= a_1 >= ... >= a_(d-1) and
@@ -849,13 +835,13 @@ class _JSFUniformOrderStat3D(object):
 
         P_total = jsf_backend(log_du)
 
-        outside = P_total[(P_total < -self.tolerance) |
-                          (P_total > 1 + self.tolerance)]
-        if len(outside) > 0:
+        inside = (P_total > -self.tolerance) & (P_total < 1 + self.tolerance)
+        outside_vals = P_total[~inside]
+        if len(outside_vals) > 0:
             # A watchdog for unexpected results.
-            warnings.warn(f"{len(outside)}/{P_total.shape[0]} values of the "
-                          f"computed joint prob. matrix lie outside of the "
-                          f"valid [0, 1] interval:\n{outside}\n"
+            warnings.warn(f"{len(outside_vals)}/{P_total.shape[0]} values of "
+                          "the computed joint prob. matrix lie outside of the "
+                          f"valid [0, 1] interval:\n{outside_vals}\n"
                           "Clipping to 0 and 1.")
             P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
@@ -1877,6 +1863,8 @@ class ASSET(object):
               * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
             Default: 'double'
         cuda_threads : int, optional
+            [CUDA/OpenCL performance parameter that does not influence the
+            result.]
             The number of CUDA/OpenCL threads per block (in X axis) between 1
             and 1024 and is used only if CUDA or OpenCL backend is enabled.
             For performance reasons, it should be a multiple of 32.
@@ -1885,10 +1873,13 @@ class ASSET(object):
             work best with 32 threads.
             Default: 64
         cuda_cwr_loops : int, optional
-            CUDA/OpenCL optimization parameter, a positive integer that defines
-            the number of fast 'combinations_with_replacement' loops to run to
-            reduce branch divergence. This parameter influences the performance
-            when the number of iterations is huge (`>1e8`).
+            [CUDA/OpenCL performance parameter that does not influence the
+            result.]
+            A positive integer that defines the number of fast
+            'combinations_with_replacement' loops to run to reduce branch
+            divergence. This parameter influences the performance when the
+            number of iterations is huge (`>1e8`); in such cases, increase
+            the value.
             Default: 32
         tolerance : float, optional
             Tolerance is used to catch unexpected behavior of billions of

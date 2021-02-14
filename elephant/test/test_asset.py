@@ -6,9 +6,11 @@ Unit tests for the ASSET analysis.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import itertools
+import os
 import random
 import unittest
-import itertools
+import warnings
 
 import neo
 import numpy as np
@@ -29,9 +31,18 @@ else:
     HAVE_SKLEARN = True
     stretchedmetric2d = asset._stretched_metric_2d
 
+try:
+    import pyopencl
+    HAVE_PYOPENCL = True
+except ImportError:
+    HAVE_PYOPENCL = False
+
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetTestCase(unittest.TestCase):
+
+    def setUp(self):
+        os.environ['ELEPHANT_USE_OPENCL'] = '0'
 
     def test_stretched_metric_2d_size(self):
         nr_points = 4
@@ -302,12 +313,30 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
                                  len(matrix_entries_correct))
 
     def test_next_sequence_sorted(self):
+        # This test shows the main idea of CUDA ASSET parallelization that
+        # allows reconstructing a 'sequence_sorted' from the iteration number
+        # and therefore getting rid of sequential nature of joint prob.
+        # matrix calculation.
+        def next_sequence_sorted(jsf, iteration):
+            # One-to-one correspondence with
+            # 'void next_sequence_sorted(int *sequence_sorted, ULL iteration)'
+            # function in asset.pycuda.py.
+            sequence_sorted = []
+            element = jsf.n - 1
+            for row in range(jsf.d - 1, -1, -1):
+                map_row = jsf.map_iterations[row]
+                while element > row and iteration < map_row[element]:
+                    element -= 1
+                iteration -= map_row[element]
+                sequence_sorted.append(element + 1)
+            return tuple(sequence_sorted)
+
         for n in range(1, 15):
             for d in range(1, min(6, n + 1)):
                 jsf = asset._JSFUniformOrderStat3D(n=n, d=d)
                 for iter_id, seq_sorted_true in enumerate(
                         jsf._combinations_with_replacement()):
-                    seq_sorted = jsf._next_sequence_sorted(iteration=iter_id)
+                    seq_sorted = next_sequence_sorted(jsf, iteration=iter_id)
                     self.assertEqual(seq_sorted, seq_sorted_true)
 
     def test_invalid_values(self):
@@ -327,7 +356,7 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
         u /= np.max(u)
         p_out = jsf.compute(u)
-        assert_array_almost_equal(p_out, [1., 0.])
+        assert_array_almost_equal(p_out, [1., 0.], decimal=5)
 
     def test_precision(self):
         L = 2
@@ -345,6 +374,59 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
                 # in practice, the results deviate starting at decimal 3 or 2
                 assert_array_almost_equal(P_total_double, P_total_float,
                                           decimal=5)
+
+    @unittest.skipUnless(HAVE_PYOPENCL, 'requires PyOpenCL')
+    def test_pyopencl(self):
+        # Test single floating-point precision only since doubles are poorly
+        # supported by OpenCL 1.2
+        np.random.seed(12)
+        for L in [1, 3, 100]:
+            for n in [1, 3, 10]:
+                for d in range(1, min(4, n + 1)):
+                    u = np.random.rand(L, d).cumsum(axis=1)
+                    u /= np.max(u)
+                    jsf = asset._JSFUniformOrderStat3D(n=n, d=d,
+                                                       precision='float')
+                    du = np.diff(u, prepend=0, append=1, axis=1)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', RuntimeWarning)
+                        log_du = np.log(du, dtype=np.float32)
+                    P_total_opencl = jsf.pyopencl(log_du)
+                    P_total_cpu = jsf.cpu(log_du)
+                    assert_array_almost_equal(P_total_opencl, P_total_cpu,
+                                              decimal=5)
+
+    @unittest.skipUnless(HAVE_PYOPENCL, 'requires PyOpenCL')
+    def test_pyopencl_threads_and_cwr_loops(self):
+        # The num. of threads (work items) and CWR loops must not influence
+        # the result.
+        L, N, D = 10, 15, 10
+
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u)
+        du = np.diff(u, prepend=0, append=1, axis=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            log_du = np.log(du, dtype=np.float32)
+
+        jsf = asset._JSFUniformOrderStat3D(n=N, d=D, precision='float')
+        P_expected = jsf.pyopencl(log_du)
+
+        for threads in [1, 16, 32, 128, 1024]:
+            for cwr_loops in [1, 16, 128]:
+                jsf = asset._JSFUniformOrderStat3D(n=N, d=D, precision='float',
+                                                   cuda_threads=threads,
+                                                   cuda_cwr_loops=cwr_loops)
+                P_total = jsf.pyopencl(log_du)
+                assert_array_almost_equal(P_total, P_expected, decimal=3)
+
+    def test_watchdog(self):
+        L, N, D = 10, 7, 3
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u) - 1
+        # 'u' is invalid input, which must lead to watchdog barking
+        jsf = asset._JSFUniformOrderStat3D(n=N, d=D)
+        self.assertWarns(UserWarning, jsf.compute, u)
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
