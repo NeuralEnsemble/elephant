@@ -583,12 +583,10 @@ class _JSFUniformOrderStat3D(object):
         import pyopencl as cl
         import pyopencl.array as cl_array
 
+        self._check_input(log_du)
+
         it_todo = self.num_iterations
         u_length = log_du.shape[0]
-
-        if it_todo > np.iinfo(np.uint64).max:
-            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
-                             " Only Python backend is supported.")
 
         # Probably due to not officially supported atomic add instructions
         # for floats and doubles. Floats are "more stable" than doubles but
@@ -643,6 +641,9 @@ class _JSFUniformOrderStat3D(object):
         log_factorial_str = ", ".join(f"{val:.10f}" for val in log_factorial)
         log_factorial_str = "{%s}" % log_factorial_str
         atomic_int = 'int' if self.precision == 'float' else 'long'
+        # OpenCL defines unsigned long as uint64, therefore we're adding
+        # the LU suffix, not LLU, which would indicate unsupported uint128
+        # data type format.
         asset_cl = self._compile_template(
             template_name="asset.pyopencl.cl",
             L=f"{u_length}LU",
@@ -680,12 +681,10 @@ class _JSFUniformOrderStat3D(object):
             raise ImportError(f"{err}. Install pycuda with "
                               "'pip install pycuda'")
 
+        self._check_input(log_du)
+
         it_todo = self.num_iterations
         u_length = log_du.shape[0]
-
-        if it_todo > np.iinfo(np.uint64).max:
-            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
-                             " Only Python backend is supported.")
 
         device = pycuda.autoinit.device
 
@@ -758,15 +757,13 @@ class _JSFUniformOrderStat3D(object):
         # A note to developers: remove this backend in half a year once the
         # pycuda backend proves to be stable.
 
-        it_todo = self.num_iterations
-        if it_todo > np.iinfo(np.uint64).max:
-            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
-                             " Only Python backend is supported.")
+        self._check_input(log_du)
 
         asset_cu = self._compile_template(
             template_name="asset.template.cu",
             L=f"{log_du.shape[0]}LLU",
             N_THREADS=self.cuda_threads,
+            ITERATIONS_TODO=f"{self.num_iterations}LLU",
             ASSET_DEBUG=int(self.verbose)
         )
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
@@ -789,9 +786,10 @@ class _JSFUniformOrderStat3D(object):
                 print(compile_status.stdout.decode())
                 print(compile_status.stderr.decode(), file=sys.stderr)
             compile_status.check_returncode()
-            log_du_path = os.path.join(asset_tmp_folder, "log_du.txt")
-            P_total_path = os.path.join(asset_tmp_folder, "P_total.txt")
-            np.savetxt(log_du_path, log_du, fmt="%.6f")
+            log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
+            P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
+            with open(log_du_path, 'wb') as f:
+                log_du.tofile(f)
             run_status = subprocess.run(
                 [asset_bin_path, log_du_path, P_total_path],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -799,9 +797,21 @@ class _JSFUniformOrderStat3D(object):
                 print(run_status.stdout.decode())
                 print(run_status.stderr.decode(), file=sys.stderr)
             run_status.check_returncode()
-            P_total = np.genfromtxt(P_total_path)
+            with open(P_total_path, 'rb') as f:
+                P_total = np.fromfile(f, dtype=self.dtype)
 
         return P_total
+
+    def _check_input(self, log_du):
+        it_todo = self.num_iterations
+        if it_todo > np.iinfo(np.uint64).max:
+            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
+                             " Only Python backend is supported.")
+        # Don't convert log_du to float32 transparently for the user to avoid
+        # situations when the user accidentally passes an array with float64.
+        # Doing so wastes memory for nothing.
+        if log_du.dtype != np.float32:
+            raise ValueError("'log_du' must be a float32 array")
 
     def _choose_backend(self):
         # If CUDA is detected, always use CUDA.

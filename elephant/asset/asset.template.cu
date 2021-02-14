@@ -289,37 +289,6 @@ void print_constants() {
 }
 
 
-float* copy2cuda_log_du(asset_float *buffer, FILE *log_du_file) {
-    float *log_du_device;
-    gpuErrchk( cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1)) );
-
-#if L * (D + 1) < 100000000LLU
-    // For arrays of size <100 Mb, allocate host memory for log_du
-    float *log_du_host = (float*) malloc(sizeof(float) * L * (D + 1));
-    ULL pos;
-    for (pos = 0; pos < L * (D + 1); pos++) {
-        fscanf(log_du_file, "%f", log_du_host + pos);
-    }
-    gpuErrchk( cudaMemcpyAsync(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice) );
-    free(log_du_host);
-#else
-    // Use P_total buffer to read log_du and copy batches to the GPU card
-    float *log_du_host = (float*) buffer;
-    ULL col, row;
-    for (col = 0; col <= D; col++) {
-        for (row = 0; row < L; row++) {
-            fscanf(log_du_file, "%f", log_du_host + row);
-        }
-        gpuErrchk( cudaMemcpyAsync(log_du_device + col * L, log_du_host, sizeof(float) * L, cudaMemcpyHostToDevice) );
-    }
-#endif
-
-    fclose(log_du_file);
-
-    return log_du_device;
-}
-
-
 /**
  * ASSET jsf_uniform_orderstat_3d host function to calculate P_total.
  * The result of a calculation is saved in P_total_host array.
@@ -328,7 +297,28 @@ float* copy2cuda_log_du(asset_float *buffer, FILE *log_du_file) {
  * @param log_du_host  input flattened L*(D+1) matrix of log_du values
  */
 void jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
-    float *log_du_device = copy2cuda_log_du(P_total_host, log_du_file);
+    float *log_du_device;
+    gpuErrchk( cudaMalloc((void**)&log_du_device, sizeof(float) * L * (D + 1)) );
+
+    float *log_du_host;
+
+#if L * (D + 1) < 100000000LLU
+    // For arrays of size <100 Mb, allocate host memory for log_du
+    log_du_host = (float*) malloc(sizeof(float) * L * (D + 1));
+    fread(log_du_host, sizeof(float), L * (D + 1), log_du_file);
+    gpuErrchk( cudaMemcpyAsync(log_du_device, log_du_host, sizeof(float) * L * (D + 1), cudaMemcpyHostToDevice) );
+#else
+    // Use P_total buffer to read log_du and copy batches to a GPU card
+    log_du_host = (float*) P_total_host;
+    ULL col;
+    for (col = 0; col <= D; col++) {
+        fread(log_du_host, sizeof(float), L, log_du_file);
+        // Wait till the copy finishes before filling the buffer with a next chunk.
+        gpuErrchk( cudaMemcpy(log_du_device + col * L, log_du_host, sizeof(float) * L, cudaMemcpyHostToDevice) );
+    }
+#endif
+
+    fclose(log_du_file);
 
     asset_float *P_total_device;
 
@@ -390,6 +380,11 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
     // Wait for asynchronous memory copies to finish.
     gpuErrchk( cudaDeviceSynchronize() );
 
+    if (log_du_host != P_total_host) {
+        // the memory has been allocated
+        free(log_du_host);
+    }
+
 #if ASSET_DEBUG
     print_constants();
 #endif
@@ -416,13 +411,13 @@ int main(int argc, char* argv[]) {
     // compile command: nvcc -o asset.o asset.cu
     // (run after you fill the template keys L, N, D, etc.)
     if (argc != 3) {
-        fprintf(stderr, "Usage: ./asset.o /path/to/log_du.txt /path/to/P_total_output.txt\n");
+        fprintf(stderr, "Usage: ./asset.o /path/to/log_du.dat /path/to/P_total_output.dat\n");
         return 1;
     }
     char *log_du_path = argv[1];
     char *P_total_path = argv[2];
 
-    FILE *log_du_file = fopen(log_du_path, "r");
+    FILE *log_du_file = fopen(log_du_path, "rb");
 
     if (log_du_file == NULL) {
         fprintf(stderr, "File '%s' not found\n", log_du_path);
@@ -433,16 +428,13 @@ int main(int argc, char* argv[]) {
 
     jsf_uniform_orderstat_3d(P_total, log_du_file);
 
-    FILE *P_total_file = fopen(P_total_path, "w");
+    FILE *P_total_file = fopen(P_total_path, "wb");
     if (P_total_file == NULL) {
         free(P_total);
         fprintf(stderr, "Could not open '%s' for writing.\n", P_total_path);
         return 1;
     }
-    ULL col;
-    for (col = 0; col < L; col++) {
-        fprintf(P_total_file, "%f\n", P_total[col]);
-    }
+    fwrite(P_total, sizeof(asset_float), L, P_total_file);
     fclose(P_total_file);
 
     free(P_total);
