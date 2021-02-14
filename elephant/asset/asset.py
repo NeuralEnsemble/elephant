@@ -623,7 +623,7 @@ class _JSFUniformOrderStat3D(object):
         queue = cl.CommandQueue(context)
         log_du_gpu = cl_array.to_device(queue, log_du, async_=True)
 
-        max_l_block = device.local_mem_size / (
+        max_l_block = device.local_mem_size // (
                 self.dtype.itemsize * (self.d + 2))
         n_threads = min(self.cuda_threads, max_l_block,
                         device.max_work_group_size)
@@ -706,7 +706,7 @@ class _JSFUniformOrderStat3D(object):
         log_du_gpu = drv.mem_alloc_like(log_du)
         drv.memcpy_htod_async(log_du_gpu, log_du)
 
-        max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK / (
+        max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK // (
                     self.dtype.itemsize * (self.d + 2))
         n_threads = min(self.cuda_threads, max_l_block,
                         device.MAX_THREADS_PER_BLOCK)
