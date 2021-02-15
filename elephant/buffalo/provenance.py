@@ -224,7 +224,7 @@ class Provenance(object):
         input_kwargs_names = []
 
         try:
-            fn_sig = inspect.signature(function)
+            fn_sig = signature(function)
             func_parameters = fn_sig.bind(*args, **kwargs)
 
             # Get default arguments in case they were not passed
@@ -232,8 +232,7 @@ class Provenance(object):
                             for k, v in fn_sig.parameters.items()
                             if v.default is not inspect.Parameter.empty}
 
-            for arg_name, arg_value in \
-                    func_parameters.arguments.items():
+            for arg_name, arg_value in func_parameters.arguments.items():
                 cur_parameter = \
                     func_parameters.signature.parameters[arg_name]
 
