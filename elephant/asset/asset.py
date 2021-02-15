@@ -1913,10 +1913,12 @@ class ASSET(object):
 
         Notes
         -----
-        1. By default, if CUDA is detected, CUDA acceleration is used. To turn
-           off CUDA features, set the environment flag ``ELEPHANT_USE_CUDA``
-           to ``0``. Otherwise
+        1. By default, if CUDA is detected, CUDA acceleration is used. CUDA
+           backend is **~X1000** faster than the Python implementation.
+           To turn off CUDA features, set the environment flag
+           ``ELEPHANT_USE_CUDA`` to ``0``. Otherwise
         2. If PyOpenCL is installed and detected, PyOpenCL backend is used.
+           PyOpenCL backend is **~X100** faster than the Python implementation.
            To turn off OpenCL features, set the environment flag
            ``ELEPHANT_USE_OPENCL`` to ``0``.
 
