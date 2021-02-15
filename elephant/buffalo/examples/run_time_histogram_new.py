@@ -76,7 +76,7 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
 
     plt.tight_layout()
 
-    figure_new_code.savefig('time_histogram_new_code.png')
+    figure_new_code.savefig("time_histogram_new_code.png")
 
     if show_plot:
         plt.show()

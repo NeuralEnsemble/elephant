@@ -37,7 +37,7 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     elephant.buffalo.USE_ANALYSIS_OBJECTS = True
 
     time_hist_obj_count = time_histogram(spiketrains, bin_size,
-                                         output='counts')
+                                         output="counts")
 
     # Creates PSTH using this previously calculated TimeHistogramObject
     psth_object = PSTHObject.from_time_histogram(time_hist_obj_count,
@@ -73,7 +73,7 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
                                title="PSTH - PSTHObject from previous time "
                                      "histogram",
                                time_unit=time_unit)
-    plt.axvline(0, linewidth=1, linestyle='dashed', color='black')
+    plt.axvline(0, linewidth=1, linestyle="dashed", color="black")
 
     # Same as the second plot, but when using the PSTHObject calculated from
     # the spike trains. The plot must be the same.
@@ -81,12 +81,12 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     plot_time_histogram_object(psth_object_from_spiketrains,
                                title="PSTH - PSTHObject from spiketrains",
                                time_unit=time_unit)
-    plt.axvline(0, linewidth=1, linestyle='dashed', color='black')
+    plt.axvline(0, linewidth=1, linestyle="dashed", color="black")
 
 
     plt.tight_layout()
 
-    figure_psth.savefig('psth.png')
+    figure_psth.savefig("psth.png")
 
     if show_plot:
         plt.show()

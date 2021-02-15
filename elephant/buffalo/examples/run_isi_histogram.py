@@ -1,25 +1,27 @@
 import sys
-sys.path.append("/home/koehler/PycharmProjects/reach_to_grasp/python")
 
 import os
 import numpy as np
-import dill
-import matplotlib
+
 
 # matplotlib.use('qt5agg')
 
 import matplotlib.pyplot as plt
 import quantities as pq
 
-from reachgraspio.reachgraspio import ReachGraspIO
+from reachgraspio import ReachGraspIO
+
 from elephant.statistics import isi, mean_firing_rate, fanofactor
-from elephant.buffalo import provenance
 from elephant.spike_train_generation import homogeneous_poisson_process
+
+from elephant.buffalo import provenance
+from elephant.buffalo.examples.utils.files import get_file_name
 
 import warnings
 
-
-SOURCE_DIR = "/home/koehler/datafiles/multielectrode_grasp/datasets"
+plt.Figure.savefig = \
+    provenance.Provenance(inputs=['self'],
+                          file_output=['fname'])(plt.Figure.savefig)
 
 
 @provenance.Provenance(inputs=["isi_times"])
@@ -55,10 +57,10 @@ def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
     -------
     fig : plt.Figure
         Figure object with the plot.
-    axes : plt.Axes or list of plt.Axes
-        If more than one supblot created, ti is a list with the axes of every
-        individual subplot. If only one plot was created, it is the `plt.Axes`
-        object of the plot.
+    axes : plt.Axes or np.ndarray of plt.Axes
+        If more than one subplot was created, this is an array with the axes of
+        every individual subplot. If only one plot was created, this is the
+        `plt.Axes` object of the plot.
 
     Raises
     ------
@@ -70,7 +72,7 @@ def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
     Warns
     -----
     UserWarning
-        If a `np.ndarray` is passed in `isi_times`, warns that the values are
+        If an `np.ndarray` is passed in `isi_times`, warns that the values are
         assumed to be in the same unit as `bin_size`.
 
     See Also
@@ -115,63 +117,68 @@ def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
 @provenance.Provenance(inputs=[], file_input=['session_filename'])
 def load_data(session_filename):
     """
-    Loads R2G data using the custom BlackRockIO object ReachGraspIO.
+    Loads Reach2Grasp data using the custom BlackRockIO object ReachGraspIO.
+
+    Parameters
+    ----------
+    session_filename : str
+        Full path to the dataset file.
+
+    Returns
+    -------
+    neo.Block
+        Block container with the session data. The block is lazy loaded.
+
     """
     file, ext = os.path.splitext(session_filename)
-    nsx_to_load = int(ext[-1])
     file_path = os.path.dirname(session_filename)
 
-    session = ReachGraspIO(file, nsx_to_load=nsx_to_load,
-                           odml_directory=file_path,
+    session = ReachGraspIO(file, odml_directory=file_path,
                            verbose=False)
 
-    block = session.read_block(load_waveforms=False, lazy=True)
+    block = session.read_block(load_waveforms=False, nsx_to_load=None,
+                               load_events=True, lazy=False, channels='all',
+                               units='all')
 
-    assert len(block.segments) == 1
     return block
 
 
-def main(session_id):
+def main(session_filename):
     provenance.activate()
 
-    # Load data using any custom function.
-
-    session_filename = os.path.join(SOURCE_DIR, session_id)
-
+    # Load the data
     block = load_data(session_filename)
 
     # ISI histograms using Buffalo (first 2 spiketrains of the segment)
     titles = []
+    isis = []
+    for idx in range(2):
+        isi_times = isi(block.segments[0].spiketrains[idx])
+        isis.append(isi_times)
+        titles.append(str(block.segments[0].spiketrains[idx].annotations))
 
-    isi_times = isi(block.segments[0].spiketrains[0], axis=0)
-
-    titles.append(str(block.segments[0].spiketrains[0].annotations))
-
-    isi_times2 = isi(block.segments[0].spiketrains[1], 0)
-
-    titles.append(str(block.segments[0].spiketrains[1].annotations))
-
-    firing_rate = mean_firing_rate(block.segments[0].spiketrains[0])
     fano_factor = fanofactor(block.segments[0].spiketrains)
 
     # Custom spike times
     generated_spike_times = homogeneous_poisson_process(50*pq.Hz,
                                                         as_array=True)
     isi_times3 = isi(generated_spike_times)
-
+    isis.append(isi_times3)
     titles.append("Generated spike train")
 
     # Do plotting
-    figure, axes = plot_isi_histograms((3, 1), *(isi_times, isi_times2,
-                                                 isi_times3), titles=titles)
+    figure, axes = plot_isi_histograms((len(isis), 1), *isis, titles=titles)
     plt.show()
 
-    figure.savefig('isi.png')
+    figure.savefig("isi.png")
 
     # provenance.print_history()
-    provenance.save_graph("isi_histogram.html", show=True)
+    provenance.save_graph(get_file_name(__file__, extension=".html"),
+                          show=True)
 
 
 if __name__ == "__main__":
-    session_id = "i140703-001"
-    main(session_id)
+    if len(sys.argv) < 2:
+        raise ValueError("You must specify the path to the data set file.")
+
+    main(sys.argv[1])

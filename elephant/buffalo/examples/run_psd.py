@@ -1,3 +1,8 @@
+"""
+This example shows the functionality of the data analysis object for power
+spectrum density, and the integration with the provenance tracker.
+"""
+
 import numpy as np
 import quantities as pq
 
@@ -11,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from numpy import mean
 
-welch_psd = provenance.Provenance(inputs=['signal'])(welch_psd)
+
 mean = provenance.Provenance(inputs=['a'])(mean)
 
 
