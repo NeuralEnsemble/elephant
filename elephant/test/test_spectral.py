@@ -177,13 +177,69 @@ class MultitaperPSDTestCase(unittest.TestCase):
                           fs, nw, frequency_resolution=-1)
 
     def test_multitaper_psd_behavior(self):
-        pass
+        # generate data by adding white noise and a sinusoid
+        data_length = 5000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        noise = np.random.normal(size=data_length)
+        signal = [np.sin(2 * np.pi * signal_freq * t)
+                  for t in np.arange(0, data_length * sampling_period,
+                                     sampling_period)]
+        data = n.AnalogSignal(np.array(signal + noise),
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
+
+        # consistency between different ways of specifying number of tapers
+        freqs1, psd1 = elephant.spectral.multitaper_psd(data,
+                                                        fs=data.sampling_rate,
+                                                        nw=3.5)
+        freqs2, psd2 = elephant.spectral.multitaper_psd(data,
+                                                        fs=data.sampling_rate,
+                                                        num_tapers=6)
+        self.assertTrue((psd1 == psd2).all() and (freqs1 == freqs2).all())
+
+        # frequency resolution and consistency with data
+        freq_res = 1.0 * pq.Hz
+        freqs, psd = elephant.spectral.multitaper_psd(
+            data, frequency_resolution=freq_res)
+        self.assertAlmostEqual(freq_res, freqs[1] - freqs[0])
+        self.assertEqual(freqs[psd.argmax()], signal_freq)
+        freqs_np, psd_np = elephant.spectral.multitaper_psd(
+            data.magnitude.flatten(), fs=1 / sampling_period,
+            frequency_resolution=freq_res)
+        self.assertTrue((freqs == freqs_np).all() and (psd == psd_np).all())
 
     def test_multitaper_psd_input_types(self):
-        pass
+        # generate a test data
+        sampling_period = 0.001
+        data = n.AnalogSignal(np.array(np.random.normal(size=5000)),
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
 
-    def test_multitaper_psd_multidim_input(self):
-        pass
+        # outputs from AnalogSignal input are of Quantity type (standard usage)
+        freqs_neo, psd_neo = elephant.spectral.multitaper_psd(data)
+        self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
+        self.assertTrue(isinstance(psd_neo, pq.quantity.Quantity))
+
+        # outputs from Quantity array input are of Quantity type
+        freqs_pq, psd_pq = elephant.spectral.multitaper_psd(
+            data.magnitude.flatten() * data.units, fs=1 / sampling_period)
+        self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
+        self.assertTrue(isinstance(psd_pq, pq.quantity.Quantity))
+
+        # outputs from Numpy ndarray input are NOT of Quantity type
+        freqs_np, psd_np = elephant.spectral.multitaper_psd(
+            data.magnitude.flatten(), fs=1 / sampling_period)
+        self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
+        self.assertFalse(isinstance(psd_np, pq.quantity.Quantity))
+
+        # check if the results from different input types are identical
+        self.assertTrue(
+            (freqs_neo == freqs_pq).all() and (
+                    psd_neo == psd_pq).all())
+        self.assertTrue(
+            (freqs_neo == freqs_np).all() and (
+                    psd_neo == psd_np).all())
 
 
 class WelchCohereTestCase(unittest.TestCase):
