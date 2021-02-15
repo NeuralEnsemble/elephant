@@ -418,7 +418,7 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
 
 
 class _JSFUniformOrderStat3D(object):
-    def __init__(self, n, d, precision='double', verbose=False,
+    def __init__(self, n, d, precision='float', verbose=False,
                  cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5):
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
@@ -1835,7 +1835,7 @@ class ASSET(object):
         return pmat
 
     def joint_probability_matrix(self, pmat, filter_shape, n_largest,
-                                 min_p_value=1e-5, precision='double',
+                                 min_p_value=1e-5, precision='float',
                                  cuda_threads=64, cuda_cwr_loops=32,
                                  tolerance=1e-5):
         """
@@ -1876,7 +1876,9 @@ class ASSET(object):
               * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
 
               * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
-            Default: 'double'
+            Double floating-point precision is typically x4 times slower than
+            single floating-point when PyOpenCL backend is used.
+            Default: 'float'
         cuda_threads : int, optional
             [CUDA/OpenCL performance parameter that does not influence the
             result.]
