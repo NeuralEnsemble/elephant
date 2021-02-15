@@ -595,7 +595,6 @@ class _JSFUniformOrderStat3D(object):
 
         # A queue bounded to the device
         queue = cl.CommandQueue(context)
-        log_du_gpu = cl_array.to_device(queue, log_du, async_=True)
 
         max_l_block = device.local_mem_size // (
                 self.dtype.itemsize * (self.d + 2))
@@ -606,21 +605,6 @@ class _JSFUniformOrderStat3D(object):
             # a multiple of the warp size (32).
             n_threads -= n_threads % 32
         l_block = min(n_threads, u_length)
-        l_num_blocks = math.ceil(u_length / l_block)
-        grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
-        if grid_size > l_num_blocks:
-            # make grid_size divisible by l_num_blocks
-            grid_size -= grid_size % l_num_blocks
-        else:
-            # grid_size must be at least l_num_blocks
-            grid_size = l_num_blocks
-
-        if self.verbose:
-            print(f"[Joint prob. matrix] it_todo={it_todo}, "
-                  f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                  f"N_THREADS={n_threads}")
-
-        P_total_gpu = cl_array.zeros(queue, shape=u_length, dtype=self.dtype)
 
         iteration_table_str = ", ".join(f"{val}LU" for val in
                                         self.map_iterations.flatten())
@@ -631,32 +615,65 @@ class _JSFUniformOrderStat3D(object):
         log_factorial_str = ", ".join(f"{val:.10f}" for val in log_factorial)
         log_factorial_str = "{%s}" % log_factorial_str
         atomic_int = 'int' if self.precision == 'float' else 'long'
-        # OpenCL defines unsigned long as uint64, therefore we're adding
-        # the LU suffix, not LLU, which would indicate unsupported uint128
-        # data type format.
-        asset_cl = self._compile_template(
-            template_name="asset.pyopencl.cl",
-            L=f"{u_length}LU",
-            L_BLOCK=l_block,
-            L_NUM_BLOCKS=l_num_blocks,
-            ITERATIONS_TODO=f"{it_todo}LU",
-            logK=f"{logK:.10f}f",
-            iteration_table=iteration_table_str,
-            log_factorial=log_factorial_str,
-            ATOMIC_UINT=f"unsigned {atomic_int}",
-            ASSET_ENABLE_DOUBLE_SUPPORT=int(self.precision == "double")
-        )
 
-        program = cl.Program(context, asset_cl).build()
+        # GPU_MAX_HEAP_SIZE OpenCL flag is set to 2 Gb (1 << 31) by default
+        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size,
+                        1 << 31)
+        # 4 * (D + 1) * size + 8 * size == mem_avail
+        chunk_size = mem_avail // (4 * log_du.shape[1] + self.dtype.itemsize)
+        chunk_size = min(chunk_size, u_length)
+        n_chunks = math.ceil(u_length / chunk_size)
+        chunk_size = math.ceil(u_length / n_chunks)  # align in size
+        split_idx = list(range(0, u_length, chunk_size))
+        split_idx.append(u_length)
+        P_total = np.empty(u_length, dtype=self.dtype)
+        P_total_gpu = cl_array.zeros(queue, shape=chunk_size, dtype=self.dtype)
 
-        # synchronize
-        cl.enqueue_barrier(queue)
+        for i_start, i_end in zip(split_idx[:-1], split_idx[1:]):
+            log_du_gpu = cl_array.to_device(queue, log_du[i_start: i_end],
+                                            async_=True)
+            chunk_size = i_end - i_start
+            l_num_blocks = math.ceil(chunk_size / l_block)
+            grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
+            if grid_size > l_num_blocks:
+                # make grid_size divisible by l_num_blocks
+                grid_size -= grid_size % l_num_blocks
+            else:
+                # grid_size must be at least l_num_blocks
+                grid_size = l_num_blocks
 
-        kernel = program.jsf_uniform_orderstat_3d_kernel
-        kernel(queue, (grid_size,), (n_threads,),
-               P_total_gpu.data, log_du_gpu.data, g_times_l=True)
+            if self.verbose:
+                print(f"[Joint prob. matrix] it_todo={it_todo}, "
+                      f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                      f"N_THREADS={n_threads}")
 
-        P_total = P_total_gpu.get()
+            # OpenCL defines unsigned long as uint64, therefore we're adding
+            # the LU suffix, not LLU, which would indicate unsupported uint128
+            # data type format.
+            asset_cl = self._compile_template(
+                template_name="asset.pyopencl.cl",
+                L=f"{chunk_size}LU",
+                L_BLOCK=l_block,
+                L_NUM_BLOCKS=l_num_blocks,
+                ITERATIONS_TODO=f"{it_todo}LU",
+                logK=f"{logK:.10f}f",
+                iteration_table=iteration_table_str,
+                log_factorial=log_factorial_str,
+                ATOMIC_UINT=f"unsigned {atomic_int}",
+                ASSET_ENABLE_DOUBLE_SUPPORT=int(self.precision == "double")
+            )
+
+            program = cl.Program(context, asset_cl).build()
+
+            # synchronize
+            cl.enqueue_barrier(queue)
+
+            kernel = program.jsf_uniform_orderstat_3d_kernel
+            kernel(queue, (grid_size,), (n_threads,),
+                   P_total_gpu.data, log_du_gpu.data, g_times_l=True)
+
+            P_total[i_start: i_end] = P_total_gpu[:chunk_size].get()
+            P_total_gpu.fill(value=0, queue=queue)
 
         return P_total
 
