@@ -13,5 +13,6 @@ dependencies:
   - pandas
   - scikit-learn
   - statsmodels
+  - jinja2
   - pip:
      - -r file:requirements.txt
