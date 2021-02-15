@@ -421,8 +421,18 @@ class Provenance(object):
 
     @classmethod
     def set_calling_frame(cls, frame):
-        # This method stores the frame of the code being tracked, and
-        # extract several information that is needed for capturing provenance
+        """
+        This method stores the frame of the code being tracked, and
+        extract several information that is needed for capturing provenance
+
+        Parameters
+        ----------
+        frame : inspect.frame
+            Frame object returned by the `inspect` module. This must
+            correspond to the namespace where provenance tracking was
+            activated. This is automatically fetched by the interface function
+            :func:`provenance.activate` defined in this module.
+        """
 
         # Store the reference to the calling frame
         cls.calling_frame = frame
@@ -473,11 +483,12 @@ class Provenance(object):
     @classmethod
     def get_graph(cls):
         """
-        Get the Networkx graph of the provenance history.
+        Get the graph of the provenance history.
 
         Returns
         -------
         BuffaloProvenanceGraph
+            Networkx DiGraph with the provenance history.
         """
         return BuffaloProvenanceGraph(cls.history)
 
