@@ -158,10 +158,12 @@ class BuffaloObjectHash(object):
 
         # If we already computed the hash for the object during this function
         # call, retrieve it from the memoized values
+        print(self.type, self.id)
         memoized = hash_memoizer.check(self.value)
         if memoized is not None:
             return memoized
 
+        print("Hashing")
         array_of_matplotlib = False
         if (isinstance(self.value, np.ndarray) and
                 self.value.dtype == np.dtype('object')):

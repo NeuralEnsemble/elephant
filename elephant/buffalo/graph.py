@@ -97,7 +97,10 @@ def _convert_name(value):
 class NeoDescription(ObjectDescription):
     attributes = ('shape', 'units', 't_start', 't_stop', 'name')
     array_annotations = ('channel_names', 'belongs_to_trialtype',
-                         'trial_event_labels')
+                         'trial_event_labels', 'trial_number',
+                         'implantation_site')
+    annotations = ('trial_number', 'implantation_site', 'nix_name',
+                   'trial_protocol', 'recording_area')
     converters = {'units': _convert_units,
                   'channel_names': _convert_channel_names,
                   'name': _convert_name}
