@@ -6,105 +6,6 @@ the call to a tracked function.
 """
 import numpy as np
 import ast
-from collections import namedtuple
-
-
-from elephant.buffalo.ast_analysis import (_process_subscript_or_attribute,
-                                            _build_object_tree_provenance)
-
-
-# class IterationBlocks(object):
-#     """
-#     Stores blocks of `for` loops, and provides access to the iterator
-#     variables.
-#     """
-#
-#     def __init__(self):
-#         # This will hold start and end line numbers of the `ast.For` node,
-#         # the `iter` and `target` values, as well as extracted AST nodes
-#         # representing the loop iterables, indexes and values.
-#         self.blocks = None
-#
-#     def add(self, nodes, offset=0):
-#         for_statement_lines = list()
-#         for for_node in nodes:
-#             if not isinstance(for_node, ast.For):
-#                 raise TypeError("Node is not an `ast.For` iteration!")
-#
-#             # Find the maximum line of the for loop block
-#             end_lines = [child.lineno for child in ast.walk(for_node) if
-#                          'lineno' in child._attributes]
-#             last_line = max(end_lines) + offset
-#             start_line = for_node.lineno + offset
-#
-#             iterator = for_node.iter
-#             target = for_node.target
-#             indexes, values, iterables = \
-#                 self._extract_information(iterator, target)
-#             iteration = (start_line, last_line, iterator, target, indexes,
-#                          values, iterables)
-#
-#             for_statement_lines.append(iteration)
-#
-#         for_statement_lines = sorted(for_statement_lines, key=lambda x: x[0])
-#
-#         # Final information is stored in a NumPy array with the following
-#         # columns: start line, last line, iterator AST node, target AST node,
-#         # list of nodes representing indexes, list of nodes representing
-#         # values, and list of nodes representing iterables in the loop.
-#         # Each for iteration block is a row.
-#         self.blocks = np.asarray(for_statement_lines)
-#
-#     @staticmethod
-#     def _extract_information(iterator, target):
-#         iterables = []
-#         indexes = []
-#         values = []
-#
-#         if isinstance(iterator, ast.Call):
-#             # Iterator is a function. Check for functions that operate on
-#             # iterables and fetch relevant information.
-#             function = iterator.func.id
-#             if function == 'enumerate':
-#                 # Target is a tuple: first element is the index,
-#                 # second element is the value during iteration
-#                 # TODO: this may still break if not unpacking at the loop
-#                 indexes.append(target.elts[0])
-#                 values.append(target.elts[1])
-#                 # Argument for the function is the iterable
-#                 iterables.append(iterator.args[0])
-#             elif function == 'zip':
-#                 # Multiple iterators. Need to fetch the variable associated
-#                 # with each
-#                 for index, zip_arg in enumerate(iterator.args):
-#                     values.append(target.elts[index])
-#                     iterables.append(zip_arg)
-#             elif function == 'range':
-#                 # Not Pythonic, but will loop only to fetch a value
-#                 # No iterable object to map
-#                 values.append(target)
-#         elif isinstance(iterator, (ast.Name, ast.Subscript, ast.Attribute)):
-#             # Iterator is a variable, attribute or subscript
-#             iterables.append(iterator)
-#             values.append(target)
-#
-#         return indexes, values, iterables
-#
-#     def get_object(self, position, name, tracker):
-#         pass
-#
-#     def within_iteration(self, position):
-#         # If `position` is within an iteration block, the difference w.r.t
-#         # the starting line will be positive, and w.r.t to the last line is
-#         # <= 0. Therefore, the product of the differences will be <= 0.
-#         # For any position outside the block, either both differences are
-#         # positive or both differences are negative. Therefore, the product
-#         # will always be > 0.
-#         map = self.blocks[:, 0:2] - position
-#         map = np.prod(map, axis=1)
-#
-#         # Return the block(s) with iteration information
-#         return self.blocks[map <= 0]
 
 
 class _BuffaloCodeAnalyzer(object):
@@ -188,23 +89,6 @@ class _BuffaloCodeAnalyzer(object):
         line_diff = self.statement_lines[:, 0] - line_number
         nearest_number_index = np.argmax(line_diff[line_diff <= 0])
         return self.statement_lines[nearest_number_index, :]
-
-    # def is_iteration(self, line_number):
-    #     """
-    #     Returns if the line under execution is inside a iteration block (e.g.,
-    #     for loop).
-    #
-    #     Parameters
-    #     ----------
-    #     line_number : int
-    #         Line number from :attr:`source_code`.
-    #
-    #     Returns
-    #     -------
-    #     bool
-    #         True if part of an iteration block, False otherwise.
-    #     """
-    #     pass
 
     def extract_multiline_statement(self, line_number):
         """
