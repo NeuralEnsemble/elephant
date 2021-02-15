@@ -195,12 +195,16 @@ You can have one, both, or none installed in your system.
 
             conda install -c conda-forge pyopencl ocl-icd-system
 
-        Set ``ELEPHANT_USE_OPENCL`` environment flag to ``1`` to use PyOpenCL
-        acceleration.
+        Set ``ELEPHANT_USE_OPENCL`` environment flag to ``0`` to turn off
+        PyOpenCL support.
 
         .. note::
 
-            Using your graphics card to perform computations may make the system
+            Make sure you've disabled GPU Hangcheck as described in the
+            `Intel GPU developers documentation <https://software.intel.com/
+            content/www/us/en/develop/documentation/get-started-with-intel-
+            oneapi-base-linux/top/before-you-begin.html>`_. Do it with caution -
+            using your graphics card to perform computations may make the system
             unresponsive until the compute program terminates.
 
 

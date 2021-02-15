@@ -579,46 +579,7 @@ class _JSFUniformOrderStat3D(object):
             N=self.n, D=self.d, **kwargs)
         return asset_cu
 
-    def pyopencl(self, log_du, device_id=0, debug=False):
-        """
-        If `debug` is set to True, the output array will contain integers
-        that count the number of performed atomic additions. If all the
-        counts are the same (the value does not matter), as they should be,
-        the PyOpenCL backend is considered to be stable and you can work with
-        the output followed by setting `debug` back to False. As long as at
-        least one entry differs from the rest, the output array is no longer
-        valid - it may look valid because:
-        1) PyOpenCL becomes unstable when the number of iterations is large
-        2) when the num. of iterations is large (e.g., a million), each entry
-           being added is on average equal to ``1 / 1e6``
-        3) if you miss several floats of values ``~1e-6``, you won't notice
-           this in the overall picture simply because floats are not
-           associative: (a + b) + c != a + (b + c). Therefore, each run may
-           output slightly different result, and all small deviations will
-           be eaten up by the :attr:`tolerance`.
-
-        Moreover, when L (``log_du.shape[0]``) is > 1e8, the program becomes
-        also unstable even with the small number of iterations.
-
-        Typically, you don't need to worry about the `debug` flag - a watchdog
-        will catch unexpected result outside of the valid range ``[0, 1]``,
-        which is very likely to happen when the backend is unstable.
-
-        Notes
-        -----
-        PyCUDA backend is stable for any input data and set of parameters.
-
-        Examples
-        --------
-        In this example (L=1_000_000, N=15, D=5) all values are equal to 64.
-        Therefore, PyOpenCL backend is assumed to be stable for a given set of
-        parameters - L, N, and D.
-        >>> jsf = _JSFUniformOrderStat3D(n=15, d=5, precision='float')
-        >>> jsf.pyopencl(log_du=np.zeros((1_000_000, 5+1), dtype=np.float32),
-        ...              debug=True)
-        [64. 64. 64. ... 64. 64. 64.]
-
-        """
+    def pyopencl(self, log_du, device_id=0):
         import pyopencl as cl
         import pyopencl.array as cl_array
 
@@ -626,16 +587,6 @@ class _JSFUniformOrderStat3D(object):
 
         it_todo = self.num_iterations
         u_length = log_du.shape[0]
-
-        # Probably due to not officially supported atomic add instructions
-        # for floats and doubles. Floats are "more stable" than doubles but
-        # they give up after >1e9 iterations. The credibility of PyOpenCL
-        # backend results is left for the users to judge.
-        warnings.warn("PyOpenCL backend is unstable, especially with double "
-                      "floating-point precision. PyOpenCL backend with a "
-                      "single floating-point precision is fast and useful "
-                      "to explore the data, but the final result must be run "
-                      "on either Python or CUDA backend.")
 
         context = cl.create_some_context(interactive=False)
         if self.verbose:
@@ -693,7 +644,7 @@ class _JSFUniformOrderStat3D(object):
             iteration_table=iteration_table_str,
             log_factorial=log_factorial_str,
             ATOMIC_UINT=f"unsigned {atomic_int}",
-            ASSET_DEBUG=int(debug)
+            ASSET_ENABLE_DOUBLE_SUPPORT=int(self.precision == "double")
         )
 
         program = cl.Program(context, asset_cl).build()
@@ -861,7 +812,7 @@ class _JSFUniformOrderStat3D(object):
         # If OpenCL is detected, don't use it by default to avoid the system
         # becoming unresponsive until the program terminates.
         use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
-        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '0'))
+        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
         cuda_detected = get_cuda_capability_major() != 0
         if use_cuda and cuda_detected:
             return self.pycuda
@@ -893,14 +844,20 @@ class _JSFUniformOrderStat3D(object):
 
         P_total = jsf_backend(log_du)
 
+        # Captures non-finite values like NaN, inf
         inside = (P_total > -self.tolerance) & (P_total < 1 + self.tolerance)
         outside_vals = P_total[~inside]
         if len(outside_vals) > 0:
             # A watchdog for unexpected results.
             warnings.warn(f"{len(outside_vals)}/{P_total.shape[0]} values of "
                           "the computed joint prob. matrix lie outside of the "
-                          f"valid [0, 1] interval:\n{outside_vals}\n"
-                          "Clipping to 0 and 1.")
+                          f"valid [0, 1] interval:\n{outside_vals}\nIf you're "
+                          "using PyOpenCL backend, make sure you've disabled "
+                          "GPU Hangcheck as described here https://"
+                          "software.intel.com/content/www/us/en/develop/"
+                          "documentation/get-started-with-intel-oneapi-"
+                          "base-linux/top/before-you-begin.html\n"
+                          "Clipping the output array to 0 and 1.")
             P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
         return P_total
@@ -1954,11 +1911,20 @@ class ASSET(object):
 
         Notes
         -----
-        By default, if a GPU is detected, CUDA implementations is used for
-        large arrays. To turn off CUDA features, set the environment flag
-        `ELEPHANT_USE_CUDA=0` either in python or via the command line:
+        1. By default, if CUDA is detected, CUDA acceleration is used. To turn
+           off CUDA features, set the environment flag ``ELEPHANT_USE_CUDA``
+           to ``0``. Otherwise
+        2. If PyOpenCL is installed and detected, PyOpenCL backend is used.
+           To turn off OpenCL features, set the environment flag
+           ``ELEPHANT_USE_OPENCL`` to ``0``.
 
-          ``ELEPHANT_USE_CUDA=0 python /path/to/script``
+           When using PyOpenCL backend, make sure you've disabled GPU Hangcheck
+           as described in the `Intel GPU developers documentation
+           <https://software.intel.com/content/www/us/en/develop/
+           documentation/get-started-with-intel-oneapi-base-linux/top/
+           before-you-begin.html>`_. Do it with caution - using your built-in
+           Intel graphics card to perform computations may make the system
+           unresponsive until the compute program terminates.
 
         """
         l, w = filter_shape

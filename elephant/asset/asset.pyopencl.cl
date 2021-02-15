@@ -1,6 +1,8 @@
-// Enables atomicAdd(double*) features. Not sure if needed.
-#pragma OPENCL EXTENSION cl_khr_fp64: enable
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+// Enable support for double floating-point precision, if needed.
+#if {{ASSET_ENABLE_DOUBLE_SUPPORT}}
+  #pragma OPENCL EXTENSION cl_khr_fp64: enable
+  #pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+#endif
 
 #define L {{L}}
 #define N {{N}}
@@ -31,8 +33,6 @@
  * each thread runs CWR_LOOPS of 'combinations_with_replacement'.
  */
 #define CWR_LOOPS         {{CWR_LOOPS}}
-
-#define ASSET_DEBUG       {{ASSET_DEBUG}}
 
 typedef {{precision}} asset_float;
 
@@ -187,11 +187,7 @@ __kernel void jsf_uniform_orderstat_3d_kernel(__global asset_float *P_out, __glo
 
     for (row = threadIdx_x; row < block_width + threadIdx_x; row++) {
         // Reduce atomicAdd conflicts by adding threadIdx_x to each row
-#if ASSET_DEBUG
-        atomicAdd_local(P_total + row % block_width, 1);
-#else
         atomicAdd_local(P_total + row % block_width, P_thread[row % block_width]);
-#endif
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
