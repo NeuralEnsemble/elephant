@@ -604,7 +604,6 @@ class _JSFUniformOrderStat3D(object):
             # It's more efficient to make the number of threads
             # a multiple of the warp size (32).
             n_threads -= n_threads % 32
-        l_block = min(n_threads, u_length)
 
         iteration_table_str = ", ".join(f"{val}LU" for val in
                                         self.map_iterations.flatten())
@@ -627,12 +626,14 @@ class _JSFUniformOrderStat3D(object):
         split_idx = list(range(0, u_length, chunk_size))
         split_idx.append(u_length)
         P_total = np.empty(u_length, dtype=self.dtype)
-        P_total_gpu = cl_array.zeros(queue, shape=chunk_size, dtype=self.dtype)
+        P_total_gpu = cl_array.Array(queue, shape=chunk_size, dtype=self.dtype)
 
         for i_start, i_end in zip(split_idx[:-1], split_idx[1:]):
             log_du_gpu = cl_array.to_device(queue, log_du[i_start: i_end],
                                             async_=True)
+            P_total_gpu.fill(0, queue=queue)
             chunk_size = i_end - i_start
+            l_block = min(n_threads, chunk_size)
             l_num_blocks = math.ceil(chunk_size / l_block)
             grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
             if grid_size > l_num_blocks:
@@ -673,14 +674,19 @@ class _JSFUniformOrderStat3D(object):
                    P_total_gpu.data, log_du_gpu.data, g_times_l=True)
 
             P_total[i_start: i_end] = P_total_gpu[:chunk_size].get()
-            P_total_gpu.fill(value=0, queue=queue)
 
         return P_total
 
-    def pycuda(self, log_du):
-        # PyCuda should not be in requirements-extra because CPU limited
-        # users won't be able to install Elephant.
+    def pycuda(self, log_du, max_mem_alloc_size=None):
+        """
+        'max_mem_alloc_size' specifies the maximum contiguous memory size that
+        can be allocated in a single call cudaMalloc(). Refer to
+        https://stackoverflow.com/questions/36331935/determine-maximum-amount-
+        of-gpu-device-memory-that-can-be-allocated-contiguously for more info.
+        """
         try:
+            # PyCuda should not be in requirements-extra because CPU limited
+            # users won't be able to install Elephant.
             import pycuda.autoinit
             import pycuda.gpuarray as gpuarray
             import pycuda.driver as drv
@@ -696,9 +702,6 @@ class _JSFUniformOrderStat3D(object):
 
         device = pycuda.autoinit.device
 
-        log_du_gpu = drv.mem_alloc_like(log_du)
-        drv.memcpy_htod_async(log_du_gpu, log_du)
-
         max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK // (
                     self.dtype.itemsize * (self.d + 2))
         n_threads = min(self.cuda_threads, max_l_block,
@@ -707,52 +710,71 @@ class _JSFUniformOrderStat3D(object):
             # It's more efficient to make the number of threads
             # a multiple of the warp size (32).
             n_threads -= n_threads % device.WARP_SIZE
-        l_block = min(n_threads, u_length)
-        l_num_blocks = math.ceil(u_length / l_block)
-        grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
-        grid_size = min(grid_size, device.MAX_GRID_DIM_X)
-        if grid_size > l_num_blocks:
-            # make grid_size divisible by l_num_blocks
-            grid_size -= grid_size % l_num_blocks
-        else:
-            # grid_size must be at least l_num_blocks
-            grid_size = l_num_blocks
-
-        if self.verbose:
-            print(f"[Joint prob. matrix] it_todo={it_todo}, "
-                  f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                  f"N_THREADS={n_threads}")
-
-        P_total_gpu = gpuarray.zeros(u_length, dtype=self.dtype)
 
         log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
         log_factorial = log_factorial.astype(self.dtype)
         logK = log_factorial[-1]
-        asset_cu = self._compile_template(
-            template_name="asset.pycuda.cu",
-            L=f"{log_du.shape[0]}LLU",
-            L_BLOCK=l_block,
-            L_NUM_BLOCKS=l_num_blocks,
-            ITERATIONS_TODO=f"{it_todo}LLU",
-            logK=f"{logK:.10f}f",
-        )
 
-        module = SourceModule(asset_cu)
+        free, total = drv.mem_get_info()
+        mem_avail = free
+        if max_mem_alloc_size is not None:
+            mem_avail = min(mem_avail, max_mem_alloc_size)
+        # 4 * (D + 1) * size + 8 * size == mem_avail
+        chunk_size = mem_avail // (4 * log_du.shape[1] + self.dtype.itemsize)
+        chunk_size = min(chunk_size, u_length)
+        n_chunks = math.ceil(u_length / chunk_size)
+        chunk_size = math.ceil(u_length / n_chunks)  # align in size
+        split_idx = list(range(0, u_length, chunk_size))
+        split_idx.append(u_length)
+        P_total = np.empty(u_length, dtype=self.dtype)
+        P_total_gpu = gpuarray.zeros(chunk_size, dtype=self.dtype)
+        log_du_gpu = drv.mem_alloc(4 * chunk_size * log_du.shape[1])
 
-        iteration_table_gpu, _ = module.get_global("iteration_table")
-        iteration_table = self.map_iterations.astype(np.uint64)
-        drv.memcpy_htod(iteration_table_gpu, iteration_table)
+        for i_start, i_end in zip(split_idx[:-1], split_idx[1:]):
+            drv.memcpy_htod_async(dest=log_du_gpu, src=log_du[i_start: i_end])
+            P_total_gpu.fill(0)
+            chunk_size = i_end - i_start
+            l_block = min(n_threads, chunk_size)
+            l_num_blocks = math.ceil(chunk_size / l_block)
+            grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
+            grid_size = min(grid_size, device.MAX_GRID_DIM_X)
+            if grid_size > l_num_blocks:
+                # make grid_size divisible by l_num_blocks
+                grid_size -= grid_size % l_num_blocks
+            else:
+                # grid_size must be at least l_num_blocks
+                grid_size = l_num_blocks
 
-        log_factorial_gpu, _ = module.get_global("log_factorial")
-        drv.memcpy_htod(log_factorial_gpu, log_factorial)
+            if self.verbose:
+                print(f"[Joint prob. matrix] it_todo={it_todo}, "
+                      f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                      f"N_THREADS={n_threads}")
 
-        drv.Context.synchronize()
+            asset_cu = self._compile_template(
+                template_name="asset.pycuda.cu",
+                L=f"{chunk_size}LLU",
+                L_BLOCK=l_block,
+                L_NUM_BLOCKS=l_num_blocks,
+                ITERATIONS_TODO=f"{it_todo}LLU",
+                logK=f"{logK:.10f}f",
+            )
 
-        kernel = module.get_function("jsf_uniform_orderstat_3d_kernel")
-        kernel(P_total_gpu.gpudata, log_du_gpu, grid=(grid_size, 1),
-               block=(n_threads, 1, 1))
+            module = SourceModule(asset_cu)
 
-        P_total = P_total_gpu.get()
+            iteration_table_gpu, _ = module.get_global("iteration_table")
+            iteration_table = self.map_iterations.astype(np.uint64)
+            drv.memcpy_htod(iteration_table_gpu, iteration_table)
+
+            log_factorial_gpu, _ = module.get_global("log_factorial")
+            drv.memcpy_htod(log_factorial_gpu, log_factorial)
+
+            drv.Context.synchronize()
+
+            kernel = module.get_function("jsf_uniform_orderstat_3d_kernel")
+            kernel(P_total_gpu.gpudata, log_du_gpu, grid=(grid_size, 1),
+                   block=(n_threads, 1, 1))
+
+            P_total[i_start: i_end] = P_total_gpu[:chunk_size].get()
 
         return P_total
 
