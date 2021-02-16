@@ -1916,7 +1916,7 @@ class ASSET(object):
 
               * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
             Double floating-point precision is typically x4 times slower than
-            single floating-point when PyOpenCL backend is used.
+            the single floating-point equivalent.
             Default: 'float'
         cuda_threads : int, optional
             [CUDA/OpenCL performance parameter that does not influence the
