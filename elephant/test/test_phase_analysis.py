@@ -411,31 +411,62 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.simple_y = np.array([0, -np.pi, np.pi])
         self.simple_z = np.array([0, np.pi, np.pi / 2, -np.pi])
 
-        ### check for ground truth consistency with LFP-dataset
+        ### check for ground truth consistency with REAL/ARTIFICIAl LFP-dataset
+        ## REAL LFP-DATASET
         # Load first & second data file
-        self.filename1 = os.path.sep.join(['lfp_dataset1.mat'])
-        self.dataset1 = scipy.io.loadmat(self.filename1, squeeze_me=True)
-        self.filename2 = os.path.sep.join(['lfp_dataset2.mat'])
-        self.dataset2 = scipy.io.loadmat(self.filename2, squeeze_me=True)
+        self.filename1_R = os.path.sep.join(['lfp_dataset1.mat'])
+        self.dataset1_R = scipy.io.loadmat(self.filename1_R, squeeze_me=True)
+        self.filename2_R = os.path.sep.join(['lfp_dataset2.mat'])
+        self.dataset2_R = scipy.io.loadmat(self.filename2_R, squeeze_me=True)
         # get the relevant values
-        self.lfps1 = self.dataset1['lfp_matrix'] * pq.uV
-        self.sf1 = self.dataset1['sf'] * pq.Hz
-        self.lfps2 = self.dataset2['lfp_matrix'] * pq.uV
-        self.sf2 = self.dataset2['sf'] * pq.Hz
-        # load ground-truth calculated by FieldTrip: ft_connectivity_wpli
-        self.wpli_ground_truth_FieldTrip = np.loadtxt(
-            'ground_truth_WPLI_FieldTrip.csv', delimiter=',', dtype=np.float64)
+        self.lfps1_R = self.dataset1_R['lfp_matrix'] * pq.uV
+        self.sf1_R = self.dataset1_R['sf'] * pq.Hz
+        self.lfps2_R = self.dataset2_R['lfp_matrix'] * pq.uV
+        self.sf2_R = self.dataset2_R['sf'] * pq.Hz
+        ## ARRTIFICIAL LFP-DATASET
+        self.filename1_A = os.path.sep.join(['artificial_LFPs_1.mat'])
+        self.dataset1_A = scipy.io.loadmat(self.filename1_A, squeeze_me=True)
+        self.filename2_A = os.path.sep.join(['artificial_LFPs_2.mat'])
+        self.dataset2_A = scipy.io.loadmat(self.filename2_A, squeeze_me=True)
+        # get the relevant values
+        self.lfps1_A = self.dataset1_A['lfp_matrix'] * pq.uV
+        self.sf1_A = self.dataset1_A['sf'] * pq.Hz
+        self.lfps2_A = self.dataset2_A['lfp_matrix'] * pq.uV
+        self.sf2_A = self.dataset2_A['sf'] * pq.Hz
 
-    def test_WPLI_is_consistent_with_ground_truth_from_LFP_dataset(self):
+        # load ground-truth calculated by FieldTrip: ft_connectivity_wpli
+        self.wpli_ground_truth_FieldTrip_REAL = np.loadtxt(
+            'ground_truth_WPLI_FieldTrip_real_LFPs.csv', delimiter=',', dtype=np.float64)
+        self.wpli_ground_truth_FieldTrip_ARTIFICIAL = np.loadtxt(
+            'ground_truth_WPLI_FieldTrip_artificial_LFPs.csv', delimiter=',',
+            dtype=np.float64)
+
+    def test_WPLI_is_ground_truth_consistency_REAL_LFP_dataset(self):
         """
         Test if the WPLI is consistent with the ground truth generated from
         the LFP-datasets from the ICN lecture 10: 'The Local Field Potential'.
         """
-        freq_from_lfp_dataset, wpli_from_lfp_dataset = \
+        # REAL DATA
+        freq_from_lfp_dataset_R, wpli_from_lfp_dataset_R = \
             elephant.phase_analysis.weighted_phase_lag_index(
-                self.lfps1, self.lfps2, self.sf1)
+                self.lfps1_R, self.lfps2_R, self.sf1_R)
+        mask = ~(np.isnan(wpli_from_lfp_dataset_R) | np.isnan(self.wpli_ground_truth_FieldTrip_REAL))
         np.testing.assert_allclose(
-            wpli_from_lfp_dataset, self.wpli_ground_truth_FieldTrip,
+            wpli_from_lfp_dataset_R[mask], self.wpli_ground_truth_FieldTrip_REAL[mask],
+            atol=1e-14, rtol=1e-12)
+
+    def test_WPLI_is_ground_truth_consistency_ARTIFICIAL_LFP_dataset(self):
+        """
+        Test if the WPLI is consistent with the ground truth generated from
+        artificial LFP-datasets.
+        """
+        # ARTIFICIAL DATA
+        freq_from_lfp_dataset_A, wpli_from_lfp_dataset_A = \
+            elephant.phase_analysis.weighted_phase_lag_index(
+                self.lfps1_A, self.lfps2_A, self.sf1_A)
+        mask = ~(np.isnan(wpli_from_lfp_dataset_A) | np.isnan(self.wpli_ground_truth_FieldTrip_ARTIFICIAL))
+        np.testing.assert_allclose(
+            wpli_from_lfp_dataset_A[mask], self.wpli_ground_truth_FieldTrip_ARTIFICIAL[mask],
             atol=1e-14, rtol=1e-12)
 
     def test_WPLI_is_zero(self):  # for: f = 16Hz
