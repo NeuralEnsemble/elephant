@@ -866,9 +866,9 @@ class _JSFUniformOrderStat3D(object):
         # A faster and memory efficient implementation of
         # du = np.diff(u, prepend=0, append=1, axis=1).astype(np.float32)
         du = np.empty((u.shape[0], u.shape[1] + 1), dtype=np.float32)
-        du[:, 1:-1] = u[:, 1:] - u[:, :-1]
         du[:, 0] = u[:, 0]
-        du[:, -1] = 1 - u[:, -1]
+        np.subtract(u[:, 1:], u[:, :-1], out=du[:, 1:-1])
+        np.subtract(1, u[:, -1], out=du[:, -1])
 
         # precompute logarithms
         # ignore warnings about infinities, see inside the loop:
