@@ -400,7 +400,7 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
     def test_pyopencl_threads_and_cwr_loops(self):
         # The num. of threads (work items) and CWR loops must not influence
         # the result.
-        L, N, D = 10, 15, 10
+        L, N, D = 100, 10, 3
 
         u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
         u /= np.max(u)
