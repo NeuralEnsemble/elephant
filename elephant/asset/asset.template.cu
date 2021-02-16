@@ -380,7 +380,7 @@ void jsf_uniform_orderstat_3d(asset_float *P_total_host, FILE *log_du_file) {
     // Wait for asynchronous memory copies to finish.
     gpuErrchk( cudaDeviceSynchronize() );
 
-    if (log_du_host != P_total_host) {
+    if (log_du_host != (float*) P_total_host) {
         // the memory has been allocated
         free(log_du_host);
     }
