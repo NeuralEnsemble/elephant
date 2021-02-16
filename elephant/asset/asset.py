@@ -677,13 +677,7 @@ class _JSFUniformOrderStat3D(object):
 
         return P_total
 
-    def pycuda(self, log_du, max_mem_alloc_size=None):
-        """
-        'max_mem_alloc_size' specifies the maximum contiguous memory size that
-        can be allocated in a single call cudaMalloc(). Refer to
-        https://stackoverflow.com/questions/36331935/determine-maximum-amount-
-        of-gpu-device-memory-that-can-be-allocated-contiguously for more info.
-        """
+    def pycuda(self, log_du):
         try:
             # PyCuda should not be in requirements-extra because CPU limited
             # users won't be able to install Elephant.
@@ -716,11 +710,8 @@ class _JSFUniformOrderStat3D(object):
         logK = log_factorial[-1]
 
         free, total = drv.mem_get_info()
-        mem_avail = free
-        if max_mem_alloc_size is not None:
-            mem_avail = min(mem_avail, max_mem_alloc_size)
         # 4 * (D + 1) * size + 8 * size == mem_avail
-        chunk_size = mem_avail // (4 * log_du.shape[1] + self.dtype.itemsize)
+        chunk_size = free // (4 * log_du.shape[1] + self.dtype.itemsize)
         chunk_size = min(chunk_size, u_length)
         n_chunks = math.ceil(u_length / chunk_size)
         chunk_size = math.ceil(u_length / n_chunks)  # align in size
