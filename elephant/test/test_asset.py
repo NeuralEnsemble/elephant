@@ -200,6 +200,21 @@ class AssetTestCase(unittest.TestCase):
         correct = mat
         assert_array_equal(clustered, correct)
 
+    def test_cluster_matrix_entries_chunked(self):
+        np.random.seed(12)
+        mmat = np.random.randn(50, 50) > 0
+        max_distance = 5
+        min_neighbors = 4
+        stretch = 2
+        cmat_true = asset.ASSET.cluster_matrix_entries(
+            mmat, max_distance=max_distance, min_neighbors=min_neighbors,
+            stretch=stretch)
+        for working_memory in [1, 10, 100, 1000]:
+            cmat = asset.ASSET.cluster_matrix_entries(
+                mmat, max_distance=max_distance, min_neighbors=min_neighbors,
+                stretch=stretch, working_memory=working_memory)
+            assert_array_equal(cmat, cmat_true)
+
     def test_intersection_matrix(self):
         st1 = neo.SpikeTrain([1, 2, 4] * pq.ms, t_stop=6 * pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)

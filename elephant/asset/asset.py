@@ -112,6 +112,7 @@ import quantities as pq
 import scipy.spatial
 import scipy.stats
 from sklearn.cluster import dbscan
+from sklearn.metrics import pairwise_distances, pairwise_distances_chunked
 from tqdm import trange, tqdm
 
 import elephant.conversion as conv
@@ -325,7 +326,7 @@ def _analog_signal_step_interp(signal, times):
 # =============================================================================
 
 
-def _stretched_metric_2d(x, y, stretch, ref_angle):
+def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -372,32 +373,61 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
     # stretched distance
     points = np.column_stack([x, y])
 
-    # Compute the matrix D[i, j] of euclidean distances among points i and j
-    D = scipy.spatial.distance_matrix(points, points)
-
-    # Compute the angular coefficients of the line between each pair of points
     x_array = np.expand_dims(x, axis=0)
     y_array = np.expand_dims(y, axis=0)
-    dX = x_array.T - x_array  # dX[i,j]: x difference between points i and j
-    dY = y_array.T - y_array  # dY[i,j]: y difference between points i and j
 
-    # Compute the matrix Theta of angles between each pair of points
-    theta = np.arctan2(dY, dX, dtype=np.float32)
+    def calculate_stretch_mat(theta_mat, D_mat):
+        # Transform [-pi, pi] back to [-pi/2, pi/2]
+        theta_mat[theta_mat < -np.pi / 2] += np.pi
+        theta_mat[theta_mat > np.pi / 2] -= np.pi
 
-    # Transform [-pi, pi] back to [-pi/2, pi/2]
-    theta[theta < -np.pi / 2] += np.pi
-    theta[theta > np.pi / 2] -= np.pi
+        # Compute the matrix of stretching factors for each pair of points.
+        # Equivalent to:
+        #   stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
+        _stretch_mat = np.subtract(alpha, theta_mat, out=theta_mat)
+        _stretch_mat = np.sin(_stretch_mat, out=_stretch_mat)
+        _stretch_mat = np.abs(_stretch_mat, out=_stretch_mat)
+        _stretch_mat = np.multiply(stretch - 1, _stretch_mat, out=_stretch_mat)
+        _stretch_mat = np.add(1, _stretch_mat, out=_stretch_mat)
 
-    # Compute the matrix of stretching factors for each pair of points.
-    # Equivalent to:
-    #   stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
-    stretch_mat = np.subtract(alpha, theta, out=theta)
-    stretch_mat = np.sin(stretch_mat, out=stretch_mat)
-    stretch_mat = np.abs(stretch_mat, out=stretch_mat)
-    stretch_mat = np.multiply(stretch - 1, stretch_mat)
-    stretch_mat = np.add(1, stretch_mat, out=stretch_mat)
+        _stretch_mat = np.multiply(D_mat, _stretch_mat, out=_stretch_mat)
 
-    stretch_mat = np.multiply(D, stretch_mat, out=stretch_mat)
+        return _stretch_mat
+
+    if working_memory is None:
+        # Compute the matrix D[i, j] of euclidean distances among points
+        # i and j
+        D = pairwise_distances(points)
+
+        # Compute the angular coefficients of the line between each pair of
+        # points
+
+        # dX[i,j]: x difference between points i and j
+        # dY[i,j]: y difference between points i and j
+        dX = x_array.T - x_array
+        dY = y_array.T - y_array
+
+        # Compute the matrix Theta of angles between each pair of points
+        theta = np.arctan2(dY, dX, dtype=np.float32)
+
+        stretch_mat = calculate_stretch_mat(theta, D)
+    else:
+        start = 0
+        # x and y sizes are the same
+        stretch_mat = np.empty((len(x), len(y)), dtype=np.float32)
+        for D_chunk in pairwise_distances_chunked(
+                points, working_memory=working_memory):
+            chunk_size = D_chunk.shape[0]
+            dX = x_array[:, start: start + chunk_size].T - x_array
+            dY = y_array[:, start: start + chunk_size].T - y_array
+
+            theta_chunk = np.arctan2(
+                dY, dX, out=stretch_mat[start: start + chunk_size, :])
+
+            # stretch_mat (theta_chunk) is updated in-place here
+            calculate_stretch_mat(theta_chunk, D_chunk)
+
+            start += chunk_size
 
     # Return the stretched distance matrix
     return stretch_mat
@@ -2059,7 +2089,7 @@ class ASSET(object):
 
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
-                               stretch):
+                               stretch, working_memory=None):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2111,6 +2141,14 @@ class ASSET(object):
             stretching increases from 1 to `stretch` as the direction of the
             two elements moves from the 45 to the 135 degree direction.
             `stretch` must be greater than 1.
+        working_memory : int or None, optional
+            The sought maximum memory for temporary distance matrix chunks.
+            When None (default), no chunking is performed. This parameter
+            is passed directly to
+            ``sklearn.metrics.pairwise_distances_chunked`` function and it
+            has no influence on the outcome matrix. Instead, it control the
+            memory VS speed trade-off.
+            Default: None
 
         Returns
         -------
@@ -2138,8 +2176,14 @@ class ASSET(object):
 
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
-        D = _stretched_metric_2d(
-            xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45)
+        try:
+            D = _stretched_metric_2d(
+                xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
+                working_memory=working_memory
+            )
+        except MemoryError as err:
+            raise MemoryError("Set 'working_memory=100' or another value to "
+                              "chunk the data") from err
 
         # Cluster positions of significant pixels via dbscan
         core_samples, config = dbscan(
