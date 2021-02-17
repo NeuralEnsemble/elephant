@@ -370,29 +370,37 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
 
     # Create the array of points (one per row) for which to compute the
     # stretched distance
-    points = np.vstack([x, y]).T
+    points = np.column_stack([x, y])
 
     # Compute the matrix D[i, j] of euclidean distances among points i and j
     D = scipy.spatial.distance_matrix(points, points)
 
     # Compute the angular coefficients of the line between each pair of points
-    x_array = np.tile(x, reps=(len(x), 1))
-    y_array = np.tile(y, reps=(len(y), 1))
+    x_array = np.expand_dims(x, axis=0)
+    y_array = np.expand_dims(y, axis=0)
     dX = x_array.T - x_array  # dX[i,j]: x difference between points i and j
     dY = y_array.T - y_array  # dY[i,j]: y difference between points i and j
 
     # Compute the matrix Theta of angles between each pair of points
-    theta = np.arctan2(dY, dX)
+    theta = np.arctan2(dY, dX, dtype=np.float32)
 
     # Transform [-pi, pi] back to [-pi/2, pi/2]
     theta[theta < -np.pi / 2] += np.pi
     theta[theta > np.pi / 2] -= np.pi
 
-    # Compute the matrix of stretching factors for each pair of points
-    stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
+    # Compute the matrix of stretching factors for each pair of points.
+    # Equivalent to:
+    #   stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
+    stretch_mat = np.subtract(alpha, theta, out=theta)
+    stretch_mat = np.sin(stretch_mat, out=stretch_mat)
+    stretch_mat = np.abs(stretch_mat, out=stretch_mat)
+    stretch_mat = np.multiply(stretch - 1, stretch_mat)
+    stretch_mat = np.add(1, stretch_mat, out=stretch_mat)
+
+    stretch_mat = np.multiply(D, stretch_mat, out=stretch_mat)
 
     # Return the stretched distance matrix
-    return D * stretch_mat
+    return stretch_mat
 
 
 def _interpolate_signals(signals, sampling_times, verbose=False):
