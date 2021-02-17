@@ -899,7 +899,8 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 report='a',
                 algo='s',
                 winlen=winlen,
-                threads=0)
+                threads=0,
+                verbose=4)
             break
     else:
         fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
