@@ -64,7 +64,7 @@ class AssetTestCase(unittest.TestCase):
         y = (1, 2, 0)
         stretch = 10
         D = stretchedmetric2d(x, y, stretch=stretch, ref_angle=45)
-        assert_array_almost_equal(D, D.T, decimal=12)
+        assert_array_almost_equal(D, D.T, decimal=6)
 
     def test_stretched_metric_2d_equals_euclidean_if_stretch_1(self):
         x = np.arange(10)
@@ -76,7 +76,7 @@ class AssetTestCase(unittest.TestCase):
         points = np.vstack([x, y]).T
         E = scipy.spatial.distance_matrix(points, points)
         # assert D == E
-        assert_array_almost_equal(D, E, decimal=12)
+        assert_array_almost_equal(D, E, decimal=5)
 
     def test_sse_difference(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
