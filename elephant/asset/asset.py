@@ -105,6 +105,7 @@ import subprocess
 import sys
 import tempfile
 import warnings
+from pathlib import Path
 
 import neo
 import numpy as np
@@ -607,10 +608,8 @@ class _JSFUniformOrderStat3D(object):
 
     def _compile_template(self, template_name, **kwargs):
         from jinja2 import Template
-        cu_template_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), template_name)
-        with open(cu_template_path) as f:
-            cu_template = Template(f.read())
+        cu_template_path = Path(__file__).parent / template_name
+        cu_template = Template(cu_template_path.read_text())
         asset_cu = cu_template.render(
             precision=self.precision,
             CWR_LOOPS=self.cuda_cwr_loops,
@@ -724,8 +723,8 @@ class _JSFUniformOrderStat3D(object):
             import pycuda.driver as drv
             from pycuda.compiler import SourceModule
         except ImportError as err:
-            raise ImportError(f"{err}. Install pycuda with "
-                              "'pip install pycuda'")
+            raise ImportError(
+                "Install pycuda with 'pip install pycuda'") from err
 
         self._check_input(log_du)
 
@@ -931,6 +930,123 @@ class _JSFUniformOrderStat3D(object):
         return P_total
 
 
+def _pmat_neighbors_pyopencl(mat, filt, n_largest, symmetric):
+    import pyopencl as cl
+    import pyopencl.array as cl_array
+    from jinja2 import Template
+
+    context = cl.create_some_context(interactive=False)
+    queue = cl.CommandQueue(context)
+
+    l = filt.shape[0]  # filt is a square matrix
+    filt_rows, filt_cols = filt.nonzero()
+    filt_rows = "{%s}" % ", ".join(f"{row}U" for row in filt_rows)
+    filt_cols = "{%s}" % ", ".join(f"{col}U" for col in filt_cols)
+
+    if symmetric:
+        n_rows_select = mat.shape[0] - 2 * l + 1
+        it_todo = n_rows_select * (n_rows_select + 1) // 2
+    else:
+        it_todo = (mat.shape[0] - l + 1) * (mat.shape[1] - l + 1)
+
+    pmat_neighbors_cl_path = Path(__file__).parent / "pmat_neighbors.cl"
+    pmat_neighbors_cl_template = Template(pmat_neighbors_cl_path.read_text())
+    pmat_neighbors_cl = pmat_neighbors_cl_template.render(
+        L=l,
+        N_LARGEST=n_largest,
+        PMAT_ROWS=mat.shape[0],
+        PMAT_COLS=mat.shape[1],
+        NONZERO_SIZE=filt.sum(),
+        SYMMETRIC=int(symmetric),
+        filt_rows=filt_rows,
+        filt_cols=filt_cols
+    )
+
+    lmat_gpu = cl_array.zeros(queue,
+                              shape=(mat.shape[0], mat.shape[1], n_largest),
+                              dtype=np.float32)
+
+    mat_gpu = cl_array.to_device(queue, mat, async_=True)
+
+    program = cl.Program(context, pmat_neighbors_cl).build()
+
+    # synchronize
+    cl.enqueue_barrier(queue)
+
+    kernel = program.pmat_neighbors
+    # When the grid size is set to the total number of work items to run and
+    # the local size is set to None, PyOpenCL chooses the number of threads
+    # automatically such that the total number of work items exactly matches
+    # the desired number of iterations (it_todo).
+    kernel(queue, (it_todo,), None, lmat_gpu.data, mat_gpu.data)
+
+    lmat = lmat_gpu.get()
+
+    return lmat
+
+
+def _pmat_neighbors_pycuda(mat, filt, n_largest, symmetric, n_threads=32):
+    from jinja2 import Template
+    try:
+        # PyCuda should not be in requirements-extra because CPU limited
+        # users won't be able to install Elephant.
+        import pycuda.autoinit
+        import pycuda.gpuarray as gpuarray
+        import pycuda.driver as drv
+        from pycuda.compiler import SourceModule
+    except ImportError as err:
+        raise ImportError("Install pycuda with 'pip install pycuda'") from err
+
+    device = pycuda.autoinit.device
+    n_threads = min(n_threads, device.MAX_THREADS_PER_BLOCK)
+    if n_threads > device.WARP_SIZE:
+        n_threads -= n_threads % device.WARP_SIZE
+
+    l = filt.shape[0]  # filt is a square matrix
+    filt_rows, filt_cols = filt.nonzero()
+
+    if symmetric:
+        n_rows_select = mat.shape[0] - 2 * l + 1
+        it_todo = n_rows_select * (n_rows_select + 1) // 2
+    else:
+        it_todo = (mat.shape[0] - l + 1) * (mat.shape[1] - l + 1)
+
+    pmat_neighbors_cu_path = Path(__file__).parent / "pmat_neighbors.cl"
+    pmat_neighbors_cu_template = Template(pmat_neighbors_cu_path.read_text())
+    pmat_neighbors_cu = pmat_neighbors_cu_template.render(
+        L=l,
+        N_LARGEST=n_largest,
+        PMAT_ROWS=mat.shape[0],
+        PMAT_COLS=mat.shape[1],
+        NONZERO_SIZE=filt.sum(),
+        SYMMETRIC=int(symmetric),
+        IT_TODO=it_todo
+    )
+
+    module = SourceModule(pmat_neighbors_cu)
+
+    mat_gpu = gpuarray.to_gpu_async(mat)
+    lmat_gpu = gpuarray.zeros((mat.shape[0], mat.shape[1], n_largest),
+                              dtype=np.float32)
+
+    filt_rows_gpu, _ = module.get_global("filt_rows")
+    drv.memcpy_htod(filt_rows_gpu, filt_rows.astype(np.uint32))
+
+    filt_cols_gpu, _ = module.get_global("filt_cols")
+    drv.memcpy_htod(filt_cols_gpu, filt_cols.astype(np.uint32))
+
+    drv.Context.synchronize()
+
+    grid_size = math.ceil(it_todo / n_threads)
+    kernel = module.get_function("pmat_neighbors")
+    kernel(lmat_gpu.gpudata, mat_gpu.gpudata, grid=(grid_size, 1),
+           block=(n_threads, 1, 1))
+
+    lmat = lmat_gpu.get()
+
+    return lmat
+
+
 def _pmat_neighbors(mat, filter_shape, n_largest):
     """
     Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
@@ -979,6 +1095,10 @@ def _pmat_neighbors(mat, filter_shape, n_largest):
     symmetric = np.all(np.diagonal(mat) == 0.5)
 
     # Check consistent arguments
+    if (symmetric and mat.shape[0] < 2 * l - 1) \
+            or (not symmetric and min(mat.shape) < l):
+        raise ValueError(f"'filter_shape' {filter_shape} is too large "
+                         f"for the input matrix of shape {mat.shape}")
     if w >= l:
         raise ValueError('filter_shape width must be lower than length')
     if not ((w % 2) and (l % 2)):
@@ -987,37 +1107,51 @@ def _pmat_neighbors(mat, filter_shape, n_largest):
                       'for both entries of filter_shape.')
 
     # Construct the kernel
-    filt = np.ones((l, l), dtype=np.float32)
+    filt = np.ones((l, l), dtype=bool)
     filt = np.triu(filt, -w)
     filt = np.tril(filt, w)
 
     # Convert mat values to floats, and replaces np.infs with specified input
     # values
-    mat = np.array(mat, dtype=np.float32)
+    mat = np.asarray(mat, dtype=np.float32)
 
-    # Initialize the matrix of d-largest values as a matrix of zeroes
-    lmat = np.zeros((n_largest, mat.shape[0], mat.shape[1]), dtype=np.float32)
-
-    N_bin_y = mat.shape[0]
-    N_bin_x = mat.shape[1]
-    # if the matrix is symmetric do not use kernel positions intersected
-    # by the diagonal
-    if symmetric:
-        bin_range_y = range(l, N_bin_y - l + 1)
+    use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
+    use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
+    cuda_detected = get_cuda_capability_major() != 0
+    if use_cuda and cuda_detected:
+        lmat = _pmat_neighbors_pycuda(mat=mat, filt=filt, n_largest=n_largest,
+                                      symmetric=symmetric)
+    elif use_opencl:
+        lmat = _pmat_neighbors_pyopencl(mat=mat, filt=filt,
+                                        n_largest=n_largest,
+                                        symmetric=symmetric)
     else:
-        bin_range_y = range(N_bin_y - l + 1)
-        bin_range_x = range(N_bin_x - l + 1)
+        # Initialize the matrix of d-largest values as a matrix of zeroes
+        lmat = np.zeros((mat.shape[0], mat.shape[1], n_largest),
+                        dtype=np.float32)
 
-    # compute matrix of largest values
-    for y in bin_range_y:
+        N_bin_y = mat.shape[0]
+        N_bin_x = mat.shape[1]
+        # if the matrix is symmetric do not use kernel positions intersected
+        # by the diagonal
         if symmetric:
-            # x range depends on y position
-            bin_range_x = range(y - l + 1)
-        for x in bin_range_x:
-            patch = mat[y: y + l, x: x + l]
-            mskd = np.multiply(filt, patch)
-            largest_vals = np.sort(mskd, axis=None)[-n_largest:]
-            lmat[:, y + (l // 2), x + (l // 2)] = largest_vals
+            bin_range_y = range(l, N_bin_y - l + 1)
+        else:
+            bin_range_y = range(N_bin_y - l + 1)
+            bin_range_x = range(N_bin_x - l + 1)
+
+        # compute matrix of largest values
+        for y in bin_range_y:
+            if symmetric:
+                # x range depends on y position
+                bin_range_x = range(y - l + 1)
+            for x in bin_range_x:
+                patch = mat[y: y + l, x: x + l]
+                mskd = patch[filt]
+                largest_vals = np.sort(mskd)[-n_largest:]
+                lmat[y + (l // 2), x + (l // 2), :] = largest_vals
+
+    lmat = np.moveaxis(lmat, source=2, destination=0)
 
     return lmat
 

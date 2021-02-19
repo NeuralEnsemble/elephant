@@ -215,6 +215,45 @@ class AssetTestCase(unittest.TestCase):
                 stretch=stretch, working_memory=working_memory)
             assert_array_equal(cmat, cmat_true)
 
+    @unittest.skipUnless(HAVE_PYOPENCL, "requires PyOpenCl")
+    def test_pmat_neighbors_pyopencl(self):
+        np.random.seed(12)
+        for symmetric in [False, True]:
+            pmat = np.random.random_sample((40, 40))
+            if symmetric:
+                np.fill_diagonal(pmat, 0.5)
+            filter_shape = (11, 3)
+            n_largest = 3
+            os.environ['ELEPHANT_USE_OPENCL'] = '0'
+            lmat = asset._pmat_neighbors(pmat, filter_shape=filter_shape,
+                                         n_largest=n_largest)
+            os.environ['ELEPHANT_USE_OPENCL'] = '1'
+            lmat_opencl = asset._pmat_neighbors(pmat,
+                                                filter_shape=filter_shape,
+                                                n_largest=n_largest)
+            assert_array_almost_equal(lmat, lmat_opencl)
+
+    def test_pmat_neighbors_invalid_input(self):
+        np.random.seed(12)
+        pmat = np.random.random_sample((20, 20))
+        np.fill_diagonal(pmat, 0.5)
+
+        # Too large filter_shape
+        self.assertRaises(ValueError, asset._pmat_neighbors, mat=pmat,
+                          filter_shape=(11, 3), n_largest=3)
+        np.fill_diagonal(pmat, 0.0)
+        self.assertRaises(ValueError, asset._pmat_neighbors, mat=pmat,
+                          filter_shape=(21, 3), n_largest=3)
+
+        # w >= l
+        self.assertRaises(ValueError, asset._pmat_neighbors, mat=pmat,
+                          filter_shape=(9, 9), n_largest=3)
+
+        # not centered
+        self.assertWarns(UserWarning, asset._pmat_neighbors, mat=pmat,
+                         filter_shape=(10, 6), n_largest=3)
+
+
     def test_intersection_matrix(self):
         st1 = neo.SpikeTrain([1, 2, 4] * pq.ms, t_stop=6 * pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)
