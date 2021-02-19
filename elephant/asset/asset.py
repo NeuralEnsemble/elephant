@@ -2138,7 +2138,8 @@ class ASSET(object):
         pmat_neighb = _pmat_neighbors(
             pmat, filter_shape=filter_shape, n_largest=n_largest)
 
-        pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value)
+        pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value,
+                                 out=pmat_neighb)
 
         # in order to avoid doing the same calculation multiple times:
         # find all unique sets of values in pmat_neighb
