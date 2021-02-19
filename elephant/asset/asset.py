@@ -1011,7 +1011,7 @@ def _pmat_neighbors_pycuda(mat, filt, n_largest, symmetric, n_threads=32):
     else:
         it_todo = (mat.shape[0] - l + 1) * (mat.shape[1] - l + 1)
 
-    pmat_neighbors_cu_path = Path(__file__).parent / "pmat_neighbors.cl"
+    pmat_neighbors_cu_path = Path(__file__).parent / "pmat_neighbors.cu"
     pmat_neighbors_cu_template = Template(pmat_neighbors_cu_path.read_text())
     pmat_neighbors_cu = pmat_neighbors_cu_template.render(
         L=l,
