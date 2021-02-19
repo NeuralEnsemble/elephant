@@ -1073,8 +1073,8 @@ def _pmat_neighbors(mat, filter_shape, n_largest):
     Returns
     -------
     lmat : np.ndarray
-        A matrix of shape `(n_largest, l, w)` containing along the first
-        dimension `lmat[:, i, j]` the largest neighbors of `mat[i, j]`.
+        A matrix of shape `(l, w, n_largest)` containing along the last
+        dimension `lmat[i, j, :]` the largest neighbors of `mat[i, j]`.
 
     Raises
     ------
@@ -1150,8 +1150,6 @@ def _pmat_neighbors(mat, filter_shape, n_largest):
                 mskd = patch[filt]
                 largest_vals = np.sort(mskd)[-n_largest:]
                 lmat[y + (l // 2), x + (l // 2), :] = largest_vals
-
-    lmat = np.moveaxis(lmat, source=2, destination=0)
 
     return lmat
 
@@ -2146,7 +2144,7 @@ class ASSET(object):
         # find all unique sets of values in pmat_neighb
         # and store the corresponding indices
         # flatten the second and third dimension in order to use np.unique
-        pmat_neighb = pmat_neighb.reshape(n_largest, pmat.size).T
+        pmat_neighb = pmat_neighb.reshape(pmat.size, n_largest)
         pmat_neighb, pmat_neighb_indices = np.unique(pmat_neighb, axis=0,
                                                      return_inverse=True)
 
