@@ -539,6 +539,25 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
             jsf = asset._JSFUniformOrderStat3D(n=N, d=D, precision='float')
             run_test(jsf, jsf.pycuda)
 
+    def test_gpu_chunked(self):
+        L, N, D = 100, 9, 3
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u)
+        du = np.diff(u, prepend=0, append=1, axis=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            log_du = np.log(du, dtype=np.float32)
+        jsf = asset._JSFUniformOrderStat3D(n=N, d=D)
+        P_true = jsf.cpu(log_du)
+        for max_chunk_size in (13, 50):
+            jsf.max_chunk_size = max_chunk_size
+            if HAVE_PYOPENCL:
+                P_total = jsf.pyopencl(log_du)
+                assert_array_almost_equal(P_total, P_true)
+            if HAVE_CUDA:
+                P_total = jsf.pycuda(log_du)
+                assert_array_almost_equal(P_total, P_true)
+
     def test_watchdog(self):
         L, N, D = 10, 7, 3
         u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
