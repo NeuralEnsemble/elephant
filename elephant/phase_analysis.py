@@ -309,7 +309,7 @@ def phase_difference(alpha, beta):
     return phase_diff
 
 
-def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency, abs=True):
+def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency, absolute_value=True):
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI)
 
@@ -324,6 +324,9 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency, abs=True):
         with `t` time points and `n` trials.
     sampling_frequency: quantity/ scaler
         Sampling frequency of the signals in Hz.
+    absolute_value: boolean (default: True)
+        Determines, if the WPLI contains additional directionality information
+        about which signal leads/lags the other signal, when set to 'False'.
 
     Returns
     -------
@@ -365,11 +368,21 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency, abs=True):
     fft2 = np.fft.fft(signal_j)
     freqs = np.fft.fftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
 
+    # remove negative frequencies of FFT-vectors
+    if np.shape(fft1)[1] % 2 == 0:
+        fft1 = fft1[:, 0:int(np.shape(fft1)[1] / 2)]
+        fft2 = fft2[:, 0:int(np.shape(fft2)[1] / 2)]
+        freqs = freqs[0:int(len(freqs) / 2)]
+    else:
+        fft1 = fft1[:, 0:int((np.shape(fft1)[1] + 1) / 2)]
+        fft2 = fft2[:, 0:int((np.shape(fft2)[1] + 1) / 2)]
+        freqs = freqs[0:int((len(freqs) + 1) / 2)]
+
     # obtain cross-spectrum
     cs = fft1 * np.conjugate(fft2)
     # calculate WPLI
     wpli_num = np.mean(np.abs(np.imag(cs)) * np.sign(np.imag(cs)), axis=0)
-    if abs:
+    if absolute_value:
         wpli_num = np.abs(wpli_num)
     wpli_den = np.mean(np.abs(np.imag(cs)), axis=0)
     wpli = wpli_num / wpli_den
