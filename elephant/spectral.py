@@ -677,9 +677,6 @@ if __name__ == '__main__':
                                        frequency_resolution=0.01,
                                        fs=fs,
                                        len_segment=length)
-    import nitime.algorithms as tsa
-    f, psd_mt, nu = tsa.multi_taper_psd(time_series, Fs=fs, NW=4,
-                                         jackknife=False, low_bias=False)
 
     from matplotlib import pyplot as plt
 
@@ -690,52 +687,7 @@ if __name__ == '__main__':
     plt.plot(freqs_multi, psd_multitaper, color='orange',
              label='Multitaper estimate')
     plt.plot(freqs_welch, psd_welch, color='black', label='Welch estimate')
-    plt.plot(f, psd_mt)
 
     plt.legend()
 
-    plt.show()
-    print('Real data')
-    import os.path
-    import numpy as n
-    import scipy
-    import scipy.io
-    import scipy.signal
-    import matplotlib.mlab
-    import matplotlib.pyplot as plt
-    import quantities as pq
-
-    filename = os.path.sep.join(['', 'dataset1.mat'])
-    print("Loading {0}".format(filename))
-    dataset1 = scipy.io.loadmat(filename[1:], squeeze_me=True)
-
-    lfps1 = dataset1['lfp_matrix'] * pq.uV
-    times1 = dataset1['time'] * pq.ms
-    sf1 = dataset1['sf'] * pq.Hz
-    fs = sf1.item()
-
-    f, psd_mt, nu = tsa.multi_taper_psd(lfps1, Fs=fs, NW=10,
-                                         jackknife=False, low_bias=False)
-
-    freqs_welch, psd_welch = welch_psd(signal=lfps1,
-                                       frequency_resolution=4,
-                                       fs=fs)
-                                       #len_segment=length)
-
-    freqs_multi, psd_multitaper = multitaper_psd(signal=lfps1, fs=fs,
-                                                 nw=10)
-                                                 #frequency_resolution=4)
-
-    plt.plot(f, psd_mt[0], label='Nitime')
-    plt.plot(freqs_multi, psd_multitaper[0], label ='Our Multi')
-    plt.yscale('log')
-    plt.plot(freqs_welch, psd_welch[0], label='Welch')
-    plt.legend()
-    plt.show()
-
-    plt.plot(f, psd_mt[39], label='Nitime')
-    plt.plot(freqs_multi, psd_multitaper[39], label ='Our Multi')
-    plt.yscale('log')
-    plt.plot(freqs_welch, psd_welch[39], label='Welch')
-    plt.legend()
     plt.show()
