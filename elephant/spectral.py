@@ -266,12 +266,12 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     fs : float, optional
         Specifies the sampling frequency of the input time series
         Default: 1.0
-    NW : float, optional
+    nw : float, optional
         Time bandwidth product
         Default: 4.0
     num_tapers : int, optional
         Number of tapers used in 1. to obtain estimate of PSD. By default
-        [2*NW] - 1 is chosen.
+        [2*nw] - 1 is chosen.
         Default: None
     frequency_resolution : float, optional
         Desired frequency resolution of the obtained PSD estimate. When given
@@ -293,18 +293,33 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     if isinstance(signal, neo.AnalogSignal):
         data = np.rollaxis(data, 0, len(data.shape))
 
+    # If the data is given as AnalogSignak, use its attribute to specify the
+    # sampling frequency
+    if hasattr(signal, 'sampling_rate'):
+        fs = signal.sampling_rate.rescale('Hz').magnitude
+
+    # If fs and frequency resolution is pq Quantity get magnitude
+    if isinstance(fs, pq.quantity.Quantity):
+        fs = fs.rescale('Hz').magnitude
+    if isinstance(frequency_resolution, pq.quantity.Quantity):
+        frequency_resolution = frequency_resolution.rescale('Hz').magnitude
+
     # Number of data points in time series
-    length_signal = np.size(signal)
+    if data.ndim == 1:
+        length_signal = np.shape(data)[0]
+    else:
+        length_signal = np.shape(data)[1]
 
     # Determine time-halfbandwidth product from given parameters
     if frequency_resolution is not None:
         if frequency_resolution <= 0:
             raise ValueError("frequency_resolution must be positive")
         else:
-            nw = length_signal * frequency_resolution / 2
+            nw = length_signal / fs * frequency_resolution / 2
 
     if num_tapers is None:
-        num_tapers = 2*np.floor(nw).astype(int) - 1
+        num_tapers = np.floor(2*nw).astype(int) - 1
+        num_tapers = np.max([num_tapers, 1])
     else:
         if not isinstance(num_tapers, int):
             raise TypeError("num_tapers must be integer")
@@ -316,17 +331,31 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     # Generate frequencies
     freqs = np.fft.rfftfreq(length_signal, d=1/fs)
 
-    # Fetch slepian functions
+    # Get slepian functions
     slepain_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
                                              Kmax=num_tapers,
                                              sym='False')
 
     # Calculate approximately independent spectrum estimates
-    spectrum_estimates = np.abs(np.fft.rfft(signal * slepain_fcts, axis=1))**2
+    if signal.ndim == 1:
+        windowed_signal = data * slepain_fcts
+        spectrum_estimates = np.abs(np.fft.rfft(windowed_signal, axis=1))**2
+        spectrum_estimates[:, 1:] *= 2
 
-    # average to obtain Multitaper PSD estimate
-    multitaper_psd = np.mean(spectrum_estimates, axis=0) / fs
+        # Average Fourier transform of windowed signal
+        multitaper_psd = np.mean(spectrum_estimates, axis=0) / fs
+    else:
+        windowed_signal = data[:, np.newaxis] * slepain_fcts
+        spectrum_estimates = np.abs(np.fft.rfft(windowed_signal, axis=2))**2
+        spectrum_estimates[:, :, 1:] *= 2
+
+        # Average Fourier transform windowed signal
+        multitaper_psd = np.mean(spectrum_estimates, axis=1) / fs
+
+    if isinstance(signal, pq.quantity.Quantity):
+        multitaper_psd = multitaper_psd * signal.units * signal.units
+        freqs = freqs * pq.Hz
 
     return freqs, multitaper_psd
 
@@ -628,7 +657,7 @@ if __name__ == '__main__':
         return times, time_series, freqs, psd_time_series
 
     # Choose parameters, coeffs as in nitime
-    length = 2**9
+    length = 2**10
     coeffs = np.array([2.7607, -3.8106, 2.6535, -0.9238])
     variance = 1.
     fs = 1
@@ -640,15 +669,21 @@ if __name__ == '__main__':
         fs=fs)
 
     freqs_multi, psd_multitaper = multitaper_psd(signal=time_series, fs=fs,
-                                                 frequency_resolution=0.05)
+                                                 nw=4)
+                                                 #frequency_resolution=0.01)
 
     print(np.max(psd_time_series))
     print(np.max(psd_multitaper))
 
     freqs_welch, psd_welch = welch_psd(signal=time_series,
-                                       frequency_resolution=0.05,
+                                       frequency_resolution=0.01,
                                        fs=fs,
                                        len_segment=length)
+    import nitime.algorithms as tsa
+    f, psd_mt, nu = tsa.multi_taper_psd(time_series, Fs=fs, NW=4,
+                                         jackknife=False, low_bias=False)
+    #import IPython
+    #IPython.embed()
 
     from matplotlib import pyplot as plt
 
@@ -659,8 +694,54 @@ if __name__ == '__main__':
     plt.plot(freqs_multi, psd_multitaper, color='orange',
              label='Multitaper estimate')
     plt.plot(freqs_welch, psd_welch, color='black', label='Welch estimate')
+    plt.plot(f, psd_mt)
 
     plt.legend()
 
     plt.show()
+    print('Real data')
+    import os.path
+    import numpy as n
+    import scipy
+    import scipy.io
+    import scipy.signal
+    import matplotlib.mlab
+    import matplotlib.pyplot as plt
+    import quantities as pq
 
+    filename = os.path.sep.join(['', 'dataset1.mat'])
+    print("Loading {0}".format(filename))
+    dataset1 = scipy.io.loadmat(filename[1:], squeeze_me=True)
+
+    lfps1 = dataset1['lfp_matrix'] * pq.uV
+    times1 = dataset1['time'] * pq.ms
+    sf1 = dataset1['sf'] * pq.Hz
+    import IPython
+    IPython.embed()
+    fs = sf1.item()
+
+    f, psd_mt, nu = tsa.multi_taper_psd(lfps1, Fs=fs, NW=10,
+                                         jackknife=False, low_bias=False)
+
+    freqs_welch, psd_welch = welch_psd(signal=lfps1,
+                                       frequency_resolution=4,
+                                       fs=fs)
+                                       #len_segment=length)
+
+    freqs_multi, psd_multitaper = multitaper_psd(signal=lfps1, fs=fs,
+                                                 nw=10)
+                                                 #frequency_resolution=4)
+
+    plt.plot(f, psd_mt[0], label='Nitime')
+    plt.plot(freqs_multi, psd_multitaper[0], label ='Our Multi')
+    plt.yscale('log')
+    plt.plot(freqs_welch, psd_welch[0], label='Welch')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, psd_mt[39], label='Nitime')
+    plt.plot(freqs_multi, psd_multitaper[39], label ='Our Multi')
+    plt.yscale('log')
+    plt.plot(freqs_welch, psd_welch[39], label='Welch')
+    plt.legend()
+    plt.show()
