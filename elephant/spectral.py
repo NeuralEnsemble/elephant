@@ -347,14 +347,14 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     spectrum_estimates[..., 1:] *= 2
 
     # Average Fourier transform windowed signal
-    multitaper_psd = np.mean(spectrum_estimates, axis=-2) / fs
+    psd = np.mean(spectrum_estimates, axis=-2) / fs
 
     # Attach proper units to return values
     if isinstance(signal, pq.quantity.Quantity):
-        multitaper_psd = multitaper_psd * signal.units * signal.units / pq.Hz
+        psd = psd * signal.units * signal.units / pq.Hz
         freqs = freqs * pq.Hz
 
-    return freqs, multitaper_psd
+    return freqs, psd
 
 
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
