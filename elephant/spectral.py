@@ -336,7 +336,6 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
                                              Kmax=num_tapers,
                                              sym='False')
 
-
     # Calculate approximately independent spectrum estimates
     if data.ndim == 1:
         tapered_signal = data * slepain_fcts
