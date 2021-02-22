@@ -293,7 +293,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     if isinstance(signal, neo.AnalogSignal):
         data = np.rollaxis(data, 0, len(data.shape))
 
-    # If the data is given as AnalogSignak, use its attribute to specify the
+    # If the data is given as AnalogSignal, use its attribute to specify the
     # sampling frequency
     if hasattr(signal, 'sampling_rate'):
         fs = signal.sampling_rate.rescale('Hz').magnitude
@@ -319,7 +319,6 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
 
     if num_tapers is None:
         num_tapers = np.floor(2*nw).astype(int) - 1
-        num_tapers = np.max([num_tapers, 1])
     else:
         if not isinstance(num_tapers, int):
             raise TypeError("num_tapers must be integer")
@@ -337,24 +336,23 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
                                              Kmax=num_tapers,
                                              sym='False')
 
+
     # Calculate approximately independent spectrum estimates
-    if signal.ndim == 1:
-        windowed_signal = data * slepain_fcts
-        spectrum_estimates = np.abs(np.fft.rfft(windowed_signal, axis=1))**2
-        spectrum_estimates[:, 1:] *= 2
-
-        # Average Fourier transform of windowed signal
-        multitaper_psd = np.mean(spectrum_estimates, axis=0) / fs
+    if data.ndim == 1:
+        tapered_signal = data * slepain_fcts
     else:
-        windowed_signal = data[:, np.newaxis] * slepain_fcts
-        spectrum_estimates = np.abs(np.fft.rfft(windowed_signal, axis=2))**2
-        spectrum_estimates[:, :, 1:] *= 2
+        tapered_signal = data[:, np.newaxis] * slepain_fcts
 
-        # Average Fourier transform windowed signal
-        multitaper_psd = np.mean(spectrum_estimates, axis=1) / fs
+    # Determine Fourier transform of tapered signal
+    spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1))**2
+    spectrum_estimates[..., 1:] *= 2
 
+    # Average Fourier transform windowed signal
+    multitaper_psd = np.mean(spectrum_estimates, axis=-2) / fs
+
+    # Attach proper units to return values
     if isinstance(signal, pq.quantity.Quantity):
-        multitaper_psd = multitaper_psd * signal.units * signal.units
+        multitaper_psd = multitaper_psd * signal.units * signal.units / pq.Hz
         freqs = freqs * pq.Hz
 
     return freqs, multitaper_psd
@@ -682,8 +680,6 @@ if __name__ == '__main__':
     import nitime.algorithms as tsa
     f, psd_mt, nu = tsa.multi_taper_psd(time_series, Fs=fs, NW=4,
                                          jackknife=False, low_bias=False)
-    #import IPython
-    #IPython.embed()
 
     from matplotlib import pyplot as plt
 
@@ -716,8 +712,6 @@ if __name__ == '__main__':
     lfps1 = dataset1['lfp_matrix'] * pq.uV
     times1 = dataset1['time'] * pq.ms
     sf1 = dataset1['sf'] * pq.Hz
-    import IPython
-    IPython.embed()
     fs = sf1.item()
 
     f, psd_mt, nu = tsa.multi_taper_psd(lfps1, Fs=fs, NW=10,
