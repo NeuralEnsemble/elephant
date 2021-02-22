@@ -1607,30 +1607,29 @@ class ASSET(object):
             print('compute the prob. that each neuron fires in each pair of '
                   'bins...')
 
-        spike_probs_x = [1. - np.exp(-(rate * self.bin_size).rescale(
-            pq.dimensionless).magnitude) for rate in fir_rate_x]
+        rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
+        spike_probs_x = 1. - np.exp(-rate_bins_x)
         if symmetric:
             spike_probs_y = spike_probs_x
         else:
-            spike_probs_y = [1. - np.exp(-(rate * self.bin_size).rescale(
-                pq.dimensionless).magnitude) for rate in fir_rate_y]
-
-        # For each neuron k compute the matrix of probabilities p_ijk that
-        # neuron k spikes in both bins i and j. (For i = j it's just spike
-        # probs[k][i])
-        spike_prob_mats = [np.outer(probx, proby) for (probx, proby) in
-                           zip(spike_probs_x, spike_probs_y)]
+            rate_bins_y = (fir_rate_y * self.bin_size).simplified.magnitude
+            spike_probs_y = 1. - np.exp(-rate_bins_y)
 
         # Compute the matrix Mu[i, j] of parameters for the Poisson
         # distributions which describe, at each (i, j), the approximated
         # overlap probability. This matrix is just the sum of the probability
-        # matrices computed above
-
+        # matrices p_ijk computed for each neuron k:
+        # p_ijk is the probability that neuron k spikes in both bins i and j.
+        # The sum of outer products is equivalent to a dot product.
         if self.verbose:
             print(
                 "compute the probability matrix by Le Cam's approximation...")
-
-        Mu = np.sum(spike_prob_mats, axis=0)
+        Mu = spike_probs_x.T.dot(spike_probs_y)
+        # A straightforward implementation is:
+        # pmat_shape = spike_probs_x.shape[1], spike_probs_y.shape[1]
+        # Mu = np.zeros(pmat_shape, dtype=np.float64)
+        # for probx, proby in zip(spike_probs_x, spike_probs_y):
+        #     Mu += np.outer(probx, proby)
 
         # Compute the probability matrix obtained from imat using the Poisson
         # pdfs
