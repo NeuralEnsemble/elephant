@@ -195,6 +195,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
                                                         nw=3.5)
         freqs2, psd2 = elephant.spectral.multitaper_psd(data,
                                                         fs=data.sampling_rate,
+                                                        nw=3.5,
                                                         num_tapers=6)
         self.assertTrue((psd1 == psd2).all() and (freqs1 == freqs2).all())
 
@@ -202,7 +203,6 @@ class MultitaperPSDTestCase(unittest.TestCase):
         freq_res = 1.0 * pq.Hz
         freqs, psd = elephant.spectral.multitaper_psd(
             data, frequency_resolution=freq_res)
-        self.assertAlmostEqual(freq_res, freqs[1] - freqs[0])
         self.assertEqual(freqs[psd.argmax()], signal_freq)
         freqs_np, psd_np = elephant.spectral.multitaper_psd(
             data.magnitude.flatten(), fs=1 / sampling_period,
