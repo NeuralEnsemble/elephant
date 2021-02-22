@@ -375,36 +375,33 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
 class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def setUp(self):
-        self.ntrials = 100
+        ntrials = 100
         self.srate = 250        # Hz
-        self.tlength = 500      # ms
+        tlength = 500      # ms
         self.freq = 16          # Hz
-        self.amp = 1            # mV
-        self.phase = 0
+        amp = 1            # mV
+        phase = 0
         self.tolerance = 1e-15
 
         # time-vector
-        self.t = np.arange(0, self.tlength, 1. / (self.srate / 1000))
+        t = np.arange(0, tlength, 1. / (self.srate / 1000))
 
-        # # signal sampels
-        self.trials_x = [16 + self.amp * np.sin(
-            2 * np.pi * (self.freq / 1000) * self.t + self.phase)
-                         for _ in range(self.ntrials)]
-        self.signal_x = np.stack(self.trials_x, axis=0)
+        # artificial signal sampels to assert certain WPLI values: 0 and 1 
+        trials_x = [16 + amp * np.sin(2 * np.pi * (self.freq / 1000) * t + phase)
+                    for _ in range(ntrials)]
+        self.signal_x = np.stack(trials_x, axis=0)
         # constant phase lag of pi/3
-        self.trials_y = [16 + self.amp * np.sin(
-            2 * np.pi * (self.freq / 1000) * self.t + np.pi/3)
-                         for _ in range(self.ntrials)]
-        self.signal_y = np.stack(self.trials_y, axis=0)
+        trials_y = [16 + amp * np.sin(2 * np.pi * (self.freq / 1000) * t + np.pi/3)
+                    for _ in range(ntrials)]
+        self.signal_y = np.stack(trials_y, axis=0)
         # equal distributed phase lags of pi/2 and 1.5*pi across trials
-        self.signal_z = np.empty((self.ntrials, len(self.t)))
-        for i in range(self.ntrials):
-            if i < self.ntrials/2:
+        self.signal_z = np.empty((ntrials, len(t)))
+        for i in range(ntrials):
+            if i < ntrials/2:
                 phase = np.pi/2
             else:
                 phase = 1.5 * np.pi
-            self.signal_z[i] = 16 + self.amp * np.sin(
-                2 * np.pi * (self.freq / 1000) * self.t + phase)
+            self.signal_z[i] = 16 + amp * np.sin(2 * np.pi * (self.freq / 1000) * t + phase)
 
         # simple samples of different shapes to assert ErrorRaising
         self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
@@ -414,25 +411,25 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         ### check for ground truth consistency with REAL/ARTIFICIAl LFP-dataset
         ## REAL LFP-DATASET
         # Load first & second data file
-        self.filename1_R = os.path.sep.join(['lfp_dataset1.mat'])
-        self.dataset1_R = scipy.io.loadmat(self.filename1_R, squeeze_me=True)
-        self.filename2_R = os.path.sep.join(['lfp_dataset2.mat'])
-        self.dataset2_R = scipy.io.loadmat(self.filename2_R, squeeze_me=True)
+        filename1_R = os.path.sep.join(['lfp_dataset1.mat'])
+        dataset1_R = scipy.io.loadmat(filename1_R, squeeze_me=True)
+        filename2_R = os.path.sep.join(['lfp_dataset2.mat'])
+        dataset2_R = scipy.io.loadmat(filename2_R, squeeze_me=True)
         # get the relevant values
-        self.lfps1_R = self.dataset1_R['lfp_matrix'] * pq.uV
-        self.sf1_R = self.dataset1_R['sf'] * pq.Hz
-        self.lfps2_R = self.dataset2_R['lfp_matrix'] * pq.uV
-        self.sf2_R = self.dataset2_R['sf'] * pq.Hz
+        self.lfps1_R = dataset1_R['lfp_matrix'] * pq.uV
+        self.sf1_R = dataset1_R['sf'] * pq.Hz
+        self.lfps2_R = dataset2_R['lfp_matrix'] * pq.uV
+        self.sf2_R = dataset2_R['sf'] * pq.Hz
         ## ARRTIFICIAL LFP-DATASET
-        self.filename1_A = os.path.sep.join(['artificial_LFPs_1.mat'])
-        self.dataset1_A = scipy.io.loadmat(self.filename1_A, squeeze_me=True)
-        self.filename2_A = os.path.sep.join(['artificial_LFPs_2.mat'])
-        self.dataset2_A = scipy.io.loadmat(self.filename2_A, squeeze_me=True)
+        filename1_A = os.path.sep.join(['artificial_LFPs_1.mat'])
+        dataset1_A = scipy.io.loadmat(filename1_A, squeeze_me=True)
+        filename2_A = os.path.sep.join(['artificial_LFPs_2.mat'])
+        dataset2_A = scipy.io.loadmat(filename2_A, squeeze_me=True)
         # get the relevant values
-        self.lfps1_A = self.dataset1_A['lfp_matrix'] * pq.uV
-        self.sf1_A = self.dataset1_A['sf'] * pq.Hz
-        self.lfps2_A = self.dataset2_A['lfp_matrix'] * pq.uV
-        self.sf2_A = self.dataset2_A['sf'] * pq.Hz
+        self.lfps1_A = dataset1_A['lfp_matrix'] * pq.uV
+        self.sf1_A = dataset1_A['sf'] * pq.Hz
+        self.lfps2_A = dataset2_A['lfp_matrix'] * pq.uV
+        self.sf2_A = dataset2_A['sf'] * pq.Hz
 
         # load ground-truth calculated by FieldTrip: ft_connectivity_wpli
         self.wpli_ground_truth_FieldTrip_REAL = np.loadtxt(
