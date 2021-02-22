@@ -456,9 +456,80 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
     return interpolated_signal
 
 
-class _JSFUniformOrderStat3D(object):
+class _GPUBackend:
+    """
+    Parameters
+    ----------
+    max_chunk_size: int or None, optional
+        Defines the maximum chunk size used in the `_split_axis` function. The
+        users typically don't need to set this parameter manually - it's used
+        to simulate scenarios when the input matrix is so large that it cannot
+        fit into GPU memory. Setting this parameter manually can resolve GPU
+        memory errors in case automatic parameters adjustment fails.
+
+    Notes
+    -----
+    1. PyOpenCL backend takes some time to compile the kernel for the first
+       time - the caching will affect your benchmarks unless you run each
+       program twice.
+    2. Pinned Host Memory.
+       Host (CPU) data allocations are pageable by default. The GPU cannot
+       access data directly from pageable host memory, so when a data transfer
+       from pageable host memory to device memory is invoked, the CUDA driver
+       must first allocate a temporary page-locked, or "pinned", host array,
+       copy the host data to the pinned array, and then transfer the data from
+       the pinned array to device memory, as illustrated at
+       https://developer.nvidia.com/blog/how-optimize-data-transfers-cuda-cc/
+       Same for OpenCL. Therefore, Python memory analyzers show increments in
+       the used RAM each time an OpenCL/CUDA buffer is created. As with any
+       Python objects, PyOpenCL and PyCUDA clean up and free allocated memory
+       automatically when garbage collection is executed.
+    """
+    def __init__(self, max_chunk_size=None):
+        self.max_chunk_size = max_chunk_size
+
+    def _choose_backend(self):
+        # If CUDA is detected, always use CUDA.
+        # If OpenCL is detected, don't use it by default to avoid the system
+        # becoming unresponsive until the program terminates.
+        use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
+        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
+        cuda_detected = get_cuda_capability_major() != 0
+        if use_cuda and cuda_detected:
+            return self.pycuda
+        if use_opencl:
+            return self.pyopencl
+        return self.cpu
+
+    def _split_axis(self, chunk_size, axis_size, min_chunk_size=None):
+        chunk_size = min(chunk_size, axis_size)
+        if self.max_chunk_size is not None:
+            chunk_size = min(chunk_size, self.max_chunk_size)
+        if min_chunk_size is not None and chunk_size < min_chunk_size:
+            raise ValueError(f"[GPU not enough memory] Impossible to split "
+                             f"the array into chunks of size at least "
+                             f"{min_chunk_size} to fit into GPU memory")
+        n_chunks = math.ceil(axis_size / chunk_size)
+        chunk_size = math.ceil(axis_size / n_chunks)  # align in size
+        if min_chunk_size is not None:
+            chunk_size = max(chunk_size, min_chunk_size)
+        split_idx = list(range(0, axis_size, chunk_size))
+        last_id = split_idx[-1]
+        last_size = axis_size - last_id  # last is the smallest
+        split_idx = list(zip(split_idx[:-1], split_idx[1:]))
+        if min_chunk_size is not None and last_size < min_chunk_size:
+            # Overlap the last chunk with the previous.
+            # The overlapped part (intersection) will be computed twice.
+            last_id = axis_size - min_chunk_size
+        split_idx.append((last_id, axis_size))
+        return chunk_size, split_idx
+
+
+class _JSFUniformOrderStat3D(_GPUBackend):
     def __init__(self, n, d, precision='float', verbose=False,
-                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5):
+                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5,
+                 max_chunk_size=None):
+        super().__init__(max_chunk_size=max_chunk_size)
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
         self.n = n
@@ -657,15 +728,13 @@ class _JSFUniformOrderStat3D(object):
                         1 << 31)
         # 4 * (D + 1) * size + 8 * size == mem_avail
         chunk_size = mem_avail // (4 * log_du.shape[1] + self.dtype.itemsize)
-        chunk_size = min(chunk_size, u_length)
-        n_chunks = math.ceil(u_length / chunk_size)
-        chunk_size = math.ceil(u_length / n_chunks)  # align in size
-        split_idx = list(range(0, u_length, chunk_size))
-        split_idx.append(u_length)
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=u_length)
+
         P_total = np.empty(u_length, dtype=self.dtype)
         P_total_gpu = cl_array.Array(queue, shape=chunk_size, dtype=self.dtype)
 
-        for i_start, i_end in zip(split_idx[:-1], split_idx[1:]):
+        for i_start, i_end in split_idx:
             log_du_gpu = cl_array.to_device(queue, log_du[i_start: i_end],
                                             async_=True)
             P_total_gpu.fill(0, queue=queue)
@@ -689,7 +758,7 @@ class _JSFUniformOrderStat3D(object):
             # the LU suffix, not LLU, which would indicate unsupported uint128
             # data type format.
             asset_cl = self._compile_template(
-                template_name="asset.pyopencl.cl",
+                template_name="joint_pmat.cl",
                 L=f"{chunk_size}LU",
                 L_BLOCK=l_block,
                 L_NUM_BLOCKS=l_num_blocks,
@@ -710,7 +779,7 @@ class _JSFUniformOrderStat3D(object):
             kernel(queue, (grid_size,), (n_threads,),
                    P_total_gpu.data, log_du_gpu.data, g_times_l=True)
 
-            P_total[i_start: i_end] = P_total_gpu[:chunk_size].get()
+            P_total_gpu[:chunk_size].get(ary=P_total[i_start: i_end])
 
         return P_total
 
@@ -749,16 +818,14 @@ class _JSFUniformOrderStat3D(object):
         free, total = drv.mem_get_info()
         # 4 * (D + 1) * size + 8 * size == mem_avail
         chunk_size = free // (4 * log_du.shape[1] + self.dtype.itemsize)
-        chunk_size = min(chunk_size, u_length)
-        n_chunks = math.ceil(u_length / chunk_size)
-        chunk_size = math.ceil(u_length / n_chunks)  # align in size
-        split_idx = list(range(0, u_length, chunk_size))
-        split_idx.append(u_length)
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=u_length)
+
         P_total = np.empty(u_length, dtype=self.dtype)
-        P_total_gpu = gpuarray.zeros(chunk_size, dtype=self.dtype)
+        P_total_gpu = gpuarray.GPUArray(chunk_size, dtype=self.dtype)
         log_du_gpu = drv.mem_alloc(4 * chunk_size * log_du.shape[1])
 
-        for i_start, i_end in zip(split_idx[:-1], split_idx[1:]):
+        for i_start, i_end in split_idx:
             drv.memcpy_htod_async(dest=log_du_gpu, src=log_du[i_start: i_end])
             P_total_gpu.fill(0)
             chunk_size = i_end - i_start
@@ -779,7 +846,7 @@ class _JSFUniformOrderStat3D(object):
                       f"N_THREADS={n_threads}")
 
             asset_cu = self._compile_template(
-                template_name="asset.pycuda.cu",
+                template_name="joint_pmat.cu",
                 L=f"{chunk_size}LLU",
                 L_BLOCK=l_block,
                 L_NUM_BLOCKS=l_num_blocks,
@@ -802,12 +869,12 @@ class _JSFUniformOrderStat3D(object):
             kernel(P_total_gpu.gpudata, log_du_gpu, grid=(grid_size, 1),
                    block=(n_threads, 1, 1))
 
-            P_total[i_start: i_end] = P_total_gpu[:chunk_size].get()
+            P_total_gpu[:chunk_size].get(ary=P_total[i_start: i_end])
 
         return P_total
 
     def _cuda(self, log_du):
-        # Compile a self-contained asset.template.cu file and run it
+        # Compile a self-contained joint_pmat_old.cu file and run it
         # in a terminal. Having this function is useful to debug ASSET CUDA
         # application because it's self-contained and the logic is documented.
         # Don't use this backend when the 'log_du' arrays are huge because
@@ -818,7 +885,7 @@ class _JSFUniformOrderStat3D(object):
         self._check_input(log_du)
 
         asset_cu = self._compile_template(
-            template_name="asset.template.cu",
+            template_name="joint_pmat_old.cu",
             L=f"{log_du.shape[0]}LLU",
             N_THREADS=self.cuda_threads,
             ITERATIONS_TODO=f"{self.num_iterations}LLU",
@@ -874,19 +941,6 @@ class _JSFUniformOrderStat3D(object):
             raise ValueError(f"log_du.shape[1] ({log_du.shape[1]}) must be "
                              f"equal to D+1 ({self.d + 1})")
 
-    def _choose_backend(self):
-        # If CUDA is detected, always use CUDA.
-        # If OpenCL is detected, don't use it by default to avoid the system
-        # becoming unresponsive until the program terminates.
-        use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
-        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
-        cuda_detected = get_cuda_capability_major() != 0
-        if use_cuda and cuda_detected:
-            return self.pycuda
-        if use_opencl:
-            return self.pyopencl
-        return self.cpu
-
     def compute(self, u):
         if u.shape[1] != self.d:
             raise ValueError("Invalid input data shape axis 1: expected {}, "
@@ -930,204 +984,261 @@ class _JSFUniformOrderStat3D(object):
         return P_total
 
 
-def _pmat_neighbors_pyopencl(mat, filt, n_largest, symmetric):
-    import pyopencl as cl
-    import pyopencl.array as cl_array
-    from jinja2 import Template
-
-    context = cl.create_some_context(interactive=False)
-    queue = cl.CommandQueue(context)
-
-    l = filt.shape[0]  # filt is a square matrix
-    filt_rows, filt_cols = filt.nonzero()
-    filt_rows = "{%s}" % ", ".join(f"{row}U" for row in filt_rows)
-    filt_cols = "{%s}" % ", ".join(f"{col}U" for col in filt_cols)
-
-    if symmetric:
-        n_rows_select = mat.shape[0] - 2 * l + 1
-        it_todo = n_rows_select * (n_rows_select + 1) // 2
-    else:
-        it_todo = (mat.shape[0] - l + 1) * (mat.shape[1] - l + 1)
-
-    pmat_neighbors_cl_path = Path(__file__).parent / "pmat_neighbors.cl"
-    pmat_neighbors_cl_template = Template(pmat_neighbors_cl_path.read_text())
-    pmat_neighbors_cl = pmat_neighbors_cl_template.render(
-        L=l,
-        N_LARGEST=n_largest,
-        PMAT_ROWS=mat.shape[0],
-        PMAT_COLS=mat.shape[1],
-        NONZERO_SIZE=filt.sum(),
-        SYMMETRIC=int(symmetric),
-        filt_rows=filt_rows,
-        filt_cols=filt_cols
-    )
-
-    lmat_gpu = cl_array.zeros(queue,
-                              shape=(mat.shape[0], mat.shape[1], n_largest),
-                              dtype=np.float32)
-
-    mat_gpu = cl_array.to_device(queue, mat, async_=True)
-
-    program = cl.Program(context, pmat_neighbors_cl).build()
-
-    # synchronize
-    cl.enqueue_barrier(queue)
-
-    kernel = program.pmat_neighbors
-    # When the grid size is set to the total number of work items to run and
-    # the local size is set to None, PyOpenCL chooses the number of threads
-    # automatically such that the total number of work items exactly matches
-    # the desired number of iterations (it_todo).
-    kernel(queue, (it_todo,), None, lmat_gpu.data, mat_gpu.data)
-
-    lmat = lmat_gpu.get()
-
-    return lmat
-
-
-def _pmat_neighbors_pycuda(mat, filt, n_largest, symmetric, n_threads=32):
-    from jinja2 import Template
-    try:
-        # PyCuda should not be in requirements-extra because CPU limited
-        # users won't be able to install Elephant.
-        import pycuda.autoinit
-        import pycuda.gpuarray as gpuarray
-        import pycuda.driver as drv
-        from pycuda.compiler import SourceModule
-    except ImportError as err:
-        raise ImportError("Install pycuda with 'pip install pycuda'") from err
-
-    device = pycuda.autoinit.device
-    n_threads = min(n_threads, device.MAX_THREADS_PER_BLOCK)
-    if n_threads > device.WARP_SIZE:
-        n_threads -= n_threads % device.WARP_SIZE
-
-    l = filt.shape[0]  # filt is a square matrix
-    filt_rows, filt_cols = filt.nonzero()
-
-    if symmetric:
-        n_rows_select = mat.shape[0] - 2 * l + 1
-        it_todo = n_rows_select * (n_rows_select + 1) // 2
-    else:
-        it_todo = (mat.shape[0] - l + 1) * (mat.shape[1] - l + 1)
-
-    pmat_neighbors_cu_path = Path(__file__).parent / "pmat_neighbors.cu"
-    pmat_neighbors_cu_template = Template(pmat_neighbors_cu_path.read_text())
-    pmat_neighbors_cu = pmat_neighbors_cu_template.render(
-        L=l,
-        N_LARGEST=n_largest,
-        PMAT_ROWS=mat.shape[0],
-        PMAT_COLS=mat.shape[1],
-        NONZERO_SIZE=filt.sum(),
-        SYMMETRIC=int(symmetric),
-        IT_TODO=it_todo
-    )
-
-    module = SourceModule(pmat_neighbors_cu)
-
-    mat_gpu = gpuarray.to_gpu_async(mat)
-    lmat_gpu = gpuarray.zeros((mat.shape[0], mat.shape[1], n_largest),
-                              dtype=np.float32)
-
-    filt_rows_gpu, _ = module.get_global("filt_rows")
-    drv.memcpy_htod(filt_rows_gpu, filt_rows.astype(np.uint32))
-
-    filt_cols_gpu, _ = module.get_global("filt_cols")
-    drv.memcpy_htod(filt_cols_gpu, filt_cols.astype(np.uint32))
-
-    drv.Context.synchronize()
-
-    grid_size = math.ceil(it_todo / n_threads)
-    kernel = module.get_function("pmat_neighbors")
-    kernel(lmat_gpu.gpudata, mat_gpu.gpudata, grid=(grid_size, 1),
-           block=(n_threads, 1, 1))
-
-    lmat = lmat_gpu.get()
-
-    return lmat
-
-
-def _pmat_neighbors(mat, filter_shape, n_largest):
+class _PMatNeighbors(_GPUBackend):
     """
-    Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
-    `mat`.
-
-    For each entry `mat[i, j]`, collects the `n_largest` elements with largest
-    values around `mat[i, j]`, say `z_i, i=1,2,...,n_largest`, and assigns them
-    to `L[i, j, :]`.
-    The zone around `mat[i, j]` where largest neighbors are collected from is
-    a rectangular area (kernel) of shape `(l, w) = filter_shape` centered
-    around `mat[i, j]` and aligned along the diagonal.
-
-    If `mat` is symmetric, only the triangle below the diagonal is considered.
-
     Parameters
     ----------
-    mat : np.ndarray
-        A square matrix of real-valued elements.
     filter_shape : tuple of int
         A pair of integers representing the kernel shape `(l, w)`.
     n_largest : int
         The number of largest neighbors to collect for each entry in `mat`.
-
-    Returns
-    -------
-    lmat : np.ndarray
-        A matrix of shape `(l, w, n_largest)` containing along the last
-        dimension `lmat[i, j, :]` the largest neighbors of `mat[i, j]`.
-
-    Raises
-    ------
-    ValueError
-        If `filter_shape[1]` is not lower than `filter_shape[0]`.
-
-    Warns
-    -----
-    UserWarning
-        If both entries in `filter_shape` are not odd values (i.e., the kernel
-        is not centered on the data point used in the calculation).
-
     """
-    l, w = filter_shape
 
-    # if the matrix is symmetric the diagonal was set to 0.5
-    # when computing the probability matrix
-    symmetric = np.all(np.diagonal(mat) == 0.5)
+    def __init__(self, filter_shape, n_largest, max_chunk_size=None):
+        super().__init__(max_chunk_size=max_chunk_size)
+        self.n_largest = n_largest
+        self.max_chunk_size = max_chunk_size
 
-    # Check consistent arguments
-    if (symmetric and mat.shape[0] < 2 * l - 1) \
-            or (not symmetric and min(mat.shape) < l):
-        raise ValueError(f"'filter_shape' {filter_shape} is too large "
-                         f"for the input matrix of shape {mat.shape}")
-    if w >= l:
-        raise ValueError('filter_shape width must be lower than length')
-    if not ((w % 2) and (l % 2)):
-        warnings.warn('The kernel is not centered on the datapoint in whose'
-                      'calculation it is used. Consider using odd values'
-                      'for both entries of filter_shape.')
+        filter_size, filter_width = filter_shape
+        if filter_width >= filter_size:
+            raise ValueError('filter_shape width must be lower than length')
+        if not ((filter_width % 2) and (filter_size % 2)):
+            warnings.warn(
+                'The kernel is not centered on the datapoint in whose'
+                'calculation it is used. Consider using odd values'
+                'for both entries of filter_shape.')
 
-    # Construct the kernel
-    filt = np.ones((l, l), dtype=bool)
-    filt = np.triu(filt, -w)
-    filt = np.tril(filt, w)
+        # Construct the kernel
+        filt = np.ones((filter_size, filter_size), dtype=bool)
+        filt = np.triu(filt, -filter_width)
+        filt = np.tril(filt, filter_width)
+        if n_largest > len(filt.nonzero()[0]):
+            raise ValueError(f"Too small filter shape {filter_shape} to "
+                             f"select {n_largest} largest elements.")
 
-    # Convert mat values to floats, and replaces np.infs with specified input
-    # values
-    mat = np.asarray(mat, dtype=np.float32)
+        self.filter_kernel = filt
 
-    use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
-    use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
-    cuda_detected = get_cuda_capability_major() != 0
-    if use_cuda and cuda_detected:
-        lmat = _pmat_neighbors_pycuda(mat=mat, filt=filt, n_largest=n_largest,
-                                      symmetric=symmetric)
-    elif use_opencl:
-        lmat = _pmat_neighbors_pyopencl(mat=mat, filt=filt,
-                                        n_largest=n_largest,
-                                        symmetric=symmetric)
-    else:
+    def _check_input(self, mat):
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        # Check consistent arguments
+        filter_size = self.filter_kernel.shape[0]
+        if (symmetric and mat.shape[0] < 2 * filter_size - 1) \
+                or (not symmetric and min(mat.shape) < filter_size):
+            raise ValueError(f"'filter_shape' {self.filter_kernel.shape} is "
+                             f"too large for the input matrix of shape "
+                             f"{mat.shape}")
+        if mat.dtype != np.float32:
+            raise ValueError("The input matrix dtype must be float32.")
+
+    def pyopencl(self, mat):
+        import pyopencl as cl
+        import pyopencl.array as cl_array
+        from jinja2 import Template
+
+        context = cl.create_some_context(interactive=False)
+        device = context.devices[0]
+        queue = cl.CommandQueue(context)
+
+        # if the matrix is symmetric the diagonal was set to 0.5
+        # when computing the probability matrix
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        self._check_input(mat)
+
+        filt_size = self.filter_kernel.shape[0]  # filt is a square matrix
+        filt_rows, filt_cols = self.filter_kernel.nonzero()
+        filt_rows = "{%s}" % ", ".join(f"{row}U" for row in filt_rows)
+        filt_cols = "{%s}" % ", ".join(f"{col}U" for col in filt_cols)
+
+        lmat_padded = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
+                               dtype=np.float32)
+        if symmetric:
+            mat = mat[filt_size:]
+            lmat = lmat_padded[filt_size + filt_size // 2: -filt_size // 2 + 1]
+        else:
+            lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
+
+        # GPU_MAX_HEAP_SIZE OpenCL flag is set to 2 Gb (1 << 31) by default
+        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size,
+                        1 << 31)
+        # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
+        chunk_size = (mem_avail // 4 - filt_size * lmat.shape[1]) // (
+                lmat.shape[1] * (self.n_largest + 1))
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=lmat.shape[0],
+                                                 min_chunk_size=filt_size)
+
+        pmat_cl_path = Path(__file__).parent / "pmat_neighbors.cl"
+        pmat_cl_template = Template(pmat_cl_path.read_text())
+
+        lmat_gpu = cl_array.Array(
+            queue, shape=(chunk_size, lmat.shape[1], self.n_largest),
+            dtype=np.float32
+        )
+
+        for i_start, i_end in split_idx:
+            mat_gpu = cl_array.to_device(queue,
+                                         mat[i_start: i_end + filt_size],
+                                         async_=True)
+            lmat_gpu.fill(0, queue=queue)
+            chunk_size = i_end - i_start
+            it_todo = chunk_size * (lmat.shape[1] - filt_size + 1)
+
+            pmat_neighbors_cl = pmat_cl_template.render(
+                FILT_SIZE=filt_size,
+                N_LARGEST=self.n_largest,
+                PMAT_COLS=f"{lmat.shape[1]}LU",
+                Y_OFFSET=f"{i_start}LU",
+                NONZERO_SIZE=self.filter_kernel.sum(),
+                SYMMETRIC=int(symmetric),
+                filt_rows=filt_rows,
+                filt_cols=filt_cols
+            )
+
+            program = cl.Program(context, pmat_neighbors_cl).build()
+
+            # synchronize
+            cl.enqueue_barrier(queue)
+
+            kernel = program.pmat_neighbors
+            # When the grid size is set to the total number of work items to
+            # execute and the local size is set to None, PyOpenCL chooses the
+            # number of threads automatically such that the total number of
+            # work items exactly matches the desired number of iterations.
+            kernel(queue, (it_todo,), None, lmat_gpu.data, mat_gpu.data)
+
+            lmat_gpu[:chunk_size].get(ary=lmat[i_start: i_end])
+
+        return lmat_padded
+
+    def pycuda(self, mat):
+        from jinja2 import Template
+        try:
+            # PyCuda should not be in requirements-extra because CPU limited
+            # users won't be able to install Elephant.
+            import pycuda.autoinit
+            import pycuda.gpuarray as gpuarray
+            import pycuda.driver as drv
+            from pycuda.compiler import SourceModule
+        except ImportError as err:
+            raise ImportError(
+                "Install pycuda with 'pip install pycuda'") from err
+
+        # if the matrix is symmetric the diagonal was set to 0.5
+        # when computing the probability matrix
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        self._check_input(mat)
+
+        device = pycuda.autoinit.device
+        n_threads = device.MAX_THREADS_PER_BLOCK
+
+        filt_size = self.filter_kernel.shape[0]
+        filt_rows, filt_cols = self.filter_kernel.nonzero()
+
+        lmat_padded = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
+                               dtype=np.float32)
+        if symmetric:
+            mat = mat[filt_size:]
+            lmat = lmat_padded[filt_size + filt_size // 2: -filt_size // 2 + 1]
+        else:
+            lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
+
+        free, total = drv.mem_get_info()
+        # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
+        chunk_size = (free // 4 - filt_size * lmat.shape[1]) // (
+                lmat.shape[1] * (self.n_largest + 1))
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=lmat.shape[0],
+                                                 min_chunk_size=filt_size)
+
+        pmat_cu_path = Path(__file__).parent / "pmat_neighbors.cu"
+        pmat_cu_template = Template(pmat_cu_path.read_text())
+
+        lmat_gpu = gpuarray.GPUArray(
+            (chunk_size, lmat.shape[1], self.n_largest), dtype=np.float32)
+
+        mat_gpu = drv.mem_alloc(4 * (chunk_size + filt_size) * mat.shape[1])
+
+        for i_start, i_end in split_idx:
+            drv.memcpy_htod_async(dest=mat_gpu,
+                                  src=mat[i_start: i_end + filt_size])
+            lmat_gpu.fill(0)
+            chunk_size = i_end - i_start
+            it_todo = chunk_size * (lmat.shape[1] - filt_size + 1)
+
+            pmat_neighbors_cu = pmat_cu_template.render(
+                FILT_SIZE=filt_size,
+                N_LARGEST=self.n_largest,
+                PMAT_COLS=f"{lmat.shape[1]}LLU",
+                Y_OFFSET=f"{i_start}LLU",
+                NONZERO_SIZE=self.filter_kernel.sum(),
+                SYMMETRIC=int(symmetric),
+                IT_TODO=it_todo,
+            )
+
+            module = SourceModule(pmat_neighbors_cu)
+
+            filt_rows_gpu, _ = module.get_global("filt_rows")
+            drv.memcpy_htod(filt_rows_gpu, filt_rows.astype(np.uint32))
+
+            filt_cols_gpu, _ = module.get_global("filt_cols")
+            drv.memcpy_htod(filt_cols_gpu, filt_cols.astype(np.uint32))
+
+            drv.Context.synchronize()
+
+            grid_size = math.ceil(it_todo / n_threads)
+            if grid_size > device.MAX_GRID_DIM_X:
+                raise ValueError("Cannot launch a CUDA kernel with "
+                                 f"{grid_size} num. of blocks. Adjust the "
+                                 "'max_chunk_size' parameter.")
+
+            kernel = module.get_function("pmat_neighbors")
+            kernel(lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1),
+                   block=(n_threads, 1, 1))
+
+            lmat_gpu[:chunk_size].get(ary=lmat[i_start: i_end])
+
+        return lmat_padded
+
+    def compute(self, mat):
+        """
+        Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
+        `mat`.
+
+        For each entry `mat[i, j]`, collects the `n_largest` elements with
+        largest values around `mat[i, j]`, say `z_i, i=1,2,...,n_largest`,
+        and assigns them to `L[i, j, :]`.
+        The zone around `mat[i, j]` where largest neighbors are collected from
+        is a rectangular area (kernel) of shape `(l, w) = filter_shape`
+        centered around `mat[i, j]` and aligned along the diagonal.
+
+        If `mat` is symmetric, only the triangle below the diagonal is
+        considered.
+
+        Parameters
+        ----------
+        mat : np.ndarray
+            A square matrix of real-valued elements.
+
+        Returns
+        -------
+        lmat : np.ndarray
+            A matrix of shape `(l, w, n_largest)` containing along the last
+            dimension `lmat[i, j, :]` the largest neighbors of `mat[i, j]`.
+        """
+        backend = self._choose_backend()
+        lmat = backend(mat)
+        return lmat
+
+    def cpu(self, mat):
+        # if the matrix is symmetric the diagonal was set to 0.5
+        # when computing the probability matrix
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        self._check_input(mat)
+
+        filter_size = self.filter_kernel.shape[0]
+
         # Initialize the matrix of d-largest values as a matrix of zeroes
-        lmat = np.zeros((mat.shape[0], mat.shape[1], n_largest),
+        lmat = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
                         dtype=np.float32)
 
         N_bin_y = mat.shape[0]
@@ -1135,23 +1246,24 @@ def _pmat_neighbors(mat, filter_shape, n_largest):
         # if the matrix is symmetric do not use kernel positions intersected
         # by the diagonal
         if symmetric:
-            bin_range_y = range(l, N_bin_y - l + 1)
+            bin_range_y = range(filter_size, N_bin_y - filter_size + 1)
         else:
-            bin_range_y = range(N_bin_y - l + 1)
-            bin_range_x = range(N_bin_x - l + 1)
+            bin_range_y = range(N_bin_y - filter_size + 1)
+            bin_range_x = range(N_bin_x - filter_size + 1)
 
         # compute matrix of largest values
         for y in bin_range_y:
             if symmetric:
                 # x range depends on y position
-                bin_range_x = range(y - l + 1)
+                bin_range_x = range(y - filter_size + 1)
             for x in bin_range_x:
-                patch = mat[y: y + l, x: x + l]
-                mskd = patch[filt]
-                largest_vals = np.sort(mskd)[-n_largest:]
-                lmat[y + (l // 2), x + (l // 2), :] = largest_vals
+                patch = mat[y: y + filter_size, x: x + filter_size]
+                mskd = patch[self.filter_kernel]
+                largest_vals = np.sort(mskd)[-self.n_largest:]
+                lmat[y + (filter_size // 2), x + (filter_size // 2), :] = \
+                    largest_vals
 
-    return lmat
+        return lmat
 
 
 def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
@@ -2135,8 +2247,10 @@ class ASSET(object):
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
-        pmat_neighb = _pmat_neighbors(
-            pmat, filter_shape=filter_shape, n_largest=n_largest)
+        pmat = np.asarray(pmat, dtype=np.float32)
+        pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
+                                         n_largest=n_largest)
+        pmat_neighb = pmat_neighb_obj.compute(pmat)
 
         pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value,
                                  out=pmat_neighb)
@@ -2275,9 +2389,9 @@ class ASSET(object):
             two elements moves from the 45 to the 135 degree direction.
             `stretch` must be greater than 1.
         working_memory : int or None, optional
-            The sought maximum memory for temporary distance matrix chunks.
-            When None (default), no chunking is performed. This parameter
-            is passed directly to
+            The sought maximum memory in MiB for temporary distance matrix
+            chunks. When None (default), no chunking is performed. This
+            parameter is passed directly to
             ``sklearn.metrics.pairwise_distances_chunked`` function and it
             has no influence on the outcome matrix. Instead, it control the
             memory VS speed trade-off.
