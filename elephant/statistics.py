@@ -918,7 +918,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                           bin_size=bin_size)
 
     if binary:
-        bs = bs.binarize()
+        bs = bs.binarize(copy=False)
     bin_hist = bs.get_num_of_spikes(axis=0)
     # Flatten array
     bin_hist = np.ravel(bin_hist)
@@ -1309,7 +1309,7 @@ class Complexity(object):
                                     tolerance=self.tolerance)
 
         if self.binary:
-            bst = bst.binarize()
+            bst = bst.binarize(copy=False)
         bincount = bst.get_num_of_spikes(axis=0)
 
         nonzero_indices = np.nonzero(bincount)[0]
