@@ -374,22 +374,21 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
 class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def setUp(self):
+        self.tolerance = 1e-15
+
+        # # create simple artificial signals with the following parameters
+        # to assert certain WPLI values (0, 1 and -1) at freq = 16 Hz
         ntrials = 100
         self.srate = 250        # Hz
         tlength = 2500          # ms
         self.freq = 16          # Hz
         amp = 1                 # mV
-        phase = 0
-        self.tolerance = 1e-15
-
         # time-vector
         t = np.arange(0, tlength, 1. / (self.srate / 1000))
 
-        # simple artificial signals to assert certain WPLI values (0 and 1)
-        # at freq = 16 Hz
-        # constant phase shift of pi/3 across trials
+        # constant phase shift of 0 across trials
         self.signal_x = np.full((ntrials, len(t)),
-            amp * np.sin(2 * np.pi * (self.freq / 1000) * t + phase))
+            amp * np.sin(2 * np.pi * (self.freq / 1000) * t + 0))
         # constant phase shift of pi/3 across trials
         self.signal_y = np.full((ntrials, len(t)),
             amp * np.sin(2 * np.pi * (self.freq / 1000) * t + np.pi/3))
@@ -401,12 +400,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.signal_z[int(ntrials/2):] = \
             amp * np.sin(2 * np.pi * (self.freq / 1000) * t + 1.5*np.pi)
 
-        # simple samples of different shapes to assert ErrorRaising
+        # # simple samples of different shapes to assert ErrorRaising
         self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
         self.simple_y = np.array([0, -np.pi, np.pi])
         self.simple_z = np.array([0, np.pi, np.pi / 2, -np.pi])
 
-        # check for ground truth consistency with REAL/ARTIFICIAL LFP-dataset
+        # # check for ground truth consistency with REAL/ARTIFICIAL LFP-dataset
         # REAL LFP-DATASET
         # Load first & second data file
         filename1_r = os.path.sep.join(['lfp_dataset1.mat'])
