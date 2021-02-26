@@ -309,7 +309,8 @@ def phase_difference(alpha, beta):
     return phase_diff
 
 
-def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency, absolute_value=True):
+def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
+                             absolute_value=True):
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI)
 

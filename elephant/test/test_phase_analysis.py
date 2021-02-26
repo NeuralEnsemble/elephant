@@ -387,12 +387,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
         # simple artificial signals to assert certain WPLI values (0 and 1)
         # at freq = 16 Hz
+        # constant phase shift of pi/3 across trials
         self.signal_x = np.full((ntrials, len(t)),
             amp * np.sin(2 * np.pi * (self.freq / 1000) * t + phase))
-        # constant phase lag of pi/3 across trials
+        # constant phase shift of pi/3 across trials
         self.signal_y = np.full((ntrials, len(t)),
             amp * np.sin(2 * np.pi * (self.freq / 1000) * t + np.pi/3))
-        # in one half of the trials from signal_z the phase lag is pi/2 and
+        # in one half of the trials from signal_z the phase shift is pi/2 and
         # in the other half its 1.5*pi
         self.signal_z = np.empty((ntrials, len(t)))
         self.signal_z[0:int(ntrials/2)] = \
@@ -484,6 +485,16 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
             self.signal_x, self.signal_y, self.srate)
         np.testing.assert_allclose(wpli[np.where(freq == self.freq)], 1,
+                                   atol=self.tolerance, rtol=self.tolerance)
+
+    def test_WPLI_is_minus_one(self):  # for: f = 16Hz
+        """
+        Test if WPLI is minus one at frequency f=16Hz, which is the frequency
+        of this artificial test-data sinusoid.
+        """
+        freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+            self.signal_x, self.signal_y, self.srate, absolute_value=False)
+        np.testing.assert_allclose(wpli[np.where(freq == self.freq)], -1,
                                    atol=self.tolerance, rtol=self.tolerance)
 
     def test_WPLI_raise_error_if_trial_number_is_different(self):
