@@ -245,8 +245,21 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         freqs = freqs * pq.Hz
 
     if elephant.buffalo.USE_ANALYSIS_OBJECTS:
+        # We are storing the parameters to this function, but also the
+        # information and the parameters regarding the SciPy function that is
+        # wrapped by Elephant
         params.pop('x')
-        psd_object = PSDObject(freqs, psd, method='scipy.signal.welch', params=params)
+        object_params = {'n_segments': n_segments, 'len_segment': len_segment,
+                         'frequency_resolution': frequency_resolution,
+                          'overlap': overlap, 'fs': fs, 'window': window,
+                         'nfft': nfft, 'detrend': detrend,
+                         'return_onesided': return_onesided,
+                         'scaling': scaling, 'axis': axis,
+                         'wrapped_method': 'scipy.signal.welch',
+                         'wrapped_params': params}
+        psd_object = PSDObject(freqs, psd,
+                               method='elephant.spectral.welch_psd',
+                               params=object_params)
         return psd_object
     return freqs, psd
 
