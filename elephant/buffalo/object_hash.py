@@ -8,7 +8,7 @@ import inspect
 import joblib
 import hashlib
 
-from dill._dill import save_function, save_property
+from dill._dill import save_function
 
 from collections import namedtuple
 import numpy as np
@@ -16,10 +16,10 @@ from pathlib import Path
 
 from copy import copy
 
-# Need to use `dill` pickling function to support lambdas
+# Need to use `dill` pickling function to support lambdas. This is needed
+# for unit tests, since Nose test classes have lambda functions
 # The dispatch table of the `joblib.Hasher` object is updated
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
-# joblib.hashing.Hasher.dispatch[type(property)] = save_property
 
 
 ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
