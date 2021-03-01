@@ -559,7 +559,7 @@ def save_graph(filename, show=False):
     Provenance.save_graph(filename, show=show)
 
 
-def dump_provenance(filename=None, format='turtle'):
+def save_provenance(filename=None, file_format='turtle'):
     """
     Serialized provenance information according to the W3C Provenance Data
     Model (PROV).
@@ -571,7 +571,7 @@ def dump_provenance(filename=None, format='turtle'):
         If None, the function will return a string containing the provenance
         information in the specified format.
         Default: None
-    format : {'json', 'rdf', 'prov'}, optional
+    file_format : {'json', 'rdf', 'prov', 'xml'}, optional
         Serialization format. Formats currently supported are:
         * 'json' : PROV-JSON
         * 'rdf' : PROV-O
@@ -587,12 +587,12 @@ def dump_provenance(filename=None, format='turtle'):
 
     Notes
     -----
-    For details regarding the serialization formats, please check the W3C
-    specification for each format on https://www.w3.org/TR/prov-primer/.
+    For details regarding the serialization formats, please check the
+    specification on the W3C website (https://www.w3.org/TR/prov-primer/).
 
     """
     prov_document = Provenance.get_prov_info()
-    prov_data = prov_document.serialize(filename, format=format)
+    prov_data = prov_document.serialize(filename, format=file_format)
     return prov_data
 
 
