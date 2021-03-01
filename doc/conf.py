@@ -113,7 +113,7 @@ pygments_style = 'sphinx'
 #modindex_common_prefix = []
 
 # Only execute Jupyter notebooks that have no evaluated cells
-nbsphinx_execute = 'never'
+nbsphinx_execute = 'auto'
 # Kernel to use for execution
 nbsphinx_kernel_name = 'python3'
 # Cancel compile on errors in notebooks
