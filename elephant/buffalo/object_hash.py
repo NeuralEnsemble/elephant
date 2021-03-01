@@ -26,57 +26,6 @@ ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
 FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path', 'details'))
 
 
-class _HashMemoization(object):
-    """
-    Class for memoization of hashes during provenance tracking.
-    It should not be used outside the `Provenance` decorator.
-    """
-
-    def __init__(self):
-        self.items = dict()
-
-    def memoize(self, obj, value):
-        """
-        Add an object hash to the memoization dictionary.
-
-        Parameters
-        ----------
-        obj : object
-            Python object whose hash is being memoized.
-        value : int
-            Python object hash of value and type.
-        """
-        self.items[id(obj)] = value
-
-    def check(self, obj):
-        """
-        Check if a given object has a hash memoized. If a hash is present,
-        it will be retrieved.
-
-        Parameters
-        ----------
-        obj : object
-            Python object whose hash is being checked.
-
-        Returns
-        -------
-        str or None
-            If no hash was memoized for `obj`, returns None.
-            Otherwise, returns the hash value.
-
-        """
-        return self.items.get(id(obj))
-
-    def clear(self):
-        """
-        Clears the memoization dictionary.
-        """
-        self.items.clear()
-
-
-hash_memoizer = _HashMemoization()
-
-
 class BuffaloFileHash(object):
 
     HASH_TYPES = {'md5': hashlib.md5,
@@ -138,6 +87,20 @@ class BuffaloObjectHash(object):
         A Python object that will be hashed with respect to type and content.
     """
 
+    _hash_memoizer = dict()
+
+    @classmethod
+    def clear_memoization(cls):
+        cls._hash_memoizer.clear()
+
+    @classmethod
+    def memoize(cls, id, hash_value):
+        cls._hash_memoizer[id] = hash_value
+
+    @classmethod
+    def get_memoized(cls, id):
+        return cls._hash_memoizer.get(id)
+
     @staticmethod
     def _get_object_package(obj):
         # Returns the string with the name of the package where the object
@@ -159,7 +122,7 @@ class BuffaloObjectHash(object):
         # If we already computed the hash for the object during this function
         # call, retrieve it from the memoized values
         print(self.type, self.id)
-        memoized = hash_memoizer.check(self.value)
+        memoized = self.get_memoized(self.id)
         if memoized is not None:
             return memoized
 
@@ -191,7 +154,7 @@ class BuffaloObjectHash(object):
         object_hash = hash((self.type, value_hash))
 
         # Memoize the hash
-        hash_memoizer.memoize(self.value, object_hash)
+        self.memoize(self.id, object_hash)
 
         return object_hash
 

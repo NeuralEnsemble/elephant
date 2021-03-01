@@ -12,8 +12,7 @@ import ast
 from collections import namedtuple
 import datetime
 
-from elephant.buffalo.object_hash import (BuffaloObjectHash, BuffaloFileHash,
-                                          hash_memoizer)
+from elephant.buffalo.object_hash import BuffaloObjectHash, BuffaloFileHash
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import _CallAST
 from elephant.buffalo.code_lines import _BuffaloCodeAnalyzer
@@ -370,7 +369,7 @@ class Provenance(object):
             if Provenance.active:
 
                 # Clear previous hash memoizations
-                hash_memoizer.clear()
+                BuffaloObjectHash.clear_memoization()
 
                 # In the first run, analyze the function code to check if there
                 # are returns. If no return, we won't track the output as this
