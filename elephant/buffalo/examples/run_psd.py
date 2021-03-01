@@ -18,7 +18,7 @@ from numpy import mean
 
 
 mean = provenance.Provenance(inputs=['a'])(mean)
-#get_analog_signal = provenance.Provenance(inputs=[])(get_analog_signal)
+get_analog_signal = provenance.Provenance(inputs=[])(get_analog_signal)
 
 
 @provenance.Provenance(inputs=['axes', 'freqs', 'psd'])
