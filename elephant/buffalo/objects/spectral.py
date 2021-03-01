@@ -31,7 +31,7 @@ class PSDObject(AnalysisObject, _PSDObjectTuple):
     """
 
     def __new__(cls, frequencies, psd, method, params=None, *args, **kwargs):
-        if psd.shape[-1] != psd.shape[0]:
+        if psd.shape[-1] != frequencies.shape[0]:
             raise ValueError("PSD array must have the same length for the"
                              "frequency dimension")
         return super().__new__(cls, frequencies, psd)
