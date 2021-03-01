@@ -17,6 +17,7 @@ from elephant.buffalo.object_hash import (BuffaloObjectHash, BuffaloFileHash,
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import _CallAST
 from elephant.buffalo.code_lines import _BuffaloCodeAnalyzer
+from elephant.buffalo.serialization import generate_prov_representation
 
 from os.path import splitext
 
@@ -460,37 +461,13 @@ class Provenance(object):
                                                  cls.source_name)
 
     @classmethod
-    def get_prov_info(cls, **kwargs):
+    def get_prov_info(cls):
         """
         Returns the W3C PROV representation of the captured provenance
         information.
         """
-        raise NotImplementedError
-
-    @classmethod
-    def get_graph(cls):
-        """
-        Get the graph of the provenance history.
-
-        Returns
-        -------
-        BuffaloProvenanceGraph
-            Networkx DiGraph with the provenance history.
-        """
-        return BuffaloProvenanceGraph(cls.history)
-
-    @classmethod
-    def dump_history(cls, filename):
-        """
-        Save the provenance history to disk.
-
-        Parameters
-        ----------
-        filename : str or Path-like
-            Destination file where the history will be stored.
-        """
-        #FIXME: this produces some errors with matplotlib objects
-        dill.dump(Provenance.history, open(filename, "wb"))
+        return generate_prov_representation(cls.source_file,
+                                            cls.history)
 
     @classmethod
     def save_graph(cls, filename, show=False):
@@ -511,12 +488,14 @@ class Provenance(object):
             If `filename` is not an HTML file.
 
         """
+        # TODO: this method will be removed, any visualization will be part
+        # of BuffaloProvDocument
         name, ext = splitext(filename)
         if not ext.lower() in ['.html', '.htm']:
             raise ValueError("Filename must have HTML extension (.html, "
                              ".htm)!")
 
-        source = cls.get_graph()
+        source = BuffaloProvenanceGraph(cls.history)
         source.to_pyvis(filename, show=show)
 
     @classmethod
@@ -581,10 +560,40 @@ def save_graph(filename, show=False):
     Provenance.save_graph(filename, show=show)
 
 
-def get_graph():
-    return Provenance.get_graph()
+def dump_provenance(filename=None, format='turtle'):
+    """
+    Serialized provenance information according to the W3C Provenance Data
+    Model (PROV).
 
+    Parameters
+    ----------
+    filename : str or path-like, optional
+        Destination file to serialize the provenance information.
+        If None, the function will return a string containing the provenance
+        information in the specified format.
+        Default: None
+    format : {'json', 'rdf', 'prov'}, optional
+        Serialization format. Formats currently supported are:
+        * 'json' : PROV-JSON
+        * 'rdf' : PROV-O
+        * 'prov' : PROV-N
+        * 'xml : PROV-XML
+        Default: 'rdf'
 
-def dump_provenance(filename):
-    Provenance.dump_history(filename)
+    Returns
+    -------
+    str or None
+        If `filename` is None, the function returns the PROV information as
+        a string. If a file destination was informed, the return is None.
+
+    Notes
+    -----
+    For details regarding the serialization formats, please check the W3C
+    specification for each format on https://www.w3.org/TR/prov-primer/.
+
+    """
+    prov_document = Provenance.get_prov_info()
+    prov_data = prov_document.serialize(filename, format=format)
+    return prov_data
+
 
