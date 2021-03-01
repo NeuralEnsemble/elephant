@@ -1,6 +1,6 @@
 """
 This example shows the functionality of the data analysis object for power
-spectrum density, and the integration with the provenance tracker.
+spectrum density (PSDObject), and the integration with the provenance tracker.
 """
 
 import numpy as np
@@ -18,18 +18,20 @@ from numpy import mean
 
 
 mean = provenance.Provenance(inputs=['a'])(mean)
+#get_analog_signal = provenance.Provenance(inputs=[])(get_analog_signal)
 
 
 @provenance.Provenance(inputs=['axes', 'freqs', 'psd'])
-def plot_lfp_psd(axes, freqs, psd, label, freq_range=None, **kwargs):
+def plot_lfp_psd(axes, freqs, psd, title, freq_range=None, **kwargs):
     if freq_range is None:
         freq_range = [0, np.max(freqs)]
 
     indexes = np.where((freqs >= freq_range[0]) & (freqs <= freq_range[1]))
 
     axes.semilogy(freqs[indexes], psd[indexes], **kwargs)
-    axes.set_ylabel(label)
+    axes.set_ylabel(f"Power [{psd.dimensionality}]")
     axes.set_xlabel(f"Frequency [{freqs.dimensionality}]")
+    axes.set_title(title)
 
 
 def main():
@@ -45,13 +47,12 @@ def main():
     if elephant.buffalo.USE_ANALYSIS_OBJECTS:
         obj = welch_psd(signal)
         avg_psd = mean(obj.psd, axis=0)
-        plot_lfp_psd(axes, obj.freqs, avg_psd, 'AnalysisObject',
+        plot_lfp_psd(axes, obj.frequencies, avg_psd, 'AnalysisObject',
                      freq_range=[0, 49])
     else:
         freqs, psd = welch_psd(signal)
         avg_psd = mean(psd, axis=0)
-        plot_lfp_psd(axes, freqs, avg_psd, 'Tuple',
-                     freq_range=[0, 49])
+        plot_lfp_psd(axes, freqs, avg_psd, 'Tuple', freq_range=[0, 49])
 
     provenance.save_graph("psd_plot.html", show=True)
 
