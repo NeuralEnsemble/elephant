@@ -1,8 +1,10 @@
+.. _asset:
+
 ===================================================
 Analysis of Sequences of Synchronous EvenTs (ASSET)
 ===================================================
 
-.. automodule:: elephant.asset
+.. automodule:: elephant.asset.asset
 
 
 References

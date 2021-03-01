@@ -182,8 +182,8 @@ class TestSpikeContrast(unittest.TestCase):
         filepath_zip = download(url=izhikevich_url,
                                 checksum="70e848500c1d9c6403b66de8c741d849")
         unzip(filepath_zip)
-        filepath = filepath_zip.replace(".zip", ".json")
-        with open(filepath) as read_file:
+        filepath_json = filepath_zip.with_suffix(".json")
+        with open(filepath_json) as read_file:
             data = json.load(read_file)
 
         # for the sake of compute time, take the first 5 networks
@@ -282,6 +282,59 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         self._test_template(spiketrains, correct_annotations, sampling_rate,
                             spread=0, mode='delete', in_place=True,
                             deletion_threshold=2)
+
+    def test_spiketrains_findable(self):
+
+        # same test as `test_spread_0` with the addition of
+        # a neo structure: we must not overwrite the spiketrain
+        # list of the segment before determining the index
+
+        sampling_rate = 1 / pq.s
+
+        segment = neo.Segment()
+
+        segment.spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                              t_stop=20*pq.s),
+                               neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                              t_stop=20*pq.s)]
+
+        segment.create_relationship()
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        self._test_template(segment.spiketrains, correct_annotations,
+                            sampling_rate, spread=0, mode='delete',
+                            in_place=True, deletion_threshold=2)
+
+    def test_unidirectional_uplinks(self):
+
+        # same test as `test_spiketrains_findable` but the spiketrains
+        # are rescaled first
+        # the rescaled spiketrains have a unidirectional uplink to segment
+        # check that this does not cause an error
+        # check that a UserWarning is issued in this case
+
+        sampling_rate = 1 / pq.s
+
+        segment = neo.Segment()
+
+        segment.spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                              t_stop=20*pq.s),
+                               neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                              t_stop=20*pq.s)]
+
+        segment.create_relationship()
+
+        spiketrains = [st.rescale(pq.s) for st in segment.spiketrains]
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        with self.assertWarns(UserWarning):
+            self._test_template(spiketrains, correct_annotations,
+                                sampling_rate, spread=0, mode='delete',
+                                in_place=True, deletion_threshold=2)
 
     def test_spread_1(self):
 

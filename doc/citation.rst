@@ -18,7 +18,7 @@ A BibTeX entry for LaTeX users is:
         booktitle = {Neuroinformatics 2018},
         title = {{C}ollaborative {HPC}-enabled workflows on the {HBP} {C}ollaboratory using the {E}lephant framework},
         pages = {P19},
-        year = {2018}
+        year = {2018},
         doi = {10.12751/incf.ni2018.0019},
         url = {https://abstracts.g-node.org/conference/NI2018/abstracts#/uuid/023bec4e-0c35-4563-81ce-2c6fac282abd},
     }
