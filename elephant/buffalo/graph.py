@@ -91,6 +91,8 @@ def _convert_channel_names(value):
 
 
 def _convert_name(value):
+    if value is None:
+        return str(None)
     return textwrap.shorten(value, 30)
 
 
