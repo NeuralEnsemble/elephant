@@ -7,6 +7,7 @@ script execution.
 import inspect
 import joblib
 import hashlib
+import uuid
 
 from dill._dill import save_function
 
@@ -163,7 +164,8 @@ class BuffaloObjectHash(object):
 
     def info(self):
         """
-        Returns provenance information for the object.
+        Returns provenance information for the object. If the object is None,
+        then the hash is replaced by a unique id for the object.
 
         Returns
         -------
@@ -178,6 +180,11 @@ class BuffaloObjectHash(object):
             * details : dict
                 Extended information (metadata) on the object.
         """
+        # All Nones will have the same hash. Use UUID instead
+        if self.value is None:
+            unique_id = uuid.uuid4()
+            return ObjectInfo(unique_id, self.type, self.id, {})
+
         # Here we can extract specific metadata to record
         details = {}
 

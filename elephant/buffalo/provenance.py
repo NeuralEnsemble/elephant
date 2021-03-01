@@ -40,7 +40,8 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'kwarg_map',
                                            'call_ast',
                                            'code_statement',
-                                           'time_stamp',
+                                           'time_stamp_start',
+                                           'time_stamp_end',
                                            'return_targets',
                                            'vis'))
 
@@ -100,7 +101,8 @@ class Provenance(object):
         * 'call_ast': `ast.AST` object containing the Abstract Syntax Tree
           of the code that generated the function call.
         * 'code_statement': `str` with the code statement calling the function.
-        * 'time_stamp': `datetime` with the execution time of the statement;
+        * 'time_stamp_start', 'time_stamp_end': `str` with the ISO
+          representation of the start and end times of the function execution;
         * 'return_targets': names of the variables that store the function
           output(s) in the source code;
         * 'vis': tuple of integers, with the X/Y positions for the function
@@ -135,10 +137,6 @@ class Provenance(object):
         # Store the list of arguments that are inputs
         self.inputs = inputs
 
-        # Initialize other variables
-        self.initialized = False
-        self.has_return = True
-
     def _insert_static_information(self, tree, function, time_stamp):
         # Use a NodeVisitor to find the Call node that corresponds to the
         # current AnalysisStep. It will fetch static relationships between
@@ -147,27 +145,9 @@ class Provenance(object):
         ast_visitor = _CallAST(self, function, time_stamp)
         ast_visitor.visit(tree)
 
-    def _analyze_function(self, function):
-        # Check if the function code has a Return node.
-        # If it has, returns True.
-        try:
-            source_code = inspect.getsourcelines(function)[0]
-            source_code = source_code[1:]       # Strip decorator
-            code_string = "".join(source_code)
-            ast_tree = ast.parse(code_string)
-
-            has_return = False
-            for node in ast.walk(ast_tree):
-                if isinstance(node, ast.Return):
-                    has_return = True
-                    break
-        except:
-            has_return = True
-
-        return has_return
-
     def _capture_provenance(self, lineno, function, args, kwargs,
-                            function_output, time_stamp):
+                            function_output, time_stamp_start,
+                            time_stamp_end):
 
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
         # function. We need to check the source code in case the
@@ -291,12 +271,11 @@ class Provenance(object):
         # objects to follow individual returns, if the function
         # is not returning None
         outputs = {}
-        if self.has_return:
-            if len(return_targets) > 1:
-                for index, item in enumerate(function_output):
-                    outputs[index] = BuffaloObjectHash(item).info()
-            else:
-                outputs[0] = BuffaloObjectHash(function_output).info()
+        if len(return_targets) > 1:
+            for index, item in enumerate(function_output):
+                outputs[index] = BuffaloObjectHash(item).info()
+        else:
+            outputs[0] = BuffaloObjectHash(function_output).info()
 
         # If there is a file output as defined in the class
         # initialization, create the hash and add as output,
@@ -310,7 +289,7 @@ class Provenance(object):
         # input/output and other variables/objects in the script
         self._insert_static_information(ast_tree,
                                         function_info.name,
-                                        time_stamp)
+                                        time_stamp_start)
 
         # 8. Use a call counter to organize the nodes in the output
         # graph
@@ -326,8 +305,8 @@ class Provenance(object):
         return AnalysisStep(function_info, inputs, parameters,
                             outputs,
                             input_args_names, input_kwargs_names,
-                            ast_tree, source_line, time_stamp,
-                            return_targets, vis_position)
+                            ast_tree, source_line, time_stamp_start,
+                            time_stamp_end, return_targets, vis_position)
 
     def _get_calling_line_number(self, frame):
         # Get the line number of the current call.
@@ -362,21 +341,15 @@ class Provenance(object):
         def wrapped(*args, **kwargs):
 
             # Call the function and get the execution time stamp
+            time_stamp_start = datetime.datetime.utcnow().isoformat()
             function_output = function(*args, **kwargs)
-            time_stamp = datetime.datetime.utcnow().isoformat()
+            time_stamp_end = datetime.datetime.utcnow().isoformat()
 
             # If capturing provenance...
             if Provenance.active:
 
                 # Clear previous hash memoizations
                 BuffaloObjectHash.clear_memoization()
-
-                # In the first run, analyze the function code to check if there
-                # are returns. If no return, we won't track the output as this
-                # is automatically the None object
-                if not self.initialized:
-                    self.has_return = self._analyze_function(function)
-                    self.initialized = True
 
                 # For functions that are used inside other decorated functions,
                 # or recursively, check if the calling frame is the one being
@@ -395,7 +368,8 @@ class Provenance(object):
                     # Get AnalysisStep tuple with provenance information
                     step = self._capture_provenance(lineno, function, args,
                                                     kwargs, function_output,
-                                                    time_stamp)
+                                                    time_stamp_start,
+                                                    time_stamp_end)
 
                     # Add step to the history.
                     # The history will be the base to generate the graph and
