@@ -115,18 +115,6 @@ class Provenance(object):
     active = False
     history = []
 
-    inputs = None
-    file_inputs = None
-    file_outputs = None
-
-    calling_frame = None
-    source_code = None
-    frame_ast = None
-    source_lineno = None
-    source_file = None
-    source_name = None
-    code_analyzer = None
-
     call_order = list()
     call_count = dict()
 
