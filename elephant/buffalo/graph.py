@@ -8,54 +8,69 @@ import re
 
 class ObjectDescription(object):
 
+    attributes = None
     annotations = None
     array_annotations = None
-    attributes = None
     converters = {}
 
-    @classmethod
-    def _add_line(cls, key, value):
-        converter = cls.converters.get(key)
+    def _add_line(self, key, value):
+        converter = self.converters.get(key)
         value = converter(value) if converter is not None else value
         return f"<br><font size=\"0.5\"><i>{key}</i>={value}</font>"
 
-    @classmethod
-    def build_title(cls, object_details, array_summary=True):
+    def build_title(self, object_details, array_summary=True):
         title = ""
 
         # Get values of the selected attributes
-        if cls.attributes is not None:
+        if self.attributes is not None:
             attributes = list(object_details.keys()) if \
-                cls.attributes == 'all' else cls.attributes
+                self.attributes == 'all' else self.attributes
             for attr in attributes:
                 if attr in object_details:
-                    title += cls._add_line(attr, object_details[attr])
+                    title += self._add_line(attr, object_details[attr])
 
         # Get values of the selected annotations
-        if cls.annotations is not None and 'annotations' in object_details:
+        if self.annotations is not None and 'annotations' in object_details:
             annotations_dict = object_details['annotations']
-            for attr in cls.annotations:
+            for attr in self.annotations:
                 if attr in annotations_dict:
-                    title += cls._add_line(attr, annotations_dict[attr])
+                    title += self._add_line(attr, annotations_dict[attr])
 
-        if (cls.array_annotations is not None and
+        if (self.array_annotations is not None and
                 'array_annotations' in object_details):
             annotations_dict = object_details['array_annotations']
-            for attr in cls.array_annotations:
+            for attr in self.array_annotations:
                 if attr in annotations_dict:
                     value = annotations_dict[attr]
                     if array_summary:
                         value = set(value)
-                    title += cls._add_line(attr, value)
+                    title += self._add_line(attr, value)
 
         return title
 
     def __init__(self, attributes=None, annotations=None,
                  array_annotations=None, converters=None):
-        self.attributes = attributes
-        self.annotations = annotations
-        self.array_annotations = array_annotations
-        self.converters = {} if converters is None else converters
+        # Update static definitions if additional configurations are passed
+        if attributes is not None:
+            if self.attributes is None or self.attributes == 'all':
+                self.attributes = attributes
+            else:
+                self.attributes.extend(attributes)
+
+        if annotations is not None:
+            if self.annotations is None:
+                self.annotations = annotations
+            else:
+                self.annotations.extend(annotations)
+
+        if array_annotations is not None:
+            if self.array_annotations is None:
+                self.array_annotations = array_annotations
+            else:
+                self.array_annotations.extend(array_annotations)
+
+        if converters is not None:
+            self.converters.update(converters)
 
 
 class FunctionParameters(ObjectDescription):
@@ -63,7 +78,7 @@ class FunctionParameters(ObjectDescription):
 
 
 class ArrayDescription(ObjectDescription):
-    attributes = ('shape', 'dtype')
+    attributes = ['shape', 'dtype']
 
 
 def _convert_units(value):
@@ -97,12 +112,12 @@ def _convert_name(value):
 
 
 class NeoDescription(ObjectDescription):
-    attributes = ('shape', 'units', 't_start', 't_stop', 'name')
-    array_annotations = ('channel_names', 'belongs_to_trialtype',
+    attributes = ['shape', 'units', 't_start', 't_stop', 'name']
+    annotations = ['trial_number', 'implantation_site', 'nix_name',
+                   'trial_protocol', 'recording_area']
+    array_annotations = ['channel_names', 'belongs_to_trialtype',
                          'trial_event_labels', 'trial_number',
-                         'implantation_site')
-    annotations = ('trial_number', 'implantation_site', 'nix_name',
-                   'trial_protocol', 'recording_area')
+                         'implantation_site']
     converters = {'units': _convert_units,
                   'channel_names': _convert_channel_names,
                   'name': _convert_name}
@@ -113,25 +128,25 @@ def _convert_params(value):
 
 
 class AnalysisObjectDescription(ObjectDescription):
-    attributes = ('pid', 'create_time', 'name', 'params', 'method')
+    attributes = ['pid', 'create_time', 'name', 'params', 'method']
     converters = {'params': _convert_params}
 
 
-
 class MatplotlibDescription(ObjectDescription):
-    attributes = ('title',)
+    attributes = ['title']
 
 
-DESCRIPTION_MAP = {
-    'neo.core.event.Event': NeoDescription,
-    'neo.core.block.Block': NeoDescription,
-    'neo.core.segment.Segment': NeoDescription,
-    'neo.core.epoch.Epoch': NeoDescription,
-    'neo.core.analogsignal.AnalogSignal': NeoDescription,
-    'neo.core.spiketrain.SpikeTrain': NeoDescription,
-    'quantities.quantity.Quantity': NeoDescription,
-    'numpy.ndarray': ArrayDescription,
-    'elephant.buffalo.objects.spectral.PSDObject': AnalysisObjectDescription
+DEFAULT_DESCRIPTION_MAP = {
+    'neo.core.event.Event': NeoDescription(),
+    'neo.core.block.Block': NeoDescription(),
+    'neo.core.segment.Segment': NeoDescription(),
+    'neo.core.epoch.Epoch': NeoDescription(),
+    'neo.core.analogsignal.AnalogSignal': NeoDescription(),
+    'neo.core.spiketrain.SpikeTrain': NeoDescription(),
+    'quantities.quantity.Quantity': NeoDescription(),
+    'numpy.ndarray': ArrayDescription(),
+    'elephant.buffalo.objects.spectral.PSDObject': AnalysisObjectDescription(),
+    '_function': FunctionParameters()
 }
 
 
@@ -145,10 +160,19 @@ class BuffaloProvenanceGraph(nx.DiGraph):
     history : list of AnalysisStep
         The history of steps tracked in the Python script, that will be
         represented in the graph.
+    description_map : dict, optional
+        Dictionary containing the mapping of each object type (as `str`) to
+        an `ObjectDescription` instance. This is used to format and display
+        the information on the graph as labels.
+        If None, the default description map will be used.
+        Default: None
     """
 
-    def __init__(self, history):
+    def __init__(self, history, description_map=None):
         super(BuffaloProvenanceGraph, self).__init__()
+        if description_map is None:
+            description_map = DEFAULT_DESCRIPTION_MAP
+        self.description_map = description_map
         for step in history:
             self.add_step(step)
 
@@ -157,7 +181,8 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         def _connect_edge(input_obj, output_obj, function_edge):
             if function_edge:
-                title = FunctionParameters.build_title(analysis_step.params)
+                title = self.description_map['_function'].build_title(
+                    analysis_step.params)
                 x, y = self._get_x_y(analysis_step.vis, 0, function_edge)
                 self.add_node(function_edge, label=edge_label,
                               title=edge_title+title, type='function',
@@ -192,16 +217,15 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                 output_obj = None
             _connect_edge(input_obj, output_obj, function_edge)
 
-    @staticmethod
-    def _get_type_and_label(obj):
+    def _get_type_and_label(self, obj):
         from elephant.buffalo.object_hash import ObjectInfo
         if isinstance(obj, ObjectInfo):
             # Provenance of a Python object (ObjectInfo named tuple)
             obj_type = obj.type
             obj_label = obj_type.split(".")[-1]
             title = ""
-            if obj_type in DESCRIPTION_MAP:
-                title = DESCRIPTION_MAP[obj_type].build_title(obj.details)
+            if obj_type in self.description_map:
+                title = self.description_map[obj_type].build_title(obj.details)
             return obj_type + title, obj_label, "data"
         else:
             # Provenance of a file (FileInfo named tuple)
