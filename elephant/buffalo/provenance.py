@@ -326,6 +326,11 @@ class Provenance(object):
                 frame = frame.f_back
                 frame_info = inspect.getframeinfo(frame)
                 function_name = frame_info.function
+        elif function_name == 'wrapper':
+            # For the Elephant deprecations, we need to skip the decorator
+            frame = frame.f_back
+            frame_info = inspect.getframeinfo(frame)
+            function_name = frame_info.function
 
         # If the frame corresponds to the script file and the tracked function,
         # we get the line number
@@ -340,7 +345,7 @@ class Provenance(object):
         @wraps(function)
         def wrapped(*args, **kwargs):
 
-            # Call the function and get the execution time stamp
+            # Call the function and get the execution time stamps
             time_stamp_start = datetime.datetime.utcnow().isoformat()
             function_output = function(*args, **kwargs)
             time_stamp_end = datetime.datetime.utcnow().isoformat()
