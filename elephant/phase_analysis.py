@@ -326,8 +326,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     sampling_frequency: quantity/ scaler
         Sampling frequency of the signals in Hz.
     absolute_value: boolean (default: True)
-        Determines, if the WPLI contains additional directionality information
-        about which signal leads/lags the other signal, when set to 'False'.
+        Takes the absolute value of the numerator in the WPLI-formula.
 
     Returns
     -------
@@ -352,6 +351,12 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     Y: complex-valued vector, representing the Fourier spectra
     of a particular frequency
 
+    Usage/Interpretation of the paramater 'absolute_value':
+    When set to 'False', the WPLI contains additional directionality
+    information about which signal leads/lags the other signal:
+        - wpli > 0 : first signal leads second one
+        - wpli < 0 : first signal lags second one
+
     References
     ----------
     [1] "An improved index of phase-synchronization for electrophysiological
@@ -365,19 +370,9 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
 
     # ARRAY-approach
     # calculate Fourier transforms
-    fft1 = np.fft.fft(signal_i)
-    fft2 = np.fft.fft(signal_j)
-    freqs = np.fft.fftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
-
-    # remove negative frequencies of FFT-vectors
-    if np.shape(fft1)[1] % 2 == 0:
-        fft1 = fft1[:, 0:int(np.shape(fft1)[1] / 2)]
-        fft2 = fft2[:, 0:int(np.shape(fft2)[1] / 2)]
-        freqs = freqs[0:int(len(freqs) / 2)]
-    else:
-        fft1 = fft1[:, 0:int((np.shape(fft1)[1] + 1) / 2)]
-        fft2 = fft2[:, 0:int((np.shape(fft2)[1] + 1) / 2)]
-        freqs = freqs[0:int((len(freqs) + 1) / 2)]
+    fft1 = np.fft.rfft(signal_i)
+    fft2 = np.fft.rfft(signal_j)
+    freqs = np.fft.rfftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
 
     # obtain cross-spectrum
     cs = fft1 * np.conjugate(fft2)
