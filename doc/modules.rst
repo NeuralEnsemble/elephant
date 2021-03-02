@@ -11,7 +11,6 @@ Local field potentials (LFPs) and population signals
 .. toctree::
     :maxdepth: 1
 
-    reference/phase_analysis
     reference/signal_processing
     reference/spectral
     reference/causality
