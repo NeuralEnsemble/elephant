@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Basic processing procedures for analog signals (e.g., performing a z-score of a
+Basic processing procedures for time series (e.g., performing a z-score of a
 signal, or filtering a signal).
 
 .. autosummary::
