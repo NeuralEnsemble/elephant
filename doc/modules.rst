@@ -38,7 +38,16 @@ Spike trains
 
     reference/change_point_detection
     reference/gpfa
+.. toctree::
+    :maxdepth: 1
 
+    reference/spike_train_surrogates
+
+.. toctree::
+    :maxdepth: 2
+
+    reference/spike_train_generation
+    
 
 ********************************
 LFPs and spike trains (combined)
