@@ -46,9 +46,9 @@ Spike trains
     reference/gpfa
 
 
-*******************************
-LFP and spike trains (combined)
-*******************************
+********************************
+LFPs and spike trains (combined)
+********************************
 
 .. toctree::
     :maxdepth: 1
