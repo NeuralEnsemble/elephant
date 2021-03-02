@@ -234,7 +234,7 @@ Now you're ready to share the code publicly.
     affiliation/employer in :file:`doc/authors.rst`
 
 2.  Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
-    Then we'll merge your code in Elephant.
+    Then we will guide you through the process of merging your code into Elephant.
 
 That's all! We'll guide you with the pull request process.
 
