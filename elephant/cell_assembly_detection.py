@@ -95,7 +95,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
     """
     Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
-    (discretized) spike trains given in input. The method looks for candidate
+    (discretized) spike trains given in the input. The method looks for candidate
     significant patterns with lags (number of bins between successive spikes
     in the pattern) going from `-max_lag` to `max_lag` (second parameter of the
     function). Thus, between two successive spikes in the pattern there can
