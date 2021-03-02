@@ -61,7 +61,7 @@ Call of the method.
         3800., 3830., 3930., 4080., 4560., 4600., 4670.]) * ms,
  'signature': [[1, 83], [2, 25]]}
 
-Refer to Viziphant documentation to check the visualization of this example.
+Refer to the Viziphant documentation regarding the visualization of this example.
 
 """
 
