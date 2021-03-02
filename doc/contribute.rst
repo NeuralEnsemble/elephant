@@ -115,7 +115,7 @@ want to add in Elephant. This includes, in particular:
    * improving the documentation;
    * adding a new functionality.
 
-Writing the code
+Writing code
 ----------------
 
 Imagine that you want to add a novel
