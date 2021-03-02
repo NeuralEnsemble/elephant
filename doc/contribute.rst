@@ -34,7 +34,7 @@ Using the issue tracker
 -----------------------
 
 If you find a bug in Elephant, please create a new ticket on the
-`Issue tracker`_.
+`issue tracker`_.
 Choose a name that is as specific as possible to the problem you've found, and
 in the description give as much information as you think is necessary to
 recreate the problem. The best way to do this is to create the shortest possible
