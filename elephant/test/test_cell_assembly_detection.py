@@ -110,7 +110,7 @@ class CadTestCase(unittest.TestCase):
         # check neurons in the pattern
         assert_array_equal(sorted(output_single[0]['neurons']),
                            self.elements1)
-        # check the occurrences time of the patter
+        # check the occurrences time of the pattern
         assert_array_equal(output_single[0]['times'],
                            self.occ1 * self.bin_size)
         # check the lags
