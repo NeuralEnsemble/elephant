@@ -3,9 +3,9 @@ Function Reference by Module
 ============================
 
 
-**********************
-LFP and analog signals
-**********************
+****************************************************
+Local field potentials (LFPs) and population signals
+****************************************************
 
 
 .. toctree::
