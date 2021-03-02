@@ -109,7 +109,7 @@ Adding new functionality
 ************************
 
 After you've set up a development environment, implement a functionality you
-want to add in Elephant. This includes (either of):
+want to add in Elephant. This includes, in particular:
 
    * fixing a bug;
    * improving the documentation;
