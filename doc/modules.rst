@@ -54,7 +54,7 @@ LFP and spike trains (combined)
     :maxdepth: 1
 
     reference/sta
-
+    reference/phase_analysis
 
 *******
 Kernels
