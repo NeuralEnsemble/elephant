@@ -1,6 +1,6 @@
-====================================
-Synchronous spike patterns detectors
-====================================
+=======================================
+Detection of synchronous spike patterns
+=======================================
 
 .. toctree::
     :maxdepth: 1
