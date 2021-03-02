@@ -9,3 +9,4 @@ Synchronous spike patterns detectors
     unitary_event_analysis
     asset
     spade
+    cubic
