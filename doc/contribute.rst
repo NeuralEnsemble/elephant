@@ -284,7 +284,7 @@ documentation:
 
    ``PYTHONPATH`` environmental variable is set in order to find elephant
    package while executing jupyter notebooks that are part of the documentation.
-   You may also need to install LaTex support:
+   You may also need to install LaTeX support:
 
    .. code-block:: sh
 
