@@ -282,7 +282,7 @@ documentation:
         export PYTHONPATH=${PYTHONPATH}.:../..
         make html
 
-   ``PYTHONPATH`` environmental variable is set in order to find elephant
+   ``PYTHONPATH`` environmental variable is set in order to find Elephant
    package while executing jupyter notebooks that are part of the documentation.
    You may also need to install LaTeX support:
 
