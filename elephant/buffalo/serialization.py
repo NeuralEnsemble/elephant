@@ -19,7 +19,7 @@ class BuffaloProvDocument(ProvDocument):
         # Create an Agent to represent the script
         # We are using the SoftwareAgent subclass for the description
         # URI defined as the script name + file hash
-        script_hash = BuffaloFileHash(script_file_name).hash
+        script_hash = BuffaloFileHash(script_file_name).info().hash
         script_name = pathlib.Path(script_file_name).name.replace('.', '_')
         script_uri = f"urn:{script_name}_{script_hash}"
         script_attributes = {'prov:type': 'prov:SoftwareAgent'}
