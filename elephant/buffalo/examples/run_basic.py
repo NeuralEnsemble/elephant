@@ -2,9 +2,8 @@
 Example showing the basic usage of the provenance tracking module in Elephant.
 This example is based on the publicly available Reach2Grasp dataset, that
 must be downloaded from the repository together with the supporting code.
-
-The path to the code where the `reachgraspio.py` interface is located must be
-provided in the `PYTHONPATH` environment variable when running the script.
+Details for setting the environment can be found in README.md in the examples
+folder.
 
 The session file to use is passed as a parameter when running the script:
 
@@ -43,7 +42,7 @@ def load_data(session_filename):
     Returns
     -------
     neo.Block
-        Block container with the session data. The block is lazy loaded.
+        Block container with the session data.
 
     """
     file, ext = os.path.splitext(session_filename)

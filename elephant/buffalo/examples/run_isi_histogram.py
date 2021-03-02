@@ -168,6 +168,7 @@ def main(session_filename):
 
     # Do plotting
     figure, axes = plot_isi_histograms((len(isis), 1), *isis, titles=titles)
+
     plt.show()
 
     figure.savefig("isi.png")
