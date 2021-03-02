@@ -119,7 +119,7 @@ Writing the code
 ----------------
 
 Imagine that you want to add a novel
-statistics calculation of a list of spike trains that returns an analog signal.
+statistical measure of a list of spike trains that returns an analog signal in the existing module ``elephant/statistics.py``.
 Let's call it ``statistics_x``.
 
 Elephant relies on Neo structures that use Quantities extensively, allowing
