@@ -3,7 +3,7 @@
 Functions to generate/extract spike trains from analog signals, or to generate
 random spike trains.
 
-Extract spike times from analog signals
+Extract spike times from time series
 ***************************************
 .. autosummary::
     :toctree: _toctree/spike_train_generation
