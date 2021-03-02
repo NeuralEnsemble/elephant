@@ -7,7 +7,7 @@ firing rate) or not as stationary process (i.e. presence of one or more points
 at which the rate increases or decreases). In case of non-stationarity, the
 output is a list of detected Change Points (CPs).
 
-Essentially, a det of two-sided window of width `h`
+Essentially, a set of two-sided windows of width `h`
 (`_filter(t, h, spiketrain)`) slides over the spike train within the time
 `[h, t_final-h]`. This generates a `_filter_process(time_step, h, spiketrain)`
 that assigns at each time `t` the difference between a spike lying in the right
