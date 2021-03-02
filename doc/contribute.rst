@@ -302,7 +302,7 @@ documentation:
 Citations
 ---------
 
-The citations are in BibTex format, stored in `doc/bib/elephant.bib
+The citations are in BibTeX format, stored in `doc/bib/elephant.bib
 <https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_.
 
 To cite Elephant, refer to :doc:`citation`.
