@@ -58,7 +58,7 @@ your local machine.
 
     $ pip uninstall elephant
 
-   to uninstall ``elephant`` in case you've installed it previously as a pip
+   in the newly created environment to uninstall ``elephant`` in case you've installed it previously as a pip
    package.
 
 2. Fork `Elephant <https://github.com/NeuralEnsemble/elephant>`_ as described
