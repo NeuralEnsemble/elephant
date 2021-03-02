@@ -236,7 +236,7 @@ Now you're ready to share the code publicly.
 2.  Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
     Then we will guide you through the process of merging your code into Elephant.
 
-That's all! We'll guide you with the pull request process.
+That's all! We're happy to assist you throughout the process of contributing.
 
 If you experience any problems during one of the steps below, please contact us
 and we'll help you.
