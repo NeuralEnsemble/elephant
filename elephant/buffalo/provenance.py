@@ -435,8 +435,7 @@ class Provenance(object):
         # so that we can capture provenance information later
         cls.code_analyzer = _BuffaloCodeAnalyzer(cls.source_code,
                                                  cls.frame_ast,
-                                                 cls.source_lineno,
-                                                 cls.source_name)
+                                                 cls.source_lineno)
 
     @classmethod
     def get_prov_info(cls):
