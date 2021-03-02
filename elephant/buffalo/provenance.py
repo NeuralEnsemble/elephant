@@ -24,13 +24,12 @@ from pprint import pprint
 
 
 # Python 2.7 compatibility
-if 'signature' in dir(inspect):
+try:
     signature = inspect.signature
-else:
+except AttributeError:
     import funcsigs
     signature = funcsigs.signature
 
-import dill
 
 AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'input',
