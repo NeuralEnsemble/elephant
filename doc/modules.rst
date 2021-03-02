@@ -28,11 +28,6 @@ Spike trains
     reference/spike_train_generation
 
 .. toctree::
-    :maxdepth: 1
-
-    reference/spike_train_surrogates
-
-.. toctree::
     :maxdepth: 2
 
     reference/_spike_train_processing
