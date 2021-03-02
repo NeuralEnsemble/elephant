@@ -66,15 +66,6 @@ Kernels
     reference/kernels
 
 
-********************
-Binning spike trains
-********************
-
-.. toctree::
-    :maxdepth: 1
-
-    reference/conversion
-
 *********
 Waveforms
 *********
@@ -84,6 +75,14 @@ Waveforms
 
     reference/waveform_features
 
+********************************
+Alternative data representations
+********************************
+
+.. toctree::
+    :maxdepth: 1
+
+    reference/conversion
 *************
 Miscellaneous
 *************
