@@ -123,7 +123,7 @@ statistical measure of a list of spike trains that returns an analog signal in t
 Let's call it ``statistics_x``.
 
 Elephant relies on Neo structures that use Quantities extensively, allowing
-the users not to care about the different units (seconds and milliseconds)
+the users to conveniently specify physical units (e.g., seconds and milliseconds)
 of input objects. Typically, to avoid computationally expensive quantities
 rescaling operation on large input arrays, we check that the main data objects
 - spike trains or analog signals - share the same units and rescale additional
