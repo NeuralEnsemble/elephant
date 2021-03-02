@@ -1,6 +1,6 @@
 ======================
-Spike train processing
-======================
+Correlative measures on spike trains
+====================================
 
 ***********************
 Spike train correlation
