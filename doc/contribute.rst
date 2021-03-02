@@ -263,7 +263,7 @@ Building the documentation
 The documentation in :file:`doc/` folder is written in `reStructuredText
 <http://docutils.sourceforge.net/rst.html>`_, using the
 `Sphinx <http://sphinx-doc.org/>`_ documentation system. To build the
-documentation:
+documentation locally on a Linux system, follow these steps:
 
 1. Install requirements-docs.txt and requirements-tutorials.txt the same way
    it's explained in :ref:`set_up_an_environment` step 3:
