@@ -538,7 +538,7 @@ def save_graph(filename, show=False):
     Provenance.save_graph(filename, show=show)
 
 
-def save_provenance(filename=None, file_format='turtle'):
+def save_provenance(filename=None, file_format='rdf'):
     """
     Serialized provenance information according to the W3C Provenance Data
     Model (PROV).
