@@ -116,7 +116,7 @@ want to add in Elephant. This includes, in particular:
    * adding a new functionality.
 
 Writing code
-----------------
+------------
 
 Imagine that you want to add a novel
 statistical measure of a list of spike trains that returns an analog signal in the existing module ``elephant/statistics.py``.
