@@ -42,7 +42,6 @@ Spike trains
     :maxdepth: 1
 
     reference/change_point_detection
-    reference/cubic
     reference/gpfa
 
 
