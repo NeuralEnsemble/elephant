@@ -184,8 +184,8 @@ parameters (t_start, t_stop, bin_size, etc.) to the units of input objects.
         return signal
 
 
-Testing the code
-----------------
+Testing code
+------------
 
 Write at least one test in ``elephant/test/test_module_name.py`` file that
 covers the functionality.
