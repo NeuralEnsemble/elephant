@@ -27,7 +27,7 @@ Using the mailing list
 General discussion of Elephant development takes place in the
 `NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_.
 
-Discussion of issues should take place on the `Issue tracker`_.
+Please raise concrete issues, bugs, and feature requests on the `issue tracker`_.
 
 
 Using the issue tracker
