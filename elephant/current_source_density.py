@@ -22,7 +22,7 @@ The following methods have been implemented so far
 - 2D: KCSD2D, MoIKCSD (Saline layer on top of slice)
 - 3D: KCSD3D
 
-Each listed method has some advantages. The KCSD methods, for instance, can
+Each listed method has certain advantages. The KCSD methods, for instance, can
 handle broken or irregular electrode configurations electrode.
 
 .. autosummary::
