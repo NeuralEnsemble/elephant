@@ -4,18 +4,16 @@ used by the `Provenance` class decorator to track unique objects during the
 script execution.
 """
 
-import inspect
-import joblib
 import hashlib
+import inspect
 import uuid
-
-from dill._dill import save_function
-
 from collections import namedtuple
-import numpy as np
+from copy import copy
 from pathlib import Path
 
-from copy import copy
+import joblib
+import numpy as np
+from dill._dill import save_function
 
 # Need to use `dill` pickling function to support lambdas. This is needed
 # for unit tests, since Nose test classes have lambda functions
@@ -24,7 +22,8 @@ joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
 
 ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
-FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path', 'details'))
+FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path', 'details'),
+                      defaults=[None])
 
 
 class BuffaloFileHash(object):
@@ -34,6 +33,7 @@ class BuffaloFileHash(object):
 
     def _get_file_hash(self, file_path, hash_type='sha256',
                        block_size=4096 * 1024):
+        # TODO: always use sha256
         file_hash = self.HASH_TYPES[hash_type]()
 
         with open(file_path, 'rb') as file:
@@ -43,9 +43,8 @@ class BuffaloFileHash(object):
         return file_hash.hexdigest(), hash_type
 
     def __init__(self, file_path):
-        self._file_path = file_path
+        self.file_path = file_path
         self._hash, self._hash_type = self._get_file_hash(file_path)
-        self._details = {}
 
     def __hash__(self):
         return self._hash
@@ -58,12 +57,11 @@ class BuffaloFileHash(object):
             raise TypeError("Cannot compare different objects")
 
     def __repr__(self):
-        return "{}: [{}] {}".format(Path(self._file_path).name,
+        return "{}: [{}] {}".format(Path(self.file_path).name,
                                     self._hash_type, self._hash)
 
     def info(self):
-        return FileInfo(self._hash, self._hash_type,
-                        self._file_path, self._details)
+        return FileInfo(self._hash, self._hash_type, self.file_path)
 
 
 class BuffaloObjectHash(object):

@@ -2,6 +2,10 @@
 This module implements classes to extract and work with the information
 obtained from the nodes of an Abstract Syntax Tree describing the code
 associated with a given function call within the script.
+
+# TODO: add informative example
+
+>>> isi_times = isi(block.segments[0].spiketrains[0])
 """
 
 import ast

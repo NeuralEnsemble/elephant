@@ -1,9 +1,11 @@
-import networkx as nx
-from pyvis.network import Network
+import re
+import textwrap
 import uuid
 
-import textwrap
-import re
+import networkx as nx
+from pyvis.network import Network
+
+# TODO: get rid of pyvis in favor of prov
 
 
 class ObjectDescription(object):
@@ -179,7 +181,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
     def _add_input_to_output(self, analysis_step, input_obj, edge_label,
                              edge_title, multi_output, function_edge, **attrs):
 
-        def _connect_edge(input_obj, output_obj, function_edge):
+        def _connect_edge(input_obj, output_obj):
             if function_edge:
                 title = self.description_map['_function'].build_title(
                     analysis_step.params)
@@ -208,16 +210,18 @@ class BuffaloProvenanceGraph(nx.DiGraph):
 
         if multi_output:
             for output_key, output_obj in analysis_step.output.items():
-                _connect_edge(input_obj, output_obj, function_edge)
+                _connect_edge(input_obj, output_obj)
         else:
             if len(analysis_step.output):
                 index = next(iter(analysis_step.output))
                 output_obj = analysis_step.output[index]
             else:
                 output_obj = None
-            _connect_edge(input_obj, output_obj, function_edge)
+            _connect_edge(input_obj, output_obj)
 
     def _get_type_and_label(self, obj):
+        # TODO: add a comment why it's imported here and not in the
+        #  global scope
         from elephant.buffalo.object_hash import ObjectInfo
         if isinstance(obj, ObjectInfo):
             # Provenance of a Python object (ObjectInfo named tuple)
@@ -271,7 +275,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             x, y = self._get_x_y(analysis_step.vis, 1, obj.hash)
             self.add_node(obj.hash, label=obj_label, title=obj_type,
                           type=node_type, x=x, y=y)
-        multi_output = len(list(analysis_step.output.keys())) > 1
+        multi_output = len(analysis_step.output.keys()) > 1
 
         edge_label, edge_title, function_edge = \
             self._get_edge_attrs_and_labels(analysis_step)
@@ -319,7 +323,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             Default: True.
         """
 
-        def _get_color(highlight, grayscale):
+        def _get_color(highlight):
             # Return the string or dictionary with the proper node
             # colors according to the visualization options
             if not grayscale:
@@ -334,7 +338,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
                             }
                         }
 
-        def _add_node(node_id, grayscale=grayscale):
+        def _add_node(node_id):
             # Add the given node to the pyvis Network `net`.
             attr = nodes[node_id]
 
@@ -348,7 +352,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             # Set shape, color and font attributes of the node
             node_type = attr['type']
             shape = shape_types[node_type]
-            color = _get_color(color_types[node_type], grayscale)
+            color = _get_color(color_types[node_type])
             font = {"color": "rgba(255, 255, 255, 1)"}
 
             net.add_node(hash(node_id), shape=shape, color=color,
