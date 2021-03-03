@@ -322,11 +322,5 @@ class WelchCohereTestCase(unittest.TestCase):
             np.all(phase_lag_neo_1dim[:, 0] == phase_lag_neo[:, 0]))
 
 
-def suite():
-    suite = unittest.makeSuite(WelchPSDTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

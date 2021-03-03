@@ -150,6 +150,67 @@ For more information, refer to `mpi4py
 <https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html>`_ documentation.
 
 
+***********************
+CUDA and OpenCL support
+***********************
+
+:ref:`asset` module supports CUDA and OpenCL. These are experimental features.
+You can have one, both, or none installed in your system.
+
+.. tabs::
+
+    .. tab:: CUDA
+
+        To leverage CUDA acceleration on an NVIDIA GPU card, `CUDA toolkit
+        <https://developer.nvidia.com/cuda-downloads>`_ must installed on
+        your system. Then run the following command in a terminal:
+
+        .. code-block:: sh
+
+            pip install pycuda
+
+        In case you experience issues installing PyCUDA, `this guide
+        <https://medium.com/leadkaro/setting-up-pycuda-on-ubuntu-18-04-for-
+        gpu-programming-with-python-830e03fc4b81>`_ offers a step-by-step
+        installation manual.
+
+        If PyCUDA is detected and installed, CUDA backend is used by default in
+        Elephant ASSET module. To turn off CUDA support, set ``ELEPHANT_USE_CUDA``
+        environment flag to ``0``.
+
+
+    .. tab:: OpenCL
+
+        If you have a laptop with a built-in Intel Graphics Card, you can still
+        leverage significant performance optimization with OpenCL backend.
+        The simplest way to install PyOpenCL is to run a conda command:
+
+        .. code-block:: sh
+
+            conda install -c conda-forge pyopencl intel-compute-runtime
+
+        However, if you have root (sudo) privileges, it's recommended to install
+        up-to-date `Intel Graphics Compute Runtime
+        <https://github.com/intel/compute-runtime/releases>`_ system-wide and then
+        install PyOpenCL as follows:
+
+        .. code-block:: sh
+
+            conda install -c conda-forge pyopencl ocl-icd-system
+
+        Set ``ELEPHANT_USE_OPENCL`` environment flag to ``0`` to turn off
+        PyOpenCL support.
+
+        .. note::
+
+            Make sure you've disabled GPU Hangcheck as described in the
+            `Intel GPU developers documentation <https://software.intel.com/
+            content/www/us/en/develop/documentation/get-started-with-intel-
+            oneapi-base-linux/top/before-you-begin.html>`_. Do it with caution -
+            using your graphics card to perform computations may make the system
+            unresponsive until the compute program terminates.
+
+
 ************
 Dependencies
 ************
