@@ -21,8 +21,6 @@ class _BuffaloCodeAnalyzer(object):
         Abstract Syntax Tree of the source code.
     start_line : int
         Line from the source file where the code starts.
-    source_name : str
-        Name of the frame whose source code corresponds.
     """
 
     def __init__(self, source_code, ast_tree, start_line):
@@ -32,7 +30,6 @@ class _BuffaloCodeAnalyzer(object):
         # self.iteration_blocks = IterationBlocks()
         self.statement_lines, self.source_lines = \
             self._build_line_map(ast_tree)
-        pass
 
     def _build_line_map(self, ast_tree):
         # This function analyzes the AST structure to fetch the start and end
