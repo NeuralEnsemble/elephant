@@ -86,3 +86,4 @@ Additional
     tutorials/parallel.ipynb
     tutorials/statistics.ipynb
     tutorials/unitary_event_analysis.ipynb
+    tutorials/granger_causality.ipynb

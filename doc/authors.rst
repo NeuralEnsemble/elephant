@@ -1,5 +1,3 @@
-:orphan:
-
 ************************
 Authors and contributors
 ************************

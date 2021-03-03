@@ -350,6 +350,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     >>> import neo
     >>> import numpy as np
+    >>> import quantities as pq
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import covariance
@@ -455,6 +456,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     >>> import neo
     >>> import numpy as np
+    >>> import quantities as pq
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import correlation_coefficient

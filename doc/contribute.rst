@@ -7,6 +7,10 @@ Contributing to Elephant
 You are here to help with Elephant? Awesome, feel welcome to get in touch with
 us by asking questions, proposing features and improvements to Elephant.
 
+For guidelines on code documentation, please see the :ref:`documentation_guide`
+below.
+
+
 .. note::
 
     We highly recommend to get in touch with us *before* starting to implement a
@@ -34,8 +38,9 @@ Using the issue tracker
 -----------------------
 
 If you find a bug in Elephant, please create a new ticket on the
-`issue tracker`_.
-Choose a name that is as specific as possible to the problem you've found, and
+`issue tracker`_. Choose one of the available templates - "Bug report",
+"Feature request", or "Questions".
+Choose an issue title that is as specific as possible to the problem you've found, and
 in the description give as much information as you think is necessary to
 recreate the problem. The best way to do this is to create the shortest possible
 Python script that demonstrates the problem, and attach the file to the ticket.
@@ -46,41 +51,25 @@ If you have an idea for an improvement to Elephant, create a ticket with type
 
 .. _set_up_an_environment:
 
-*************************
-Setting up an environment
-*************************
+************************************
+Setting up a development environment
+************************************
 
-To make any changes to Elephant code, you must set up a Python environment on
+In order to contribute to the Elephant code, you must set up a Python environment on
 your local machine.
 
-1. Follow the instructions in :ref:`prerequisites` to setup a clean conda
-   environment. To be safe, run::
-
-    $ pip uninstall elephant
-
-   in the newly created environment to uninstall ``elephant`` in case you've installed it previously as a pip
-   package.
-
-2. Fork `Elephant <https://github.com/NeuralEnsemble/elephant>`_ as described
+1. Fork `Elephant <https://github.com/NeuralEnsemble/elephant>`_ as described
    in `Fork a repo <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_.
    Download Elephant source code from your forked repo::
 
     $ git clone git://github.com/<your-github-profile>/elephant.git
     $ cd elephant
 
-3. Install the requirements (either via pip or conda):
+2. Set up the virtual environment (either via pip or conda):
 
 .. tabs::
 
-    .. tab:: pip
-
-        .. code-block:: sh
-
-            pip install -r requirements/requirements.txt
-            pip install -r requirements/requirements-extras.txt  # optional
-            pip install -r requirements/requirements-tests.txt
-
-    .. tab:: conda
+    .. tab:: conda (recommended)
 
         .. code-block:: sh
 
@@ -88,8 +77,19 @@ your local machine.
             conda activate elephant
             pip install -r requirements/requirements-tests.txt
 
+    .. tab:: pip
 
-4. Before you make any changes, run the test suite to make sure all the tests
+        .. code-block:: sh
+
+            python -m venv elephant-env
+            source elephant-env/bin/activate
+
+            pip install -r requirements/requirements.txt
+            pip install -r requirements/requirements-extras.txt  # optional
+            pip install -r requirements/requirements-tests.txt
+
+
+3. Before you make any changes, run the test suite to make sure all the tests
    pass on your system::
 
     $ nosetests .
@@ -242,13 +242,15 @@ If you experience any problems during one of the steps below, please contact us
 and we'll help you.
 
 
+.. _documentation_guide:
+
 *******************
 Documentation Guide
 *******************
 
 
-Writing the documentation
--------------------------
+Writing documentation
+---------------------
 
 Each module (python source file) should start with a short description of the
 listed functionality. Class and function docstrings should conform to the
@@ -257,8 +259,8 @@ listed functionality. Class and function docstrings should conform to the
 .. note:: Please refer to our :doc:`style_guide`.
 
 
-Building the documentation
---------------------------
+Building documentation
+----------------------
 
 The documentation in :file:`doc/` folder is written in `reStructuredText
 <http://docutils.sourceforge.net/rst.html>`_, using the
