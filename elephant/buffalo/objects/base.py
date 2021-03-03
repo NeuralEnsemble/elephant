@@ -6,8 +6,8 @@ in Elephant.
 :license: BSD, see LICENSE.txt for details.
 """
 
-from datetime import datetime
 import uuid
+from datetime import datetime
 
 
 class AnalysisObject(object):

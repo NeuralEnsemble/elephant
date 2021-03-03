@@ -6,11 +6,12 @@ in Elephant.
 :license: BSD, see LICENSE.txt for details.
 """
 
+from copy import deepcopy
+
+import neo
 import numpy as np
 import quantities as pq
-import neo
-from functools import wraps
-from copy import deepcopy
+
 from .base import AnalysisObject
 
 

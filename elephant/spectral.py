@@ -248,10 +248,10 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         # We are storing the parameters to this function, but also the
         # information and the parameters regarding the SciPy function that is
         # wrapped by Elephant
-        params.pop('x')
+        params.pop('x')  # don't store the data
         object_params = {'n_segments': n_segments, 'len_segment': len_segment,
                          'frequency_resolution': frequency_resolution,
-                          'overlap': overlap, 'fs': fs, 'window': window,
+                         'overlap': overlap, 'fs': fs, 'window': window,
                          'nfft': nfft, 'detrend': detrend,
                          'return_onesided': return_onesided,
                          'scaling': scaling, 'axis': axis,

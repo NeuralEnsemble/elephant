@@ -8,10 +8,15 @@ capture during the analysis workflow in Elephant.
 :license: BSD, see LICENSE.txt for details.
 """
 
-from . import objects
-from . import provenance
+try:
+    from . import objects
+    from . import provenance
+except ImportError:
+    # requirements-prov are missing
+    pass
 
-__version__ = '0.0.2'
+
+__version__ = '0.0.1'
 
 
 USE_ANALYSIS_OBJECTS = False

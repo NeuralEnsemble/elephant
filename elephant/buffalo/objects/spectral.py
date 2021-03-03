@@ -2,13 +2,15 @@ from copy import deepcopy
 from .base import AnalysisObject
 from collections import namedtuple
 
-_PSDObjectTuple = namedtuple('PSDObject', 'frequencies psd')
 
-
-class PSDObject(AnalysisObject, _PSDObjectTuple):
+class PSDObject(AnalysisObject, namedtuple('PSDObject', 'frequencies psd')):
     """
     Class to store outputs of Elephant functions that compute power spectrum
     density (PSD) estimations (e.g.: `elephant.spectral.welch_psd`).
+
+    It's a `namedtuple` with two values, frequencies and PSD, such that one can
+    call ``frequencies, psd = PSDObject(...)``. All parameters listed below
+    are accessible as attributes.
 
     Parameters
     ----------

@@ -1,0 +1,5 @@
+dill>=0.3.3
+prov>=2.0.0
+networkx>=2.5
+pyvis>=0.1.9
+joblib>=1.0.1
