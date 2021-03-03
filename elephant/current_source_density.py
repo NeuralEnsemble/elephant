@@ -66,7 +66,7 @@ def estimate_csd(lfp, coordinates=None, method=None,
                  process_estimate=True, **kwargs):
     """
     Function call to compute the current source density (CSD) from
-    extracellular potential recordings (local-field potentials - LFP) using
+    extracellular potential recordings (local field potentials - LFP) using
     laminar electrodes or multi-contact electrodes with 2D or 3D geometries.
 
     Parameters
