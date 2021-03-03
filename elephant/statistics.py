@@ -981,7 +981,8 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     ... ]
     >>> hist = statistics.time_histogram(spiketrains, bin_size=1 * pq.s)
     >>> hist
-    AnalogSignal with 1 channels of length 10; units dimensionless; datatype int64
+    AnalogSignal with 1 channels of length 10; units dimensionless; datatype
+    int64
     annotations: {'normalization': 'counts'}
     sampling rate: 1.0 1/s
     time: 0.0 s to 10.0 s

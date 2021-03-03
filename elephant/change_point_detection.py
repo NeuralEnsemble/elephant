@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-The Change point detection algorithm :cite:`cpd-Messer2014_2027` determines if a
-spike train `spiketrain` can be considered as a stationary process (constant
+The Change point detection algorithm :cite:`cpd-Messer2014_2027` determines if
+a spike train `spiketrain` can be considered as a stationary process (constant
 firing rate) or not as stationary process (i.e. presence of one or more points
 at which the rate increases or decreases). In case of non-stationarity, the
 output is a list of detected Change Points (CPs).

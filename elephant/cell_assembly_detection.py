@@ -61,7 +61,8 @@ Call of the method.
         3800., 3830., 3930., 4080., 4560., 4600., 4670.]) * ms,
  'signature': [[1, 83], [2, 25]]}
 
-Refer to the Viziphant documentation regarding the visualization of this example.
+Refer to the Viziphant documentation regarding the visualization of this
+example.
 
 """
 
@@ -92,14 +93,13 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             subgroup_pruning=True,
                             same_configuration_pruning=False,
                             bool_times_format=None, verbose=False):
-
     """
     Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
-    (discretized) spike trains given in the input. The method looks for candidate
-    significant patterns with lags (number of bins between successive spikes
-    in the pattern) ranging from `-max_lag` to `max_lag` (second parameter of the
-    function). Thus, between two successive spikes in the pattern there can
-    be at most `max_lag`*`bin_size` units of time.
+    (discretized) spike trains given in the input. The method looks for
+    candidate significant patterns with lags (number of bins between successive
+    spikes in the pattern) ranging from `-max_lag` to `max_lag` (the second
+    parameter of the function). Thus, between two successive spikes in the
+    pattern there can be at most `max_lag`*`bin_size` units of time.
 
     The method agglomerates pairs of units (or a unit and a preexisting
     assembly), tests their significance by a statistical test
