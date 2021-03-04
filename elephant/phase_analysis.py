@@ -6,6 +6,9 @@ Methods for performing phase analysis.
     :toctree: _toctree/phase_analysis
 
     spike_triggered_phase
+    phase_locking_value
+    mean_phase_vector
+    phase_difference
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
