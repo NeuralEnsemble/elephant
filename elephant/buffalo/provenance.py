@@ -22,7 +22,7 @@ from os.path import splitext
 
 from pprint import pprint
 
-
+# TODO no python 2
 # Python 2.7 compatibility
 try:
     signature = inspect.signature
@@ -115,23 +115,27 @@ class Provenance(object):
 
     active = False
     history = []
+    source_file = None
+    calling_frame = None
 
     call_order = list()
     call_count = dict()
 
     def __init__(self, inputs, file_input=None, file_output=None):
+        if inputs is None:
+            inputs = []
+        if file_input is None:
+            file_input = []
+        if file_output is None:
+            file_output = []
+
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
 
-        self.file_inputs = list()
-        self.file_outputs = list()
-
-        # Iterate over the list of arguments that are either file input/output,
-        # and store in the appropriate class attribute
-        for arg, file_list in zip((file_input, file_output),
-                                  (self.file_inputs, self.file_outputs)):
-            if arg is not None:
-                file_list.extend(arg)
+        self.file_inputs = [f_input for f_input in file_input
+                            if f_input is not None]
+        self.file_outputs = [f_output for f_output in file_output
+                             if f_output is not None]
 
         # Store the list of arguments that are inputs
         self.inputs = inputs
@@ -152,6 +156,7 @@ class Provenance(object):
         # function. We need to check the source code in case the
         # call spans multiple lines. In this case, we fetch the
         # full statement.
+        # TODO: use logging instead of printing
         print(lineno)
         source_line = \
             self.code_analyzer.extract_multiline_statement(lineno)
@@ -172,6 +177,7 @@ class Provenance(object):
             elif isinstance(assign_target, ast.Name):
                 return_targets = [assign_target.id]
             else:
+                # This branch should not be reachable
                 raise ValueError("Unknown assign target!")
 
         # 3. Extract function name and information
@@ -190,6 +196,8 @@ class Provenance(object):
         input_args_names = []
         input_kwargs_names = []
 
+        # TODO: consider moving the try-catch block below to a separate
+        #  private function
         try:
             fn_sig = signature(function)
             func_parameters = fn_sig.bind(*args, **kwargs)
@@ -263,18 +271,17 @@ class Provenance(object):
                         BuffaloObjectHash(input_value).info()
             elif key in self.file_inputs:
                 inputs[key] = BuffaloFileHash(input_value).info()
-            elif not key in self.file_outputs:
+            elif key not in self.file_outputs:
                 parameters[key] = input_value
 
         # 6. Create hashable `BuffaloObjectHash` for the output
         # objects to follow individual returns, if the function
         # is not returning None
+        if len(return_targets) == 1:
+            function_output = [function_output]
         outputs = {}
-        if len(return_targets) > 1:
-            for index, item in enumerate(function_output):
-                outputs[index] = BuffaloObjectHash(item).info()
-        else:
-            outputs[0] = BuffaloObjectHash(function_output).info()
+        for index, item in enumerate(function_output):
+            outputs[index] = BuffaloObjectHash(item).info()
 
         # If there is a file output as defined in the class
         # initialization, create the hash and add as output,
@@ -292,7 +299,7 @@ class Provenance(object):
 
         # 8. Use a call counter to organize the nodes in the output
         # graph
-        if not function_info.name in self.call_order:
+        if function_info.name not in self.call_order:
             self.call_order.append(function_info.name)
             self.call_count[function_info.name] = 0
 
@@ -301,6 +308,7 @@ class Provenance(object):
                         self.call_order.index(function_info.name))
 
         # 9. Create tuple with the analysis step information.
+        # TODO use keyword argument
         return AnalysisStep(function_info, inputs, parameters,
                             outputs,
                             input_args_names, input_kwargs_names,
@@ -370,6 +378,7 @@ class Provenance(object):
                 if lineno is not None:
 
                     # Get AnalysisStep tuple with provenance information
+                    # TODO don't use C call signature
                     step = self._capture_provenance(lineno, function, args,
                                                     kwargs, function_output,
                                                     time_stamp_start,
@@ -511,6 +520,7 @@ def deactivate():
     """
     Deactivates provenance tracking within Elephant.
     """
+    # TODO: release the frame here: set to None
     Provenance.active = False
 
 

@@ -6,9 +6,11 @@ the W3C Provenance Data Model (PROV).
 :license: BSD, see LICENSE.txt for details.
 """
 
-from prov.model import ProvDocument, ProvAgent, ProvActivity, ProvEntity
-from elephant.buffalo.object_hash import BuffaloFileHash
 import pathlib
+
+from prov.model import ProvDocument, ProvAgent
+
+from elephant.buffalo.object_hash import BuffaloFileHash
 
 
 class BuffaloProvDocument(ProvDocument):
@@ -20,6 +22,8 @@ class BuffaloProvDocument(ProvDocument):
         # We are using the SoftwareAgent subclass for the description
         # URI defined as the script name + file hash
         script_hash = BuffaloFileHash(script_file_name).info().hash
+        # TODO: resolve conflicts when two files clash to the same
+        #  script_name: my.name.txt and my_name.txt
         script_name = pathlib.Path(script_file_name).name.replace('.', '_')
         script_uri = f"urn:{script_name}_{script_hash}"
         script_attributes = {'prov:type': 'prov:SoftwareAgent'}

@@ -86,6 +86,7 @@ class BuffaloObjectHash(object):
         A Python object that will be hashed with respect to type and content.
     """
 
+    # TODO: don't make it static
     _hash_memoizer = dict()
 
     @classmethod

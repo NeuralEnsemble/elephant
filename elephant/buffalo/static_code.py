@@ -84,6 +84,7 @@ class _StaticStep(object):
             else None
         output_object = self.object_hash
 
+        # TODO C call signature
         return provenance.AnalysisStep(
             provenance.FunctionInfo(self._operation, '', ''),
             {0: input_object}, params, {0:output_object}, None, None,
@@ -180,6 +181,7 @@ class _SubscriptStep(_StaticStep):
             start = int(start.n) if start is not None else None
             step = int(step.n) if step is not None else None
 
+            # TODO use python3.6+ string formatting
             params['slice'] = ":{}".format(stop)
             if start is not None:
                 params['slice'] = "{}{}".format(start, params['slice'])
@@ -198,12 +200,12 @@ class _SubscriptStep(_StaticStep):
 
 class _AttributeStep(_StaticStep):
     """
-     Analysis step that represents an `ast.Attribute` Abstract Syntax Tree
-     node.
+    Analysis step that represents an `ast.Attribute` Abstract Syntax Tree
+    node.
 
-     This step represents accessing an object attribute using dot '.' operation
-     in the script.
-     """
+    This step represents accessing an object attribute using dot '.' operation
+    in the script.
+    """
 
     _operation = 'attribute'
     _node_type = ast.Attribute
