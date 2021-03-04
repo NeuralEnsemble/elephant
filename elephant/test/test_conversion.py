@@ -2,7 +2,7 @@
 """
 Unit tests for the conversion module.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -514,10 +514,10 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         b = neo.SpikeTrain(
             [-0.1, -0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s,
             t_start=-1 * pq.s, t_stop=8 * pq.s)
-        start, stop = cv.get_common_start_stop_times(a)
+        start, stop = get_common_start_stop_times(a)
         self.assertEqual(start, a.t_start)
         self.assertEqual(stop, a.t_stop)
-        start, stop = cv.get_common_start_stop_times([a, b])
+        start, stop = get_common_start_stop_times([a, b])
         self.assertEqual(start, a.t_start)
         self.assertEqual(stop, b.t_stop)
 

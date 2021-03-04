@@ -45,7 +45,7 @@ lib
 lib64
 # sphinx build directory
 doc/_build
-doc/reference/toctree/*
+doc/reference/_toctree
 *.h5
 # setup.py dist directory
 dist

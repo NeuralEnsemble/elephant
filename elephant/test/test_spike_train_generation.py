@@ -2,7 +2,7 @@
 """
 Unit tests for the spike_train_generation module.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -220,10 +220,8 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         for refractory_period in (None, 3 * pq.ms):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                """
-                Catch RuntimeWarning: divide by zero encountered in true_divide
-                mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                """
+                # RuntimeWarning: divide by zero encountered in true_divide
+                # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
                 sp = stgen.homogeneous_poisson_process(
                     rate=0 * pq.Hz, t_stop=10 * pq.s,
                     refractory_period=refractory_period)
@@ -488,10 +486,8 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         for refractory_period in (3 * pq.ms, None):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                """
-                Catch RuntimeWarning: divide by zero encountered in true_divide
-                mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                """
+                # RuntimeWarning: divide by zero encountered in true_divide
+                # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
                 spiketrain = stgen.inhomogeneous_poisson_process(
                     self.rate_profile_0, refractory_period=refractory_period)
             self.assertEqual(spiketrain.size, 0)
@@ -793,10 +789,8 @@ class cppTestCase(unittest.TestCase):
         # test negative rate
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            """
-            Catches RuntimeWarning: invalid value encountered in sqrt
-            number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
-            """
+            # Catches RuntimeWarning: invalid value encountered in sqrt
+            # number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
             self.assertRaises(
                 ValueError, stgen.cpp, amplitude_distribution=[0, 1, 0],
                 t_stop=10 * 1000 * pq.ms,
@@ -836,10 +830,8 @@ class cppTestCase(unittest.TestCase):
         rate = [3, 4] * pq.Hz
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            """
-            Catch RuntimeWarning: divide by zero encountered in true_divide
-            mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            """
+            # Catch RuntimeWarning: divide by zero encountered in true_divide
+            # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
             cpp_het = stgen.cpp(rate, amplitude_distribution,
                                 t_stop, t_start=t_start)
             # testing the ouput formats

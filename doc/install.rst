@@ -1,8 +1,8 @@
 .. _install:
 
-************
+============
 Installation
-************
+============
 
 The easiest way to install Elephant is by creating a conda environment, followed by ``pip install elephant``.
 Below is the explanation of how to proceed with these two steps.
@@ -10,8 +10,9 @@ Below is the explanation of how to proceed with these two steps.
 
 .. _prerequisites:
 
+*************
 Prerequisites
-=============
+*************
 
 Elephant requires `Python <http://python.org/>`_ 3.6, 3.7, 3.8, or 3.9.
 
@@ -42,9 +43,9 @@ Elephant requires `Python <http://python.org/>`_ 3.6, 3.7, 3.8, or 3.9.
            sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
 
 
-
+************
 Installation
-============
+************
 
 .. tabs::
 
@@ -116,8 +117,9 @@ Installation
                     conda activate elephant
                     pip install -e .
 
+***********
 MPI support
------------
+***********
 
 Some Elephant modules (ASSET, SPADE, etc.) are parallelized to run with MPI.
 In order to make use of MPI parallelization, you need to install ``mpi4py``
@@ -131,7 +133,7 @@ package:
 
             conda install -c conda-forge mpi4py
 
-    .. tab:: pip (Debian/Ubuntu)
+    .. tab:: pip (Linux)
 
         .. code-block:: sh
 
@@ -148,8 +150,9 @@ For more information, refer to `mpi4py
 <https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html>`_ documentation.
 
 
+***********************
 CUDA and OpenCL support
------------------------
+***********************
 
 :ref:`asset` module supports CUDA and OpenCL. These are experimental features.
 You can have one, both, or none installed in your system.
@@ -208,11 +211,11 @@ You can have one, both, or none installed in your system.
             unresponsive until the compute program terminates.
 
 
+************
 Dependencies
-------------
+************
 
-Elephant relies on the following packages (automatically installed when you
-run ``pip install elephant``):
+Elephant relies on two special packages, installed by default:
 
     * `quantities <http://pypi.python.org/pypi/quantities>`_ - support for physical quantities with units (mV, ms, etc.)
     * `neo <http://pypi.python.org/pypi/neo>`_ - electrophysiology data manipulations

@@ -1,6 +1,6 @@
 """
 .. autosummary::
-    :toctree: toctree/utils
+    :toctree: _toctree/utils
 
     is_time_quantity
     get_common_start_stop_times
@@ -21,6 +21,7 @@ import quantities as pq
 
 
 __all__ = [
+    "deprecated_alias",
     "is_binary",
     "is_time_quantity",
     "get_common_start_stop_times",
@@ -34,7 +35,7 @@ def is_binary(array):
     """
     Parameters
     ----------
-    array: np.ndarray or list
+    array : np.ndarray or list
 
     Returns
     -------
@@ -52,7 +53,7 @@ def deprecated_alias(**aliases):
 
     Parameters
     ----------
-    aliases: str
+    **aliases
         The key-value pairs of mapping old --> new argument names of a
         function.
 
@@ -86,9 +87,9 @@ def _rename_kwargs(func_name, kwargs, aliases):
     for old, new in aliases.items():
         if old in kwargs:
             if new in kwargs:
-                raise TypeError("{} received both '{}' and '{}'".format(
-                    func_name, old, new))
-            warnings.warn("'{}' is deprecated; use '{}'".format(old, new),
+                raise TypeError(f"{func_name} received both '{old}' and "
+                                f"'{new}'")
+            warnings.warn(f"'{old}' is deprecated; use '{new}'",
                           DeprecationWarning)
             kwargs[new] = kwargs.pop(old)
 
@@ -156,8 +157,8 @@ def get_common_start_stop_times(neo_objects):
         raise AttributeError("Input neo objects must have 't_start' and "
                              "'t_stop' attributes")
     if t_stop < t_start:
-        raise ValueError("t_stop ({t_stop}) is smaller than t_start "
-                         "({t_start})".format(t_stop=t_stop, t_start=t_start))
+        raise ValueError(f"t_stop ({t_stop}) is smaller than t_start "
+                         f"({t_start})")
     return t_start, t_stop
 
 
@@ -201,8 +202,9 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         tolerance = 0
     for neo_obj in neo_objects:
         if not isinstance(neo_obj, object_type):
-            raise TypeError("The input must be a list of {}. Got {}".format(
-                object_type.__name__, type(neo_obj).__name__))
+            raise TypeError("The input must be a list of "
+                            f"{object_type.__name__}. Got "
+                            f"{type(neo_obj).__name__}")
         if neo_obj.units != units:
             raise ValueError("The input must have the same units.")
         if t_start is None and abs(neo_obj.t_start.item() - start) > tolerance:
@@ -239,7 +241,7 @@ def check_same_units(quantities, object_type=pq.Quantity):
         raise TypeError(f"The input must be a list of {object_type.__name__}")
     for quantity in quantities:
         if not isinstance(quantity, object_type):
-            raise TypeError(f"The input must be a list of "
+            raise TypeError("The input must be a list of "
                             f"{object_type.__name__}. Got "
                             f"{type(quantity).__name__}")
         if quantity.units != units:

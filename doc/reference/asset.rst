@@ -11,6 +11,6 @@ References
 ----------
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: as
+   :labelprefix: asset
    :keyprefix: asset-
    :style: unsrt

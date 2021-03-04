@@ -3,4 +3,12 @@ Waveform features
 =================
 
 .. automodule:: elephant.waveform_features
-   :members:
+
+
+References
+----------
+
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: wf
+   :keyprefix: waveforms-
+   :style: unsrt

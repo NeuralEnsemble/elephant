@@ -8,7 +8,7 @@ ASSET analysis class object of finding patterns
 -----------------------------------------------
 
 .. autosummary::
-    :toctree: toctree/asset/
+    :toctree: _toctree/asset/
 
     ASSET
 
@@ -17,7 +17,7 @@ Patterns post-exploration
 -------------------------
 
 .. autosummary::
-    :toctree: toctree/asset/
+    :toctree: _toctree/asset/
 
     synchronous_events_intersection
     synchronous_events_difference
@@ -42,59 +42,77 @@ Run tutorial interactively:
 
 Examples
 --------
+In this example we
 
-0) Create `ASSET` class object that holds spike trains.
+  * simulate two noisy synfire chains;
+  * shuffle the neurons to destroy visual appearance;
+  * run ASSET analysis to recover the original neurons arrangement.
+
+1. Simulate two noise synfire chains, shuffle the neurons to destroy the
+   pattern visually, and store shuffled activations in neo.SpikeTrains.
+
+   >>> import neo
+   >>> import numpy as np
+   >>> import quantities as pq
+   >>> np.random.seed(10)
+   >>> spiketrain = np.linspace(0, 50, num=10)
+   >>> np.random.shuffle(spiketrain)
+   >>> spiketrains = np.c_[spiketrain, spiketrain + 100]
+   >>> spiketrains += np.random.random_sample(spiketrains.shape) * 5
+   >>> spiketrains = [neo.SpikeTrain(st, units='ms', t_stop=1 * pq.s)
+   ...                for st in spiketrains]
+
+2. Create `ASSET` class object that holds spike trains.
 
    `ASSET` requires at least one argument - a list of spike trains. If
    `spiketrains_y` is not provided, the same spike trains are used to build an
    intersection matrix with.
 
-   >>> import neo
-   >>> import numpy as np
-   >>> import quantities as pq
    >>> from elephant import asset
+   >>> asset_obj = asset.ASSET(spiketrains, bin_size=3*pq.ms)
 
-   >>> spiketrains = [
-   ...      neo.SpikeTrain([start, start + 6] * (3 * pq.ms) + 10 * pq.ms,
-   ...                     t_stop=60 * pq.ms)
-   ...      for _ in range(3)
-   ...      for start in range(3)
-   ... ]
-   >>> asset_obj = asset.ASSET(spiketrains, bin_size=3*pq.ms, verbose=False)
-
-1) Build the intersection matrix `imat`:
+3. Build the intersection matrix `imat`:
 
    >>> imat = asset_obj.intersection_matrix()
 
-2) Estimate the probability matrix `pmat`, using the analytical method:
+4. Estimate the probability matrix `pmat`, using the analytical method:
 
    >>> pmat = asset_obj.probability_matrix_analytical(imat,
-   ...                                                kernel_width=9*pq.ms)
+   ...                                                kernel_width=50*pq.ms)
 
-3) Compute the joint probability matrix `jmat`, using a suitable filter:
+5. Compute the joint probability matrix `jmat`, using a suitable filter:
 
    >>> jmat = asset_obj.joint_probability_matrix(pmat, filter_shape=(5, 1),
    ...                                           n_largest=3)
 
-4) Create the masked version of the intersection matrix, `mmat`, from `pmat`
+6. Create the masked version of the intersection matrix, `mmat`, from `pmat`
    and `jmat`:
 
    >>> mmat = asset_obj.mask_matrices([pmat, jmat], thresholds=.9)
 
-5) Cluster significant elements of imat into diagonal structures:
+7. Cluster significant elements of imat into diagonal structures:
 
-   >>> cmat = asset_obj.cluster_matrix_entries(mmat, max_distance=3,
+   >>> cmat = asset_obj.cluster_matrix_entries(mmat, max_distance=11,
    ...                                         min_neighbors=3, stretch=5)
 
-6) Extract sequences of synchronous events:
+9. Extract sequences of synchronous events:
 
    >>> sses = asset_obj.extract_synchronous_events(cmat)
 
-The ASSET found 2 sequences of synchronous events:
+The ASSET found the following sequences of synchronous events:
 
-   >>> from pprint import pprint
-   >>> pprint(sses)
-   {1: {(9, 3): {0, 3, 6}, (10, 4): {1, 4, 7}, (11, 5): {8, 2, 5}}}
+>>> sses
+{1: {(36, 2): {5},
+  (37, 4): {1},
+  (40, 6): {4},
+  (41, 7): {8},
+  (43, 9): {2},
+  (47, 14): {7},
+  (48, 15): {0},
+  (50, 17): {9}}}
+
+To visualize them, refer to Viziphant documentation and an example plot
+:func:`viziphant.asset.plot_synchronous_events`.
 
 """
 from __future__ import division, print_function, unicode_literals
@@ -240,18 +258,18 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
         time segment `[t_start, t_start+bin_size]`.
         If None, takes the value of `spiketrain.t_start`, common for all
         input `spiketrains` (raises ValueError if it's not the case).
-        Default: None.
+        Default: None
     t_stop : pq.Quantity
         The ending time. Only spikes occurring at times `t < t_stop` are
         considered.
         If None, takes the value of `spiketrain.t_stop`, common for all
         input `spiketrains` (raises ValueError if it's not the case).
-        Default: None.
+        Default: None
     ids : list of int, optional
         List of spike train IDs.
         If None, the IDs `0` to `N-1` are used, where `N` is the number of
         input spike trains.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -1296,7 +1314,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
         of synchronous events as values (see above).
     intersection : {'pixelwise', 'linkwise'}, optional
         The type of intersection to perform among the two SSEs (see above).
-        Default: 'linkwise'.
+        Default: 'linkwise'
 
     Returns
     -------
@@ -1365,7 +1383,7 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
     difference : {'pixelwise', 'linkwise'}, optional
         The type of difference to perform between `sse1` and `sse2` (see
         above).
-        Default: 'linkwise'.
+        Default: 'linkwise'
 
     Returns
     -------
@@ -1732,16 +1750,16 @@ class ASSET(object):
         respectively.
         If None, the attribute `t_start` of the spike trains is used
         (if the same for all spike trains).
-        Default: None.
+        Default: None
     t_stop_i, t_stop_j : pq.Quantity, optional
         The stop time of the binning for the first and second axes,
         respectively.
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
-        Default: None.
+        Default: None
     verbose : bool, optional
         If True, print messages and show progress bar.
-        Default: True.
+        Default: True
 
 
     Raises
@@ -1856,7 +1874,7 @@ class ASSET(object):
                 * 'intersection': `len(intersection(s_i, s_j))`
                 * 'mean': `sqrt(len(s_1) * len(s_2))`
                 * 'union': `len(union(s_i, s_j))`
-            Default: None.
+            Default: None
 
         Returns
         -------
@@ -1917,7 +1935,7 @@ class ASSET(object):
             :func:`spike_train_surrogates.surrogates` documentation for more
             information about each surrogate method. Note that some of these
             methods need `surrogate_dt` parameter, others ignore it.
-            Default: 'dither_spike_train'.
+            Default: 'dither_spike_train'
         surrogate_dt : pq.Quantity, optional
             For surrogate methods shifting spike times randomly around their
             original time ('dither_spike_train', 'dither_spikes') or replacing
@@ -1925,7 +1943,7 @@ class ASSET(object):
             `surrogate_dt` represents the size of that shift (window). For
             other methods, `surrogate_dt` is ignored.
             If None, it's set to `self.bin_size * 5`.
-            Default: None.
+            Default: None
 
         Returns
         -------
@@ -2040,11 +2058,11 @@ class ASSET(object):
             `spiketrains[i]`.
             If 'estimate', firing rates are estimated by simple boxcar kernel
             convolution, with the specified `kernel_width`.
-            Default: 'estimate'.
+            Default: 'estimate'
         kernel_width : pq.Quantity, optional
             The total width of the kernel used to estimate the rate profiles
             when `firing_rates` is 'estimate'.
-            Default: 100 * pq.ms.
+            Default: 100 * pq.ms
 
         Returns
         -------
@@ -2182,6 +2200,8 @@ class ASSET(object):
             significant value in `pmat` (extreme case: `pmat[i, j] = 1`) yields
             joint significance of itself and its neighbors.
             Default: 1e-5
+<<<<<<< HEAD:elephant/asset.py
+=======
         precision : {'float', 'double'}, optional
             Single or double floating-point precision for the resulting `jmat`
             matrix.
@@ -2217,6 +2237,7 @@ class ASSET(object):
             resulting joint prob. matrix values are outside of the acceptable
             range ``[-tolerance, 1.0 + tolerance]``.
             Default: 1e-5
+>>>>>>> master:elephant/asset/asset.py
 
         Returns
         -------
@@ -2456,13 +2477,13 @@ class ASSET(object):
 
         Parameters
         ----------
-        cmat: (n,n) np.ndarray
+        cmat : (n,n) np.ndarray
             The cluster matrix, the output of
             :func:`ASSET.cluster_matrix_entries`.
         ids : list, optional
             A list of spike train IDs. If provided, `ids[i]` is the identity
             of `spiketrains[i]`. If None, the IDs `0,1,...,n-1` are used.
-            Default: None.
+            Default: None
 
         Returns
         -------
