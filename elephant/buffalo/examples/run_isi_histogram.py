@@ -92,8 +92,8 @@ def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
         if isinstance(isi_time, pq.Quantity):
             times = isi_time.rescale(bin_size.units).magnitude
         elif isinstance(isi_time, np.ndarray):
-            warnings.warn("`np.ndarray` assumed to be in units '{}'".format(
-                bin_size.dimensionality))
+            warnings.warn("`np.ndarray` assumed to be in units '"
+                          f"{bin_size.dimensionality}'")
             times = isi_time
         else:
             raise TypeError("ISI is not `pq.Quantity` or `np.ndarray`!")
@@ -104,8 +104,8 @@ def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
         bar_widths = np.diff(edges)
         axes[index].bar(edges[:-1], height=bins, align='edge',
                         width=bar_widths)
-        axes[index].set_xlabel("Inter-spike interval ({})".format(
-            bin_size.dimensionality.string))
+        axes[index].set_xlabel(f"Inter-spike interval "
+                               f"({bin_size.dimensionality.string})")
         axes[index].set_ylabel("Count")
         if titles is not None:
             axes[index].set_title(titles[index])

@@ -24,10 +24,9 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     spiketrains = get_spike_trains(firing_rate, n_spiketrains, t_stop)
 
     # Time histogram parameters output
-    print("Generating time histograms with bin size = {}".format(bin_size))
-    print("Data is {} spike trains with rate {}".format(n_spiketrains,
-                                                        firing_rate))
-    print("Maximum spike time is {}\n\n".format(t_stop))
+    print(f"Generating time histograms with bin size = {bin_size}")
+    print(f"Data is {n_spiketrains} spike trains with rate {firing_rate}")
+    print(f"Maximum spike time is {t_stop}\n\n")
 
     # Using old `elephant.time_histogram` function, that returns
     # `neo.AnalogSignal`.
@@ -51,15 +50,13 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
 
     print("Checking if objects are compatible with `neo.AnalogSignal`")
     for obj in [time_hist_obj_count, time_hist_obj_mean]:
-        print("Object {}".format(obj.pid))  # AnalysisObjects base class has a
-                                            # PID
-        print("Is neo.AnalogSignal? {}\n\n".format(isinstance(
-            obj, neo.AnalogSignal)))
+        print(f"Object {obj.pid}")  # AnalysisObjects base class has a PID
+        print(f"Is neo.AnalogSignal? "
+              f"{isinstance(obj, neo.AnalogSignal)}\n\n")
 
     print("Checking properties of the objects")
-    print("Bin size script parameter: {}".format(bin_size))
-    print("Bin size object property value: {}".format(
-        time_hist_obj_count.bin_size))
+    print(f"Bin size script parameter: {bin_size}")
+    print(f"Bin size object property value: {time_hist_obj_count.bin_size}")
 
     # Do plotting - use old code function that expects `neo.AnalogSignal`.
     # Legacy code should work with `AnalysisObject` types, and output

@@ -72,8 +72,8 @@ class BuffaloFileHash(object):
             raise TypeError("Cannot compare different objects")
 
     def __repr__(self):
-        return "{}: [{}] {}".format(Path(self.file_path).name,
-                                    self._hash_type, self._hash)
+        return f"{Path(self.file_path).name}: " \
+               f"[{self._hash_type}] {self._hash}"
 
     def info(self):
         """
@@ -144,7 +144,7 @@ class BuffaloObjectHash(object):
 
     def __init__(self, obj):
         self.package = self._get_object_package(obj)
-        self.type = "{}.{}".format(type(obj).__module__, type(obj).__name__)
+        self.type = f"{type(obj).__module__}.{type(obj).__name__}"
         self.id = id(obj)
         self.value = obj
 
@@ -190,7 +190,7 @@ class BuffaloObjectHash(object):
         return object_hash
 
     def __repr__(self):
-        return "{}: {}".format(self.id, self.type)
+        return f"{self.id}: {self.type}"
 
     def info(self):
         """

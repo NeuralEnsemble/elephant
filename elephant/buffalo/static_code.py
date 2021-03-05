@@ -21,8 +21,8 @@ class _StaticStep(object):
     node : ast.AST
         Abstract Syntax Tree node that represents the object.
         The subclass varies for each operation.
-    child : StaticStep, optional
-        A `StaticStep` object that is owned by the one being created. If a
+    child : _StaticStep, optional
+        A `_StaticStep` object that is owned by the one being created. If a
         node in the Abstract Syntax Tree contains other nodes that describe a
         Python object, this node is the parent.
         Default: None.
@@ -42,7 +42,7 @@ class _StaticStep(object):
     ------
     TypeError
         If `node` is not of the type describing the operation represented
-        by the `StaticStep` object.
+        by the `_StaticStep` object.
     """
 
     _operation = None
@@ -50,8 +50,8 @@ class _StaticStep(object):
 
     def __init__(self, node, time_stamp, child=None):
         if not isinstance(node, self._node_type):
-            raise TypeError("AST node must be of type '{}'".format(
-                type(self._node_type)))
+            raise TypeError("AST node must be of type '"
+                            f"{type(self._node_type)}'")
         self.parent = None
         self._node = node
         if child is not None:
@@ -181,12 +181,11 @@ class _SubscriptStep(_StaticStep):
             start = int(start.n) if start is not None else None
             step = int(step.n) if step is not None else None
 
-            # TODO use python3.6+ string formatting
-            params['slice'] = ":{}".format(stop)
+            params['slice'] = f":{stop}"
             if start is not None:
-                params['slice'] = "{}{}".format(start, params['slice'])
+                params['slice'] = f"{start}{params['slice']}"
             if step is not None:
-                params['slice'] += ":{}".format(step)
+                params['slice'] += f":{step}"
 
             return slice(start, stop, step), params
 

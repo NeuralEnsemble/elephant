@@ -42,7 +42,7 @@ def plot_time_histogram(histogram, time_unit=pq.s, title=""):
     # Create the plot (need to access `neo.AnalogSignal` properties according
     # to the information needed for the bar plot)
     plt.bar(times, histogram.squeeze().magnitude, align='edge', width=width)
-    plt.xlabel("Time ({})".format(time_unit))
+    plt.xlabel(f"Time ({time_unit})")
     plt.ylabel("Y Axis?")
     if len(title):
         plt.title(title)
@@ -74,7 +74,7 @@ def plot_time_histogram_object(histogram, time_unit=pq.s, title=""):
     plt.bar(histogram.edges, histogram.bins, align='edge',
             width=histogram.bin_width)
     plt.ylabel(histogram.histogram_type)
-    plt.xlabel("Time ({})".format(histogram.time_units.dimensionality))
+    plt.xlabel(f"Time ({histogram.time_units.dimensionality})")
     plt.title(title)
 
 
@@ -102,6 +102,6 @@ def plot_psth(histogram, event_time, time_unit=pq.s, title=""):
     plt.bar(np.subtract(histogram.edges, event_time),
             histogram.bins, align='edge', width=histogram.bin_width)
     plt.ylabel(histogram.histogram_type)
-    plt.xlabel("Time ({})".format(histogram.time_units.dimensionality))
+    plt.xlabel(f"Time ({histogram.time_units.dimensionality})")
     plt.axvline(0, linewidth=1, linestyle='dashed', color='black')
     plt.title(title)
