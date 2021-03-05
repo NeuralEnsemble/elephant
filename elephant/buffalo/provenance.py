@@ -22,6 +22,7 @@ from os.path import splitext
 
 from pprint import pprint
 
+
 AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'input',
                                            'params',
@@ -35,7 +36,9 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'return_targets',
                                            'vis'))
 
+
 FunctionInfo = namedtuple('FunctionInfo', ('name', 'module', 'version'))
+
 
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
 VarArgs = namedtuple('VarArgs', 'args')
@@ -121,6 +124,7 @@ class Provenance(object):
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
 
+        # Store the arguments that are file input/outputs
         self.file_inputs = [f_input for f_input in file_input
                             if f_input is not None]
         self.file_outputs = [f_output for f_output in file_output
