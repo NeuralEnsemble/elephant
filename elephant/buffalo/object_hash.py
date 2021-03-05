@@ -15,36 +15,51 @@ import joblib
 import numpy as np
 from dill._dill import save_function
 
-# Need to use `dill` pickling function to support lambdas. This is needed
-# for unit tests, since Nose test classes have lambda functions
-# The dispatch table of the `joblib.Hasher` object is updated
+# Need to use `dill` pickling function to support lambdas.
+# Some objects may have attributes that are lambdas. One example is the
+# test case of Nose. When running Elephant unit tests that access variables
+# in the class (e.g., `self.spiketrains`), the hashing of the `self` object
+# fails.
+# Here we update the dispatch table of the `joblib.Hasher` object to use
+# the function from `dill` that supports these attributes.
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
 
 ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
-FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path', 'details'),
-                      defaults=[None])
+FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path'))
 
 
 class BuffaloFileHash(object):
+    """
+    Class for hashing files.
 
-    HASH_TYPES = {'md5': hashlib.md5,
-                  'sha256': hashlib.sha256}
+    The SHA256 hash and file path are captured.
 
-    def _get_file_hash(self, file_path, hash_type='sha256',
-                       block_size=4096 * 1024):
-        # TODO: always use sha256
-        file_hash = self.HASH_TYPES[hash_type]()
+    The method `info` is called to obtain these provenance information as the
+    `FileInfo` named tuple.
+
+    Easy comparison between files can be done using the equality operator.
+
+    Parameters
+    ----------
+    file_path : str or path-like
+        The path to the file that is being hashed.
+    """
+
+    @staticmethod
+    def _get_file_hash(file_path, block_size=4096 * 1024):
+        file_hash = hashlib.sha256()
 
         with open(file_path, 'rb') as file:
             for block in iter(lambda: file.read(block_size), b""):
                 file_hash.update(block)
 
-        return file_hash.hexdigest(), hash_type
+        return file_hash.hexdigest()
 
     def __init__(self, file_path):
         self.file_path = file_path
-        self._hash, self._hash_type = self._get_file_hash(file_path)
+        self._hash_type = 'sha256'
+        self._hash = self._get_file_hash(file_path)
 
     def __hash__(self):
         return self._hash
@@ -61,7 +76,23 @@ class BuffaloFileHash(object):
                                     self._hash_type, self._hash)
 
     def info(self):
-        return FileInfo(self._hash, self._hash_type, self.file_path)
+        """
+        Returns provenance information for the file.
+
+        Returns
+        -------
+        FileInfo
+            A named tuple with the following attributes:
+            * hash : int
+                SHA256 hash of the file.
+            * hash_type: str
+                String storing the hash type (='sha256').
+            * path : str or path-like
+                The path to the file that was hashed.
+        """
+        return FileInfo(hash=self._hash,
+                        hash_type=self._hash_type,
+                        path=self.file_path)
 
 
 class BuffaloObjectHash(object):
