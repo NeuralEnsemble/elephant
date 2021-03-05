@@ -22,7 +22,6 @@ from os.path import splitext
 
 from pprint import pprint
 
-
 AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'input',
                                            'params',
@@ -36,9 +35,7 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'return_targets',
                                            'vis'))
 
-
 FunctionInfo = namedtuple('FunctionInfo', ('name', 'module', 'version'))
-
 
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
 VarArgs = namedtuple('VarArgs', 'args')
@@ -176,7 +173,8 @@ class Provenance(object):
         # TODO: fetch version information
 
         module = getattr(function, '__module__')
-        function_info = FunctionInfo(function.__name__, module, None)
+        function_info = FunctionInfo(name=function.__name__,
+                                     module=module, version=None)
 
         # 4. Extract parameters passed to the function and store
         # in `input_data` dictionary. Two separate lists with the
@@ -300,12 +298,18 @@ class Provenance(object):
                         self.call_order.index(function_info.name))
 
         # 9. Create tuple with the analysis step information.
-        # TODO use keyword argument
-        return AnalysisStep(function_info, inputs, parameters,
-                            outputs,
-                            input_args_names, input_kwargs_names,
-                            ast_tree, source_line, time_stamp_start,
-                            time_stamp_end, return_targets, vis_position)
+        return AnalysisStep(function=function_info,
+                            input=inputs,
+                            params=parameters,
+                            output=outputs,
+                            arg_map=input_args_names,
+                            kwarg_map=input_kwargs_names,
+                            call_ast=ast_tree,
+                            code_statement=source_line,
+                            time_stamp_start=time_stamp_start,
+                            time_stamp_end=time_stamp_end,
+                            return_targets=return_targets,
+                            vis=vis_position)
 
     def _get_calling_line_number(self, frame):
         # Get the line number of the current call.
@@ -368,13 +372,14 @@ class Provenance(object):
 
                 # Capture provenance information
                 if lineno is not None:
-
                     # Get AnalysisStep tuple with provenance information
-                    # TODO don't use C call signature
-                    step = self._capture_provenance(lineno, function, args,
-                                                    kwargs, function_output,
-                                                    time_stamp_start,
-                                                    time_stamp_end)
+                    step = self._capture_provenance(
+                        lineno=lineno,
+                        function=function, args=args,
+                        kwargs=kwargs,
+                        function_output=function_output,
+                        time_stamp_start=time_stamp_start,
+                        time_stamp_end=time_stamp_end)
 
                     # Add step to the history.
                     # The history will be the base to generate the graph and
@@ -573,5 +578,3 @@ def save_provenance(filename=None, file_format='rdf'):
     prov_document = Provenance.get_prov_info()
     prov_data = prov_document.serialize(filename, format=file_format)
     return prov_data
-
-

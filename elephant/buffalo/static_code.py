@@ -84,12 +84,22 @@ class _StaticStep(object):
             else None
         output_object = self.object_hash
 
-        # TODO C call signature
         return provenance.AnalysisStep(
-            provenance.FunctionInfo(self._operation, '', ''),
-            {0: input_object}, params, {0:output_object}, None, None,
-            self._node, None, self.time_stamp, self.time_stamp,
-            [], (None, None))
+            function=provenance.FunctionInfo(
+                name=self._operation,
+                module="",
+                version=""),
+            input={0: input_object},
+            params=params,
+            output={0: output_object},
+            arg_map=None,
+            kwarg_map=None,
+            call_ast=self._node,
+            code_statement=None,
+            time_stamp_start=self.time_stamp,
+            time_stamp_end=self.time_stamp,
+            return_targets=[],
+            vis=(None, None))
 
 
 class _NameStep(_StaticStep):
