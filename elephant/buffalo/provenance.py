@@ -512,7 +512,7 @@ def deactivate():
     """
     Deactivates provenance tracking within Elephant.
     """
-    # TODO: release the frame here: set to None
+    Provenance.calling_frame = None
     Provenance.active = False
 
 
