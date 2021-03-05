@@ -22,14 +22,6 @@ from os.path import splitext
 
 from pprint import pprint
 
-# TODO no python 2
-# Python 2.7 compatibility
-try:
-    signature = inspect.signature
-except AttributeError:
-    import funcsigs
-    signature = funcsigs.signature
-
 
 AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'input',
@@ -199,7 +191,7 @@ class Provenance(object):
         # TODO: consider moving the try-catch block below to a separate
         #  private function
         try:
-            fn_sig = signature(function)
+            fn_sig = inspect.signature(function)
             func_parameters = fn_sig.bind(*args, **kwargs)
 
             # Get default arguments in case they were not passed
