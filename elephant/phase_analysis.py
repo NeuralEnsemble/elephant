@@ -351,7 +351,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     Y: complex-valued vector, representing the Fourier spectra
     of a particular frequency
 
-    Usage/Interpretation of the paramater 'absolute_value':
+    Usage/Interpretation of the parameter 'absolute_value':
     When set to 'False', the WPLI contains additional directionality
     information about which signal leads/lags the other signal:
         - wpli > 0 : first signal leads second one

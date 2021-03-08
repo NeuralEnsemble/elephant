@@ -14,6 +14,7 @@ import numpy as np
 import quantities as pq
 import os.path
 import scipy.io
+from scipy.io import savemat
 
 import elephant.phase_analysis
 
@@ -373,6 +374,75 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
 
 class WeightedPhaseLagIndexTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(73)
+        cls._generate_datasets_for_ground_truth_testing()
+
+    @staticmethod
+    def _generate_datasets_for_ground_truth_testing(ntrial=40, tlength=2.5,
+                                                    srate=250):
+        """
+        Generates simple sinusoidal, artificial LFP-datasets.
+
+        This function simulates the recording of two LFP-signals over several
+        trials, for a certain duration of time and with a specified sampling
+        rate. These datasets will be used to calculate one WPLI-ground-truth
+        with the MATlAB package FieldTrip and its function
+        ft_connectivity_wpli().
+
+        Parameters
+        ----------
+        ntrial: int
+            Number of trials in the datasets.
+        tlength: float
+            Time length of the datasets in seconds.
+        srate: float
+            Sampling rate used to 'record' the signals in Hz.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        Used versions of MATLAB & FieldTrip:
+        MATLAB          Version 9.9         (2020b)
+        FieldTrip       fieldtrip-20210128
+
+        Instead of using the ft_connectivityanalysis() wrapper function, which
+        expects preprocessed data, the ft_connectivity_wpli() is called
+        directly. That's because the preprocessing functions of FieldTrip have
+        no 'conventional' Fourier-Transformation (FFT) method, but among
+        others a multitaper-FFT. Because this python-version of WPLI doesn't
+        use multitaper, but conventional FFT, the utilized MATLAB script also
+        uses the conventional FFT to preprocess the data and calculate the
+        cross-spectrum, which will then be passed to the ft_connectivity_wpli.
+
+        """
+        times = np.arange(0, tlength, 1 / srate)
+        kappa = 1.9
+        noise = np.random.normal(loc=0.0, scale=7, size=len(times))
+
+        sig_1 = [3 * np.sin(2 * 10 * np.pi * times +
+                            np.random.vonmises(np.pi, kappa)) + noise
+                 for _ in range(ntrial)]
+        lfps_1 = np.stack(sig_1, axis=0)
+
+        sig_2 = [9 * np.sin(2 * 15 * np.pi * times +
+                            np.random.vonmises(np.pi / 2, kappa)) + noise
+                 for _ in range(ntrial)]
+        lfps_2 = np.stack(sig_2, axis=0)
+
+        # save artifical LFP-dataset to .mat files
+        mdic_1 = {"lfp_matrix": lfps_1, "time": times, "sf": srate}
+        mdic_2 = {"lfp_matrix": lfps_2, "time": times, "sf": srate}
+        filename1_a = os.path.sep.join(['artificial_LFPs_1.mat'])
+        filename2_a = os.path.sep.join(['artificial_LFPs_2.mat'])
+
+        savemat(filename1_a, mdic_1)
+        savemat(filename2_a, mdic_2)
+
     def setUp(self):
         self.tolerance = 1e-15
 
