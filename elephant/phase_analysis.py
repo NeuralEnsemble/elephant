@@ -372,7 +372,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     # calculate Fourier transforms
     fft1 = np.fft.rfft(signal_i)
     fft2 = np.fft.rfft(signal_j)
-    freqs = np.fft.rfftfreq(np.shape(fft1)[1], d=1.0 / sampling_frequency)
+    freqs = np.fft.rfftfreq(np.shape(signal_i)[1], d=1.0 / sampling_frequency)
 
     # obtain cross-spectrum
     cs = fft1 * np.conjugate(fft2)
