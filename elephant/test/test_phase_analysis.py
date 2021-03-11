@@ -514,12 +514,9 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         freq_from_lfp_dataset_r, wpli_from_lfp_dataset_r = \
             elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_r, self.lfps2_r, self.sf1_r)
-        mask = ~(np.isnan(wpli_from_lfp_dataset_r) |
-                 np.isnan(self.wpli_ground_truth_FieldTrip_REAL))
-        np.testing.assert_allclose(
-            wpli_from_lfp_dataset_r[mask],
-            self.wpli_ground_truth_FieldTrip_REAL[mask], atol=1e-14,
-            rtol=1e-12)
+        np.testing.assert_allclose(wpli_from_lfp_dataset_r,
+            self.wpli_ground_truth_FieldTrip_REAL, atol=1e-14, rtol=1e-12,
+            equal_nan=True)
 
     def test_WPLI_ground_truth_consistency_ARTIFICIAL_LFP_dataset(self):
         """
@@ -530,12 +527,9 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         freq_from_lfp_dataset_a, wpli_from_lfp_dataset_a = \
             elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_a, self.lfps2_a, self.sf1_a, absolute_value=False)
-        mask = ~(np.isnan(wpli_from_lfp_dataset_a) |
-                 np.isnan(self.wpli_ground_truth_FieldTrip_ARTIFICIAL))
-        np.testing.assert_allclose(
-            wpli_from_lfp_dataset_a[mask],
-            self.wpli_ground_truth_FieldTrip_ARTIFICIAL[mask], atol=1e-14,
-            rtol=1e-12)
+        np.testing.assert_allclose(wpli_from_lfp_dataset_a,
+            self.wpli_ground_truth_FieldTrip_ARTIFICIAL, atol=1e-14,
+            rtol=1e-12, equal_nan=True)
 
     def test_WPLI_comparison_to_multitaper_approaches(self):
         """
@@ -564,7 +558,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             atol=self.tolerance, rtol=self.tolerance,
             err_msg="MNE, supposed wpli=1 failed")
         np.testing.assert_allclose(abs(wpli[freq == 70]),
-            self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[freq == 90],
+            self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[freq == 70],
             atol=0.002, rtol=self.tolerance,
             err_msg="MNE, supposed wpli=0 failed")
 
