@@ -552,17 +552,21 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # comparing to FieldTrips' ft_conectivity()
         np.testing.assert_allclose(wpli[mask],
             self.wpli_ground_truth_FieldTrip_ARTIFICIAL_multitaper[mask],
-            atol=self.tolerance, rtol=self.tolerance)
+            atol=self.tolerance, rtol=self.tolerance,
+            err_msg="FieldTrip, supposed wpli=1 failed")
         np.testing.assert_allclose(wpli[freq == 70],
             self.wpli_ground_truth_FieldTrip_ARTIFICIAL_multitaper[freq == 70],
-                                   atol=0.0002, rtol=self.tolerance)
+            atol=0.0002, rtol=self.tolerance,
+            err_msg="FieldTrip, supposed wpli=0 failed")
         # comparing to MNEs' spectral_connectivity()
         np.testing.assert_allclose(abs(wpli[mask]),
             self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[mask],
-            atol=self.tolerance, rtol=self.tolerance)
+            atol=self.tolerance, rtol=self.tolerance,
+            err_msg="MNE, supposed wpli=1 failed")
         np.testing.assert_allclose(abs(wpli[freq == 70]),
-            self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[freq == 70],
-            atol=0.002, rtol=self.tolerance)
+            self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[freq == 90],
+            atol=0.002, rtol=self.tolerance,
+            err_msg="MNE, supposed wpli=0 failed")
 
     def test_WPLI_is_zero(self):  # for: f = 70Hz
         """
