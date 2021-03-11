@@ -488,12 +488,21 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.sf1_a = dataset1_a['sf'] * pq.Hz
         self.lfps2_a = dataset2_a['lfp_matrix'] * pq.uV
 
-        # load ground-truth calculated by FieldTrip: ft_connectivity_wpli
+        # # load ground-truth calculated by:
+        # # 1) FieldTrip: ft_connectivity_wpli()
         self.wpli_ground_truth_FieldTrip_REAL = np.loadtxt(
             'ground_truth_WPLI_FieldTrip_real_LFPs.csv', delimiter=',',
             dtype=np.float64)
         self.wpli_ground_truth_FieldTrip_ARTIFICIAL = np.loadtxt(
             'ground_truth_WPLI_FieldTrip_artificial_LFPs_more_complex.csv',
+            delimiter=',', dtype=np.float64)
+        # # 2) FieldTrip: ft_connectivity(), uses multitaper for FFT
+        self.wpli_ground_truth_FieldTrip_ARTIFICIAL_multitaper = np.loadtxt(
+            'ground_truth_WPLI_FieldTrip_artificial_LFPs_multitaper.csv',
+            delimiter=',', dtype=np.float64)
+        # # 3) MNE: spectral_connectivity(), uses multitaper for FFT
+        self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper = np.loadtxt(
+            'ground_truth_WPLI_MNE_spectral_connectivity_multitaper.csv',
             delimiter=',', dtype=np.float64)
 
     def test_WPLI_ground_truth_consistency_REAL_LFP_dataset(self):
@@ -527,6 +536,33 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             wpli_from_lfp_dataset_a[mask],
             self.wpli_ground_truth_FieldTrip_ARTIFICIAL[mask], atol=1e-14,
             rtol=1e-12)
+
+    def test_WPLI_comparison_to_multitaper_approaches(self):
+        """
+        Test if WPLI values are equal to those calculated from
+        FieldTrips' ft_connectivity() and MNEs' spectral_connectivity() at
+        frequencies [16, 36, 52, 70, 100]Hz.
+        """
+        freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1_a, self.lfps2_a, self.sf1_a, absolute_value=False)
+        # mask for supposed wpli=1 frequencies,
+        # freq=70Hz with supposed wpli=0 is treated separately,
+        # because of noise existence in the artificial dataset
+        mask = ((freq == 16) | (freq == 36) | (freq == 52) | (freq == 100))
+        # comparing to FieldTrips' ft_conectivity()
+        np.testing.assert_allclose(wpli[mask],
+            self.wpli_ground_truth_FieldTrip_ARTIFICIAL_multitaper[mask],
+            atol=self.tolerance, rtol=self.tolerance)
+        np.testing.assert_allclose(wpli[freq == 70],
+            self.wpli_ground_truth_FieldTrip_ARTIFICIAL_multitaper[freq == 70],
+                                   atol=0.0002, rtol=self.tolerance)
+        # comparing to MNEs' spectral_connectivity()
+        np.testing.assert_allclose(abs(wpli[mask]),
+            self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[mask],
+            atol=self.tolerance, rtol=self.tolerance)
+        np.testing.assert_allclose(abs(wpli[freq == 70]),
+            self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper[freq == 70],
+            atol=0.002, rtol=self.tolerance)
 
     def test_WPLI_is_zero(self):  # for: f = 70Hz
         """
