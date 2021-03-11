@@ -390,6 +390,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         rate. These datasets will be used to calculate one WPLI-ground-truth
         with the MATlAB package FieldTrip and its function
         ft_connectivity_wpli().
+        Moreover this function generates a secound pair of LFP-signals, which
+        will be used to calculate two other WPLI-ground-truths. One from the
+        FieldTrip wrapper ft_connectivityanalysis() and the other from MNEs
+        spectral_connectivity(), which both use multitaper for FFT, therefore
+        just certain frequencies will be compared.
 
         Parameters
         ----------
@@ -421,20 +426,31 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
         """
         times = np.arange(0, tlength, 1 / srate)
-        kappa = 1.9
-        noise = np.random.normal(loc=0.0, scale=7, size=len(times))
 
-        sig_1 = [3 * np.sin(2 * 10 * np.pi * times +
-                            np.random.vonmises(np.pi, kappa)) + noise
-                 for _ in range(ntrial)]
-        lfps_1 = np.stack(sig_1, axis=0)
+        # # lfps_1 & 2 will be used for
+        # # 1) calculating ground-truth with FieldTrips' ft_connectivity_wpli
+        # # 2) comparison to mutlitaper-approaches like
+        # # FieldTrips' ft_connectivityanalysis()
+        # # and MNEs' spectral_connectivity at certain frequencies
+        lfps_1 = [np.cos(2 * 16 * np.pi * times + np.pi/2) +
+                  np.cos(2 * 36 * np.pi * times + np.pi / 2) +
+                  np.cos(2 * 52 * np.pi * times) +
+                  np.cos(2 * 100 * np.pi * times) +
+                  np.cos(2 * 70 * np.pi * times + np.pi/2 + np.pi*(i % 2)) +
+                  np.random.normal(loc=0.0, scale=1, size=len(times))
+                  for i in range(ntrial)]
+        lfps_1 = np.stack(lfps_1, axis=0)
 
-        sig_2 = [9 * np.sin(2 * 15 * np.pi * times +
-                            np.random.vonmises(np.pi / 2, kappa)) + noise
-                 for _ in range(ntrial)]
-        lfps_2 = np.stack(sig_2, axis=0)
+        lfps_2 = [np.cos(2 * 16 * np.pi * times) +
+                  np.cos(2 * 36 * np.pi * times) +
+                  np.cos(2 * 52 * np.pi * times + np.pi/2) +
+                  np.cos(2 * 100 * np.pi * times + np.pi/2) +
+                  np.cos(2 * 70 * np.pi * times) +
+                  np.random.normal(loc=0.0, scale=1, size=len(times))
+                  for _ in range(ntrial)]
+        lfps_2 = np.stack(lfps_2, axis=0)
 
-        # save artifical LFP-dataset to .mat files
+        # save artificial LFP-dataset to .mat files
         mdic_1 = {"lfp_matrix": lfps_1, "time": times, "sf": srate}
         mdic_2 = {"lfp_matrix": lfps_2, "time": times, "sf": srate}
         filename1_a = os.path.sep.join(['artificial_LFPs_1.mat'])
@@ -445,30 +461,6 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tolerance = 1e-15
-
-        # # create simple artificial signals with the following parameters
-        # to assert certain WPLI values (0, 1 and -1) at freq = 16 Hz
-        ntrials = 100
-        self.srate = 250        # Hz
-        tlength = 2500          # ms
-        self.freq = 16          # Hz
-        amp = 1                 # mV
-        # time-vector
-        t = np.arange(0, tlength, 1. / (self.srate / 1000))
-
-        # constant phase shift of 0 across trials
-        self.signal_x = np.full((ntrials, len(t)),
-            amp * np.sin(2 * np.pi * (self.freq / 1000) * t + 0))
-        # constant phase shift of pi/3 across trials
-        self.signal_y = np.full((ntrials, len(t)),
-            amp * np.sin(2 * np.pi * (self.freq / 1000) * t + np.pi/3))
-        # in one half of the trials from signal_z the phase shift is pi/2 and
-        # in the other half its 1.5*pi
-        self.signal_z = np.empty((ntrials, len(t)))
-        self.signal_z[0:int(ntrials/2)] = \
-            amp * np.sin(2 * np.pi * (self.freq / 1000) * t + np.pi/2)
-        self.signal_z[int(ntrials/2):] = \
-            amp * np.sin(2 * np.pi * (self.freq / 1000) * t + 1.5*np.pi)
 
         # # simple samples of different shapes to assert ErrorRaising
         self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
@@ -501,8 +493,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             'ground_truth_WPLI_FieldTrip_real_LFPs.csv', delimiter=',',
             dtype=np.float64)
         self.wpli_ground_truth_FieldTrip_ARTIFICIAL = np.loadtxt(
-            'ground_truth_WPLI_FieldTrip_artificial_LFPs.csv', delimiter=',',
-            dtype=np.float64)
+            'ground_truth_WPLI_FieldTrip_artificial_LFPs_more_complex.csv',
+            delimiter=',', dtype=np.float64)
 
     def test_WPLI_ground_truth_consistency_REAL_LFP_dataset(self):
         """
@@ -528,7 +520,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # ARTIFICIAL DATA
         freq_from_lfp_dataset_a, wpli_from_lfp_dataset_a = \
             elephant.phase_analysis.weighted_phase_lag_index(
-                self.lfps1_a, self.lfps2_a, self.sf1_a)
+                self.lfps1_a, self.lfps2_a, self.sf1_a, absolute_value=False)
         mask = ~(np.isnan(wpli_from_lfp_dataset_a) |
                  np.isnan(self.wpli_ground_truth_FieldTrip_ARTIFICIAL))
         np.testing.assert_allclose(
@@ -536,35 +528,37 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             self.wpli_ground_truth_FieldTrip_ARTIFICIAL[mask], atol=1e-14,
             rtol=1e-12)
 
-    def test_WPLI_is_zero(self):  # for: f = 16Hz
+    def test_WPLI_is_zero(self):  # for: f = 70Hz
         """
-        Test if WPLI is zero at frequency f=16Hz, which is the frequency
-        of this artificial test-data sinusoid.
+        Test if WPLI is zero at frequency f=70Hz for the multi-sine
+        artificial LFP dataset.
         """
         freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
-            self.signal_x, self.signal_z, self.srate)
-        np.testing.assert_allclose(wpli[np.where(freq == self.freq)], 0,
-                                   atol=self.tolerance, rtol=self.tolerance)
+            self.lfps1_a, self.lfps2_a, self.sf1_a, absolute_value=False)
+        np.testing.assert_allclose(wpli[freq == 70], 0, atol=0.002,
+                                   rtol=self.tolerance)
 
-    def test_WPLI_is_one(self):  # for: f = 16Hz
+    def test_WPLI_is_one(self):  # for: f = 16Hz and 36Hz
         """
-        Test if WPLI is one at frequency f=16Hz, which is the frequency
-        of this artificial test-data sinusoid.
+        Test if WPLI is one at frequency f=16Hz and 36Hz for the multi-sine
+        artificial LFP dataset.
         """
         freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
-            self.signal_x, self.signal_y, self.srate)
-        np.testing.assert_allclose(wpli[np.where(freq == self.freq)], 1,
-                                   atol=self.tolerance, rtol=self.tolerance)
+            self.lfps1_a, self.lfps2_a, self.sf1_a, absolute_value=False)
+        mask = ((freq == 16) | (freq == 36))
+        np.testing.assert_allclose(wpli[mask], 1, atol=self.tolerance,
+                                   rtol=self.tolerance)
 
-    def test_WPLI_is_minus_one(self):  # for: f = 16Hz
+    def test_WPLI_is_minus_one(self):  # for: f = 52Hz and 100Hz
         """
-        Test if WPLI is minus one at frequency f=16Hz, which is the frequency
-        of this artificial test-data sinusoid.
+        Test if WPLI is minus one at frequency f=52Hz and 100Hz
+        for the multi-sine artificial LFP dataset.
         """
         freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
-            self.signal_x, self.signal_y, self.srate, absolute_value=False)
-        np.testing.assert_allclose(wpli[np.where(freq == self.freq)], -1,
-                                   atol=self.tolerance, rtol=self.tolerance)
+            self.lfps1_a, self.lfps2_a, self.sf1_a, absolute_value=False)
+        mask = ((freq == 52) | (freq == 100))
+        np.testing.assert_allclose(wpli[mask], -1, atol=self.tolerance,
+                                   rtol=self.tolerance)
 
     def test_WPLI_raise_error_if_trial_number_is_different(self):
         """
@@ -574,7 +568,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # different numbers of trails
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            self.simple_x, self.simple_y, self.srate)
+            self.simple_x, self.simple_y, 250)
 
     def test_WPLI_raise_error_if_trial_lengths_are_different(self):
         """
@@ -584,7 +578,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # different lengths in a trail pair
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            self.simple_y, self.simple_z, self.srate)
+            self.simple_y, self.simple_z, 250)
 
 
 if __name__ == '__main__':
