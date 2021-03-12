@@ -143,6 +143,80 @@ class Provenance(object):
                                function=function, time_stamp=time_stamp)
         ast_visitor.visit(tree)
 
+    def _process_input_arguments(self, function, args, kwargs):
+        # Inspect the arguments to extract the ones defined as inputs.
+        # Values are stored in a dictionary with the argument name as key.
+        # If signature inspection is not possible, the inputs are stored by
+        # order in the function call, with the index as keys.
+
+        # Initialize dictionaries and lists
+        input_data = {}
+        input_args_names = []
+        input_kwargs_names = []
+
+        try:
+            # Get the function signature and bind the arguments, obtaining a
+            # dictionary with argument name as keys and argument value as
+            # values
+            fn_sig = inspect.signature(function)
+            func_parameters = fn_sig.bind(*args, **kwargs)
+
+            # Get the default argument values, to store them in case they
+            # were not passed in the call
+            default_args = {k: v.default
+                            for k, v in fn_sig.parameters.items()
+                            if v.default is not inspect.Parameter.empty}
+
+            # For each item in the bound arguments dictionary...
+            for arg_name, arg_value in func_parameters.arguments.items():
+
+                # Get the description of the current argument by its name
+                cur_parameter = \
+                    func_parameters.signature.parameters[arg_name]
+
+                # If this argument is one of possible default values, remove
+                # it, since the user has passed a value explicitly
+                if arg_name in default_args:
+                    default_args.pop(arg_name)
+
+                # If the argument is variable positional, i.e., *arg, we will
+                # store its tuple in the dictionary as the VarArgs named tuple.
+                # This signals that this argument's value is multiple.
+                # Otherwise, we just store the value
+                if cur_parameter.kind != VAR_POSITIONAL:
+                    input_data[arg_name] = arg_value
+                else:
+                    # Variable positional arguments are stored as
+                    # the namedtuple VarArgs.
+                    input_data[arg_name] = VarArgs(arg_value)
+
+                # Store the argument name in the appropriate list
+                if arg_name in kwargs:
+                    input_kwargs_names.append(arg_name)
+                else:
+                    input_args_names.append(arg_name)
+
+            # Add the default argument names to the list of kwargs names
+            input_kwargs_names.extend(default_args.keys())
+
+        except ValueError:
+            # Can't inspect signature. Append args/kwargs by order
+            for arg_index, arg in enumerate(args):
+                input_data[arg_index] = arg
+                input_args_names.append(arg_index)
+
+            # Keyword arguments index start after the last positional argument
+            kwarg_start = len(input_data)
+            for kwarg_index, kwarg in enumerate(kwargs,
+                                                start=kwarg_start):
+                input_data[kwarg_index] = kwarg
+                input_kwargs_names.append(kwarg_index)
+
+            # No default arguments
+            default_args = {}
+
+        return input_data, input_args_names, input_kwargs_names, default_args
+
     def _capture_provenance(self, lineno, function, args, kwargs,
                             function_output, time_stamp_start,
                             time_stamp_end):
@@ -182,63 +256,15 @@ class Provenance(object):
         function_info = FunctionInfo(name=function.__name__,
                                      module=module, version=None)
 
-        # 4. Extract parameters passed to the function and store
-        # in `input_data` dictionary. Two separate lists with the
-        # names according to the arg/kwarg order are also
-        # constructed, to map to the `args` and `keywords` fields
-        # of the AST nodes
+        # 4. Extract the parameters passed to the function and store them in
+        # the `input_data` dictionary.
+        # Two separate lists with the names according to the arg/kwarg order
+        # are also constructed, to map to the `args` and `keywords` fields
+        # of the AST nodes. Also, the list of all arguments whose values taken
+        # are defaults is returned as the `default_args` dictionary.
 
-        input_data = {}
-        input_args_names = []
-        input_kwargs_names = []
-
-        # TODO: consider moving the try-catch block below to a separate
-        #  private function
-        try:
-            fn_sig = inspect.signature(function)
-            func_parameters = fn_sig.bind(*args, **kwargs)
-
-            # Get default arguments in case they were not passed
-            default_args = {k: v.default
-                            for k, v in fn_sig.parameters.items()
-                            if v.default is not inspect.Parameter.empty}
-
-            for arg_name, arg_value in func_parameters.arguments.items():
-                cur_parameter = \
-                    func_parameters.signature.parameters[arg_name]
-
-                if arg_name in default_args:
-                    default_args.pop(arg_name)
-
-                if cur_parameter.kind != VAR_POSITIONAL:
-                    input_data[arg_name] = arg_value
-                else:
-                    # Variable positional arguments are stored as
-                    # the namedtuple VarArgs.
-                    input_data[arg_name] = VarArgs(arg_value)
-
-                if arg_name in kwargs:
-                    input_kwargs_names.append(arg_name)
-                else:
-                    input_args_names.append(arg_name)
-
-            # Add default arguments to kwargs
-            input_kwargs_names.extend(list(default_args.keys()))
-
-        except ValueError:
-            # Can't inspect signature. Append args/kwargs by
-            # order
-            for arg_index, arg in enumerate(args):
-                input_data[arg_index] = arg
-                input_args_names.append(arg_index)
-
-            kwarg_start = len(input_data)
-            for kwarg_index, kwarg in enumerate(kwargs,
-                                                start=kwarg_start):
-                input_data[kwarg_index] = kwarg
-                input_kwargs_names.append(kwarg_index)
-
-            default_args = {}
+        input_data, input_args_names, input_kwargs_names, default_args = \
+            self._process_input_arguments(function, args, kwargs)
 
         # 5. Create parameters/input descriptions for the graph.
         # Here the inputs, but not the parameters passed to the function, are
@@ -247,17 +273,22 @@ class Provenance(object):
         # decorator, and stored as the attribute `inputs`. If one parameter
         # is defined as a `file_input` in the initialization, a hash to the
         # file is obtained using the `BuffaloFileHash`.
+        # After this step, all hashes of input parameters/files are going to
+        # be stored in the dictionary `inputs`.
 
         hasher = BuffaloObjectHasher()
 
-        # Initialize parameter list with all default arguments
-        # that were not passed to the function
+        # Initialize parameter list with all default arguments that were not
+        # passed to the function
         parameters = default_args
 
         inputs = {}
         for key, input_value in input_data.items():
             if key in self.inputs:
                 if isinstance(input_value, VarArgs):
+                    # If the argument is multiple, hash each value of the
+                    # tuple and store them inside a `VarArgs` namedtuple so
+                    # that we know this is a multiple input
                     var_input_list = []
                     for var_arg in input_value.args:
                         var_input_list.append(hasher.info(var_arg))
@@ -265,21 +296,27 @@ class Provenance(object):
                 else:
                     inputs[key] = hasher.info(input_value)
             elif key in self.file_inputs:
+                # Input is from a file. Hash using `BuffaloFileHash`
                 inputs[key] = BuffaloFileHash(input_value).info()
             elif key not in self.file_outputs:
+                # The remainder argument is also not an output file, so this
+                # is an actual input to the function defined when initializing
+                # the decorator.
                 parameters[key] = input_value
 
         # 6. Create hash for the output using `BuffaloObjectHasher` to follow
-        # individual returns
+        # individual returns. The hashes will be stored in the `outputs`
+        # dictionary, with the index as the order of each returned object.
+        outputs = {}
         if len(return_targets) == 1:
             function_output = [function_output]
-        outputs = {}
         for index, item in enumerate(function_output):
             outputs[index] = hasher.info(item)
 
-        # If there is a file output as defined in the class
-        # initialization, create the hash and add as output,
-        # using `BuffaloFileHash`
+        # If there is a file output as defined in the decorator
+        # initialization, create the hash and add as output using
+        # `BuffaloFileHash`. These outputs will be identified by the key
+        # `file.X`, where X is an integer with the order of the file output
         if len(self.file_outputs):
             for idx, file_output in enumerate(self.file_outputs):
                 outputs[f"file.{idx}"] = \
@@ -301,7 +338,7 @@ class Provenance(object):
         vis_position = (self.call_count[function_info.name],
                         self.call_order.index(function_info.name))
 
-        # 9. Create tuple with the analysis step information.
+        # 9. Create tuple with the analysis step information and return.
         return AnalysisStep(function=function_info,
                             input=inputs,
                             params=parameters,
