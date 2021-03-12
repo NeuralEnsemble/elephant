@@ -93,7 +93,7 @@ class _BuffaloCodeAnalyzer(object):
 
         # Correct the line numbers. If in a function, the `def` line is 1, and
         # the code starts on line 2 of the function body. The code in
-        # `self.source_code` also starts one line after the number stored in
+        # `self.source_code` also starts one line before the number stored in
         # `self.start_line`.
         if is_function:
             offset = self.start_line - 2
@@ -119,8 +119,7 @@ class _BuffaloCodeAnalyzer(object):
         Returns
         -------
         str
-            The code corresponding to the full statement in case it is a
-            multiline.
+            The code corresponding to the full statement.
 
         """
         # Find the start and end line of the statement identified by
