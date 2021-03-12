@@ -290,7 +290,7 @@ class Provenance(object):
         # individual returns. The hashes will be stored in the `outputs`
         # dictionary, with the index as the order of each returned object.
         outputs = {}
-        if len(return_targets) == 1:
+        if len(return_targets) < 2:
             function_output = [function_output]
         for index, item in enumerate(function_output):
             outputs[index] = hasher.info(item)
