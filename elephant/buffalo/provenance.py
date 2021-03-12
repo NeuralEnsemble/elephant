@@ -9,9 +9,9 @@ during the execution of analysis scripts using Elephant.
 from functools import wraps
 import inspect
 import ast
-from collections import namedtuple
 import datetime
 
+from elephant.buffalo.types import AnalysisStep, FunctionInfo, VarArgs
 from elephant.buffalo.object_hash import BuffaloObjectHasher, BuffaloFileHash
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import _CallAST
@@ -23,25 +23,7 @@ from os.path import splitext
 from pprint import pprint
 
 
-AnalysisStep = namedtuple('AnalysisStep', ('function',
-                                           'input',
-                                           'params',
-                                           'output',
-                                           'arg_map',
-                                           'kwarg_map',
-                                           'call_ast',
-                                           'code_statement',
-                                           'time_stamp_start',
-                                           'time_stamp_end',
-                                           'return_targets',
-                                           'vis'))
-
-
-FunctionInfo = namedtuple('FunctionInfo', ('name', 'module', 'version'))
-
-
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
-VarArgs = namedtuple('VarArgs', 'args')
 
 
 class Provenance(object):

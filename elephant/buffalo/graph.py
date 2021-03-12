@@ -5,6 +5,9 @@ import uuid
 import networkx as nx
 from pyvis.network import Network
 
+from elephant.buffalo.types import ObjectInfo, VarArgs
+
+
 # TODO: get rid of pyvis in favor of prov
 
 
@@ -220,9 +223,6 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             _connect_edge(input_obj, output_obj)
 
     def _get_type_and_label(self, obj):
-        # TODO: add a comment why it's imported here and not in the
-        #  global scope
-        from elephant.buffalo.object_hash import ObjectInfo
         if isinstance(obj, ObjectInfo):
             # Provenance of a Python object (ObjectInfo named tuple)
             obj_type = obj.type
@@ -267,8 +267,6 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         return None, None
 
     def add_step(self, analysis_step, **attr):
-
-        from elephant.buffalo.provenance import VarArgs
 
         for key, obj in analysis_step.output.items():
             obj_type, obj_label, node_type = self._get_type_and_label(obj)

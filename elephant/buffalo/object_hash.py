@@ -7,13 +7,14 @@ script execution.
 import hashlib
 import inspect
 import uuid
-from collections import namedtuple
 from copy import copy
 from pathlib import Path
 
 import joblib
 import numpy as np
 from dill._dill import save_function
+
+from elephant.buffalo.types import ObjectInfo, FileInfo
 
 # Need to use `dill` pickling function to support lambdas.
 # Some objects may have attributes that are lambdas. One example is the
@@ -23,9 +24,6 @@ from dill._dill import save_function
 # Here we update the dispatch table of the `joblib.Hasher` object to use
 # the function from `dill` that supports these attributes.
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
-
-ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
-FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path'))
 
 
 class BuffaloFileHash(object):
