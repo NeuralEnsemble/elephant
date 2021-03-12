@@ -24,7 +24,6 @@ from dill._dill import save_function
 # the function from `dill` that supports these attributes.
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
-
 ObjectInfo = namedtuple('ObjectInfo', ('hash', 'type', 'id', 'details'))
 FileInfo = namedtuple('FileInfo', ('hash', 'hash_type', 'path'))
 
@@ -95,9 +94,9 @@ class BuffaloFileHash(object):
                         path=self.file_path)
 
 
-class BuffaloObjectHash(object):
+class BuffaloObjectHasher(object):
     """
-    Class for hashing Python objects.
+    Class for hashing Python objects, supporting memoization.
 
     The object hash value is obtaining by hashing a tuple consisting of the
     object type, and the MD5 hash of its value.
@@ -111,26 +110,10 @@ class BuffaloObjectHash(object):
     The method `info` is called to obtain the provenance information
     associated with the object during tracking.
 
-    Parameters
-    ----------
-    obj : object
-        A Python object that will be hashed with respect to type and content.
     """
 
-    # TODO: don't make it static
-    _hash_memoizer = dict()
-
-    @classmethod
-    def clear_memoization(cls):
-        cls._hash_memoizer.clear()
-
-    @classmethod
-    def memoize(cls, id, hash_value):
-        cls._hash_memoizer[id] = hash_value
-
-    @classmethod
-    def get_memoized(cls, id):
-        return cls._hash_memoizer.get(id)
+    def __init__(self):
+        self._hash_memoizer = dict()
 
     @staticmethod
     def _get_object_package(obj):
@@ -142,60 +125,60 @@ class BuffaloObjectHash(object):
             package = module.__package__.split(".")[0]
         return package
 
-    def __init__(self, obj):
-        self.package = self._get_object_package(obj)
-        self.type = f"{type(obj).__module__}.{type(obj).__name__}"
-        self.id = id(obj)
-        self.value = obj
+    def _get_object_hash(self, obj, obj_type, obj_id, package):
+        # Computes the hash for `obj`. `obj_type` and `package` are the
+        # string representations of the type and package, and `obj_id` the
+        # id() of the object
 
-    def __hash__(self):
+        print(obj_type, obj_id)
 
         # If we already computed the hash for the object during this function
         # call, retrieve it from the memoized values
-        print(self.type, self.id)
-        memoized = self.get_memoized(self.id)
-        if memoized is not None:
-            return memoized
+        if obj_id in self._hash_memoizer:
+            return self._hash_memoizer[obj_id]
 
         print("Hashing")
-        array_of_matplotlib = False
-        if (isinstance(self.value, np.ndarray) and
-                self.value.dtype == np.dtype('object')):
-            if (len(self.value) and
-                    self._get_object_package(self.value.flat[0]) ==
-                    'matplotlib'):
-                array_of_matplotlib = True
 
-        if self.package in ['matplotlib']:
+        # Check if the object is a NumPy array of matplotlib objects
+        array_of_matplotlib = False
+        if isinstance(obj, np.ndarray) and obj.dtype == np.dtype('object'):
+            is_matplotlib = lambda x: self._get_object_package(x) == \
+                                      'matplotlib'
+            array_of_matplotlib = all(map(is_matplotlib, obj))
+
+        if package in ['matplotlib']:
             # For matplotlib objects, we need to use the builtin hashing
             # function instead of joblib's. Multiple object hashes are
             # generated, since each time something is plotted the object
             # changes.
-            value_hash = hash(self.value)
+            value_hash = hash(obj)
         elif array_of_matplotlib:  # or isinstance(self.value, list):
             # We also have to use an exception for NumPy arrays with Axes
             # objects, as those also change when the plot changes.
             # These are usually return by the `plt.subplots()` call.
-            value_hash = id(self.value)
+            value_hash = obj_id
         else:
             # Other objects, like Neo, Quantity and NumPy arrays, use joblib
-            value_hash = joblib.hash(self.value)
+            value_hash = joblib.hash(obj)
 
         # Compute final hash by type and value
-        object_hash = hash((self.type, value_hash))
+        object_hash = hash((obj_type, value_hash))
 
         # Memoize the hash
-        self.memoize(self.id, object_hash)
+        self._hash_memoizer[obj_id] = object_hash
 
         return object_hash
 
-    def __repr__(self):
-        return f"{self.id}: {self.type}"
-
-    def info(self):
+    def info(self, obj):
         """
-        Returns provenance information for the object. If the object is None,
-        then the hash is replaced by a unique id for the object.
+        Returns provenance information for the object.
+        If the object is None, then the hash is replaced by a unique id for
+        the object.
+
+        Parameters
+        ----------
+        obj : object
+            Python object to get the provenance information.
 
         Returns
         -------
@@ -210,25 +193,35 @@ class BuffaloObjectHash(object):
             * details : dict
                 Extended information (metadata) on the object.
         """
+        obj_type = f"{type(obj).__module__}.{type(obj).__name__}"
+        obj_id = id(obj)
+
         # All Nones will have the same hash. Use UUID instead
-        if self.value is None:
+        if obj is None:
             unique_id = uuid.uuid4()
-            return ObjectInfo(unique_id, self.type, self.id, {})
+            return ObjectInfo(hash=unique_id, type=obj_type, id=obj_id,
+                              details={})
 
         # Here we can extract specific metadata to record
         details = {}
 
         # Currently fetching the whole instance dictionary
-        if hasattr(self.value, '__dict__'):
+        if hasattr(obj, '__dict__'):
             # Need to copy otherwise the hashes change
-            details = copy(self.value.__dict__)
+            details = copy(obj.__dict__)
 
         # Store specific attributes that are relevant for arrays, quantities
         # Neo objects, and AnalysisObjects
         for attr in ('units', 'shape', 'dtype', 't_start', 't_stop',
                      'id', 'nix_name', 'dimensionality', 'pid',
                      'create_time'):
-            if hasattr(self.value, attr):
-                details[attr] = getattr(self.value, attr)
+            if hasattr(obj, attr):
+                details[attr] = getattr(obj, attr)
 
-        return ObjectInfo(hash(self), self.type, self.id, details)
+        # Compute object hash
+        package = self._get_object_package(obj)
+        obj_hash = self._get_object_hash(obj=obj, obj_type=obj_type,
+                                         obj_id=obj_id, package=package)
+
+        return ObjectInfo(hash=obj_hash, type=obj_type, id=obj_id,
+                          details=details)

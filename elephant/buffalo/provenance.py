@@ -12,7 +12,7 @@ import ast
 from collections import namedtuple
 import datetime
 
-from elephant.buffalo.object_hash import BuffaloObjectHash, BuffaloFileHash
+from elephant.buffalo.object_hash import BuffaloObjectHasher, BuffaloFileHash
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import _CallAST
 from elephant.buffalo.code_lines import _BuffaloCodeAnalyzer
@@ -133,12 +133,14 @@ class Provenance(object):
         # Store the list of arguments that are inputs
         self.inputs = inputs
 
-    def _insert_static_information(self, tree, function, time_stamp):
+    def _insert_static_information(self, tree, hasher, function, time_stamp):
         # Use a NodeVisitor to find the Call node that corresponds to the
         # current AnalysisStep. It will fetch static relationships between
         # variables and attributes, and link to the inputs and outputs of the
-        # function
-        ast_visitor = _CallAST(self, function, time_stamp)
+        # function. The hasher object is passed, to use hash memoization in
+        # case the hash of some object is already computed
+        ast_visitor = _CallAST(provenance_tracker=self, hasher=hasher,
+                               function=function, time_stamp=time_stamp)
         ast_visitor.visit(tree)
 
     def _capture_provenance(self, lineno, function, args, kwargs,
@@ -239,13 +241,14 @@ class Provenance(object):
             default_args = {}
 
         # 5. Create parameters/input descriptions for the graph.
-        # Here the inputs, but not the parameters passed to the
-        # function, are transformed in the hashable type
-        # `BuffaloObjectHash`. Inputs are defined by the parameter
-        # `inputs` when initializing the class, and stored as the
-        # class attribute `inputs`. If one parameter is defined
-        # as a `file_input` when initializing the class, a hash
-        # to the file is obtained using the `BuffaloFileHash`.
+        # Here the inputs, but not the parameters passed to the function, are
+        # hashed using the `BuffaloObjectHasher` object.
+        # Inputs are defined by the parameter `inputs` when initializing the
+        # decorator, and stored as the attribute `inputs`. If one parameter
+        # is defined as a `file_input` in the initialization, a hash to the
+        # file is obtained using the `BuffaloFileHash`.
+
+        hasher = BuffaloObjectHasher()
 
         # Initialize parameter list with all default arguments
         # that were not passed to the function
@@ -257,25 +260,22 @@ class Provenance(object):
                 if isinstance(input_value, VarArgs):
                     var_input_list = []
                     for var_arg in input_value.args:
-                        var_input_list.append(
-                            BuffaloObjectHash(var_arg).info())
+                        var_input_list.append(hasher.info(var_arg))
                     inputs[key] = VarArgs(tuple(var_input_list))
                 else:
-                    inputs[key] = \
-                        BuffaloObjectHash(input_value).info()
+                    inputs[key] = hasher.info(input_value)
             elif key in self.file_inputs:
                 inputs[key] = BuffaloFileHash(input_value).info()
             elif key not in self.file_outputs:
                 parameters[key] = input_value
 
-        # 6. Create hashable `BuffaloObjectHash` for the output
-        # objects to follow individual returns, if the function
-        # is not returning None
+        # 6. Create hash for the output using `BuffaloObjectHasher` to follow
+        # individual returns
         if len(return_targets) == 1:
             function_output = [function_output]
         outputs = {}
         for index, item in enumerate(function_output):
-            outputs[index] = BuffaloObjectHash(item).info()
+            outputs[index] = hasher.info(item)
 
         # If there is a file output as defined in the class
         # initialization, create the hash and add as output,
@@ -287,9 +287,9 @@ class Provenance(object):
 
         # 7. Analyze AST and fetch static relationships in the
         # input/output and other variables/objects in the script
-        self._insert_static_information(ast_tree,
-                                        function_info.name,
-                                        time_stamp_start)
+        self._insert_static_information(tree=ast_tree, hasher=hasher,
+                                        function=function_info.name,
+                                        time_stamp=time_stamp_start)
 
         # 8. Use a call counter to organize the nodes in the output
         # graph
@@ -359,9 +359,6 @@ class Provenance(object):
 
             # If capturing provenance...
             if Provenance.active:
-
-                # Clear previous hash memoizations
-                BuffaloObjectHash.clear_memoization()
 
                 # For functions that are used inside other decorated functions,
                 # or recursively, check if the calling frame is the one being

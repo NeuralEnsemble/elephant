@@ -13,7 +13,6 @@ import itertools
 
 from elephant.buffalo.static_code import (_AttributeStep, _NameStep,
                                           _SubscriptStep)
-from elephant.buffalo.object_hash import BuffaloObjectHash
 
 
 class _NameAST(ast.NodeTransformer):
@@ -33,9 +32,10 @@ class _NameAST(ast.NodeTransformer):
 
     provenance_tracker = None
 
-    def __init__(self, provenance_tracker):
+    def __init__(self, provenance_tracker, hasher):
         super(_NameAST, self).__init__()
         self.provenance_tracker = provenance_tracker
+        self.hasher = hasher
 
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
@@ -44,7 +44,7 @@ class _NameAST(ast.NodeTransformer):
             # reference and hash
             instance = self.provenance_tracker.get_script_variable(node.id)
             setattr(node, 'instance', instance)
-            setattr(node, 'object_hash', BuffaloObjectHash(instance).info())
+            setattr(node, 'object_hash', self.hasher.info(instance))
             return node
         return node
 
@@ -64,13 +64,11 @@ class _CallAST(ast.NodeVisitor):
         Timestamp of the current function execution.
     """
 
-    provenance_tracker = None
-    function = None
-
-    def __init__(self, provenance_tracker, function, time_stamp):
+    def __init__(self, provenance_tracker, hasher, function, time_stamp):
         super(_CallAST, self).__init__()
         self.provenance_tracker = provenance_tracker
         self.function = function
+        self.hasher = hasher
         self.time_stamp = time_stamp
 
     def visit_Call(self, node):
@@ -87,6 +85,7 @@ class _CallAST(ast.NodeVisitor):
                 if isinstance(arg_node, (ast.Subscript, ast.Attribute)):
                     _process_subscript_or_attribute(arg_node,
                                                     self.provenance_tracker,
+                                                    self.hasher,
                                                     self.time_stamp)
         else:
             self.generic_visit(node)
@@ -113,7 +112,7 @@ def _fetch_object_tree(node, time_stamp):
     return _extract(node)
 
 
-def _build_object_tree_provenance(object_tree, provenance_tracker):
+def _build_object_tree_provenance(object_tree, provenance_tracker, hasher):
     # Iterate recursively through an hierarchical tree describing
     # the child/parent relationships between the objects, build the
     # provenance analysis steps associated and store in the provenance
@@ -122,13 +121,13 @@ def _build_object_tree_provenance(object_tree, provenance_tracker):
     def _hash_and_store(tree_node):
         if tree_node.object_hash is None:
             # Hash if needed
-            tree_node.object_hash = BuffaloObjectHash(tree_node.value).info()
+            tree_node.object_hash = hasher.info(tree_node.value)
         if tree_node.parent is not None:
             # Insert provenance step
             if tree_node.parent.object_hash is None:
                 # Hash if needed
-                tree_node.parent.object_hash = BuffaloObjectHash(
-                    tree_node.parent.value).info()
+                tree_node.parent.object_hash = hasher.info(
+                    tree_node.parent.value)
             provenance_tracker.history.append(
                 tree_node.get_analysis_step())
             _hash_and_store(tree_node.parent)
@@ -136,14 +135,15 @@ def _build_object_tree_provenance(object_tree, provenance_tracker):
     _hash_and_store(object_tree)
 
 
-def _process_subscript_or_attribute(node, provenance_tracker, time_stamp):
+def _process_subscript_or_attribute(node, provenance_tracker, hasher,
+                                    time_stamp):
     # Find root variable, hash it and include reference in the
     # node
-    name_visitor = _NameAST(provenance_tracker)
+    name_visitor = _NameAST(provenance_tracker, hasher)
     name_visitor.visit(node.value)
 
     # Fetch object references from syntax
     object_tree = _fetch_object_tree(node, time_stamp)
 
     # Insert provenance operations and create hashes if necessary
-    _build_object_tree_provenance(object_tree, provenance_tracker)
+    _build_object_tree_provenance(object_tree, provenance_tracker, hasher)
