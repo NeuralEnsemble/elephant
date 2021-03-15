@@ -70,7 +70,7 @@ class _BuffaloCodeAnalyzer(object):
                 code_nodes.extend(node.body)
 
                 # If `else` block is present, add it as well
-                if len(node.orelse):
+                if hasattr(node, 'orelse') and len(node.orelse):
                     code_nodes.extend(node.orelse)
 
                 if hasattr(node, 'iter'):
