@@ -351,6 +351,7 @@ def __variation_check(v, with_nan):
 
 
 @deprecated_alias(v='time_intervals')
+@Provenance(inputs=['time_intervals'])
 def cv2(time_intervals, with_nan=False):
     r"""
     Calculate the measure of Cv2 for a sequence of time intervals between
@@ -486,7 +487,7 @@ def lv(time_intervals, with_nan=False):
     cv_i = np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:])
     return 3. * np.mean(np.power(cv_i, 2))
 
-
+@Provenance(inputs=['time_intervals'])
 def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     r"""
     Calculate the measure of revised local variation LvR for a sequence of time
@@ -971,6 +972,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                                warnings_raised=warnings_raised)
 
 
+@Provenance(inputs=['spiketrains'])
 def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
          t_stop=None, output='counts', binary=False):
     """
@@ -1563,6 +1565,7 @@ def cost_function(x, N, w, dt):
 
 
 @deprecated_alias(tin='times', w='bandwidth')
+@Provenance(inputs=['spiketimes'])
 def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                              bootstrap=False):
     """
