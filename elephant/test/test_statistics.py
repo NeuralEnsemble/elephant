@@ -22,6 +22,8 @@ import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import homogeneous_poisson_process
 
+from elephant.buffalo.testing import _provenance_test
+
 
 class isi_TestCase(unittest.TestCase):
     def setUp(self):
@@ -39,6 +41,8 @@ class isi_TestCase(unittest.TestCase):
         self.targ_array_1d = self.targ_array_2d_1[0, :]
 
     def test_isi_with_spiketrain(self):
+        _provenance_test()
+
         st = neo.SpikeTrain(
             self.test_array_1d, units='ms', t_stop=10.0, t_start=0.29)
         target = pq.Quantity(self.targ_array_1d, 'ms')
@@ -46,12 +50,16 @@ class isi_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_isi_with_quantities_1d(self):
+        _provenance_test()
+
         st = pq.Quantity(self.test_array_1d, units='ms')
         target = pq.Quantity(self.targ_array_1d, 'ms')
         res = statistics.isi(st)
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_isi_with_plain_array_1d(self):
+        _provenance_test()
+
         st = self.test_array_1d
         target = self.targ_array_1d
         res = statistics.isi(st)
@@ -59,6 +67,8 @@ class isi_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_isi_with_plain_array_2d_default(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_default
         res = statistics.isi(st)
@@ -66,6 +76,8 @@ class isi_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_isi_with_plain_array_2d_0(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_0
         res = statistics.isi(st, axis=0)
@@ -73,6 +85,8 @@ class isi_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_isi_with_plain_array_2d_1(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_1
         res = statistics.isi(st, axis=1)
@@ -80,6 +94,8 @@ class isi_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_unsorted_array(self):
+        _provenance_test()
+
         np.random.seed(0)
         array = np.random.rand(100)
         with self.assertWarns(UserWarning):
@@ -91,12 +107,16 @@ class isi_cv_TestCase(unittest.TestCase):
         self.test_array_regular = np.arange(1, 6)
 
     def test_cv_isi_regular_spiketrain_is_zero(self):
+        _provenance_test()
+
         st = neo.SpikeTrain(self.test_array_regular, units='ms', t_stop=10.0)
         targ = 0.0
         res = statistics.cv(statistics.isi(st))
         self.assertEqual(res, targ)
 
     def test_cv_isi_regular_array_is_zero(self):
+        _provenance_test()
+
         st = self.test_array_regular
         targ = 0.0
         res = statistics.cv(statistics.isi(st))
@@ -125,6 +145,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         self.max_array_1d = self.max_array_2d_1[0]
 
     def test_invalid_input_spiketrain(self):
+        _provenance_test()
+
         # empty spiketrain
         self.assertRaises(ValueError, statistics.mean_firing_rate, [])
         for st_invalid in (None, 0.1):
@@ -132,12 +154,16 @@ class mean_firing_rate_TestCase(unittest.TestCase):
                               st_invalid)
 
     def test_mean_firing_rate_with_spiketrain(self):
+        _provenance_test()
+
         st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
         target = pq.Quantity(self.targ_array_1d / 10., '1/ms')
         res = statistics.mean_firing_rate(st)
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_typical_use_case(self):
+        _provenance_test()
+
         np.random.seed(92)
         st = homogeneous_poisson_process(rate=100 * pq.Hz, t_stop=100 * pq.s)
         rate1 = statistics.mean_firing_rate(st)
@@ -147,6 +173,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         self.assertAlmostEqual(rate1.item(), rate2.item())
 
     def test_mean_firing_rate_with_spiketrain_set_ends(self):
+        _provenance_test()
+
         st = neo.SpikeTrain(self.test_array_1d, units='ms', t_stop=10.0)
         target = pq.Quantity(2 / 0.5, '1/ms')
         res = statistics.mean_firing_rate(st, t_start=0.4 * pq.ms,
@@ -154,12 +182,16 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_quantities_1d(self):
+        _provenance_test()
+
         st = pq.Quantity(self.test_array_1d, units='ms')
         target = pq.Quantity(self.targ_array_1d / self.max_array_1d, '1/ms')
         res = statistics.mean_firing_rate(st)
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_quantities_1d_set_ends(self):
+        _provenance_test()
+
         st = pq.Quantity(self.test_array_1d, units='ms')
 
         # t_stop is not a Quantity
@@ -171,6 +203,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
                           t_start=0.4, t_stop=1. * pq.ms)
 
     def test_mean_firing_rate_with_plain_array_1d(self):
+        _provenance_test()
+
         st = self.test_array_1d
         target = self.targ_array_1d / self.max_array_1d
         res = statistics.mean_firing_rate(st)
@@ -178,6 +212,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_1d_set_ends(self):
+        _provenance_test()
+
         st = self.test_array_1d
         target = self.targ_array_1d / (1.23 - 0.3)
         res = statistics.mean_firing_rate(st, t_start=0.3, t_stop=1.23)
@@ -185,6 +221,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_2d_default(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_default / self.max_array_2d_default
         res = statistics.mean_firing_rate(st)
@@ -192,6 +230,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_2d_0(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_0 / self.max_array_2d_0
         res = statistics.mean_firing_rate(st, axis=0)
@@ -199,6 +239,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_2d_1(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_1 / self.max_array_2d_1
         res = statistics.mean_firing_rate(st, axis=1)
@@ -206,6 +248,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_3d_None(self):
+        _provenance_test()
+
         st = self.test_array_3d
         target = np.sum(self.test_array_3d, None) / 5.
         res = statistics.mean_firing_rate(st, axis=None, t_stop=5.)
@@ -213,6 +257,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_3d_0(self):
+        _provenance_test()
+
         st = self.test_array_3d
         target = np.sum(self.test_array_3d, 0) / 5.
         res = statistics.mean_firing_rate(st, axis=0, t_stop=5.)
@@ -220,6 +266,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_3d_1(self):
+        _provenance_test()
+
         st = self.test_array_3d
         target = np.sum(self.test_array_3d, 1) / 5.
         res = statistics.mean_firing_rate(st, axis=1, t_stop=5.)
@@ -227,6 +275,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_3d_2(self):
+        _provenance_test()
+
         st = self.test_array_3d
         target = np.sum(self.test_array_3d, 2) / 5.
         res = statistics.mean_firing_rate(st, axis=2, t_stop=5.)
@@ -234,6 +284,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_2d_1_set_ends(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = np.array([4, 1, 3]) / (1.23 - 0.14)
         res = statistics.mean_firing_rate(st, axis=1, t_start=0.14,
@@ -242,6 +294,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
         assert_array_almost_equal(res, target, decimal=9)
 
     def test_mean_firing_rate_with_plain_array_2d_None(self):
+        _provenance_test()
+
         st = self.test_array_2d
         target = self.targ_array_2d_None / self.max_array_2d_None
         res = statistics.mean_firing_rate(st, axis=None)
@@ -250,6 +304,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
 
     def test_mean_firing_rate_with_plain_array_and_units_start_stop_typeerror(
             self):
+        _provenance_test()
+
         st = self.test_array_2d
         self.assertRaises(TypeError, statistics.mean_firing_rate, st,
                           t_start=pq.Quantity(0, 'ms'))
@@ -288,6 +344,8 @@ class FanoFactorTestCase(unittest.TestCase):
             self.sp_counts[i] = len(st)
 
     def test_fanofactor_spiketrains(self):
+        _provenance_test()
+
         # Test with list of spiketrains
         self.assertEqual(
             np.var(self.sp_counts) / np.mean(self.sp_counts),
@@ -298,6 +356,8 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertEqual(statistics.fanofactor([st]), 0.0)
 
     def test_fanofactor_empty(self):
+        _provenance_test()
+
         # Test with empty list
         self.assertTrue(np.isnan(statistics.fanofactor([])))
         self.assertTrue(np.isnan(statistics.fanofactor([[]])))
@@ -311,40 +371,58 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertTrue(np.isnan(statistics.fanofactor(st)))
 
     def test_fanofactor_spiketrains_same(self):
+        _provenance_test()
+
         # Test with same spiketrains in list
         sts = [self.test_spiketrains[0]] * 3
         self.assertEqual(statistics.fanofactor(sts), 0.0)
 
     def test_fanofactor_array(self):
+        _provenance_test()
+
         self.assertEqual(statistics.fanofactor(self.test_array),
                          np.var(self.sp_counts) / np.mean(self.sp_counts))
 
     def test_fanofactor_array_same(self):
+        _provenance_test()
+
         lst = [self.test_array[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
     def test_fanofactor_quantity(self):
+        _provenance_test()
+
         self.assertEqual(statistics.fanofactor(self.test_quantity),
                          np.var(self.sp_counts) / np.mean(self.sp_counts))
 
     def test_fanofactor_quantity_same(self):
+        _provenance_test()
+
         lst = [self.test_quantity[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
     def test_fanofactor_list(self):
+        _provenance_test()
+
         self.assertEqual(statistics.fanofactor(self.test_list),
                          np.var(self.sp_counts) / np.mean(self.sp_counts))
 
     def test_fanofactor_list_same(self):
+        _provenance_test()
+
         lst = [self.test_list[0]] * 3
         self.assertEqual(statistics.fanofactor(lst), 0.0)
 
     def test_fanofactor_different_durations(self):
+        _provenance_test()
+
         st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
         st2 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4.5 * pq.s)
         self.assertWarns(UserWarning, statistics.fanofactor, (st1, st2))
 
     def test_fanofactor_wrong_type(self):
+        _provenance_test()
+
         # warn_tolerance is not a quantity
         st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
         self.assertRaises(TypeError, statistics.fanofactor, [st1],
@@ -367,24 +445,34 @@ class LVTestCase(unittest.TestCase):
         self.target = 0.971826029994
 
     def test_lv_with_quantities(self):
+        _provenance_test()
+
         seq = pq.Quantity(self.test_seq, units='ms')
         assert_array_almost_equal(statistics.lv(seq), self.target, decimal=9)
 
     def test_lv_with_plain_array(self):
+        _provenance_test()
+
         seq = np.array(self.test_seq)
         assert_array_almost_equal(statistics.lv(seq), self.target, decimal=9)
 
     def test_lv_with_list(self):
+        _provenance_test()
+
         seq = self.test_seq
         assert_array_almost_equal(statistics.lv(seq), self.target, decimal=9)
 
     def test_lv_raise_error(self):
+        _provenance_test()
+
         seq = self.test_seq
         self.assertRaises(ValueError, statistics.lv, [])
         self.assertRaises(ValueError, statistics.lv, 1)
         self.assertRaises(ValueError, statistics.lv, np.array([seq, seq]))
 
     def test_2short_spike_train(self):
+        _provenance_test()
+
         seq = [1]
         with self.assertWarns(UserWarning):
             """
@@ -410,24 +498,32 @@ class LVRTestCase(unittest.TestCase):
         self.target = 2.1845363464753134
 
     def test_lvr_with_quantities(self):
+        _provenance_test()
+
         seq = pq.Quantity(self.test_seq, units='ms')
         assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
         seq = pq.Quantity(self.test_seq, units='ms').rescale('s')
         assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
 
     def test_lvr_with_plain_array(self):
+        _provenance_test()
+
         seq = np.array(self.test_seq)
         with self.assertWarns(UserWarning):
             assert_array_almost_equal(statistics.lvr(seq),
                                       self.target, decimal=9)
 
     def test_lvr_with_list(self):
+        _provenance_test()
+
         seq = self.test_seq
         with self.assertWarns(UserWarning):
             assert_array_almost_equal(statistics.lvr(seq),
                                       self.target, decimal=9)
 
     def test_lvr_raise_error(self):
+        _provenance_test()
+
         seq = self.test_seq
         self.assertRaises(ValueError, statistics.lvr, [])
         self.assertRaises(ValueError, statistics.lvr, 1)
@@ -435,12 +531,16 @@ class LVRTestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.lvr, seq, -1 * pq.ms)
 
     def test_lvr_refractoriness_kwarg(self):
+        _provenance_test()
+
         seq = np.array(self.test_seq)
         with self.assertWarns(UserWarning):
             assert_array_almost_equal(statistics.lvr(seq, R=5),
                                       self.target, decimal=9)
 
     def test_2short_spike_train(self):
+        _provenance_test()
+
         seq = [1]
         with self.assertWarns(UserWarning):
             # Catches UserWarning: Input size is too small. Please provide
@@ -464,18 +564,26 @@ class CV2TestCase(unittest.TestCase):
         self.target = 1.0022235296529176
 
     def test_cv2_with_quantities(self):
+        _provenance_test()
+
         seq = pq.Quantity(self.test_seq, units='ms')
         assert_array_almost_equal(statistics.cv2(seq), self.target, decimal=9)
 
     def test_cv2_with_plain_array(self):
+        _provenance_test()
+
         seq = np.array(self.test_seq)
         assert_array_almost_equal(statistics.cv2(seq), self.target, decimal=9)
 
     def test_cv2_with_list(self):
+        _provenance_test()
+
         seq = self.test_seq
         assert_array_almost_equal(statistics.cv2(seq), self.target, decimal=9)
 
     def test_cv2_raise_error(self):
+        _provenance_test()
+
         seq = self.test_seq
         self.assertRaises(ValueError, statistics.cv2, [])
         self.assertRaises(ValueError, statistics.cv2, 1)
@@ -508,6 +616,8 @@ class InstantaneousRateTest(unittest.TestCase):
         self.kernel = kernels.TriangularKernel(sigma=0.03 * pq.s)
 
     def test_instantaneous_rate_and_warnings(self):
+        _provenance_test()
+
         st = self.spike_train
         sampling_period = 0.01 * pq.s
         with self.assertWarns(UserWarning):
@@ -523,6 +633,8 @@ class InstantaneousRateTest(unittest.TestCase):
         self.assertEqual(inst_rate.t_start.simplified, st.t_start.simplified)
 
     def test_error_instantaneous_rate(self):
+        _provenance_test()
+
         self.assertRaises(
             TypeError, statistics.instantaneous_rate,
             spiketrains=[1, 2, 3] * pq.s,
@@ -571,6 +683,8 @@ class InstantaneousRateTest(unittest.TestCase):
         Test, whether the integral of the rate estimation curve is (almost)
         equal to the number of spikes of the spike train.
         """
+        _provenance_test()
+
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
@@ -599,6 +713,8 @@ class InstantaneousRateTest(unittest.TestCase):
                                        delta=0.01 * num_spikes)
 
     def test_not_center_kernel(self):
+        _provenance_test()
+
         # issue 107
         t_spike = 1 * pq.s
         st = neo.SpikeTrain([t_spike], t_start=0 * pq.s, t_stop=2 * pq.s,
@@ -616,6 +732,8 @@ class InstantaneousRateTest(unittest.TestCase):
         self.assertTrue(all_after_response_onset)
 
     def test_regression_288(self):
+        _provenance_test()
+
         np.random.seed(9)
         sampling_period = 200 * pq.ms
         spiketrain = homogeneous_poisson_process(10 * pq.Hz,
@@ -631,6 +749,8 @@ class InstantaneousRateTest(unittest.TestCase):
             len(rate), (spiketrain.t_stop / sampling_period).simplified.item())
 
     def test_small_kernel_sigma(self):
+        _provenance_test()
+
         # Test that the instantaneous rate is overestimated when
         # kernel.sigma << sampling_period and center_kernel is True.
         # The setup is set to match the issue 288.
@@ -657,6 +777,8 @@ class InstantaneousRateTest(unittest.TestCase):
                 self.assertGreater(rate.mean(), rate_expected)
 
     def test_spikes_on_edges(self):
+        _provenance_test()
+
         # this test demonstrates that the trimming (convolve valid mode)
         # removes the edge spikes, underestimating the true firing rate and
         # thus is not able to reconstruct the number of spikes in a
@@ -685,6 +807,8 @@ class InstantaneousRateTest(unittest.TestCase):
                 assert_array_almost_equal(rate.magnitude, 0, decimal=3)
 
     def test_trim_as_convolve_mode(self):
+        _provenance_test()
+
         cutoff = 5
         sampling_period = 0.01 * pq.s
         t_spikes = np.linspace(-cutoff, cutoff, num=(2 * cutoff + 1)) * pq.s
@@ -712,6 +836,8 @@ class InstantaneousRateTest(unittest.TestCase):
                 assert_array_almost_equal(rate_centered, rate_convolve)
 
     def test_instantaneous_rate_spiketrainlist(self):
+        _provenance_test()
+
         np.random.seed(19)
         duration_effective = self.st_dur - 2 * self.st_margin
         st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
@@ -740,6 +866,8 @@ class InstantaneousRateTest(unittest.TestCase):
 
     # Regression test for #144
     def test_instantaneous_rate_regression_144(self):
+        _provenance_test()
+
         # The following spike train contains spikes that are so close to each
         # other, that the optimal kernel cannot be detected. Therefore, the
         # function should react with a ValueError.
@@ -749,6 +877,8 @@ class InstantaneousRateTest(unittest.TestCase):
 
     # Regression test for #245
     def test_instantaneous_rate_regression_245(self):
+        _provenance_test()
+
         # This test makes sure that the correct kernel width is chosen when
         # selecting 'auto' as kernel
         spiketrain = neo.SpikeTrain(
@@ -777,6 +907,8 @@ class InstantaneousRateTest(unittest.TestCase):
         assert_array_almost_equal(result_target, result_automatic)
 
     def test_instantaneous_rate_grows_with_sampling_period(self):
+        _provenance_test()
+
         np.random.seed(0)
         rate_expected = 10 * pq.Hz
         spiketrain = homogeneous_poisson_process(rate=rate_expected,
@@ -797,6 +929,8 @@ class InstantaneousRateTest(unittest.TestCase):
 
     # Regression test for #360
     def test_centered_at_origin(self):
+        _provenance_test()
+
         # Skip RectangularKernel because it doesn't have a strong peak.
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
@@ -833,6 +967,8 @@ class InstantaneousRateTest(unittest.TestCase):
                     self.assertEqual(rate.times[np.argmax(rate)], 0)
 
     def test_annotations(self):
+        _provenance_test()
+
         spiketrain = neo.SpikeTrain([1, 2], t_stop=2 * pq.s, units=pq.s)
         kernel = kernels.AlphaKernel(sigma=100 * pq.ms)
         rate = statistics.instantaneous_rate(spiketrain,
@@ -860,17 +996,23 @@ class TimeHistogramTestCase(unittest.TestCase):
         self.spiketrain_b = None
 
     def test_time_histogram(self):
+        _provenance_test()
+
         targ = np.array([4, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_binary(self):
+        _provenance_test()
+
         targ = np.array([2, 2, 1, 1, 2, 2, 1, 0, 1, 0])
         histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               binary=True)
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_tstart_tstop(self):
+        _provenance_test()
+
         # Start, stop short range
         targ = np.array([2, 1])
         histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
@@ -892,6 +1034,8 @@ class TimeHistogramTestCase(unittest.TestCase):
         assert_array_equal(targ, histogram.magnitude[:, 0])
 
     def test_time_histogram_output(self):
+        _provenance_test()
+
         # Normalization mean
         histogram = statistics.time_histogram(self.spiketrains, bin_size=pq.s,
                                               output='mean')
@@ -910,6 +1054,8 @@ class TimeHistogramTestCase(unittest.TestCase):
                           bin_size=pq.s, output=' ')
 
     def test_annotations(self):
+        _provenance_test()
+
         np.random.seed(1)
         spiketrains = [homogeneous_poisson_process(
             rate=10 * pq.Hz, t_stop=10 * pq.s) for _ in range(10)]
@@ -923,6 +1069,8 @@ class TimeHistogramTestCase(unittest.TestCase):
 
 class ComplexityPdfTestCase(unittest.TestCase):
     def test_complexity_pdf_deprecated(self):
+        _provenance_test()
+
         spiketrain_a = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
         spiketrain_b = neo.SpikeTrain(
