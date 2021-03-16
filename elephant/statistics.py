@@ -93,7 +93,7 @@ __all__ = [
     "fftkernel",
     "optimal_kernel_bandwidth"
 ]
-from elephant.buffalo.provenance import Provenance
+from elephant.buffalo.decorator import Provenance
 from elephant.utils import is_time_quantity
 from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
 import elephant.buffalo

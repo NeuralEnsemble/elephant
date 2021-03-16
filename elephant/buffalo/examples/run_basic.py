@@ -18,7 +18,7 @@ import numpy as np
 from reachgraspio import ReachGraspIO
 from elephant.statistics import isi, mean_firing_rate, fanofactor
 
-from elephant.buffalo import provenance
+from elephant import buffalo
 from elephant.buffalo.examples.utils.files import get_file_name
 
 
@@ -26,10 +26,10 @@ from elephant.buffalo.examples.utils.files import get_file_name
 # The `np.array` function does not have named arguments. Therefore, the
 # `inputs` argument to the constructor is the argument order that corresponds
 # to the input.
-np.array = provenance.Provenance(inputs=[0])(np.array)
+np.array = buffalo.Provenance(inputs=[0])(np.array)
 
 
-@provenance.Provenance(inputs=[], file_input=['session_filename'])
+@buffalo.Provenance(inputs=[], file_input=['session_filename'])
 def load_data(session_filename):
     """
     Loads Reach2Grasp data using the custom BlackRockIO object ReachGraspIO.
@@ -52,38 +52,33 @@ def load_data(session_filename):
                            verbose=False)
 
     block = session.read_block(load_waveforms=False, nsx_to_load=None,
-                               load_events=True, lazy=False, channels='all',
+                               load_events=True, lazy=False, channels=[10],
                                units='all')
 
     return block
 
 
 def main(session_filename):
-    provenance.activate()
+    buffalo.activate()
 
     # Load the data
-
     block = load_data(session_filename)
 
     # Compute some statistics using the first spiketrain in the segment
-
     isi_times = isi(block.segments[0].spiketrains[0], axis=0)
     firing_rate = mean_firing_rate(block.segments[0].spiketrains[0])
 
     # Compute the Fano factor using all spiketrains in the segment
-
     fano_factor = fanofactor(block.segments[0].spiketrains)
 
     # Generate an array representing artificial spike times and compute
     # statistics
-
     generated_spike_times = np.array([0.001, 0.202, 0.405, 0.607, 0.904, 1.1])
     isi_times2 = isi(generated_spike_times)
     firing_rate2 = mean_firing_rate(generated_spike_times)
 
-    # Save the provenance graph
-    provenance.save_graph(get_file_name(__file__, extension=".html"),
-                          show=True)
+    # Save the provenance as a graph
+    buffalo.save_graph(get_file_name(__file__, extension=".html"), show=True)
 
 
 if __name__ == "__main__":

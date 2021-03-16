@@ -18,7 +18,7 @@ import scipy.signal
 from elephant.utils import deprecated_alias
 
 from elephant.buffalo.objects.spectral import PSDObject
-from elephant.buffalo.provenance import Provenance
+from elephant.buffalo.decorator import Provenance
 import elephant.buffalo
 
 __all__ = [

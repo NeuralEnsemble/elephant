@@ -10,7 +10,8 @@ capture during the analysis workflow in Elephant.
 
 try:
     from . import objects
-    from . import provenance
+    from .decorator import (Provenance, activate, deactivate,
+                            save_provenance, save_graph, print_history)
 except ImportError:
     # requirements-prov are missing
     pass

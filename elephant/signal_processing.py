@@ -15,7 +15,7 @@ import quantities as pq
 import scipy.signal
 
 from elephant.utils import deprecated_alias, check_same_units
-from elephant.buffalo.provenance import Provenance
+from elephant.buffalo.decorator import Provenance
 
 __all__ = [
     "zscore",

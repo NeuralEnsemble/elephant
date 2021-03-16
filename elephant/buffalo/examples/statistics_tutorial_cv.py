@@ -4,9 +4,9 @@ from quantities import s, Hz
 from elephant.spike_train_generation import homogeneous_poisson_process
 
 # Provenance tracking
-from elephant.buffalo import provenance
+from elephant.buffalo import decorator
 
-provenance.activate()
+decorator.activate()
 
 spiketrain_list = [homogeneous_poisson_process(rate=10.0*Hz, t_start=0.0*s,
                                                t_stop=100.0*s)
@@ -32,5 +32,5 @@ plt.title("Coefficient of Variation of homogeneous Poisson process")
 
 plt.show()
 
-provenance.print_history()
-provenance.save_graph("elephant_tutorial.html", show=True)
+decorator.print_history()
+decorator.save_graph("elephant_tutorial.html", show=True)

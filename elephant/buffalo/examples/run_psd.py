@@ -10,7 +10,7 @@ from elephant.buffalo.examples.utils import get_analog_signal
 from elephant.spectral import welch_psd
 
 import elephant.buffalo
-import elephant.buffalo.provenance as provenance
+import elephant.buffalo.decorator as provenance
 
 import matplotlib.pyplot as plt
 
