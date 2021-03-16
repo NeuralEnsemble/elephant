@@ -6,6 +6,7 @@ the child/parent relationships between the objects.
 """
 
 import ast
+from elephant.buffalo.types import AnalysisStep, FunctionInfo
 
 
 class _StaticStep(object):
@@ -77,18 +78,17 @@ class _StaticStep(object):
         Returns an `AnalysisStep` named tuple describing the relationships
         between parent and child nodes.
         """
-        import elephant.buffalo.provenance as provenance
+        import elephant.buffalo.decorator as provenance
 
         params = self._get_params()
         input_object = self.parent.object_hash if self.parent is not None \
             else None
         output_object = self.object_hash
 
-        return provenance.AnalysisStep(
-            function=provenance.FunctionInfo(
-                name=self._operation,
-                module="",
-                version=""),
+        return AnalysisStep(
+            function=FunctionInfo(name=self._operation,
+                                  module="",
+                                  version=""),
             input={0: input_object},
             params=params,
             output={0: output_object},
@@ -161,7 +161,7 @@ class _SubscriptStep(_StaticStep):
             elif isinstance(slice_node.value, ast.Str):
                 index_value = slice_node.value.s
             elif isinstance(slice_node.value, ast.Name):
-                from elephant.buffalo.provenance import Provenance
+                from elephant.buffalo.decorator import Provenance
                 index_value = Provenance.get_script_variable(slice_node.value.id)
             else:
                 raise TypeError("Operation not supported")
@@ -176,7 +176,7 @@ class _SubscriptStep(_StaticStep):
             return index_value, params
 
         elif isinstance(slice_node, ast.Name):
-            from elephant.buffalo.provenance import Provenance
+            from elephant.buffalo.decorator import Provenance
             index_value = Provenance.get_script_variable(slice_node.id)
             params['index'] = index_value
             return index_value, params
