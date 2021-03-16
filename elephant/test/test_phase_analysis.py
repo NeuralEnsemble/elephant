@@ -387,14 +387,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
         This function simulates the recording of two LFP-signals over several
         trials, for a certain duration of time and with a specified sampling
-        rate. These datasets will be used to calculate one WPLI-ground-truth
+        rate. These datasets will be used to calculate WPLI-ground-truth
         with the MATlAB package FieldTrip and its function
-        ft_connectivity_wpli().
-        Moreover this function generates a secound pair of LFP-signals, which
-        will be used to calculate two other WPLI-ground-truths. One from the
-        FieldTrip wrapper ft_connectivityanalysis() and the other from MNEs
-        spectral_connectivity(), which both use multitaper for FFT, therefore
-        just certain frequencies will be compared.
+        ft_connectivity_wpli(), its wrapper ft_connectivityanalysis() and
+        with MNEs spectral_connectivity(). The last two use both multitaper
+        for FFT, therefore just certain frequencies will be compared.
 
         Parameters
         ----------
@@ -427,11 +424,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         """
         times = np.arange(0, tlength, 1 / srate)
 
-        # # lfps_1 & 2 will be used for
-        # # 1) calculating ground-truth with FieldTrips' ft_connectivity_wpli
-        # # 2) comparison to mutlitaper-approaches like
-        # # FieldTrips' ft_connectivityanalysis()
-        # # and MNEs' spectral_connectivity at certain frequencies
+        # lfps_1 & 2 will be used for
+        # 1) calculating ground-truth with FieldTrips' ft_connectivity_wpli
+        # 2) comparison to mutlitaper-approaches like
+        # FieldTrips' ft_connectivityanalysis()
+        # and MNEs' spectral_connectivity at certain frequencies
         lfps_1 = [np.cos(2 * 16 * np.pi * times + np.pi/2) +
                   np.cos(2 * 36 * np.pi * times + np.pi / 2) +
                   np.cos(2 * 52 * np.pi * times) +
@@ -453,8 +450,10 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # save artificial LFP-dataset to .mat files
         mdic_1 = {"lfp_matrix": lfps_1, "time": times, "sf": srate}
         mdic_2 = {"lfp_matrix": lfps_2, "time": times, "sf": srate}
-        filename1_a = os.path.sep.join(['artificial_LFPs_1.mat'])
-        filename2_a = os.path.sep.join(['artificial_LFPs_2.mat'])
+        filename1_a = os.path.sep.join(['cross_testing_scripts',
+                                        'artificial_LFPs_1.mat'])
+        filename2_a = os.path.sep.join(['cross_testing_scripts',
+                                        'artificial_LFPs_2.mat'])
 
         savemat(filename1_a, mdic_1)
         savemat(filename2_a, mdic_2)
@@ -462,48 +461,58 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
 
-        # # simple samples of different shapes to assert ErrorRaising
+        # simple samples of different shapes to assert ErrorRaising
         self.simple_x = np.array([[0, -np.pi, np.pi], [0, -np.pi, np.pi]])
         self.simple_y = np.array([0, -np.pi, np.pi])
         self.simple_z = np.array([0, np.pi, np.pi / 2, -np.pi])
 
-        # # check for ground truth consistency with REAL/ARTIFICIAL LFP-dataset
+        # check for ground truth consistency with REAL/ARTIFICIAL LFP-dataset
         # REAL LFP-DATASET
         # Load first & second data file
-        filename1_r = os.path.sep.join(['lfp_dataset1.mat'])
+        filename1_r = os.path.sep.join(['cross_testing_scripts',
+                                        'lfp_dataset1.mat'])
         dataset1_r = scipy.io.loadmat(filename1_r, squeeze_me=True)
-        filename2_r = os.path.sep.join(['lfp_dataset2.mat'])
+        filename2_r = os.path.sep.join(['cross_testing_scripts',
+                                        'lfp_dataset2.mat'])
         dataset2_r = scipy.io.loadmat(filename2_r, squeeze_me=True)
         # get the relevant values
         self.lfps1_r = dataset1_r['lfp_matrix'] * pq.uV
         self.sf1_r = dataset1_r['sf'] * pq.Hz
         self.lfps2_r = dataset2_r['lfp_matrix'] * pq.uV
         # ARRTIFICIAL LFP-DATASET
-        filename1_a = os.path.sep.join(['artificial_LFPs_1.mat'])
+        filename1_a = os.path.sep.join(['cross_testing_scripts',
+                                        'artificial_LFPs_1.mat'])
         dataset1_a = scipy.io.loadmat(filename1_a, squeeze_me=True)
-        filename2_a = os.path.sep.join(['artificial_LFPs_2.mat'])
+        filename2_a = os.path.sep.join(['cross_testing_scripts',
+                                        'artificial_LFPs_2.mat'])
         dataset2_a = scipy.io.loadmat(filename2_a, squeeze_me=True)
         # get the relevant values
         self.lfps1_a = dataset1_a['lfp_matrix'] * pq.uV
         self.sf1_a = dataset1_a['sf'] * pq.Hz
         self.lfps2_a = dataset2_a['lfp_matrix'] * pq.uV
 
-        # # load ground-truth calculated by:
-        # # 1) FieldTrip: ft_connectivity_wpli()
+        # load ground-truth calculated by:
+        # 1) FieldTrip: ft_connectivity_wpli()
+        filename3_gt_ft_r = os.path.sep.join(['cross_testing_scripts',
+            'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs.csv'])
         self.wpli_ground_truth_FieldTrip_REAL = np.loadtxt(
-            'ground_truth_WPLI_FieldTrip_real_LFPs.csv', delimiter=',',
-            dtype=np.float64)
+            filename3_gt_ft_r, delimiter=',', dtype=np.float64)
+        filename3_gt_ft_a = os.path.sep.join(['cross_testing_scripts',
+            'ground_truth_WPLI_from_ft_connectivity_wpli_with_artificial_LFPs.csv'])
         self.wpli_ground_truth_FieldTrip_ARTIFICIAL = np.loadtxt(
-            'ground_truth_WPLI_FieldTrip_artificial_LFPs_more_complex.csv',
-            delimiter=',', dtype=np.float64)
-        # # 2) FieldTrip: ft_connectivity(), uses multitaper for FFT
+            filename3_gt_ft_a, delimiter=',', dtype=np.float64)
+        # 2) FieldTrip: ft_connectivity(), uses multitaper for FFT
+        filename4_gt_ft_multitaped_a = os.path.sep.join(
+            ['cross_testing_scripts',
+             'ground_truth_WPLI_from_ft_connectivityanalysis_with_artificial_LFPs_multitaped.csv'])
         self.wpli_ground_truth_FieldTrip_ARTIFICIAL_multitaper = np.loadtxt(
-            'ground_truth_WPLI_FieldTrip_artificial_LFPs_multitaper.csv',
-            delimiter=',', dtype=np.float64)
-        # # 3) MNE: spectral_connectivity(), uses multitaper for FFT
+            filename4_gt_ft_multitaped_a, delimiter=',', dtype=np.float64)
+        # 3) MNE: spectral_connectivity(), uses multitaper for FFT
+        filename5_gt_mne_multitaped_a = os.path.sep.join(
+            ['cross_testing_scripts',
+             'ground_truth_WPLI_from_MNE_spectral_connectivity_with_artificial_LFPs_multitaped.csv'])
         self.wpli_ground_truth_MNE_ARTIFICIAL_multitaper = np.loadtxt(
-            'ground_truth_WPLI_MNE_spectral_connectivity_multitaper.csv',
-            delimiter=',', dtype=np.float64)
+            filename5_gt_mne_multitaped_a, delimiter=',', dtype=np.float64)
 
     def test_WPLI_ground_truth_consistency_REAL_LFP_dataset(self):
         """
