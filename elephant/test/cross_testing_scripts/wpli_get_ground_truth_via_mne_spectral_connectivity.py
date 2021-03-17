@@ -47,7 +47,8 @@ def main():
     ax.legend(fontsize=16, framealpha=0)
     plt.show()
 
-    np.savetxt("ground_truth_WPLI_from_MNE_spectral_connectivity_with_artificial_LFPs_multitaped.csv",
+    np.savetxt("ground_truth_WPLI_from_MNE_spectral_connectivity"
+               "_with_artificial_LFPs_multitaped.csv",
                wpli, delimiter=",", fmt="%20.20e")
 
 
