@@ -16,7 +16,7 @@ from elephant.buffalo.object_hash import BuffaloObjectHasher, BuffaloFileHash
 from elephant.buffalo.graph import BuffaloProvenanceGraph
 from elephant.buffalo.ast_analysis import _CallAST
 from elephant.buffalo.code_lines import _BuffaloCodeAnalyzer
-from elephant.buffalo.serialization import generate_prov_representation
+from elephant.buffalo.serialization import BuffaloProvDocument
 
 from os.path import splitext
 
@@ -468,8 +468,10 @@ class Provenance(object):
         Returns the W3C PROV representation of the captured provenance
         information.
         """
-        return generate_prov_representation(cls.source_file,
-                                            cls.history)
+
+        buffalo_prov = BuffaloProvDocument(cls.source_file)
+        buffalo_prov.process_analysis_steps(cls.history)
+        return buffalo_prov
 
     @classmethod
     def save_graph(cls, filename, show=False):
@@ -563,7 +565,7 @@ def save_graph(filename, show=False):
     Provenance.save_graph(filename, show=show)
 
 
-def save_provenance(filename=None, file_format='rdf'):
+def save_provenance(filename=None, file_format='rdf', plot=False):
     """
     Serialized provenance information according to the W3C Provenance Data
     Model (PROV).
@@ -582,6 +584,9 @@ def save_provenance(filename=None, file_format='rdf'):
         * 'prov' : PROV-N
         * 'xml : PROV-XML
         Default: 'rdf'
+    plot : bool
+        If True, plot the resulting PROV graph.
+        Default: False
 
     Returns
     -------
@@ -597,4 +602,6 @@ def save_provenance(filename=None, file_format='rdf'):
     """
     prov_document = Provenance.get_prov_info()
     prov_data = prov_document.serialize(filename, format=file_format)
+    if plot:
+        prov_document.plot()
     return prov_data

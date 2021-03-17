@@ -77,8 +77,11 @@ def main(session_filename):
     isi_times2 = isi(generated_spike_times)
     firing_rate2 = mean_firing_rate(generated_spike_times)
 
-    # Save the provenance as a graph
-    buffalo.save_graph(get_file_name(__file__, extension=".html"), show=True)
+    # Save the provenance as PROV, with optional plotting
+    file_format = "rdf"
+    buffalo.save_provenance(
+        get_file_name(__file__, extension=f".{file_format}"),
+        file_format=file_format, plot=True)
 
 
 if __name__ == "__main__":
