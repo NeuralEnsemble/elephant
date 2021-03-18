@@ -10,6 +10,7 @@ from functools import wraps
 import inspect
 import ast
 import datetime
+import logging
 
 from elephant.buffalo.types import AnalysisStep, FunctionInfo, VarArgs
 from elephant.buffalo.object_hash import BuffaloObjectHasher, BuffaloFileHash
@@ -24,6 +25,15 @@ from pprint import pprint
 
 
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
+
+
+# Create logger and set configuration
+logger = logging.getLogger(__file__)
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter("[%(asctime)s] buffalo.decorator -"
+                                           " %(levelname)s: %(message)s"))
+logger.addHandler(log_handler)
+logger.propagate = False
 
 
 class Provenance(object):
@@ -207,12 +217,10 @@ class Provenance(object):
         # function. We need to check the source code in case the
         # call spans multiple lines. In this case, we fetch the
         # full statement.
-        # TODO: use logging instead of printing
-        print(lineno)
         source_line = \
             self.code_analyzer.extract_multiline_statement(lineno)
         ast_tree = ast.parse(source_line)
-        print(source_line)
+        logger.info(f"Line {lineno} -> {source_line}")
 
         # 2. Check if there is an assignment to one or more
         # variables. This will be used to identify if there are

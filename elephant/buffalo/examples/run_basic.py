@@ -14,6 +14,7 @@ import os
 import sys
 
 import numpy as np
+import logging
 
 from reachgraspio import ReachGraspIO
 from elephant.statistics import isi, mean_firing_rate, fanofactor
@@ -21,6 +22,7 @@ from elephant.statistics import isi, mean_firing_rate, fanofactor
 from elephant import buffalo
 from elephant.buffalo.examples.utils.files import get_file_name
 
+logging.basicConfig(level=logging.INFO)
 
 # We need to apply the decorator in functions of other modules
 # The `np.array` function does not have named arguments. Therefore, the

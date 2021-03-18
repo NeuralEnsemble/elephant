@@ -9,6 +9,7 @@ import inspect
 import uuid
 from copy import copy
 from pathlib import Path
+import logging
 
 import joblib
 import numpy as np
@@ -24,6 +25,15 @@ from elephant.buffalo.types import ObjectInfo, FileInfo
 # Here we update the dispatch table of the `joblib.Hasher` object to use
 # the function from `dill` that supports these attributes.
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
+
+
+# Create logger and set configuration
+logger = logging.getLogger(__file__)
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter("[%(asctime)s] buffalo.hash -"
+                                           " %(levelname)s: %(message)s"))
+logger.addHandler(log_handler)
+logger.propagate = False
 
 
 class BuffaloFileHash(object):
@@ -128,14 +138,14 @@ class BuffaloObjectHasher(object):
         # string representations of the type and package, and `obj_id` the
         # id() of the object
 
-        print(obj_type, obj_id)
+        logger.debug(f"{obj_type}, id={obj_id}")
 
         # If we already computed the hash for the object during this function
         # call, retrieve it from the memoized values
         if obj_id in self._hash_memoizer:
             return self._hash_memoizer[obj_id]
 
-        print("Hashing")
+        logger.debug("Hashing")
 
         # Check if the object is a NumPy array of matplotlib objects
         array_of_matplotlib = False
