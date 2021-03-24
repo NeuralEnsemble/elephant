@@ -1361,11 +1361,12 @@ class Complexity(object):
                           'Note that using the complexity epoch to get '
                           'precise spike times can lead to rounding errors.')
 
+        complexity = self.time_histogram.magnitude.flatten()
+        complexity = complexity.astype(np.uint16)
+
         epoch = neo.Epoch(left_edges,
                           durations=durations,
-                          array_annotations={
-                              'complexity':
-                              self.time_histogram.magnitude.flatten()})
+                          array_annotations={'complexity': complexity})
         return epoch
 
     def _epoch_with_spread(self):
@@ -1428,6 +1429,8 @@ class Complexity(object):
         # Ensure that an epoch does not start before the minimum t_start.
         # Note: all spike trains share the same t_start and t_stop.
         left_edges[0] = max(self.t_start, left_edges[0])
+
+        complexities = complexities.astype(np.uint16)
 
         complexity_epoch = neo.Epoch(times=left_edges,
                                      durations=right_edges - left_edges,
