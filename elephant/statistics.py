@@ -928,7 +928,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         duration = t_stop.simplified.magnitude - t_start.simplified.magnitude
         # ensure integral over firing rate yield the exact number of spikes
         for i, spiketrain in enumerate(spiketrains):
-            rate[:, i] *= len(spiketrain) / (np.mean(rate[:, i]).magnitude * duration)
+            if len(spiketrain) > 0:
+                rate[:, i] *= len(spiketrain) /\
+                              (np.mean(rate[:, i]).magnitude * duration)
 
 
     return rate
