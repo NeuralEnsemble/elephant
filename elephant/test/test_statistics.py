@@ -580,6 +580,9 @@ class InstantaneousRateTest(unittest.TestCase):
         kernels_available.append('auto')
         kernel_resolution = 0.01 * pq.s
         for kernel in kernels_available:
+            boundary_correction = False
+            if isinstance(kernel, kernels.GaussianKernel):
+                boundary_correction = True
             for center_kernel in (False, True):
                 rate_estimate = statistics.instantaneous_rate(
                     self.spike_train,
@@ -588,7 +591,9 @@ class InstantaneousRateTest(unittest.TestCase):
                     t_start=self.st_tr[0] * pq.s,
                     t_stop=self.st_tr[1] * pq.s,
                     trim=False,
-                    center_kernel=center_kernel)
+                    center_kernel=center_kernel,
+                    boundary_correction=boundary_correction
+                )
                 num_spikes = len(self.spike_train)
                 auc = spint.cumtrapz(
                     y=rate_estimate.magnitude[:, 0],
