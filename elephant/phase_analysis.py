@@ -16,7 +16,8 @@ __all__ = [
     "spike_triggered_phase",
     "phase_locking_value",
     "mean_phase_vector",
-    "phase_difference"
+    "phase_difference",
+    "weighted_phase_lag_index"
 ]
 
 
@@ -314,55 +315,60 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI)
 
-    This function expects the two signals (each containing multiple trials).
-    It Fourier-transforms the signals and for each trial pair, it calculates
-    the cross-spectrum. With that the WPLI is calculated.
+    This function estimates the WPLI, which is a measure of phase-synchrony. It
+    describes for two given signals i and j, who is leading/lagging the other
+    signal in the frequency domain across multiple trials.
 
     Parameters
     ----------
-    signal_i, signal_j: (t, n) np.array
+    signal_i, signal_j : np.array, quantity, neo.AnalogSignal
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
-    sampling_frequency: quantity/ scaler
+    sampling_frequency : quantity
         Sampling frequency of the signals in Hz.
-    absolute_value: boolean (default: True)
+    absolute_value : boolean (default: True)
         Takes the absolute value of the numerator in the WPLI-formula.
+        When set to `False`, the WPLI contains additional directionality
+        information about which signal leads/lags the other signal:
+            - wpli > 0 : first signal leads second one
+            - wpli < 0 : first signal lags second one
 
     Returns
     -------
-    wpli: float
-        Weighted phase-lag index of signal_i and signal_j across trials.
-        Range: :math: `[0, 1]`
+    freqs : quantity
+        Positive frequencies in Hz associated with the estimates of `wpli`.
+        Range: :math:`[0, sampling frequency/2]`
+    wpli : float
+        Weighted phase-lag index of `signal_i` and `signal_j` across trials.
+        Range: :math:`[0, 1]`
+
+    Raises
+    ------
+    ValueError
+        If trial number or trial length are different for signal i and j.
 
     Notes
     -----
-    This implementation is base on the formula taken from [1] (pp.1550):
+    This implementation is based on the formula taken from [1] (pp.1550) :
+
     .. math::
         WPLI = \frac{| E( |Im(X)| * sgn(Im(X)) ) |}{E( |Im(X)| )}
 
     with:
-    E{...} : expected value operator
-    Im{X} : imaginary component of the cross-spectrum
-    X = Z_1 * Z_2_conjugate : as cross-spectrum
-    X = R * exp(i * theta) : R = magnitude and theta = relative phase
-    Z = A * Y
-    where
-    A: real-valued matrix with frequency dependent coefficients
-    Y: complex-valued vector, representing the Fourier spectra
-    of a particular frequency
-
-    Usage/Interpretation of the parameter 'absolute_value':
-    When set to 'False', the WPLI contains additional directionality
-    information about which signal leads/lags the other signal:
-        - wpli > 0 : first signal leads second one
-        - wpli < 0 : first signal lags second one
+        - E{...} : expected value operator
+        - Im{X} : imaginary component of the cross-spectrum
+        - X = Z_i * Z_j_conjugate : as cross-spectrum
+        - Z_i, Z_j : complex-valued matrix, representing the Fourier spectra
+                     of a particular frequency of the signals i and j.
 
     References
     ----------
-    [1] "An improved index of phase-synchronization for electrophysiological
-    data in the presence of volume-conduction, noise and sample-size bias"
-    by Martin Vinck, Robert Oostenveld, Marijn van Wingerden,
-    Franscesco Battaglia, Cyriel M.A. Pennartz
+    ..  [1] Martin Vinck, Robert Oostenveld, Marijn van Wingerden,
+        Franscesco Battaglia, Cyriel M.A. Pennartz; "An improved index of
+        phase-synchronization for electrophysiological data in the presence
+        of volume-conduction, noise and sample-size bias"; NeuroImage, vol. 55,
+        pp. 1548-1565, 2011
+
     """
     if np.shape(signal_i) != np.shape(signal_j):
         raise ValueError("trial number and trial length of signal i and j "
