@@ -381,11 +381,6 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
 
-        # simple samples of different shapes to assert ErrorRaising
-        self.trials2_length3 = np.array([[0, -1, 1], [0, -1, 1]])
-        self.trials1_length3 = np.array([0, -1, 1])
-        self.trials1_length4 = np.array([0, 1, 1 / 2, -1])
-
         # check for ground truth consistency with REAL/ARTIFICIAL LFP-dataset
         # REAL LFP-DATASET
         # Load first & second data file
@@ -540,25 +535,26 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         np.testing.assert_allclose(wpli[mask], -1, atol=self.tolerance,
                                    rtol=self.tolerance)
 
-    def test_WPLI_raise_error_if_trial_number_is_different(self):
+    def test_WPLI_raise_error_if_signals_have_different_shapes(self):
         """
         Test if a ValueError is raised, when the signals have different
-        number of trails.
+        number of trails or different trial lengths.
         """
-        # different numbers of trails
-        np.testing.assert_raises(
-            ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            self.trials2_length3, self.trials1_length3, 250)
+        # simple samples of different shapes to assert ErrorRaising
+        trials2_length3 = np.array([[0, -1, 1], [0, -1, 1]])
+        trials1_length3 = np.array([[0, -1, 1]])
+        trials1_length4 = np.array([[0, 1, 1 / 2, -1]])
 
-    def test_WPLI_raise_error_if_trial_lengths_are_different(self):
-        """
-        Test if a ValueError is raised, when within a trail-pair of the signals
-        the trial-lengths are different.
-        """
+        # different numbers of trails
+        with np.testing.assert_raises(
+                ValueError, msg="while testing different number of trials"):
+            elephant.phase_analysis.weighted_phase_lag_index(
+                trials2_length3, trials1_length3, 250)
         # different lengths in a trail pair
-        np.testing.assert_raises(
-            ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            self.trials1_length3, self.trials1_length4, 250)
+        with np.testing.assert_raises(
+                ValueError, msg="while testing different trial lengths"):
+            elephant.phase_analysis.weighted_phase_lag_index(
+                trials1_length3, trials1_length4, 250)
 
 
 if __name__ == '__main__':
