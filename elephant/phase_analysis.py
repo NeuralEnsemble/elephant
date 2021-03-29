@@ -373,8 +373,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     if np.shape(signal_i) != np.shape(signal_j):
         if len(signal_i) != len(signal_j):
             raise ValueError("trial number of signal i and j must be equal")
-        else:
-            raise ValueError("trial length of signal i and j must be equal")
+        raise ValueError("trial length of signal i and j must be equal")
 
     # ARRAY-approach
     # calculate Fourier transforms
