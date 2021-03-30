@@ -321,7 +321,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
 
     Parameters
     ----------
-    signal_i, signal_j : np.array, quantity, neo.AnalogSignal
+    signal_i, signal_j : np.array, Quantity, neo.AnalogSignal
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
     sampling_frequency : quantity
