@@ -57,6 +57,8 @@ from functools import partial
 import neo
 import numpy as np
 import quantities as pq
+from scipy import stats
+from scipy.optimize import root_scalar
 
 from elephant.spike_train_surrogates import dither_spike_train
 from elephant.utils import deprecated_alias
@@ -375,6 +377,119 @@ def _homogeneous_process(interval_generator, mean_rate, t_start, t_stop,
     return spikes
 
 
+class RenewalProcess(object):
+    def generate_spiketrain(self, as_array=False):
+        raise NotImplementedError
+
+class StationaryRenewalProcess(RenewalProcess):
+    interval_generator: stats.rv_continuous
+    def __init__(
+            self, rate: pq.Quantity,
+            t_stop: pq.Quantity=1.*pq.s,
+            t_start: pq.Quantity=0.*pq.s):
+
+        if not (isinstance(t_start, pq.Quantity) and
+                isinstance(t_stop, pq.Quantity)):
+            raise ValueError("t_start and t_stop must be of type pq.Quantity")
+        self.t_stop = t_stop.simplified.magnitude
+        self.t_start = t_start.simplified.magnitude
+
+        if not isinstance(rate, pq.Quantity):
+            raise ValueError("rate must be of type pq.Quantity")
+        self.rate = rate.simplified.magnitude
+
+        self.n_expected_spikes = int(np.ceil(
+            ((self.t_stop - self.t_start) * self.rate)))
+
+        if self.n_expected_spikes < 0:
+            raise ValueError(
+                "Expected no. of spikes: {n_spikes} < 0. The firing "
+                "rate ({rate}) cannot be negative and t_stop "
+                "({t_stop}) must be greater than t_start "
+                "({t_start})".format(n_spikes=self.n_expected_spikes,
+                                     rate=self.rate,
+                                     t_stop=self.t_stop,
+                                     t_start=self.t_start))
+
+    def _return_empty_spiketrain(self, as_array: bool=False):
+        if as_array:
+            return np.array([])
+        return neo.SpikeTrain(
+            [], t_start=self.t_start, t_stop=self.t_stop, units=pq.s)
+
+    def generate_spiketrain(self, as_array: bool=False):
+
+        if self.n_expected_spikes == 0:
+            return self._return_empty_spiketrain(as_array=as_array)
+
+        random_number = np.random.random()
+        first_spike = root_scalar(
+            lambda x: self.rate * self.interval_generator.sf(x) - random_number,
+            x0=1./(2*self.rate),
+            fprime=lambda x: -self.rate * self.interval_generator.pdf(x)
+        ).root + self.t_start
+
+        spikes = np.array([first_spike])
+
+        # 3 STDs corresponds to 99.7%
+        n_spikes_three_stds = int(np.ceil(
+            self.n_expected_spikes + 3 * np.sqrt(self.n_expected_spikes)))
+
+        # Continue until whole time range is covered
+        while spikes[-1] < self.t_stop:
+            isi = self.interval_generator.rvs(size=n_spikes_three_stds)
+
+            t_last_spike = spikes[-1]
+            spikes = np.r_[spikes, t_last_spike + np.cumsum(isi)]
+
+        index_last_spike = spikes.searchsorted(self.t_stop)
+        spikes = spikes[:index_last_spike]
+
+        if as_array:
+            return spikes
+        return neo.SpikeTrain(
+            spikes, t_start=self.t_start, t_stop=self.t_stop, units=pq.s)
+
+
+class NonStationaryRenewalProcess(RenewalProcess):
+    def __init__(self, rate: neo.AnalogSignal):
+        self.rate = rate
+
+
+
+class StationaryPoissonProcess(StationaryRenewalProcess):
+    def __init__(self, rate: pq.Quantity,
+            t_stop: pq.Quantity=1.*pq.s,
+            t_start: pq.Quantity=0.*pq.s):
+        super().__init__(rate=rate, t_start=t_start, t_stop=t_stop)
+        self.interval_generator = stats.expon(scale=1./self.rate)
+
+class StationaryPoissonProcessDeadTime(StationaryRenewalProcess):
+    def __init__(
+            self, rate: pq.Quantity,
+            dead_time: pq.Quantity,
+            t_stop: pq.Quantity=1.*pq.s,
+            t_start: pq.Quantity=0.*pq.s):
+        super().__init__(rate=rate, t_start=t_start, t_stop=t_stop)
+
+        if not isinstance(dead_time, pq.Quantity):
+            raise ValueError("dead_time must be of type pq.Quantity")
+        self.dead_time = dead_time.simplified.magnitude
+        effective_rate = self.rate / (1. - self.rate * self.dead_time)
+        self.interval_generator = stats.expon(
+            scale=1./effective_rate, loc=self.dead_time)
+
+class StationaryGammaProcess(StationaryRenewalProcess):
+    def __init__(
+            self, rate: pq.Quantity,
+            shape_factor: float,
+            t_stop: pq.Quantity=1.*pq.s,
+            t_start: pq.Quantity=0.*pq.s):
+        super().__init__(rate=rate, t_start=t_start, t_stop=t_stop)
+        self.shape_factor = shape_factor
+        self.interval_generator = stats.gamma(
+            a=self.shape_factor, b=1./(self.shape_factor * self.rate))
+
 def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
                                 t_stop=1000.0 * pq.ms, as_array=False,
                                 refractory_period=None):
@@ -430,6 +545,15 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     ...     t_stop=1000*pq.ms, refractory_period = 3*pq.ms)
 
     """
+    if refractory_period is None:
+        return StationaryPoissonProcess(
+            rate=rate, t_start=t_start, t_stop=t_stop).generate_spiketrain(
+            as_array=as_array)
+    else:
+        return StationaryPoissonProcessDeadTime(
+            rate=rate, t_start=t_start, t_stop=t_stop, dead_time=refractory_period
+        ).generate_spiketrain(as_array=as_array)
+
     if not (isinstance(t_start, pq.Quantity) and
             isinstance(t_stop, pq.Quantity)):
         raise ValueError("t_start and t_stop must be of type pq.Quantity")
