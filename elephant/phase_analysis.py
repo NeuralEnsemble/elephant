@@ -310,7 +310,7 @@ def phase_difference(alpha, beta):
     return phase_diff
 
 
-def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
+def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
                              absolute_value=True):
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI)
@@ -324,8 +324,9 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
     signal_i, signal_j : np.array, Quantity, neo.AnalogSignal
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
-    sampling_frequency : quantity
-        Sampling frequency of the signals in Hz.
+    sampling_frequency : quantity (default: None)
+        Sampling frequency of the signals in Hz. Not needed if signal i and j
+        are neo.AnalogSignals.
     absolute_value : boolean (default: True)
         Takes the absolute value of the numerator in the WPLI-formula.
         When set to `False`, the WPLI contains additional directionality
@@ -370,6 +371,11 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency,
         pp. 1548-1565, 2011
 
     """
+    if sampling_frequency is None:  # neo.AnalogSignal-input
+        sampling_frequency = signal_i.sampling_rate
+        signal_i = signal_i.magnitude
+        signal_j = signal_j.magnitude
+
     if np.shape(signal_i) != np.shape(signal_j):
         if len(signal_i) != len(signal_j):
             raise ValueError("trial number of signal i and j must be equal")

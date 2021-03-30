@@ -394,6 +394,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.lfps1_real = dataset1_real['lfp_matrix'] * pq.uV
         self.sf1_real = dataset1_real['sf'] * pq.Hz
         self.lfps2_real = dataset2_real['lfp_matrix'] * pq.uV
+        self.sf2_real = dataset2_real['sf'] * pq.Hz
+        # create AnalogSignals form the real dataset
+        self.lfps1_real_AnalogSignal = AnalogSignal(
+            signal=self.lfps1_real, sampling_rate=self.sf1_real)
+        self.lfps2_real_AnalogSignal = AnalogSignal(
+            signal=self.lfps2_real, sampling_rate=self.sf2_real)
 
         # artificial LFP-dataset
         filename1_artificial = os.path.sep.join(['cross_testing_scripts',
@@ -408,6 +414,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         self.lfps1_artificial = dataset1_artificial['lfp_matrix'] * pq.uV
         self.sf1_artificial = dataset1_artificial['sf'] * pq.Hz
         self.lfps2_artificial = dataset2_artificial['lfp_matrix'] * pq.uV
+        self.sf2_artificial = dataset2_artificial['sf'] * pq.Hz
+        # create AnalogSignals form the artificial dataset
+        self.lfps1_artificial_AnalogSignal = AnalogSignal(
+            signal=self.lfps1_artificial, sampling_rate=self.sf1_artificial)
+        self.lfps2_artificial_AnalogSignal = AnalogSignal(
+            signal=self.lfps2_artificial, sampling_rate=self.sf2_artificial)
 
         # load ground-truth calculated by:
         # 1) FieldTrip: ft_connectivity_wpli()
@@ -463,6 +475,14 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             rtol=1e-12, equal_nan=True,
             err_msg="while testing 'ground truth consistency with real data' "
                     "with np.array input")
+        # neo.AnalogSignal-input
+        freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1_real_AnalogSignal, self.lfps2_real_AnalogSignal)
+        np.testing.assert_allclose(
+            wpli, self.wpli_ground_truth_FieldTrip_real, atol=1e-14,
+            rtol=1e-12, equal_nan=True,
+            err_msg="while testing 'ground truth consistency with real data' "
+                    "with neo.AnalogSignal input")
 
     def test_WPLI_ground_truth_consistency_artificial_LFP_dataset(self):
         """
@@ -487,6 +507,15 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             atol=1e-14, rtol=1e-12, equal_nan=True,
             err_msg="while testing 'ground truth consistency with artificial "
                     "data' with np.array input")
+        # neo.AnalogSignal-input
+        freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1_artificial_AnalogSignal,
+            self.lfps2_artificial_AnalogSignal, absolute_value=False)
+        np.testing.assert_allclose(
+            wpli, self.wpli_ground_truth_FieldTrip_artificial,
+            atol=1e-14, rtol=1e-12, equal_nan=True,
+            err_msg="while testing 'ground truth consistency with artificial "
+                    "data' with neo.AnalogSignal input")
 
     def test_WPLI_comparison_to_multitaper_approaches(self):
         """
@@ -495,16 +524,23 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         frequencies [16, 36, 52, 70, 100]Hz.
         """
         i = 1
-        while i <= 2:
+        while i <= 3:
             if i == 1:  # Quantity-input
+                input_type = 'Quantity'
                 freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                     self.lfps1_artificial, self.lfps2_artificial,
                     self.sf1_artificial, absolute_value=False)
-            else:  # np.array-input
+            elif i == 2:  # np.array-input
+                input_type = 'np.array'
                 freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                     self.lfps1_artificial.magnitude,
                     self.lfps2_artificial.magnitude, self.sf1_artificial,
                     absolute_value=False)
+            else:  # neo.AnalogSignal-input
+                input_type = 'neo.AnalogSignal'
+                freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+                    self.lfps1_artificial_AnalogSignal,
+                    self.lfps2_artificial_AnalogSignal, absolute_value=False)
             # mask for supposed wpli=1 frequencies,
             # freq=70Hz with supposed wpli=0 is treated separately,
             # because of noise existence in the artificial dataset
@@ -515,26 +551,24 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 self.wpli_ground_truth_FieldTrip_multitaped_artificial[mask],
                 atol=self.tolerance, rtol=self.tolerance,
                 err_msg=f"FieldTrip, supposed wpli=1 failed with "
-                        f"{'Quantity' if i == 1 else 'np.array'} input")
+                        f"{input_type} input")
             np.testing.assert_allclose(
                 wpli[freq == 70],
                 self.wpli_ground_truth_FieldTrip_multitaped_artificial[
                     freq == 70], atol=0.0002, rtol=self.tolerance,
                 err_msg=f"FieldTrip, supposed wpli=0 failed with "
-                        f"{'Quantity' if i == 1 else 'np.array'} input")
+                        f"{input_type} input")
             # comparing to MNEs' spectral_connectivity()
             np.testing.assert_allclose(
                 abs(wpli[mask]),
                 self.wpli_ground_truth_MNE_multitaped_artificial[mask],
                 atol=self.tolerance, rtol=self.tolerance,
-                err_msg=f"MNE, supposed wpli=1 failed with "
-                        f"{'Quantity' if i == 1 else 'np.array'} input")
+                err_msg=f"MNE, supposed wpli=1 failed with {input_type} input")
             np.testing.assert_allclose(
                 abs(wpli[freq == 70]),
                 self.wpli_ground_truth_MNE_multitaped_artificial[freq == 70],
                 atol=0.002, rtol=self.tolerance,
-                err_msg=f"MNE, supposed wpli=0 failed with "
-                        f"{'Quantity' if i == 1 else 'np.array'} input")
+                err_msg=f"MNE, supposed wpli=0 failed with {input_type} input")
             i += 1
 
     def test_WPLI_is_zero(self):  # for: f = 70Hz
@@ -556,6 +590,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         np.testing.assert_allclose(
             wpli[freq == 70], 0, atol=0.002, rtol=self.tolerance,
             err_msg="while testing 'is zero' with np.array input")
+        # neo.AnalogSignal-input
+        freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1_artificial_AnalogSignal,
+            self.lfps2_artificial_AnalogSignal, absolute_value=False)
+        np.testing.assert_allclose(
+            wpli[freq == 70], 0, atol=0.002, rtol=self.tolerance,
+            err_msg="while testing 'is zero' with neo.AnalogSignal input")
 
     def test_WPLI_is_one(self):  # for: f = 16Hz and 36Hz
         """
@@ -577,6 +618,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         np.testing.assert_allclose(
             wpli[mask], 1, atol=self.tolerance, rtol=self.tolerance,
             err_msg="while testing 'is plus one' with np.array input")
+        # neo.AnalogSignal-input
+        freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1_artificial_AnalogSignal,
+            self.lfps2_artificial_AnalogSignal, absolute_value=False)
+        np.testing.assert_allclose(
+            wpli[mask], 1, atol=self.tolerance, rtol=self.tolerance,
+            err_msg="while testing 'is plus one' with neo.AnalogSignal input")
 
     def test_WPLI_is_minus_one(self):  # for: f = 52Hz and 100Hz
         """
@@ -598,6 +646,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         np.testing.assert_allclose(
             wpli[mask], -1, atol=self.tolerance, rtol=self.tolerance,
             err_msg="while testing 'is minus one' with np.array input")
+        # neo.AnalogSignal-input
+        freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+            self.lfps1_artificial_AnalogSignal,
+            self.lfps2_artificial_AnalogSignal, absolute_value=False)
+        np.testing.assert_allclose(
+            wpli[mask], -1, atol=self.tolerance, rtol=self.tolerance,
+            err_msg="while testing 'is minus one' with neo.AnalogSignal input")
 
     def test_WPLI_raise_error_if_signals_have_different_shapes(self):
         """
@@ -608,29 +663,48 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         trials2_length3 = np.array([[0, -1, 1], [0, -1, 1]]) * pq.uV
         trials1_length3 = np.array([[0, -1, 1]]) * pq.uV
         trials1_length4 = np.array([[0, 1, 1 / 2, -1]]) * pq.uV
+        sampling_frequency = 250 * pq.Hz
+        trials2_length3_AnalogSignal = AnalogSignal(
+            signal=trials2_length3, sampling_rate=sampling_frequency)
+        trials1_length3_AnalogSignal = AnalogSignal(
+            signal=trials1_length3, sampling_rate=sampling_frequency)
+        trials1_length4_AnalogSignal = AnalogSignal(
+            signal=trials1_length4, sampling_rate=sampling_frequency)
 
         # different numbers of trails
         with np.testing.assert_raises(
             ValueError, msg="while testing different number of trials"
                             " with Quantity input"):
             elephant.phase_analysis.weighted_phase_lag_index(
-                trials2_length3, trials1_length3, 250)
+                trials2_length3, trials1_length3, sampling_frequency)
         with np.testing.assert_raises(
             ValueError, msg="while testing different number of trials"
                             " with np.array input"):
             elephant.phase_analysis.weighted_phase_lag_index(
-                trials2_length3.magnitude, trials1_length3.magnitude, 250)
+                trials2_length3.magnitude, trials1_length3.magnitude,
+                sampling_frequency)
+        with np.testing.assert_raises(
+            ValueError, msg="while testing different number of trials"
+                            " with neo.AnalogSignal input"):
+            elephant.phase_analysis.weighted_phase_lag_index(
+                trials2_length3_AnalogSignal, trials1_length3_AnalogSignal)
         # different lengths in a trail pair
         with np.testing.assert_raises(
                 ValueError, msg="while testing different trial lengths "
                                 "with Quantity input"):
             elephant.phase_analysis.weighted_phase_lag_index(
-                trials1_length3, trials1_length4, 250)
+                trials1_length3, trials1_length4, sampling_frequency)
         with np.testing.assert_raises(
                 ValueError, msg="while testing different trial lengths "
                                 "with np.array input"):
             elephant.phase_analysis.weighted_phase_lag_index(
-                trials1_length3.magnitude, trials1_length4.magnitude, 250)
+                trials1_length3.magnitude, trials1_length4.magnitude,
+                sampling_frequency)
+        with np.testing.assert_raises(
+                ValueError, msg="while testing different trial lengths "
+                                "with neo.AnalogSignal input"):
+            elephant.phase_analysis.weighted_phase_lag_index(
+                trials1_length3_AnalogSignal, trials1_length4_AnalogSignal)
 
 
 if __name__ == '__main__':
