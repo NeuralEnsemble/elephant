@@ -545,8 +545,8 @@ class SurrogatesTestCase(unittest.TestCase):
             refractory_period=3 * pq.ms,
             t_stop=0.1 * pq.s)
         surrogate_train = surr.JointISI(spiketrain).dithering()[0]
-        ground_truth = [0.005571, 0.018363, 0.026825, 0.036336, 0.045193,
-                        0.05146, 0.058489, 0.078053]
+        ground_truth = [0.0060744,  0.01886591, 0.02732847, 0.03683888,
+                        0.04569622, 0.05196334, 0.05899197, 0.07855664]
         assert_array_almost_equal(surrogate_train.magnitude, ground_truth)
 
     def test_joint_isi_with_wrongly_ordered_spikes(self):
