@@ -543,8 +543,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             with self.subTest(msg=f"FieldTrip; wpli=1; {input_type} input"):
                 np.testing.assert_allclose(
                     wpli[mask],
-                    self.wpli_ground_truth_FieldTrip_multitaped_artificial[mask],
-                    atol=self.tolerance, rtol=self.tolerance)
+                    self.wpli_ground_truth_FieldTrip_multitaped_artificial[
+                        mask], atol=self.tolerance, rtol=self.tolerance)
             with self.subTest(msg=f"FieldTrip; wpli=0; {input_type} input"):
                 np.testing.assert_allclose(
                     wpli[freq == 70],
@@ -559,8 +559,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             with self.subTest(msg=f"MNE; wpli=0; {input_type} input"):
                 np.testing.assert_allclose(
                     abs(wpli[freq == 70]),
-                    self.wpli_ground_truth_MNE_multitaped_artificial[freq == 70],
-                    atol=0.002, rtol=self.tolerance)
+                    self.wpli_ground_truth_MNE_multitaped_artificial[
+                        freq == 70], atol=0.002, rtol=self.tolerance)
 
     def test_WPLI_is_zero(self):  # for: f = 70Hz
         """
