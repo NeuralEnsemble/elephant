@@ -8,10 +8,12 @@ the W3C Provenance Data Model (PROV).
 
 import pathlib
 from io import BytesIO
+from itertools import product
 
 from prov.model import ProvDocument, PROV, PROV_TYPE, Namespace
 
 from elephant.buffalo.object_hash import BuffaloFileHash
+from elephant.buffalo.types import ObjectInfo
 
 
 # Values that are used to compose the URNs
@@ -48,10 +50,48 @@ class BuffaloProvDocument(ProvDocument):
         script_uri = f":{NSS_SCRIPT}:{script_name}:{script_hash}"
         script_attributes = {PROV_TYPE: PROV["SoftwareAgent"],
                              "rdfs:label": script_file_name}
-        self.agent(script_uri, script_attributes)
+        self._script_agent = self.agent(script_uri, script_attributes)
+
+    def _create_entity(self, info):
+        # Create a PROV Entity based on ObjectInfo/FileInfo information
+        if isinstance(info, ObjectInfo):
+            cur_uri = f":{NSS_DATA}:{info.type}:{info.hash}"
+        else:
+            cur_uri = f":{NSS_FILE}:{info.hash_type}:{info.hash}"
+
+        cur_entity = self.entity(cur_uri)
+        return cur_entity
 
     def _add_analysis_step(self, step):
-        pass
+        # Add one `AnalysisStep` record and generate all the provenance
+        # semantic relationships
+        activity_uri = f":{NSS_FUNCTION}:" \
+                       f"{step.function.module}.{step.function.name}"
+        cur_activity = self.activity(activity_uri)
+
+        # Add all the inputs as entities, and create a `used` association with
+        # the activity. URNs differ when the input is a file or Python object
+        input_entities = []
+        for key, value in step.input.items():
+            cur_entity = self._create_entity(value)
+            input_entities.append(cur_entity)
+            self.used(cur_activity, cur_entity)
+
+        # Add all the outputs as entities, and create the `wasGenerated`
+        # relationship
+        output_entities = []
+        for key, value in step.output.items():
+            cur_entity = self._create_entity(value)
+            output_entities.append(cur_entity)
+            self.wasGeneratedBy(cur_entity, cur_activity)
+
+        # Iterate over the input/output pairs to add the `wasDerived`
+        # relationship
+        for input, output in product(input_entities, output_entities):
+            self.wasDerivedFrom(output, input)
+
+        # Attribute the activity to the script
+        self.wasAttributedTo(cur_activity, self._script_agent)
 
     @classmethod
     def read_records(cls, file_name, file_format=None):
