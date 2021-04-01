@@ -64,11 +64,11 @@ install:
 
   - pip -V
   - pip install -r requirements/requirements-tests.txt
-  - pip install coverage coveralls
+  - pip install pytest-cov
   - python setup.py install
   - python -c "from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list
   - python --version
 
 script:
-  nosetests --with-coverage --cover-package=elephant
+  pytest --cov=elephant
