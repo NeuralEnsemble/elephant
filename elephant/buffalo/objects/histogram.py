@@ -244,7 +244,7 @@ class PSTHObject(TimeHistogramObject):
             obj = cls(histogram.bins, histogram.bin_size, event_time,
                       event_label=event_label, units=histogram.units,
                       histogram_type=histogram.histogram_type,
-                      t_start=histogram.time_start, t_stop=histogram.time_stop,
+                      t_start=histogram.t_start, t_stop=histogram.t_stop,
                       binary=histogram.binary,
                       warnings_raised=histogram.warnings_raised)
             return obj
