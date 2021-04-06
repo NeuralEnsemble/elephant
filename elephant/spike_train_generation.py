@@ -467,7 +467,8 @@ class StationaryPoissonProcess(RenewalProcess):
             equilibrium: bool=True):
         super().__init__(rate=rate, t_start=t_start, t_stop=t_stop,
                          equilibrium=equilibrium)
-        self.isi_generator = stats.expon(scale=1./self.rate)
+        if self.n_expected_spikes > 0:
+            self.isi_generator = stats.expon(scale=1./self.rate)
 
 class StationaryPoissonProcessDeadTime(RenewalProcess):
     def __init__(
@@ -481,10 +482,12 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
 
         if not isinstance(dead_time, pq.Quantity):
             raise ValueError("dead_time must be of type pq.Quantity")
-        self.dead_time = dead_time.rescale(self.unit).item()
-        effective_rate = self.rate / (1. - self.rate * self.dead_time)
-        self.isi_generator = stats.expon(
-            scale=1./effective_rate, loc=self.dead_time)
+
+        if self.n_expected_spikes > 0:
+            dead_time = dead_time.rescale(self.unit).item()
+            effective_rate = self.rate / (1. - self.rate * dead_time)
+            self.isi_generator = stats.expon(
+                scale=1./effective_rate, loc=dead_time)
 
 class StationaryGammaProcess(RenewalProcess):
     def __init__(
@@ -495,9 +498,9 @@ class StationaryGammaProcess(RenewalProcess):
             equilibrium: bool=True):
         super().__init__(rate=rate, t_start=t_start, t_stop=t_stop,
                          equilibrium=equilibrium)
-        self.shape_factor = shape_factor
-        self.isi_generator = stats.gamma(
-            a=self.shape_factor, scale=1./(self.shape_factor * self.rate))
+        if self.n_expected_spikes > 0:
+            self.isi_generator = stats.gamma(
+                a=shape_factor, scale=1./(shape_factor * self.rate))
 
 class RateModulatedProcess:
     def __init__(self, rate_signal):

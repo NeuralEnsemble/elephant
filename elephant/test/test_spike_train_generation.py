@@ -368,7 +368,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
 
         time_generation = 0
         n_trials = 200
-        rtol = 0.05  # 5% of deviation allowed
+        rtol = 0.1  # 10% of deviation allowed
         kernel = kernels.RectangularKernel(sigma=0.25 * pq.s)
         for rate in (10 * pq.Hz, 100 * pq.Hz):
             rate_profile = neo.AnalogSignal(rate * profile,
