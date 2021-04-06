@@ -15,7 +15,10 @@ try:
     HAVE_PROV = True
 except ImportError:
     # requirements-prov are missing
+    # Set the flag and import no provenance decorator to avoid errors in
+    # the modules with syntactic sugar `@buffalo.Provenance`
     HAVE_PROV = False
+    from ._no_provenance import _no_provenance as Provenance
 
 
 __version__ = '0.0.1'

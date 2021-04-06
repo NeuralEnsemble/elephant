@@ -15,10 +15,13 @@ import quantities as pq
 from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 
 import elephant.buffalo as buffalo
-from elephant.buffalo.object_hash import BuffaloObjectHasher
 
+try:
+    from elephant.buffalo.object_hash import BuffaloObjectHasher
+except ImportError:
+    pass
 
-@unittest.skipUnless(buffalo.HAVE_PROV)
+@unittest.skipUnless(buffalo.HAVE_PROV, "requirements-prov missing")
 class ObjectHasherTestCase(unittest.TestCase):
 
     def setUp(self):
