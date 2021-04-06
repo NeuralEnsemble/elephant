@@ -6,7 +6,7 @@ and compatibility with existing code that uses Elephant functions.
 import matplotlib.pyplot as plt
 import quantities as pq
 import neo
-import elephant.buffalo
+import elephant.buffalo as buffalo
 
 from elephant.statistics import time_histogram
 
@@ -37,10 +37,10 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     # Using new `elephant.statistics.time_histogram` function, that returns
     # `AnalysisObject` classes (`TimeHistogramObject` in the case of
     # `elephant.statistics.time_histogram`).
-    # The `elephant.buffalo.USE_ANALYSIS_OBJECTS` flag is used to control
-    # if Elephant functions output `AnalysisObject`s.
+    # The `buffalo.USE_ANALYSIS_OBJECTS` flag is used to control if Elephant
+    # functions output `AnalysisObject`s.
 
-    elephant.buffalo.USE_ANALYSIS_OBJECTS = True
+    buffalo.USE_ANALYSIS_OBJECTS = True
 
     time_hist_obj_count = time_histogram(spiketrains, bin_size,
                                          output='counts')

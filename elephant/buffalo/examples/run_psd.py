@@ -9,19 +9,21 @@ import quantities as pq
 from elephant.buffalo.examples.utils import get_analog_signal
 from elephant.spectral import welch_psd
 
-import elephant.buffalo
-import elephant.buffalo.decorator as provenance
+import elephant.buffalo as buffalo
 
 import matplotlib.pyplot as plt
 
 from numpy import mean
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
-mean = provenance.Provenance(inputs=['a'])(mean)
-get_analog_signal = provenance.Provenance(inputs=[])(get_analog_signal)
+mean = buffalo.Provenance(inputs=['a'])(mean)
+get_analog_signal = buffalo.Provenance(inputs=[])(get_analog_signal)
 
 
-@provenance.Provenance(inputs=['axes', 'freqs', 'psd'])
+@buffalo.Provenance(inputs=['axes', 'freqs', 'psd'])
 def plot_lfp_psd(axes, freqs, psd, title, freq_range=None, **kwargs):
     if freq_range is None:
         freq_range = [0, np.max(freqs)]
@@ -36,15 +38,15 @@ def plot_lfp_psd(axes, freqs, psd, title, freq_range=None, **kwargs):
 
 def main():
 
-    provenance.activate()
-    elephant.buffalo.USE_ANALYSIS_OBJECTS = True
+    buffalo.activate()
+    buffalo.USE_ANALYSIS_OBJECTS = True
 
     fig, axes = plt.subplots()
 
     signal = get_analog_signal(frequency=30*pq.Hz, n_channels=5, t_stop=3*pq.s,
                                sampling_rate=30000*pq.Hz, amplitude=50*pq.uV)
 
-    if elephant.buffalo.USE_ANALYSIS_OBJECTS:
+    if buffalo.USE_ANALYSIS_OBJECTS:
         obj = welch_psd(signal)
         avg_psd = mean(obj.psd, axis=0)
         plot_lfp_psd(axes, obj.frequencies, avg_psd, 'AnalysisObject',
@@ -54,7 +56,7 @@ def main():
         avg_psd = mean(psd, axis=0)
         plot_lfp_psd(axes, freqs, avg_psd, 'Tuple', freq_range=[0, 49])
 
-    provenance.save_graph("psd_plot.html", show=True)
+    buffalo.save_graph("psd_plot.html", show=True)
 
     plt.show()
 

@@ -14,13 +14,12 @@ import numpy as np
 import quantities as pq
 from numpy.testing.utils import assert_array_almost_equal, assert_array_equal
 
-from elephant.buffalo.object_hash import BuffaloObjectHash
-import elephant.kernels as kernels
-from elephant import statistics
-from elephant.spike_train_generation import homogeneous_poisson_process
+import elephant.buffalo as buffalo
+from elephant.buffalo.object_hash import BuffaloObjectHasher
 
 
-class ObjectHash_TestCase(unittest.TestCase):
+@unittest.skipUnless(buffalo.HAVE_PROV)
+class ObjectHasherTestCase(unittest.TestCase):
 
     def setUp(self):
         self.test_list = [1, 2, 3]
@@ -33,13 +32,13 @@ class ObjectHash_TestCase(unittest.TestCase):
     def test_hash_builtins(self):
         for var in [self.test_list, self.test_integer, self.test_float,
                     self.test_string]:
-            obj_hash = BuffaloObjectHash(var)
+            obj_hash = BuffaloObjectHasher(var)
             self.assertEquals(obj_hash.type, "builtins.")
-        list_hash = BuffaloObjectHash(self.test_list)
+        list_hash = BuffaloObjectHasher(self.test_list)
         self.assertIsInstance(hash(list_hash), int)
 
-        str_hash = BuffaloObjectHash(self.test_string)
+        str_hash = BuffaloObjectHasher(self.test_string)
         self.assertIsInstance(hash(str_hash), int)
 
-        int_hash = BuffaloObjectHash(self.test_integer)
+        int_hash = BuffaloObjectHasher(self.test_integer)
         self.assertIsInstance(hash(int_hash), int)

@@ -12,17 +12,21 @@ from reachgraspio import ReachGraspIO
 from elephant.statistics import isi, mean_firing_rate, fanofactor
 from elephant.spike_train_generation import homogeneous_poisson_process
 
-from elephant.buffalo import decorator
+import elephant.buffalo as buffalo
 from elephant.buffalo.examples.utils.files import get_file_name
 
 import warnings
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 
 plt.Figure.savefig = \
-    decorator.Provenance(inputs=['self'],
-                         file_output=['fname'])(plt.Figure.savefig)
+    buffalo.Provenance(inputs=['self'],
+                       file_output=['fname'])(plt.Figure.savefig)
 
 
-@decorator.Provenance(inputs=["isi_times"])
+@buffalo.Provenance(inputs=["isi_times"])
 def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
                         titles=None):
     """
@@ -112,7 +116,7 @@ def plot_isi_histograms(grid, *isi_times, bin_size=2*pq.ms, max_time=500*pq.ms,
     return fig, axes
 
 
-@decorator.Provenance(inputs=[], file_input=['session_filename'])
+@buffalo.Provenance(inputs=[], file_input=['session_filename'])
 def load_data(session_filename):
     """
     Loads Reach2Grasp data using the custom BlackRockIO object ReachGraspIO.
@@ -142,7 +146,7 @@ def load_data(session_filename):
 
 
 def main(session_filename):
-    decorator.activate()
+    buffalo.activate()
 
     # Load the data
     block = load_data(session_filename)
@@ -172,8 +176,7 @@ def main(session_filename):
     figure.savefig("isi.png")
 
     # provenance.print_history()
-    decorator.save_graph(get_file_name(__file__, extension=".html"),
-                         show=True)
+    buffalo.save_graph(get_file_name(__file__, extension=".html"), show=True)
 
 
 if __name__ == "__main__":

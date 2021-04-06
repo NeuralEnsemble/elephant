@@ -12,9 +12,10 @@ try:
     from . import objects
     from .decorator import (Provenance, activate, deactivate,
                             save_provenance, save_graph, print_history)
+    HAVE_PROV = True
 except ImportError:
     # requirements-prov are missing
-    pass
+    HAVE_PROV = False
 
 
 __version__ = '0.0.1'

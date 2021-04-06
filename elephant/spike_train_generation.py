@@ -21,7 +21,7 @@ import quantities as pq
 
 from elephant.spike_train_surrogates import dither_spike_train
 from elephant.utils import deprecated_alias
-from elephant.buffalo import decorator
+import elephant.buffalo as buffalo
 
 __all__ = [
     "spike_extraction",
@@ -336,7 +336,8 @@ def _homogeneous_process(interval_generator, mean_rate, t_start, t_stop,
 
     return spikes
 
-@decorator.Provenance(inputs=[])
+
+@buffalo.Provenance(inputs=[])
 def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
                                 t_stop=1000.0 * pq.ms, as_array=False,
                                 refractory_period=None):

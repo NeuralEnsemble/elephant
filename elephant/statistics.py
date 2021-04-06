@@ -93,15 +93,13 @@ __all__ = [
     "fftkernel",
     "optimal_kernel_bandwidth"
 ]
-from elephant.buffalo.decorator import Provenance
-from elephant.utils import is_time_quantity
-from elephant.buffalo.objects import TimeHistogramObject, PSTHObject
-import elephant.buffalo
 
-cv = Provenance(inputs=["a"])(scipy.stats.variation)
+import elephant.buffalo as buffalo
+
+cv = buffalo.Provenance(inputs=["a"])(scipy.stats.variation)
 
 
-@Provenance(inputs=['spiketrain'])
+@buffalo.Provenance(inputs=['spiketrain'])
 def isi(spiketrain, axis=-1):
     """
     Return an array containing the inter-spike intervals of the spike train.
@@ -147,7 +145,7 @@ def isi(spiketrain, axis=-1):
     return intervals
 
 
-@Provenance(inputs=['spiketrain'])
+@buffalo.Provenance(inputs=['spiketrain'])
 def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     """
     Return the firing rate of the spike train.
@@ -257,7 +255,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                         format(type(spiketrain)))
 
 
-@Provenance(inputs=['spiketrains'])
+@buffalo.Provenance(inputs=['spiketrains'])
 def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
@@ -351,7 +349,7 @@ def __variation_check(v, with_nan):
 
 
 @deprecated_alias(v='time_intervals')
-@Provenance(inputs=['time_intervals'])
+@buffalo.Provenance(inputs=['time_intervals'])
 def cv2(time_intervals, with_nan=False):
     r"""
     Calculate the measure of Cv2 for a sequence of time intervals between
@@ -421,7 +419,7 @@ def cv2(time_intervals, with_nan=False):
 
 
 @deprecated_alias(v='time_intervals')
-@Provenance(inputs=["time_intervals"])
+@buffalo.Provenance(inputs=["time_intervals"])
 def lv(time_intervals, with_nan=False):
     r"""
     Calculate the measure of local variation Lv for a sequence of time
@@ -487,7 +485,8 @@ def lv(time_intervals, with_nan=False):
     cv_i = np.diff(time_intervals) / (time_intervals[:-1] + time_intervals[1:])
     return 3. * np.mean(np.power(cv_i, 2))
 
-@Provenance(inputs=['time_intervals'])
+
+@buffalo.Provenance(inputs=['time_intervals'])
 def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     r"""
     Calculate the measure of revised local variation LvR for a sequence of time
@@ -581,7 +580,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 
 
 @deprecated_alias(spiketrain='spiketrains')
-@Provenance(inputs=["spiketrains"])
+@buffalo.Provenance(inputs=["spiketrains"])
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True):
@@ -854,7 +853,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
 
 @deprecated_alias(binsize='bin_size')
-@Provenance(inputs=["spiketrains"])
+@buffalo.Provenance(inputs=["spiketrains"])
 def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
     """
@@ -959,20 +958,20 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     else:
         raise ValueError(f'Parameter output ({output}) is not valid.')
 
-    if not elephant.buffalo.USE_ANALYSIS_OBJECTS:
+    if not buffalo.USE_ANALYSIS_OBJECTS:
         return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                                 sampling_period=bin_size, units=bin_hist.units,
                                 t_start=bs.t_start, normalization=output,
                                 copy=False,
                                 warnings_raised=warnings_raised)
 
-    return TimeHistogramObject(np.expand_dims(bin_hist, axis=1), bin_size,
-                               units=bin_hist.units, histogram_type=output,
-                               t_start=bs.t_start, binary=binary, copy=False,
-                               warnings_raised=warnings_raised)
+    return buffalo.objects.TimeHistogramObject(
+        np.expand_dims(bin_hist, axis=1), bin_size, units=bin_hist.units,
+        histogram_type=output, t_start=bs.t_start, binary=binary, copy=False,
+        warnings_raised=warnings_raised)
 
 
-@Provenance(inputs=['spiketrains'])
+@buffalo.Provenance(inputs=['spiketrains'])
 def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
          t_stop=None, output='counts', binary=False):
     """
@@ -1032,7 +1031,7 @@ def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
         If `elephant.buffalo.USE_ANALYSIS_OBJECTS` is not True.
 
     """
-    if not elephant.buffalo.USE_ANALYSIS_OBJECTS:
+    if not buffalo.USE_ANALYSIS_OBJECTS:
         raise ValueError("This function works with `AnalysisObject` classes. "
                          "Please set the flag"
                          "`elephant.buffalo.USE_ANALYSIS_OBJECTS` to True.")
@@ -1040,11 +1039,12 @@ def psth(spiketrains, binsize, event_time, event_label=None, t_start=None,
     histogram = time_histogram(spiketrains, binsize, t_start=t_start,
                                t_stop=t_stop, output=output,
                                binary=binary)
-    return PSTHObject.from_time_histogram(histogram, event_time,
-                                          event_label=event_label)
+    return buffalo.objects.PSTHObject.from_time_histogram(
+        histogram, event_time, event_label=event_label)
+
 
 @deprecated_alias(binsize='bin_size')
-@Provenance(inputs=["spiketrains"])
+@buffalo.Provenance(inputs=["spiketrains"])
 def complexity_pdf(spiketrains, bin_size):
     """
     Deprecated in favor of the complexity class which has a pdf attribute.
@@ -1565,7 +1565,7 @@ def cost_function(x, N, w, dt):
 
 
 @deprecated_alias(tin='times', w='bandwidth')
-@Provenance(inputs=['spiketimes'])
+@buffalo.Provenance(inputs=['spiketimes'])
 def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                              bootstrap=False):
     """

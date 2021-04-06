@@ -17,9 +17,7 @@ import scipy.signal
 
 from elephant.utils import deprecated_alias
 
-from elephant.buffalo.objects.spectral import PSDObject
-from elephant.buffalo.decorator import Provenance
-import elephant.buffalo
+import elephant.buffalo as buffalo
 
 __all__ = [
     "welch_psd",
@@ -29,7 +27,7 @@ __all__ = [
 
 @deprecated_alias(num_seg='n_segments', len_seg='len_segment',
                   freq_res='frequency_resolution')
-@Provenance(inputs=['signal'])
+@buffalo.Provenance(inputs=['signal'])
 def welch_psd(signal, n_segments=8, len_segment=None,
               frequency_resolution=None, overlap=0.5, fs=1.0, window='hanning',
               nfft=None, detrend='constant', return_onesided=True,
@@ -244,7 +242,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
             psd = psd * signal.units * signal.units / pq.Hz
         freqs = freqs * pq.Hz
 
-    if elephant.buffalo.USE_ANALYSIS_OBJECTS:
+    if buffalo.USE_ANALYSIS_OBJECTS:
         # We are storing the parameters to this function, but also the
         # information and the parameters regarding the SciPy function that is
         # wrapped by Elephant
@@ -257,10 +255,13 @@ def welch_psd(signal, n_segments=8, len_segment=None,
                          'scaling': scaling, 'axis': axis,
                          'wrapped_method': 'scipy.signal.welch',
                          'wrapped_params': params}
-        psd_object = PSDObject(freqs, psd,
-                               method='elephant.spectral.welch_psd',
-                               params=object_params)
+
+        psd_object = buffalo.objects.PSDObject(
+            freqs, psd, method='elephant.spectral.welch_psd',
+            params=object_params)
+
         return psd_object
+
     return freqs, psd
 
 

@@ -5,10 +5,9 @@ specific objects can be implemented building on more generic objects.
 
 import matplotlib.pyplot as plt
 import quantities as pq
-import elephant.buffalo
+import elephant.buffalo as buffalo
 
 from elephant.statistics import time_histogram, psth
-from elephant.statistics import PSTHObject
 
 from elephant.buffalo.examples.utils import (get_spike_trains,
                                              plot_time_histogram_object,
@@ -33,14 +32,14 @@ def main(firing_rate, n_spiketrains, t_stop=2000*pq.ms, bin_size=2*pq.ms,
     # Use new `elephant.statistics.time_histogram` function, that returns
     # `AnalysisObject` classes, to obtain a time histogram of the `spiketrains`
 
-    elephant.buffalo.USE_ANALYSIS_OBJECTS = True
+    buffalo.USE_ANALYSIS_OBJECTS = True
 
     time_hist_obj_count = time_histogram(spiketrains, bin_size,
                                          output="counts")
 
     # Creates PSTH using this previously calculated TimeHistogramObject
-    psth_object = PSTHObject.from_time_histogram(time_hist_obj_count,
-                                                 event_time)
+    psth_object = buffalo.objects.PSTHObject.from_time_histogram(
+        time_hist_obj_count, event_time)
 
     # Instead of using a previous TimeHistogram of the same segment,
     # calculate a new PSTH from the source spike trains.

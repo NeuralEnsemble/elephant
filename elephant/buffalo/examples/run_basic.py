@@ -19,7 +19,7 @@ import logging
 from reachgraspio import ReachGraspIO
 from elephant.statistics import isi, mean_firing_rate, fanofactor
 
-from elephant import buffalo
+import elephant.buffalo as buffalo
 from elephant.buffalo.examples.utils.files import get_file_name
 
 logging.basicConfig(level=logging.INFO)
