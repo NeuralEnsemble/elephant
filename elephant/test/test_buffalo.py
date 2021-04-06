@@ -21,6 +21,7 @@ try:
 except ImportError:
     pass
 
+
 @unittest.skipUnless(buffalo.HAVE_PROV, "requirements-prov missing")
 class ObjectHasherTestCase(unittest.TestCase):
 
@@ -33,15 +34,17 @@ class ObjectHasherTestCase(unittest.TestCase):
         self.test_integer = 5
 
     def test_hash_builtins(self):
+        hasher = BuffaloObjectHasher()
         for var in [self.test_list, self.test_integer, self.test_float,
                     self.test_string]:
-            obj_hash = BuffaloObjectHasher(var)
-            self.assertEquals(obj_hash.type, "builtins.")
-        list_hash = BuffaloObjectHasher(self.test_list)
-        self.assertIsInstance(hash(list_hash), int)
+            obj_hash = hasher.info(var)
+            self.assertTrue(obj_hash.type.startswith("builtins."))
 
-        str_hash = BuffaloObjectHasher(self.test_string)
-        self.assertIsInstance(hash(str_hash), int)
+        list_hash = hasher.info(self.test_list).hash
+        self.assertIsInstance(list_hash, int)
 
-        int_hash = BuffaloObjectHasher(self.test_integer)
-        self.assertIsInstance(hash(int_hash), int)
+        str_hash = hasher.info(self.test_string).hash
+        self.assertIsInstance(str_hash, int)
+
+        int_hash = hasher.info(self.test_integer).hash
+        self.assertIsInstance(int_hash, int)

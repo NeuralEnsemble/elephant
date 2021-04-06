@@ -20,6 +20,14 @@ matrix:
       script: mpiexec -n 1 python -m mpi4py.futures -m nose --with-coverage --cover-package=elephant
       after_success: coveralls || echo "coveralls failed"
 
+    - name: "conda 3.6 prov"
+      python: 3.6
+      env:
+        - DISTRIB="conda"
+        - TEST_PROV=true
+      before_script:
+        - pip install -r requirements/requirements-prov.txt
+
     - name: "conda 3.7"
       python: 3.7
       env: DISTRIB="conda"

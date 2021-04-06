@@ -3,7 +3,8 @@ import inspect
 import elephant.buffalo as buffalo
 
 
-TEST_PROV = os.environ.get('TEST_PROV', False) and buffalo.HAVE_PROV
+TEST_PROV = bool(os.environ.get('TEST_PROV', 'false')
+                 in ['true', '1']) and buffalo.HAVE_PROV
 
 
 def _provenance_test(active=TEST_PROV):
