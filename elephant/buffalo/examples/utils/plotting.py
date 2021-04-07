@@ -44,7 +44,7 @@ def plot_time_histogram(histogram, time_unit=pq.s, title=""):
     plt.bar(times, histogram.squeeze().magnitude, align='edge', width=width)
     plt.xlabel(f"Time ({time_unit})")
     plt.ylabel("Y Axis?")
-    if len(title):
+    if title:
         plt.title(title)
 
 

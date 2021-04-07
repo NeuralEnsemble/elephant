@@ -87,8 +87,9 @@ class BuffaloProvDocument(ProvDocument):
 
         # Iterate over the input/output pairs to add the `wasDerived`
         # relationship
-        for input, output in product(input_entities, output_entities):
-            self.wasDerivedFrom(output, input)
+        for input_entity, output_entity in \
+                product(input_entities, output_entities):
+            self.wasDerivedFrom(output_entity, input_entity)
 
         # Attribute the activity to the script
         self.wasAttributedTo(cur_activity, self._script_agent)

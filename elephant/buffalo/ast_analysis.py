@@ -101,11 +101,13 @@ def _fetch_object_tree(node, time_stamp):
             subscript = _SubscriptStep(node, time_stamp, child)
             _extract(node.value, subscript)
             return subscript
-        elif isinstance(node, ast.Attribute):
+
+        if isinstance(node, ast.Attribute):
             attribute = _AttributeStep(node, time_stamp, child)
             _extract(node.value, attribute)
             return attribute
-        elif isinstance(node, ast.Name):
+
+        if isinstance(node, ast.Name):
             name = _NameStep(node, time_stamp, child)
             return name
 

@@ -131,8 +131,7 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
     def time_units(self):
         if self._time_units is None:
             return self.times.units
-        else:
-            return self._time_units
+        return self._time_units
 
     @time_units.setter
     def time_units(self, unit):
@@ -142,14 +141,12 @@ class TimeHistogramObject(HistogramObject, neo.AnalogSignal):
     def bin_width(self):
         if self._time_units is None:
             return self.bin_size.rescale(self.times.units)
-        else:
-            return self.bin_size.rescale(self._time_units)
+        return self.bin_size.rescale(self._time_units)
 
     def _get_rescaled_edges(self):
         if self._time_units is None:
             return self.times.magnitude
-        else:
-            return self.times.rescale(self._time_units).magnitude
+        return self.times.rescale(self._time_units).magnitude
 
     @property
     def edges(self):

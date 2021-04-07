@@ -62,7 +62,7 @@ class _BuffaloCodeAnalyzer(object):
 
         # We process node by node. Whenever code blocks are identified, all
         # nodes in its body are pushed to the `code_nodes` stack
-        while len(code_nodes):
+        while code_nodes:
             node = code_nodes.pop(0)
             if hasattr(node, 'body'):
                 # Another code block (e.g., if, for, while)
@@ -70,7 +70,7 @@ class _BuffaloCodeAnalyzer(object):
                 code_nodes.extend(node.body)
 
                 # If `else` block is present, add it as well
-                if hasattr(node, 'orelse') and len(node.orelse):
+                if hasattr(node, 'orelse') and node.orelse:
                     code_nodes.extend(node.orelse)
 
                 if hasattr(node, 'iter'):

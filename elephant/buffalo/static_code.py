@@ -170,18 +170,18 @@ class _SubscriptStep(_StaticStep):
             return index_value, params
 
         # Required for newer Python versions
-        elif isinstance(slice_node, ast.Constant):
+        if isinstance(slice_node, ast.Constant):
             index_value = slice_node.value
             params['index'] = index_value
             return index_value, params
 
-        elif isinstance(slice_node, ast.Name):
+        if isinstance(slice_node, ast.Name):
             from elephant.buffalo.decorator import Provenance
             index_value = Provenance.get_script_variable(slice_node.id)
             params['index'] = index_value
             return index_value, params
 
-        elif isinstance(slice_node, ast.Slice):
+        if isinstance(slice_node, ast.Slice):
 
             # Slicing
             stop = int(slice_node.upper.n)

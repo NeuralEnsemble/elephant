@@ -215,7 +215,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             for output_key, output_obj in analysis_step.output.items():
                 _connect_edge(input_obj, output_obj)
         else:
-            if len(analysis_step.output):
+            if analysis_step.output:
                 index = next(iter(analysis_step.output))
                 output_obj = analysis_step.output[index]
             else:
@@ -231,9 +231,9 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             if obj_type in self.description_map:
                 title = self.description_map[obj_type].build_title(obj.details)
             return obj_type + title, obj_label, "data"
-        else:
-            # Provenance of a file (FileInfo named tuple)
-            return f"{obj.path}<br>[{obj.hash_type}:{obj.hash}]", "<File>", "file"
+
+        # Provenance of a file (FileInfo named tuple)
+        return f"{obj.path}<br>[{obj.hash_type}:{obj.hash}]", "<File>", "file"
 
     @staticmethod
     def _get_edge_attrs_and_labels(analysis_step):
@@ -278,7 +278,7 @@ class BuffaloProvenanceGraph(nx.DiGraph):
         edge_label, edge_title, function_edge = \
             self._get_edge_attrs_and_labels(analysis_step)
 
-        if len(analysis_step.input.keys()):
+        if analysis_step.input.keys():
             for key, obj in analysis_step.input.items():
                 if isinstance(obj, VarArgs):
                     for var_arg in obj.args:
@@ -326,15 +326,15 @@ class BuffaloProvenanceGraph(nx.DiGraph):
             # colors according to the visualization options
             if not grayscale:
                 return highlight
-            else:
-                return {
+
+            return {
                         "background": "rgba(120, 120, 120, 1)",
                         "border": "rgba(120, 120, 120, 1)",
-                            "highlight": {
-                                "background": highlight,
-                                "border": highlight,
-                            }
+                        "highlight": {
+                            "background": highlight,
+                            "border": highlight,
                         }
+                    }
 
         def _add_node(node_id):
             # Add the given node to the pyvis Network `net`.

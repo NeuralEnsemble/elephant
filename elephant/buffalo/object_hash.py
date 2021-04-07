@@ -75,8 +75,7 @@ class BuffaloFileHash(object):
         if isinstance(other, BuffaloFileHash):
             return hash(self) == hash(other) and \
                    self._hash_type == other._hash_type
-        else:
-            raise TypeError("Cannot compare different objects")
+        raise TypeError("Cannot compare different objects")
 
     def __repr__(self):
         return f"{Path(self.file_path).name}: " \

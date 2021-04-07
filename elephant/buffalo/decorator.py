@@ -307,7 +307,7 @@ class Provenance(object):
         # initialization, create the hash and add as output using
         # `BuffaloFileHash`. These outputs will be identified by the key
         # `file.X`, where X is an integer with the order of the file output
-        if len(self.file_outputs):
+        if self.file_outputs:
             for idx, file_output in enumerate(self.file_outputs):
                 outputs[f"file.{idx}"] = \
                     BuffaloFileHash(input_data[file_output]).info()
