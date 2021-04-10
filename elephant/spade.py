@@ -1381,7 +1381,8 @@ def _generate_binned_surrogates(
                 binned_surrogates,
                 bin_size=bin_size,
                 t_start=spiketrains[0].t_start,
-                t_stop=spiketrains[0].t_stop)
+                t_stop=spiketrains[0].t_stop,
+                tolerance=None)
         elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
             surrs = [instance.dithering()[0]
                      for instance in joint_isi_instances]
