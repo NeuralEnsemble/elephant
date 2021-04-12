@@ -19,7 +19,7 @@ import quantities as pq
 from scipy.stats import expon
 from scipy.stats import kstest, poisson
 
-import elephant.spike_train_generation as stgen
+import elephant.spike_train_generation as stg
 from elephant.statistics import isi, instantaneous_rate
 from elephant import kernels
 
@@ -53,7 +53,7 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         # Test whether spikes are extracted at the correct times from
         # an analog signal.
 
-        spike_train = stgen.threshold_detection(self.vm)
+        spike_train = stg.threshold_detection(self.vm)
         try:
             len(spike_train)
         # Handles an error in Neo related to some zero length
@@ -78,7 +78,7 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
 
     def test_peak_detection_threshold(self):
         # Test for empty SpikeTrain when threshold is too high
-        result = stgen.threshold_detection(self.vm, threshold=30 * pq.mV)
+        result = stg.threshold_detection(self.vm, threshold=30 * pq.mV)
         self.assertEqual(len(result), 0)
 
 
@@ -99,7 +99,7 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
 
     def test_peak_detection_time_stamps(self):
         # Test with default arguments
-        result = stgen.peak_detection(self.vm)
+        result = stg.peak_detection(self.vm)
         self.assertEqual(len(self.true_time_stamps), len(result))
         self.assertIsInstance(result, neo.core.SpikeTrain)
 
@@ -110,7 +110,7 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
 
     def test_peak_detection_threshold(self):
         # Test for empty SpikeTrain when threshold is too high
-        result = stgen.peak_detection(self.vm, threshold=30 * pq.mV)
+        result = stg.peak_detection(self.vm, threshold=30 * pq.mV)
         self.assertEqual(len(result), 0)
 
 
@@ -138,8 +138,8 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
                                      -0.06715259, -0.06703235, -0.06691635])
 
     def test_spike_extraction_waveform(self):
-        spike_train = stgen.spike_extraction(self.vm.reshape(-1),
-                                             interval=(-1 * pq.ms, 2 * pq.ms))
+        spike_train = stg.spike_extraction(self.vm.reshape(-1),
+                                           interval=(-1 * pq.ms, 2 * pq.ms))
         try:
             assert_array_almost_equal(
                 spike_train.waveforms[0][0].magnitude.reshape(-1),
@@ -162,7 +162,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 # zero refractory period should act as no refractory period
                 for refractory_period in (None, 0 * pq.ms):
                     np.random.seed(seed=12345)
-                    spiketrain = stgen.homogeneous_poisson_process(
+                    spiketrain = stg.homogeneous_poisson_process(
                         rate, t_stop=t_stop,
                         refractory_period=refractory_period)
                     intervals = isi(spiketrain)
@@ -197,12 +197,12 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         rate = 10 * pq.Hz
         t_stop = 20 * pq.s
         np.random.seed(27)
-        sp1 = stgen.homogeneous_poisson_process(rate, t_stop=t_stop,
-                                                as_array=True)
+        sp1 = stg.homogeneous_poisson_process(rate, t_stop=t_stop,
+                                              as_array=True)
         np.random.seed(27)
-        sp2 = stgen.homogeneous_poisson_process(rate, t_stop=t_stop,
-                                                refractory_period=0 * pq.ms,
-                                                as_array=True)
+        sp2 = stg.homogeneous_poisson_process(rate, t_stop=t_stop,
+                                              refractory_period=0 * pq.ms,
+                                              as_array=True)
         assert_array_almost_equal(sp1, sp2)
 
     def test_t_start_and_t_stop(self):
@@ -210,7 +210,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         t_start = 17 * pq.ms
         t_stop = 2 * pq.s
         for refractory_period in (None, 3 * pq.ms):
-            spiketrain = stgen.homogeneous_poisson_process(
+            spiketrain = stg.homogeneous_poisson_process(
                 rate=rate, t_start=t_start, t_stop=t_stop,
                 refractory_period=refractory_period)
             self.assertEqual(spiketrain.t_start, t_start)
@@ -222,7 +222,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 warnings.simplefilter("ignore")
                 # RuntimeWarning: divide by zero encountered in true_divide
                 # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                sp = stgen.homogeneous_poisson_process(
+                sp = stg.homogeneous_poisson_process(
                     rate=0 * pq.Hz, t_stop=10 * pq.s,
                     refractory_period=refractory_period)
                 self.assertEqual(sp.size, 0)
@@ -230,7 +230,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
     def test_nondecrease_spike_times(self):
         for refractory_period in (None, 3 * pq.ms):
             np.random.seed(27)
-            spiketrain = stgen.homogeneous_poisson_process(
+            spiketrain = stg.homogeneous_poisson_process(
                 rate=10 * pq.Hz, t_stop=1000 * pq.s,
                 refractory_period=refractory_period)
             diffs = np.diff(spiketrain.times)
@@ -241,11 +241,11 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         t_stop = 10 * pq.s
         for refractory_period in (None, 3 * pq.ms):
             np.random.seed(27)
-            spiketrain = stgen.homogeneous_poisson_process(
+            spiketrain = stg.homogeneous_poisson_process(
                 rate=rate, t_stop=t_stop, refractory_period=refractory_period)
             self.assertIsInstance(spiketrain, neo.SpikeTrain)
             np.random.seed(27)
-            spiketrain_array = stgen.homogeneous_poisson_process(
+            spiketrain_array = stg.homogeneous_poisson_process(
                 rate=rate, t_stop=t_stop, refractory_period=refractory_period,
                 as_array=True)
             # don't check with isinstance: Quantity is a subclass of np.ndarray
@@ -257,7 +257,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         np.random.seed(27)
         rate_expected = 10 * pq.Hz
         refractory_period = 90 * pq.ms  # 10 ms of effective ISI
-        spiketrain = stgen.homogeneous_poisson_process(
+        spiketrain = stg.homogeneous_poisson_process(
             rate_expected, t_stop=1000 * pq.s,
             refractory_period=refractory_period)
         rate_obtained = len(spiketrain) / spiketrain.t_stop
@@ -273,7 +273,7 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         rate = 10 * pq.Hz
         for refractory_period in (None, 3 * pq.ms):
             # t_stop < t_start
-            hpp = stgen.homogeneous_poisson_process
+            hpp = stg.homogeneous_poisson_process
             self.assertRaises(
                 ValueError, hpp, rate=rate, t_start=5 * pq.ms,
                 t_stop=1 * pq.ms, refractory_period=refractory_period)
@@ -309,7 +309,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
         shape_factor = 2.5
 
         for rate in [self.rate_profile, self.rate_profile.rescale(pq.kHz)]:
-            spiketrain = stgen.inhomogeneous_gamma_process(
+            spiketrain = stg.inhomogeneous_gamma_process(
                 rate, shape_factor=shape_factor)
             intervals = isi(spiketrain)
 
@@ -332,55 +332,54 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
             self.assertEqual(rate.t_start, spiketrain.t_start)
 
         # Testing type
-        spiketrain_as_array = stgen.inhomogeneous_gamma_process(
+        spiketrain_as_array = stg.inhomogeneous_gamma_process(
             rate, shape_factor=shape_factor, as_array=True)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
         # check error if rate has wrong format
         self.assertRaises(
-            ValueError, stgen.inhomogeneous_gamma_process,
+            ValueError, stg.inhomogeneous_gamma_process,
             rate=[0.1, 2.],
             shape_factor=shape_factor)
 
         # check error if negative values in rate
         self.assertRaises(
-            ValueError, stgen.inhomogeneous_gamma_process,
+            ValueError, stg.inhomogeneous_gamma_process,
             rate=neo.AnalogSignal([-0.1, 10.] * pq.Hz,
                                   sampling_period=0.001 * pq.s),
             shape_factor=shape_factor)
 
         # check error if rate is empty
         self.assertRaises(
-            ValueError, stgen.inhomogeneous_gamma_process,
+            ValueError, stg.inhomogeneous_gamma_process,
             rate=neo.AnalogSignal([] * pq.Hz, sampling_period=0.001 * pq.s),
             shape_factor=shape_factor)
 
     def test_recovered_firing_rate_profile(self):
         np.random.seed(54)
         t_start = 0 * pq.s
-        t_stop = 4 * np.round(np.pi, decimals=3) * pq.s  # 2 full periods
+        t_stop = 2 * np.round(np.pi, decimals=3) * pq.s  # 2 full periods
         sampling_period = 0.001 * pq.s
 
         # an arbitrary rate profile
         profile = 0.5 * (1 + np.sin(np.arange(t_start.item(), t_stop.item(),
                                               sampling_period.item())))
 
-        time_generation = 0
-        n_trials = 200
+        n_trials = 100
         rtol = 0.1  # 10% of deviation allowed
         kernel = kernels.RectangularKernel(sigma=0.25 * pq.s)
-        for rate in (10 * pq.Hz, 100 * pq.Hz):
+        for rate in (10 * pq.Hz, 50 * pq.Hz):
             rate_profile = neo.AnalogSignal(rate * profile,
                                             sampling_period=sampling_period)
             # the recovered firing rate profile should not depend on the
             # shape factor; here we test float and integer values of the shape
             # factor: the method supports float values that is not trivial
             # for inhomogeneous gamma process generation
-            for shape_factor in (1, 2.5, 10.):
+            for shape_factor in (2.5, 10.):
 
                 spiketrains = \
-                    [stgen.inhomogeneous_gamma_process(
+                    [stg.inhomogeneous_gamma_process(
                         rate_profile, shape_factor=shape_factor)
                      for _ in range(n_trials)]
                 rate_recovered = instantaneous_rate(
@@ -418,7 +417,7 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
 
         for rate in (self.rate_profile, self.rate_profile.rescale(pq.kHz)):
             for refractory_period in (3 * pq.ms, None):
-                spiketrain = stgen.inhomogeneous_poisson_process(
+                spiketrain = stg.inhomogeneous_poisson_process(
                     rate, refractory_period=refractory_period)
                 intervals = isi(spiketrain)
 
@@ -445,23 +444,23 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
                 self.assertEqual(rate.t_start, spiketrain.t_start)
 
         # Testing type
-        spiketrain_as_array = stgen.inhomogeneous_poisson_process(
+        spiketrain_as_array = stg.inhomogeneous_poisson_process(
             rate, as_array=True)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
         # Testing type for refractory period
         refractory_period = 3 * pq.ms
-        spiketrain = stgen.inhomogeneous_poisson_process(
+        spiketrain = stg.inhomogeneous_poisson_process(
             rate, refractory_period=refractory_period)
-        spiketrain_as_array = stgen.inhomogeneous_poisson_process(
+        spiketrain_as_array = stg.inhomogeneous_poisson_process(
             rate, as_array=True, refractory_period=refractory_period)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
         # Check that to high refractory period raises error
         self.assertRaises(
-            ValueError, stgen.inhomogeneous_poisson_process,
+            ValueError, stg.inhomogeneous_poisson_process,
             self.rate_profile,
             refractory_period=1000 * pq.ms)
 
@@ -471,7 +470,7 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         refractory_period = 90 * pq.ms  # 10 ms of effective ISI
         rates = neo.AnalogSignal(np.repeat(rate_expected, 1000), units=pq.Hz,
                                  t_start=0 * pq.ms, sampling_rate=1 * pq.Hz)
-        spiketrain = stgen.inhomogeneous_poisson_process(
+        spiketrain = stg.inhomogeneous_poisson_process(
             rates, refractory_period=refractory_period)
         rate_obtained = len(spiketrain) / spiketrain.t_stop
         self.assertAlmostEqual(rate_expected, rate_obtained.simplified,
@@ -488,14 +487,14 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
                 warnings.simplefilter("ignore")
                 # RuntimeWarning: divide by zero encountered in true_divide
                 # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                spiketrain = stgen.inhomogeneous_poisson_process(
+                spiketrain = stg.inhomogeneous_poisson_process(
                     self.rate_profile_0, refractory_period=refractory_period)
             self.assertEqual(spiketrain.size, 0)
 
     def test_negative_rates(self):
         for refractory_period in (3 * pq.ms, None):
             self.assertRaises(
-                ValueError, stgen.inhomogeneous_poisson_process,
+                ValueError, stg.inhomogeneous_poisson_process,
                 self.rate_profile_negative,
                 refractory_period=refractory_period)
 
@@ -511,7 +510,7 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         a = 3.0
         for b in (67.0 * pq.Hz, 0.067 * pq.kHz):
             for t_stop in (2345 * pq.ms, 2.345 * pq.s):
-                spiketrain = stgen.homogeneous_gamma_process(
+                spiketrain = stg.homogeneous_gamma_process(
                     a, b, t_stop=t_stop)
                 intervals = isi(spiketrain)
 
@@ -546,11 +545,11 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         a = 3.
         b = 10 * pq.Hz
         np.random.seed(27)
-        spiketrain = stgen.homogeneous_gamma_process(a=a, b=b)
+        spiketrain = stg.homogeneous_gamma_process(a=a, b=b)
         self.assertIsInstance(spiketrain, neo.SpikeTrain)
         np.random.seed(27)
-        spiketrain_array = stgen.homogeneous_gamma_process(a=a, b=b,
-                                                           as_array=True)
+        spiketrain_array = stg.homogeneous_gamma_process(a=a, b=b,
+                                                         as_array=True)
         # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
         self.assertTrue(isinstance(spiketrain_array, np.ndarray))
         assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
@@ -567,7 +566,7 @@ class _n_poisson_TestCase(unittest.TestCase):
     def test_poisson(self):
 
         # Check the output types for input rate + n number of neurons
-        pp = stgen._n_poisson(
+        pp = stg._n_poisson(
             rate=self.rate,
             t_stop=self.t_stop,
             n_spiketrains=self.n)
@@ -577,7 +576,7 @@ class _n_poisson_TestCase(unittest.TestCase):
         self.assertEqual(len(pp), self.n)
 
         # Check the output types for input list of rates
-        pp = stgen._n_poisson(rate=self.rates, t_stop=self.t_stop)
+        pp = stg._n_poisson(rate=self.rates, t_stop=self.t_stop)
         self.assertIsInstance(pp, list)
         self.assertIsInstance(pp[0], neo.core.spiketrain.SpikeTrain)
         self.assertEqual(pp[0].simplified.units, 1000 * pq.ms)
@@ -587,21 +586,21 @@ class _n_poisson_TestCase(unittest.TestCase):
 
         # Dimensionless rate
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=5, t_stop=self.t_stop)
+            ValueError, stg._n_poisson, rate=5, t_stop=self.t_stop)
         # Negative rate
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=-5 * pq.Hz, t_stop=self.t_stop)
+            ValueError, stg._n_poisson, rate=-5 * pq.Hz, t_stop=self.t_stop)
         # Negative value when rate is a list
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=[-5, 3] * pq.Hz,
+            ValueError, stg._n_poisson, rate=[-5, 3] * pq.Hz,
             t_stop=self.t_stop)
         # Negative n
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=self.rate, t_stop=self.t_stop,
+            ValueError, stg._n_poisson, rate=self.rate, t_stop=self.t_stop,
             n_spiketrains=-1)
         # t_start>t_stop
         self.assertRaises(
-            ValueError, stgen._n_poisson, rate=self.rate, t_start=4 * pq.ms,
+            ValueError, stg._n_poisson, rate=self.rate, t_start=4 * pq.ms,
             t_stop=3 * pq.ms, n_spiketrains=3)
 
 
@@ -616,7 +615,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
     def test_sip(self):
 
         # Generate an example SIP mode
-        sip, coinc = stgen.single_interaction_process(
+        sip, coinc = stg.single_interaction_process(
             n_spiketrains=self.n, t_stop=self.t_stop, rate=self.rate,
             coincidence_rate=self.rate_c, return_coincidences=True)
 
@@ -635,7 +634,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             # Generate an example SIP mode giving a list of rates as imput
-            sip, coinc = stgen.single_interaction_process(
+            sip, coinc = stg.single_interaction_process(
                 t_stop=self.t_stop, rate=self.rates,
                 coincidence_rate=self.rate_c, return_coincidences=True)
 
@@ -653,7 +652,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
             (self.rate_c * self.t_stop).rescale(pq.dimensionless))
 
         # Generate an example SIP mode stochastic number of coincidences
-        sip = stgen.single_interaction_process(
+        sip = stg.single_interaction_process(
             n_spiketrains=self.n,
             t_stop=self.t_stop,
             rate=self.rate,
@@ -669,26 +668,26 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
     def test_sip_error(self):
         # Negative rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
+            ValueError, stg.single_interaction_process, n_spiketrains=self.n,
             rate=-5 * pq.Hz,
             coincidence_rate=self.rate_c, t_stop=self.t_stop)
         # Negative coincidence rate
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
+            ValueError, stg.single_interaction_process, n_spiketrains=self.n,
             rate=self.rate, coincidence_rate=-3 * pq.Hz, t_stop=self.t_stop)
         # Negative value when rate is a list
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n_spiketrains=self.n,
+            ValueError, stg.single_interaction_process, n_spiketrains=self.n,
             rate=[-5, 3, 4, 2] * pq.Hz, coincidence_rate=self.rate_c,
             t_stop=self.t_stop)
         # Negative n
         self.assertRaises(
-            ValueError, stgen.single_interaction_process, n_spiketrains=-1,
+            ValueError, stg.single_interaction_process, n_spiketrains=-1,
             rate=self.rate, coincidence_rate=self.rate_c, t_stop=self.t_stop)
         # Rate_c < rate
         self.assertRaises(
             ValueError,
-            stgen.single_interaction_process,
+            stg.single_interaction_process,
             n_spiketrains=self.n,
             rate=self.rate,
             coincidence_rate=self.rate + 1 * pq.Hz,
@@ -702,8 +701,8 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10 * 1000 * pq.ms
         t_start = 5 * 1000 * pq.ms
         rate = 3 * pq.Hz
-        cpp_hom = stgen.cpp(rate, amplitude_distribution,
-                            t_stop, t_start=t_start)
+        cpp_hom = stg.cpp(rate, amplitude_distribution,
+                          t_stop, t_start=t_start)
         # testing the ouput formats
         self.assertEqual(
             [type(train) for train in cpp_hom],
@@ -724,8 +723,8 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10000 * pq.ms
         t_start = 5 * 1000 * pq.ms
         rate = 3 * pq.Hz
-        cpp_unit = stgen.cpp(rate, amplitude_distribution,
-                             t_stop, t_start=t_start)
+        cpp_unit = stg.cpp(rate, amplitude_distribution,
+                           t_stop, t_start=t_start)
 
         self.assertEqual(cpp_unit[0].units, t_stop.units)
         self.assertEqual(cpp_unit[0].t_stop.units, t_stop.units)
@@ -736,7 +735,7 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10 * 1000 * pq.ms
         t_start = 5 * 1000 * pq.ms
         rate = 3 * pq.Hz
-        cpp_hom_empty = stgen.cpp(
+        cpp_hom_empty = stg.cpp(
             rate, amplitude_distribution, t_stop, t_start=t_start)
 
         self.assertEqual(
@@ -747,7 +746,7 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10 * 1000 * pq.ms
         t_start = 5 * 1000 * pq.ms
         rate = 0 * pq.Hz
-        cpp_hom_empty_r = stgen.cpp(
+        cpp_hom_empty_r = stg.cpp(
             rate, amplitude_distribution, t_stop, t_start=t_start)
         self.assertEqual(
             [len(train) for train in cpp_hom_empty_r], [0] * len(
@@ -758,7 +757,7 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10 * 1000 * pq.ms
         t_start = 5 * 1000 * pq.ms
         rate = 3 * pq.Hz
-        cpp_hom_eq = stgen.cpp(
+        cpp_hom_eq = stg.cpp(
             rate, amplitude_distribution, t_stop, t_start=t_start)
 
         self.assertTrue(
@@ -769,7 +768,7 @@ class cppTestCase(unittest.TestCase):
         # testing empty amplitude
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[],
             t_stop=10 * 1000 * pq.ms,
             rate=3 * pq.Hz)
@@ -777,13 +776,13 @@ class cppTestCase(unittest.TestCase):
         # testing sum of amplitude>1
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[1, 1, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=3 * pq.Hz)
         # testing negative value in the amplitude
         self.assertRaises(
-            ValueError, stgen.cpp, amplitude_distribution=[-1, 1, 1],
+            ValueError, stg.cpp, amplitude_distribution=[-1, 1, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=3 * pq.Hz)
         # test negative rate
@@ -792,13 +791,13 @@ class cppTestCase(unittest.TestCase):
             # Catches RuntimeWarning: invalid value encountered in sqrt
             # number = np.ceil(n + 3 * np.sqrt(n)), when `n` == -3 Hz.
             self.assertRaises(
-                ValueError, stgen.cpp, amplitude_distribution=[0, 1, 0],
+                ValueError, stg.cpp, amplitude_distribution=[0, 1, 0],
                 t_stop=10 * 1000 * pq.ms,
                 rate=-3 * pq.Hz)
         # test wrong unit for rate
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 1, 0],
             t_stop=10 * 1000 * pq.ms,
             rate=3 * 1000 * pq.ms)
@@ -806,19 +805,19 @@ class cppTestCase(unittest.TestCase):
         # testing raises of AttributeError (missing input units)
         # Testing missing unit to t_stop
         self.assertRaises(
-            ValueError, stgen.cpp, amplitude_distribution=[0, 1, 0], t_stop=10,
+            ValueError, stg.cpp, amplitude_distribution=[0, 1, 0], t_stop=10,
             rate=3 * pq.Hz)
         # Testing missing unit to t_start
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 1, 0],
             t_stop=10 * 1000 * pq.ms,
             rate=3 * pq.Hz,
             t_start=3)
         # testing rate missing unit
         self.assertRaises(
-            AttributeError, stgen.cpp, amplitude_distribution=[0, 1, 0],
+            AttributeError, stg.cpp, amplitude_distribution=[0, 1, 0],
             t_stop=10 * 1000 * pq.ms,
             rate=3)
 
@@ -832,8 +831,8 @@ class cppTestCase(unittest.TestCase):
             warnings.simplefilter("ignore")
             # Catch RuntimeWarning: divide by zero encountered in true_divide
             # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-            cpp_het = stgen.cpp(rate, amplitude_distribution,
-                                t_stop, t_start=t_start)
+            cpp_het = stg.cpp(rate, amplitude_distribution,
+                              t_stop, t_start=t_start)
             # testing the ouput formats
             self.assertEqual(
                 [type(train) for train in cpp_het],
@@ -856,7 +855,7 @@ class cppTestCase(unittest.TestCase):
             t_stop = 10000 * pq.ms
             t_start = 5 * 1000 * pq.ms
             rate = [3, 4] * pq.Hz
-            cpp_unit = stgen.cpp(
+            cpp_unit = stg.cpp(
                 rate, amplitude_distribution, t_stop, t_start=t_start)
 
             self.assertEqual(cpp_unit[0].units, t_stop.units)
@@ -867,7 +866,7 @@ class cppTestCase(unittest.TestCase):
             t_stop = 10 * 1000 * pq.ms
             t_start = 5 * 1000 * pq.ms
             rate = [3, 4] * pq.Hz
-            cpp_het_empty = stgen.cpp(
+            cpp_het_empty = stg.cpp(
                 rate, amplitude_distribution, t_stop, t_start=t_start)
 
             self.assertEqual(len(cpp_het_empty[0]), 0)
@@ -877,7 +876,7 @@ class cppTestCase(unittest.TestCase):
             t_stop = 10 * 1000 * pq.ms
             t_start = 5 * 1000 * pq.ms
             rate = [0, 0] * pq.Hz
-            cpp_het_empty_r = stgen.cpp(
+            cpp_het_empty_r = stg.cpp(
                 rate, amplitude_distribution, t_stop, t_start=t_start)
             self.assertEqual(
                 [len(train) for train in cpp_het_empty_r], [0] * len(
@@ -888,7 +887,7 @@ class cppTestCase(unittest.TestCase):
             t_stop = 10 * 1000 * pq.ms
             t_start = 5 * 1000 * pq.ms
             rate = [3, 3] * pq.Hz
-            cpp_het_eq = stgen.cpp(
+            cpp_het_eq = stg.cpp(
                 rate, amplitude_distribution, t_stop, t_start=t_start)
 
             self.assertTrue(np.allclose(
@@ -899,57 +898,57 @@ class cppTestCase(unittest.TestCase):
         # testing empty amplitude
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz)
         # testing sum amplitude>1
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[1, 1, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz)
         # testing amplitude negative value
         self.assertRaises(
-            ValueError, stgen.cpp, amplitude_distribution=[-1, 1, 1],
+            ValueError, stg.cpp, amplitude_distribution=[-1, 1, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz)
         # testing negative rate
-        self.assertRaises(ValueError, stgen.cpp, amplitude_distribution=[
+        self.assertRaises(ValueError, stg.cpp, amplitude_distribution=[
             0, 1, 0], t_stop=10 * 1000 * pq.ms, rate=[-3, 4] * pq.Hz)
         # testing empty rate
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 1, 0],
             t_stop=10 * 1000 * pq.ms,
             rate=[] * pq.Hz)
         # testing empty amplitude
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz)
         # testing different len(A)-1 and len(rate)
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz)
         # testing rate with different unit from Hz
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * 1000 * pq.ms)
         # Testing analytical constrain between amplitude and rate
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 0, 1],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz,
@@ -958,19 +957,19 @@ class cppTestCase(unittest.TestCase):
         # testing raises of AttributeError (missing input units)
         # Testing missing unit to t_stop
         self.assertRaises(
-            ValueError, stgen.cpp, amplitude_distribution=[0, 1, 0], t_stop=10,
+            ValueError, stg.cpp, amplitude_distribution=[0, 1, 0], t_stop=10,
             rate=[3, 4] * pq.Hz)
         # Testing missing unit to t_start
         self.assertRaises(
             ValueError,
-            stgen.cpp,
+            stg.cpp,
             amplitude_distribution=[0, 1, 0],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4] * pq.Hz,
             t_start=3)
         # Testing missing unit to rate
         self.assertRaises(
-            AttributeError, stgen.cpp, amplitude_distribution=[0, 1, 0],
+            AttributeError, stg.cpp, amplitude_distribution=[0, 1, 0],
             t_stop=10 * 1000 * pq.ms,
             rate=[3, 4])
 
@@ -980,7 +979,7 @@ class cppTestCase(unittest.TestCase):
         t_stop = 10 * 1000 * pq.ms
         t_start = 5 * 1000 * pq.ms
         rate = 3 * pq.Hz
-        cpp_shift = stgen.cpp(
+        cpp_shift = stg.cpp(
             rate,
             amplitude_distribution,
             t_stop,
@@ -1008,7 +1007,7 @@ class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
     def test_invalid(self):
         rate = 10 * pq.Hz
         # t_stop < t_start
-        hpp = stgen.homogeneous_poisson_process
+        hpp = stg.homogeneous_poisson_process
         self.assertRaises(ValueError, hpp, rate=rate, t_start=5 * pq.ms,
                           t_stop=1 * pq.ms, refractory_period=3 * pq.ms)
 
