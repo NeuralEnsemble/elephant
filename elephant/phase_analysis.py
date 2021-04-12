@@ -20,6 +20,8 @@ __all__ = [
     "weighted_phase_lag_index"
 ]
 
+from neo import AnalogSignal
+
 
 def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
@@ -371,7 +373,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
         pp. 1548-1565, 2011
 
     """
-    if sampling_frequency is None:  # neo.AnalogSignal-input
+    if isinstance(signal_i, neo.AnalogSignal):
         sampling_frequency = signal_i.sampling_rate
         signal_i = signal_i.magnitude
         signal_j = signal_j.magnitude
