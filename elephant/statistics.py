@@ -772,7 +772,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         return kernels.GaussianKernel(width_sigma * st.units)
 
     if boundary_correction and not \
-            (kernel=='auto' or isinstance(kernel, kernels.GaussianKernel)):
+            (kernel == 'auto' or isinstance(kernel, kernels.GaussianKernel)):
         raise ValueError(
             'The boundary correction is only implemented'
             ' for Gaussian kernels.')

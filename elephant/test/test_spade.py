@@ -308,8 +308,9 @@ class SpadeTestCase(unittest.TestCase):
         mining_results_fpg = spade._fpgrowth(
             transactions,
             rel_matrix=rel_matrix)
-        print('#################################################################')
-        print('mining results fpg',mining_results_fpg)
+        print(
+            '#################################################################')
+        print('mining results fpg', mining_results_fpg)
         # mining the data with C fim
         mining_results_ffca = spade._fast_fca(context)
 
