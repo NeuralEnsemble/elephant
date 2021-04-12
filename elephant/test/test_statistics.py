@@ -17,6 +17,7 @@ import quantities as pq
 import scipy.integrate as spint
 from numpy.testing import assert_array_almost_equal, assert_array_equal, \
     assert_array_less
+
 import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import homogeneous_poisson_process
@@ -579,9 +580,6 @@ class InstantaneousRateTest(unittest.TestCase):
         kernels_available.append('auto')
         kernel_resolution = 0.01 * pq.s
         for kernel in kernels_available:
-            boundary_correction = False
-            if isinstance(kernel, kernels.GaussianKernel):
-                boundary_correction = True
             for center_kernel in (False, True):
                 rate_estimate = statistics.instantaneous_rate(
                     self.spike_train,
@@ -590,9 +588,7 @@ class InstantaneousRateTest(unittest.TestCase):
                     t_start=self.st_tr[0] * pq.s,
                     t_stop=self.st_tr[1] * pq.s,
                     trim=False,
-                    center_kernel=center_kernel,
-                    boundary_correction=boundary_correction
-                )
+                    center_kernel=center_kernel)
                 num_spikes = len(self.spike_train)
                 auc = spint.cumtrapz(
                     y=rate_estimate.magnitude[:, 0],
@@ -845,42 +841,6 @@ class InstantaneousRateTest(unittest.TestCase):
                                  invert=kernel.invert)
         self.assertIn('kernel', rate.annotations)
         self.assertEqual(rate.annotations['kernel'], kernel_annotation)
-
-    def test_boundary_correction(self):
-        np.random.seed(0)
-        n_spiketrains = 75
-        rate = 50. * pq.Hz
-        t_start = 0. * pq.ms
-        t_stop = 1000. * pq.ms
-
-        sampling_period = 0.1 * pq.ms
-
-        trial_list = [homogeneous_poisson_process(
-            rate=rate, t_start=t_start,
-            t_stop=t_stop) for _ in range(n_spiketrains)]
-
-        for CORRECTION in (True, False):
-            rates = []
-            for trial in trial_list:
-                # calculate instaneous rate, discard extra dimension
-                instantenous_rate = statistics.instantaneous_rate(
-                    spiketrains=trial,
-                    sampling_period=sampling_period,
-                    kernel='auto',
-                    boundary_correction=CORRECTION
-                )
-                rates.append(instantenous_rate)
-            rate_estimated = np.mean(rates, axis=0)[:, 0]
-
-            rtol = 0.05  # Five percent of tolerance
-
-            if CORRECTION:
-                assert np.max(rate_estimated) < (1. + rtol) * rate.item()
-                assert np.min(rate_estimated) > (1. - rtol) * rate.item()
-            else:
-                assert np.max(rate_estimated) < (1. + rtol) * rate.item()
-                # The minimal rate deviates strongly in the uncorrected case.
-                assert not np.min(rate_estimated) > (1. - rtol) * rate.item()
 
 
 class TimeHistogramTestCase(unittest.TestCase):
