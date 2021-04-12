@@ -624,11 +624,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         rate estimation. Currently implemented kernel forms are rectangular,
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
-        # TODO: The implementation is actually that of Shinomoto.
-        #  The one of Shimazaki is NOT implemented in elephant.
-        #  As it is now it is highly misleading!
-        If 'auto', the optimized kernel width for the rate estimation is
-        calculated according to :cite:`statistics-Shimazaki2010_171` and with
+        If 'auto', the optimized kernel width (that is not adaptive)
+        for the rate estimation is calculated according to
+        :cite:`statistics-Shimazaki2010_171` and with
         this width a gaussian kernel is constructed. Automatized calculation
         of the kernel width is not available for other than gaussian kernel
         shapes.
@@ -669,8 +667,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         the origin of the kernel.
         Default: True
     boundary_correction : bool, optional
-        Apply the boundary correction as introduced in
-        Stella, Bouss et al. (2021) to be submitted.
+        Apply a boundary correction.
+        Only possible in the case of a Gaussian kernel.
         Default: False
 
     Returns
@@ -774,7 +772,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         return kernels.GaussianKernel(width_sigma * st.units)
 
     if boundary_correction and not \
-            (kernel=='auto' or isinstance(kernel, kernels.GaussianKernel)):
+            (kernel == 'auto' or isinstance(kernel, kernels.GaussianKernel)):
         raise ValueError(
             'The boundary correction is only implemented'
             ' for Gaussian kernels.')
@@ -922,7 +920,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                     np.sqrt(2.) * sigma)))
 
         # multiply with correction factor for stationary rate as described in
-        # Stella, Bouss et al. (2021)
+        # Stella, Bouss et al. (2021), in prep.
         rate *= correction_factor[:, None]
 
         duration = t_stop.simplified.magnitude - t_start.simplified.magnitude
