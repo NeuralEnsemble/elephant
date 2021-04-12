@@ -12,6 +12,7 @@ try:
     from . import objects
     from .decorator import (Provenance, activate, deactivate,
                             save_provenance, save_graph, print_history)
+    from .ipython import activate_ipython
     HAVE_PROV = True
 except ImportError:
     # requirements-prov are missing
