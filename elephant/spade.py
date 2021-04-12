@@ -881,13 +881,16 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 zmin=min_z,
                 zmax=max_z,
                 report='a',
-                algo='s')
+                algo='s',
+                winlen=winlen,
+                threads=0,
+                verbose=4)
             break
     else:
         fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
     # Applying min/max conditions and computing extent (window positions)
-    fpgrowth_output = [concept for concept in fpgrowth_output
-                       if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
+    # fpgrowth_output = [concept for concept in fpgrowth_output
+    #                    if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
     # filter out subsets of patterns that are found as a side-effect
     # of using the moving window strategy
     fpgrowth_output = _filter_for_moving_window_subsets(
@@ -935,18 +938,18 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     return spectrum
 
 
-def _fpgrowth_filter(concept, winlen, max_c, min_neu):
-    """
-    Filter for selecting closed frequent items set with a minimum number of
-    neurons and a maximum number of occurrences and first spike in the first
-    bin position
-    """
-    intent = np.array(concept[0])
-    keep_concept = (min(intent % winlen) == 0
-                    and concept[1] <= max_c
-                    and np.unique(intent // winlen).shape[0] >= min_neu
-                    )
-    return keep_concept
+# def _fpgrowth_filter(concept, winlen, max_c, min_neu):
+#     """
+#     Filter for selecting closed frequent items set with a minimum number of
+#     neurons and a maximum number of occurrences and first spike in the first
+#     bin position
+#     """
+#     intent = np.array(concept[0])
+#     keep_concept = (min(intent % winlen) == 0
+#                     and concept[1] <= max_c
+#                     and np.unique(intent // winlen).shape[0] >= min_neu
+#                     )
+#     return keep_concept
 
 
 def _rereference_to_last_spike(transactions, winlen):
