@@ -318,7 +318,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     Calculates the Weigthed Phase-Lag Index (WPLI)
 
     This function estimates the WPLI, which is a measure of phase-synchrony. It
-    describes for two given signals i and j, who is leading/lagging the other
+    describes for two given signals i and j, which is leading/lagging the other
     signal in the frequency domain across multiple trials.
 
     Parameters
@@ -360,7 +360,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     with:
         - E{...} : expected value operator
         - Im{X} : imaginary component of the cross-spectrum
-        - X = Z_i * Z_j_conjugate : as cross-spectrum
+        - X = Z_i * Z_j_conjugate : cross-spectrum
         - Z_i, Z_j : complex-valued matrix, representing the Fourier spectra
                      of a particular frequency of the signals i and j.
 
@@ -373,10 +373,19 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
         pp. 1548-1565, 2011
 
     """
-    if isinstance(signal_i, neo.AnalogSignal):
+    if isinstance(signal_i, neo.AnalogSignal) and \
+            isinstance(signal_j, neo.AnalogSignal):  # neo.AnalogSignal input
+        signal_j.sampling_rate = signal_j.sampling_rate.rescale(
+            signal_i.sampling_rate.units)
+        if signal_i.sampling_rate.magnitude != signal_j.sampling_rate.magnitude:
+            raise ValueError("sampling rate of signal i and j must be equal")
         sampling_frequency = signal_i.sampling_rate
         signal_i = signal_i.magnitude
         signal_j = signal_j.magnitude
+    else:  # np.array() or Quantity input
+        if sampling_frequency is None:
+            raise ValueError("sampling frequency must be given for np.array or"
+                             "Quanitity input")
 
     if np.shape(signal_i) != np.shape(signal_j):
         if len(signal_i) != len(signal_j):
