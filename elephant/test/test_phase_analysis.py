@@ -14,7 +14,6 @@ import numpy as np
 import quantities as pq
 import os.path
 import scipy.io
-from scipy.io import savemat
 
 import elephant.phase_analysis
 
@@ -518,23 +517,27 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         FieldTrips' ft_connectivity() and MNEs' spectral_connectivity() at
         frequencies [16, 36, 52, 70, 100]Hz.
         """
-        for i in range(1, 4):
-            if i == 1:  # Quantity-input
-                input_type = 'Quantity'
-                freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
-                    self.lfps1_artificial, self.lfps2_artificial,
-                    self.sf1_artificial, absolute_value=False)
-            elif i == 2:  # np.array-input
-                input_type = 'np.array'
-                freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
-                    self.lfps1_artificial.magnitude,
-                    self.lfps2_artificial.magnitude, self.sf1_artificial,
-                    absolute_value=False)
-            else:  # neo.AnalogSignal-input
-                input_type = 'neo.AnalogSignal'
-                freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
-                    self.lfps1_artificial_AnalogSignal,
-                    self.lfps2_artificial_AnalogSignal, absolute_value=False)
+        configuration = {
+            'Quantity': {
+                'signal_i': self.lfps1_artificial,
+                'signal_j': self.lfps2_artificial,
+                'sampling_frequency': self.sf1_artificial
+            },
+            'np.ndarray': {
+                'signal_i': self.lfps1_artificial.magnitude,
+                'signal_j': self.lfps2_artificial.magnitude,
+                'sampling_frequency': self.sf1_artificial
+            },
+            'neo.AnalogSignal': {
+                'signal_i': self.lfps1_artificial_AnalogSignal,
+                'signal_j': self.lfps2_artificial_AnalogSignal
+            }
+        }
+        for input_type, inputs in configuration.items():
+            # Compute WPLI using each input-type
+            freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
+                **inputs, absolute_value=False)
+
             # mask for supposed wpli=1 frequencies,
             # freq=70Hz with supposed wpli=0 is treated separately,
             # because of noise existence in the artificial dataset
