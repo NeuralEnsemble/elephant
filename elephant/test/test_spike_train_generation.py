@@ -339,7 +339,7 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
 
         # check error if rate has wrong format
         self.assertRaises(
-            ValueError, stg.inhomogeneous_gamma_process,
+            TypeError, stg.inhomogeneous_gamma_process,
             rate=[0.1, 2.],
             shape_factor=shape_factor)
 
@@ -473,8 +473,9 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         spiketrain = stg.inhomogeneous_poisson_process(
             rates, refractory_period=refractory_period)
         rate_obtained = len(spiketrain) / spiketrain.t_stop
-        self.assertAlmostEqual(rate_expected, rate_obtained.simplified,
-                               places=1)
+        self.assertAlmostEqual(
+            rate_expected.simplified.item(),
+            rate_obtained.simplified.item(), places=1)
         intervals_inhomo = isi(spiketrain)
         isi_mean_expected = 1. / rate_expected
         self.assertAlmostEqual(isi_mean_expected.simplified,
@@ -510,8 +511,7 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         a = 3.0
         for b in (67.0 * pq.Hz, 0.067 * pq.kHz):
             for t_stop in (2345 * pq.ms, 2.345 * pq.s):
-                spiketrain = stg.homogeneous_gamma_process(
-                    a, b, t_stop=t_stop)
+                spiketrain = stg.homogeneous_gamma_process(a, b, t_stop=t_stop)
                 intervals = isi(spiketrain)
 
                 expected_spike_count = int((b / a * t_stop).simplified)
