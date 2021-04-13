@@ -384,10 +384,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # real LFP-dataset
         # Load first & second data file
         filename1_real = os.path.sep.join(['cross_testing_scripts',
-                                           'lfp_dataset1.mat'])
+                                           'i140703-001_ch01_slice_TS_ON_to_'
+                                           'GO_ON_correct_trials.mat'])
         dataset1_real = scipy.io.loadmat(filename1_real, squeeze_me=True)
         filename2_real = os.path.sep.join(['cross_testing_scripts',
-                                           'lfp_dataset2.mat'])
+                                           'i140703-001_ch02_slice_TS_ON_to_'
+                                           'GO_ON_correct_trials.mat'])
         dataset2_real = scipy.io.loadmat(filename2_real, squeeze_me=True)
         # get the relevant values
         self.lfps1_real = dataset1_real['lfp_matrix'] * pq.uV
@@ -424,7 +426,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # 1) FieldTrip: ft_connectivity_wpli()
         filename3_ground_truth_FieldTrip_real = os.path.sep.join(
             ['cross_testing_scripts',
-             'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs.csv'])
+             'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs_R2G.csv'])
         self.wpli_ground_truth_FieldTrip_real = np.loadtxt(
             filename3_ground_truth_FieldTrip_real, delimiter=',', 
             dtype=np.float64)
@@ -457,28 +459,30 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         Test if the WPLI is consistent with the ground truth generated from
         the LFP-datasets from the ICN lecture 10: 'The Local Field Potential'.
         """
+        atol = 5e-6
+        rtol = 4e-3
         # Quantity-input
         with self.subTest(msg="Quantity input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real, self.lfps2_real, self.sf1_real)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_real, atol=1e-14,
-                rtol=1e-12, equal_nan=True)
+                wpli, self.wpli_ground_truth_FieldTrip_real, atol=atol,
+                rtol=rtol, equal_nan=True)
         # np.array-input
         with self.subTest(msg="np.array input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real.magnitude, self.lfps2_real.magnitude,
                 self.sf1_real)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_real, atol=1e-14,
-                rtol=1e-12, equal_nan=True)
+                wpli, self.wpli_ground_truth_FieldTrip_real, atol=atol,
+                rtol=rtol, equal_nan=True)
         # neo.AnalogSignal-input
         with self.subTest(msg="neo.AnalogSignal input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real_AnalogSignal, self.lfps2_real_AnalogSignal)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_real, atol=1e-14,
-                rtol=1e-12, equal_nan=True)
+                wpli, self.wpli_ground_truth_FieldTrip_real, atol=atol,
+                rtol=rtol, equal_nan=True)
 
     def test_WPLI_ground_truth_consistency_artificial_LFP_dataset(self):
         """
