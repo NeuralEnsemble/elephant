@@ -504,6 +504,10 @@ class RenewalProcess(AbstractPointProcess):
 
         return spikes
 
+    @property
+    def cv(self):
+        raise NotImplementedError
+
 
 class StationaryPoissonProcess(RenewalProcess):
     """
@@ -518,6 +522,8 @@ class StationaryPoissonProcess(RenewalProcess):
     equilibrium: bool, optional
         Default: True
     """
+    cv: float = 1.
+
     def __init__(
             self,
             rate: pq.Quantity,
@@ -589,9 +595,13 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
         random_uniform = np.random.random()
         if random_uniform <= self.rate * self.dead_time:
             return random_uniform/self.rate + self.t_start
-        # time > self.dead_time
+        # random_uniform > self.rate * self.dead_time
         return (np.log(1.-self.rate*self.dead_time)-np.log(1.-random_uniform)
                 )/self.effective_rate + self.dead_time
+
+    @property
+    def cv(self):
+        return 1.-self.rate*self.dead_time
 
 
 class StationaryGammaProcess(RenewalProcess):
@@ -627,12 +637,86 @@ class StationaryGammaProcess(RenewalProcess):
     def _cdf_first_spike_equilibrium(self, time):
         if time < 0.:
             return 0.
-        value = self.rate * time * \
-               gammaincc(self.shape_factor,
-                         self.shape_factor*self.rate*time)\
-               + gammainc(self.shape_factor+1.,
-                          self.shape_factor*self.rate*time)
-        return value
+        return self.rate * time * \
+            gammaincc(self.shape_factor,
+                      self.shape_factor*self.rate*time)\
+            + gammainc(self.shape_factor+1.,
+                       self.shape_factor*self.rate*time)
+
+    @property
+    def cv(self):
+        return 1./np.sqrt(self.shape_factor)
+
+
+class StationaryLogNormalProcess(RenewalProcess):
+    """
+    Parameters
+    ----------
+    rate: pq.Quantity
+    sigma: float
+    t_start: pq.Quantity, optional
+        Default: 0.*pq.s
+    t_stop: pq.Quantity, optional
+        Default: 1.*pq.s
+    equilibrium: bool, optional
+        Default: True
+    """
+    def __init__(
+            self,
+            rate: pq.Quantity,
+            sigma: float,
+            t_start: pq.Quantity = 0. * pq.s,
+            t_stop: pq.Quantity = 1.*pq.s,
+            equilibrium: bool = True,
+            **kwargs
+    ):
+        super().__init__(
+            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium,
+            **kwargs)
+        self.sigma = sigma
+        if self.n_expected_spikes > 0:
+            self.isi_generator = stats.lognorm(
+                s=self.sigma, scale=1./self.rate)
+
+    @property
+    def mu(self):
+        return -np.log(self.rate)
+
+    @property
+    def cv(self):
+        return np.sqrt(np.exp(self.sigma**2) - 1)
+
+
+class StationaryInverseGaussianProcess(RenewalProcess):
+    """
+    Parameters
+    ----------
+    rate: pq.Quantity
+    cv: float
+    t_start: pq.Quantity, optional
+        Default: 0.*pq.s
+    t_stop: pq.Quantity, optional
+        Default: 1.*pq.s
+    equilibrium: bool, optional
+        Default: True
+    """
+    cv: float = 1.
+
+    def __init__(
+            self,
+            rate: pq.Quantity,
+            cv: float,
+            t_start: pq.Quantity = 0. * pq.s,
+            t_stop: pq.Quantity = 1.*pq.s,
+            equilibrium: bool = True,
+            **kwargs
+    ):
+        super().__init__(
+            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium,
+            **kwargs)
+        self.cv = cv
+        if self.n_expected_spikes > 0:
+            self.isi_generator = stats.invgauss(mu=1./cv, scale=1./self.rate)
 
 
 class RateModulatedProcess(RenewalProcess):
@@ -705,6 +789,13 @@ class RateModulatedProcess(RenewalProcess):
             spiketrain = spiketrain[:index_last_spike]
         return spiketrain
 
+    @property
+    def cv(self):
+        warnings.warn(UserWarning(
+            f'The CV of {type(self)} is that of the corresponding'
+            ' stationary process.'))
+        return super().cv
+
 
 class NonStationaryPoissonProcess(
         RateModulatedProcess, StationaryPoissonProcess):
@@ -756,6 +847,14 @@ class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
                 thinned_spiketrain.append(spike)
                 previous_spike = spike
         return np.array(thinned_spiketrain)
+
+    @property
+    def cv(self):
+        warnings.warn(UserWarning(
+            f'The CV of {type(self)} is that of the corresponding'
+            ' stationary process.'))
+        return 1./(1.+self.rate  # this is the average effective rate
+                   * self.dead_time)
 
 
 class NonStationaryGammaProcess(RateModulatedProcess, StationaryGammaProcess):
