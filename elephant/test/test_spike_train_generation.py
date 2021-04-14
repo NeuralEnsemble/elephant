@@ -159,12 +159,21 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
 
         for rate in [123.0 * pq.Hz, 0.123 * pq.kHz]:
             for t_stop in [2345 * pq.ms, 2.345 * pq.s]:
-                # zero refractory period should act as no refractory period
-                for refractory_period in (None, 0 * pq.ms):
-                    np.random.seed(seed=12345)
-                    spiketrain = stg.homogeneous_poisson_process(
-                        rate, t_stop=t_stop,
-                        refractory_period=refractory_period)
+                for dead_time in (None, 3.*pq.ms):
+                    np.random.seed(seed=123456)
+                    spiketrain_old = stg.homogeneous_poisson_process(
+                        rate, t_stop=t_stop, refractory_period=dead_time)
+                    np.random.seed(seed=123456)
+                    if dead_time is None:
+                        spiketrain = stg.StationaryPoissonProcess(
+                            rate, t_stop=t_stop).generate_spiketrain()
+                    else:
+                        spiketrain = stg.StationaryPoissonProcessDeadTime(
+                            rate, t_stop=t_stop, dead_time=dead_time
+                        ).generate_spiketrain()
+                    assert_array_almost_equal(
+                        spiketrain_old.magnitude,
+                        spiketrain.magnitude)
                     intervals = isi(spiketrain)
 
                     expected_mean_isi = 1. / rate.simplified
@@ -182,37 +191,61 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                     self.assertLess(expected_last_spike -
                                     spiketrain[-1], 7 * expected_mean_isi)
 
-                    # Kolmogorov-Smirnov test
-                    D, p = kstest(
-                        intervals.rescale(t_stop.units),
-                        "expon",
-                        # args are (loc, scale)
-                        args=(0,
-                              expected_mean_isi.rescale(t_stop.units)),
-                        alternative='two-sided')
+                    if dead_time is None:
+                        # Kolmogorov-Smirnov test
+                        D, p = kstest(
+                            intervals.rescale(t_stop.units).magnitude,
+                            "expon",
+                            # args are (loc, scale)
+                            args=(
+                                0.,
+                                expected_mean_isi.rescale(t_stop.units).magnitude),
+                            alternative='two-sided')
+                    else:
+                        dead_time = dead_time.rescale(t_stop.units).magnitude
+                        measured_rate = 1./expected_mean_isi.rescale(
+                                    t_stop.units).magnitude
+                        effective_rate = measured_rate / (
+                                1. - measured_rate * dead_time)
+
+                        # Kolmogorov-Smirnov test
+                        D, p = kstest(
+                            intervals.rescale(t_stop.units).magnitude,
+                            "expon",
+                            # args are (loc, scale)
+                            args=(dead_time, 1./effective_rate),
+                            alternative='two-sided')
                     self.assertGreater(p, 0.001)
                     self.assertLess(D, 0.12)
 
     def test_zero_refractory_period(self):
         rate = 10 * pq.Hz
         t_stop = 20 * pq.s
+
         np.random.seed(27)
-        sp1 = stg.homogeneous_poisson_process(rate, t_stop=t_stop,
-                                              as_array=True)
+        sp1 = stg.StationaryPoissonProcess(
+            rate, t_stop=t_stop).generate_spiketrain(as_spiketrain=False)
+
         np.random.seed(27)
-        sp2 = stg.homogeneous_poisson_process(rate, t_stop=t_stop,
-                                              refractory_period=0 * pq.ms,
-                                              as_array=True)
+        sp2 = stg.StationaryPoissonProcessDeadTime(
+            rate, t_stop=t_stop, dead_time=0.*pq.ms).generate_spiketrain(
+            as_spiketrain=False)
+
         assert_array_almost_equal(sp1, sp2)
 
     def test_t_start_and_t_stop(self):
         rate = 10 * pq.Hz
         t_start = 17 * pq.ms
         t_stop = 2 * pq.s
-        for refractory_period in (None, 3 * pq.ms):
-            spiketrain = stg.homogeneous_poisson_process(
-                rate=rate, t_start=t_start, t_stop=t_stop,
-                refractory_period=refractory_period)
+
+        sp1 = stg.StationaryPoissonProcess(
+            rate, t_start=t_start, t_stop=t_stop).generate_spiketrain()
+
+        sp2 = stg.StationaryPoissonProcessDeadTime(
+            rate, t_start=t_start, t_stop=t_stop, dead_time=3 * pq.ms
+        ).generate_spiketrain()
+
+        for spiketrain in (sp1, sp2):
             self.assertEqual(spiketrain.t_start, t_start)
             self.assertEqual(spiketrain.t_stop, t_stop)
 
@@ -222,17 +255,25 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                 warnings.simplefilter("ignore")
                 # RuntimeWarning: divide by zero encountered in true_divide
                 # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                sp = stg.homogeneous_poisson_process(
-                    rate=0 * pq.Hz, t_stop=10 * pq.s,
-                    refractory_period=refractory_period)
+                if refractory_period is None:
+                    sp = stg.StationaryPoissonProcess(
+                        rate=0 * pq.Hz, t_stop=10 * pq.s).generate_spiketrain()
+                else:
+                    sp = stg.StationaryPoissonProcessDeadTime(
+                        rate=0 * pq.Hz, t_stop=10 * pq.s,
+                        dead_time=refractory_period).generate_spiketrain()
                 self.assertEqual(sp.size, 0)
 
     def test_nondecrease_spike_times(self):
         for refractory_period in (None, 3 * pq.ms):
             np.random.seed(27)
-            spiketrain = stg.homogeneous_poisson_process(
-                rate=10 * pq.Hz, t_stop=1000 * pq.s,
-                refractory_period=refractory_period)
+            if refractory_period is None:
+                spiketrain = stg.StationaryPoissonProcess(
+                    rate=10 * pq.Hz, t_stop=1000 * pq.s).generate_spiketrain()
+            else:
+                spiketrain = stg.StationaryPoissonProcessDeadTime(
+                    rate=10 * pq.Hz, t_stop=1000 * pq.s,
+                    dead_time=refractory_period).generate_spiketrain()
             diffs = np.diff(spiketrain.times)
             self.assertTrue((diffs >= 0).all())
 
@@ -240,14 +281,17 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         rate = 10 * pq.Hz
         t_stop = 10 * pq.s
         for refractory_period in (None, 3 * pq.ms):
+            if refractory_period is None:
+                process = stg.StationaryPoissonProcess(
+                    rate=rate, t_stop=t_stop)
+            else:
+                process = stg.StationaryPoissonProcessDeadTime(
+                    rate=rate, t_stop=t_stop, dead_time=refractory_period)
             np.random.seed(27)
-            spiketrain = stg.homogeneous_poisson_process(
-                rate=rate, t_stop=t_stop, refractory_period=refractory_period)
+            spiketrain = process.generate_spiketrain()
             self.assertIsInstance(spiketrain, neo.SpikeTrain)
             np.random.seed(27)
-            spiketrain_array = stg.homogeneous_poisson_process(
-                rate=rate, t_stop=t_stop, refractory_period=refractory_period,
-                as_array=True)
+            spiketrain_array = process.generate_spiketrain().as_array()
             # don't check with isinstance: Quantity is a subclass of np.ndarray
             self.assertTrue(isinstance(spiketrain_array, np.ndarray))
             assert_array_almost_equal(spiketrain.times.magnitude,
@@ -257,9 +301,9 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         np.random.seed(27)
         rate_expected = 10 * pq.Hz
         refractory_period = 90 * pq.ms  # 10 ms of effective ISI
-        spiketrain = stg.homogeneous_poisson_process(
-            rate_expected, t_stop=1000 * pq.s,
-            refractory_period=refractory_period)
+        spiketrain = stg.StationaryPoissonProcessDeadTime(
+                rate_expected, t_stop=1000 * pq.s, dead_time=refractory_period
+            ).generate_spiketrain()
         rate_obtained = len(spiketrain) / spiketrain.t_stop
         rate_obtained = rate_obtained.simplified
         self.assertAlmostEqual(rate_expected.simplified,
@@ -273,19 +317,22 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
         rate = 10 * pq.Hz
         for refractory_period in (None, 3 * pq.ms):
             # t_stop < t_start
-            hpp = stg.homogeneous_poisson_process
+            if refractory_period is None:
+                hpp = stg.StationaryPoissonProcess
+            else:
+                hpp = stg.StationaryPoissonProcessDeadTime
             self.assertRaises(
                 ValueError, hpp, rate=rate, t_start=5 * pq.ms,
-                t_stop=1 * pq.ms, refractory_period=refractory_period)
+                t_stop=1 * pq.ms, dead_time=refractory_period)
 
             # no units provided for rate, t_stop
             self.assertRaises(ValueError, hpp, rate=10,
-                              refractory_period=refractory_period)
+                              dead_time=refractory_period)
             self.assertRaises(ValueError, hpp, rate=rate, t_stop=5,
-                              refractory_period=refractory_period)
+                              dead_time=refractory_period)
 
         # no units provided for refractory_period
-        self.assertRaises(ValueError, hpp, rate=rate, refractory_period=2)
+        self.assertRaises(ValueError, hpp, rate=rate, dead_time=2)
 
 
 class InhomogeneousGammaTestCase(unittest.TestCase):
@@ -304,13 +351,17 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
         # This is a statistical test that has a non-zero chance of failure
         # during normal operation. Thus, we set the random seed to a value that
         # creates a realization passing the test.
-        np.random.seed(seed=12345)
-
         shape_factor = 2.5
 
         for rate in [self.rate_profile, self.rate_profile.rescale(pq.kHz)]:
-            spiketrain = stg.inhomogeneous_gamma_process(
+            np.random.seed(seed=12345)
+            spiketrain_old = stg.inhomogeneous_gamma_process(
                 rate, shape_factor=shape_factor)
+            np.random.seed(seed=12345)
+            spiketrain = stg.NonStationaryGammaProcess(
+                rate, shape_factor=shape_factor).generate_spiketrain()
+            assert_allclose(spiketrain_old.magnitude, spiketrain.magnitude)
+
             intervals = isi(spiketrain)
 
             # Computing expected statistics and percentiles
@@ -332,28 +383,30 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
             self.assertEqual(rate.t_start, spiketrain.t_start)
 
         # Testing type
-        spiketrain_as_array = stg.inhomogeneous_gamma_process(
-            rate, shape_factor=shape_factor, as_array=True)
+        spiketrain_as_array = stg.NonStationaryGammaProcess(
+            rate, shape_factor=shape_factor).generate_spiketrain(
+                as_spiketrain=False)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
         # check error if rate has wrong format
         self.assertRaises(
-            TypeError, stg.inhomogeneous_gamma_process,
-            rate=[0.1, 2.],
+            ValueError, stg.NonStationaryGammaProcess,
+            rate_signal=[0.1, 2.],
             shape_factor=shape_factor)
 
         # check error if negative values in rate
         self.assertRaises(
-            ValueError, stg.inhomogeneous_gamma_process,
-            rate=neo.AnalogSignal([-0.1, 10.] * pq.Hz,
-                                  sampling_period=0.001 * pq.s),
+            ValueError, stg.NonStationaryGammaProcess,
+            rate_signal=neo.AnalogSignal(
+                [-0.1, 10.] * pq.Hz, sampling_period=0.001 * pq.s),
             shape_factor=shape_factor)
 
         # check error if rate is empty
         self.assertRaises(
-            ValueError, stg.inhomogeneous_gamma_process,
-            rate=neo.AnalogSignal([] * pq.Hz, sampling_period=0.001 * pq.s),
+            ValueError, stg.NonStationaryGammaProcess,
+            rate_signal=neo.AnalogSignal(
+                [] * pq.Hz, sampling_period=0.001 * pq.s),
             shape_factor=shape_factor)
 
     def test_recovered_firing_rate_profile(self):
@@ -377,11 +430,9 @@ class InhomogeneousGammaTestCase(unittest.TestCase):
             # factor: the method supports float values that is not trivial
             # for inhomogeneous gamma process generation
             for shape_factor in (2.5, 10.):
-
-                spiketrains = \
-                    [stg.inhomogeneous_gamma_process(
-                        rate_profile, shape_factor=shape_factor)
-                     for _ in range(n_trials)]
+                spiketrains = stg.NonStationaryGammaProcess(
+                    rate_profile, shape_factor=shape_factor
+                ).generate_n_spiketrains(n_trials)
                 rate_recovered = instantaneous_rate(
                     spiketrains,
                     sampling_period=sampling_period,
@@ -413,12 +464,21 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         # This is a statistical test that has a non-zero chance of failure
         # during normal operation. Thus, we set the random seed to a value that
         # creates a realization passing the test.
-        np.random.seed(seed=12345)
-
         for rate in (self.rate_profile, self.rate_profile.rescale(pq.kHz)):
             for refractory_period in (3 * pq.ms, None):
-                spiketrain = stg.inhomogeneous_poisson_process(
+                np.random.seed(seed=12345)
+                spiketrain_old = stg.inhomogeneous_poisson_process(
                     rate, refractory_period=refractory_period)
+                np.random.seed(seed=12345)
+                if refractory_period is None:
+                    process = stg.NonStationaryPoissonProcess
+                else:
+                    process = stg.NonStationaryPoissonProcessDeadTime
+                spiketrain = process(rate, dead_time=refractory_period
+                                     ).generate_spiketrain()
+                assert_allclose(
+                    spiketrain_old.magnitude, spiketrain.magnitude)
+
                 intervals = isi(spiketrain)
 
                 # Computing expected statistics and percentiles
@@ -444,25 +504,26 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
                 self.assertEqual(rate.t_start, spiketrain.t_start)
 
         # Testing type
-        spiketrain_as_array = stg.inhomogeneous_poisson_process(
-            rate, as_array=True)
+        spiketrain_as_array = stg.NonStationaryPoissonProcess(
+            rate).generate_spiketrain(as_spiketrain=False)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
         # Testing type for refractory period
         refractory_period = 3 * pq.ms
-        spiketrain = stg.inhomogeneous_poisson_process(
-            rate, refractory_period=refractory_period)
-        spiketrain_as_array = stg.inhomogeneous_poisson_process(
-            rate, as_array=True, refractory_period=refractory_period)
+        spiketrain = stg.NonStationaryPoissonProcessDeadTime(
+            rate, dead_time=refractory_period).generate_spiketrain()
+        spiketrain_as_array = stg.NonStationaryPoissonProcessDeadTime(
+            rate, dead_time=refractory_period).generate_spiketrain(
+            as_spiketrain=False)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
         # Check that to high refractory period raises error
         self.assertRaises(
-            ValueError, stg.inhomogeneous_poisson_process,
+            ValueError, stg.NonStationaryPoissonProcessDeadTime,
             self.rate_profile,
-            refractory_period=1000 * pq.ms)
+            dead_time=1000 * pq.ms)
 
     def test_effective_rate_refractory_period(self):
         np.random.seed(27)
@@ -470,8 +531,8 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
         refractory_period = 90 * pq.ms  # 10 ms of effective ISI
         rates = neo.AnalogSignal(np.repeat(rate_expected, 1000), units=pq.Hz,
                                  t_start=0 * pq.ms, sampling_rate=1 * pq.Hz)
-        spiketrain = stg.inhomogeneous_poisson_process(
-            rates, refractory_period=refractory_period)
+        spiketrain = stg.NonStationaryPoissonProcessDeadTime(
+            rates, dead_time=refractory_period).generate_spiketrain()
         rate_obtained = len(spiketrain) / spiketrain.t_stop
         self.assertAlmostEqual(
             rate_expected.simplified.item(),
@@ -484,20 +545,29 @@ class InhomogeneousPoissonProcessTestCase(unittest.TestCase):
 
     def test_zero_rate(self):
         for refractory_period in (3 * pq.ms, None):
+            if refractory_period is None:
+                process = stg.NonStationaryPoissonProcess
+            else:
+                process = stg.NonStationaryPoissonProcessDeadTime
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 # RuntimeWarning: divide by zero encountered in true_divide
                 # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                spiketrain = stg.inhomogeneous_poisson_process(
-                    self.rate_profile_0, refractory_period=refractory_period)
+                spiketrain = process(
+                    self.rate_profile_0, dead_time=refractory_period
+                ).generate_spiketrain()
             self.assertEqual(spiketrain.size, 0)
 
     def test_negative_rates(self):
         for refractory_period in (3 * pq.ms, None):
+            if refractory_period is None:
+                process = stg.NonStationaryPoissonProcess
+            else:
+                process = stg.NonStationaryPoissonProcessDeadTime
             self.assertRaises(
-                ValueError, stg.inhomogeneous_poisson_process,
+                ValueError, process,
                 self.rate_profile_negative,
-                refractory_period=refractory_period)
+                dead_time=refractory_period)
 
 
 class HomogeneousGammaProcessTestCase(unittest.TestCase):
@@ -506,12 +576,18 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         # This is a statistical test that has a non-zero chance of failure
         # during normal operation. Thus, we set the random seed to a value that
         # creates a realization passing the test.
-        np.random.seed(seed=12345)
-
         a = 3.0
         for b in (67.0 * pq.Hz, 0.067 * pq.kHz):
             for t_stop in (2345 * pq.ms, 2.345 * pq.s):
-                spiketrain = stg.homogeneous_gamma_process(a, b, t_stop=t_stop)
+                np.random.seed(seed=12345)
+                spiketrain_old = stg.homogeneous_gamma_process(
+                    a, b, t_stop=t_stop)
+                np.random.seed(seed=12345)
+                spiketrain = stg.StationaryGammaProcess(
+                    rate=b/a, shape_factor=a, t_stop=t_stop
+                ).generate_spiketrain()
+                assert_allclose(spiketrain_old.magnitude, spiketrain.magnitude)
+
                 intervals = isi(spiketrain)
 
                 expected_spike_count = int((b / a * t_stop).simplified)
@@ -545,11 +621,13 @@ class HomogeneousGammaProcessTestCase(unittest.TestCase):
         a = 3.
         b = 10 * pq.Hz
         np.random.seed(27)
-        spiketrain = stg.homogeneous_gamma_process(a=a, b=b)
+        spiketrain = stg.StationaryGammaProcess(
+            rate=b/a, shape_factor=a).generate_spiketrain()
         self.assertIsInstance(spiketrain, neo.SpikeTrain)
         np.random.seed(27)
-        spiketrain_array = stg.homogeneous_gamma_process(a=a, b=b,
-                                                         as_array=True)
+        spiketrain_array = stg.StationaryGammaProcess(
+            rate=b / a, shape_factor=a).generate_spiketrain(
+            as_spiketrain=False)
         # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
         self.assertTrue(isinstance(spiketrain_array, np.ndarray))
         assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
@@ -1002,21 +1080,21 @@ class cppTestCase(unittest.TestCase):
         self.assertEqual(len(cpp_shift), len(amplitude_distribution) - 1)
 
 
-class HomogeneousPoissonProcessWithRefrPeriodTestCase(unittest.TestCase):
+class HomogeneousPoissonProcessWithDeadTimeTestCase(unittest.TestCase):
 
     def test_invalid(self):
         rate = 10 * pq.Hz
         # t_stop < t_start
-        hpp = stg.homogeneous_poisson_process
+        hpp = stg.StationaryPoissonProcessDeadTime
         self.assertRaises(ValueError, hpp, rate=rate, t_start=5 * pq.ms,
-                          t_stop=1 * pq.ms, refractory_period=3 * pq.ms)
+                          t_stop=1 * pq.ms, dead_time=3 * pq.ms)
 
         # no units provided
         self.assertRaises(ValueError, hpp, rate=10,
-                          refractory_period=3 * pq.ms)
+                          dead_time=3 * pq.ms)
         self.assertRaises(ValueError, hpp, rate=rate, t_stop=5,
-                          refractory_period=3 * pq.ms)
-        self.assertRaises(ValueError, hpp, rate=rate, refractory_period=2)
+                          dead_time=3 * pq.ms)
+        self.assertRaises(ValueError, hpp, rate=rate, dead_time=2)
 
 
 if __name__ == '__main__':
