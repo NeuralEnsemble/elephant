@@ -968,8 +968,10 @@ class RateModulatedProcess(RenewalProcess):
         self.rate_signal = rate_signal
         self.sampling_period = \
             self.rate_signal.sampling_period.rescale(self.unit).magnitude
-        # Operational time corresponds to the integral of the firing rate over time
-        operational_time = np.cumsum(rate_signal.rescale(1./self.unit).magnitude)
+        # Operational time corresponds to the integral of the firing rate
+        # over time, here normalized by the average firing rate
+        operational_time = np.cumsum(
+            rate_signal.rescale(1./self.unit).magnitude)
         operational_time *= (self.sampling_period / self.rate)
         operational_time = np.hstack((0., operational_time))
         self.operational_time = operational_time + self.t_start
@@ -988,14 +990,17 @@ class RateModulatedProcess(RenewalProcess):
         indices = np.searchsorted(self.operational_time,
                                   spiketrain_operational_time)
 
-        # In real time the spikes are first aligned to the left border of the bin.
+        # In real time the spikes are first aligned
+        # to the left border of the bin.
         # Note that indices are greater than 0 because 'operational_time' was
         # padded with zeros.
         spiketrain = self.real_time[indices - 1]
         # the relative position of the spikes in the operational time bins
         positions_in_bins = \
-            (spiketrain_operational_time - self.operational_time[indices - 1]) / (
-                    self.operational_time[indices] - self.operational_time[indices - 1])
+            (spiketrain_operational_time
+             - self.operational_time[indices - 1]) / \
+            (self.operational_time[indices]
+             - self.operational_time[indices - 1])
 
         # add the positions in the bin times the sampling period in real time
         spiketrain += self.sampling_period * positions_in_bins
@@ -1070,7 +1075,8 @@ class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
             **kwargs):
 
         effective_rate_signal = \
-            rate_signal / (1. - rate_signal.simplified.magnitude * dead_time.simplified.item())
+            rate_signal / (1. - rate_signal.simplified.magnitude
+                           * dead_time.simplified.item())
 
         super().__init__(
             rate_signal=effective_rate_signal,

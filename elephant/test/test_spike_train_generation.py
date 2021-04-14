@@ -197,9 +197,8 @@ class HomogeneousPoissonProcessTestCase(unittest.TestCase):
                             intervals.rescale(t_stop.units).magnitude,
                             "expon",
                             # args are (loc, scale)
-                            args=(
-                                0.,
-                                expected_mean_isi.rescale(t_stop.units).magnitude),
+                            args=(0., expected_mean_isi.rescale(
+                                t_stop.units).magnitude),
                             alternative='two-sided')
                     else:
                         dead_time = dead_time.rescale(t_stop.units).magnitude
