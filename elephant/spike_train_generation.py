@@ -251,6 +251,63 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
     return result_st
 
 
+def _analog_signal_linear_interp(signal, times):
+    """
+    Compute the linear interpolation of a signal at desired times.
+
+    Given the `signal` (neo.AnalogSignal) taking value `s0` and `s1` at two
+    consecutive time points `t0` and `t1` `(t0 < t1)`, for every time `t` in
+    `times`, such that `t0<t<=t1` is returned the value of the linear
+    interpolation, given by:
+                `s = ((s1 - s0) / (t1 - t0)) * t + s0`.
+
+    Parameters
+    ----------
+    signal : neo.AnalogSignal
+        The analog signal containing the discretization of the function to
+        interpolate
+    times : pq.Quantity
+        The time points for which the interpolation is computed
+
+    Returns
+    -------
+    out: pq.Quantity
+        representing the values of the interpolated signal at
+        the times given by times
+
+    Notes
+    -----
+    If `signal` has sampling period `sampling_period=signal.sampling_period`,
+    its values are defined at `t=signal.times`, such that
+    `t[i] = signal.t_start + i * sampling_period`
+    The last of such times is lower than
+    signal.t_stop`:t[-1] = signal.t_stop - sampling_period`.
+    For the interpolation at times t such that `t[-1] <= t <= signal.t_stop`,
+    the value of `signal` at `signal.t_stop` is taken to be that
+    at time `t[-1]`.
+    """
+    sampling_period = signal.sampling_period
+    t_start = signal.t_start.rescale(signal.times.units)
+    t_stop = signal.t_stop.rescale(signal.times.units)
+
+    # Extend the signal (as a dimensionless array) copying the last value
+    # one time, and extend its times to t_stop
+    signal_extended = np.vstack(
+        [signal.magnitude, signal[-1].magnitude]).flatten()
+    times_extended = np.hstack([signal.times, t_stop]) * signal.times.units
+    time_ids = (times - t_start) / sampling_period
+    time_ids = np.floor(time_ids.simplified.magnitude).astype(np.int32)
+
+    # Compute the slope of the signal at each time in times
+    signal_1 = signal_extended[time_ids]
+    signal_2 = signal_extended[time_ids + 1]
+    slope = (signal_2 - signal_1) / sampling_period
+
+    # Interpolate the signal at each time in times by linear interpolation
+    return (signal_1
+            + slope * (times - times_extended[time_ids])) * signal.units
+
+
 @deprecated_alias(format='as_array')
 def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
                    as_array=False):
@@ -397,18 +454,17 @@ class AbstractPointProcess:
 
     Parameters
     ----------
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
     """
     def __init__(
             self,
             t_stop: pq.Quantity = 1.*pq.s,
-            t_start: pq.Quantity = 0.*pq.s,
-            **kwargs
+            t_start: pq.Quantity = 0.*pq.s
     ):
         if not (isinstance(t_start, pq.Quantity) and
                 isinstance(t_stop, pq.Quantity)):
@@ -423,23 +479,24 @@ class AbstractPointProcess:
         raise NotImplementedError
 
     def generate_spiketrain(
-            self, as_spiketrain: bool = True
+            self, as_array: bool = False
     ) -> Union[neo.SpikeTrain, np.ndarray]:
         """
         Generates a single spike train.
 
         Parameters
         ----------
-        as_spiketrain:
-            If True, a neo.SpikeTrain is generated. If False, a numpy array.
-            Default: True
+        as_array : bool, optional
+            If True, a NumPy array of sorted spikes is returned,
+            rather than a `neo.SpikeTrain` object.
+            Default: False
 
         Returns
         -------
-        spiketrain: neo.SpikeTrain or np.ndarray
+        spiketrain : neo.SpikeTrain or np.ndarray
             The generated spike train in the specified format.
         """
-        if as_spiketrain:
+        if not as_array:
             return neo.SpikeTrain(
                 self._generate_spiketrain_as_array(),
                 t_start=self.t_start, t_stop=self.t_stop, units=self.unit)
@@ -448,27 +505,26 @@ class AbstractPointProcess:
     def generate_n_spiketrains(
             self,
             n_spiketrains: int,
-            as_spiketrain: bool = True
+            as_array: bool = False
     ) -> Union[List[neo.SpikeTrain], List[np.ndarray]]:
         """
         Generates a list of spike trains.
 
         Parameters
         ----------
-        n_spiketrains: int
+        n_spiketrains : int
             The number of spike trains to generate.
-        as_spiketrain:
-            as_spiketrain:
-            If True, a list of neo.SpikeTrain is generated. If False, a list of
-            numpy arrays.
-            Default: True
+        as_array : bool, optional
+            If True, a NumPy array of sorted spikes is returned,
+            rather than a `neo.SpikeTrain` object.
+            Default: False
 
         Returns
         -------
-        list_of_spiketrain: list of neo.SpikeTrain or list of np.ndarray
+        list_of_spiketrain : list of neo.SpikeTrain or list of np.ndarray
             A list generated spike trains in the specified format.
         """
-        return [self.generate_spiketrain(as_spiketrain=as_spiketrain)
+        return [self.generate_spiketrain(as_array=as_array)
                 for _ in range(n_spiketrains)]
 
 
@@ -478,15 +534,15 @@ class RenewalProcess(AbstractPointProcess):
 
     Parameters
     ----------
-    rate: pq.Quantity
+    rate : pq.Quantity
         The constant firing rate.
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-    equilibrium: bool, optional
+    equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
     """
@@ -497,10 +553,9 @@ class RenewalProcess(AbstractPointProcess):
             rate: pq.Quantity,
             t_start: pq.Quantity = 0. * pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
-            equilibrium: bool = True,
-            **kwargs
+            equilibrium: bool = True
     ):
-        super().__init__(t_start=t_start, t_stop=t_stop, **kwargs)
+        super().__init__(t_start=t_start, t_stop=t_stop)
         if not isinstance(rate, pq.Quantity):
             raise ValueError("rate must be of type pq.Quantity")
         self.rate = rate.rescale(1./self.unit).item()
@@ -568,7 +623,7 @@ class RenewalProcess(AbstractPointProcess):
         """
         The coefficient of variation.
         """
-        raise NotImplementedError
+        raise self.isi_generator.std()/self.isi_generator.mean()
 
 
 class StationaryPoissonProcess(RenewalProcess):
@@ -579,12 +634,12 @@ class StationaryPoissonProcess(RenewalProcess):
 
     Parameters
     ----------
-    rate: pq.Quantity
+    rate : pq.Quantity
         The constant firing rate.
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
 
@@ -600,18 +655,16 @@ class StationaryPoissonProcess(RenewalProcess):
     ...     t_stop=1000*pq.ms).generate_spiketrain()
     >>> spiketrain_array = StationaryPoissonProcess(
     ...     rate=20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms
-    ...     ).generate_spiketrain(as_spiketrain=False)
+    ...     ).generate_spiketrain(as_array=True)
     """
     def __init__(
             self,
             rate: pq.Quantity,
             t_stop: pq.Quantity = 1.*pq.s,
-            t_start: pq.Quantity = 0.*pq.s,
-            **kwargs
+            t_start: pq.Quantity = 0.*pq.s
     ):
         super().__init__(
-            rate=rate, t_start=t_start, t_stop=t_stop,
-            **kwargs)
+            rate=rate, t_start=t_start, t_stop=t_stop)
         if self.n_expected_spikes > 0:
             self.isi_generator = stats.expon(scale=1./self.rate)
 
@@ -639,17 +692,17 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
 
     Parameters
     ----------
-    rate: pq.Quantity
+    rate : pq.Quantity
         The constant firing rate.
-    dead_time: pq.Quantity
+    dead_time : pq.Quantity
         The time period after one spike in which no other spike is emitted.
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-    equilibrium: bool, optional
+    equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
 
@@ -676,12 +729,10 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
             dead_time: pq.Quantity,
             t_start: pq.Quantity = 0. * pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
-            equilibrium: bool = True,
-            **kwargs
+            equilibrium: bool = True
     ):
         super().__init__(
-            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium,
-            **kwargs)
+            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium)
 
         if not isinstance(dead_time, pq.Quantity):
             raise ValueError("dead_time must be of type pq.Quantity")
@@ -731,17 +782,17 @@ class StationaryGammaProcess(RenewalProcess):
 
     Parameters
     ----------
-    rate: pq.Quantity
+    rate : pq.Quantity
         The constant firing rate.
-    shape_factor: float
+    shape_factor : float
         The shape parameter of the gamma distribution.
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-    equilibrium: bool, optional
+    equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
 
@@ -758,7 +809,7 @@ class StationaryGammaProcess(RenewalProcess):
     ...     t_stop=1000*pq.ms).generate_spiketrain()
     >>> spiketrain_array = StationaryGammaProcess(
     ...     rate=20*pq.Hz, shape_factor=5.0, t_start=5000*pq.ms,
-    ...     t_stop=10000*pq.ms).generate_spiketrain(as_spiketrain=False)
+    ...     t_stop=10000*pq.ms).generate_spiketrain(as_array=True)
     """
     def __init__(
             self,
@@ -766,12 +817,10 @@ class StationaryGammaProcess(RenewalProcess):
             shape_factor: float,
             t_start: pq.Quantity = 0. * pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
-            equilibrium: bool = True,
-            **kwargs
+            equilibrium: bool = True
     ):
         super().__init__(
-            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium,
-            **kwargs)
+            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium)
         if self.n_expected_spikes > 0:
             self.shape_factor = shape_factor
             self.isi_generator = stats.gamma(
@@ -802,17 +851,17 @@ class StationaryLogNormalProcess(RenewalProcess):
 
     Parameters
     ----------
-    rate: pq.Quantity
+    rate : pq.Quantity
         The constant firing rate.
-    sigma: float
+    sigma : float
         The sigma/ s parameter of the Log-Normal distribution.
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-    equilibrium: bool, optional
+    equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
 
@@ -829,7 +878,7 @@ class StationaryLogNormalProcess(RenewalProcess):
     ...     t_stop=1000*pq.ms).generate_spiketrain()
     >>> spiketrain_array = StationaryLogNormalProcess(
     ...     rate=20*pq.Hz, sigma=5.0, t_start=5000*pq.ms,
-    ...     t_stop=10000*pq.ms).generate_spiketrain(as_spiketrain=False)
+    ...     t_stop=10000*pq.ms).generate_spiketrain(as_array=True)
     """
     def __init__(
             self,
@@ -837,23 +886,21 @@ class StationaryLogNormalProcess(RenewalProcess):
             sigma: float,
             t_start: pq.Quantity = 0. * pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
-            equilibrium: bool = True,
-            **kwargs
+            equilibrium: bool = True
     ):
         super().__init__(
-            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium,
-            **kwargs)
+            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium)
         self.sigma = sigma
         if self.n_expected_spikes > 0:
             self.isi_generator = stats.lognorm(
-                s=self.sigma, scale=1./self.rate)
+                s=self.sigma, scale=np.exp(self.mu))
 
     @property
     def mu(self):
         """
         The parameter mu of the log-normal distribution.
         """
-        return -np.log(self.rate)
+        return -np.log(self.rate) - self.sigma**2/2
 
     @property
     def cv(self):
@@ -876,17 +923,17 @@ class StationaryInverseGaussianProcess(RenewalProcess):
 
     Parameters
     ----------
-    rate: pq.Quantity
+    rate : pq.Quantity
         The constant firing rate.
-    cv: float
+    cv : float
         The coefficient of variation.
-    t_start: pq.Quantity, optional
+    t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
-    t_stop: pq.Quantity, optional
+    t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-    equilibrium: bool, optional
+    equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
 
@@ -898,7 +945,7 @@ class StationaryInverseGaussianProcess(RenewalProcess):
     ...     t_stop=1000*pq.ms).generate_spiketrain()
     >>> spiketrain_array = StationaryInverseGaussianProcess(
     ...     rate=20*pq.Hz, cv=5.0, t_start=5000*pq.ms,
-    ...     t_stop=10000*pq.ms).generate_spiketrain(as_spiketrain=False)
+    ...     t_stop=10000*pq.ms).generate_spiketrain(as_array=True)
     """
     def __init__(
             self,
@@ -906,15 +953,14 @@ class StationaryInverseGaussianProcess(RenewalProcess):
             cv: float,
             t_start: pq.Quantity = 0. * pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
-            equilibrium: bool = True,
-            **kwargs
+            equilibrium: bool = True
     ):
         super().__init__(
-            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium,
-            **kwargs)
+            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium)
         self._cv = cv
         if self.n_expected_spikes > 0:
-            self.isi_generator = stats.invgauss(mu=1./cv, scale=1./self.rate)
+            self.isi_generator = stats.invgauss(
+                mu=cv**2, scale=1./(self.rate*cv**2))
 
     @property
     def cv(self):
@@ -924,29 +970,28 @@ class StationaryInverseGaussianProcess(RenewalProcess):
         return self._cv
 
 
-class RateModulatedProcess(RenewalProcess):
-    def __init__(
-            self,
-            rate_signal: neo.AnalogSignal,
-            **kwargs
-    ):
-        """
-        Abstract rate-modulated process to subclass from.
+class RateModulatedProcess(AbstractPointProcess):
+    """
+    Abstract rate-modulated process to subclass from.
 
-        Parameters
-        ----------
-        rate_signal: neo.AnalogSignal
-            A `neo.AnalogSignal` representing the rate profile evolving over
-            time.Its values have all to be `>=0`. The generated spike trains
-            will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
+    Parameters
+    ----------
+    rate_signal : neo.AnalogSignal
+        A `neo.AnalogSignal` representing the rate profile evolving over
+        time.Its values have all to be `>=0`. The generated spike trains
+        will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
 
-        Raises
-        ------
-        ValueError
-            If `rate_signal` is not a neo AnalogSignal
-            If `rate_signal` contains a negative value.
-            If `rate_signal` is empty.
-        """
+    Raises
+    ------
+    ValueError
+        If `rate_signal` is not a neo AnalogSignal
+        If `rate_signal` contains a negative value.
+        If `rate_signal` is empty.
+    """
+    process_operational_time: RenewalProcess
+
+    def __init__(self, rate_signal: neo.AnalogSignal):
+
         if not isinstance(rate_signal, neo.AnalogSignal):
             raise ValueError(
                 f'rate_signal should be of type neo.AnalogSignal.'
@@ -958,21 +1003,22 @@ class RateModulatedProcess(RenewalProcess):
                 f'All elements of rate_signal should be positive.')
 
         super().__init__(
-            # the mean of a AnalogSignal is still a pq.Quantity
-            rate=np.mean(rate_signal),
-            t_start=rate_signal.t_start,
-            t_stop=rate_signal.t_stop,
-            **kwargs
-        )
+            t_start=rate_signal.t_start, t_stop=rate_signal.t_stop)
 
         self.rate_signal = rate_signal
+
+        self.mean_rate = np.mean(rate_signal.rescale(1./self.unit).magnitude)
+
+        if self.mean_rate == 0.:
+            return
+
         self.sampling_period = \
             self.rate_signal.sampling_period.rescale(self.unit).magnitude
         # Operational time corresponds to the integral of the firing rate
         # over time, here normalized by the average firing rate
         operational_time = np.cumsum(
             rate_signal.rescale(1./self.unit).magnitude)
-        operational_time *= (self.sampling_period / self.rate)
+        operational_time *= (self.sampling_period / self.mean_rate)
         operational_time = np.hstack((0., operational_time))
         self.operational_time = operational_time + self.t_start
 
@@ -983,7 +1029,7 @@ class RateModulatedProcess(RenewalProcess):
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
         spiketrain_operational_time = \
-            super()._generate_spiketrain_as_array()
+            self.process_operational_time._generate_spiketrain_as_array()
         if len(spiketrain_operational_time) == 0:
             return spiketrain_operational_time
         # indices where between which points in operational time the spikes lie
@@ -1006,27 +1052,15 @@ class RateModulatedProcess(RenewalProcess):
         spiketrain += self.sampling_period * positions_in_bins
         return spiketrain
 
-    @property
-    def cv(self):
-        """
-        The coefficient of variation in operational time.
-        """
-        warnings.warn(
-            f'The CV of {type(self)} is that of the corresponding'
-            ' stationary process.',
-            UserWarning)
-        return super().cv
 
-
-class NonStationaryPoissonProcess(
-        RateModulatedProcess, StationaryPoissonProcess):
+class NonStationaryPoissonProcess(RateModulatedProcess):
     """
     Generates spike trains whose spikes are realizations of a non-stationary
     Poisson process with the given `rate-signal`.
 
     Parameters
     ----------
-    rate_signal: neo.AnalogSignal
+    rate_signal : neo.AnalogSignal
         A `neo.AnalogSignal` representing the rate profile evolving over
         time.Its values have all to be `>=0`. The generated spike trains
         will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
@@ -1038,13 +1072,12 @@ class NonStationaryPoissonProcess(
         If `rate_signal` contains a negative value.
         If `rate_signal` is empty.
     """
-    def __init__(
-            self,
-            rate_signal: neo.AnalogSignal,
-            **kwargs):
-        super().__init__(
-            rate_signal=rate_signal,
-            **kwargs)
+    def __init__(self, rate_signal: neo.AnalogSignal):
+        super().__init__(rate_signal=rate_signal)
+        self.process_operational_time = StationaryPoissonProcess(
+            rate=self.mean_rate * 1./self.unit,
+            t_start=self.t_start * self.unit,
+            t_stop=self.t_stop * self.unit)
 
 
 class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
@@ -1054,11 +1087,11 @@ class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
 
     Parameters
     ----------
-    rate_signal: neo.AnalogSignal
+    rate_signal : neo.AnalogSignal
         A `neo.AnalogSignal` representing the rate profile evolving over
         time.Its values have all to be `>=0`. The generated spike trains
         will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
-    dead_time: pq.Quantity
+    dead_time : pq.Quantity
         The time period after one spike in which no other spike is emitted.
 
     Raises
@@ -1068,19 +1101,12 @@ class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
         If `rate_signal` contains a negative value.
         If `rate_signal` is empty.
     """
-    def __init__(
-            self,
-            rate_signal: neo.AnalogSignal,
-            dead_time: pq.Quantity,
-            **kwargs):
-
+    def __init__(self, rate_signal: neo.AnalogSignal, dead_time: pq.Quantity):
         effective_rate_signal = \
             rate_signal / (1. - rate_signal.simplified.magnitude
                            * dead_time.simplified.item())
 
-        super().__init__(
-            rate_signal=effective_rate_signal,
-            **kwargs)
+        super().__init__(rate_signal=effective_rate_signal)
         self.dead_time = dead_time.rescale(self.unit).item()
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
@@ -1096,31 +1122,19 @@ class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
                 previous_spike = spike
         return np.array(thinned_spiketrain)
 
-    @property
-    def cv(self):
-        """
-        The coefficient of variation in operational time.
-        """
-        warnings.warn(
-            f'The CV of {type(self)} is that of the corresponding'
-            ' stationary process.',
-            UserWarning)
-        return 1./(1.+self.rate  # this is the average effective rate
-                   * self.dead_time)
 
-
-class NonStationaryGammaProcess(RateModulatedProcess, StationaryGammaProcess):
+class NonStationaryGammaProcess(RateModulatedProcess):
     """
     Generates spike trains whose spikes are realizations of a non-stationary
     Gamma process with the given `rate-signal`.
 
     Parameters
     ----------
-    rate_signal: neo.AnalogSignal
+    rate_signal : neo.AnalogSignal
         A `neo.AnalogSignal` representing the rate profile evolving over
         time.Its values have all to be `>=0`. The generated spike trains
         will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
-    shape_factor: float
+    shape_factor : float
         The shape parameter of the gamma distribution.
 
     Raises
@@ -1130,15 +1144,13 @@ class NonStationaryGammaProcess(RateModulatedProcess, StationaryGammaProcess):
         If `rate_signal` contains a negative value.
         If `rate_signal` is empty.
     """
-    def __init__(
-            self,
-            rate_signal: neo.AnalogSignal,
-            shape_factor: float,
-            **kwargs):
-        super().__init__(
-            rate_signal=rate_signal,
+    def __init__(self, rate_signal: neo.AnalogSignal, shape_factor: float):
+        super().__init__(rate_signal=rate_signal)
+        self.process_operational_time = StationaryGammaProcess(
+            rate=self.mean_rate * 1./self.unit,
             shape_factor=shape_factor,
-            **kwargs)
+            t_start=self.t_start * self.unit,
+            t_stop=self.t_stop * self.unit)
 
 
 def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
@@ -1203,13 +1215,12 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
         DeprecationWarning)
     if refractory_period is None:
         return StationaryPoissonProcess(
-            rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=True
-        ).generate_spiketrain(
-            as_spiketrain=not as_array)
+            rate=rate, t_start=t_start, t_stop=t_stop).generate_spiketrain(
+            as_array=as_array)
     return StationaryPoissonProcessDeadTime(
         rate=rate, t_start=t_start, t_stop=t_stop,
         dead_time=refractory_period, equilibrium=True
-    ).generate_spiketrain(as_spiketrain=not as_array)
+    ).generate_spiketrain(as_array=as_array)
 
 
 def inhomogeneous_poisson_process(rate, as_array=False,
@@ -1257,68 +1268,10 @@ def inhomogeneous_poisson_process(rate, as_array=False,
         DeprecationWarning)
     if refractory_period is None:
         return NonStationaryPoissonProcess(
-            rate_signal=rate, equilibrium=True
-        ).generate_spiketrain(as_spiketrain=not as_array)
+            rate_signal=rate).generate_spiketrain(as_array=as_array)
     return NonStationaryPoissonProcessDeadTime(
-        rate_signal=rate, dead_time=refractory_period, equilibrium=True
-    ).generate_spiketrain(as_spiketrain=not as_array)
-
-
-def _analog_signal_linear_interp(signal, times):
-    """
-    Compute the linear interpolation of a signal at desired times.
-
-    Given the `signal` (neo.AnalogSignal) taking value `s0` and `s1` at two
-    consecutive time points `t0` and `t1` `(t0 < t1)`, for every time `t` in
-    `times`, such that `t0<t<=t1` is returned the value of the linear
-    interpolation, given by:
-                `s = ((s1 - s0) / (t1 - t0)) * t + s0`.
-
-    Parameters
-    ----------
-    signal : neo.AnalogSignal
-        The analog signal containing the discretization of the function to
-        interpolate
-    times : pq.Quantity
-        The time points for which the interpolation is computed
-
-    Returns
-    -------
-    out: pq.Quantity
-        representing the values of the interpolated signal at
-        the times given by times
-
-    Notes
-    -----
-    If `signal` has sampling period `sampling_period=signal.sampling_period`,
-    its values are defined at `t=signal.times`, such that
-    `t[i] = signal.t_start + i * sampling_period`
-    The last of such times is lower than
-    signal.t_stop`:t[-1] = signal.t_stop - sampling_period`.
-    For the interpolation at times t such that `t[-1] <= t <= signal.t_stop`,
-    the value of `signal` at `signal.t_stop` is taken to be that
-    at time `t[-1]`.
-    """
-    sampling_period = signal.sampling_period
-    t_start = signal.t_start.rescale(signal.times.units)
-    t_stop = signal.t_stop.rescale(signal.times.units)
-
-    # Extend the signal (as a dimensionless array) copying the last value
-    # one time, and extend its times to t_stop
-    signal_extended = np.vstack(
-        [signal.magnitude, signal[-1].magnitude]).flatten()
-    times_extended = np.hstack([signal.times, t_stop]) * signal.times.units
-    time_ids = (times - t_start) / sampling_period
-    time_ids = np.floor(time_ids.simplified.magnitude).astype(np.int32)
-
-    # Compute the slope of the signal at each time in times
-    signal_1 = signal_extended[time_ids]
-    signal_2 = signal_extended[time_ids + 1]
-    slope = (signal_2 - signal_1) / sampling_period
-
-    # Interpolate the signal at each time in times by linear interpolation
-    return (signal_1
-            + slope * (times - times_extended[time_ids])) * signal.units
+        rate_signal=rate, dead_time=refractory_period).generate_spiketrain(
+        as_array=as_array)
 
 
 def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
@@ -1374,7 +1327,7 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
         rate=b / a, shape_factor=a, t_stop=t_stop, t_start=t_start,
         equilibrium=True
     )
-    return process.generate_spiketrain(as_spiketrain=not as_array)
+    return process.generate_spiketrain(as_array=as_array)
 
 
 def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
@@ -1414,8 +1367,8 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
         " use 'nonStationaryGammaProcess'.",
         DeprecationWarning)
     return NonStationaryGammaProcess(
-        rate_signal=rate, shape_factor=shape_factor, equilibrium=True
-    ).generate_spiketrain(as_spiketrain=not as_array)
+        rate_signal=rate, shape_factor=shape_factor
+    ).generate_spiketrain(as_array=as_array)
 
 
 @deprecated_alias(n='n_spiketrains')
