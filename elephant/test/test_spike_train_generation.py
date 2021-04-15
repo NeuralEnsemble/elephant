@@ -539,6 +539,7 @@ class StationaryInverseGaussianProcessTestCase(unittest.TestCase):
         self.assertTrue(isinstance(spiketrain_array, np.ndarray))
         assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
 
+
 class NonStationaryPoissonProcessTestCase(unittest.TestCase):
     def setUp(self):
         rate_list = [[20]] * 1000 + [[200]] * 1000
