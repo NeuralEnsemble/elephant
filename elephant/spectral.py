@@ -243,7 +243,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
 
 def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
-                   frequency_resolution=None):
+                   peak_resolution=None):
     """
     Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
     using Multitaper method
@@ -273,7 +273,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
         Number of tapers used in 1. to obtain estimate of PSD. By default
         [2*nw] - 1 is chosen.
         Default: None
-    frequency_resolution : float, optional
+    peak_resolution : float, optional
         Desired frequency resolution of the obtained PSD estimate. When given
         as a `float`, it is taken as frequency in Hz.
         If None, it will be determined from other parameters.
@@ -301,8 +301,8 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     # If fs and frequency resolution is pq Quantity get magnitude
     if isinstance(fs, pq.quantity.Quantity):
         fs = fs.rescale('Hz').magnitude
-    if isinstance(frequency_resolution, pq.quantity.Quantity):
-        frequency_resolution = frequency_resolution.rescale('Hz').magnitude
+    if isinstance(peak_resolution, pq.quantity.Quantity):
+        peak_resolution = peak_resolution.rescale('Hz').magnitude
 
     # Number of data points in time series
     if data.ndim == 1:
@@ -311,11 +311,11 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
         length_signal = np.shape(data)[1]
 
     # Determine time-halfbandwidth product from given parameters
-    if frequency_resolution is not None:
-        if frequency_resolution <= 0:
-            raise ValueError("frequency_resolution must be positive")
+    if peak_resolution is not None:
+        if peak_resolution <= 0:
+            raise ValueError("peak_resolution must be positive")
         else:
-            nw = length_signal / fs * frequency_resolution / 2
+            nw = length_signal / fs * peak_resolution / 2
 
     if num_tapers is None:
         num_tapers = np.floor(2*nw).astype(int) - 1
