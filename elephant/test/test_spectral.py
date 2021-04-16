@@ -174,7 +174,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
                           fs, nw, num_tapers=-5.0)
         # - frequency resolution
         self.assertRaises(ValueError, elephant.spectral.multitaper_psd, signal,
-                          fs, nw, frequency_resolution=-1)
+                          fs, nw, peak_resolution=-1)
 
     def test_multitaper_psd_behavior(self):
         # generate data by adding white noise and a sinusoid
@@ -202,11 +202,11 @@ class MultitaperPSDTestCase(unittest.TestCase):
         # frequency resolution and consistency with data
         freq_res = 1.0 * pq.Hz
         freqs, psd = elephant.spectral.multitaper_psd(
-            data, frequency_resolution=freq_res)
+            data, peak_resolution=freq_res)
         self.assertEqual(freqs[psd.argmax()], signal_freq)
         freqs_np, psd_np = elephant.spectral.multitaper_psd(
             data.magnitude.flatten(), fs=1 / sampling_period,
-            frequency_resolution=freq_res)
+            peak_resolution=freq_res)
         self.assertTrue((freqs == freqs_np).all() and (psd == psd_np).all())
 
     def test_multitaper_psd_input_types(self):
