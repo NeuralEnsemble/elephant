@@ -426,7 +426,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # 1) FieldTrip: ft_connectivity_wpli()
         filename3_ground_truth_FieldTrip_real = os.path.sep.join(
             ['cross_testing_scripts',
-             'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs_R2G.csv'])
+             'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs_'
+             'R2G.csv'])
         self.wpli_ground_truth_FieldTrip_real = np.loadtxt(
             filename3_ground_truth_FieldTrip_real, delimiter=',', 
             dtype=np.float64)
@@ -457,7 +458,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def test_WPLI_ground_truth_consistency_real_LFP_dataset(self):
         """
         Test if the WPLI is consistent with the ground truth generated from
-        the LFP-datasets from the ICN lecture 10: 'The Local Field Potential'.
+        the LFP-datasets from the multielectrode-grasp gin-repository.
         """
         atol = 5e-6
         rtol = 4e-3
@@ -702,6 +703,27 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             np.testing.assert_raises(
                 ValueError, elephant.phase_analysis.weighted_phase_lag_index,
                 trials1_length3_AnalogSignal, trials1_length4_AnalogSignal)
+
+    def test_WPLI_raises_error_if_AnalogSignals_have_diff_sampling_rate(self):
+        signal_x_250_Hz = AnalogSignal(signal=np.random.random([40, 2100]),
+                                       units=pq.mV, sampling_rate=0.25*pq.kHz)
+        signal_y_1000_Hz = AnalogSignal(signal=np.random.random([40, 2100]),
+                                        units=pq.mV, sampling_rate=1000*pq.Hz)
+        np.testing.assert_raises(
+            ValueError, elephant.phase_analysis.weighted_phase_lag_index,
+            signal_x_250_Hz, signal_y_1000_Hz)
+
+    def test_WPLI_raises_error_if_sampling_rate_not_given(self):
+        signal_x = np.random.random([40, 2100]) * pq.mV
+        signal_y = np.random.random([40, 2100]) * pq.mV
+        with self.subTest(msg="Quantity-input"):
+            np.testing.assert_raises(
+                ValueError, elephant.phase_analysis.weighted_phase_lag_index,
+                signal_x, signal_y)
+        with self.subTest(msg="np.array-input"):
+            np.testing.assert_raises(
+                ValueError, elephant.phase_analysis.weighted_phase_lag_index,
+                signal_x.magnitude, signal_y.magnitude)
 
 
 if __name__ == '__main__':

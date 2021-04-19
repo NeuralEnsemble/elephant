@@ -360,7 +360,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     with:
         - E{...} : expected value operator
         - Im{X} : imaginary component of the cross-spectrum
-        - X = Z_i * Z_j_conjugate : cross-spectrum
+        - X = Z_i * Z_j_conjugate : cross-spectrum, averaged across trials
         - Z_i, Z_j : complex-valued matrix, representing the Fourier spectra
                      of a particular frequency of the signals i and j.
 
@@ -375,9 +375,8 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     """
     if isinstance(signal_i, neo.AnalogSignal) and \
             isinstance(signal_j, neo.AnalogSignal):  # neo.AnalogSignal input
-        signal_j.sampling_rate = signal_j.sampling_rate.rescale(
-            signal_i.sampling_rate.units)
-        if signal_i.sampling_rate.magnitude != signal_j.sampling_rate.magnitude:
+        if signal_i.sampling_rate.rescale("Hz") != \
+                signal_j.sampling_rate.rescale("Hz"):
             raise ValueError("sampling rate of signal i and j must be equal")
         sampling_frequency = signal_i.sampling_rate
         signal_i = signal_i.magnitude
