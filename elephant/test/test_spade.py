@@ -701,21 +701,23 @@ class SpadeTestCase(unittest.TestCase):
     def test_different_surrogate_method(self):
         np.random.seed(0)
         random.seed(0)
-        spiketrains = [stg.homogeneous_poisson_process(rate=20*pq.Hz)
-                       for _ in range(2)]
+        spiketrains = stg.StationaryPoissonProcess(
+            rate=20*pq.Hz).generate_n_spiketrains(2)
         surr_methods = ('dither_spikes', 'joint_isi_dithering',
                         'bin_shuffling',
                         'dither_spikes_with_refractory_period')
-        pv_specs = {'dither_spikes': [[2, 2, 0.8], [2, 3, 0.2]],
+        pv_specs = {'dither_spikes': [[2, 2, 1.0], [2, 3, 0.2]],
                     'joint_isi_dithering': [[2, 2, 0.8]],
-                    'bin_shuffling': [[2, 2, 1.0], [2, 3, 0.2]],
+                    'bin_shuffling': [[2, 2, 1.0], [2, 3, 0.2], [2, 4, 0.2]],
                     'dither_spikes_with_refractory_period':
-                        [[2, 2, 0.8]]}
+                        [[2, 2, 1.0], [2, 3, 0.4]]}
         for surr_method in surr_methods:
             pv_spec = spade.pvalue_spectrum(
                 spiketrains, bin_size=self.bin_size,
                 winlen=self.winlen, dither=15*pq.ms,
                 n_surr=5, surr_method=surr_method)
+            print(surr_method)
+            print(pv_spec)
             self.assertEqual(pv_spec, pv_specs[surr_method])
 
 
