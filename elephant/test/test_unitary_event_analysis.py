@@ -545,8 +545,7 @@ class UETestCase(unittest.TestCase):
                                      'method': 'analytic_TrialByTrial',
                                      't_start': 0 * pq.s,
                                      't_stop': 1 * pq.s, 'n_surrogates': 100}
-        from pprint import pprint
-        pprint(UE_dic)
+
         assert_array_almost_equal(UE_dic['Js'], js_expected)
         assert_array_almost_equal(UE_dic['n_emp'], n_emp_expected)
         assert_array_almost_equal(UE_dic['n_exp'], n_exp_expected)
