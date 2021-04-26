@@ -601,7 +601,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
-                       center_kernel=True, boundary_correction=False):
+                       center_kernel=True, border_correction=False):
     """
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -666,7 +666,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         spike. If False, no adjustment is performed such that the spike sits at
         the origin of the kernel.
         Default: True
-    boundary_correction : bool, optional
+    border_correction : bool, optional
         Apply a boundary correction.
         Only possible in the case of a Gaussian kernel.
         Default: False
@@ -771,7 +771,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              "instantaneous rate from input data.")
         return kernels.GaussianKernel(width_sigma * st.units)
 
-    if boundary_correction and not \
+    if border_correction and not \
             (kernel == 'auto' or isinstance(kernel, kernels.GaussianKernel)):
         raise ValueError(
             'The boundary correction is only implemented'
@@ -910,7 +910,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                             units=pq.Hz, t_start=t_start, t_stop=t_stop,
                             kernel=kernel_annotation)
 
-    if boundary_correction:
+    if border_correction:
         sigma = kernel.sigma.simplified.magnitude
         times = rate.times.simplified.magnitude
         correction_factor = 2 / (
