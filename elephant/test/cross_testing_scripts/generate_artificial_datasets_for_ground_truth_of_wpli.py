@@ -46,6 +46,8 @@ def _generate_datasets_for_ground_truth_testing(ntrial=40, tlength=2.5,
     cross-spectrum, which will then be passed to the ft_connectivity_wpli.
 
     """
+    np.random.seed(73)
+
     times = np.arange(0, tlength, 1 / srate)
 
     # lfps_1 & 2 will be used for
@@ -74,13 +76,18 @@ def _generate_datasets_for_ground_truth_testing(ntrial=40, tlength=2.5,
     # save artificial LFP-dataset to .mat files
     mdic_1 = {"lfp_matrix": lfps_1, "time": times, "sf": srate}
     mdic_2 = {"lfp_matrix": lfps_2, "time": times, "sf": srate}
-    filename1_artificial = os.path.sep.join(['cross_testing_scripts',
-                                             'artificial_LFPs_1.mat'])
-    filename2_artificial = os.path.sep.join(['cross_testing_scripts',
-                                             'artificial_LFPs_2.mat'])
-
+    filename1_artificial = "artificial_LFPs_1.mat"
+    filename2_artificial = "artificial_LFPs_2.mat"
     savemat(filename1_artificial, mdic_1)
     savemat(filename2_artificial, mdic_2)
+
+    # save cross-spectrum of those two LFP-matrices
+    fft1 = np.fft.rfft(lfps_1)
+    fft2 = np.fft.rfft(lfps_2)
+    cs = fft1 * np.conjugate(fft2)
+    cs_dict = {"cross_spectrum_matrix": cs}
+    cs_fname = "i140703-001_cross_spectrum_of_artificial_LFPs_1_and_2.mat"
+    savemat(cs_fname, cs_dict)
 
 
 def main():
