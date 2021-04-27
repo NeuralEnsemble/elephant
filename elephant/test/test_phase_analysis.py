@@ -460,8 +460,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         Test if the WPLI is consistent with the ground truth generated from
         the LFP-datasets from the multielectrode-grasp gin-repository.
         """
-        atol = 5e-6
-        rtol = 4e-3
+        atol = self.tolerance
+        rtol = self.tolerance
         # Quantity-input
         with self.subTest(msg="Quantity input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
