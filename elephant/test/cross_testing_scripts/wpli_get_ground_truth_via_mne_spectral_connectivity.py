@@ -38,15 +38,7 @@ def main():
 
     # get relevant relation: first signal compared to the second one
     wpli = wpli[1][0][0:]
-    freqs = freqs[0:]
-
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8), num=1)
-    fig.suptitle("Weighted Phase Lag Index - Ground Truth from MNE", size=20)
-    ax.plot(freqs, wpli, label="WPLI")
-    ax.set_xlabel('f (Hz)', size=16)
-    ax.legend(fontsize=16, framealpha=0)
-    plt.show()
-
+ 
     np.savetxt("ground_truth_WPLI_from_MNE_spectral_connectivity"
                "_with_artificial_LFPs_multitaped.csv",
                wpli, delimiter=",", fmt="%20.20e")
