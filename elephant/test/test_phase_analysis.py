@@ -519,7 +519,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def test_WPLI_comparison_to_multitaper_approaches(self):
         """
         Test if WPLI values are equal to those calculated from
-        FieldTrips' ft_connectivity() and MNEs' spectral_connectivity() at
+        FieldTrips' ft_connectivityanalysis() and MNEs' spectral_connectivity() at
         frequencies [16, 36, 52, 70, 100]Hz.
         """
         configuration = {
