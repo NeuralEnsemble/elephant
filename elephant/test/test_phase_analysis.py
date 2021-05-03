@@ -380,9 +380,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
 
-        # check for ground truth consistency with real/artificial LFP-dataset
+        # use real/artificial LFP-dataset for ground-truth consistency checks
         # real LFP-dataset
-        # Load first & second data file
         filename1_real = os.path.sep.join(['cross_testing_scripts',
                                            'i140703-001_ch01_slice_TS_ON_to_'
                                            'GO_ON_correct_trials.mat'])
@@ -391,12 +390,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                                            'i140703-001_ch02_slice_TS_ON_to_'
                                            'GO_ON_correct_trials.mat'])
         dataset2_real = scipy.io.loadmat(filename2_real, squeeze_me=True)
-        # get the relevant values
+        # get relevant values
         self.lfps1_real = dataset1_real['lfp_matrix'] * pq.uV
         self.sf1_real = dataset1_real['sf'] * pq.Hz
         self.lfps2_real = dataset2_real['lfp_matrix'] * pq.uV
         self.sf2_real = dataset2_real['sf'] * pq.Hz
-        # create AnalogSignals form the real dataset
+        # create AnalogSignals from the real dataset
         self.lfps1_real_AnalogSignal = AnalogSignal(
             signal=self.lfps1_real, sampling_rate=self.sf1_real)
         self.lfps2_real_AnalogSignal = AnalogSignal(
@@ -411,69 +410,66 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                                                  'artificial_LFPs_2.mat'])
         dataset2_artificial = scipy.io.loadmat(filename2_artificial, 
                                                squeeze_me=True)
-        # get the relevant values
+        # get relevant values
         self.lfps1_artificial = dataset1_artificial['lfp_matrix'] * pq.uV
         self.sf1_artificial = dataset1_artificial['sf'] * pq.Hz
         self.lfps2_artificial = dataset2_artificial['lfp_matrix'] * pq.uV
         self.sf2_artificial = dataset2_artificial['sf'] * pq.Hz
-        # create AnalogSignals form the artificial dataset
+        # create AnalogSignals from the artificial dataset
         self.lfps1_artificial_AnalogSignal = AnalogSignal(
             signal=self.lfps1_artificial, sampling_rate=self.sf1_artificial)
         self.lfps2_artificial_AnalogSignal = AnalogSignal(
             signal=self.lfps2_artificial, sampling_rate=self.sf2_artificial)
 
-        # load ground-truth calculated by:
+        # load ground-truth reference calculated by:
         # 1) FieldTrip: ft_connectivity_wpli()
-        filename3_ground_truth_FieldTrip_real = os.path.sep.join(
+        fname_ground_truth_ft_connectivity_wpli_real = os.path.sep.join(
             ['cross_testing_scripts',
              'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs_'
              'R2G.csv'])
-        self.wpli_ground_truth_FieldTrip_real = np.loadtxt(
-            filename3_ground_truth_FieldTrip_real, delimiter=',', 
+        self.wpli_ground_truth_ft_connectivity_wpli_real = np.loadtxt(
+            fname_ground_truth_ft_connectivity_wpli_real, delimiter=',',
             dtype=np.float64)
-        filename3_ground_truth_FieldTrip_artificial = os.path.sep.join(
+        fname_ground_truth_ft_connectivity_wpli_artificial = os.path.sep.join(
             ['cross_testing_scripts',
              'ground_truth_WPLI_from_ft_connectivity_wpli'
              '_with_artificial_LFPs.csv'])
-        self.wpli_ground_truth_FieldTrip_artificial = np.loadtxt(
-            filename3_ground_truth_FieldTrip_artificial, delimiter=',', 
+        self.wpli_ground_truth_ft_connectivity_artificial = np.loadtxt(
+            fname_ground_truth_ft_connectivity_wpli_artificial, delimiter=',',
             dtype=np.float64)
-
 
     def test_WPLI_ground_truth_consistency_real_LFP_dataset(self):
         """
-        Test if the WPLI is consistent with the ground truth generated from
-        the LFP-datasets from the multielectrode-grasp gin-repository.
+        Test if the WPLI is consistent with the ground truth generated with
+        LFP-dataset cuttings from the multielectrode-grasp gin-repository.
         """
-        atol = self.tolerance
-        rtol = self.tolerance
         # Quantity-input
         with self.subTest(msg="Quantity input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real, self.lfps2_real, self.sf1_real)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_real, atol=atol,
-                rtol=rtol, equal_nan=True)
+                wpli, self.wpli_ground_truth_ft_connectivity_wpli_real,
+                atol=self.tolerance, rtol=self.tolerance, equal_nan=True)
         # np.array-input
         with self.subTest(msg="np.array input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real.magnitude, self.lfps2_real.magnitude,
                 self.sf1_real)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_real, atol=atol,
-                rtol=rtol, equal_nan=True)
+                wpli, self.wpli_ground_truth_ft_connectivity_wpli_real,
+                atol=self.tolerance, rtol=self.tolerance, equal_nan=True)
         # neo.AnalogSignal-input
         with self.subTest(msg="neo.AnalogSignal input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real_AnalogSignal, self.lfps2_real_AnalogSignal)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_real, atol=atol,
-                rtol=rtol, equal_nan=True)
+                wpli, self.wpli_ground_truth_ft_connectivity_wpli_real,
+                atol=self.tolerance, rtol=self.tolerance, equal_nan=True)
 
     def test_WPLI_ground_truth_consistency_artificial_LFP_dataset(self):
         """
-        Test if the WPLI is consistent with the ground truth generated from
-        artificial LFP-datasets.
+        Test if the WPLI is consistent with the ground truth generated with
+        multi-sine artificial LFP-datasets.
         """
         # Quantity-input
         with self.subTest(msg="Quantity input"):
@@ -481,7 +477,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 self.lfps1_artificial, self.lfps2_artificial,
                 self.sf1_artificial, absolute_value=False)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_artificial,
+                wpli, self.wpli_ground_truth_ft_connectivity_artificial,
                 atol=1e-14, rtol=1e-12, equal_nan=True)
         # np.array-input
         with self.subTest(msg="np.array input"):
@@ -490,7 +486,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 self.lfps2_artificial.magnitude, self.sf1_artificial,
                 absolute_value=False)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_artificial,
+                wpli, self.wpli_ground_truth_ft_connectivity_artificial,
                 atol=1e-14, rtol=1e-12, equal_nan=True)
         # neo.AnalogSignal-input
         with self.subTest(msg="neo.AnalogSignal input"):
@@ -498,13 +494,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 self.lfps1_artificial_AnalogSignal,
                 self.lfps2_artificial_AnalogSignal, absolute_value=False)
             np.testing.assert_allclose(
-                wpli, self.wpli_ground_truth_FieldTrip_artificial,
+                wpli, self.wpli_ground_truth_ft_connectivity_artificial,
                 atol=1e-14, rtol=1e-12, equal_nan=True)
 
-    def test_WPLI_is_zero(self):  # for: f = 70Hz
+    def test_WPLI_is_zero(self):
         """
-        Test if WPLI is zero at frequency f=70Hz for the multi-sine
-        artificial LFP dataset.
+        Test if WPLI is close to zero at frequency f=70Hz for the multi-sine
+        artificial LFP dataset. White noise prevents arbitrary approximation.
         """
         # Quantity-input
         with self.subTest(msg="Quantity input"):
@@ -529,7 +525,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             np.testing.assert_allclose(
                 wpli[freq == 70], 0, atol=0.002, rtol=self.tolerance)
 
-    def test_WPLI_is_one(self):  # for: f = 16Hz and 36Hz
+    def test_WPLI_is_one(self):
         """
         Test if WPLI is one at frequency f=16Hz and 36Hz for the multi-sine
         artificial LFP dataset.
@@ -560,7 +556,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             np.testing.assert_allclose(
                 wpli[mask], 1, atol=self.tolerance, rtol=self.tolerance)
 
-    def test_WPLI_is_minus_one(self):  # for: f = 52Hz and 100Hz
+    def test_WPLI_is_minus_one(self):
         """
         Test if WPLI is minus one at frequency f=52Hz and 100Hz
         for the multi-sine artificial LFP dataset.
@@ -589,9 +585,9 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             np.testing.assert_allclose(
                 wpli[mask], -1, atol=self.tolerance, rtol=self.tolerance)
 
-    def test_WPLI_raise_error_if_signals_have_different_shapes(self):
+    def test_WPLI_raises_error_if_signals_have_different_shapes(self):
         """
-        Test if a ValueError is raised, when the signals have different
+        Test if WPLI raises a ValueError, when the signals have different
         number of trails or different trial lengths.
         """
         # simple samples of different shapes to assert ErrorRaising
@@ -636,6 +632,10 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 trials1_length3_AnalogSignal, trials1_length4_AnalogSignal)
 
     def test_WPLI_raises_error_if_AnalogSignals_have_diff_sampling_rate(self):
+        """
+        Test if WPLI raises a ValueError, when the AnalogSignals have different
+        sampling rates.
+        """
         signal_x_250_Hz = AnalogSignal(signal=np.random.random([40, 2100]),
                                        units=pq.mV, sampling_rate=0.25*pq.kHz)
         signal_y_1000_Hz = AnalogSignal(signal=np.random.random([40, 2100]),
@@ -645,6 +645,10 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             signal_x_250_Hz, signal_y_1000_Hz)
 
     def test_WPLI_raises_error_if_sampling_rate_not_given(self):
+        """
+        Test if WPLI raises a ValueError, when the sampling rate is not given
+        for np.array() or Quanitity input.
+        """
         signal_x = np.random.random([40, 2100]) * pq.mV
         signal_y = np.random.random([40, 2100]) * pq.mV
         with self.subTest(msg="Quantity-input"):
