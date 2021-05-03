@@ -1,5 +1,6 @@
 %% use FieldTrips' ft_connectivityanalysis() to calculate WPLI ground-truth
 %% BEFORE using this script: change current folder to cross_testing_scripts
+addpath '/path/to/FieldTrip_toolbox'
 
 % ARTIFICIAL DATA
 dataset1 = load('artificial_LFPs_1.mat');
@@ -45,6 +46,4 @@ wpli_2 = reshape(wpli_2, [1, length(wpli_2)]);
 
 writematrix(wpli_2, 'ground_truth_WPLI_from_ft_connectivityanalysis_with_artificial_LFPs_multitaped.csv');
 
-
-figure(2);
-plot(ft_wpli.freq(1:(end-1)), wpli_2);
+exit;
