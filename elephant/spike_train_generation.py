@@ -19,12 +19,10 @@ Random spike train processes
     :toctree: _toctree/spike_train_generation
 
     StationaryPoissonProcess
-    StationaryPoissonProcessDeadTime
     StationaryGammaProcess
     StationaryLogNormalProcess
     StationaryInverseGaussianProcess
     NonStationaryPoissonProcess
-    NonStationaryPoissonProcessDeadTime
     NonStationaryGammaProcess
 
 
@@ -56,7 +54,7 @@ References
 from __future__ import division, print_function, unicode_literals
 
 import warnings
-from typing import List, Union
+from typing import List, Union, Optional
 
 import neo
 import numpy as np
@@ -74,12 +72,10 @@ __all__ = [
     "threshold_detection",
     "peak_detection",
     "StationaryPoissonProcess",
-    "StationaryPoissonProcessDeadTime",
     "StationaryGammaProcess",
     "StationaryLogNormalProcess",
     "StationaryInverseGaussianProcess",
     "NonStationaryPoissonProcess",
-    "NonStationaryPoissonProcessDeadTime",
     "NonStationaryGammaProcess",
     "homogeneous_poisson_process",
     "inhomogeneous_poisson_process",
@@ -630,7 +626,7 @@ class StationaryPoissonProcess(RenewalProcess):
     """
     Generates spike trains whose spikes are realizations of a stationary
     Poisson process with the given rate, starting at time `t_start` and
-    stopping at time `t_stop`.
+    stopping at time `t_stop`. Optionally, a dead time can be specified.
 
     Parameters
     ----------
@@ -642,66 +638,9 @@ class StationaryPoissonProcess(RenewalProcess):
     t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-
-    Raises
-    ------
-    ValueError
-        If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
-
-    Examples
-    --------
-    >>> import quantities as pq
-    >>> spiketrain = StationaryPoissonProcess(rate=50.*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms).generate_spiketrain()
-    >>> spiketrain_array = StationaryPoissonProcess(
-    ...     rate=20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms
-    ...     ).generate_spiketrain(as_array=True)
-    """
-    def __init__(
-            self,
-            rate: pq.Quantity,
-            t_stop: pq.Quantity = 1.*pq.s,
-            t_start: pq.Quantity = 0.*pq.s
-    ):
-        super().__init__(
-            rate=rate, t_start=t_start, t_stop=t_stop)
-        if self.n_expected_spikes > 0:
-            self.isi_generator = stats.expon(scale=1./self.rate)
-
-    def _cdf_first_spike_equilibrium(self, time):
-        if time < 0.:
-            return 0.
-        return 1. - np.exp(-self.rate*time)
-
-    def _get_first_spike_equilibrium(self):
-        return self.isi_generator.rvs() + self.t_start
-
-    @property
-    def cv(self):
-        """
-        The coefficient of variation.
-        """
-        return 1.
-
-
-class StationaryPoissonProcessDeadTime(RenewalProcess):
-    """
-    Generates spike trains whose spikes are realizations of a stationary
-    Poisson process with dead time (PPD) with the given rate and `dead_time`
-    starting at time `t_start` and stopping at time `t_stop`.
-
-    Parameters
-    ----------
-    rate : pq.Quantity
-        The constant firing rate.
-    dead_time : pq.Quantity
+    dead_time : pq.Quantity, optional
         The time period after one spike in which no other spike is emitted.
-    t_start : pq.Quantity, optional
-        The start of the spike train.
-        Default: 0.*pq.s
-    t_stop : pq.Quantity, optional
-        The end of the spike train.
-        Default: 1.*pq.s
+        Default : None
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
@@ -711,7 +650,7 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
     ValueError
         If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
 
-        If `dead_time` is not of type `pq.Quantity`.
+        If `dead_time` is not of type `pq.Quantity` nor None.
 
         If the period between two successive spikes (`1 / rate`) is smaller
         than the `dead_time`.
@@ -719,39 +658,54 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
     Examples
     --------
     >>> import quantities as pq
-    >>> spiketrain = NonStationaryPoissonProcessDeadTime(
+    >>> spiketrain = StationaryPoissonProcess(rate=50.*pq.Hz, t_start=0*pq.ms,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> spiketrain_array = StationaryPoissonProcess(
+    ...     rate=20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms
+    ...     ).generate_spiketrain(as_array=True)
+    >>> spiketrain = StationaryPoissonProcess(
     ...     rate=50*pq.Hz, t_start=0*pq.ms,
     ...     t_stop=1000*pq.ms, dead_time = 3*pq.ms).generate_spiketrain()
     """
     def __init__(
             self,
             rate: pq.Quantity,
-            dead_time: pq.Quantity,
-            t_start: pq.Quantity = 0. * pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
+            t_start: pq.Quantity = 0.*pq.s,
+            dead_time: Optional[pq.Quantity] = None,
             equilibrium: bool = True
     ):
         super().__init__(
             rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium)
 
-        if not isinstance(dead_time, pq.Quantity):
-            raise ValueError("dead_time must be of type pq.Quantity")
-        self.dead_time = dead_time.rescale(self.unit).item()
+        if dead_time is not None:
+            if not isinstance(dead_time, pq.Quantity):
+                raise ValueError("dead_time must be of type pq.Quantity")
+            self.dead_time = dead_time.rescale(self.unit).item()
 
-        if self.rate * self.dead_time >= 1.:
-            raise ValueError(
-                "Period between two successive spikes must be larger "
-                "than the dead time. Decrease either the "
-                "firing rate or the dead time.")
+            if self.rate * self.dead_time >= 1.:
+                raise ValueError(
+                    "Period between two successive spikes must be larger "
+                    "than the dead time. Decrease either the "
+                    "firing rate or the dead time.")
+        else:
+            self.dead_time = dead_time
 
-        if self.n_expected_spikes > 0:
+        if self.n_expected_spikes > 0 and dead_time is None:
+            self.isi_generator = stats.expon(scale=1./self.rate)
+
+        elif self.n_expected_spikes > 0 and dead_time is not None:
             self.effective_rate = self.rate / (1. - self.rate * self.dead_time)
             self.isi_generator = stats.expon(
-                scale=1./self.effective_rate, loc=self.dead_time)
+                scale=1. / self.effective_rate, loc=self.dead_time)
 
     def _cdf_first_spike_equilibrium(self, time):
         if time < 0.:
             return 0.
+        elif self.dead_time is None:
+            return 1. - np.exp(-self.rate*time)
+
+        # the case with dead_time
         if time <= self.dead_time:
             return self.rate * time
         # time > self.dead_time
@@ -759,19 +713,28 @@ class StationaryPoissonProcessDeadTime(RenewalProcess):
             np.exp(-self.effective_rate*(time-self.dead_time))
 
     def _get_first_spike_equilibrium(self):
+        if self.dead_time is None:
+            return self.isi_generator.rvs() + self.t_start
+
+        # the case with dead time
         random_uniform = np.random.random()
         if random_uniform <= self.rate * self.dead_time:
-            return random_uniform/self.rate + self.t_start
+            return random_uniform / self.rate + self.t_start
         # random_uniform > self.rate * self.dead_time
-        return (np.log(1.-self.rate*self.dead_time)-np.log(1.-random_uniform)
-                )/self.effective_rate + self.dead_time
+        return (np.log(1. - self.rate * self.dead_time)
+                - np.log(1. - random_uniform)
+                ) / self.effective_rate + self.dead_time
 
     @property
     def cv(self):
         """
         The coefficient of variation.
         """
-        return 1.-self.rate*self.dead_time
+        if self.dead_time is None:
+            return 1.
+
+        # the case with dead time
+        return 1. - self.rate * self.dead_time
 
 
 class StationaryGammaProcess(RenewalProcess):
@@ -1056,7 +1019,8 @@ class RateModulatedProcess(AbstractPointProcess):
 class NonStationaryPoissonProcess(RateModulatedProcess):
     """
     Generates spike trains whose spikes are realizations of a non-stationary
-    Poisson process with the given `rate-signal`.
+    Poisson process with the given `rate-signal`. Optionally, you can specify a
+    dead time.
 
     Parameters
     ----------
@@ -1064,6 +1028,9 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
         A `neo.AnalogSignal` representing the rate profile evolving over
         time.Its values have all to be `>=0`. The generated spike trains
         will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
+    dead_time : pq.Quantity, optional
+        The time period after one spike in which no other spike is emitted.
+        Default: None
 
     Raises
     ------
@@ -1071,47 +1038,35 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
         If `rate_signal` is not a neo AnalogSignal
         If `rate_signal` contains a negative value.
         If `rate_signal` is empty.
+        If `dead_time` is not of type `pq.Quantity` nor None.
     """
-    def __init__(self, rate_signal: neo.AnalogSignal):
+    def __init__(self, rate_signal: neo.AnalogSignal,
+                 dead_time: Optional[pq.Quantity] = None):
+
+        if dead_time is not None:
+            rate_signal = \
+                rate_signal / (1. - rate_signal.simplified.magnitude
+                               * dead_time.simplified.item())
+
         super().__init__(rate_signal=rate_signal)
         self.process_operational_time = StationaryPoissonProcess(
             rate=self.mean_rate * 1./self.unit,
             t_start=self.t_start * self.unit,
             t_stop=self.t_stop * self.unit)
 
+        if dead_time is not None:
+            if not isinstance(dead_time, pq.Quantity):
+                raise ValueError("dead_time must be of type pq.Quantity")
+            self.dead_time = dead_time.rescale(self.unit).item()
 
-class NonStationaryPoissonProcessDeadTime(NonStationaryPoissonProcess):
-    """
-    Generates spike trains whose spikes are realizations of a non-stationary
-    Poisson process with dead time (PPD) with the given `rate-signal`.
-
-    Parameters
-    ----------
-    rate_signal : neo.AnalogSignal
-        A `neo.AnalogSignal` representing the rate profile evolving over
-        time.Its values have all to be `>=0`. The generated spike trains
-        will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
-    dead_time : pq.Quantity
-        The time period after one spike in which no other spike is emitted.
-
-    Raises
-    ------
-    ValueError
-        If `rate_signal` is not a neo AnalogSignal
-        If `rate_signal` contains a negative value.
-        If `rate_signal` is empty.
-    """
-    def __init__(self, rate_signal: neo.AnalogSignal, dead_time: pq.Quantity):
-        effective_rate_signal = \
-            rate_signal / (1. - rate_signal.simplified.magnitude
-                           * dead_time.simplified.item())
-
-        super().__init__(rate_signal=effective_rate_signal)
-        self.dead_time = dead_time.rescale(self.unit).item()
+        else:
+            self.dead_time = dead_time
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
-        spiketrain = super()._generate_spiketrain_as_array()
+        if self.dead_time is None:
+            return super()._generate_spiketrain_as_array()
 
+        spiketrain = super()._generate_spiketrain_as_array()
         thinned_spiketrain = []
 
         previous_spike = self.t_start - self.dead_time
@@ -1210,14 +1165,9 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     """
     warnings.warn(
         "'homogeneous_poisson_process' is deprecated;"
-        " use 'StationaryPoissonProcess' or "
-        "'StationaryPoissonProcessDeadTime'.",
-        DeprecationWarning)
-    if refractory_period is None:
-        return StationaryPoissonProcess(
-            rate=rate, t_start=t_start, t_stop=t_stop).generate_spiketrain(
-            as_array=as_array)
-    return StationaryPoissonProcessDeadTime(
+        " use 'StationaryPoissonProcess'.", DeprecationWarning)
+
+    return StationaryPoissonProcess(
         rate=rate, t_start=t_start, t_stop=t_stop,
         dead_time=refractory_period, equilibrium=True
     ).generate_spiketrain(as_array=as_array)
@@ -1263,13 +1213,9 @@ def inhomogeneous_poisson_process(rate, as_array=False,
     """
     warnings.warn(
         "'inhomogeneous_poisson_process' is deprecated;"
-        " use 'NonStationaryPoissonProcess' or "
-        "'NonStationaryPoissonProcessDeadTime'.",
+        " use 'NonStationaryPoissonProcess'.",
         DeprecationWarning)
-    if refractory_period is None:
-        return NonStationaryPoissonProcess(
-            rate_signal=rate).generate_spiketrain(as_array=as_array)
-    return NonStationaryPoissonProcessDeadTime(
+    return NonStationaryPoissonProcess(
         rate_signal=rate, dead_time=refractory_period).generate_spiketrain(
         as_array=as_array)
 
