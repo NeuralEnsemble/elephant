@@ -86,7 +86,7 @@ def _generate_datasets_for_ground_truth_testing(ntrial=40, tlength=2.5,
     fft2 = np.fft.rfft(lfps_2)
     cs = fft1 * np.conjugate(fft2)
     cs_dict = {"cross_spectrum_matrix": cs}
-    cs_fname = "i140703-001_cross_spectrum_of_artificial_LFPs_1_and_2.mat"
+    cs_fname = "cross_spectrum_of_artificial_LFPs_1_and_2.mat"
     savemat(cs_fname, cs_dict)
 
 
