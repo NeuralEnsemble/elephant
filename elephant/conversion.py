@@ -405,8 +405,8 @@ class BinnedSpikeTrain(object):
         return self.n_bins
 
     def __repr__(self):
-        return f"{type(self).__name__}(t_start={self.t_start}, " \
-               f"t_stop={self.t_stop}, bin_size={self.bin_size}; " \
+        return f"{type(self).__name__}(t_start={str(self.t_start)}, " \
+               f"t_stop={str(self.t_stop)}, bin_size={str(self.bin_size)}; " \
                f"shape={self.shape}, " \
                f"format={self.sparse_matrix.__class__.__name__})"
 
