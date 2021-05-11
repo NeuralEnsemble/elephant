@@ -8,16 +8,15 @@ Unit tests for the phase analysis module.
 from __future__ import division, print_function
 
 import unittest
+from pathlib import Path
 
-from neo import SpikeTrain, AnalogSignal
 import numpy as np
 import quantities as pq
-import os.path
 import scipy.io
+from neo import SpikeTrain, AnalogSignal
+from numpy.ma.testutils import assert_allclose
 
 import elephant.phase_analysis
-
-from numpy.ma.testutils import assert_allclose
 
 
 class SpikeTriggeredPhaseTestCase(unittest.TestCase):
@@ -382,14 +381,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
         # use real/artificial LFP-dataset for ground-truth consistency checks
         # real LFP-dataset
-        filename1_real = os.path.sep.join(['cross_testing_scripts',
-                                           'i140703-001_ch01_slice_TS_ON_to_'
-                                           'GO_ON_correct_trials.mat'])
-        dataset1_real = scipy.io.loadmat(filename1_real, squeeze_me=True)
-        filename2_real = os.path.sep.join(['cross_testing_scripts',
-                                           'i140703-001_ch02_slice_TS_ON_to_'
-                                           'GO_ON_correct_trials.mat'])
-        dataset2_real = scipy.io.loadmat(filename2_real, squeeze_me=True)
+        fname1_real = Path('cross_testing_scripts/i140703-001_ch01_slice_'
+                           'TS_ON_to_GO_ON_correct_trials.mat')
+        dataset1_real = scipy.io.loadmat(fname1_real, squeeze_me=True)
+        fname2_real = Path('cross_testing_scripts/i140703-001_ch02_slice_'
+                           'TS_ON_to_GO_ON_correct_trials.mat')
+        dataset2_real = scipy.io.loadmat(fname2_real, squeeze_me=True)
         # get relevant values
         self.lfps1_real = dataset1_real['lfp_matrix'] * pq.uV
         self.sf1_real = dataset1_real['sf'] * pq.Hz
@@ -402,13 +399,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             signal=self.lfps2_real, sampling_rate=self.sf2_real)
 
         # artificial LFP-dataset
-        filename1_artificial = os.path.sep.join(['cross_testing_scripts',
-                                                 'artificial_LFPs_1.mat'])
-        dataset1_artificial = scipy.io.loadmat(filename1_artificial, 
+        fname1_artificial = Path('cross_testing_scripts/artificial_LFPs_1.mat')
+        dataset1_artificial = scipy.io.loadmat(fname1_artificial,
                                                squeeze_me=True)
-        filename2_artificial = os.path.sep.join(['cross_testing_scripts',
-                                                 'artificial_LFPs_2.mat'])
-        dataset2_artificial = scipy.io.loadmat(filename2_artificial, 
+        fname2_artificial = Path('cross_testing_scripts/artificial_LFPs_2.mat')
+        dataset2_artificial = scipy.io.loadmat(fname2_artificial,
                                                squeeze_me=True)
         # get relevant values
         self.lfps1_artificial = dataset1_artificial['lfp_matrix'] * pq.uV
@@ -423,25 +418,31 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
         # load ground-truth reference calculated by:
         # 1) FieldTrip: ft_connectivity_wpli()
-        fname_ground_truth_ft_connectivity_wpli_real = os.path.sep.join(
-            ['cross_testing_scripts',
-             'ground_truth_WPLI_from_ft_connectivity_wpli_with_real_LFPs_'
-             'R2G.csv'])
+        fname_ground_truth_ft_connectivity_wpli_real = Path(
+            'cross_testing_scripts/ground_truth_WPLI_from_ft_connectivity_wpli'
+            '_with_real_LFPs_R2G.csv')
         self.wpli_ground_truth_ft_connectivity_wpli_real = np.loadtxt(
             fname_ground_truth_ft_connectivity_wpli_real, delimiter=',',
             dtype=np.float64)
-        fname_ground_truth_ft_connectivity_wpli_artificial = os.path.sep.join(
-            ['cross_testing_scripts',
-             'ground_truth_WPLI_from_ft_connectivity_wpli'
-             '_with_artificial_LFPs.csv'])
+        fname_ground_truth_ft_connectivity_wpli_artificial = Path(
+            'cross_testing_scripts/ground_truth_WPLI_from_ft_connectivity_wpli'
+            '_with_artificial_LFPs.csv')
         self.wpli_ground_truth_ft_connectivity_artificial = np.loadtxt(
             fname_ground_truth_ft_connectivity_wpli_artificial, delimiter=',',
             dtype=np.float64)
 
     def test_WPLI_ground_truth_consistency_real_LFP_dataset(self):
         """
-        Test if the WPLI is consistent with the ground truth generated with
-        LFP-dataset cuttings from the multielectrode-grasp gin-repository.
+        Test if the WPLI is consistent with the reference implementation
+        ft_connectivity_wpli() of the MATLAB-package FieldTrip using
+        LFP-dataset cuttings from the multielectrode-grasp  G-Node GIN
+        repository, which can be found here:
+        https://doi.gin.g-node.org/10.12751/g-node.f83565/
+        The cutting was performed with this python-script:
+        multielectrode_grasp_i140703-001_cutting_script_TS_ON_to_GO_ON.py
+        which is available on https://gin.g-node.org/INM-6/elephant-data
+        in folder dataset4, where also the MATLAB-script for ground-truth
+        generation is located.
         """
         # Quantity-input
         with self.subTest(msg="Quantity input"):
