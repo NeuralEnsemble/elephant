@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: FPGrowth.h
  *  Copyright (c) 2020 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
@@ -161,7 +161,7 @@ public:
 		UNUSED(threads);
 #endif
 
-		m_pDataObjs  = new DataObjs[m_objs]();
+		m_pDataObjs = new DataObjs[m_objs]();
 		m_pThreadMem = new FPNMemory[m_objs];
 
 		for (int32_t i = 0; i < m_objs; i++)
@@ -172,7 +172,7 @@ public:
 
 		m_pPattern = new Pattern[m_maxItemCnt];
 
-		m_pIdx2Id  = new uint32_t[m_maxItemCnt]();
+		m_pIdx2Id = new uint32_t[m_maxItemCnt]();
 		m_pId2Item = new ItemC[m_maxItemCnt]();
 
 		m_pClosedDetect = new ClosedDetect(m_maxItemCnt);
@@ -223,26 +223,26 @@ public:
 		}
 
 		std::sort(std::begin(db), std::end(db), [](const TransactionC& a, const TransactionC& b) {
-			std::size_t l = a.size() > b.size() ? b.size() : a.size();
-			for (std::size_t i = 0; i < l; i++)
-			{
-				if (a[i] != b[i])
-				{
-					if (a[i].Idx() > b[i].Idx())
-						return false;
-					else
-						return true;
-				}
-			}
+					  std::size_t l = a.size() > b.size() ? b.size() : a.size();
+					  for (std::size_t i = 0; i < l; i++)
+					  {
+						  if (a[i] != b[i])
+						  {
+							  if (a[i].Idx() > b[i].Idx())
+								  return false;
+							  else
+								  return true;
+						  }
+					  }
 
-			if (a.size() == b.size())
-				return false;
+					  if (a.size() == b.size())
+						  return false;
 
-			if (a.size() > b.size())
-				return true;
-			else
-				return false;
-		});
+					  if (a.size() > b.size())
+						  return true;
+					  else
+						  return false;
+				  });
 
 		std::reverse(std::begin(db), std::end(db));
 
@@ -346,18 +346,18 @@ private:
 				continue;
 			}
 
-			pH                          = pDst->pHeads + n;
-			pH->item                    = pSrc->pHeads[i].item;
-			pH->support                 = m_pDataObjs[tId].m_pSubs[i];
-			pH->list                    = nullptr;
-			pH->pMemory                 = pSrc->pMemory;
+			pH = pDst->pHeads + n;
+			pH->item = pSrc->pHeads[i].item;
+			pH->support = m_pDataObjs[tId].m_pSubs[i];
+			pH->list = nullptr;
+			pH->pMemory = pSrc->pMemory;
 			m_pDataObjs[tId].m_pSubs[i] = n++;
 		}
 
 		if (n == 0) return false;
 
 		// As the Tree is reused for several iterations initialize cnt and root support here
-		pDst->cnt          = n;
+		pDst->cnt = n;
 		pDst->root.support = 0;
 
 		std::size_t i;
@@ -383,12 +383,12 @@ private:
 			m_pDataObjs[tId].m_patternOpen = true;
 			std::memset(m_pDataObjs[tId].m_pAdded, 0, m_maxItemCnt);
 			std::memset(m_pDataObjs[tId].m_pAddedPerfExt, 0, m_maxItemCnt);
-			m_pDataObjs[tId].m_lastIDCnt    = 0;
+			m_pDataObjs[tId].m_lastIDCnt = 0;
 			m_pDataObjs[tId].m_perfExtIDCnt = 0;
 #ifdef DEBUG
 			LOG_DEBUG << std::endl
-					  << std::endl
-					  << "--- BEGIN PATTERN ---" << std::endl;
+				<< std::endl
+				<< "--- BEGIN PATTERN ---" << std::endl;
 #endif
 		}
 	}
@@ -405,7 +405,7 @@ private:
 #endif
 			if (m_pClosedDetect->Add(item, supp) > 0)
 			{
-				m_pDataObjs[tId].m_pAdded[item]                            = true;
+				m_pDataObjs[tId].m_pAdded[item] = true;
 				m_pDataObjs[tId].m_pSupports[m_pDataObjs[tId].m_lastIDCnt] = supp;
 				m_pDataObjs[tId].m_pLastID[m_pDataObjs[tId].m_lastIDCnt++] = item;
 
@@ -425,12 +425,12 @@ private:
 
 		if (!m_pDataObjs[tId].m_pAddedPerfExt[item] && !m_pDataObjs[tId].m_pAdded[item])
 		{
-			m_pDataObjs[tId].m_pAddedPerfExt[item]                            = true;
+			m_pDataObjs[tId].m_pAddedPerfExt[item] = true;
 			m_pDataObjs[tId].m_pPerfExtIDs[m_pDataObjs[tId].m_perfExtIDCnt++] = item;
 		}
 	}
 
-	void pp(Pattern& results, const ItemID* pIDs, const std::size_t& size, const std::size_t& pos, const std::size_t& minLen, PatternType* pBase, PatternType basePos, const Support& supp, const ItemC* pId2Item, const Support& maxSupport, const std::size_t& minNeuronCount, const ItemC& winLen)
+	void pp(Pattern& results, const ItemID* pIDs, const std::size_t& size, const std::size_t& pos, const std::size_t& minLen, PatternType* pBase, std::size_t basePos, const Support& supp, const ItemC* pId2Item, const Support& maxSupport, const std::size_t& minNeuronCount, const ItemC& winLen)
 	{
 		pBase[basePos++] = m_pId2Item[pIDs[pos]];
 		for (std::size_t i = pos + 1; i < size; i++)
@@ -493,7 +493,7 @@ private:
 					m_pPattern[pId].AddPattern(static_cast<ItemC>(m_pDataObjs[tId].m_lastIDCnt + m_pDataObjs[tId].m_perfExtIDCnt), s, m_pDataObjs[tId].m_pPatternBase, GetId2Item(), static_cast<Support>(m_maxSupport), static_cast<std::size_t>(m_minNeuronCount), m_winLen);
 #ifdef DEBUG
 					LOG_DEBUG << std::endl
-							  << std::endl;
+						<< std::endl;
 #endif
 				}
 #endif
@@ -548,22 +548,22 @@ private:
 		{
 			for (int32_t i = 0; i < m_objs; i++)
 			{
-				ppDst[i]              = new FPTree(m_tree->cnt - 1, m_tree->pIdx2Id, m_tree->pId2Item, &m_pThreadMem[i]);
-				ppDst[i]->root.id     = IDX_MAX;
-				ppDst[i]->root.succ   = nullptr;
+				ppDst[i] = new FPTree(m_tree->cnt - 1, m_tree->pIdx2Id, m_tree->pId2Item, &m_pThreadMem[i]);
+				ppDst[i]->root.id = IDX_MAX;
+				ppDst[i]->root.succ = nullptr;
 				ppDst[i]->root.parent = nullptr;
 			}
 		}
 
 		int64_t start = 0;
-		int64_t end   = static_cast<int64_t>(pTree->cnt);
-		int64_t inc   = 1;
-		bool error    = false;
+		int64_t end = static_cast<int64_t>(pTree->cnt);
+		int64_t inc = 1;
+		bool error = false;
 
 #ifdef USE_MPI
 		const int64_t iterationsPerProc = static_cast<int64_t>(pTree->cnt / procs);
-		start                           = rank;
-		inc                             = procs;
+		start = rank;
+		inc = procs;
 #endif
 
 #ifdef USE_OPENMP
@@ -576,7 +576,7 @@ private:
 #endif
 		{
 #ifdef _MSC_VER
-			if(error) continue;
+			if (error) continue;
 #endif
 #ifdef USE_OPENMP
 			int32_t tId = omp_get_thread_num();
@@ -596,7 +596,7 @@ private:
 			}
 			else if (ppDst[tId])
 			{
-				if (project(tId, ppDst[tId], pTree, i))
+				if (project(tId, ppDst[tId], pTree, static_cast<std::size_t>(i)))
 				{
 					// Use boolean return because throwing exceptions
 					// in a multi-threaded setup results in forceful
@@ -605,7 +605,7 @@ private:
 					{
 						error = true;
 #ifndef _MSC_VER
-						i     = end;
+						i = end;
 #endif
 					}
 				}
@@ -625,8 +625,8 @@ private:
 					if (tId == 0)
 						LOG_INFO << "\r" << i + 1 << " / " << pTree->cnt << " Done" << std::flush;
 #else
-				if (tId == 0)
-					LOG_INFO << "\r" << pTree->cnt - i << " / " << pTree->cnt << " Done" << std::flush;
+					if (tId == 0)
+						LOG_INFO << "\r" << pTree->cnt - i << " / " << pTree->cnt << " Done" << std::flush;
 #endif
 #ifdef USE_MPI
 				}
@@ -637,7 +637,7 @@ private:
 		if (error) throw(FPGException("Ctrl-C Interrupt"));
 
 		for (int32_t i = 0; i < m_objs; i++)
-			if (ppDst[i]) delete (ppDst[i]);
+			if (ppDst[i]) delete ppDst[i];
 
 		delete[] ppDst;
 
@@ -704,10 +704,10 @@ private:
 
 	bool growth(const int32_t& tId, const int64_t& pId, FPTree* pTree)
 	{
-		FPTree* pDst  = nullptr;
-		FPHead* pH    = nullptr;
+		FPTree* pDst = nullptr;
+		FPHead* pH = nullptr;
 		FPNode* pNode = nullptr;
-		FPNode* pAnc  = nullptr;
+		FPNode* pAnc = nullptr;
 
 #ifdef WITH_SIG_TERM
 		if (sigAborted()) return false; //throw(FPGException("CTRL-C abort"));
@@ -715,9 +715,9 @@ private:
 
 		if (pTree->cnt > 1)
 		{
-			pDst              = new FPTree(m_tree->cnt - 1, m_tree->pIdx2Id, m_tree->pId2Item, &m_pThreadMem[tId]);
-			pDst->root.id     = IDX_MAX;
-			pDst->root.succ   = nullptr;
+			pDst = new FPTree(m_tree->cnt - 1, m_tree->pIdx2Id, m_tree->pId2Item, &m_pThreadMem[tId]);
+			pDst->root.id = IDX_MAX;
+			pDst->root.succ = nullptr;
 			pDst->root.parent = nullptr;
 		}
 
@@ -737,7 +737,7 @@ private:
 			}
 			else if (pDst)
 			{
-				if (project(tId, pDst, pTree, i))
+				if (project(tId, pDst, pTree, static_cast<std::size_t>(i)))
 				{
 					if (!growth(tId, pId, pDst))
 						return false;
@@ -748,7 +748,7 @@ private:
 		}
 
 		pTree->pMemory->PopState();
-		if (pDst) delete (pDst);
+		if (pDst) delete pDst;
 		return true;
 	}
 
@@ -808,7 +808,7 @@ private:
 	{
 		DISABLE_COPY_ASSIGN_MOVE(DataObjs)
 
-		Support* m_pSubs;
+			Support* m_pSubs;
 		std::size_t* m_pMap;
 
 		bool* m_pAdded;
@@ -840,8 +840,7 @@ private:
 			,
 			m_pCMem(nullptr)
 #endif
-		{
-		}
+		{}
 
 		~DataObjs()
 		{
@@ -861,13 +860,13 @@ private:
 		void Init(const std::size_t& elements)
 		{
 			m_pSubs = new Support[elements]();
-			m_pMap  = new std::size_t[elements]();
+			m_pMap = new std::size_t[elements]();
 
-			m_pAdded        = new bool[elements]();
+			m_pAdded = new bool[elements]();
 			m_pAddedPerfExt = new bool[elements]();
-			m_pLastID       = new ItemID[elements]();
-			m_pPerfExtIDs   = new ItemID[elements]();
-			m_pSupports     = new Support[elements]();
+			m_pLastID = new ItemID[elements]();
+			m_pPerfExtIDs = new ItemID[elements]();
+			m_pSupports = new Support[elements]();
 
 			m_pPatternBase = new PatternType[elements]();
 #ifndef ALL_PATTERN
@@ -903,7 +902,7 @@ void PostProcessing(const Pattern* pPattern, const std::size_t& maxC, const std:
 			if (sigAborted()) throw(FPGException("CTRL-C abort"));
 #endif
 			const PatternType* pStart = pPtr + Pattern::DATA_IDX;
-			const PatternType* pEnd   = pStart + pPtr[Pattern::LEN_IDX];
+			const PatternType* pEnd = pStart + pPtr[Pattern::LEN_IDX];
 			if (pPtr[Pattern::LEN_IDX] <= maxC)
 			{
 				if (std::any_of(pStart, pEnd, [&winLen, &pId2Item](const PatternType& i) { return ((pId2Item[i & 0xFFFFFFFF]) % winLen) == 0; }))
@@ -931,7 +930,7 @@ void PostProcessing(const Pattern* pPattern, const std::size_t& maxC, const std:
 void ClosedDetection(const FPGrowth& fp, const Pattern* pPattern, std::vector<PatternPair>& closed)
 {
 	const std::size_t itemCount = fp.GetItemCount();
-	const ItemC* pId2Item       = fp.GetId2Item();
+	const ItemC* pId2Item = fp.GetId2Item();
 	if (fp.GetPatternCount() == 0)
 	{
 		LOG_INFO_EVAL << "No itemsets provided, skipping Closed Detection" << std::endl;
@@ -945,13 +944,13 @@ void ClosedDetection(const FPGrowth& fp, const Pattern* pPattern, std::vector<Pa
 	timer.Start();
 
 	ClosedDetect cd(itemCount);
-	PatternType* pM     = new PatternType[itemCount];
+	PatternType* pM = new PatternType[itemCount];
 	PatternType* pPfExt = new PatternType[itemCount];
 	PatternType* pItems = new PatternType[itemCount];
-	bool* pAdded        = new bool[itemCount]();
+	bool* pAdded = new bool[itemCount]();
 
 	ItemID base = ITEM_ID_MAX;
-	int32_t k   = 0;
+	int32_t k = 0;
 
 	for (int64_t patI = itemCount - 1; patI > -1; patI--)
 	{
@@ -961,7 +960,7 @@ void ClosedDetection(const FPGrowth& fp, const Pattern* pPattern, std::vector<Pa
 			if (sigAborted()) throw(FPGException("CTRL-C abort"));
 #endif
 			int32_t pfExtCnt = 0;
-			bool skip        = false;
+			bool skip = false;
 
 			if (base != pp[Pattern::DATA_IDX])
 			{
@@ -996,15 +995,15 @@ void ClosedDetection(const FPGrowth& fp, const Pattern* pPattern, std::vector<Pa
 				if (sigAborted()) throw(FPGException("CTRL-C abort"));
 #endif
 				PatternType i = pp[Pattern::DATA_IDX + p];
-				Support supp  = i >> 32;
-				ItemID item   = i & 0xFFFFFFFF;
+				Support supp = i >> 32;
+				ItemID item = i & 0xFFFFFFFF;
 				if (supp == 0)
 					pPfExt[pfExtCnt++] = item;
 				else if (!pAdded[item])
 				{
 					if (cd.Add2(item, supp) > 0)
 					{
-						pItems[k++]  = item;
+						pItems[k++] = item;
 						pAdded[item] = true;
 					}
 					else
@@ -1052,7 +1051,7 @@ void ClosedDetection(const FPGrowth& fp, const Pattern* pPattern, std::vector<Pa
 
 #ifdef DEBUG
 					LOG_DEBUG << std::endl
-							  << std::endl;
+						<< std::endl;
 #endif
 				}
 

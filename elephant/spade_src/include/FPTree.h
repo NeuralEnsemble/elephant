@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: FPTree.h
  *  Copyright (c) 2020 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,20 +21,23 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
 
+#include "HeapAlloc.h"
 #include "Types.h"
 #include "Logger.h"
 #include "Utils.h"
 #include "Memory.h"
 #include "FrequencyRef.h"
 
-#include <iostream>
 
 struct FPHead
+#ifdef _WIN32
+ : public HeapAlloc
+#endif
 {
 	ItemID item;
 	Support support;
@@ -43,6 +46,9 @@ struct FPHead
 };
 
 struct FPTree
+#ifdef _WIN32
+ : public HeapAlloc
+#endif
 {
 	DISABLE_COPY_ASSIGN_MOVE(FPTree)
 
@@ -70,8 +76,7 @@ struct FPTree
 		pId2Item(pId2Item_g),
 		pMemory(pMem)
 	{
-		// Using malloc here because new calls the constructor for each object which costs a shit ton of time
-		pHeads = reinterpret_cast<FPHead*>(malloc(cnt * sizeof(FPHead)));
+		pHeads = new FPHead[cnt];
 	}
 
 	FPTree(const std::vector<RefPair>& F, uint32_t* pIdx2Id_g, ItemC* pId2Item_g, FPNMemory* pMem) :
@@ -82,8 +87,7 @@ struct FPTree
 		pId2Item(pId2Item_g),
 		pMemory(pMem)
 	{
-		// Using malloc here because new calls the constructor for each object which costs a shit ton of time
-		pHeads = reinterpret_cast<FPHead*>(malloc(cnt * sizeof(FPHead)));
+		pHeads = new FPHead[cnt];
 		uint32_t id = 0;
 		for (std::size_t idx = 0; idx < F.size(); idx++)
 		{
@@ -100,7 +104,7 @@ struct FPTree
 
 	~FPTree()
 	{
-		free(pHeads);
+		delete[] pHeads;
 	}
 
 	void Add(const TransactionC& trans, const Support& support)

@@ -77,7 +77,7 @@
 
 #define MAJOR_VERSION 0
 #define MINOR_VERSION 4
-#define PATCH_VERSION 4
+#define PATCH_VERSION 7
 
 #define VERSION              \
 	TO_STRING(MAJOR_VERSION) \
@@ -89,6 +89,26 @@
 #define GET_PID getpid()
 #endif
 
+#if defined(_WIN32)
+#define OS_STR "Windows"
+#elif defined(__linux__)
+#define OS_STR "Linux"
+#elif defined(__APPLE__)
+#define OS_STR "Mac OS X"
+#else
+#define OS_STR "UNKNOWN OS"
+#endif
+
+#ifndef COMPILER_STR
+#define COMPILER_STR "UNKNOWN"
+#endif
+
+// CMake defines ARCH_X86 if it detects a 32-bit compiler
+#ifdef ARCH_X86
+#define ARCH_STR "x86"
+#else
+#define ARCH_STR "x64"
+#endif
 
 DEFINE_EXCEPTION(ModuleException)
 
@@ -203,7 +223,11 @@ PyObject* fpgrowth(PyObject* self, PyObject* args, PyObject* kwds)
 
 	SetVerbosity(verbosity);
 
-	LOG_INFO << " =========  FPGrowth C++ Module (v" VERSION ") - Start - PID: " <<	GET_PID << "  ========= " << std::endl;
+	LOG_INFO << " =========  FPGrowth C++ Module (v" VERSION ") - Start" << "  ========= " << std::endl;
+	LOG_INFO << " - OS      : " << OS_STR << std::endl
+			 << " - ARCH    : " << ARCH_STR << std::endl
+			 << " - Compiler: " << COMPILER_STR << std::endl
+	         << " - PID     : " << GET_PID << std::endl;
 
 	sigInstall(); // Install signal handler to catch CTRL-C interrupts
 
@@ -314,7 +338,7 @@ PyObject* fpgrowth(PyObject* self, PyObject* args, PyObject* kwds)
 					EXIT_INTERRUPT();
 #endif
 
-				pItem = hashMap[item];
+				pItem = hashMap[static_cast<ItemC>(item)];
 				Py_INCREF(pItem);
 				PyTuple_SET_ITEM(pyPattern, i, pItem);
 			}

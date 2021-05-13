@@ -87,7 +87,7 @@ public:
 		}
 		iterator& operator++()
 		{
-			m_idx += m_pItr[LEN_IDX] + OFFSET;
+			m_idx += static_cast<std::size_t>(m_pItr[LEN_IDX] + OFFSET);
 
 			if ((m_idx >= BLOCK_SIZE) || (m_mem[m_block][m_idx] == 0 && (m_block + 1) < m_maxBlocks))
 			{
@@ -151,7 +151,7 @@ public:
 		return Iterator(m_mem, m_block, m_pEndPtr);
 	}
 
-	void AddPattern(const PatternType& patternLength, const Support& support, PatternType* pData)
+	void AddPattern(const std::size_t& patternLength, const Support& support, PatternType* pData)
 	{
 		PatternType* pPattern = getNextPattern(patternLength);
 
@@ -170,7 +170,7 @@ public:
 		m_patternCnt++;
 	}
 
-	void AddPattern(const PatternType& patternLength, const Support& support, PatternType* pData, const ItemC* pId2Item, const Support& maxSupport, const std::size_t& minNeuronCount, const ItemC& winLen)
+	void AddPattern(const std::size_t& patternLength, const Support& support, PatternType* pData, const ItemC* pId2Item, const Support& maxSupport, const std::size_t& minNeuronCount, const ItemC& winLen)
 	{
 		const PatternType* pStart = pData;
 		const PatternType* pEnd   = pData + patternLength;
@@ -200,7 +200,7 @@ public:
 	}
 
 private:
-	PatternType* getNextPattern(const PatternType& length)
+	PatternType* getNextPattern(const std::size_t& length)
 	{
 		if (m_nextIdx + (length + OFFSET) >= BLOCK_SIZE)
 			allocNewPatternBlock();
