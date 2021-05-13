@@ -17,7 +17,7 @@ matrix:
         - conda install -c conda-forge pyopencl oclgrind clang=9.0.1
         - pip install -r requirements/requirements-extras.txt
         - pip install mpi4py
-      script: mpiexec -n 1 python -m mpi4py.futures -m nose --with-coverage --cover-package=elephant
+      script: mpiexec -n 1 python -m mpi4py.futures -m pytest --cov=elephant
       after_success: coveralls || echo "coveralls failed"
 
     - name: "conda 3.7"
@@ -64,11 +64,11 @@ install:
 
   - pip -V
   - pip install -r requirements/requirements-tests.txt
-  - pip install coverage coveralls
+  - pip install pytest-cov coveralls
   - python setup.py install
   - python -c "from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list
   - python --version
 
 script:
-  nosetests --with-coverage --cover-package=elephant
+  pytest --cov=elephant
