@@ -24,13 +24,14 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 
 Notes
 -----
-This modules relies on the implementation of the fp-growth algorithm contained
-in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
-and should be available in the spade_src folder (elephant/spade_src/).
-If the fim.so module is not present in the correct location or cannot be
-imported (only available for linux OS) SPADE will make use of a python
-implementation of the fast fca algorithm contained in
-`elephant/spade_src/fast_fca.py`, which is about 10 times slower.
+This modules relies on the C++ implementation of the fp-growth algorithm developed by
+Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces the
+more generic implementation fim.so which can be found here (http://www.borgelt.net/pyfim.html)
+was used in previous versions of ELephant.
+If the fim.so module is not present in a precompiled format (currently Linux/Windows) or cannot
+be compiled on a given system during install, SPADE will make use of a pure Python implementation
+of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
+significantly slower.
 
 Examples
 --------
@@ -86,7 +87,7 @@ References
    Significance evaluation of spatio-temporal patterns of various temporal
    extents. Biosystems, 185, 104022.
 
-:copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2021 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
