@@ -2,7 +2,7 @@
 """
 GPFA core functionality.
 
-:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2020 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -480,7 +480,6 @@ def learn_gp_params(seqs_latent, params, verbose=False):
     if params['notes']['learnGPNoise']:
         raise ValueError("learnGPNoise is not supported.")
     param_name = 'gamma'
-    fname = 'gpfa_util.grad_betgam'
 
     param_init = params[param_name]
     param_opt = {param_name: np.empty_like(param_init)}
@@ -492,7 +491,7 @@ def learn_gp_params(seqs_latent, params, verbose=False):
     for i in range(x_dim):
         const = {'eps': params['eps'][i]}
         initp = np.log(param_init[i])
-        res_opt = optimize.minimize(eval(fname), initp,
+        res_opt = optimize.minimize(gpfa_util.grad_betgam, initp,
                                     args=(precomp[i], const),
                                     method='L-BFGS-B', jac=True)
         param_opt['gamma'][i] = np.exp(res_opt.x)

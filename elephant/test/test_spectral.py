@@ -2,7 +2,7 @@
 """
 Unit tests for the spectral module.
 
-:copyright: Copyright 2015 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -322,11 +322,5 @@ class WelchCohereTestCase(unittest.TestCase):
             np.all(phase_lag_neo_1dim[:, 0] == phase_lag_neo[:, 0]))
 
 
-def suite():
-    suite = unittest.makeSuite(WelchPSDTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

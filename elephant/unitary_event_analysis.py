@@ -37,17 +37,15 @@ Run tutorial interactively:
             ?filepath=doc/tutorials/unitary_event_analysis.ipynb
 
 
-.. current_module elephant.unitary_event_analysis
-
 Functions overview
 ------------------
 
 .. autosummary::
-    :toctree: toctree/unitary_event_analysis/
+    :toctree: _toctree/unitary_event_analysis/
 
     jointJ_window_analysis
 
-:copyright: Copyright 2015-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -352,7 +350,8 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surrogates=1):
     for rz_idx, rz in enumerate(np.arange(n_surrogates)):
         # row-wise shuffling all elements of zero-one matrix
         mat_surr = np.copy(mat)
-        [np.random.shuffle(row) for row in mat_surr]
+        for row in mat_surr:
+            np.random.shuffle(row)
         N_exp_array[rz_idx] = n_emp_mat(mat_surr, pattern_hash)[0][0]
     return N_exp_array
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 iCSD testing suite
-'''
+"""
 
 import os
 import numpy as np
@@ -32,7 +32,7 @@ for symbol, prefix, definition, u_symbol in zip(
 def potential_of_plane(z_j, z_i=0. * pq.m,
                        C_i=1 * pq.A / pq.m**2,
                        sigma=0.3 * pq.S / pq.m):
-    '''
+    """
     Return potential of infinite horizontal plane with constant
     current source density at a vertical offset z_j.
 
@@ -52,7 +52,7 @@ def potential_of_plane(z_j, z_i=0. * pq.m,
     The potential is 0 at the plane, as the potential goes to infinity for
     large distances
 
-    '''
+    """
     try:
         assert(z_j.units == z_i.units)
     except AssertionError as ae:
@@ -68,7 +68,7 @@ def potential_of_disk(z_j,
                       C_i=1 * pq.A / pq.m**2,
                       R_i=1E-3 * pq.m,
                       sigma=0.3 * pq.S / pq.m):
-    '''
+    """
     Return potential of circular disk in horizontal plane with constant
     current source density at a vertical offset z_j.
 
@@ -84,7 +84,7 @@ def potential_of_disk(z_j,
         radius of disk source
     sigma : float*pq.S/pq.m
         conductivity of medium in units of S/m
-    '''
+    """
     try:
         assert(z_j.units == z_i.units == R_i.units)
     except AssertionError as ae:
@@ -103,7 +103,7 @@ def potential_of_cylinder(z_j,
                           h_i=0.1 * pq.m,
                           sigma=0.3 * pq.S / pq.m,
                           ):
-    '''
+    """
     Return potential of cylinder in horizontal plane with constant homogeneous
     current source density at a vertical offset z_j.
 
@@ -136,7 +136,7 @@ def potential_of_cylinder(z_j,
     ... abs(z-z_j)), (z, z_i-h/2, z_i+h/2))
 
 
-    '''
+    """
     try:
         assert(z_j.units == z_i.units == R_i.units == h_i.units)
     except AssertionError as ae:
@@ -165,10 +165,10 @@ def get_lfp_of_planes(z_j=np.arange(21) * 1E-4 * pq.m,
                       C_i=np.array([-.5, 1., -.5]) * pq.A / pq.m**2,
                       sigma=0.3 * pq.S / pq.m,
                       plot=True):
-    '''
+    """
     Compute the lfp of spatially separated planes with given current source
     density
-    '''
+    """
     phi_j = np.zeros(z_j.size) * pq.V
     for i, (zi, Ci) in enumerate(zip(z_i, C_i)):
         for j, zj in enumerate(z_j):
@@ -204,10 +204,10 @@ def get_lfp_of_disks(z_j=np.arange(21) * 1E-4 * pq.m,
                      R_i=np.array([1, 1, 1]) * 1E-3 * pq.m,
                      sigma=0.3 * pq.S / pq.m,
                      plot=True):
-    '''
+    """
     Compute the lfp of spatially separated disks with a given
     current source density
-    '''
+    """
     phi_j = np.zeros(z_j.size) * pq.V
     for i, (zi, Ci, Ri) in enumerate(zip(z_i, C_i, R_i)):
         for j, zj in enumerate(z_j):
@@ -244,10 +244,10 @@ def get_lfp_of_cylinders(z_j=np.arange(21) * 1E-4 * pq.m,
                          h_i=np.array([1, 1, 1]) * 1E-4 * pq.m,
                          sigma=0.3 * pq.S / pq.m,
                          plot=True):
-    '''
+    """
     Compute the lfp of spatially separated disks with a given
     current source density
-    '''
+    """
     phi_j = np.zeros(z_j.size) * pq.V
     for i, (zi, Ci, Ri, hi) in enumerate(zip(z_i, C_i, R_i, h_i)):
         for j, zj in enumerate(z_j):
@@ -279,13 +279,13 @@ def get_lfp_of_cylinders(z_j=np.arange(21) * 1E-4 * pq.m,
 
 
 class TestICSD(unittest.TestCase):
-    '''
+    """
     Set of test functions for each CSD estimation method comparing
     estimate to LFPs calculated with known ground truth CSD
-    '''
+    """
 
     def test_StandardCSD_00(self):
-        '''test using standard SI units'''
+        """test using standard SI units"""
         # set some parameters for ground truth csd and csd estimates.
 
         # contact point coordinates
@@ -320,7 +320,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StandardCSD_01(self):
-        '''test using non-standard SI units 1'''
+        """test using non-standard SI units 1"""
         # set some parameters for ground truth csd and csd estimates.
 
         # contact point coordinates
@@ -355,7 +355,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StandardCSD_02(self):
-        '''test using non-standard SI units 2'''
+        """test using non-standard SI units 2"""
         # set some parameters for ground truth csd and csd estimates.
 
         # contact point coordinates
@@ -390,7 +390,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StandardCSD_03(self):
-        '''test using non-standard SI units 3'''
+        """test using non-standard SI units 3"""
         # set some parameters for ground truth csd and csd estimates.
 
         # contact point coordinates
@@ -425,7 +425,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_DeltaiCSD_00(self):
-        '''test using standard SI units'''
+        """test using standard SI units"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -469,7 +469,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_DeltaiCSD_01(self):
-        '''test using non-standard SI units 1'''
+        """test using non-standard SI units 1"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -513,7 +513,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_DeltaiCSD_02(self):
-        '''test using non-standard SI units 2'''
+        """test using non-standard SI units 2"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -557,7 +557,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_DeltaiCSD_03(self):
-        '''test using non-standard SI units 3'''
+        """test using non-standard SI units 3"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -602,7 +602,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_DeltaiCSD_04(self):
-        '''test non-continous z_j array'''
+        """test non-continous z_j array"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -647,7 +647,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i[inds], csd)
 
     def test_StepiCSD_units_00(self):
-        '''test using standard SI units'''
+        """test using standard SI units"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -696,7 +696,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StepiCSD_01(self):
-        '''test using non-standard SI units 1'''
+        """test using non-standard SI units 1"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -745,7 +745,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StepiCSD_02(self):
-        '''test using non-standard SI units 2'''
+        """test using non-standard SI units 2"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -794,7 +794,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StepiCSD_03(self):
-        '''test using non-standard SI units 3'''
+        """test using non-standard SI units 3"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -843,7 +843,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd)
 
     def test_StepiCSD_units_04(self):
-        '''test non-continous z_j array'''
+        """test non-continous z_j array"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -892,7 +892,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i[inds], csd)
 
     def test_SplineiCSD_00(self):
-        '''test using standard SI units'''
+        """test using standard SI units"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -954,7 +954,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
     def test_SplineiCSD_01(self):
-        '''test using standard SI units, deep electrode coordinates'''
+        """test using standard SI units, deep electrode coordinates"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -1016,7 +1016,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
     def test_SplineiCSD_02(self):
-        '''test using non-standard SI units'''
+        """test using non-standard SI units"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -1078,7 +1078,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
     def test_SplineiCSD_03(self):
-        '''test using standard SI units'''
+        """test using standard SI units"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -1140,7 +1140,7 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
     def test_SplineiCSD_04(self):
-        '''test using standard SI units'''
+        """test using standard SI units"""
         # set some parameters for ground truth csd and csd estimates., e.g.,
         # we will use same source diameter as in ground truth
 
@@ -1203,7 +1203,7 @@ class TestICSD(unittest.TestCase):
 
 
 # def suite(verbosity=2):
-#    '''
+#    """
 #    Run unittests for the CSD toolbox
 #
 #
@@ -1212,7 +1212,7 @@ class TestICSD(unittest.TestCase):
 #    verbosity : int
 #        verbosity level
 #
-#    '''
+#    """
 #    suite = unittest.TestLoader().loadTestsFromTestCase(TestICSD)
 #    unittest.TextTestRunner(verbosity=verbosity).run(suite)
 #

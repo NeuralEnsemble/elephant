@@ -7,13 +7,13 @@ Synchrony Measures
 ------------------
 
 .. autosummary::
-    :toctree: toctree/spike_train_synchrony/
+    :toctree: _toctree/spike_train_synchrony/
 
     spike_contrast
     Synchrotool
 
 
-:copyright: Copyright 2015-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals

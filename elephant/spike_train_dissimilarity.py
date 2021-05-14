@@ -11,12 +11,12 @@ mathematical sense and time-scale dependent.
 
 
 .. autosummary::
-    :toctree: toctree/spike_train_dissimilarity
+    :toctree: _toctree/spike_train_dissimilarity
 
     victor_purpura_distance
     van_rossum_distance
 
-:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -78,14 +78,14 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains to calculate pairwise distance.
-    cost_factor: pq.Quantity
+    cost_factor : pq.Quantity, optional
         A cost factor :math:`q` for spike shifts as inverse time scalar.
         Extreme values :math:`q=0` meaning no cost for any shift of
         spikes, or :math: `q=np.inf` meaning infinite cost for any
         spike shift and hence exclusion of spike shifts, are explicitly
         allowed. If `kernel` is not `None`, :math:`q` will be ignored.
         Default: 1.0 * pq.Hz
-    kernel: kernels.Kernel
+    kernel : elephant.kernels.Kernel or None, optional
         Kernel to use in the calculation of the distance. If `kernel` is
         `None`, an unnormalized triangular kernel with standard deviation
         of :math:'2.0/(q * sqrt(6.0))' corresponding to a half width of
@@ -94,12 +94,12 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         the suitable width. The choice of another kernel is enabled, but
         this leaves the framework of Victor-Purpura distances.
         Default: None
-    sort: bool
+    sort : bool, optional
         Spike trains with sorted spike times will be needed for the
         calculation. You can set `sort` to `False` if you know that your
         spike trains are already sorted to decrease calculation time.
         Default: True
-    algorithm: string
+    algorithm : str, optional
         Allowed values are 'fast' or 'intuitive', each selecting an
         algorithm with which to calculate the pairwise Victor-Purpura distance.
         Typically 'fast' should be used, because while giving always the
@@ -138,12 +138,11 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         if cost_factor == 0.0:
             num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return np.absolute(num_spikes.T - num_spikes)
-        elif cost_factor == np.inf:
+        if cost_factor == np.inf:
             num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return num_spikes.T + num_spikes
-        else:
-            kernel = kernels.TriangularKernel(
-                sigma=2.0 / (np.sqrt(6.0) * cost_factor))
+        kernel = kernels.TriangularKernel(
+            sigma=2.0 / (np.sqrt(6.0) * cost_factor))
 
     if sort:
         spiketrains = [np.sort(st.view(type=pq.Quantity))
@@ -152,16 +151,13 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
     def compute(i, j):
         if i == j:
             return 0.0
-        else:
-            if algorithm == 'fast':
-                return _victor_purpura_dist_for_st_pair_fast(
-                    spiketrains[i], spiketrains[j], kernel)
-            elif algorithm == 'intuitive':
-                return _victor_purpura_dist_for_st_pair_intuitive(
-                    spiketrains[i], spiketrains[j], cost_factor)
-            else:
-                raise NameError("algorithm must be either 'fast' "
-                                "or 'intuitive'.")
+        if algorithm == 'fast':
+            return _victor_purpura_dist_for_st_pair_fast(
+                spiketrains[i], spiketrains[j], kernel)
+        if algorithm == 'intuitive':
+            return _victor_purpura_dist_for_st_pair_intuitive(
+                spiketrains[i], spiketrains[j], cost_factor)
+        raise NameError("The algorithm must be either 'fast' or 'intuitive'.")
 
     return _create_matrix_from_indexed_function(
         (len(spiketrains), len(spiketrains)), compute, kernel.is_symmetric())
@@ -311,14 +307,14 @@ def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
 @deprecated_alias(trains='spiketrains', tau='time_constant')
 def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     """
-    Calculates the van Rossum distance.
+    Calculates the van Rossum distance :cite:`dissimilarity-Rossum2001_751`,
+    defined as Euclidean distance of the spike trains convolved with a
+    causal decaying exponential smoothing filter.
 
-    It is defined as Euclidean distance of the spike trains convolved with a
-    causal decaying exponential smoothing filter. A detailed description can
-    be found in [1]_. This implementation is normalized to yield
-    a distance of 1.0 for the distance between an empty spike train and a
-    spike train with a single spike. Divide the result by sqrt(2.0) to get
-    the normalization used in the cited paper.
+    The implementation is normalized to yield a distance of 1.0 for the
+    distance between an empty spike train and a spike train with a single
+    spike. Divide the result by sqrt(2.0) to get the normalization used in the
+    paper.
 
     Given :math:`N` spike trains with :math:`n` spikes on average the run-time
     complexity of this function is :math:`O(N^2 n)`.
@@ -330,9 +326,9 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     time_constant : Quantity scalar
         Decay rate of the exponential function as time scalar. Controls for
         which time scale the metric will be sensitive. Denoted as :math:`t_c`
-        in [1]_. This parameter will be ignored if `kernel` is not `None`.
-        May also be :const:`scipy.inf` which will lead to only measuring
-        differences in spike count.
+        in :cite:`dissimilarity-Rossum2001_751`. This parameter will be
+        ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
+        which will lead to only measuring differences in spike count.
         Default: 1.0 * pq.s
     sort : bool
         Spike trains with sorted spike times might be needed for the
@@ -345,11 +341,6 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     np.ndarray
         2-D Matrix containing the van Rossum distances for all pairs of
         spike trains.
-
-    References
-    ----------
-    [1] Rossum, M. V. (2001). A novel spike distance. Neural computation,
-        13(4), 751-763.
 
     Examples
     --------
@@ -373,7 +364,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     if time_constant == 0:
         spike_counts = [st.size for st in spiketrains]
         return np.sqrt(spike_counts + np.atleast_2d(spike_counts).T)
-    elif time_constant == np.inf:
+    if time_constant == np.inf:
         spike_counts = [st.size for st in spiketrains]
         return np.absolute(spike_counts - np.atleast_2d(spike_counts).T)
 

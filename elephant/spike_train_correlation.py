@@ -3,7 +3,7 @@
 This modules provides functions to calculate correlations between spike trains.
 
 .. autosummary::
-    :toctree: toctree/spike_train_correlation
+    :toctree: _toctree/spike_train_correlation
 
     covariance
     correlation_coefficient
@@ -11,7 +11,7 @@ This modules provides functions to calculate correlations between spike trains.
     spike_time_tiling_coefficient
     spike_train_timescale
 
-:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -24,6 +24,7 @@ import quantities as pq
 import scipy.signal
 from scipy import integrate
 
+from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias
 
 __all__ = [
@@ -148,8 +149,8 @@ class _CrossCorrHist(object):
                                  right_edge + i, side='right')
             timediff = st2_bin_idx_unique[il:ir] - i
             assert ((timediff >= left_edge) & (
-                timediff <= right_edge)).all(), 'Not all the '
-            'entries of cch lie in the window'
+                timediff <= right_edge)).all(), \
+                'Not all the entries of cch lie in the window'
             cross_corr[timediff - left_edge] += (
                 st1_spmat[idx] * st2_spmat[il:ir])
             st2_bin_idx_unique = st2_bin_idx_unique[il:]
@@ -308,12 +309,12 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         If True, the spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
-        Default: False.
+        Default: False
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
         `np.cov()`. Otherwise, use memory efficient implementation.
         See Notes [2].
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -345,19 +346,22 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     Examples
     --------
-    Generate two Poisson spike trains
+    Covariance matrix of two Poisson spike train processes.
 
     >>> import neo
-    >>> from quantities import s, Hz, ms
+    >>> import numpy as np
+    >>> import quantities as pq
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> st1 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*ms))
-    >>> print(cov_matrix[0, 1])
-    -0.001668334167083546
+    >>> from elephant.spike_train_correlation import covariance
+
+    >>> np.random.seed(1)
+    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
+    >>> cov_matrix
+    array([[ 0.05432316, -0.00152276],
+       [-0.00152276,  0.04917234]])
 
     """
     if binary:
@@ -410,12 +414,12 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
         If True, two spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
-        Default: False.
+        Default: False
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
         `np.corrcoef()`. Otherwise, use memory efficient implementation.
         See Notes[2]
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -448,21 +452,23 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     Examples
     --------
-    Generate two Poisson spike trains
+    Correlation coefficient of two Poisson spike train processes.
 
     >>> import neo
-    >>> from quantities import s, Hz, ms
+    >>> import numpy as np
+    >>> import quantities as pq
     >>> from elephant.spike_train_generation import homogeneous_poisson_process
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> st1 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> st2 = homogeneous_poisson_process(
-    ...       rate=10.0*Hz, t_start=0.0*s, t_stop=10.0*s)
-    >>> cc_matrix = correlation_coefficient(BinnedSpikeTrain([st1, st2],
-    ... bin_size=5*ms))
-    >>> print(cc_matrix[0, 1])
-    0.015477320222075359
+    >>> from elephant.spike_train_correlation import correlation_coefficient
 
+    >>> np.random.seed(1)
+    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
+    ...     bin_size=5*pq.ms))
+    >>> corrcoef
+    array([[ 1.        , -0.02946313],
+           [-0.02946313,  1.        ]])
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -554,12 +560,11 @@ def cross_correlation_histogram(
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
 
-
     Parameters
     ----------
-    binned_spiketrain_i, binned_spiketrain_j :
-        elephant.conversion.BinnedSpikeTrain
-        Binned spike trains of lengths N and M to cross-correlate. The input
+    binned_spiketrain_i, binned_spiketrain_j : BinnedSpikeTrain
+        Binned spike trains of lengths N and M to cross-correlate - the output
+        of :class:`elephant.conversion.BinnedSpikeTrain`. The input
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
         ‘full’: This returns the cross-correlation at each point of overlap,
@@ -574,7 +579,7 @@ def cross_correlation_histogram(
               The entries of window are two integers representing the left and
               right extremes (expressed as number of bins) where the
               cross-correlation is computed.
-        Default: 'full'.
+        Default: 'full'
     border_correction : bool, optional
         whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
@@ -584,11 +589,11 @@ def cross_correlation_histogram(
                             (H+1)/(H+1-|b|),
 
         which linearly corrects for loss of bins at the edges.
-        Default: False.
+        Default: False
     binary : bool, optional
         If True, spikes falling in the same bin are counted as a single spike;
         otherwise they are counted as different spikes.
-        Default: False.
+        Default: False
     kernel : np.ndarray or None, optional
         A one dimensional array containing a smoothing kernel applied
         to the resulting CCH. The length N of the kernel indicates the
@@ -600,7 +605,7 @@ def cross_correlation_histogram(
           * hanning: `numpy.hanning(N)`
           * bartlett: `numpy.bartlett(N)`
         If None, the CCH is not smoothed.
-        Default: None.
+        Default: None
     method : {'speed', 'memory'}, optional
         Defines the algorithm to use. "speed" uses `numpy.correlate` to
         calculate the correlation between two binned spike trains using a
@@ -608,12 +613,12 @@ def cross_correlation_histogram(
         fastest realization. In contrast, the option "memory" uses an own
         implementation to calculate the correlation based on sparse matrices,
         which is more memory efficient but slower than the "speed" option.
-        Default: "speed".
+        Default: "speed"
     cross_correlation_coefficient : bool, optional
         If True, a normalization is applied to the CCH to obtain the
         cross-correlation  coefficient function ranging from -1 to 1 according
-        to Equation (5.10) in [1]_. See Notes.
-        Default: False.
+        to Equation (5.10) in :cite:`correlation-Eggermont2010_77`. See Notes.
+        Default: False
 
     Returns
     -------
@@ -647,45 +652,44 @@ def cross_correlation_histogram(
 
     Notes
     -----
-    1. The Eq. (5.10) in [1]_ is valid for binned spike trains with at most one
-       spike per bin. For a general case, refer to the implementation of
-       `_covariance_sparse()`.
+    1. The Eq. (5.10) in :cite:`correlation-Eggermont2010_77` is valid for
+       binned spike trains with at most one spike per bin. For a general case,
+       refer to the implementation of `_covariance_sparse()`.
     2. Alias: `cch`
-
-    References
-    ----------
-    .. [1] "Analysis of parallel spike trains", 2010, Gruen & Rotter, Vol 7.
 
     Examples
     --------
     Plot the cross-correlation histogram between two Poisson spike trains
 
     >>> import elephant
-    >>> import matplotlib.pyplot as plt
     >>> import quantities as pq
+    >>> import numpy as np
+    >>> from elephant.conversion import BinnedSpikeTrain
+    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_correlation import \
+    ... cross_correlation_histogram
 
-    >>> binned_spiketrain_i = elephant.conversion.BinnedSpikeTrain(
-    ...        elephant.spike_train_generation.homogeneous_poisson_process(
+    >>> np.random.seed(1)
+    >>> binned_spiketrain_i = BinnedSpikeTrain(
+    ...        homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
     ...        bin_size=5. * pq.ms)
-    >>> binned_spiketrain_j = elephant.conversion.BinnedSpikeTrain(
-    ...        elephant.spike_train_generation.homogeneous_poisson_process(
+    >>> binned_spiketrain_j = BinnedSpikeTrain(
+    ...        homogeneous_poisson_process(
     ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
     ...        bin_size=5. * pq.ms)
 
-    >>> cc_hist = \
-    ...    elephant.spike_train_correlation.cross_correlation_histogram(
-    ...        binned_spiketrain_i, binned_spiketrain_j, window=[-30,30],
+    >>> cc_hist, lags = cross_correlation_histogram(
+    ...        binned_spiketrain_i, binned_spiketrain_j, window=[-10, 10],
     ...        border_correction=False,
-    ...        binary=False, kernel=None, method='memory')
-
-    >>> plt.bar(left=cc_hist[0].times.magnitude,
-    ...         height=cc_hist[0][:, 0].magnitude,
-    ...         width=cc_hist[0].sampling_period.magnitude)
-    >>> plt.xlabel('time (' + str(cc_hist[0].times.units) + ')')
-    >>> plt.ylabel('cross-correlation histogram')
-    >>> plt.axis('tight')
-    >>> plt.show()
+    ...        binary=False, kernel=None)
+    >>> print(cc_hist.flatten())
+    [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
+      1.  2.  4.  2. -0.  3.  3.] dimensionless
+    >>> lags
+    array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
+         0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
+        10], dtype=int32)
 
     """
 
@@ -812,8 +816,8 @@ cch = cross_correlation_histogram
 @deprecated_alias(spiketrain_1='spiketrain_i', spiketrain_2='spiketrain_j')
 def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     """
-    Calculates the Spike Time Tiling Coefficient (STTC) as described in [1]_
-    following their implementation in C.
+    Calculates the Spike Time Tiling Coefficient (STTC) as described in
+    :cite:`correlation-Cutts2014_14288` following their implementation in C.
     The STTC is a pairwise measure of correlation between spike trains.
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
@@ -837,16 +841,16 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     `[-dt, +dt]` of a spike of the other train.
 
     This is a Python implementation compatible with the elephant library of
-    the original code by C. Cutts written in C and avaiable at:
-    (https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/
-    blob/master/spike_time_tiling_coefficient.c)
+    the original code by C. Cutts written in C and available `here
+    <https://github.com/CCutts/Detecting_pairwise_correlations_in_spike_trains/
+    blob/master/spike_time_tiling_coefficient.c>`_:
 
     Parameters
     ----------
-    spiketrain_i, spiketrain_j: neo.SpikeTrain
+    spiketrain_i, spiketrain_j : neo.SpikeTrain
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
-    dt: pq.Quantity.
+    dt : pq.Quantity.
         The synchronicity window is used for both: the quantification of the
         proportion of total recording time that lies `[-dt, +dt]` of each spike
         in each train and the proportion of spikes in `spiketrain_i` that lies
@@ -855,20 +859,28 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
 
     Returns
     -------
-    index:  float or np.nan
+    index : float or np.nan
         The spike time tiling coefficient (STTC). Returns np.nan if any spike
         train is empty.
-
-    References
-    ----------
-    .. [1] Cutts, C. S., & Eglen, S. J. (2014). Detecting Pairwise Correlations
-           in Spike Trains: An Objective Comparison of Methods and Application
-           to the Study of Retinal Waves. Journal of Neuroscience, 34(43),
-           14288–14303.
 
     Notes
     -----
     Alias: `sttc`
+
+    Examples
+    --------
+    >>> import neo
+    >>> import quantities as pq
+    >>> from elephant.spike_train_correlation import \
+    ...    spike_time_tiling_coefficient
+
+    >>> spiketrain1 = neo.SpikeTrain([1.3, 7.56, 15.87, 28.23, 30.9, 34.2,
+    ...     38.2, 43.2], units='ms', t_stop=50)
+    >>> spiketrain2 = neo.SpikeTrain([1.02, 2.71, 18.82, 28.46, 28.79, 43.6],
+    ...     units='ms', t_stop=50)
+    >>> spike_time_tiling_coefficient(spiketrain1, spiketrain2)
+    0.4958601655933762
+
     """
 
     def run_P(spiketrain_i, spiketrain_j):
@@ -974,9 +986,9 @@ sttc = spike_time_tiling_coefficient
 @deprecated_alias(binned_st='binned_spiketrain', tau_max='max_tau')
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
-    Calculates the auto-correlation time of a binned spike train.
-    Uses the definition of the auto-correlation time proposed in [[1]_,
-    Eq. (6)]:
+    Calculates the auto-correlation time of a binned spike train; uses the
+    definition of the auto-correlation time proposed in
+    :cite:`correlation-Wieland2015_040901` (Eq. 6):
 
     .. math::
         \tau_\mathrm{corr} = \int_{-\tau_\mathrm{max}}^{\tau_\mathrm{max}}\
@@ -1013,11 +1025,18 @@ def spike_train_timescale(binned_spiketrain, max_tau):
       defines the discretization of the integral :math:`d\tau`. If it is too
       big, the numerical approximation of the integral is inaccurate.
 
-    References
-    ----------
-    .. [1] Wieland, S., Bernardi, D., Schwalger, T., & Lindner, B. (2015).
-        Slow fluctuations in recurrent networks of spiking neurons.
-        Physical Review E, 92(4), 040901.
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.spike_train_correlation import spike_train_timescale
+    >>> from elephant.conversion import BinnedSpikeTrain
+    >>> spiketrain = neo.SpikeTrain([1, 5, 7, 8], units='ms', t_stop=10*pq.ms)
+    >>> bst = BinnedSpikeTrain(spiketrain, bin_size=1 * pq.ms)
+    >>> spike_train_timescale(bst, max_tau=5 * pq.ms)
+    array(14.11111111) * ms
+
     """
     if binned_spiketrain.get_num_of_spikes() < 2:
         warnings.warn("Spike train contains less than 2 spikes! "
