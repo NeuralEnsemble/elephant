@@ -272,8 +272,8 @@ class SpadeTestCase(unittest.TestCase):
              for lags in lags_msip_max_spikes],
             [True] * len(lags_msip_max_spikes))
 
-        # TODO: ask Florian if it is possible to fix this
-        # # test max_occ parameter
+        # TODO: does not work with new FIM module
+        # test max_occ parameter
         # output_msip_max_occ = spade.spade(
         #     self.msip,
         #     self.bin_size,
