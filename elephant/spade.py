@@ -26,12 +26,13 @@ Notes
 -----
 This modules relies on the C++ implementation of the fp-growth algorithm developed by
 Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces the
-more generic implementation fim.so which can be found here (http://www.borgelt.net/pyfim.html)
-was used in previous versions of ELephant.
-If the fim.so module is not present in a precompiled format (currently Linux/Windows) or cannot
+a more generic implementation of the algorithm by Christian Borgelt
+(http://www.borgelt.net/pyfim.html) that was used in previous versions of ELephant.
+If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
 be compiled on a given system during install, SPADE will make use of a pure Python implementation
 of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
 significantly slower.
+
 
 Examples
 --------
