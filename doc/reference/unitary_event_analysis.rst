@@ -1,6 +1,6 @@
-======================
-Unitary Event Analysis
-======================
+===========================
+Unitary Event Analysis (UE)
+===========================
 
 .. automodule:: elephant.unitary_event_analysis
 

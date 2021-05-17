@@ -8,11 +8,12 @@ addons:
 
 matrix:
   include:
-    - name: "pip 3.6 requirements-extras"
+    - name: "conda 3.6 extras,opencl"
       python: 3.6
-      env: DISTRIB="pip"
+      env: DISTRIB="conda"
       before_install: sudo apt install -y libopenmpi-dev openmpi-bin
       before_script:
+        - conda install -c conda-forge pyopencl oclgrind clang=9.0.1
         - pip install -r requirements/requirements-extras.txt
         - pip install mpi4py
       script: mpiexec -n 1 python -m mpi4py.futures -m pytest --cov=elephant --import-mode=importlib
@@ -55,7 +56,7 @@ install:
       sed -i '/mpi4py/d' requirements/environment.yml;
       conda env create -f requirements/environment.yml;
       conda activate elephant;
-      pip list;
+      conda list;
     else
       pip install -r requirements/requirements.txt;
     fi

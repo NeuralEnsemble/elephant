@@ -14,15 +14,15 @@ def main():  # pragma: no cover
     I = 4 * mvolt / ms
 
     # Standard Izhikevich neuron equations.
-    eqs = '''
+    eqs = """
   dv/dt = 0.04*v**2/(ms*mvolt) + (5/ms)*v + 140*mvolt/ms - u + I : volt
   du/dt = a*((b*v) - u) : volt/second
-  '''
+  """
 
-    reset = '''
+    reset = """
   v = c
   u += d
-  '''
+  """
 
     # Setup and run simulation.
     G = NeuronGroup(1, eqs, threshold='v>30*mvolt', reset='v = -70*mvolt')

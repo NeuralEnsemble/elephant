@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 py-iCSD toolbox!
 Translation of the core functionality of the CSDplotter MATLAB package
 to python.
@@ -31,7 +31,7 @@ Written by:
 - Espen.Hagen@umb.no, 2010,
 - e.hagen@fz-juelich.de, 2015-2016
 
-'''
+"""
 
 import numpy as np
 import scipy.integrate as si
@@ -40,9 +40,9 @@ import quantities as pq
 
 
 class CSD(object):
-    '''Base iCSD class'''
+    """Base iCSD class"""
     def __init__(self, lfp, f_type='gaussian', f_order=(3, 1)):
-        '''Initialize parent class iCSD
+        """Initialize parent class iCSD
 
         Parameters
         ----------
@@ -52,7 +52,7 @@ class CSD(object):
             type of spatial filter, must be a scipy.signal filter design method
         f_order : list
             settings for spatial filter, arg passed to  filter design function
-        '''
+        """
         self.name = 'CSD estimate parent class'
         self.lfp = lfp
         self.f_matrix = np.eye(lfp.shape[0]) * pq.m**3 / pq.S
@@ -60,7 +60,7 @@ class CSD(object):
         self.f_order = f_order
 
     def get_csd(self, ):
-        '''
+        """
         Perform the CSD estimate from the LFP and forward matrix F, i.e as
         CSD=F**-1*LFP
 
@@ -71,13 +71,13 @@ class CSD(object):
         -------
         csd : np.ndarray * quantity.Quantity
             Array with the csd estimate
-        '''
+        """
         csd = np.linalg.solve(self.f_matrix, self.lfp)
 
         return csd * (self.f_matrix.units**-1 * self.lfp.units).simplified
 
     def filter_csd(self, csd, filterfunction='convolve'):
-        '''
+        """
         Spatial filtering of the CSD estimate, using an N-point filter
 
         Arguments
@@ -87,7 +87,7 @@ class CSD(object):
         filterfunction : str
             'filtfilt' or 'convolve'. Apply spatial filter using
             scipy.signal.filtfilt or scipy.signal.convolve.
-        '''
+        """
         if self.f_type == 'gaussian':
             try:
                 assert(len(self.f_order) == 2)
@@ -145,12 +145,12 @@ class CSD(object):
 
 
 class StandardCSD(CSD):
-    '''
+    """
     Standard CSD method with and without Vaknin electrodes
-    '''
+    """
 
     def __init__(self, lfp, coord_electrode, **kwargs):
-        '''
+        """
         Initialize standard CSD method class with & without Vaknin electrodes.
 
         Parameters
@@ -172,7 +172,7 @@ class StandardCSD(CSD):
         f_order : list
             settings for spatial filter, arg passed to  filter design function
             Defaults to (3,1) for the gaussian
-        '''
+        """
         self.parameters(**kwargs)
         CSD.__init__(self, lfp, self.f_type, self.f_order)
 
@@ -202,12 +202,12 @@ class StandardCSD(CSD):
         self.f_inv_matrix = self.get_f_inv_matrix()
 
     def parameters(self, **kwargs):
-        '''Defining the default values of the method passed as kwargs
+        """Defining the default values of the method passed as kwargs
         Parameters
         ----------
         **kwargs
             Same as those passed to initialize the Class
-        '''
+        """
         self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
         self.vaknin_el = kwargs.pop('vaknin_el', True)
         self.f_type = kwargs.pop('f_type', 'gaussian')
@@ -216,7 +216,7 @@ class StandardCSD(CSD):
             raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_inv_matrix(self):
-        '''Calculate the inverse F-matrix for the standard CSD method'''
+        """Calculate the inverse F-matrix for the standard CSD method"""
         h_val = abs(np.diff(self.coord_electrode)[0])
         f_inv = -np.eye(self.lfp.shape[0])
 
@@ -226,14 +226,14 @@ class StandardCSD(CSD):
         return f_inv * -self.sigma / h_val
 
     def get_csd(self):
-        '''
+        """
         Perform the iCSD calculation, i.e: iCSD=F_inv*LFP
 
         Returns
         -------
         csd : np.ndarray * quantity.Quantity
             Array with the csd estimate
-        '''
+        """
         csd = np.dot(self.f_inv_matrix, self.lfp)[1:-1, ]
         # `np.dot()` does not return correct units, so the units of `csd` must
         # be assigned manually
@@ -244,11 +244,11 @@ class StandardCSD(CSD):
 
 
 class DeltaiCSD(CSD):
-    '''
+    """
     delta-iCSD method
-    '''
+    """
     def __init__(self, lfp, coord_electrode, **kwargs):
-        '''
+        """
         Initialize the delta-iCSD method class object
 
         Parameters
@@ -274,7 +274,7 @@ class DeltaiCSD(CSD):
         f_order : list
             settings for spatial filter, arg passed to  filter design function
             Defaults to (3,1) for gaussian
-        '''
+        """
         self.parameters(**kwargs)
         CSD.__init__(self, lfp, self.f_type, self.f_order)
 
@@ -313,12 +313,12 @@ class DeltaiCSD(CSD):
         self.f_matrix = self.get_f_matrix()
 
     def parameters(self, **kwargs):
-        '''Defining the default values of the method passed as kwargs
+        """Defining the default values of the method passed as kwargs
         Parameters
         ----------
         **kwargs
             Same as those passed to initialize the Class
-        '''
+        """
         self.diam = kwargs.pop('diam', 500E-6 * pq.m)
         self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
         self.sigma_top = kwargs.pop('sigma_top', 0.3 * pq.S / pq.m)
@@ -328,7 +328,7 @@ class DeltaiCSD(CSD):
             raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_matrix(self):
-        '''Calculate the F-matrix'''
+        """Calculate the F-matrix"""
         f_matrix = np.empty((self.coord_electrode.size,
                              self.coord_electrode.size)) * self.coord_electrode.units
         for j in range(self.coord_electrode.size):
@@ -348,10 +348,10 @@ class DeltaiCSD(CSD):
 
 
 class StepiCSD(CSD):
-    '''step-iCSD method'''
+    """step-iCSD method"""
     def __init__(self, lfp, coord_electrode, **kwargs):
 
-        '''
+        """
         Initializing step-iCSD method class object
 
         Parameters
@@ -383,7 +383,7 @@ class StepiCSD(CSD):
         f_order : list
             settings for spatial filter, arg passed to  filter design function
             Defaults to (3,1) for the gaussian
-        '''
+        """
         self.parameters(**kwargs)
         CSD.__init__(self, lfp, self.f_type, self.f_order)
 
@@ -428,12 +428,12 @@ class StepiCSD(CSD):
         self.f_matrix = self.get_f_matrix()
 
     def parameters(self, **kwargs):
-        '''Defining the default values of the method passed as kwargs
+        """Defining the default values of the method passed as kwargs
         Parameters
         ----------
         **kwargs
             Same as those passed to initialize the Class
-        '''
+        """
 
         self.diam = kwargs.pop('diam', 500E-6 * pq.m)
         self.h = kwargs.pop('h', np.ones(23) * 100E-6 * pq.m)
@@ -446,7 +446,7 @@ class StepiCSD(CSD):
             raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_matrix(self):
-        '''Calculate F-matrix for step iCSD method'''
+        """Calculate F-matrix for step iCSD method"""
         el_len = self.coord_electrode.size
         f_matrix = np.zeros((el_len, el_len))
         for j in range(el_len):
@@ -477,17 +477,17 @@ class StepiCSD(CSD):
         return f_matrix * self.h.units**2 / self.sigma.units
 
     def _f_cylinder(self, zeta, z_val, diam, sigma):
-        '''function used by class method'''
+        """function used by class method"""
         f_cyl = 1. / (2. * sigma) * \
             (np.sqrt((diam / 2)**2 + ((z_val - zeta))**2) - abs(z_val - zeta))
         return f_cyl
 
 
 class SplineiCSD(CSD):
-    '''spline iCSD method'''
+    """spline iCSD method"""
     def __init__(self, lfp, coord_electrode, **kwargs):
 
-        '''
+        """
         Initializing spline-iCSD method class object
 
         Parameters
@@ -519,7 +519,7 @@ class SplineiCSD(CSD):
         num_steps : int
             number of data points for the spatially upsampled LFP/CSD data
             Defaults to 200
-        '''
+        """
         self.parameters(**kwargs)
         CSD.__init__(self, lfp, self.f_type, self.f_order)
 
@@ -552,12 +552,12 @@ class SplineiCSD(CSD):
         self.f_matrix = self.get_f_matrix()
 
     def parameters(self, **kwargs):
-        '''Defining the default values of the method passed as kwargs
+        """Defining the default values of the method passed as kwargs
         Parameters
         ----------
         **kwargs
             Same as those passed to initialize the Class
-        '''
+        """
         self.diam = kwargs.pop('diam', 500E-6 * pq.m)
         self.sigma = kwargs.pop('sigma', 0.3 * pq.S / pq.m)
         self.sigma_top = kwargs.pop('sigma_top', 0.3 * pq.S / pq.m)
@@ -569,7 +569,7 @@ class SplineiCSD(CSD):
             raise TypeError('Invalid keyword arguments:', kwargs.keys())
 
     def get_f_matrix(self):
-        '''Calculate the F-matrix for cubic spline iCSD method'''
+        """Calculate the F-matrix for cubic spline iCSD method"""
         el_len = self.coord_electrode.size
         z_js = np.zeros(el_len + 1)
         z_js[:-1] = np.array(self.coord_electrode)
@@ -641,7 +641,7 @@ class SplineiCSD(CSD):
         return f_matrix * self.coord_electrode.units**2 / self.sigma.units
 
     def get_csd(self):
-        '''
+        """
         Calculate the iCSD using the spline iCSD method
 
         Returns
@@ -650,7 +650,7 @@ class SplineiCSD(CSD):
             Array with csd estimate
 
 
-        '''
+        """
         e_mat = self._calc_e_matrices()
 
         el_len = self.coord_electrode.size
@@ -700,24 +700,24 @@ class SplineiCSD(CSD):
         return csd * csd_unit
 
     def _f_mat0(self, zeta, z_val, sigma, diam):
-        '''0'th order potential function'''
+        """0'th order potential function"""
         return 1. / (2. * sigma) * \
             (np.sqrt((diam / 2)**2 + ((z_val - zeta))**2) - abs(z_val - zeta))
 
     def _f_mat1(self, zeta, z_val, zi_val, sigma, diam):
-        '''1'th order potential function'''
+        """1'th order potential function"""
         return (zeta - zi_val) * self._f_mat0(zeta, z_val, sigma, diam)
 
     def _f_mat2(self, zeta, z_val, zi_val, sigma, diam):
-        '''2'nd order potential function'''
+        """2'nd order potential function"""
         return (zeta - zi_val)**2 * self._f_mat0(zeta, z_val, sigma, diam)
 
     def _f_mat3(self, zeta, z_val, zi_val, sigma, diam):
-        '''3'rd order potential function'''
+        """3'rd order potential function"""
         return (zeta - zi_val)**3 * self._f_mat0(zeta, z_val, sigma, diam)
 
     def _calc_k_matrix(self):
-        '''Calculate the K-matrix used by to calculate E-matrices'''
+        """Calculate the K-matrix used by to calculate E-matrices"""
         el_len = self.coord_electrode.size
         h = float(np.diff(self.coord_electrode).min())
 
@@ -749,7 +749,7 @@ class SplineiCSD(CSD):
                            np.dot(np.dot(c_j0, c_j0), tj0)))
 
     def _calc_e_matrices(self):
-        '''Calculate the E-matrices used by cubic spline iCSD method'''
+        """Calculate the E-matrices used by cubic spline iCSD method"""
         el_len = self.coord_electrode.size
         # expanding electrode grid
         h = float(np.diff(self.coord_electrode).min())

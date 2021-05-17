@@ -2,13 +2,15 @@
 """
 Unit tests for the ASSET analysis.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import itertools
+import os
 import random
 import unittest
-import itertools
+import warnings
 
 import neo
 import numpy as np
@@ -29,9 +31,24 @@ else:
     HAVE_SKLEARN = True
     stretchedmetric2d = asset._stretched_metric_2d
 
+try:
+    import pyopencl
+    HAVE_PYOPENCL = True
+except ImportError:
+    HAVE_PYOPENCL = False
+
+try:
+    import pycuda
+    HAVE_CUDA = asset.get_cuda_capability_major() > 0
+except ImportError:
+    HAVE_CUDA = False
+
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetTestCase(unittest.TestCase):
+
+    def setUp(self):
+        os.environ['ELEPHANT_USE_OPENCL'] = '0'
 
     def test_stretched_metric_2d_size(self):
         nr_points = 4
@@ -53,7 +70,7 @@ class AssetTestCase(unittest.TestCase):
         y = (1, 2, 0)
         stretch = 10
         D = stretchedmetric2d(x, y, stretch=stretch, ref_angle=45)
-        assert_array_almost_equal(D, D.T, decimal=12)
+        assert_array_almost_equal(D, D.T, decimal=6)
 
     def test_stretched_metric_2d_equals_euclidean_if_stretch_1(self):
         x = np.arange(10)
@@ -65,7 +82,7 @@ class AssetTestCase(unittest.TestCase):
         points = np.vstack([x, y]).T
         E = scipy.spatial.distance_matrix(points, points)
         # assert D == E
-        assert_array_almost_equal(D, E, decimal=12)
+        assert_array_almost_equal(D, E, decimal=5)
 
     def test_sse_difference(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
@@ -189,6 +206,113 @@ class AssetTestCase(unittest.TestCase):
         correct = mat
         assert_array_equal(clustered, correct)
 
+    def test_cluster_matrix_entries_chunked(self):
+        np.random.seed(12)
+        mmat = np.random.randn(50, 50) > 0
+        max_distance = 5
+        min_neighbors = 4
+        stretch = 2
+        cmat_true = asset.ASSET.cluster_matrix_entries(
+            mmat, max_distance=max_distance, min_neighbors=min_neighbors,
+            stretch=stretch)
+        for working_memory in [1, 10, 100, 1000]:
+            cmat = asset.ASSET.cluster_matrix_entries(
+                mmat, max_distance=max_distance, min_neighbors=min_neighbors,
+                stretch=stretch, working_memory=working_memory)
+            assert_array_equal(cmat, cmat_true)
+
+    def test_pmat_neighbors_gpu(self):
+        np.random.seed(12)
+        n_largest = 3
+        pmat1 = np.random.random_sample((40, 40)).astype(np.float32)
+        np.fill_diagonal(pmat1, 0.5)
+        pmat2 = np.random.random_sample((70, 23)).astype(np.float32)
+        pmat3 = np.random.random_sample((27, 93)).astype(np.float32)
+        for pmat in (pmat1, pmat2, pmat3):
+            for filter_size in (4, 8, 11):
+                filter_shape = (filter_size, 3)
+                with warnings.catch_warnings():
+                    # ignore even filter sizes
+                    warnings.simplefilter('ignore', UserWarning)
+                    pmat_neigh = asset._PMatNeighbors(
+                        filter_shape=filter_shape, n_largest=n_largest)
+                lmat_true = pmat_neigh.cpu(pmat)
+                if HAVE_PYOPENCL:
+                    lmat_opencl = pmat_neigh.pyopencl(pmat)
+                    assert_array_almost_equal(lmat_opencl, lmat_true)
+                if HAVE_CUDA:
+                    lmat_cuda = pmat_neigh.pycuda(pmat)
+                    assert_array_almost_equal(lmat_cuda, lmat_true)
+
+    def test_pmat_neighbors_gpu_chunked(self):
+        np.random.seed(12)
+        filter_shape = (7, 3)
+        n_largest = 3
+        pmat1 = np.random.random_sample((40, 40)).astype(np.float32)
+        np.fill_diagonal(pmat1, 0.5)
+        pmat2 = np.random.random_sample((70, 27)).astype(np.float32)
+        pmat3 = np.random.random_sample((41, 80)).astype(np.float32)
+        for pmat in (pmat1, pmat2, pmat3):
+            pmat_neigh = asset._PMatNeighbors(filter_shape=filter_shape,
+                                              n_largest=n_largest)
+            lmat_true = pmat_neigh.cpu(pmat)
+            for max_chunk_size in (17, 20, 29):
+                pmat_neigh.max_chunk_size = max_chunk_size
+                if HAVE_PYOPENCL:
+                    lmat_opencl = pmat_neigh.pyopencl(pmat)
+                    assert_array_almost_equal(lmat_opencl, lmat_true)
+                if HAVE_CUDA:
+                    lmat_cuda = pmat_neigh.pycuda(pmat)
+                    assert_array_almost_equal(lmat_cuda, lmat_true)
+
+    def test_pmat_neighbors_gpu_overlapped_chunks(self):
+        # The pmat is chunked as follows:
+        #   [(0, 11), (11, 22), (22, 33), (29, 40)]
+        # Two last chunks overlap.
+        np.random.seed(12)
+        pmat = np.random.random_sample((50, 50)).astype(np.float32)
+        pmat_neigh = asset._PMatNeighbors(filter_shape=(11, 5), n_largest=3,
+                                          max_chunk_size=12)
+        lmat_true = pmat_neigh.cpu(pmat)
+        if HAVE_PYOPENCL:
+            lmat_opencl = pmat_neigh.pyopencl(pmat)
+            assert_array_almost_equal(lmat_opencl, lmat_true)
+        if HAVE_CUDA:
+            lmat_cuda = pmat_neigh.pycuda(pmat)
+            assert_array_almost_equal(lmat_cuda, lmat_true)
+
+    def test_pmat_neighbors_invalid_input(self):
+        np.random.seed(12)
+        pmat = np.random.random_sample((20, 20))
+        np.fill_diagonal(pmat, 0.5)
+
+        # Too large filter_shape
+        pmat_neigh = asset._PMatNeighbors(filter_shape=(11, 3), n_largest=3)
+        self.assertRaises(ValueError, pmat_neigh.compute, pmat)
+        pmat_neigh = asset._PMatNeighbors(filter_shape=(21, 3), n_largest=3)
+        np.fill_diagonal(pmat, 0.0)
+        self.assertRaises(ValueError, pmat_neigh.compute, pmat)
+        pmat_neigh = asset._PMatNeighbors(filter_shape=(11, 3), n_largest=3,
+                                          max_chunk_size=10)
+        if HAVE_PYOPENCL:
+            # max_chunk_size > filter_shape
+            self.assertRaises(ValueError, pmat_neigh.pyopencl, pmat)
+        if HAVE_CUDA:
+            # max_chunk_size > filter_shape
+            self.assertRaises(ValueError, pmat_neigh.pycuda, pmat)
+
+        # Too small filter_shape
+        self.assertRaises(ValueError, asset._PMatNeighbors,
+                          filter_shape=(11, 3), n_largest=100)
+
+        # w >= l
+        self.assertRaises(ValueError, asset._PMatNeighbors,
+                          filter_shape=(9, 9), n_largest=3)
+
+        # not centered
+        self.assertWarns(UserWarning, asset._PMatNeighbors,
+                         filter_shape=(10, 6), n_largest=3)
+
     def test_intersection_matrix(self):
         st1 = neo.SpikeTrain([1, 2, 4] * pq.ms, t_stop=6 * pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)
@@ -302,12 +426,30 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
                                  len(matrix_entries_correct))
 
     def test_next_sequence_sorted(self):
+        # This test shows the main idea of CUDA ASSET parallelization that
+        # allows reconstructing a 'sequence_sorted' from the iteration number
+        # and therefore getting rid of sequential nature of joint prob.
+        # matrix calculation.
+        def next_sequence_sorted(jsf, iteration):
+            # One-to-one correspondence with
+            # 'void next_sequence_sorted(int *sequence_sorted, ULL iteration)'
+            # function in asset.pycuda.py.
+            sequence_sorted = []
+            element = jsf.n - 1
+            for row in range(jsf.d - 1, -1, -1):
+                map_row = jsf.map_iterations[row]
+                while element > row and iteration < map_row[element]:
+                    element -= 1
+                iteration -= map_row[element]
+                sequence_sorted.append(element + 1)
+            return tuple(sequence_sorted)
+
         for n in range(1, 15):
             for d in range(1, min(6, n + 1)):
                 jsf = asset._JSFUniformOrderStat3D(n=n, d=d)
                 for iter_id, seq_sorted_true in enumerate(
                         jsf._combinations_with_replacement()):
-                    seq_sorted = jsf._next_sequence_sorted(iteration=iter_id)
+                    seq_sorted = next_sequence_sorted(jsf, iteration=iter_id)
                     self.assertEqual(seq_sorted, seq_sorted_true)
 
     def test_invalid_values(self):
@@ -327,7 +469,7 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
         u /= np.max(u)
         p_out = jsf.compute(u)
-        assert_array_almost_equal(p_out, [1., 0.])
+        assert_array_almost_equal(p_out, [1., 0.], decimal=5)
 
     def test_precision(self):
         L = 2
@@ -345,6 +487,84 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
                 # in practice, the results deviate starting at decimal 3 or 2
                 assert_array_almost_equal(P_total_double, P_total_float,
                                           decimal=5)
+
+    def test_gpu(self):
+        np.random.seed(12)
+        for precision, L, n in itertools.product(['float', 'double'],
+                                                 [1, 23, 100], [1, 3, 10]):
+            for d in range(1, min(4, n + 1)):
+                u = np.random.rand(L, d).cumsum(axis=1)
+                u /= np.max(u)
+                jsf = asset._JSFUniformOrderStat3D(n=n, d=d,
+                                                   precision=precision)
+                du = np.diff(u, prepend=0, append=1, axis=1)
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', RuntimeWarning)
+                    log_du = np.log(du, dtype=np.float32)
+                P_total_cpu = jsf.cpu(log_du)
+                for max_chunk_size in [None, 22]:
+                    jsf.max_chunk_size = max_chunk_size
+                    if HAVE_PYOPENCL:
+                        P_total_opencl = jsf.pyopencl(log_du)
+                        assert_array_almost_equal(P_total_opencl, P_total_cpu)
+                    if HAVE_CUDA:
+                        P_total_cuda = jsf.pycuda(log_du)
+                        assert_array_almost_equal(P_total_cuda, P_total_cpu)
+
+    def test_gpu_threads_and_cwr_loops(self):
+        # The num. of threads (work items) and CWR loops must not influence
+        # the result.
+        L, N, D = 100, 10, 3
+
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u)
+        du = np.diff(u, prepend=0, append=1, axis=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            log_du = np.log(du, dtype=np.float32)
+
+        def run_test(jsf, jsf_backend):
+            P_expected = jsf_backend(log_du)
+            for threads in [1, 16, 32, 128, 1024]:
+                for cwr_loops in [1, 16, 128]:
+                    jsf.cuda_threads = threads
+                    jsf.cuda_cwr_loops = cwr_loops
+                    P_total = jsf_backend(log_du)
+                    assert_array_almost_equal(P_total, P_expected)
+
+        if HAVE_PYOPENCL:
+            jsf = asset._JSFUniformOrderStat3D(n=N, d=D, precision='float')
+            run_test(jsf, jsf.pyopencl)
+        if HAVE_CUDA:
+            jsf = asset._JSFUniformOrderStat3D(n=N, d=D, precision='float')
+            run_test(jsf, jsf.pycuda)
+
+    def test_gpu_chunked(self):
+        L, N, D = 100, 9, 3
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u)
+        du = np.diff(u, prepend=0, append=1, axis=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            log_du = np.log(du, dtype=np.float32)
+        jsf = asset._JSFUniformOrderStat3D(n=N, d=D)
+        P_true = jsf.cpu(log_du)
+        for max_chunk_size in (13, 50):
+            jsf.max_chunk_size = max_chunk_size
+            if HAVE_PYOPENCL:
+                P_total = jsf.pyopencl(log_du)
+                assert_array_almost_equal(P_total, P_true)
+            if HAVE_CUDA:
+                P_total = jsf.pycuda(log_du)
+                assert_array_almost_equal(P_total, P_true)
+
+    def test_watchdog(self):
+        L, N, D = 10, 7, 3
+        u = np.arange(L * D, dtype=np.float32).reshape((-1, D))
+        u /= np.max(u) - 1
+        # 'u' is invalid input, which must lead to watchdog barking
+        jsf = asset._JSFUniformOrderStat3D(n=N, d=D)
+        self.assertWarns(UserWarning, jsf.compute, u)
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
