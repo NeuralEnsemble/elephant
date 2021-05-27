@@ -1414,7 +1414,7 @@ class Complexity(object):
         sorting = np.argsort(combined_starts, kind='mergesort')
         left_edges = bst.bin_edges[combined_starts[sorting]]
         right_edges = bst.bin_edges[combined_stops[sorting]]
-        complexities = combined_complexities[sorting].astype(int)
+        complexities = combined_complexities[sorting].astype(np.uint16)
 
         if self.sampling_rate:
             # ensure that spikes are not on the bin edges
@@ -1429,8 +1429,6 @@ class Complexity(object):
         # Ensure that an epoch does not start before the minimum t_start.
         # Note: all spike trains share the same t_start and t_stop.
         left_edges[0] = max(self.t_start, left_edges[0])
-
-        complexities = complexities.astype(np.uint16)
 
         complexity_epoch = neo.Epoch(times=left_edges,
                                      durations=right_edges - left_edges,
