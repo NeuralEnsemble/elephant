@@ -19,7 +19,10 @@ from elephant.utils import deprecated_alias
 
 __all__ = [
     "welch_psd",
-    "welch_coherence"
+    "welch_coherence",
+    "multitaper_psd",
+    "multitaper_cross_spectrum",
+    "multitaper_coherence"
 ]
 
 
@@ -365,6 +368,161 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     return freqs, psd
 
 
+def multitaper_cross_spectrum(signals, fs=1, nw=4,
+                              num_tapers=None, peak_resolution=None,
+                              return_onesided=True):
+    """
+    Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
+    Multitaper method.
+
+    Parameters
+    ----------
+    signals : neo.AnalogSignal
+        Time series data of signals. When `signals` is np.ndarray
+        sampling frequency should be given through keyword argument `fs`.
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+        Default: 1.0
+    nw : float, optional
+        Time bandwidth product
+        Default: 4.0
+    num_tapers : int, optional
+        Number of tapers used in 1. to obtain estimate of PSD. By default
+        [2*nw] - 1 is chosen.
+        Default: None
+    peak_resolution : float, optional
+        Desired frequency resolution of the obtained PSD estimate. When given
+        as a `float`, it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None.
+    return_onesided : bool, optional
+        If True, return a one-sided spectrum for real data.
+        If False return a two-sided spectrum.
+        Default: True.
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with power estimate in `psd`
+    psd : np.ndarray
+        PSD estimate of the time series in `signal`
+    """
+
+    # When the input is AnalogSignal, the data is added after rolling the axis
+    # for time index to the last
+    data = np.asarray(signals)
+    if isinstance(signals, neo.AnalogSignal):
+        data = np.rollaxis(data, 0, len(data.shape))
+
+    # If the data is given as AnalogSignal, use its attribute to specify the
+    # sampling frequency
+    if hasattr(signals, 'sampling_rate'):
+        fs = signals.sampling_rate.rescale('Hz').magnitude
+
+    # If fs and frequency resolution is pq Quantity get magnitude
+    if isinstance(fs, pq.quantity.Quantity):
+        fs = fs.rescale('Hz').magnitude
+    if isinstance(peak_resolution, pq.quantity.Quantity):
+        peak_resolution = peak_resolution.rescale('Hz').magnitude
+
+    # Number of data points in time series
+    length_signal = np.shape(data)[0]
+
+    # Determine time-halfbandwidth product from given parameters
+    if peak_resolution is not None:
+        if peak_resolution <= 0:
+            raise ValueError("peak_resolution must be positive")
+        else:
+            nw = length_signal / fs * peak_resolution / 2
+
+    if num_tapers is None:
+        num_tapers = np.floor(2*nw).astype(int) - 1
+    else:
+        if not isinstance(num_tapers, int):
+            raise TypeError("num_tapers must be integer")
+        elif num_tapers <= 0:
+            raise ValueError("num_tapers must be positive")
+
+    print(f'Number of tapers: {num_tapers}')
+
+    # Get slepian functions
+    slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
+                                             NW=nw,
+                                             Kmax=num_tapers,
+                                             sym='False')
+
+    # Calculate approximately independent spectrum estimates
+    tapered_signal = signals.T * slepian_fcts[:, np.newaxis]
+    tapered_signal = tapered_signal.T  # Time, dimension, taper
+
+    if return_onesided:
+        # Generate frequencies
+        freqs = np.fft.rfftfreq(length_signal, d=1/fs)
+        # Determine Fourier transform of tapered signal
+        spectrum_estimates = np.fft.rfft(tapered_signal, axis=0)
+
+    else:
+        # Generate frequencies
+        freqs = np.fft.fftfreq(length_signal, d=1/fs)
+        # Determine Fourier transform of tapered signal
+        spectrum_estimates = np.fft.fft(tapered_signal, axis=0)
+
+    temp = (spectrum_estimates[:, np.newaxis, :, :]
+            * np.conjugate(spectrum_estimates[:, :, np.newaxis, :]))
+
+    # Average Fourier transform windowed signal
+    amp_cross_spec = np.mean(temp, axis=-1) / fs
+
+    phase_cross_spec = np.angle(np.mean(temp, axis=-1))
+
+    # Attach proper units to return values
+    if isinstance(signals, pq.quantity.Quantity):
+        amp_cross_spec = amp_cross_spec * signals.units * signals.units / pq.Hz
+        freqs = freqs * pq.Hz
+
+    return freqs, phase_cross_spec, amp_cross_spec
+
+
+def multitaper_coherence(signals, fs=1, nw=4, num_tapers=None,
+                         peak_resolution=None):
+    """
+    Estimates the magnitude-squared coherence of a given 'neo.AnalogSignal'
+    using the Multitaper method.
+
+    .. math::
+        C(\omega)=\frac{|S_{xy}(\omega)|^2}{S_{xx}(\omega)S_{yy}(\omega)}
+
+    Parameters
+    ----------
+    signals : neo.AnalogSignal
+    fs : float, optional
+        Sampling rate of signals.
+    nw : float, optional
+        Time half-bandwidth product.
+    num_tapers : int, optional
+    peak_resolution : float, optional
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with the magnitude-squared coherence estimate
+    coherence : np.ndarray
+        Magnitude-squared coherence estimate
+    phase_lag : np.ndarray
+        Phase lags associated with the magnitude-square coherence estimate
+
+    """
+
+    freqs, _, Pxy = multitaper_cross_spectrum(signals, fs, nw, num_tapers,
+                                              peak_resolution)
+
+    coherence = np.abs(Pxy[:, 0, 1]) ** 2 / (Pxy[:, 0, 0] * Pxy[: 1, 1])
+
+    phase_lag = np.angle(2*Pxy[:, 0, 1])
+
+    return freqs, coherence, phase_lag
+
+
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
                   len_seg='len_segment', freq_res='frequency_resolution')
 def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -581,3 +739,74 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
+
+
+# if __name__ == "__main__":
+signals = np.random.normal(0, 1, size=(1000, 2))
+freq_m, psd_1 = multitaper_psd(signals[:, 0], fs=1000, nw=4)
+freq_m, psd_2 = multitaper_psd(signals[:, 1], fs=1000, nw=4)
+freq, phase, amp = multitaper_cross_spectrum(signals, fs=1000, nw=4)
+
+def _generate_ground_truth(length_2d=30000):
+    order = 2
+    signal = np.zeros((2, length_2d + order))
+
+    weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+
+    weights = np.stack((weights_1, weights_2))
+
+    noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+
+    for i in range(length_2d):
+        for lag in range(order):
+            signal[:, i + order] += np.dot(weights[lag],
+                                           signal[:, i + 1 - lag])
+        rnd_var = np.random.multivariate_normal([0, 0],
+                                                noise_covariance)
+        signal[:, i + order] += rnd_var
+
+    signal = signal[:, 2:]
+
+    # Return signals as Nx2
+    return signal.T
+
+
+test_data = _generate_ground_truth(length_2d=2**10)
+
+fx, Pxx = welch_psd(test_data[:, 0])
+fy, Pyy = welch_psd(test_data[:, 1])
+
+fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1], frequency_resolution=0.005)
+
+fm, Pxxm = multitaper_psd(test_data.T)
+
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.semilogy(fx, Pxx, label="Pxx")
+plt.semilogy(fy, Pyy, label="Pyy")
+plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
+plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
+plt.legend()
+plt.show()
+
+
+
+
+fcs, _, Pcs = multitaper_cross_spectrum(test_data, num_tapers=20)
+
+plt.figure()
+plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
+plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
+plt.semilogy(fcs[:512], 2*Pcs[:512, 0, 0],'r:', label="Pxx Multitaper")
+plt.semilogy(fcs[:512], 2*Pcs[:512, 1, 1], 'b:', label="Pyy Multitaper")
+plt.legend()
+plt.show()
+
+
+plt.figure()
+plt.plot(fc, Coh, label="Welch Coh")
+plt.plot(fcs[:512], np.abs(Pcs[:512, 0, 1])**2 / (Pcs[:512, 0, 0] * Pcs[:512, 1, 1]), 'b:', label="Multitaper Coh")
+plt.legend()
+plt.show()
