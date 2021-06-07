@@ -1361,11 +1361,12 @@ class Complexity(object):
                           'Note that using the complexity epoch to get '
                           'precise spike times can lead to rounding errors.')
 
+        complexity = self.time_histogram.magnitude.flatten()
+        complexity = complexity.astype(np.uint16)
+
         epoch = neo.Epoch(left_edges,
                           durations=durations,
-                          array_annotations={
-                              'complexity':
-                              self.time_histogram.magnitude.flatten()})
+                          array_annotations={'complexity': complexity})
         return epoch
 
     def _epoch_with_spread(self):
@@ -1413,7 +1414,7 @@ class Complexity(object):
         sorting = np.argsort(combined_starts, kind='mergesort')
         left_edges = bst.bin_edges[combined_starts[sorting]]
         right_edges = bst.bin_edges[combined_stops[sorting]]
-        complexities = combined_complexities[sorting].astype(int)
+        complexities = combined_complexities[sorting].astype(np.uint16)
 
         if self.sampling_rate:
             # ensure that spikes are not on the bin edges
