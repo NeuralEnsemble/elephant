@@ -775,13 +775,23 @@ class _n_poisson_TestCase(unittest.TestCase):
             t_stop=3 * pq.ms, n_spiketrains=3)
 
 
-class singleinteractionprocess_TestCase(unittest.TestCase):
+class SingleInteractionProcessTestCase(unittest.TestCase):
     def setUp(self):
         self.n = 4
         self.rate = 10 * pq.Hz
         self.rates = np.arange(1, self.n + 1) * pq.Hz
         self.t_stop = 10000 * pq.ms
         self.rate_c = 1 * pq.Hz
+
+    def format_check(self, sip, coinc):
+        self.assertEqual(type(sip), list)
+        self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
+        self.assertEqual(sip[0].simplified.units, 1000 * pq.ms)
+        self.assertEqual(coinc[0].simplified.units, 1000 * pq.ms)
+
+        # Check the output length
+        self.assertEqual(len(sip), self.n)
 
     def test_sip(self):
 
@@ -791,14 +801,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
             coincidence_rate=self.rate_c, return_coincidences=True)
 
         # Check the output types
-        self.assertEqual(type(sip), list)
-        self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(sip[0].simplified.units, 1000 * pq.ms)
-        self.assertEqual(coinc[0].simplified.units, 1000 * pq.ms)
-
-        # Check the output length
-        self.assertEqual(len(sip), self.n)
+        self.format_check(sip, coinc)
         self.assertEqual(
             len(coinc[0]), (self.rate_c * self.t_stop).simplified.magnitude)
 
@@ -810,14 +813,7 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
                 coincidence_rate=self.rate_c, return_coincidences=True)
 
         # Check the output types
-        self.assertEqual(type(sip), list)
-        self.assertEqual(type(sip[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(type(coinc[0]), neo.core.spiketrain.SpikeTrain)
-        self.assertEqual(sip[0].simplified.units, 1000 * pq.ms)
-        self.assertEqual(coinc[0].simplified.units, 1000 * pq.ms)
-
-        # Check the output length
-        self.assertEqual(len(sip), self.n)
+        self.format_check(sip, coinc)
         self.assertEqual(
             len(coinc[0]),
             (self.rate_c * self.t_stop).rescale(pq.dimensionless))
@@ -865,7 +861,24 @@ class singleinteractionprocess_TestCase(unittest.TestCase):
             t_stop=self.t_stop)
 
 
-class cppTestCase(unittest.TestCase):
+class CppTestCase(unittest.TestCase):
+
+    def format_check(self, cpp, amplitude_distribution, t_start, t_stop):
+        self.assertEqual(
+            [type(train) for train in cpp],
+            [neo.SpikeTrain] * len(cpp))
+        self.assertEqual(cpp[0].simplified.units, 1000 * pq.ms)
+        self.assertEqual(type(cpp), list)
+        # testing quantities format of the output
+        self.assertEqual(
+            [train.simplified.units for train in cpp],
+            [1000 * pq.ms] * len(cpp))
+        # testing output t_start t_stop
+        for st in cpp:
+            self.assertEqual(st.t_stop, t_stop)
+            self.assertEqual(st.t_start, t_start)
+        self.assertEqual(len(cpp), len(amplitude_distribution) - 1)
+
     def test_cpp_hom(self):
         # testing output with generic inputs
         amplitude_distribution = np.array([0, .9, .1])
@@ -874,21 +887,8 @@ class cppTestCase(unittest.TestCase):
         rate = 3 * pq.Hz
         cpp_hom = stg.cpp(rate, amplitude_distribution,
                           t_stop, t_start=t_start)
-        # testing the ouput formats
-        self.assertEqual(
-            [type(train) for train in cpp_hom],
-            [neo.SpikeTrain] * len(cpp_hom))
-        self.assertEqual(cpp_hom[0].simplified.units, 1000 * pq.ms)
-        self.assertEqual(type(cpp_hom), list)
-        # testing quantities format of the output
-        self.assertEqual(
-            [train.simplified.units for train in cpp_hom],
-            [1000 * pq.ms] * len(cpp_hom))
-        # testing output t_start t_stop
-        for st in cpp_hom:
-            self.assertEqual(st.t_stop, t_stop)
-            self.assertEqual(st.t_start, t_start)
-        self.assertEqual(len(cpp_hom), len(amplitude_distribution) - 1)
+        # testing the output formats
+        self.format_check(cpp_hom, amplitude_distribution, t_start, t_stop)
 
         # testing the units
         t_stop = 10000 * pq.ms
@@ -1004,22 +1004,8 @@ class cppTestCase(unittest.TestCase):
             # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
             cpp_het = stg.cpp(rate, amplitude_distribution,
                               t_stop, t_start=t_start)
-            # testing the ouput formats
-            self.assertEqual(
-                [type(train) for train in cpp_het],
-                [neo.SpikeTrain] * len(cpp_het))
-            self.assertEqual(cpp_het[0].simplified.units, 1000 * pq.ms)
-            self.assertEqual(type(cpp_het), list)
-            # testing units
-            self.assertEqual(
-                [train.simplified.units for train in cpp_het],
-                [1000 * pq.ms] * len(cpp_het))
-            # testing output t_start and t_stop
-            for st in cpp_het:
-                self.assertEqual(st.t_stop, t_stop)
-                self.assertEqual(st.t_start, t_start)
-            # testing the number of output spiketrains
-            self.assertEqual(len(cpp_het), len(amplitude_distribution) - 1)
+            # testing the output formats
+            self.format_check(cpp_het, amplitude_distribution, t_start, t_stop)
             self.assertEqual(len(cpp_het), len(rate))
 
             # testing the units
@@ -1053,7 +1039,7 @@ class cppTestCase(unittest.TestCase):
                 [len(train) for train in cpp_het_empty_r], [0] * len(
                     cpp_het_empty_r))
 
-            # testing completely sync spiketrains
+            # testing completely synchronous spike trains
             amplitude_distribution = np.array([0, 0, 1])
             t_stop = 10 * 1000 * pq.ms
             t_start = 5 * 1000 * pq.ms
@@ -1156,21 +1142,8 @@ class cppTestCase(unittest.TestCase):
             t_stop,
             t_start=t_start,
             shift=3 * pq.ms)
-        # testing the ouput formats
-        self.assertEqual(
-            [type(train) for train in cpp_shift], [neo.SpikeTrain] * len(
-                cpp_shift))
-        self.assertEqual(cpp_shift[0].simplified.units, 1000 * pq.ms)
-        self.assertEqual(type(cpp_shift), list)
-        # testing quantities format of the output
-        self.assertEqual(
-            [train.simplified.units for train in cpp_shift],
-            [1000 * pq.ms] * len(cpp_shift))
-        # testing output t_start t_stop
-        for spiketrain in cpp_shift:
-            self.assertEqual(spiketrain.t_stop, t_stop)
-            self.assertEqual(spiketrain.t_start, t_start)
-        self.assertEqual(len(cpp_shift), len(amplitude_distribution) - 1)
+        # testing the output formats
+        self.format_check(cpp_shift, amplitude_distribution, t_start, t_stop)
 
 
 if __name__ == '__main__':

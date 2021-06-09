@@ -1354,34 +1354,22 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     # Check that the provided input is Hertz
     if not isinstance(rate, pq.Quantity):
         raise ValueError('rate must be a pq.Quantity')
-    try:
-        rate.rescale(pq.Hz)
-    except ValueError:
-        raise ValueError('rate argument must have rate unit (1/time)')
-
-    # Check t_start < t_stop and create their strip dimensions
-    if not t_start < t_stop:
-        raise ValueError(
-            't_start (={}) must be < t_stop (={})'.format(t_start, t_stop))
 
     # Set number n of output spike trains (specified or set to len(rate))
     if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
         raise ValueError(
             'n (={}) must be a positive integer'.format(str(n_spiketrains)))
-    rate_dl = rate.simplified.magnitude.flatten()
 
-    # Check rate input parameter
-    if len(rate_dl) == 1:
-        if rate_dl < 0:
-            raise ValueError('rate (={}) must be non-negative.'.format(rate))
-        rates = np.array([rate_dl] * n_spiketrains)
-    else:
-        rates = rate_dl.flatten()
-        if any(rates < 0):
-            raise ValueError('rate must have non-negative elements.')
+    # one rate for all spike trains
+    if rate.ndim == 0:
+        return StationaryPoissonProcess(
+            rate=rate, t_start=t_start, t_stop=t_stop
+        ).generate_n_spiketrains(n_spiketrains)
 
-    return [homogeneous_poisson_process(rate * pq.Hz, t_start, t_stop)
-            for rate in rates]
+    # different rate for each spike train
+    return [StationaryPoissonProcess(
+        rate=single_rate, t_start=t_start, t_stop=t_stop).generate_spiketrain()
+            for single_rate in rate]
 
 
 @deprecated_alias(rate_c='coincidence_rate', n='n_spiketrains',
@@ -1461,11 +1449,9 @@ def single_interaction_process(
     --------
     >>> import quantities as pq
     >>> import elephant.spike_train_generation as stg
-    # TODO: check if rate_coincidence=4 is correct.
     >>> sip, coinc = stg.single_interaction_process(
-    ... rate=20*pq.Hz, coincidence_rate=4,
+    ... rate=20*pq.Hz, coincidence_rate=4.*pq.Hz,
     ... t_stop=1*pq.s, n_spiketrains=10, return_coincidences = True)
-
     """
 
     # Check if n is a positive integer
@@ -1529,9 +1515,10 @@ def single_interaction_process(
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
     else:  # coincidences == 'stochastic'
+        poisson_process = StationaryPoissonProcess(
+            rate=coincidence_rate, t_stop=t_stop, t_start=t_start)
         while True:
-            coinc_times = homogeneous_poisson_process(
-                rate=coincidence_rate, t_stop=t_stop, t_start=t_start)
+            coinc_times = poisson_process.generate_spiketrain()
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
         coinc_times = coinc_times.simplified
@@ -1687,7 +1674,8 @@ def _sample_int_from_pdf(probability_density, n_samples):
     return (cumulative_distribution < random_uniforms).sum(axis=1)
 
 
-def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * pq.ms):
+def _mother_proc_cpp_stat(
+        amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate the hidden ("mother") Poisson process for a Compound Poisson
     Process (CPP).
@@ -1695,10 +1683,11 @@ def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * pq.ms):
 
     Parameters
     ----------
-    A : np.ndarray
-        Amplitude distribution. A[j] represents the probability of a
-        synchronous event of size j.
-        The sum over all entries of a must be equal to one.
+    amplitude_distribution : np.ndarray
+        CPP's amplitude distribution :math:`A`. `A[j]` represents the
+        probability of a synchronous event of size `j` among the generated
+        spike trains. The sum over all entries of :math:`A` must be equal to
+        one.
     t_stop : pq.Quantity
         The stopping time of the mother process
     rate : pq.Quantity
@@ -1712,26 +1701,29 @@ def _mother_proc_cpp_stat(A, t_stop, rate, t_start=0 * pq.ms):
     -------
     Poisson spike train representing the mother process generating the CPP
     """
-    n_spiketrains = len(A) - 1
+    n_spiketrains = len(amplitude_distribution) - 1
     # expected amplitude
-    exp_amplitude = np.dot(A, np.arange(n_spiketrains + 1))
+    exp_amplitude = np.dot(
+        amplitude_distribution, np.arange(n_spiketrains + 1))
     # expected rate of the mother process
     exp_mother_rate = (n_spiketrains * rate) / exp_amplitude
-    return homogeneous_poisson_process(
-        rate=exp_mother_rate, t_stop=t_stop, t_start=t_start)
+    return StationaryPoissonProcess(
+        rate=exp_mother_rate, t_stop=t_stop, t_start=t_start
+    ).generate_spiketrain()
 
 
-def _cpp_hom_stat(A, t_stop, rate, t_start=0 * pq.ms):
+def _cpp_hom_stat(amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
 
     Parameters
     ----------
-    A : np.ndarray
-        Amplitude distribution. A[j] represents the probability of a
-        synchronous event of size j.
-        The sum over all entries of A must be equal to one.
+    amplitude_distribution : np.ndarray
+        CPP's amplitude distribution :math:`A`. `A[j]` represents the
+        probability of a synchronous event of size `j` among the generated
+        spike trains. The sum over all entries of :math:`A` must be equal to
+        one.
     t_stop : pq.Quantity
         The end time of the output spike trains
     rate : pq.Quantity
@@ -1749,9 +1741,11 @@ def _cpp_hom_stat(A, t_stop, rate, t_start=0 * pq.ms):
 
     # Generate mother process and associated spike labels
     mother = _mother_proc_cpp_stat(
-        A=A, t_stop=t_stop, rate=rate, t_start=t_start)
-    labels = _sample_int_from_pdf(A, len(mother))
-    n_spiketrains = len(A) - 1  # Number of trains in output
+        amplitude_distribution=amplitude_distribution,
+        t_stop=t_stop, rate=rate, t_start=t_start)
+    labels = _sample_int_from_pdf(amplitude_distribution, len(mother))
+    n_spiketrains = len(amplitude_distribution) - 1
+    # Number of trains in output
 
     spiketrains = [[]] * n_spiketrains
     try:  # Faster but more memory-consuming approach
@@ -1779,17 +1773,18 @@ def _cpp_hom_stat(A, t_stop, rate, t_start=0 * pq.ms):
             for spiketrain in spiketrains]
 
 
-def _cpp_het_stat(A, t_stop, rates, t_start=0. * pq.ms):
+def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0. * pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
 
     Parameters
     ----------
-    A : np.ndarray
-        CPP's amplitude distribution. A[j] represents the probability of
-        a synchronous event of size j among the generated spike trains.
-        The sum over all entries of A must be equal to one.
+    amplitude_distribution : np.ndarray
+        CPP's amplitude distribution :math:`A`. `A[j]` represents the
+        probability of a synchronous event of size `j` among the generated
+        spike trains. The sum over all entries of :math:`A` must be equal to
+        one.
     t_stop : pq.Quantity
         The end time of the output spike trains
     rates : pq.Quantity
@@ -1809,7 +1804,7 @@ def _cpp_het_stat(A, t_stop, rates, t_start=0. * pq.ms):
     # (uncorrelated with heterog. rates + correlated with homog. rates)
     n_spiketrains = len(rates)  # number of output spike trains
     # amplitude expectation
-    expected_amplitude = np.dot(A, np.arange(n_spiketrains + 1))
+    expected_amplitude = np.dot(amplitude_distribution, np.arange(n_spiketrains + 1))
     r_sum = np.sum(rates)  # sum of all output firing rates
     r_min = np.min(rates)  # minimum of the firing rates
 
@@ -1821,19 +1816,21 @@ def _cpp_het_stat(A, t_stop, rates, t_start=0. * pq.ms):
     r_mother = r_uncorrelated + r_correlated
 
     # Check the analytical constraint for the amplitude distribution
-    if A[1] < (r_uncorrelated / r_mother).rescale(
+    if amplitude_distribution[1] < (r_uncorrelated / r_mother).rescale(
             pq.dimensionless).magnitude:
         raise ValueError('A[1] too small / A[i], i>1 too high')
 
     # Compute the amplitude distribution of the correlated CPP, and generate it
-    A = A * (r_mother / r_correlated).magnitude
-    A[1] = A[1] - r_uncorrelated / r_correlated
+    amplitude_distribution = amplitude_distribution * (r_mother / r_correlated).magnitude
+    amplitude_distribution[1] = amplitude_distribution[1] - r_uncorrelated / r_correlated
     compound_poisson_spiketrains = _cpp_hom_stat(
-        A, t_stop, r_min, t_start)
+        amplitude_distribution, t_stop, r_min, t_start)
 
     # Generate the independent heterogeneous Poisson processes
     poisson_spiketrains = \
-        [homogeneous_poisson_process(rate - r_min, t_start, t_stop)
+        [StationaryPoissonProcess(
+            rate=rate - r_min, t_start=t_start, t_stop=t_stop
+                                  ).generate_spiketrain()
          for rate in rates]
 
     # Pool the correlated CPP and the corresponding Poisson processes
@@ -1917,12 +1914,14 @@ def compound_poisson_process(
     # Homogeneous rates
     if rate.ndim == 0:
         compound_poisson_spiketrains = _cpp_hom_stat(
-            A=amplitude_distribution, t_stop=t_stop, rate=rate,
+            amplitude_distribution=amplitude_distribution,
+            t_stop=t_stop, rate=rate,
             t_start=t_start)
     # Heterogeneous rates
     else:
         compound_poisson_spiketrains = _cpp_het_stat(
-            A=amplitude_distribution, t_stop=t_stop, rates=rate,
+            amplitude_distribution=amplitude_distribution,
+            t_stop=t_stop, rates=rate,
             t_start=t_start)
 
     if shift is not None:
