@@ -541,8 +541,10 @@ class BinnedSpikeTrain(object):
         self._t_start = self._t_start.rescale(self.units).item()
         self._t_stop = self._t_stop.rescale(self.units).item()
 
-        start_shared = max(st.t_start.item() for st in spiketrains)
-        stop_shared = min(st.t_stop.item() for st in spiketrains)
+        start_shared = max(st.t_start.rescale(self.units).item()
+                           for st in spiketrains)
+        stop_shared = min(st.t_stop.rescale(self.units).item()
+                          for st in spiketrains)
 
         tolerance = self.tolerance
         if tolerance is None:
