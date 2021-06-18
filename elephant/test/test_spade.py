@@ -719,11 +719,5 @@ class SpadeTestCase(unittest.TestCase):
             self.assertEqual(pv_spec, pv_specs[surr_method])
 
 
-def suite():
-    suite = unittest.makeSuite(SpadeTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)
