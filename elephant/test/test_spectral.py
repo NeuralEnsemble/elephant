@@ -209,6 +209,41 @@ class MultitaperPSDTestCase(unittest.TestCase):
             peak_resolution=freq_res)
         self.assertTrue((freqs == freqs_np).all() and (psd == psd_np).all())
 
+    def test_multitaper_psd_parameter_hierarchy(self):
+        # generate data by adding white noise and a sinusoid
+        data_length = 5000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        noise = np.random.normal(size=data_length)
+        signal = [np.sin(2 * np.pi * signal_freq * t)
+                  for t in np.arange(0, data_length * sampling_period,
+                                     sampling_period)]
+        data = n.AnalogSignal(np.array(signal + noise),
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
+
+        # Test num_tapers vs nw
+        freqs1, psd1 = elephant.spectral.multitaper_psd(data,
+                                                        fs=data.sampling_rate,
+                                                        nw=3,
+                                                        num_tapers=9)
+        freqs2, psd2 = elephant.spectral.multitaper_psd(data,
+                                                        fs=data.sampling_rate,
+                                                        nw=3)
+        self.assertTrue((freqs1 == freqs2).all() and (psd1 != psd2).all())
+
+        # Test peak_resolution vs nw
+        freqs1, psd1 = elephant.spectral.multitaper_psd(data,
+                                                        fs=data.sampling_rate,
+                                                        nw=3,
+                                                        num_tapers=9,
+                                                        peak_resolution=1)
+        freqs2, psd2 = elephant.spectral.multitaper_psd(data,
+                                                        fs=data.sampling_rate,
+                                                        nw=3,
+                                                        num_tapers=9)
+        self.assertTrue((freqs1 == freqs2).all() and (psd1 != psd2).all())
+
     def test_multitaper_psd_against_nitime(self):
         """
         This test assesses the match between this implementation of
