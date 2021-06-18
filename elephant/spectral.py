@@ -473,6 +473,21 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
     return freqs, phase_cross_spec, amp_cross_spec
 
 
+def multitaper_coherence(signals, fs=1, nw=4, num_tapers=None,
+                         peak_resolution=None):
+
+    freqs, _, Pxy = multitaper_cross_spectrum(signals,fs, nw, num_tapers,
+                                          peak_resolution)
+
+    coherency = np.abs(Pxy[:512, 0, 1]) ** 2 / \
+                (Pxy[:512, 0, 0] * Pxy[:512, 1, 1])
+
+    phase_lag = np.angle(2*Pxy[:512, 0, 1])
+
+
+    return freqs, coherency, phase_lag
+
+
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
                   len_seg='len_segment', freq_res='frequency_resolution')
 def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -699,3 +714,68 @@ freq, phase, amp = multitaper_cross_spectrum(signals, fs=1000, nw=4)
 
 
 print(freq_m)
+
+
+def _generate_ground_truth(length_2d=30000):
+    order = 2
+    signal = np.zeros((2, length_2d + order))
+
+    weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+
+    weights = np.stack((weights_1, weights_2))
+
+    noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+
+    for i in range(length_2d):
+        for lag in range(order):
+            signal[:, i + order] += np.dot(weights[lag],
+                                           signal[:, i + 1 - lag])
+        rnd_var = np.random.multivariate_normal([0, 0],
+                                                noise_covariance)
+        signal[:, i + order] += rnd_var
+
+    signal = signal[:, 2:]
+
+    # Return signals as Nx2
+    return signal.T
+
+
+test_data = _generate_ground_truth(length_2d=2**10)
+
+fx, Pxx = welch_psd(test_data[:, 0])
+fy, Pyy = welch_psd(test_data[:, 1])
+
+fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1], frequency_resolution=0.005)
+
+fm, Pxxm = multitaper_psd(test_data.T)
+
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.semilogy(fx, Pxx, label="Pxx")
+plt.semilogy(fy, Pyy, label="Pyy")
+plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
+plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
+plt.legend()
+plt.show()
+
+
+
+
+fcs, _, Pcs = multitaper_cross_spectrum(test_data, num_tapers=20)
+
+plt.figure()
+plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
+plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
+plt.semilogy(fcs[:512], 2*Pcs[:512, 0, 0],'r:', label="Pxx Multitaper")
+plt.semilogy(fcs[:512], 2*Pcs[:512, 1, 1], 'b:', label="Pyy Multitaper")
+plt.legend()
+plt.show()
+
+
+plt.figure()
+plt.plot(fc, Coh, label="Welch Coh")
+plt.plot(fcs[:512], np.abs(Pcs[:512, 0, 1])**2 / (Pcs[:512, 0, 0] * Pcs[:512, 1, 1]), 'b:', label="Multitaper Coh")
+plt.legend()
+plt.show()
