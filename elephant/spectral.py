@@ -329,7 +329,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     else:
         if not isinstance(num_tapers, int):
             raise TypeError("num_tapers must be integer")
-        elif num_tapers <= 0:
+        if num_tapers <= 0:
             raise ValueError("num_tapers must be positive")
 
     print(f'Number of tapers: {num_tapers}')
