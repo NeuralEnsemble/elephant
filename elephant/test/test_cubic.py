@@ -141,11 +141,5 @@ class CubicTestCase(unittest.TestCase):
             sampling_period=10 * pq.ms), alpha=self.alpha)
 
 
-def suite():
-    suite = unittest.makeSuite(CubicTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)
