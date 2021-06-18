@@ -276,7 +276,6 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     peak_resolution : float, optional
         Desired frequency resolution of the obtained PSD estimate. When given
         as a `float`, it is taken as frequency in Hz.
-        If None, it will be determined from other parameters.
         Default: None.
 
     Returns
