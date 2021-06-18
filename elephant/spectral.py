@@ -347,6 +347,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     if data.ndim == 1:
         tapered_signal = data * slepian_fcts
     else:
+        # Use broadcasting to match dimensions for point-wise multiplication
         tapered_signal = data[:, np.newaxis] * slepian_fcts
 
     # Determine Fourier transform of tapered signal
