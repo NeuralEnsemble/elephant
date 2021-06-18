@@ -137,7 +137,7 @@ class CubicTestCase(unittest.TestCase):
                           max_iterations=-100)
 
         # Checking case in which the second cumulant of the signal is smaller
-        # than the first cumulant (analitycal constrain of the method)
+        # than the first cumulant (analytical constrain of the method)
         self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
             numpy.array([1] * 1000).reshape(1000, 1), units=pq.dimensionless,
             sampling_period=10 * pq.ms), alpha=self.alpha)
