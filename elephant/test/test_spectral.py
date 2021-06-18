@@ -255,7 +255,8 @@ class MultitaperPSDTestCase(unittest.TestCase):
         freqs, psd_multitaper = elephant.spectral.multitaper_psd(
             signal=time_series, fs=0.1, nw=4, num_tapers=8)
 
-        np.testing.assert_allclose(psd_multitaper, psd_nitime, rtol=1.2)
+        np.testing.assert_allclose(psd_multitaper, psd_nitime, rtol=0.3,
+                                   atol=0.1)
 
     def test_multitaper_psd_input_types(self):
         # generate a test data
