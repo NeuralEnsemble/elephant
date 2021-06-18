@@ -337,7 +337,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     # Generate frequencies
     freqs = np.fft.rfftfreq(length_signal, d=1/fs)
 
-    # Get slepian functions
+    # Get slepian functions (sym='False' used for spectral analysis)
     slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
                                              Kmax=num_tapers,
