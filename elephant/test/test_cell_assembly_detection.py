@@ -194,11 +194,5 @@ class CadTestCase(unittest.TestCase):
                           maxlag=self.max_lag)
 
 
-def suite():
-    suite = unittest.makeSuite(CadTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)
