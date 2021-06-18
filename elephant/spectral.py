@@ -278,6 +278,13 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
         as a `float`, it is taken as frequency in Hz.
         Default: None.
 
+    Notes
+    -----
+    There is a parameter hierarchy regarding nw, num_tapers and
+    peak_resolution. If peak_resolution is provided, it determines both nw and
+    the num_tapers. Specifying num_tapers has an effect only if peak_resolution
+    is not provided.
+
     Returns
     -------
     freqs : np.ndarray
@@ -315,6 +322,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
             raise ValueError("peak_resolution must be positive")
         else:
             nw = length_signal / fs * peak_resolution / 2
+            num_tapers = np.floor(2*nw).astype(int) - 1
 
     if num_tapers is None:
         num_tapers = np.floor(2*nw).astype(int) - 1
