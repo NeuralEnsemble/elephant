@@ -322,10 +322,10 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
             raise ValueError("peak_resolution must be positive")
         else:
             nw = length_signal / fs * peak_resolution / 2
-            num_tapers = np.floor(2*nw).astype(int) - 1
+            num_tapers = int(np.floor(2*nw) - 1)
 
     if num_tapers is None:
-        num_tapers = np.floor(2*nw).astype(int) - 1
+        num_tapers = int(np.floor(2*nw) - 1)
     else:
         if not isinstance(num_tapers, int):
             raise TypeError("num_tapers must be integer")
