@@ -338,16 +338,16 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     freqs = np.fft.rfftfreq(length_signal, d=1/fs)
 
     # Get slepian functions
-    slepain_fcts = scipy.signal.windows.dpss(M=length_signal,
+    slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
                                              Kmax=num_tapers,
                                              sym='False')
 
     # Calculate approximately independent spectrum estimates
     if data.ndim == 1:
-        tapered_signal = data * slepain_fcts
+        tapered_signal = data * slepian_fcts
     else:
-        tapered_signal = data[:, np.newaxis] * slepain_fcts
+        tapered_signal = data[:, np.newaxis] * slepian_fcts
 
     # Determine Fourier transform of tapered signal
     spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1))**2
