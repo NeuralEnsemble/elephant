@@ -697,11 +697,5 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(len(surrogate_train), 0)
 
 
-def suite():
-    suite = unittest.makeSuite(SurrogatesTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)
