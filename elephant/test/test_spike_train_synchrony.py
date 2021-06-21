@@ -207,6 +207,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                        for st in spiketrains]
 
         assert_array_equal(annotations, correct_complexities)
+        for a in annotations:
+            self.assertEqual(a.dtype, np.dtype(np.uint16).type)
 
         if mode == 'extract':
             correct_spike_times = [
