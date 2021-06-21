@@ -477,13 +477,10 @@ class RenewalProcess(AbstractPointProcess):
 
         if self.n_expected_spikes < 0:
             raise ValueError(
-                "Expected no. of spikes: {n_spikes} < 0. The firing "
-                "rate ({rate}) cannot be negative and t_stop "
-                "({t_stop}) must be greater than t_start "
-                "({t_start})".format(n_spikes=self.n_expected_spikes,
-                                     rate=self.rate,
-                                     t_stop=self._t_stop,
-                                     t_start=self._t_start))
+                f"Expected no. of spikes: {self.n_expected_spikes} < 0. "
+                f"The firing rate ({self.rate/self.units}) cannot be negative "
+                f"and t_stop ({self.t_stop}) must be greater than t_start "
+                f"({self.t_start}).")
 
     def _cdf_first_spike_equilibrium(self, time):
         """
@@ -618,7 +615,8 @@ class StationaryPoissonProcess(RenewalProcess):
 
         if refractory_period is not None:
             if not isinstance(refractory_period, pq.Quantity):
-                raise ValueError("refractory_period must be of type pq.Quantity")
+                raise ValueError(
+                    "refractory_period must be of type pq.Quantity")
             self.refractory_period = refractory_period.rescale(
                 self.units).item()
 
@@ -887,10 +885,10 @@ class RateModulatedProcess(AbstractPointProcess):
                 f'rate_signal should be of type neo.AnalogSignal.'
                 f' Currently it is of type: {type(rate_signal)}')
         if len(rate_signal) == 0:
-            raise ValueError(f'rate_signal can not be empty.')
+            raise ValueError('rate_signal can not be empty.')
         if not all(rate_signal >= 0.):
             raise ValueError(
-                f'All elements of rate_signal should be positive.')
+                'All elements of rate_signal should be positive.')
 
         super().__init__(
             t_start=rate_signal.t_start, t_stop=rate_signal.t_stop)
@@ -1144,8 +1142,9 @@ def inhomogeneous_poisson_process(rate, as_array=False,
         " use 'NonStationaryPoissonProcess'.",
         DeprecationWarning)
     return NonStationaryPoissonProcess(
-        rate_signal=rate, refractory_period=refractory_period).generate_spiketrain(
-        as_array=as_array)
+        rate_signal=rate,
+        refractory_period=refractory_period).generate_spiketrain(
+            as_array=as_array)
 
 
 def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
@@ -1286,7 +1285,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     # Set number n of output spike trains (specified or set to len(rate))
     if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
         raise ValueError(
-            'n (={}) must be a positive integer'.format(str(n_spiketrains)))
+            f'n (={n_spiketrains}) must be a positive integer')
 
     # one rate for all spike trains
     if rate.ndim == 0:
@@ -1385,7 +1384,7 @@ def single_interaction_process(
     # Check if n is a positive integer
     if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
         raise ValueError(
-            'n (={}) must be a positive integer'.format(n_spiketrains))
+            f'n (={n_spiketrains}) must be a positive integer')
     if coincidences not in ('deterministic', 'stochastic'):
         raise ValueError(
             "coincidences must be 'deterministic' or 'stochastic'")
@@ -1399,7 +1398,7 @@ def single_interaction_process(
     if rate.ndim == 0:
         if rate < 0 * pq.Hz:
             raise ValueError(
-                'rate (={}) must be non-negative.'.format(rate))
+                f'rate (={rate}) must be non-negative.')
         rates_b = np.repeat(rate, n_spiketrains)
     else:
         rates_b = rate.flatten()
@@ -1792,8 +1791,8 @@ def compound_poisson_process(
     # Check A is a probability distribution (it sums to 1 and is positive)
     if abs(sum(amplitude_distribution) - 1) > np.finfo('float').eps:
         raise ValueError(
-            "'amplitude_distribution' must be a probability vector: "
-            "sum(A) = {} != 1".format(sum(amplitude_distribution)))
+            f"'amplitude_distribution' must be a probability vector: "
+            f"sum(A) = {sum(amplitude_distribution)} != 1")
     if np.any(amplitude_distribution < 0):
         raise ValueError("'amplitude_distribution' must be a probability "
                          "vector with positive entries")

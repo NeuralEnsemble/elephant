@@ -163,11 +163,13 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
                 for refractory_period in (None, 3.*pq.ms):
                     np.random.seed(seed=123456)
                     spiketrain_old = stg.homogeneous_poisson_process(
-                        rate, t_stop=t_stop, refractory_period=refractory_period)
+                        rate, t_stop=t_stop,
+                        refractory_period=refractory_period)
                     np.random.seed(seed=123456)
 
                     spiketrain = stg.StationaryPoissonProcess(
-                        rate, t_stop=t_stop, refractory_period=refractory_period,
+                        rate, t_stop=t_stop,
+                        refractory_period=refractory_period,
                         equilibrium=False
                     ).generate_spiketrain()
                     assert_array_almost_equal(
@@ -200,9 +202,10 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
                                 t_stop.units).magnitude),
                             alternative='two-sided')
                     else:
-                        refractory_period = refractory_period.rescale(t_stop.units).magnitude
+                        refractory_period = refractory_period.rescale(
+                            t_stop.units).item()
                         measured_rate = 1./expected_mean_isi.rescale(
-                                    t_stop.units).magnitude
+                                    t_stop.units).item()
                         effective_rate = measured_rate / (
                                 1. - measured_rate * refractory_period)
 
@@ -232,7 +235,6 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
 
         assert_array_almost_equal(sp1, sp2)
 
-
     def test_t_start_and_t_stop(self):
         rate = 10 * pq.Hz
         t_start = 17 * pq.ms
@@ -255,10 +257,10 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
                 warnings.simplefilter("ignore")
                 # RuntimeWarning: divide by zero encountered in true_divide
                 # mean_interval = 1 / rate.magnitude, when rate == 0 Hz.
-                sp = stg.StationaryPoissonProcess(
+                spiketrain = stg.StationaryPoissonProcess(
                     rate=0 * pq.Hz, t_stop=10 * pq.s,
                     refractory_period=refractory_period).generate_spiketrain()
-                self.assertEqual(sp.size, 0)
+                self.assertEqual(spiketrain.size, 0)
 
     def test_nondecrease_spike_times(self):
         for refractory_period in (None, 3 * pq.ms):
@@ -532,11 +534,12 @@ class FirstSpikeCvTestCase(unittest.TestCase):
             t_stop=self.t_stop,
             equilibrium=False)
 
-        self.poisson_refractory_period_equilibrium = stg.StationaryPoissonProcess(
-            rate=self.rate,
-            refractory_period=0.5 / self.rate,
-            t_stop=self.t_stop,
-            equilibrium=True)
+        self.poisson_refractory_period_equilibrium =\
+            stg.StationaryPoissonProcess(
+                rate=self.rate,
+                refractory_period=0.5 / self.rate,
+                t_stop=self.t_stop,
+                equilibrium=True)
 
         # CV = 1 / sqrt(shape_factor)
         self.gamma_process_ordinary = stg.StationaryGammaProcess(
@@ -564,17 +567,19 @@ class FirstSpikeCvTestCase(unittest.TestCase):
             t_stop=self.t_stop,
             equilibrium=True)
 
-        self.inverse_gaussian_process_ordinary = stg.StationaryInverseGaussianProcess(
-            rate=self.rate,
-            cv=1/2,
-            t_stop=self.t_stop,
-            equilibrium=False)
+        self.inverse_gaussian_process_ordinary = \
+            stg.StationaryInverseGaussianProcess(
+                rate=self.rate,
+                cv=1/2,
+                t_stop=self.t_stop,
+                equilibrium=False)
 
-        self.inverse_gaussian_process_equilibrium = stg.StationaryInverseGaussianProcess(
-            rate=self.rate,
-            cv=1 / 2,
-            t_stop=self.t_stop,
-            equilibrium=True)
+        self.inverse_gaussian_process_equilibrium = \
+            stg.StationaryInverseGaussianProcess(
+                rate=self.rate,
+                cv=1 / 2,
+                t_stop=self.t_stop,
+                equilibrium=True)
 
     def test_cv(self):
         processes = (self.poisson_process,
@@ -598,7 +603,8 @@ class FirstSpikeCvTestCase(unittest.TestCase):
                 n_spiketrains=self.n_spiketrains,
                 as_array=True)
 
-            cvs = [variation(np.diff(spiketrain)) for spiketrain in spiketrains]
+            cvs = [variation(np.diff(spiketrain))
+                   for spiketrain in spiketrains]
             mean_cv = np.mean(cvs)
 
             assert_allclose(
@@ -1011,9 +1017,9 @@ class CppTestCase(unittest.TestCase):
             [train.simplified.units for train in cpp],
             [1000 * pq.ms] * len(cpp))
         # testing output t_start t_stop
-        for st in cpp:
-            self.assertEqual(st.t_stop, t_stop)
-            self.assertEqual(st.t_start, t_start)
+        for spiketrain in cpp:
+            self.assertEqual(spiketrain.t_stop, t_stop)
+            self.assertEqual(spiketrain.t_start, t_start)
         self.assertEqual(len(cpp), len(amplitude_distribution) - 1)
 
     def test_cpp_hom(self):
