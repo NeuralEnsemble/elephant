@@ -171,11 +171,10 @@ def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
     # this can occur when extraction interval indexes beyond the signal.
     # Workaround: delete spikes shorter than the maximum length with
     if len(np.shape(waveforms)) == 1:
-        max_len = (np.array([len(x) for x in waveforms])).max()
+        max_len = max(len(waveform) for waveform in waveforms)
         to_delete = np.array([idx for idx, x in enumerate(waveforms)
                               if len(x) < max_len])
         waveforms = np.delete(waveforms, to_delete, axis=0)
-        waveforms = np.array(waveforms)
         warnings.warn("Waveforms " +
                       ("{:d}, " * len(to_delete)).format(*to_delete) +
                       "exceeded signal and had to be deleted. " +
@@ -487,16 +486,36 @@ class RenewalProcess(AbstractPointProcess):
                                      t_start=self._t_start))
 
     def _cdf_first_spike_equilibrium(self, time):
+        """
+        Integral over the p.d.f. of the first spike which is:
+        p(t) = rate * survival-function(t) * Heaviside(t).
+        See Bouss (2020).
+        """
         return self.rate * integrate.quad(self.isi_generator.sf, 0., time)[0]
 
     def _get_first_spike_equilibrium(self):
+        """
+        Return a numerically drawn sample of the p.d.f of the first spike.
+
+        By solving:
+        x = integral(c.d.f(t) from 0 to t),
+        where x is drawn from a uniform distribution.
+        """
         random_uniform = np.random.random()
-        return root_scalar(
+        return root_scalar(  # root_scalar is an equation solver
+
+                # integral(c.d.f(t) from 0 to t) - random-number-x)
                 lambda time:
                 self._cdf_first_spike_equilibrium(time) - random_uniform,
+
                 # Initial guess is solution for Poisson process
                 x0=-np.log(1.-random_uniform)/self.rate,
+
+                # limits for the time of the first spike
                 bracket=(0., 10./self.rate),
+
+                # derivative of the c.d.f, which is rate times
+                # the survival function
                 fprime=lambda time: self.rate * self.isi_generator.sf(time)
             ).root + self._t_start
 
@@ -541,7 +560,8 @@ class StationaryPoissonProcess(RenewalProcess):
     """
     Generates spike trains whose spikes are realizations of a stationary
     Poisson process with the given rate, starting at time `t_start` and
-    stopping at time `t_stop`. Optionally, a dead time can be specified.
+    stopping at time `t_stop`. Optionally, a absolute refractory period /
+    dead time can be specified.
 
     Parameters
     ----------
@@ -553,8 +573,10 @@ class StationaryPoissonProcess(RenewalProcess):
     t_stop : pq.Quantity, optional
         The end of the spike train.
         Default: 1.*pq.s
-    dead_time : pq.Quantity, optional
+    refractory_period : pq.Quantity, optional
         The time period after one spike in which no other spike is emitted.
+        This can be called an absolute refractory period or a dead time as
+        used in :cite:`generation-Deger12_443`.
         Default : None
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
@@ -565,10 +587,10 @@ class StationaryPoissonProcess(RenewalProcess):
     ValueError
         If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
 
-        If `dead_time` is not of type `pq.Quantity` nor None.
+        If `refractory_period` is not of type `pq.Quantity` nor None.
 
         If the period between two successive spikes (`1 / rate`) is smaller
-        than the `dead_time`.
+        than the `refractory_period`.
 
     Examples
     --------
@@ -579,77 +601,67 @@ class StationaryPoissonProcess(RenewalProcess):
     ...     rate=20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms
     ...     ).generate_spiketrain(as_array=True)
     >>> spiketrain = StationaryPoissonProcess(
-    ...     rate=50*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms, dead_time = 3*pq.ms).generate_spiketrain()
+    ...     rate=50*pq.Hz,
+    ...     t_start=0*pq.ms, t_stop=1000*pq.ms,
+    ...     refractory_period = 3*pq.ms).generate_spiketrain()
     """
     def __init__(
             self,
             rate: pq.Quantity,
             t_stop: pq.Quantity = 1.*pq.s,
             t_start: pq.Quantity = 0.*pq.s,
-            dead_time: Optional[pq.Quantity] = None,
+            refractory_period: Optional[pq.Quantity] = None,
             equilibrium: bool = True
     ):
         super().__init__(
             rate=rate, t_start=t_start, t_stop=t_stop, equilibrium=equilibrium)
 
-        if dead_time is not None:
-            if not isinstance(dead_time, pq.Quantity):
-                raise ValueError("dead_time must be of type pq.Quantity")
-            self.dead_time = dead_time.rescale(self.units).item()
+        if refractory_period is not None:
+            if not isinstance(refractory_period, pq.Quantity):
+                raise ValueError("refractory_period must be of type pq.Quantity")
+            self.refractory_period = refractory_period.rescale(
+                self.units).item()
 
-            if self.rate * self.dead_time >= 1.:
+            if self.rate * self.refractory_period >= 1.:
                 raise ValueError(
                     "Period between two successive spikes must be larger "
                     "than the dead time. Decrease either the "
                     "firing rate or the dead time.")
         else:
-            self.dead_time = dead_time
+            self.refractory_period = refractory_period
 
-        if self.n_expected_spikes > 0 and dead_time is None:
+        if self.n_expected_spikes > 0 and refractory_period is None:
             self.isi_generator = stats.expon(scale=1./self.rate)
 
-        elif self.n_expected_spikes > 0 and dead_time is not None:
-            self.effective_rate = self.rate / (1. - self.rate * self.dead_time)
+        elif self.n_expected_spikes > 0 and refractory_period is not None:
+            self.effective_rate = self.rate / \
+                                  (1. - self.rate * self.refractory_period)
             self.isi_generator = stats.expon(
-                scale=1. / self.effective_rate, loc=self.dead_time)
-
-    def _cdf_first_spike_equilibrium(self, time):
-        if time < 0.:
-            return 0.
-        elif self.dead_time is None:
-            return 1. - np.exp(-self.rate*time)
-
-        # the case with dead_time
-        if time <= self.dead_time:
-            return self.rate * time
-        # time > self.dead_time
-        return 1. - (1.-self.rate*self.dead_time) * \
-            np.exp(-self.effective_rate*(time-self.dead_time))
+                scale=1. / self.effective_rate, loc=self.refractory_period)
 
     def _get_first_spike_equilibrium(self):
-        if self.dead_time is None:
+        if self.refractory_period is None:
             return self.isi_generator.rvs() + self._t_start
 
         # the case with dead time
         random_uniform = np.random.random()
-        if random_uniform <= self.rate * self.dead_time:
+        if random_uniform <= self.rate * self.refractory_period:
             return random_uniform / self.rate + self._t_start
-        # random_uniform > self.rate * self.dead_time
-        return (np.log(1. - self.rate * self.dead_time)
+        # random_uniform > self.rate * self.refractory_period
+        return (np.log(1. - self.rate * self.refractory_period)
                 - np.log(1. - random_uniform)
-                ) / self.effective_rate + self.dead_time
+                ) / self.effective_rate + self.refractory_period
 
     @property
     def expected_cv(self):
         """
         The expected coefficient of variation given the ISI distribution.
         """
-        if self.dead_time is None:
+        if self.refractory_period is None:
             return 1.
 
         # the case with dead time
-        return 1. - self.rate * self.dead_time
+        return 1. - self.rate * self.refractory_period
 
 
 class StationaryGammaProcess(RenewalProcess):
@@ -943,9 +955,10 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
         A `neo.AnalogSignal` representing the rate profile evolving over
         time.Its values have all to be `>=0`. The generated spike trains
         will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
-    dead_time : pq.Quantity, optional
+    refractory_period : pq.Quantity, optional
         The time period after one spike in which no other spike is emitted.
-        Default: None
+        This can be called an absolute refractory period or a dead time.
+        Default : None
 
     Raises
     ------
@@ -953,15 +966,18 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
         If `rate_signal` is not a neo AnalogSignal
         If `rate_signal` contains a negative value.
         If `rate_signal` is empty.
-        If `dead_time` is not of type `pq.Quantity` nor None.
+        If `refractory_period` is not of type `pq.Quantity` nor None.
     """
     def __init__(self, rate_signal: neo.AnalogSignal,
-                 dead_time: Optional[pq.Quantity] = None):
+                 refractory_period: Optional[pq.Quantity] = None):
 
-        if dead_time is not None:
+        if refractory_period is not None:
+            if not isinstance(refractory_period, pq.Quantity):
+                raise ValueError(
+                    "refractory_period must be of type pq.Quantity")
             rate_signal = \
                 rate_signal / (1. - rate_signal.simplified.magnitude
-                               * dead_time.simplified.item())
+                               * refractory_period.simplified.item())
 
         super().__init__(rate_signal=rate_signal)
         self.process_operational_time = StationaryPoissonProcess(
@@ -969,25 +985,22 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
             t_start=self.t_start,
             t_stop=self.t_stop)
 
-        if dead_time is not None:
-            if not isinstance(dead_time, pq.Quantity):
-                raise ValueError("dead_time must be of type pq.Quantity")
-            self.dead_time = dead_time.rescale(self.units).item()
-
-        else:
-            self.dead_time = dead_time
+        self.refractory_period = refractory_period
+        if self.refractory_period is not None:
+            self.refractory_period = self.refractory_period.rescale(
+                self.units).item()
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
-        if self.dead_time is None:
+        if self.refractory_period is None:
             return super()._generate_spiketrain_as_array()
 
         spiketrain = super()._generate_spiketrain_as_array()
         thinned_spiketrain = []
 
-        previous_spike = self._t_start - self.dead_time
+        previous_spike = self._t_start - self.refractory_period
 
         for spike in spiketrain:
-            if spike > previous_spike + self.dead_time:
+            if spike > previous_spike + self.refractory_period:
                 thinned_spiketrain.append(spike)
                 previous_spike = spike
         return np.array(thinned_spiketrain)
@@ -1084,7 +1097,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
 
     return StationaryPoissonProcess(
         rate=rate, t_start=t_start, t_stop=t_stop,
-        dead_time=refractory_period, equilibrium=False
+        refractory_period=refractory_period, equilibrium=False
     ).generate_spiketrain(as_array=as_array)
 
 
@@ -1131,7 +1144,7 @@ def inhomogeneous_poisson_process(rate, as_array=False,
         " use 'NonStationaryPoissonProcess'.",
         DeprecationWarning)
     return NonStationaryPoissonProcess(
-        rate_signal=rate, dead_time=refractory_period).generate_spiketrain(
+        rate_signal=rate, refractory_period=refractory_period).generate_spiketrain(
         as_array=as_array)
 
 
