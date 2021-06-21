@@ -366,11 +366,25 @@ class AbstractPointProcess:
         if not (isinstance(t_start, pq.Quantity) and
                 isinstance(t_stop, pq.Quantity)):
             raise ValueError("t_start and t_stop must be of type pq.Quantity")
-        self.unit = t_stop.units
-        self.t_stop = t_stop.item()
-        self.t_start = t_start.rescale(self.unit).item()
+        self.units = t_stop.units
+        self._t_stop = t_stop.item()
+        self._t_start = t_start.rescale(self.units).item()
         if self.t_stop <= self.t_start:
             raise ValueError('t_start must be smaller than t_stop.')
+
+    @property
+    def t_start(self):
+        """
+        t_start quantity; there are no spike times below this value.
+        """
+        return self._t_start * self.units
+
+    @property
+    def t_stop(self):
+        """
+        t_stop quantity; there are no spike times above this value.
+        """
+        return self._t_stop * self.units
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
         raise NotImplementedError
@@ -396,7 +410,7 @@ class AbstractPointProcess:
         if not as_array:
             return neo.SpikeTrain(
                 self._generate_spiketrain_as_array(),
-                t_start=self.t_start, t_stop=self.t_stop, units=self.unit)
+                t_start=self.t_start, t_stop=self.t_stop, units=self.units)
         return self._generate_spiketrain_as_array()
 
     def generate_n_spiketrains(
@@ -455,12 +469,12 @@ class RenewalProcess(AbstractPointProcess):
         super().__init__(t_start=t_start, t_stop=t_stop)
         if not isinstance(rate, pq.Quantity):
             raise ValueError("rate must be of type pq.Quantity")
-        self.rate = rate.rescale(1./self.unit).item()
+        self.rate = rate.rescale(1./self.units).item()
 
         self.equilibrium = equilibrium
 
         self.n_expected_spikes = int(np.ceil(
-            ((self.t_stop - self.t_start) * self.rate)))
+            ((self._t_stop - self._t_start) * self.rate)))
 
         if self.n_expected_spikes < 0:
             raise ValueError(
@@ -469,8 +483,8 @@ class RenewalProcess(AbstractPointProcess):
                 "({t_stop}) must be greater than t_start "
                 "({t_start})".format(n_spikes=self.n_expected_spikes,
                                      rate=self.rate,
-                                     t_stop=self.t_stop,
-                                     t_start=self.t_start))
+                                     t_stop=self._t_stop,
+                                     t_start=self._t_start))
 
     def _cdf_first_spike_equilibrium(self, time):
         return self.rate * integrate.quad(self.isi_generator.sf, 0., time)[0]
@@ -484,7 +498,7 @@ class RenewalProcess(AbstractPointProcess):
                 x0=-np.log(1.-random_uniform)/self.rate,
                 bracket=(0., 10./self.rate),
                 fprime=lambda time: self.rate * self.isi_generator.sf(time)
-            ).root + self.t_start
+            ).root + self._t_start
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
         if self.n_expected_spikes == 0:
@@ -495,7 +509,7 @@ class RenewalProcess(AbstractPointProcess):
             # Bouss (2020), Master's Thesis
             first_spike = self._get_first_spike_equilibrium()
         else:  # ordinary renewal process
-            first_spike = self.isi_generator.rvs() + self.t_start
+            first_spike = self.isi_generator.rvs() + self._t_start
 
         spikes = np.array([first_spike])
 
@@ -504,23 +518,23 @@ class RenewalProcess(AbstractPointProcess):
             self.n_expected_spikes + 3 * np.sqrt(self.n_expected_spikes)))
 
         # Continue until whole time range is covered
-        while spikes[-1] < self.t_stop:
+        while spikes[-1] < self._t_stop:
             isi = self.isi_generator.rvs(size=n_spikes_three_stds)
 
             t_last_spike = spikes[-1]
             spikes = np.r_[spikes, t_last_spike + np.cumsum(isi)]
 
-        index_last_spike = spikes.searchsorted(self.t_stop)
+        index_last_spike = spikes.searchsorted(self._t_stop)
         spikes = spikes[:index_last_spike]
 
         return spikes
 
     @property
-    def cv(self):
+    def expected_cv(self):
         """
-        The coefficient of variation.
+        The expected coefficient of variation given the ISI distribution.
         """
-        raise self.isi_generator.std()/self.isi_generator.mean()
+        return self.isi_generator.std()/self.isi_generator.mean()
 
 
 class StationaryPoissonProcess(RenewalProcess):
@@ -582,7 +596,7 @@ class StationaryPoissonProcess(RenewalProcess):
         if dead_time is not None:
             if not isinstance(dead_time, pq.Quantity):
                 raise ValueError("dead_time must be of type pq.Quantity")
-            self.dead_time = dead_time.rescale(self.unit).item()
+            self.dead_time = dead_time.rescale(self.units).item()
 
             if self.rate * self.dead_time >= 1.:
                 raise ValueError(
@@ -615,21 +629,21 @@ class StationaryPoissonProcess(RenewalProcess):
 
     def _get_first_spike_equilibrium(self):
         if self.dead_time is None:
-            return self.isi_generator.rvs() + self.t_start
+            return self.isi_generator.rvs() + self._t_start
 
         # the case with dead time
         random_uniform = np.random.random()
         if random_uniform <= self.rate * self.dead_time:
-            return random_uniform / self.rate + self.t_start
+            return random_uniform / self.rate + self._t_start
         # random_uniform > self.rate * self.dead_time
         return (np.log(1. - self.rate * self.dead_time)
                 - np.log(1. - random_uniform)
                 ) / self.effective_rate + self.dead_time
 
     @property
-    def cv(self):
+    def expected_cv(self):
         """
-        The coefficient of variation.
+        The expected coefficient of variation given the ISI distribution.
         """
         if self.dead_time is None:
             return 1.
@@ -700,9 +714,9 @@ class StationaryGammaProcess(RenewalProcess):
                        self.shape_factor*self.rate*time)
 
     @property
-    def cv(self):
+    def expected_cv(self):
         """
-        The coefficient of variation.
+        The expected coefficient of variation given the ISI distribution.
         """
         return 1./np.sqrt(self.shape_factor)
 
@@ -767,9 +781,9 @@ class StationaryLogNormalProcess(RenewalProcess):
         return -np.log(self.rate) - self.sigma**2/2
 
     @property
-    def cv(self):
+    def expected_cv(self):
         """
-        The coefficient of variation.
+        The expected coefficient of variation given the ISI distribution.
         """
         return np.sqrt(np.exp(self.sigma**2) - 1)
 
@@ -790,7 +804,7 @@ class StationaryInverseGaussianProcess(RenewalProcess):
     rate : pq.Quantity
         The constant firing rate.
     cv : float
-        The coefficient of variation.
+        The expected coefficient of variation.
     t_start : pq.Quantity, optional
         The start of the spike train.
         Default: 0.*pq.s
@@ -827,9 +841,9 @@ class StationaryInverseGaussianProcess(RenewalProcess):
                 mu=cv**2, scale=1./(self.rate*cv**2))
 
     @property
-    def cv(self):
+    def expected_cv(self):
         """
-        The coefficient of variation.
+        The expected coefficient of variation given the ISI distribution.
         """
         return self._cv
 
@@ -871,25 +885,25 @@ class RateModulatedProcess(AbstractPointProcess):
 
         self.rate_signal = rate_signal
 
-        self.mean_rate = np.mean(rate_signal.rescale(1./self.unit).magnitude)
+        self.mean_rate = np.mean(rate_signal.rescale(1./self.units).magnitude)
 
         if self.mean_rate == 0.:
             return
 
         self.sampling_period = \
-            self.rate_signal.sampling_period.rescale(self.unit).magnitude
+            self.rate_signal.sampling_period.rescale(self.units).magnitude
         # Operational time corresponds to the integral of the firing rate
         # over time, here normalized by the average firing rate
         operational_time = np.cumsum(
-            rate_signal.rescale(1./self.unit).magnitude)
+            rate_signal.rescale(1./self.units).magnitude)
         operational_time *= (self.sampling_period / self.mean_rate)
         operational_time = np.hstack((0., operational_time))
-        self.operational_time = operational_time + self.t_start
+        self.operational_time = operational_time + self._t_start
 
         # The time points at which the firing rates are given
         self.real_time = np.hstack(
-            (rate_signal.times.rescale(self.unit).magnitude,
-             self.t_stop))
+            (rate_signal.times.rescale(self.units).magnitude,
+             self._t_stop))
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
         spiketrain_operational_time = \
@@ -951,14 +965,14 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
 
         super().__init__(rate_signal=rate_signal)
         self.process_operational_time = StationaryPoissonProcess(
-            rate=self.mean_rate * 1./self.unit,
-            t_start=self.t_start * self.unit,
-            t_stop=self.t_stop * self.unit)
+            rate=self.mean_rate * 1./self.units,
+            t_start=self.t_start,
+            t_stop=self.t_stop)
 
         if dead_time is not None:
             if not isinstance(dead_time, pq.Quantity):
                 raise ValueError("dead_time must be of type pq.Quantity")
-            self.dead_time = dead_time.rescale(self.unit).item()
+            self.dead_time = dead_time.rescale(self.units).item()
 
         else:
             self.dead_time = dead_time
@@ -970,7 +984,7 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
         spiketrain = super()._generate_spiketrain_as_array()
         thinned_spiketrain = []
 
-        previous_spike = self.t_start - self.dead_time
+        previous_spike = self._t_start - self.dead_time
 
         for spike in spiketrain:
             if spike > previous_spike + self.dead_time:
@@ -1003,10 +1017,10 @@ class NonStationaryGammaProcess(RateModulatedProcess):
     def __init__(self, rate_signal: neo.AnalogSignal, shape_factor: float):
         super().__init__(rate_signal=rate_signal)
         self.process_operational_time = StationaryGammaProcess(
-            rate=self.mean_rate * 1./self.unit,
+            rate=self.mean_rate * 1./self.units,
             shape_factor=shape_factor,
-            t_start=self.t_start * self.unit,
-            t_stop=self.t_stop * self.unit)
+            t_start=self.t_start,
+            t_stop=self.t_stop)
 
 
 def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
@@ -1070,7 +1084,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
 
     return StationaryPoissonProcess(
         rate=rate, t_start=t_start, t_stop=t_stop,
-        dead_time=refractory_period, equilibrium=True
+        dead_time=refractory_period, equilibrium=False
     ).generate_spiketrain(as_array=as_array)
 
 
@@ -1172,7 +1186,7 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
         DeprecationWarning)
     process = StationaryGammaProcess(
         rate=b / a, shape_factor=a, t_stop=t_stop, t_start=t_start,
-        equilibrium=True
+        equilibrium=False
     )
     return process.generate_spiketrain(as_array=as_array)
 

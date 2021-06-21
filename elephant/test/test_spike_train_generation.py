@@ -16,8 +16,7 @@ import neo
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_allclose
 import quantities as pq
-from scipy.stats import expon
-from scipy.stats import kstest, poisson
+from scipy.stats import expon, kstest, poisson, variation
 
 import elephant.spike_train_generation as stg
 from elephant.statistics import isi, instantaneous_rate
@@ -150,8 +149,14 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
                                self.first_spike))
 
 
-class StationaryPoissonProcessTestCase(unittest.TestCase):
+class AbstractPointProcessTestCase(unittest.TestCase):
+    def test_not_implemented_error(self):
+        process = stg.AbstractPointProcess()
+        self.assertRaises(
+            NotImplementedError, process._generate_spiketrain_as_array)
 
+
+class StationaryPoissonProcessTestCase(unittest.TestCase):
     def test_statistics(self):
         # This is a statistical test that has a non-zero chance of failure
         # during normal operation. Thus, we set the random seed to a value that
@@ -166,7 +171,8 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
                     np.random.seed(seed=123456)
 
                     spiketrain = stg.StationaryPoissonProcess(
-                        rate, t_stop=t_stop, dead_time=dead_time
+                        rate, t_stop=t_stop, dead_time=dead_time,
+                        equilibrium=False
                     ).generate_spiketrain()
                     assert_array_almost_equal(
                         spiketrain_old.magnitude,
@@ -330,7 +336,7 @@ class StationaryGammaProcessTestCase(unittest.TestCase):
                     a, b, t_stop=t_stop)
                 np.random.seed(seed=12345)
                 spiketrain = stg.StationaryGammaProcess(
-                    rate=b/a, shape_factor=a, t_stop=t_stop
+                    rate=b/a, shape_factor=a, t_stop=t_stop, equilibrium=False
                 ).generate_spiketrain()
                 assert_allclose(spiketrain_old.magnitude, spiketrain.magnitude)
 
@@ -499,6 +505,70 @@ class StationaryInverseGaussianProcessTestCase(unittest.TestCase):
         # don't check with isinstance: pq.Quantity is a subclass of np.ndarray
         self.assertTrue(isinstance(spiketrain_array, np.ndarray))
         assert_array_almost_equal(spiketrain.times.magnitude, spiketrain_array)
+
+
+class FirstSpikeCvTestCase(unittest.TestCase):
+    def setUp(self):
+        np.random.seed(987654321)
+        self.rate = 100. * pq.Hz
+        self.t_stop = 10.*pq.s
+        self.n_spiketrains = 100
+
+        # can only have CV equal to 1.
+        self.poisson_process = stg.StationaryPoissonProcess(
+            rate=self.rate)
+
+        # choose all further processes to have CV of 1/2
+        # CV = 1 - rate * dead_time
+        self.poisson_with_dead_time = stg.StationaryPoissonProcess(
+            rate=self.rate,
+            dead_time=0.5/self.rate,
+            t_stop=self.t_stop)
+
+        # CV = 1 / sqrt(shape_factor)
+        self.gamma_process = stg.StationaryGammaProcess(
+            rate=self.rate,
+            shape_factor=4,
+            t_stop=self.t_stop)
+
+        # CV = sqrt(exp(sigma**2) - 1)
+        self.log_normal_process = stg.StationaryLogNormalProcess(
+            rate=self.rate,
+            sigma=np.sqrt(np.log(5./4.)),
+            t_stop=self.t_stop)
+
+        self.inverse_gaussian_process = stg.StationaryInverseGaussianProcess(
+            rate=self.rate,
+            cv=1/2,
+            t_stop=self.t_stop)
+
+    def test_cv(self):
+        self.assertAlmostEqual(1., self.poisson_process.expected_cv)
+
+        for process in (self.poisson_with_dead_time,
+                        self.gamma_process,
+                        self.log_normal_process,
+                        self.inverse_gaussian_process):
+            self.assertAlmostEqual(0.5, process.expected_cv)
+            spiketrains = process.generate_n_spiketrains(
+                n_spiketrains=self.n_spiketrains,
+                as_array=True)
+            cvs = [np.std(spiketrain, ddof=1)/np.mean(spiketrain)
+                   for spiketrain in spiketrains]
+            rate = np.mean([len(spiketrain)/self.t_stop for spiketrain in spiketrains])
+            mean_cv = np.mean(cvs)
+            print(type(process).__name__, '\n',
+                  f'{mean_cv=:0f}', '\n',
+                  f'{process.expected_cv=}', '\n',
+                  f'{rate=:0f}', '\n',)
+            assert_allclose(
+                process.expected_cv, mean_cv, atol=0.1)
+            assert_allclose(
+                process.rate, rate, atol=0.5)
+
+    def test_first_spike(self):
+        # TODO: add test
+        pass
 
 
 class NonStationaryPoissonProcessTestCase(unittest.TestCase):
@@ -726,7 +796,7 @@ class NonStationaryGammaTestCase(unittest.TestCase):
                                 rtol=0, atol=rtol * rate.item())
 
 
-class _n_poisson_TestCase(unittest.TestCase):
+class NPoissonTestCase(unittest.TestCase):
 
     def setUp(self):
         self.n = 4
