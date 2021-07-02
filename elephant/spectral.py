@@ -19,7 +19,10 @@ from elephant.utils import deprecated_alias
 
 __all__ = [
     "welch_psd",
-    "welch_coherence"
+    "welch_coherence",
+    "multitaper_psd",
+    "multitaper_cross_spectrum",
+    "multitaper_coherence"
 ]
 
 
@@ -360,23 +363,13 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
 def multitaper_cross_spectrum(signals, fs=1, nw=4,
                               num_tapers=None, peak_resolution=None):
     """
-    Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
-    using Multitaper method
-
-    The PSD is obtained through the following steps:
-
-    1. Calculate 'num_tapers' approximately independent estimates of the
-       spectrum by multiplying the signal with the discrete prolate spheroidal
-       functions (also known as Slepian function) and calculate the PSD of the
-       products
-
-    2. Average the approximately independent estimates to decrease overall
-       variance of the estimates
+    Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
+    Multitaper method.
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
-        Time series data of which PSD is estimated. When `signal` is np.ndarray
+    signals : neo.AnalogSignal
+        Time series data of signals. When `signals` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
     fs : float, optional
         Specifies the sampling frequency of the input time series
@@ -475,17 +468,43 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
 
 def multitaper_coherence(signals, fs=1, nw=4, num_tapers=None,
                          peak_resolution=None):
+    """
+    Estimates the magnitude-squared coherence of a given 'neo.AnalogSignal'
+    using the Multitaper method.
 
-    freqs, _, Pxy = multitaper_cross_spectrum(signals,fs, nw, num_tapers,
-                                          peak_resolution)
+    .. math::
+        C(\omega)=\frac{|S_{xy}(\omega)|^2}{S_{xx}(\omega)S_{yy}(\omega)}
 
-    coherency = np.abs(Pxy[:512, 0, 1]) ** 2 / \
+    Parameters
+    ----------
+    signals : neo.AnalogSignal
+    fs : float, optional
+        Sampling rate of signals.
+    nw : float, optional
+        Time half-bandwidth product.
+    num_tapers : int, optional
+    peak_resolution : float, optional
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with the magnitude-squared coherence estimate
+    coherence : np.ndarray
+        Magnitude-squared coherence estimate
+    phase_lag : np.ndarray
+        Phase lags associated with the magnitude-square coherence estimate
+
+    """
+
+    freqs, _, Pxy = multitaper_cross_spectrum(signals, fs, nw, num_tapers,
+                                              peak_resolution)
+
+    coherence = np.abs(Pxy[:512, 0, 1]) ** 2 / \
                 (Pxy[:512, 0, 0] * Pxy[:512, 1, 1])
 
     phase_lag = np.angle(2*Pxy[:512, 0, 1])
 
-
-    return freqs, coherency, phase_lag
+    return freqs, coherence, phase_lag
 
 
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
