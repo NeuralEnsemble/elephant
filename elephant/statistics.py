@@ -919,8 +919,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                 - erf((t_start.simplified.magnitude - times) / (
                     np.sqrt(2.) * sigma)))
 
-        # multiply with correction factor for stationary rate as described in
-        # Stella, Bouss et al. (2021), in prep.
         rate *= correction_factor[:, None]
 
         duration = t_stop.simplified.magnitude - t_start.simplified.magnitude
@@ -929,7 +927,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             if len(spiketrain) > 0:
                 rate[:, i] *= len(spiketrain) /\
                               (np.mean(rate[:, i]).magnitude * duration)
-
 
     return rate
 
