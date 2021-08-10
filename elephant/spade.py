@@ -26,7 +26,7 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 Notes
 -----
 This modules relies on the C++ implementation of the fp-growth algorithm developed by
-Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces the
+Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces
 a more generic implementation of the algorithm by Christian Borgelt
 (http://www.borgelt.net/pyfim.html) that was used in previous versions of ELephant.
 If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
