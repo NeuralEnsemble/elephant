@@ -2,4 +2,8 @@
 conda install -c conda-forge mpi4py
 
 pip install .[tutorials,extras]
-# pip install .[tutorials]
+
+# Post-install viziphant until viziphant 0.2.0 to avoid recursive
+# installation of elephant on binder; then, add viziphant to
+# requirements-tutorial.txt
+pip install viziphant
