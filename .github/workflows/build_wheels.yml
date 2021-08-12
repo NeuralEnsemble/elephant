@@ -1,7 +1,15 @@
-name: Build
+name: Build Wheels
 
-on: [push, pull_request]
+# Trigger the workflow on push or pull request of the master
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
+# Building wheels on Ubuntu and Windows systems
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
