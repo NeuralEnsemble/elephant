@@ -14,7 +14,6 @@ import quantities as pq
 from numpy.testing import assert_array_equal
 
 import elephant.unitary_event_analysis as ue
-from elephant.test.generate_datasets import fake_neo
 from elephant.test.download import download, ELEPHANT_TMP_DIR
 from numpy.testing import assert_array_almost_equal
 from elephant.spike_train_generation import homogeneous_poisson_process

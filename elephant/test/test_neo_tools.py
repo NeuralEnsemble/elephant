@@ -11,7 +11,8 @@ Unit tests for the neo_tools module.
 from itertools import chain
 import unittest
 
-from elephant.test.generate_datasets import fake_neo, get_fake_values
+#from elephant.test.generate_datasets import fake_neo, get_fake_values
+from elephant.test.download import fake_neo, get_fake_values
 from neo.test.tools import assert_same_sub_schema
 from numpy.testing.utils import assert_array_equal
 

@@ -15,8 +15,8 @@ from itertools import chain
 
 import numpy as np
 import quantities as pq
-from elephant.test.download import download, ELEPHANT_TMP_DIR
-from elephant.test.generate_datasets import fake_neo
+from elephant.test.download import fake_neo
+#from elephant.test.generate_datasets import fake_neo
 from numpy.testing import assert_array_equal
 
 try:
