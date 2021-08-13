@@ -1,11 +1,10 @@
-dist: xenial
+dist: bionic
 language: python
 sudo: false
 
 addons:
    apt:
      update: true
-
 
 matrix:
   include:
@@ -17,7 +16,7 @@ matrix:
         - conda install -c conda-forge pyopencl oclgrind clang=9.0.1
         - pip install -r requirements/requirements-extras.txt
         - pip install mpi4py
-      script: mpiexec -n 1 python -m mpi4py.futures -m pytest --cov=elephant
+      script: mpiexec -n 1 python -m mpi4py.futures -m pytest --cov=elephant --import-mode=importlib
       after_success: coveralls || echo "coveralls failed"
 
     - name: "conda 3.7"
@@ -42,6 +41,7 @@ matrix:
         - pip install -r requirements/requirements-tutorials.txt
         - pip install -r requirements/requirements-extras.txt
         - pip install mpi4py
+        - pip install viziphant # remove viziphant, once integrated into requirements-tutorials.txt
         - sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
       script: cd doc && make html
 
@@ -66,9 +66,10 @@ install:
   - pip install -r requirements/requirements-tests.txt
   - pip install pytest-cov coveralls
   - python setup.py install
-  - python -c "from elephant.spade import HAVE_FIM; assert HAVE_FIM"
+  - python -c "import sys; sys.path.remove(''); import elephant; print(elephant.__file__)"
+  - python -c "import sys; sys.path.remove(''); from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list
   - python --version
 
 script:
-  pytest --cov=elephant
+  pytest --cov=elephant --import-mode=importlib
