@@ -15,7 +15,8 @@ from itertools import chain
 
 import numpy as np
 import quantities as pq
-from elephant.test.generate_datasets import fake_neo
+#from elephant.test.generate_datasets import generate_datasets.fake_neo
+from  . import generate_datasets
 from numpy.testing import assert_array_equal
 
 try:
@@ -169,7 +170,7 @@ class ConvertValueSafeTestCase(unittest.TestCase):
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class SpiketrainToDataframeTestCase(unittest.TestCase):
     def test__spiketrain_to_dataframe__parents_empty(self):
-        obj = fake_neo('SpikeTrain', seed=0)
+        obj = generate_datasets.generate_datasets.fake_neo('SpikeTrain', seed=0)
 
         res0 = ep.spiketrain_to_dataframe(obj)
         res1 = ep.spiketrain_to_dataframe(obj, child_first=True)
@@ -272,7 +273,7 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__spiketrain_to_dataframe__noparents(self):
-        blk = fake_neo('Block', seed=0)
+        blk = generate_datasets.fake_neo('Block', seed=0)
         obj = blk.list_children_by_class('SpikeTrain')[0]
 
         res0 = ep.spiketrain_to_dataframe(obj, parents=False)
@@ -322,7 +323,7 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__spiketrain_to_dataframe__parents_childfirst(self):
-        blk = fake_neo('Block', seed=0)
+        blk = generate_datasets.fake_neo('Block', seed=0)
         obj = blk.list_children_by_class('SpikeTrain')[0]
         res0 = ep.spiketrain_to_dataframe(obj)
         res1 = ep.spiketrain_to_dataframe(obj, child_first=True)
@@ -377,7 +378,7 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__spiketrain_to_dataframe__parents_parentfirst(self):
-        blk = fake_neo('Block', seed=0)
+        blk = generate_datasets.fake_neo('Block', seed=0)
         obj = blk.list_children_by_class('SpikeTrain')[0]
         res0 = ep.spiketrain_to_dataframe(obj, child_first=False)
         res1 = ep.spiketrain_to_dataframe(obj, parents=True, child_first=False)
@@ -417,7 +418,7 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class EventToDataframeTestCase(unittest.TestCase):
     def test__event_to_dataframe__parents_empty(self):
-        obj = fake_neo('Event', seed=42)
+        obj = generate_datasets.fake_neo('Event', seed=42)
 
         res0 = ep.event_to_dataframe(obj)
         res1 = ep.event_to_dataframe(obj, child_first=True)
@@ -525,7 +526,7 @@ class EventToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__event_to_dataframe__noparents(self):
-        blk = fake_neo('Block', seed=42)
+        blk = generate_datasets.fake_neo('Block', seed=42)
         obj = blk.list_children_by_class('Event')[0]
 
         res0 = ep.event_to_dataframe(obj, parents=False)
@@ -575,7 +576,7 @@ class EventToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__event_to_dataframe__parents_childfirst(self):
-        blk = fake_neo('Block', seed=42)
+        blk = generate_datasets.fake_neo('Block', seed=42)
         obj = blk.list_children_by_class('Event')[0]
 
         res0 = ep.event_to_dataframe(obj)
@@ -634,7 +635,7 @@ class EventToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__event_to_dataframe__parents_parentfirst(self):
-        blk = fake_neo('Block', seed=42)
+        blk = generate_datasets.fake_neo('Block', seed=42)
         obj = blk.list_children_by_class('Event')[0]
         res0 = ep.event_to_dataframe(obj, child_first=False)
         res1 = ep.event_to_dataframe(obj, parents=True, child_first=False)
@@ -676,7 +677,7 @@ class EventToDataframeTestCase(unittest.TestCase):
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class EpochToDataframeTestCase(unittest.TestCase):
     def test__epoch_to_dataframe__parents_empty(self):
-        obj = fake_neo('Epoch', seed=42)
+        obj = generate_datasets.fake_neo('Epoch', seed=42)
 
         res0 = ep.epoch_to_dataframe(obj)
         res1 = ep.epoch_to_dataframe(obj, child_first=True)
@@ -808,7 +809,7 @@ class EpochToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__epoch_to_dataframe__noparents(self):
-        blk = fake_neo('Block', seed=42)
+        blk = generate_datasets.fake_neo('Block', seed=42)
         obj = blk.list_children_by_class('Epoch')[0]
 
         res0 = ep.epoch_to_dataframe(obj, parents=False)
@@ -869,7 +870,7 @@ class EpochToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__epoch_to_dataframe__parents_childfirst(self):
-        blk = fake_neo('Block', seed=42)
+        blk = generate_datasets.fake_neo('Block', seed=42)
         obj = blk.list_children_by_class('Epoch')[0]
 
         res0 = ep.epoch_to_dataframe(obj)
@@ -941,7 +942,7 @@ class EpochToDataframeTestCase(unittest.TestCase):
             assert_index_equal(value, level)
 
     def test__epoch_to_dataframe__parents_parentfirst(self):
-        blk = fake_neo('Block', seed=42)
+        blk = generate_datasets.fake_neo('Block', seed=42)
         obj = blk.list_children_by_class('Epoch')[0]
 
         res0 = ep.epoch_to_dataframe(obj, child_first=False)
@@ -997,7 +998,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             self.assertCountEqual = self.assertItemsEqual
 
     def test__multi_spiketrains_to_dataframe__single(self):
-        obj = fake_neo('SpikeTrain', seed=0, n=5)
+        obj = generate_datasets.fake_neo('SpikeTrain', seed=0, n=5)
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=False)
@@ -1077,7 +1078,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res8)
 
     def test__multi_spiketrains_to_dataframe__unit_default(self):
-        obj = fake_neo('Unit', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Unit', seed=0, n=5)
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
 
@@ -1109,7 +1110,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_spiketrains_to_dataframe__segment_default(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Segment', seed=0, n=5)
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
 
@@ -1140,7 +1141,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_spiketrains_to_dataframe__block_noparents(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_spiketrains_to_dataframe(obj, parents=False)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=False,
@@ -1188,7 +1189,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_spiketrains_to_dataframe__block_parents_childfirst(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=True)
@@ -1241,7 +1242,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_spiketrains_to_dataframe__block_parents_parentfirst(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_spiketrains_to_dataframe(obj, child_first=False)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=True,
@@ -1282,7 +1283,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_spiketrains_to_dataframe__list_noparents(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_spiketrains_to_dataframe(obj, parents=False)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=False,
@@ -1331,7 +1332,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_spiketrains_to_dataframe__list_parents_childfirst(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=True)
@@ -1385,7 +1386,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_spiketrains_to_dataframe__list_parents_parentfirst(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_spiketrains_to_dataframe(obj, child_first=False)
         res1 = ep.multi_spiketrains_to_dataframe(obj, parents=True,
@@ -1427,7 +1428,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_spiketrains_to_dataframe__tuple_default(self):
-        obj = tuple(fake_neo('Block', seed=i, n=3) for i in range(3))
+        obj = tuple(generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3))
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
 
@@ -1460,7 +1461,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_spiketrains_to_dataframe__iter_default(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_spiketrains_to_dataframe(iter(obj))
 
@@ -1492,7 +1493,7 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_spiketrains_to_dataframe__dict_default(self):
-        obj = dict((i, fake_neo('Block', seed=i, n=3)) for i in range(3))
+        obj = dict((i, generate_datasets.fake_neo('Block', seed=i, n=3)) for i in range(3))
 
         res0 = ep.multi_spiketrains_to_dataframe(obj)
 
@@ -1532,7 +1533,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             self.assertCountEqual = self.assertItemsEqual
 
     def test__multi_events_to_dataframe__single(self):
-        obj = fake_neo('Event', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Event', seed=0, n=5)
 
         res0 = ep.multi_events_to_dataframe(obj)
         res1 = ep.multi_events_to_dataframe(obj, parents=False)
@@ -1611,7 +1612,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res8)
 
     def test__multi_events_to_dataframe__segment_default(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Segment', seed=0, n=5)
 
         res0 = ep.multi_events_to_dataframe(obj)
 
@@ -1647,7 +1648,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_events_to_dataframe__block_noparents(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_events_to_dataframe(obj, parents=False)
         res1 = ep.multi_events_to_dataframe(obj, parents=False,
@@ -1702,7 +1703,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_events_to_dataframe__block_parents_childfirst(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_events_to_dataframe(obj)
         res1 = ep.multi_events_to_dataframe(obj, parents=True)
@@ -1764,7 +1765,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_events_to_dataframe__block_parents_parentfirst(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_events_to_dataframe(obj, child_first=False)
         res1 = ep.multi_events_to_dataframe(obj, parents=True,
@@ -1810,7 +1811,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_events_to_dataframe__list_noparents(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_events_to_dataframe(obj, parents=False)
         res1 = ep.multi_events_to_dataframe(obj, parents=False,
@@ -1866,7 +1867,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_events_to_dataframe__list_parents_childfirst(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_events_to_dataframe(obj)
         res1 = ep.multi_events_to_dataframe(obj, parents=True)
@@ -1929,7 +1930,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_events_to_dataframe__list_parents_parentfirst(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_events_to_dataframe(obj, child_first=False)
         res1 = ep.multi_events_to_dataframe(obj, parents=True,
@@ -1976,7 +1977,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_events_to_dataframe__tuple_default(self):
-        obj = tuple(fake_neo('Block', seed=i, n=3) for i in range(3))
+        obj = tuple(generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3))
 
         res0 = ep.multi_events_to_dataframe(obj)
 
@@ -2013,7 +2014,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_events_to_dataframe__iter_default(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_events_to_dataframe(iter(obj))
 
@@ -2049,7 +2050,7 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_events_to_dataframe__dict_default(self):
-        obj = dict((i, fake_neo('Block', seed=i, n=3)) for i in range(3))
+        obj = dict((i, generate_datasets.fake_neo('Block', seed=i, n=3)) for i in range(3))
 
         res0 = ep.multi_events_to_dataframe(obj)
 
@@ -2093,7 +2094,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             self.assertCountEqual = self.assertItemsEqual
 
     def test__multi_epochs_to_dataframe__single(self):
-        obj = fake_neo('Epoch', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Epoch', seed=0, n=5)
 
         res0 = ep.multi_epochs_to_dataframe(obj)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=False)
@@ -2172,7 +2173,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res8)
 
     def test__multi_epochs_to_dataframe__segment_default(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Segment', seed=0, n=5)
 
         res0 = ep.multi_epochs_to_dataframe(obj)
 
@@ -2207,7 +2208,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_epochs_to_dataframe__block_noparents(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_epochs_to_dataframe(obj, parents=False)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=False,
@@ -2262,7 +2263,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_epochs_to_dataframe__block_parents_childfirst(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_epochs_to_dataframe(obj)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=True)
@@ -2324,7 +2325,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_epochs_to_dataframe__block_parents_parentfirst(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
 
         res0 = ep.multi_epochs_to_dataframe(obj, child_first=False)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=True,
@@ -2370,7 +2371,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_epochs_to_dataframe__list_noparents(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_epochs_to_dataframe(obj, parents=False)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=False,
@@ -2426,7 +2427,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_epochs_to_dataframe__list_parents_childfirst(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_epochs_to_dataframe(obj)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=True)
@@ -2489,7 +2490,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_epochs_to_dataframe__list_parents_parentfirst(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_epochs_to_dataframe(obj, child_first=False)
         res1 = ep.multi_epochs_to_dataframe(obj, parents=True,
@@ -2536,7 +2537,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_epochs_to_dataframe__tuple_default(self):
-        obj = tuple(fake_neo('Block', seed=i, n=3) for i in range(3))
+        obj = tuple(generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3))
 
         res0 = ep.multi_epochs_to_dataframe(obj)
 
@@ -2573,7 +2574,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_epochs_to_dataframe__iter_default(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
 
         res0 = ep.multi_epochs_to_dataframe(iter(obj))
 
@@ -2609,7 +2610,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_epochs_to_dataframe__dict_default(self):
-        obj = dict((i, fake_neo('Block', seed=i, n=3)) for i in range(3))
+        obj = dict((i, generate_datasets.fake_neo('Block', seed=i, n=3)) for i in range(3))
 
         res0 = ep.multi_epochs_to_dataframe(obj)
 
@@ -2649,7 +2650,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class SliceSpiketrainTestCase(unittest.TestCase):
     def setUp(self):
-        obj = [fake_neo('SpikeTrain', seed=i, n=3) for i in range(10)]
+        obj = [generate_datasets.fake_neo('SpikeTrain', seed=i, n=3) for i in range(10)]
         self.obj = ep.multi_spiketrains_to_dataframe(obj)
 
     def test_single_none(self):

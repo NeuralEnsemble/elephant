@@ -11,7 +11,8 @@ from __future__ import division, print_function, unicode_literals
 from itertools import chain
 import unittest
 
-from elephant.test.generate_datasets import fake_neo, get_fake_values
+#from elephant.test.generate_datasets import fake_neo, get_fake_values
+from  . import generate_datasets
 from neo.test.tools import assert_same_sub_schema
 from numpy.testing.utils import assert_array_equal
 
@@ -82,7 +83,7 @@ class GetAllObjsTestCase(unittest.TestCase):
             nt._get_all_objs(value, 'Block')
 
     def test__get_all_objs__epoch_for_event_valueerror(self):
-        value = fake_neo('Epoch', n=10, seed=0)
+        value = generate_datasets.fake_neo('Epoch', n=10, seed=0)
         with self.assertRaises(ValueError):
             nt._get_all_objs(value, 'Event')
 
@@ -143,58 +144,58 @@ class GetAllObjsTestCase(unittest.TestCase):
         self.assertEqual(targ, res)
 
     def test__get_all_objs__spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0)]
-        value = fake_neo('SpikeTrain', n=10, seed=0)
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0)]
+        value = generate_datasets.fake_neo('SpikeTrain', n=10, seed=0)
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__list_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = [fake_neo('SpikeTrain', n=10, seed=0),
-                 fake_neo('SpikeTrain', n=10, seed=1)]
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)]
+        value = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                 generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)]
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__nested_list_epoch(self):
-        targ = [fake_neo('Epoch', n=10, seed=0),
-                fake_neo('Epoch', n=10, seed=1)]
-        value = [[fake_neo('Epoch', n=10, seed=0)],
-                 fake_neo('Epoch', n=10, seed=1)]
+        targ = [generate_datasets.fake_neo('Epoch', n=10, seed=0),
+                generate_datasets.fake_neo('Epoch', n=10, seed=1)]
+        value = [[generate_datasets.fake_neo('Epoch', n=10, seed=0)],
+                 generate_datasets.fake_neo('Epoch', n=10, seed=1)]
 
         res = nt._get_all_objs(value, 'Epoch')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__iter_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = iter([fake_neo('SpikeTrain', n=10, seed=0),
-                      fake_neo('SpikeTrain', n=10, seed=1)])
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)]
+        value = iter([generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                      generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)])
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__nested_iter_epoch(self):
-        targ = [fake_neo('Epoch', n=10, seed=0),
-                fake_neo('Epoch', n=10, seed=1)]
-        value = iter([iter([fake_neo('Epoch', n=10, seed=0)]),
-                      fake_neo('Epoch', n=10, seed=1)])
+        targ = [generate_datasets.fake_neo('Epoch', n=10, seed=0),
+                generate_datasets.fake_neo('Epoch', n=10, seed=1)]
+        value = iter([iter([generate_datasets.fake_neo('Epoch', n=10, seed=0)]),
+                      generate_datasets.fake_neo('Epoch', n=10, seed=1)])
 
         res = nt._get_all_objs(value, 'Epoch')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__dict_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = {'a': fake_neo('SpikeTrain', n=10, seed=0),
-                 'b': fake_neo('SpikeTrain', n=10, seed=1)}
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)]
+        value = {'a': generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                 'b': generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)}
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
@@ -208,10 +209,10 @@ class GetAllObjsTestCase(unittest.TestCase):
                 raise ValueError('Target %s not in result' % i)
 
     def test__get_all_objs__nested_dict_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = {'a': fake_neo('SpikeTrain', n=10, seed=0),
-                 'b': {'c': fake_neo('SpikeTrain', n=10, seed=1)}}
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)]
+        value = {'a': generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                 'b': {'c': generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)}}
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
@@ -225,10 +226,10 @@ class GetAllObjsTestCase(unittest.TestCase):
                 raise ValueError('Target %s not in result' % i)
 
     def test__get_all_objs__nested_many_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = {'a': [fake_neo('SpikeTrain', n=10, seed=0)],
-                 'b': iter([fake_neo('SpikeTrain', n=10, seed=1)])}
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0),
+                generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)]
+        value = {'a': [generate_datasets.fake_neo('SpikeTrain', n=10, seed=0)],
+                 'b': iter([generate_datasets.fake_neo('SpikeTrain', n=10, seed=1)])}
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
@@ -242,8 +243,8 @@ class GetAllObjsTestCase(unittest.TestCase):
                 raise ValueError('Target %s not in result' % i)
 
     def test__get_all_objs__unit_spiketrain(self):
-        value = fake_neo('Unit', n=3, seed=0)
-        targ = [fake_neo('SpikeTrain', n=3, seed=train.annotations['seed'])
+        value = generate_datasets.fake_neo('Unit', n=3, seed=0)
+        targ = [generate_datasets.fake_neo('SpikeTrain', n=3, seed=train.annotations['seed'])
                 for train in value.spiketrains]
 
         for train in value.spiketrains:
@@ -255,8 +256,8 @@ class GetAllObjsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__block_epoch(self):
-        value = fake_neo('Block', n=3, seed=0)
-        targ = [fake_neo('Epoch', n=3, seed=train.annotations['seed'])
+        value = generate_datasets.fake_neo('Block', n=3, seed=0)
+        targ = [generate_datasets.fake_neo('Epoch', n=3, seed=train.annotations['seed'])
                 for train in value.list_children_by_class('Epoch')]
 
         for epoch in value.list_children_by_class('Epoch'):
@@ -271,7 +272,7 @@ class GetAllObjsTestCase(unittest.TestCase):
 class ExtractNeoAttrsTestCase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        self.block = fake_neo('Block', seed=0)
+        self.block = generate_datasets.fake_neo('Block', seed=0)
 
     def assert_dicts_equal(self, d1, d2):
         """Assert that two dictionaries are equal, taking into account arrays.
@@ -313,8 +314,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                     raise
 
     def test__extract_neo_attrs__spiketrain_noarray(self):
-        obj = fake_neo('SpikeTrain', seed=0)
-        targ = get_fake_values('SpikeTrain', seed=0)
+        obj = generate_datasets.fake_neo('SpikeTrain', seed=0)
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=0)
         targ = strip_iter_values(targ)
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -336,8 +337,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__spiketrain_noarray_skip_none(self):
-        obj = fake_neo('SpikeTrain', seed=0)
-        targ = get_fake_values('SpikeTrain', seed=0)
+        obj = generate_datasets.fake_neo('SpikeTrain', seed=0)
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=0)
         targ = strip_iter_values(targ)
         for key, value in targ.copy().items():
             if value is None:
@@ -364,8 +365,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__epoch_noarray(self):
-        obj = fake_neo('Epoch', seed=0)
-        targ = get_fake_values('Epoch', seed=0)
+        obj = generate_datasets.fake_neo('Epoch', seed=0)
+        targ = generate_datasets.get_fake_values('Epoch', seed=0)
         targ = strip_iter_values(targ)
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -387,8 +388,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__event_noarray(self):
-        obj = fake_neo('Event', seed=0)
-        targ = get_fake_values('Event', seed=0)
+        obj = generate_datasets.fake_neo('Event', seed=0)
+        targ = generate_datasets.get_fake_values('Event', seed=0)
         targ = strip_iter_values(targ)
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -410,8 +411,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__spiketrain_parents_empty_array(self):
-        obj = fake_neo('SpikeTrain', seed=0)
-        targ = get_fake_values('SpikeTrain', seed=0)
+        obj = generate_datasets.fake_neo('SpikeTrain', seed=0)
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=0)
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
@@ -458,8 +459,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         return obj
 
     def test__extract_neo_attrs__epoch_parents_empty_array(self):
-        obj = fake_neo('Epoch', seed=0)
-        targ = get_fake_values('Epoch', seed=0)
+        obj = generate_datasets.fake_neo('Epoch', seed=0)
+        targ = generate_datasets.get_fake_values('Epoch', seed=0)
 
         obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
@@ -499,8 +500,8 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assert_dicts_equal(targ, res211)
 
     def test__extract_neo_attrs__event_parents_empty_array(self):
-        obj = fake_neo('Event', seed=0)
-        targ = get_fake_values('Event', seed=0)
+        obj = generate_datasets.fake_neo('Event', seed=0)
+        targ = generate_datasets.get_fake_values('Event', seed=0)
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
@@ -539,7 +540,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__spiketrain_noparents_noarray(self):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -561,7 +562,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__epoch_noparents_noarray(self):
         obj = self.block.list_children_by_class('Epoch')[0]
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
+        targ = generate_datasets.get_fake_values('Epoch', seed=obj.annotations['seed'])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -583,7 +584,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__event_noparents_noarray(self):
         obj = self.block.list_children_by_class('Event')[0]
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
+        targ = generate_datasets.get_fake_values('Event', seed=obj.annotations['seed'])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -605,7 +606,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__spiketrain_noparents_array(self):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
@@ -640,7 +641,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__epoch_noparents_array(self):
         obj = self.block.list_children_by_class('Epoch')[0]
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
+        targ = generate_datasets.get_fake_values('Epoch', seed=obj.annotations['seed'])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
         obj = self._fix_neo_issue_749(obj, targ)
@@ -678,7 +679,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__event_noparents_array(self):
         obj = self.block.list_children_by_class('Event')[0]
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
+        targ = generate_datasets.get_fake_values('Event', seed=obj.annotations['seed'])
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
@@ -718,12 +719,12 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         rcg = self.block.channel_indexes[0]
         unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('ChannelIndex',
+        targ = generate_datasets.get_fake_values('Block', seed=blk.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('ChannelIndex',
                                     seed=rcg.annotations['seed']))
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('SpikeTrain',
+        targ.update(generate_datasets.get_fake_values('Unit', seed=unit.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('SpikeTrain',
                                     seed=obj.annotations['seed']))
         targ = strip_iter_values(targ)
 
@@ -747,9 +748,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Block', seed=blk.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Epoch', seed=obj.annotations['seed']))
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True)
@@ -772,9 +773,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Event', seed=obj.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Block', seed=blk.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Event', seed=obj.annotations['seed']))
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True)
@@ -799,12 +800,12 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         rcg = self.block.channel_indexes[0]
         unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('ChannelIndex',
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Unit', seed=unit.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('ChannelIndex',
                                     seed=rcg.annotations['seed']))
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Block', seed=blk.annotations['seed']))
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
@@ -822,9 +823,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Epoch', seed=obj.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Block', seed=blk.annotations['seed']))
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
@@ -842,9 +843,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Event', seed=obj.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Block', seed=blk.annotations['seed']))
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
@@ -863,10 +864,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
         unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('SpikeTrain',
+        targ = generate_datasets.get_fake_values('Block', seed=blk.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Unit', seed=unit.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('SpikeTrain',
                                     seed=obj.annotations['seed']))
         del targ['times']
 
@@ -892,9 +893,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Block', seed=blk.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Epoch', seed=obj.annotations['seed']))
 
         obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
@@ -920,9 +921,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Event', seed=obj.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Block', seed=blk.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Event', seed=obj.annotations['seed']))
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
@@ -951,10 +952,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
         unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = generate_datasets.get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Unit', seed=unit.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Block', seed=blk.annotations['seed']))
         del targ['times']
         del targ['index']
 
@@ -976,9 +977,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Epoch', seed=obj.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Block', seed=blk.annotations['seed']))
 
         obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
@@ -1000,9 +1001,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = generate_datasets.get_fake_values('Event', seed=obj.annotations['seed'])
+        targ.update(generate_datasets.get_fake_values('Segment', seed=seg.annotations['seed']))
+        targ.update(generate_datasets.get_fake_values('Block', seed=blk.annotations['seed']))
         del targ['times']
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
@@ -1020,7 +1021,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
 class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__spiketrain(self):
-        obj = fake_neo('SpikeTrain', seed=0, n=5)
+        obj = generate_datasets.fake_neo('SpikeTrain', seed=0, n=5)
         res0 = nt.get_all_spiketrains(obj)
 
         targ = obj
@@ -1030,11 +1031,11 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0[0])
 
     def test__get_all_spiketrains__unit(self):
-        obj = fake_neo('Unit', seed=0, n=7)
+        obj = generate_datasets.fake_neo('Unit', seed=0, n=7)
         obj.spiketrains.append(obj.spiketrains[0])
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = fake_neo('Unit', seed=0, n=7).spiketrains
+        targ = generate_datasets.fake_neo('Unit', seed=0, n=7).spiketrains
 
         self.assertTrue(len(res0) > 0)
 
@@ -1043,11 +1044,11 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__segment(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Segment', seed=0, n=5)
         obj.spiketrains.extend(obj.spiketrains)
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = fake_neo('Segment', seed=0, n=5).spiketrains
+        targ = generate_datasets.fake_neo('Segment', seed=0, n=5).spiketrains
 
         self.assertTrue(len(res0) > 0)
 
@@ -1056,14 +1057,14 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__block(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
         iobj1 = obj.channel_indexes[0].units[0]
         obj.channel_indexes[0].units.append(iobj1)
         iobj2 = obj.channel_indexes[0].units[2].spiketrains[1]
         obj.channel_indexes[1].units[1].spiketrains.append(iobj2)
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = fake_neo('Block', seed=0, n=3)
+        targ = generate_datasets.fake_neo('Block', seed=0, n=3)
         targ = targ.list_children_by_class('SpikeTrain')
 
         self.assertTrue(len(res0) > 0)
@@ -1073,7 +1074,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__list(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].channel_indexes[0].units[0]
         obj[2].channel_indexes[0].units.append(iobj1)
@@ -1082,7 +1083,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj.append(obj[-1])
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1093,7 +1094,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__tuple(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].channel_indexes[0].units[0]
         obj[2].channel_indexes[0].units.append(iobj1)
@@ -1102,7 +1103,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_spiketrains(tuple(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1113,7 +1114,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__iter(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].channel_indexes[0].units[0]
         obj[2].channel_indexes[0].units.append(iobj1)
@@ -1122,7 +1123,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj.append(obj[1])
         res0 = nt.get_all_spiketrains(iter(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1133,7 +1134,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__dict(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].channel_indexes[0].units[0]
         obj[2].channel_indexes[0].units.append(iobj1)
@@ -1143,7 +1144,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1156,7 +1157,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 
 class GetAllEventsTestCase(unittest.TestCase):
     def test__get_all_events__event(self):
-        obj = fake_neo('Event', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Event', seed=0, n=5)
         res0 = nt.get_all_events(obj)
 
         targ = obj
@@ -1166,11 +1167,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0[0])
 
     def test__get_all_events__segment(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Segment', seed=0, n=5)
         obj.events.extend(obj.events)
         res0 = nt.get_all_events(obj)
 
-        targ = fake_neo('Segment', seed=0, n=5).events
+        targ = generate_datasets.fake_neo('Segment', seed=0, n=5).events
 
         self.assertTrue(len(res0) > 0)
 
@@ -1179,14 +1180,14 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__block(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
         iobj1 = obj.segments[0]
         obj.segments.append(iobj1)
         iobj2 = obj.segments[0].events[1]
         obj.segments[1].events.append(iobj2)
         res0 = nt.get_all_events(obj)
 
-        targ = fake_neo('Block', seed=0, n=3)
+        targ = generate_datasets.fake_neo('Block', seed=0, n=3)
         targ = targ.list_children_by_class('Event')
 
         self.assertTrue(len(res0) > 0)
@@ -1196,7 +1197,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__list(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1205,7 +1206,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj.append(obj[-1])
         res0 = nt.get_all_events(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1216,7 +1217,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__tuple(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1225,7 +1226,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_events(tuple(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1236,7 +1237,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__iter(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1245,7 +1246,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_events(iter(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1256,7 +1257,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__dict(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1266,7 +1267,7 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_events(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1279,7 +1280,7 @@ class GetAllEventsTestCase(unittest.TestCase):
 
 class GetAllEpochsTestCase(unittest.TestCase):
     def test__get_all_epochs__epoch(self):
-        obj = fake_neo('Epoch', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Epoch', seed=0, n=5)
         res0 = nt.get_all_epochs(obj)
 
         targ = obj
@@ -1289,11 +1290,11 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0[0])
 
     def test__get_all_epochs__segment(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_datasets.fake_neo('Segment', seed=0, n=5)
         obj.epochs.extend(obj.epochs)
         res0 = nt.get_all_epochs(obj)
 
-        targ = fake_neo('Segment', seed=0, n=5).epochs
+        targ = generate_datasets.fake_neo('Segment', seed=0, n=5).epochs
 
         self.assertTrue(len(res0) > 0)
 
@@ -1302,14 +1303,14 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__block(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_datasets.fake_neo('Block', seed=0, n=3)
         iobj1 = obj.segments[0]
         obj.segments.append(iobj1)
         iobj2 = obj.segments[0].epochs[1]
         obj.segments[1].epochs.append(iobj2)
         res0 = nt.get_all_epochs(obj)
 
-        targ = fake_neo('Block', seed=0, n=3)
+        targ = generate_datasets.fake_neo('Block', seed=0, n=3)
         targ = targ.list_children_by_class('Epoch')
 
         self.assertTrue(len(res0) > 0)
@@ -1319,7 +1320,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__list(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1328,7 +1329,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj.append(obj[-1])
         res0 = nt.get_all_epochs(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1339,7 +1340,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__tuple(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1348,7 +1349,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_epochs(tuple(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1359,7 +1360,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__iter(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1368,7 +1369,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_epochs(iter(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1379,7 +1380,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__dict(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1389,7 +1390,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_epochs(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        targ = [generate_datasets.fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
