@@ -13,6 +13,6 @@ dependencies:
   - scikit-learn
   - statsmodels
   - jinja2
-  #- pip:
-    # - viziphant
+  - pip:
+    - viziphant
     # viziphant can be removed once it is integrated into requirements-tutorials.txt
