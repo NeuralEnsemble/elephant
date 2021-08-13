@@ -11,7 +11,7 @@ from __future__ import division, print_function, unicode_literals
 from itertools import chain
 import unittest
 
-from .generate_datasets import fake_neo, get_fake_values
+from elephant.test.generate_datasets import fake_neo, get_fake_values
 from neo.test.tools import assert_same_sub_schema
 from numpy.testing.utils import assert_array_equal
 
