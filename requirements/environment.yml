@@ -5,7 +5,7 @@ channels:
 
 dependencies:
   - python>=3.8
-  - pip
+  #- pip
   #- mpi4py
   - numpy
   - scipy
@@ -14,5 +14,5 @@ dependencies:
   - scikit-learn
   - statsmodels
   - jinja2
-  - pip:
-     - -r file:requirements.txt
+  #- pip:
+     #- -r file:requirements.txt
