@@ -15,11 +15,7 @@ from itertools import chain
 
 import numpy as np
 import quantities as pq
-import elephant
-print(elephant.__file__)
-print(elephant.__version__)
-from elephant.test.download import calculate_md5, fake_neo
-#from elephant.test.generate_datasets import fake_neo
+from neo.test.generate_datasets import fake_neo
 from numpy.testing import assert_array_equal
 
 try:
