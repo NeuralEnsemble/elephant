@@ -66,7 +66,7 @@ install:
   - pip install -r requirements/requirements-tests.txt
   - pip install pytest-cov coveralls
   - python setup.py install
-  - python -c "import sys; sys.path.remove(''); import elephant; print(elephant.__file__)"
+  - python -c "import sys; sys.path.remove(''); import elephant; print(elephant.__file__, elephant.__version__)"
   - python -c "import sys; sys.path.remove(''); from elephant.spade import HAVE_FIM; assert HAVE_FIM"
   - pip list
   - python --version
