@@ -16,4 +16,3 @@ dependencies:
   - jinja2
   - pip:
      - -r file:requirements.txt
-     - viziphant
