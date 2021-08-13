@@ -41,6 +41,7 @@ matrix:
         - pip install -r requirements/requirements-tutorials.txt
         - pip install -r requirements/requirements-extras.txt
         - pip install mpi4py
+        - pip install viziphant # remove viziphant, once integrated into requirements-tutorials.txt
         - sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
       script: cd doc && make html
 
