@@ -6,8 +6,6 @@ Unit tests for the pandas bridge module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function
-
 import unittest
 import warnings
 from distutils.version import StrictVersion

@@ -19,6 +19,3 @@ python:
               - docs
               - extras
               - tutorials
-        - method: pip
-          path: viziphant
-          # This install is only necessary until viziphant can be put into the tutorials requirements file
