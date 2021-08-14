@@ -14,5 +14,6 @@ dependencies:
   - statsmodels
   - jinja2
   - pip:
+    - neo>=0.9.0,<0.10.0
     - viziphant
-    # viziphant can be removed once it is integrated into requirements-tutorials.txt
+    # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt
