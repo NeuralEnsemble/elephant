@@ -624,12 +624,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         rate estimation. Currently implemented kernel forms are rectangular,
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
-        If 'auto', the optimized kernel width (that is not adaptive)
-        for the rate estimation is calculated according to
-        :cite:`statistics-Shimazaki2010_171` and with
-        this width a gaussian kernel is constructed. Automatized calculation
-        of the kernel width is not available for other than gaussian kernel
+        If 'auto', the optimized kernel width for the rate estimation is
+        calculated according to :cite:`statistics-Shimazaki2010_171` and a
+        Gaussian kernel is constructed with this width. Automatized calculation
+        of the kernel width is not available for other than Gaussian kernel
         shapes.
+        Note: The kernel width is not adaptive, i.e., it is calculated as
+        global optimum across the data.
         Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
@@ -667,7 +668,11 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         the origin of the kernel.
         Default: True
     border_correction : bool, optional
-        Apply a boundary correction.
+        Apply a border correction to prevent underestimating the firing rates
+        at the borders of the spike trains, i.e., close to t_start and t_stop.
+        The correction is done by estimating the mass of the kernel outside
+        these spike train borders under the assumption that the rate does not
+        change strongly.
         Only possible in the case of a Gaussian kernel.
         Default: False
 

@@ -859,28 +859,37 @@ class InstantaneousRateTest(unittest.TestCase):
             rate=rate, t_start=t_start,
             t_stop=t_stop) for _ in range(n_spiketrains)]
 
-        for CORRECTION in (True, False):
+        for correction in (True, False):
             rates = []
             for trial in trial_list:
-                # calculate instaneous rate, discard extra dimension
-                instantenous_rate = statistics.instantaneous_rate(
+                # calculate the instantaneous rate, discard extra dimension
+                instantaneous_rate = statistics.instantaneous_rate(
                     spiketrains=trial,
                     sampling_period=sampling_period,
                     kernel='auto',
-                    border_correction=CORRECTION
+                    border_correction=correction
                 )
-                rates.append(instantenous_rate)
-            rate_estimated = np.mean(rates, axis=0)[:, 0]
+                rates.append(instantaneous_rate)
+
+            # The average estimated rate gives the average estimated value of
+            # the firing rate in each time bin.
+            # Note: the indexing [:, 0] is necessary to get the output an
+            # one-dimensional array.
+            average_estimated_rate = np.mean(rates, axis=0)[:, 0]
 
             rtol = 0.05  # Five percent of tolerance
 
-            if CORRECTION:
-                assert np.max(rate_estimated) < (1. + rtol) * rate.item()
-                assert np.min(rate_estimated) > (1. - rtol) * rate.item()
+            if correction:
+                self.assertLess(np.max(average_estimated_rate),
+                                (1. + rtol) * rate.item())
+                self.assertGreater(np.min(average_estimated_rate),
+                                   (1. - rtol) * rate.item())
             else:
-                assert np.max(rate_estimated) < (1. + rtol) * rate.item()
+                self.assertLess(np.max(average_estimated_rate),
+                                (1. + rtol) * rate.item())
                 # The minimal rate deviates strongly in the uncorrected case.
-                assert not np.min(rate_estimated) > (1. - rtol) * rate.item()
+                self.assertLess(np.min(average_estimated_rate),
+                                (1. - rtol) * rate.item())
 
 
 class TimeHistogramTestCase(unittest.TestCase):
