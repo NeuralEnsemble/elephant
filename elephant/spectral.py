@@ -446,6 +446,9 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
     print(f'Number of tapers: {num_tapers}')
 
     # Get slepian functions
+    print(f'M: {length_signal}')
+    print(f'NM: {nw}')
+    print(f'Kmax: {num_tapers}')
     slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
                                              Kmax=num_tapers,
@@ -771,42 +774,43 @@ def _generate_ground_truth(length_2d=30000):
     # Return signals as Nx2
     return signal.T
 
+if __name__ == '__main__':
 
-test_data = _generate_ground_truth(length_2d=2**10)
+    test_data = _generate_ground_truth(length_2d=2**10)
 
-fx, Pxx = welch_psd(test_data[:, 0])
-fy, Pyy = welch_psd(test_data[:, 1])
+    fx, Pxx = welch_psd(test_data[:, 0])
+    fy, Pyy = welch_psd(test_data[:, 1])
 
-fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1], frequency_resolution=0.005)
+    fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1], frequency_resolution=0.005)
 
-fm, Pxxm = multitaper_psd(test_data.T)
+    fm, Pxxm = multitaper_psd(test_data.T)
 
-import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
-plt.figure()
-plt.semilogy(fx, Pxx, label="Pxx")
-plt.semilogy(fy, Pyy, label="Pyy")
-plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
-plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
-plt.legend()
-plt.show()
-
-
-
-
-fcs, _, Pcs = multitaper_cross_spectrum(test_data, num_tapers=20)
-
-plt.figure()
-plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
-plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
-plt.semilogy(fcs[:512], 2*Pcs[:512, 0, 0],'r:', label="Pxx Multitaper")
-plt.semilogy(fcs[:512], 2*Pcs[:512, 1, 1], 'b:', label="Pyy Multitaper")
-plt.legend()
-plt.show()
+    plt.figure()
+    plt.semilogy(fx, Pxx, label="Pxx")
+    plt.semilogy(fy, Pyy, label="Pyy")
+    plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
+    plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
+    plt.legend()
+    plt.show()
 
 
-plt.figure()
-plt.plot(fc, Coh, label="Welch Coh")
-plt.plot(fcs[:512], np.abs(Pcs[:512, 0, 1])**2 / (Pcs[:512, 0, 0] * Pcs[:512, 1, 1]), 'b:', label="Multitaper Coh")
-plt.legend()
-plt.show()
+
+
+    fcs, _, Pcs = multitaper_cross_spectrum(test_data, num_tapers=20)
+
+    plt.figure()
+    plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
+    plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
+    plt.semilogy(fcs[:512], 2*Pcs[:512, 0, 0],'r:', label="Pxx Multitaper")
+    plt.semilogy(fcs[:512], 2*Pcs[:512, 1, 1], 'b:', label="Pyy Multitaper")
+    plt.legend()
+    plt.show()
+
+
+    plt.figure()
+    plt.plot(fc, Coh, label="Welch Coh")
+    plt.plot(fcs[:512], np.abs(Pcs[:512, 0, 1])**2 / (Pcs[:512, 0, 0] * Pcs[:512, 1, 1]), 'b:', label="Multitaper Coh")
+    plt.legend()
+    plt.show()
