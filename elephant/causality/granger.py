@@ -80,6 +80,7 @@ from collections import namedtuple
 
 import numpy as np
 from neo.core import AnalogSignal
+from elephant.spectral import multitaper_cross_spectrum, multitaper_psd
 
 
 __all__ = (
@@ -371,6 +372,116 @@ def _optimal_vector_arm(signals, dimension, max_order,
     return optimal_coeffs, optimal_cov_matrix, optimal_order
 
 
+def _bracket_operator(spectrum, num_freqs, num_signals):
+    '''
+    Implementation of the [ \cdot ]^{+} from "The Factorization of Matricial
+    Spectral Densities", Wilson 1972, SiAM J Appl Math, Definition 1.2 (ii)
+
+    Paramaters
+    ----------
+
+    spectrum : np.ndarray
+
+    '''
+
+    # Get coefficients from spectrum
+    causal_part = np.fft.ifft(spectrum, axis=0)
+    # Throw away of acausal part
+    causal_part[(num_freqs + 1) // 2:] = 0
+
+    # Treat zero frequency part
+    causal_part[0] /= 2
+
+    # Back-transformation
+    causal_part = np.fft.fft(causal_part, axis=0)
+
+    # Adjust zero frequency part to ensure convergence
+    indices = np.tril_indices(num_signals, k=-1)
+    causal_part[0, indices[0], indices[1]] = 0
+    '''
+    ## Version 2
+    # Treat zero frequency term
+    causal_part[0] /= 2
+
+    # Ensure convergence
+    indices = np.tril_indices(num_signals, k=-1)
+    causal_part[0, indices[0], indices[1]] = 0
+
+    # Throw away acausal part
+    causal_part[(num_freqs + 1) // 2:] = 0
+
+    # Back-transformation
+    causal_part = np.fft.fft(causal_part, axis=0)
+    '''
+
+    return causal_part
+
+
+def _dagger(matrix_array):
+    '''
+    Return Hermitian conjugate of matrix array
+    '''
+
+    if matrix_array.ndim == 2:
+        return np.transpose(matrix_array.conj(), axes=(1, 0))
+
+    else:
+        return np.transpose(matrix_array.conj(), axes=(0, 2, 1))
+
+
+def _spectral_factorization(cross_spectrum, num_iterations):
+    '''
+    '''
+
+    # spectral_density_function = np.fft.ifft(cross_spectrum, axis=0)
+    spectral_density_function = np.copy(cross_spectrum)
+
+    # Resolve dimensions
+    num_freqs = np.shape(spectral_density_function)[0]
+    num_signals = np.shape(spectral_density_function)[1]
+
+    # Initialization
+    identity = np.identity(num_signals)
+    factorization = np.zeros(np.shape(spectral_density_function),
+                             dtype='complex128')
+
+    # Estimate initial conditions
+    try:
+        initial_cond = np.linalg.cholesky(cross_spectrum[0].real).T
+    except np.linalg.LinAlgError:
+        raise NotImplementedError('ToDo - non converging Cholesky')
+
+    factorization += initial_cond
+    # Iteration for calculating spectral factorization
+    for i in range(num_iterations):
+
+        factorization_old = np.copy(factorization)
+
+        # Implementation of Eq. 3.1 from "The Factorization of Matricial
+        # Spectral Densities", Wilson 1972, SiAM J Appl Math
+        X = np.linalg.solve(factorization,
+                            spectral_density_function)
+        Y = np.linalg.solve(factorization,
+                            _dagger(X))
+        Y += identity
+        Y = _bracket_operator(Y, num_freqs, num_signals)
+
+        factorization = np.matmul(factorization, Y)
+
+        diff = factorization - factorization_old
+        error = np.max(np.abs(diff))
+        if error < 1e-10:
+            pass
+
+    cov_matrix = np.matmul(factorization[0].real,
+                           np.transpose(factorization[0].real))
+
+    transfer_function = np.matmul(factorization,
+                                  np.linalg.inv(factorization[0]))
+
+    return cov_matrix, transfer_function
+
+
 def pairwise_granger(signals, max_order, information_criterion='aic'):
     r"""
     Determine Granger Causality of two time series
@@ -611,3 +722,190 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
                                                  est_sig_figures)
 
     return conditional_causality_xy_z_round
+
+
+def pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
+                              peak_resolution=None, num_iterations=20):
+
+    length = np.size(signals[0])
+    signals[0] -= np.mean(signals[0])
+    signals[1] -= np.mean(signals[1])
+
+    freqs, _, S = multitaper_cross_spectrum(signals.T,
+                                            fs=fs,
+                                            nw=nw,
+                                            num_tapers=num_tapers,
+                                            peak_resolution=peak_resolution)
+
+    C, H = _spectral_factorization(S, num_iterations=num_iterations)
+
+    # Take positive frequencies
+    freqs = freqs[:(length+1)//2]
+    S = S[:(length+1)//2]
+    H = H[:(length+1)//2]
+
+    spectral_granger_y_x = np.log(S[:, 0, 0]
+                                  / (S[:, 0, 0]
+                                     - (C[1, 1] - C[0, 1]**2/C[0, 0])
+                                     * np.abs(H[:, 0, 1])**2))
+
+    spectral_granger_x_y = np.log(S[:, 1, 1]
+                                  / (S[:, 1, 1]
+                                     - (C[0, 0] - C[1, 0]**2/C[1, 1])
+                                     * np.abs(H[:, 1, 0])**2))
+
+
+    return freqs, spectral_granger_y_x, spectral_granger_x_y
+
+
+if __name__ == '__main__':
+
+    # Test spectral factorization
+    np.random.seed(12321)
+    length_2d = 1124
+    signal = np.zeros((2, length_2d))
+
+    order = 2
+    weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
+    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
+
+    weights = np.stack((weights_1, weights_2))
+
+    noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
+
+    for i in range(length_2d):
+        for lag in range(order):
+            signal[:, i] += np.dot(weights[lag],
+                                   signal[:, i - lag - 1])
+        rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+        signal[0, i] += rnd_var[0]
+        signal[1, i] += rnd_var[1]
+
+    signal = signal[:, 100:]
+    length_2d -= 100
+    n = length_2d
+
+    x = signal[0]
+    y = signal[1]
+
+    f, psd_1 = multitaper_psd(x, num_tapers=15)
+    f, psd_2 = multitaper_psd(y, num_tapers=15)
+
+    _, _, cross_spectrum = multitaper_cross_spectrum(signal.T, num_tapers=15)
+
+    from matplotlib import pyplot as plt
+    plt.plot(f, psd_1)
+    plt.plot(f, 2*cross_spectrum[:(n+2)//2, 0, 0])
+    plt.show()
+
+    plt.plot(f, psd_2)
+    plt.plot(f, 2*cross_spectrum[:(n+2)//2, 1, 1])
+    plt.show()
+
+    cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
+                                                            num_iterations=50)
+
+    A = np.matmul(np.matmul(transfer_function, cov_matrix),
+                  _dagger(transfer_function))
+
+
+
+    print('################')
+
+    plt.plot(f, cross_spectrum[:(n+2)//2, 0, 0], label='True')
+    plt.plot(f, A[:(n+2)//2, 0, 0], label='Mult')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, np.real(cross_spectrum[:(n+2)//2, 0, 1]), label='True')
+    plt.plot(f, np.real(A[:(n+2)//2, 0, 1]), label='Mult')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, np.imag(cross_spectrum[:(n+2)//2, 0, 1]), label='True')
+    plt.plot(f, np.imag(A[:(n+2)//2, 0, 1]), label='Mult')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, np.real(cross_spectrum[:(n+2)//2, 1, 0]), label='True')
+    plt.plot(f, np.real(A[:(n+2)//2, 1, 0]), label='Mult')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, np.imag(cross_spectrum[:(n+2)//2, 1, 0]), label='True')
+    plt.plot(f, np.imag(A[:(n+2)//2, 1, 0]), label='Mult')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, cross_spectrum[:(n+2)//2, 1, 1], label='True')
+    plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
+    plt.legend()
+    plt.show()
+
+    # Test spectral granger
+    xy = []
+    yx = []
+    psd_x = []
+    psd_y = []
+
+    for i in range(100):
+        np.random.seed(i**2+135)
+        length_2d = 1124
+        signal = np.zeros((2, length_2d))
+
+        order = 2
+        weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
+        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
+
+        weights = np.stack((weights_1, weights_2))
+
+        noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
+
+        for i in range(length_2d):
+            for lag in range(order):
+                signal[:, i] += np.dot(weights[lag],
+                                       signal[:, i - lag - 1])
+            rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+            signal[0, i] += rnd_var[0]
+            signal[1, i] += rnd_var[1]
+
+        signal = signal[:, 100:]
+        length_2d -= 100
+
+        f, _, cross_spec = multitaper_cross_spectrum(signal.T, num_tapers=15)
+        #f = f[:(length_2d+1)//2]
+        psd_x.append(cross_spec[:(length_2d+1)//2, 0, 0])
+        psd_y.append(cross_spec[:(length_2d+1)//2, 1, 1])
+
+        f, y_x, x_y = pairwise_spectral_granger(signal, num_tapers=15,
+                                                num_iterations=50)
+
+        xy.append(x_y)
+        yx.append(y_x)
+
+    xy = np.array(xy)
+    yx = np.array(yx)
+
+    x_y = np.mean(xy, axis=0)
+    y_x = np.mean(yx, axis=0)
+
+    psd_x = np.array(psd_x)
+    psd_y = np.array(psd_y)
+
+    psd_x = np.mean(psd_x, axis=0)
+    psd_y = np.mean(psd_y, axis=0)
+
+    from matplotlib import pyplot as plt
+
+    #plt.plot(f, 2*cross_spec[:, 0, 0], label='1')
+    #plt.plot(f, 2*cross_spec[:, 1, 1], label='2')
+    plt.plot(f, psd_x, label='1')
+    plt.plot(f, psd_y, label='2')
+    plt.legend()
+    plt.show()
+
+
+    plt.plot(f, y_x, label='y->x')
+    plt.plot(f, x_y, label='x->y')
+    plt.legend()
+    plt.show()
