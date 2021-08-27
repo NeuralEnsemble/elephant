@@ -757,8 +757,52 @@ def pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
 
     return freqs, spectral_granger_y_x, spectral_granger_x_y
 
+def ding_pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
+                                   peak_resolution=None, num_iterations=20):
+
+    length = np.size(signals[0])
+    signals[0] -= np.mean(signals[0])
+    signals[1] -= np.mean(signals[1])
+
+    freqs, _, S = multitaper_cross_spectrum(signals.T,
+                                            fs=fs,
+                                            nw=nw,
+                                            num_tapers=num_tapers,
+                                            peak_resolution=peak_resolution)
+
+    C, H = _spectral_factorization(S, num_iterations=num_iterations)
+
+    # Take positive frequencies
+    freqs = freqs[:(length+1)//2]
+    S = S[:(length+1)//2]
+    H = H[:(length+1)//2]
+
+    H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
+    H_tilde_yy = H[:, 1, 1] + C[0, 1]/C[1, 1]*H[:, 1, 0]
+
+    granger_y_x = np.log(S[:, 0, 0] /
+                                  (H_tilde_xx
+                                   * C[0, 0]
+                                   * H_tilde_xx.conj()))
+
+    granger_x_y = np.log(S[:, 1, 1] /
+                                  (H_tilde_yy
+                                   * C[1, 1]
+                                   * H_tilde_yy.conj()))
+
+    instantaneous_causality = np.log(
+        (H_tilde_xx * C[0, 0] * H_tilde_xx.conj())
+        * (H_tilde_yy * C[1, 1] * H_tilde_yy.conj()))
+    instantaneous_causality -= np.linalg.slogdet(S)[1]
+
+    total_interdependence = granger_x_y + granger_y_x + instantaneous_causality
+
+    return freqs, granger_y_x, granger_x_y, instantaneous_causality, total_interdependence
+
 
 if __name__ == '__main__':
+
+    '''
 
     # Test spectral factorization
     np.random.seed(12321)
@@ -841,15 +885,20 @@ if __name__ == '__main__':
     plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
     plt.legend()
     plt.show()
+    '''
 
     # Test spectral granger
     xy = []
     yx = []
+    ding_xy = []
+    ding_yx = []
+    ding_inst = []
+    ding_tot = []
     psd_x = []
     psd_y = []
 
-    for i in range(100):
-        np.random.seed(i**2+135)
+    for i in range(50):
+        np.random.seed(i**2+134)
         length_2d = 1124
         signal = np.zeros((2, length_2d))
 
@@ -859,7 +908,7 @@ if __name__ == '__main__':
 
         weights = np.stack((weights_1, weights_2))
 
-        noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
+        noise_covariance = np.array([[1., 0.], [0., 0.7]])
 
         for i in range(length_2d):
             for lag in range(order):
@@ -873,21 +922,38 @@ if __name__ == '__main__':
         length_2d -= 100
 
         f, _, cross_spec = multitaper_cross_spectrum(signal.T, num_tapers=15)
-        #f = f[:(length_2d+1)//2]
         psd_x.append(cross_spec[:(length_2d+1)//2, 0, 0])
         psd_y.append(cross_spec[:(length_2d+1)//2, 1, 1])
 
         f, y_x, x_y = pairwise_spectral_granger(signal, num_tapers=15,
                                                 num_iterations=50)
 
+        f, ding_y_x, ding_x_y, inst, tot = ding_pairwise_spectral_granger(signal, num_tapers=15,
+                                                               num_iterations=50)
+
         xy.append(x_y)
         yx.append(y_x)
+
+        ding_xy.append(ding_x_y)
+        ding_yx.append(ding_y_x)
+        ding_inst.append(inst)
+        ding_tot.append(tot)
 
     xy = np.array(xy)
     yx = np.array(yx)
 
     x_y = np.mean(xy, axis=0)
     y_x = np.mean(yx, axis=0)
+
+    ding_xy = np.array(ding_xy)
+    ding_yx = np.array(ding_yx)
+    ding_inst = np.array(ding_inst)
+    ding_tot = np.array(ding_tot)
+
+    ding_x_y = np.mean(ding_xy, axis=0)
+    ding_y_x = np.mean(ding_yx, axis=0)
+    ding_inst = np.mean(ding_inst, axis=0)
+    ding_tot = np.mean(ding_tot, axis=0)
 
     psd_x = np.array(psd_x)
     psd_y = np.array(psd_y)
@@ -899,13 +965,22 @@ if __name__ == '__main__':
 
     #plt.plot(f, 2*cross_spec[:, 0, 0], label='1')
     #plt.plot(f, 2*cross_spec[:, 1, 1], label='2')
-    plt.plot(f, psd_x, label='1')
-    plt.plot(f, psd_y, label='2')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, psd_x, label='1')
+    #plt.plot(f, psd_y, label='2')
+    #plt.legend()
+    #plt.show()
 
 
     plt.plot(f, y_x, label='y->x')
     plt.plot(f, x_y, label='x->y')
+    plt.plot(f, ding_y_x, label='y->x')
+    plt.plot(f, ding_x_y, label='x->y')
+    plt.legend()
+    plt.show()
+
+    plt.plot(f, ding_y_x, label='y->x')
+    plt.plot(f, ding_x_y, label='x->y')
+    plt.plot(f, ding_inst, label='inst')
+    plt.plot(f, ding_tot, label='tot')
     plt.legend()
     plt.show()
