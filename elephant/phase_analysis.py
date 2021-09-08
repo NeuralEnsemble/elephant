@@ -333,8 +333,8 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
         Takes the absolute value of the numerator in the WPLI-formula.
         When set to `False`, the WPLI contains additional directionality
         information about which signal leads/lags the other signal:
-            - wpli > 0 : first signal leads second one
-            - wpli < 0 : first signal lags second one
+            - wpli > 0 : first signal i leads second signal j
+            - wpli < 0 : first signal i lags second signal j
 
     Returns
     -------
@@ -391,7 +391,6 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
             raise ValueError("trial number of signal i and j must be equal")
         raise ValueError("trial length of signal i and j must be equal")
 
-    # ARRAY-approach
     # calculate Fourier transforms
     fft1 = np.fft.rfft(signal_i)
     fft2 = np.fft.rfft(signal_j)
