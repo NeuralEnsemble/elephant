@@ -1500,7 +1500,7 @@ def ilogexp(x):
     return y
 
 
-def cost_function(x, N, w, dt):
+def cost_function_fixed(x, N, w, dt):
     """
     Computes the cost function for `sskernel`.
 
@@ -1515,6 +1515,118 @@ def cost_function(x, N, w, dt):
     # formula for rate
     # C = dt*sum( yh.^2 - 2*yh.*y_hist + 2/sqrt(2*pi)/w*y_hist )
     return C, yh
+
+def cost_function_adaptive(y_hist, N, t, dt, optws, WIN, WinFunc, g):
+
+    L = y_hist.size
+    optwv = np.zeros((L, ))
+    for k in range(L):
+        gs = optws[:, k] / WIN
+        if g > np.max(gs):
+            optwv[k] = np.min(WIN)
+        else:
+            if g < min(gs):
+                optwv[k] = np.max(WIN)
+            else:
+                idx = np.max(np.nonzero(gs >= g))
+                optwv[k] = g * WIN[idx]
+
+    # Nadaraya-Watson kernel regression
+    optwp = np.zeros((L, ))
+    for k in range(L):
+        if WinFunc == 'Boxcar':
+            Z = Boxcar(t[k]-t, optwv / g)
+        elif WinFunc == 'Laplace':
+            Z = Laplace(t[k]-t, optwv / g)
+        elif WinFunc == 'Cauchy':
+            Z = Cauchy(t[k]-t, optwv / g)
+        else:  # WinFunc == 'Gauss'
+            Z = Gauss(t[k]-t, optwv / g)
+        optwp[k] = np.sum(optwv * Z) / np.sum(Z)
+
+    # speed-optimized baloon estimator
+    idx = y_hist.nonzero()
+    y_hist_nz = y_hist[idx]
+    t_nz = t[idx]
+    yv = np.zeros((L, ))
+    for k in range(L):
+        yv[k] = np.sum(y_hist_nz * dt * Gauss(t[k]-t_nz, optwp[k]))
+    yv = yv * N / np.sum(yv * dt)
+
+    # cost function of estimated kernel
+    cg = yv**2 - 2 * yv * y_hist + 2 / (2 * np.pi)**0.5 / optwp * y_hist
+    Cg = np.sum(cg * dt)
+
+    return Cg, yv, optwp
+
+def fftkernelWin(x, w, WinFunc):
+    # forward padded transform
+    L = x.size
+    Lmax = L + 3 * w
+    n = 2 ** np.ceil(np.log2(Lmax))
+    X = np.fft.fft(x, n.astype(np.int))
+
+    # generate kernel domain
+    f = np.linspace(start=0, stop=n-1, num=int(n)) / n
+    f = np.concatenate((-f[0: np.int(n / 2 + 1)],
+                        f[1: np.int(n / 2 - 1 + 1)][::-1]))
+    t = 2 * np.pi * f
+
+    # determine window function - evaluate kernel
+    if WinFunc == 'Boxcar':
+        a = 12**0.5 * w
+        K = 2 * np.sin(a * t / 2) / (a * t)
+        K[0] = 1
+    elif WinFunc == 'Laplace':
+        K = 1 / (1 + (w * 2 * np.pi * f)**2 / 2)
+    elif WinFunc == 'Cauchy':
+        K = np.exp(-w * np.abs(2 * np.pi * f))
+    else:  # WinFunc == 'Gauss'
+        K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
+
+    # convolve and transform back from frequency domain
+    y = np.real(np.fft.ifft(X * K, n))
+    y = y[0:L]
+
+    return y
+
+
+def Gauss(x, w):
+    y = 1 / (2 * np.pi)**2 / w * np.exp(-x**2 / 2 / w**2)
+    return y
+
+
+def Laplace(x, w):
+    y = 1 / 2**0.5 / w * np.exp(-(2**0.5) / w / np.abs(x))
+    return y
+
+
+def Cauchy(x, w):
+    y = 1 / (np.pi * w * (1 + (x / w)**2))
+    return y
+
+
+def Boxcar(x, w):
+    a = 12**0.5 * w
+    y = 1 / a
+    y[np.abs(x) > a / 2] = 0
+    return y
+
+
+def logexp_adaptive(x):
+    y = np.zeros(x.shape)
+    y[x < 1e2] = np.log(1+np.exp(x[x < 1e2]))
+    y[x >= 1e2] = x[x >= 1e2]
+    return y
+
+
+def ilogexp_adaptive(x):
+    y = np.zeros(x.shape)
+    y[x < 1e2] = np.log(np.exp(x[x < 1e2]) - 1)
+    y[x >= 1e2] = x[x >= 1e2]
+    return y
+
+
 
 
 @deprecated_alias(tin='times', w='bandwidth')
@@ -1604,7 +1716,7 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
         C = np.zeros(len(bandwidth))
         Cmin = np.inf
         for k, w_ in enumerate(bandwidth):
-            C[k], yh = cost_function(yhist, N, w_, dt)
+            C[k], yh = cost_function_fixed(yhist, N, w_, dt)
             if C[k] < Cmin:
                 Cmin = C[k]
                 optw = w_
@@ -1622,8 +1734,8 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
         b = ilogexp(wmax)
         c1 = (phi - 1) * a + (2 - phi) * b
         c2 = (2 - phi) * a + (phi - 1) * b
-        f1, y1 = cost_function(yhist, N, logexp(c1), dt)
-        f2, y2 = cost_function(yhist, N, logexp(c2), dt)
+        f1, y1 = cost_function_fixed(yhist, N, logexp(c1), dt)
+        f2, y2 = cost_function_fixed(yhist, N, logexp(c2), dt)
         k = 0
         while (np.abs(b - a) > (tolerance * (np.abs(c1) + np.abs(c2)))) \
                 and (k < imax):
@@ -1632,7 +1744,7 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                 c2 = c1
                 c1 = (phi - 1) * a + (2 - phi) * b
                 f2 = f1
-                f1, y1 = cost_function(yhist, N, logexp(c1), dt)
+                f1, y1 = cost_function_fixed(yhist, N, logexp(c1), dt)
                 bandwidth[k] = logexp(c1)
                 C[k] = f1
                 optw = logexp(c1)
@@ -1642,7 +1754,7 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                 c1 = c2
                 c2 = (2 - phi) * a + (phi - 1) * b
                 f1 = f2
-                f2, y2 = cost_function(yhist, N, logexp(c2), dt)
+                f2, y2 = cost_function_fixed(yhist, N, logexp(c2), dt)
                 bandwidth[k] = logexp(c2)
                 C[k] = f2
                 optw = logexp(c2)
@@ -1683,3 +1795,143 @@ def sskernel(*args, **kwargs):
     warnings.warn("'sskernel' function is deprecated; "
                   "use 'optimal_kernel_bandwidth'", DeprecationWarning)
     return optimal_kernel_bandwidth(*args, **kwargs)
+
+def adaptive_optimal_kernel_bandwidth(spiketimes, times=None,
+                                      num_bandwiths_to_evaluate=80,
+                                      bootstrap=False,
+                                      WinFunc='Boxcar'):
+
+    if times is None:
+        time = np.max(spiketimes) - np.min(spiketimes)
+        isi = np.diff(spiketimes)
+        isi = isi[isi > 0].copy()
+        dt = np.min(isi)
+        times = np.linspace(np.min(spiketimes),
+                            np.max(spiketimes),
+                            min(int(time / dt + 0.5),
+                                1000))  # The 1000 seems somewhat arbitrary
+        t = times
+    else:
+        time = np.max(times) - np.min(times)
+        spiketimes = spiketimes[(spiketimes >= np.min(times)) &
+                                (spiketimes <= np.max(times))].copy()
+        isi = np.diff(spiketimes)
+        isi = isi[isi > 0].copy()
+        dt = np.min(isi)
+        if dt > np.min(np.diff(times)):
+            t = np.linspace(np.min(times), np.max(times),
+                            min(int(time / dt + 0.5), 1000))
+        else:
+            t = times
+    dt = np.min(np.diff(times))
+    print('dt', dt)
+    yhist, bins = np.histogram(spiketimes, np.r_[t - dt / 2, t[-1] + dt / 2])
+    N = np.sum(yhist)
+    L = yhist.size
+    yhist = yhist / dt  # density
+    print('yhist', yhist)
+    
+    # initialize window sizes
+    bandwidths = logexp_adaptive(np.linspace(ilogexp_adaptive(5 * dt), 
+                                             ilogexp_adaptive(time),
+                                    num_bandwiths_to_evaluate))
+                        
+    # compute local cost functions
+    c = np.zeros((num_bandwiths_to_evaluate, L))
+    for j in range(num_bandwiths_to_evaluate):
+        w = bandwidths[j]
+        yh = fftkernel(yhist, w / dt)
+        c[j, :] = yh**2 - 2 * yh * yhist + 2 / (2 * np.pi)**0.5 / w * yhist
+        
+    # initialize optimal ws
+    optws = np.zeros((num_bandwiths_to_evaluate, L))
+    for i in range(num_bandwiths_to_evaluate):
+        Win = bandwidths[i]
+        C_local = np.zeros((num_bandwiths_to_evaluate, L))
+        for j in range(num_bandwiths_to_evaluate):
+            C_local[j, :] = fftkernelWin(c[j, :], Win / dt, WinFunc)
+        n = np.argmin(C_local, axis=0)
+        optws[i, :] = bandwidths[n]
+
+    k = 0
+    gs = np.zeros((30, 1))
+    C = np.zeros((30, 1))
+    tol = 1e-5
+    a = 1e-12
+    b = 1
+    phi = (5**0.5 + 1) / 2
+    c1 = (phi - 1) * a + (2 - phi) * b
+    c2 = (2 - phi) * a + (phi - 1) * b
+    f1 = cost_function_adaptive(yhist, N, t, dt, optws, bandwidths, WinFunc, c1)[0]
+    f2 = cost_function_adaptive(yhist, N, t, dt, optws, bandwidths, WinFunc, c2)[0]
+    while (np.abs(b-a) > tol * (abs(c1) + abs(c2))) & (k < 30):
+        if f1 < f2:
+            b = c2
+            c2 = c1
+            c1 = (phi - 1) * a + (2 - phi) * b
+            f2 = f1
+            f1, yv1, optwp1 = cost_function_adaptive(yhist, N, t, dt, optws, bandwidths,
+                                           WinFunc, c1)
+            yopt = yv1 / np.sum(yv1 * dt)
+            optw = optwp1
+        else:
+            a = c1
+            c1 = c2
+            c2 = (2 - phi) * a + (phi - 1) * b
+            f1 = f2
+            f2, yv2, optwp2 = cost_function_adaptive(yhist, N, t, dt, optws, bandwidths,
+                                           WinFunc, c2)
+            yopt = yv2 / np.sum(yv2 * dt)
+            optw = optwp2
+
+        # capture estimates and increment iteration counter
+        gs[k] = c1
+        C[k] = f1
+        k = k + 1
+
+    # discard unused entries in gs, C
+    gs = gs[0:k]
+    C = C[0:k]
+         
+
+    # Bootstrap confidence intervals
+    confb95 = None
+    yb = None
+    # If bootstrap is requested, and an optimal kernel was found
+    if bootstrap and optw:
+        nbs = 1000
+        print(nbs, times.size)
+        yb = np.zeros((int(nbs), times.size))
+        for i in range(nbs):
+            Nb = np.random.poisson(lam=N)
+            idx = np.random.randint(0, N, Nb)
+            xb = spiketimes[idx]
+            thist = np.concatenate((t, (t[-1]+dt)[np.newaxis]))
+            y_histb = np.histogram(xb, thist - dt / 2)[0]
+            idx = y_histb.nonzero()
+            y_histb_nz = y_histb[idx]
+            t_nz = t[idx]
+            yb_buf = np.zeros((L, ))
+            for k in range(L):
+                yb_buf[k] = np.sum(y_histb_nz * Gauss(t[k] - t_nz, optw[k])) / Nb
+            yb_buf = yb_buf / np.sum(yb_buf * dt)
+            yb[i, :] = np.interp(times, t, yb_buf)
+        ybsort = np.sort(yb, axis=0)
+        y95b = ybsort[np.int(np.floor(0.05 * nbs)), :]
+        y95u = ybsort[np.int(np.floor(0.95 * nbs)), :]
+        confb95 = np.concatenate((y95b[np.newaxis], y95u[np.newaxis]), axis=0)
+
+    # return outputs
+    # Only perform interpolation if y could be calculated
+    if yopt is not None:
+        y = np.interp(times, t, yopt)
+    optw = np.interp(times, t, optw)
+    t = times
+
+    return {'y': y,
+            't': times,
+            'optw': optw,
+            'gs': gs,
+            'C': C,
+            'confb95': confb95,
+            'yb': yb}
