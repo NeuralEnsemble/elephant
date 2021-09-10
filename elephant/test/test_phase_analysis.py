@@ -385,15 +385,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # and then loaded/ read for each test function individually.
         repo_url = "https://gin.g-node.org/INM-6/elephant-data/raw/" \
                    "feature_PhaseAnalysis_WPLI"
-        ## REAL DATA
+        # REAL DATA
         real_data_url = repo_url + "/dataset-4"
         files_to_download_real = (
             ("i140703-001_ch01_slice_TS_ON_to_GO_ON_correct_trials.mat",
              "0e76454c58208cab710e672d04de5168"),
             ("i140703-001_ch02_slice_TS_ON_to_GO_ON_correct_trials.mat",
              "b06059e5222e91eb640caad0aba15b7f"),
-            ("i140703-001_ch03_slice_TS_ON_to_GO_ON_correct_trials.mat",
-             "f0563ffe08bd85db5591e2cf60d68f2c"),
             ("i140703-001_cross_spectrum_of_channel_1_and_2_of_slice_"
              "TS_ON_to_GO_ON_corect_trials.mat",
              "2687ef63a4a456971a5dcc621b02e9a9")
@@ -401,7 +399,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         for filename, checksum in files_to_download_real:
             # files will be downloaded to ELEPHANT_TMP_DIR
             download(url=f"{real_data_url}/{filename}", checksum=checksum)
-        ## ARTIFICIAL DATA
+        # ARTIFICIAL DATA
         url_artificial = \
             repo_url + "/validation/phase_analysis/weighted_phase_lag_index/" \
                        "wpli_specific_artificial_dataset"
@@ -412,7 +410,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         for filename, checksum in files_to_download_artificial:
             # files will be downloaded to ELEPHANT_TMP_DIR
             download(url=f"{url_artificial}/{filename}", checksum=checksum)
-        ## GROUND TRUTH DATA
+        # GROUND TRUTH DATA
         url_ground_truth = \
             repo_url + "/validation/phase_analysis/weighted_phase_lag_index/" \
                        "ground_truth_wpli"
@@ -645,11 +643,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         trials1_length3 = np.array([[0, -1, 1]]) * pq.uV
         trials1_length4 = np.array([[0, 1, 1 / 2, -1]]) * pq.uV
         sampling_frequency = 250 * pq.Hz
-        trials2_length3_AnalogSignal = AnalogSignal(
+        trials2_length3_analogsignal = AnalogSignal(
             signal=trials2_length3, sampling_rate=sampling_frequency)
-        trials1_length3_AnalogSignal = AnalogSignal(
+        trials1_length3_analogsignal = AnalogSignal(
             signal=trials1_length3, sampling_rate=sampling_frequency)
-        trials1_length4_AnalogSignal = AnalogSignal(
+        trials1_length4_analogsignal = AnalogSignal(
             signal=trials1_length4, sampling_rate=sampling_frequency)
 
         # different numbers of trails
@@ -665,7 +663,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         with self.subTest(msg="diff. trial numbers & neo.AnalogSignal input"):
             np.testing.assert_raises(
                 ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-                trials2_length3_AnalogSignal, trials1_length3_AnalogSignal)
+                trials2_length3_analogsignal, trials1_length3_analogsignal)
         # different lengths in a trail pair
         with self.subTest(msg="diff. trial lengths & Quantity input"):
             np.testing.assert_raises(
@@ -679,20 +677,21 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         with self.subTest(msg="diff. trial lengths & neo.AnalogSignal input"):
             np.testing.assert_raises(
                 ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-                trials1_length3_AnalogSignal, trials1_length4_AnalogSignal)
+                trials1_length3_analogsignal, trials1_length4_analogsignal)
 
-    def test_WPLI_raises_error_if_AnalogSignals_have_diff_sampling_rate(self):
+    @staticmethod
+    def test_WPLI_raises_error_if_AnalogSignals_have_diff_sampling_rate():
         """
         Test if WPLI raises a ValueError, when the AnalogSignals have different
         sampling rates.
         """
-        signal_x_250_Hz = AnalogSignal(signal=np.random.random([40, 2100]),
+        signal_x_250_hz = AnalogSignal(signal=np.random.random([40, 2100]),
                                        units=pq.mV, sampling_rate=0.25*pq.kHz)
-        signal_y_1000_Hz = AnalogSignal(signal=np.random.random([40, 2100]),
+        signal_y_1000_hz = AnalogSignal(signal=np.random.random([40, 2100]),
                                         units=pq.mV, sampling_rate=1000*pq.Hz)
         np.testing.assert_raises(
             ValueError, elephant.phase_analysis.weighted_phase_lag_index,
-            signal_x_250_Hz, signal_y_1000_Hz)
+            signal_x_250_hz, signal_y_1000_hz)
 
     def test_WPLI_raises_error_if_sampling_rate_not_given(self):
         """
