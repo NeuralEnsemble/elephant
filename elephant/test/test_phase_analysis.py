@@ -485,8 +485,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         The cutting was performed with this python-script:
         multielectrode_grasp_i140703-001_cutting_script_TS_ON_to_GO_ON.py
         which is available on https://gin.g-node.org/INM-6/elephant-data
-        in folder dataset4, where also the MATLAB-script for ground-truth
-        generation is located.
+        in folder validation/phase_analysis/weighted_phase_lag_index/scripts,
+        where also the MATLAB-script for ground-truth generation is located.
         """
         # Quantity-input
         with self.subTest(msg="Quantity input"):
@@ -515,6 +515,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         """
         Test if the WPLI is consistent with the ground truth generated with
         multi-sine artificial LFP-datasets.
+        The generation was performed with this python-script:
+        generate_artificial_datasets_for_ground_truth_of_wpli.py
+        which is available on https://gin.g-node.org/INM-6/elephant-data
+        in folder validation/phase_analysis/weighted_phase_lag_index/scripts,
+        where also the MATLAB-script for ground-truth generation is located.
         """
         # Quantity-input
         with self.subTest(msg="Quantity input"):
