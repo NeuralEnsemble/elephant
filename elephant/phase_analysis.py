@@ -323,10 +323,10 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
 
     Parameters
     ----------
-    signal_i, signal_j : np.array, Quantity, neo.AnalogSignal
+    signal_i, signal_j : np.array, pq.quantity.Quantity, neo.AnalogSignal
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
-    sampling_frequency : quantity (default: None)
+    sampling_frequency : pq.quantity.Quantity (default: None)
         Sampling frequency of the signals in Hz. Not needed if signal i and j
         are neo.AnalogSignals.
     absolute_value : boolean (default: True)
@@ -338,10 +338,10 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
 
     Returns
     -------
-    freqs : quantity
+    freqs : pq.quantity.Quantity
         Positive frequencies in Hz associated with the estimates of `wpli`.
         Range: :math:`[0, sampling frequency/2]`
-    wpli : float
+    wpli : np.ndarray with dtype=float
         Weighted phase-lag index of `signal_i` and `signal_j` across trials.
         Range: :math:`[0, 1]`
 
