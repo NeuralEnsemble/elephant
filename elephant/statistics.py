@@ -1495,15 +1495,8 @@ def fftkernel(x, w, WinFunc='Gauss'):
     
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
-
-
-def ilogexp(x):
-    if x < 1e2:
-        y = np.log(np.exp(x) - 1)
-    else:
-        y = x
+    
     return y
-
 
 def cost_function_fixed(x, N, w, dt):
     """
@@ -1585,20 +1578,11 @@ def Boxcar(x, w):
     y[np.abs(x) > a / 2] = 0
     return y
 
+def logexp(x):
+    return np.logaddexp(0, x)
 
-def logexp_adaptive(x):
-    y = np.zeros(x.shape)
-    y[x < 1e2] = np.log(1+np.exp(x[x < 1e2]))
-    y[x >= 1e2] = x[x >= 1e2]
-    return y
-
-
-def ilogexp_adaptive(x):
-    y = np.zeros(x.shape)
-    y[x < 1e2] = np.log(np.exp(x[x < 1e2]) - 1)
-    y[x >= 1e2] = x[x >= 1e2]
-    return y
-
+def ilogexp(x):
+    return np.log(np.expm1(x))
 
 
 
@@ -1805,8 +1789,8 @@ def adaptive_optimal_kernel_bandwidth(spiketimes, times=None,
     print('yhist', yhist)
     
     # initialize window sizes
-    bandwidths = logexp_adaptive(np.linspace(ilogexp_adaptive(5 * dt), 
-                                             ilogexp_adaptive(time),
+    bandwidths = logexp(np.linspace(ilogexp(5 * dt), 
+                                             ilogexp(time),
                                     num_bandwiths_to_evaluate))
                         
     # compute local cost functions
