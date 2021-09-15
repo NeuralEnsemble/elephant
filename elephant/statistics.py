@@ -1905,3 +1905,210 @@ def adaptive_optimal_kernel_bandwidth(spiketimes, times=None,
             'C': C,
             'confb95': confb95,
             'yb': yb}
+
+class KernelBandwidth:
+    def __init__(self, spiketimes, n_trials=1, times=None, bandwidth=None, 
+                 n_bootstraps=1000, n_bandwidths_to_evaluate=80, 
+                 WinFunc='Boxcar', n_max_iters=20,
+                 tolerance = 1e-5):
+        self.spiketimes = spiketimes
+        self.times = times
+        self.bandwidth = bandwidth
+        self.n_bootstraps = n_bootstraps 
+        self.n_bandwidths_to_evaluate = n_bandwidths_to_evaluate
+        self.WinFunc = 'Boxcar'
+        self.n_max_iters = n_max_iters
+        self.tolerance = tolerance
+        self.n_trials = n_trials
+        
+    def determine_t(self):
+        if self.times is None:
+            time = np.max(self.spiketimes) - np.min(self.spiketimes)
+            isi = np.diff(self.spiketimes)
+            isi = isi[isi > 0].copy()
+            dt = np.min(isi)
+            times = np.linspace(np.min(self.spiketimes),
+                                np.max(self.spiketimes),
+                                min(int(time / dt + 0.5),
+                                    1000))  # The 1000 seems somewhat arbitrary
+            self.t = times
+        else:
+            time = np.max(self.times) - np.min(self.times)
+            spiketimes_in_times = self.spiketimes[(self.spiketimes >= np.min(self.times)) &
+                                    (self.spiketimes <= np.max(self.times))].copy()
+            isi = np.diff(spiketimes_in_times)
+            isi = isi[isi > 0].copy()
+            dt = np.min(isi)
+            if dt > np.min(np.diff(self.times)):
+                self.t = np.linspace(np.min(self.times), np.max(self.times),
+                                min(int(time / dt + 0.5), 1000))
+            else:
+                self.t = self.times
+        
+        self.dt = np.min(np.diff(self.t))
+        
+    def get_histogram(self):
+        
+        if hasattr(self, 't'):
+            pass
+        else:
+            self.determine_t()
+        
+        self.hist, self.hist_bins = np.histogram(self.spiketimes,
+                                    np.r_[self.t - self.dt / 2,
+                                            self.t[-1] + self.dt / 2])
+        
+    def get_normalized_histogram(self):
+        
+        if hasattr(self, 'hist'):
+            pass
+        else:
+            self.get_histogram()
+        
+        self.get_histogram()
+        self.normalization = np.sum(self.hist) # number of spikes
+        self.normalized_hist = self.hist / (self.normalization * self.dt)
+
+    @staticmethod
+    def _cost_function_fixed_bandwidth(x, N, w, dt):
+        """
+        Computes the cost function for `sskernel`.
+        
+        Eq. 9 in Shimazaki paper
+
+        Cn(w) = sum_{i,j} int k(x - x_i) k(x - x_j) dx - 2 sum_{i~=j} k(x_i - x_j)
+
+        """
+        yh = np.abs(fftkernel(x, w / dt))  # density
+        # formula for density
+        C = np.sum(yh ** 2) * dt - 2 * np.sum(yh * x) * \
+            dt + 2 / np.sqrt(2 * np.pi) / w / N
+        C = C * N * N
+        # formula for rate
+        # C = dt*sum( yh.^2 - 2*yh.*y_hist + 2/sqrt(2*pi)/w*y_hist )
+        return C, yh
+    
+    def determine_fixed_optimal_bandwidth(self):
+        
+        if hasattr(self, 'normalized_hist'):
+            pass
+        else:
+            self.get_normalized_histogram()
+        
+        optimal_bandwidth = None
+        estimated_density = None
+        if self.bandwidth is not None:
+            costs = np.zeros(len(self.bandwidth))
+            current_minimum = np.inf
+            for k, test_bandwidth in enumerate(self.bandwidth):
+                costs[k], intermediate_density = \
+                    self._cost_function_fixed_bandwidth(
+                        self.normalized_hist,
+                        self.normalization,
+                        test_bandwidth,
+                        self.dt)
+                # evaluate whether costs is smaller than current minimium
+                if costs[k] < current_minimum:
+                    current_minimum = costs[k]
+                    optimal_bandwidth = test_bandwidth
+                    estimated_density = intermediate_density
+        else: # golden section search for optimal bandwidth
+            # define containers for bandwidth and cost per iteration step k
+            bandwidths_iteration = np.zeros(self.n_max_iters)
+            costs_iteration = np.zeros(self.n_max_iters)
+            
+            # define parameters for golden section search on a log-exp scale
+            minimal_bandwidth = 2 * self.dt
+            maximal_bandwidth = max(self.spiketimes) - min(self.spiketimes)
+            phi = 0.5 * (np.sqrt(5) + 1)  # The Golden ratio
+            a = np.log(np.expm1(minimal_bandwidth))
+            b = np.log(np.expm1(maximal_bandwidth))
+            c1 = (phi - 1) * a + (2 - phi) * b
+            c2 = (2 - phi) * a + (phi - 1) * b
+            
+            intermediate_bandwidth_1 = np.logaddexp(0, c1)
+            intermediate_bandwidth_2 = np.logaddexp(0, c2)
+
+            cost_1, density_1 = self._cost_function_fixed_bandwidth(
+                self.normalized_hist, self.normalization, intermediate_bandwidth_1, self.dt)
+            cost_2, density_2 = self._cost_function_fixed_bandwidth(
+                self.normalized_hist, self.normalization, intermediate_bandwidth_2, self.dt)
+            
+            # initialize the iteration index k
+            k = 0
+            while (np.abs(b - a) > (self.tolerance * (np.abs(c1) + np.abs(c2)))) \
+                    and (k < self.n_max_iters):
+                if cost_1 < cost_2:
+                    b = c2
+                    c2 = c1
+                    c1 = (phi - 1) * a + (2 - phi) * b
+                    intermediate_bandwidth_1 = np.logaddexp(0, c1)
+                    cost_2 = cost_1
+                    cost_1, density_1 = self._cost_function_fixed_bandwidth(
+                        self.normalized_hist, self.normalization, intermediate_bandwidth_1, self.dt)
+                    bandwidths_iteration[k] = intermediate_bandwidth_1
+                    costs_iteration[k] = cost_1
+                    optimal_bandwidth = intermediate_bandwidth_1
+                    estimated_density = density_1 / (np.sum(density_1 * self.dt))
+                else:
+                    a = c1
+                    c1 = c2
+                    c2 = (2 - phi) * a + (phi - 1) * b
+                    intermediate_bandwidth_2 = np.logaddexp(0, c2)
+
+                    cost_1 = cost_2
+                    cost_2, density_2 = self._cost_function_fixed_bandwidth(
+                        self.normalized_hist, self.normalization, intermediate_bandwidth_2, self.dt)
+                    bandwidths_iteration[k] = intermediate_bandwidth_2
+                    costs_iteration[k] = cost_2
+                    optimal_bandwidth = intermediate_bandwidth_2
+                    estimated_density = density_2 / np.sum(density_2 * self.dt)
+                k = k + 1
+                
+            # Only perform interpolation if y could be calculated
+            if estimated_density is not None and self.times is not None:
+                estimated_density = np.interp(self.times, self.t, estimated_density)
+                
+            self.estimated_density_fixed_bandwidth = estimated_density
+            self.optimal_bandwidth = optimal_bandwidth
+            self.costs_iteration = costs_iteration
+            self.bandwidths_iteration = bandwidths_iteration
+    
+    def get_confidence_intervals_via_bootstrap(self):
+        
+        if hasattr(self, 'optimal_bandwidth'):
+            pass
+        else:
+            self.determine_fixed_optimal_bandwidth()
+        
+        # Bootstrap confidence intervals
+        yb = np.zeros((self.n_bootstraps, len(self.t)))
+        for ii in range(self.n_bootstraps):
+            idx = np.floor(np.random.rand(self.normalization) * self.normalization).astype(int)
+            xb = self.spiketimes[idx]
+            y_histb, bins = np.histogram(
+                xb, np.r_[self.t - self.dt / 2, 
+                          self.t[-1] + self.dt / 2]) / self.dt / self.normalization
+            yb_buf = fftkernel(y_histb, self.optimal_bandwidth / self.dt).real
+            yb_buf = yb_buf / np.sum(yb_buf * self.dt)
+            if self.times is not None:
+                yb[ii, :] = np.interp(self.times, self.t, yb_buf)
+            else:
+                yb[ii, :] = yb_buf
+        ybsort = np.sort(yb, axis=0)
+        y95b = ybsort[np.floor(0.05 * self.n_bootstraps).astype(int), :]
+        y95u = ybsort[np.floor(0.95 * self.n_bootstraps).astype(int), :]
+        confb95 = np.array((y95b, y95u))
+        
+        self.confb95 = confb95
+        self.densities_bootstrap = yb
+        
+    def get_estimated_rate(self):
+        if hasattr(self, 'estimated_density'):
+            pass
+        else:
+            self.determine_fixed_optimal_bandwidth()
+        
+        self.estimated_rate_fixed_bandwidth = self.estimated_density_fixed_bandwidth * self.normalization / self.n_trials
+            
+        
