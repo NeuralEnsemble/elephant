@@ -1501,6 +1501,8 @@ def fftkernel(x, w, WinFunc='Gauss'):
 def cost_function_fixed(x, N, w, dt):
     """
     Computes the cost function for `sskernel`.
+    
+    Eq. 9 in Shimazaki paper
 
     Cn(w) = sum_{i,j} int k(x - x_i) k(x - x_j) dx - 2 sum_{i~=j} k(x_i - x_j)
 
@@ -1518,7 +1520,9 @@ def cost_function_adaptive(y_hist, N, t, dt, optws, WIN, WinFunc, g):
 
     L = y_hist.size
     optwv = np.zeros((L, ))
+    # for each time step k get the optimal bandwidth w given a stiffness factor g
     for k in range(L):
+        # get all optimal bandwidths at a given time point k in units of the W
         gs = optws[:, k] / WIN
         if g > np.max(gs):
             optwv[k] = np.min(WIN)
@@ -1526,10 +1530,13 @@ def cost_function_adaptive(y_hist, N, t, dt, optws, WIN, WinFunc, g):
             if g < min(gs):
                 optwv[k] = np.max(WIN)
             else:
+                # np.nonzero returns an array of indices for which the condition is true
+                # equivalent: np.max(np.where(gs>=g)) 
                 idx = np.max(np.nonzero(gs >= g))
                 optwv[k] = g * WIN[idx]
+    # optwv = \bar{\w}^\gamma_t
 
-    # Nadaraya-Watson kernel regression
+    # Nadaraya-Watson kernel regression to smooth the fixed bandwidth
     optwp = np.zeros((L, ))
     for k in range(L):
         if WinFunc == 'Boxcar':
@@ -1541,6 +1548,7 @@ def cost_function_adaptive(y_hist, N, t, dt, optws, WIN, WinFunc, g):
         else:  # WinFunc == 'Gauss'
             Z = Gauss(t[k]-t, optwv / g)
         optwp[k] = np.sum(optwv * Z) / np.sum(Z)
+    # optwp = w^\gamma_t
 
     # speed-optimized baloon estimator
     idx = y_hist.nonzero()
@@ -1550,6 +1558,7 @@ def cost_function_adaptive(y_hist, N, t, dt, optws, WIN, WinFunc, g):
     for k in range(L):
         yv[k] = np.sum(y_hist_nz * dt * Gauss(t[k]-t_nz, optwp[k]))
     yv = yv * N / np.sum(yv * dt)
+    # yv = \hat{\lambda}_t
 
     # cost function of estimated kernel
     cg = yv**2 - 2 * yv * y_hist + 2 / (2 * np.pi)**0.5 / optwp * y_hist
