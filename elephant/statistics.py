@@ -1447,7 +1447,7 @@ def nextpow2(x):
     return n
 
 
-def fftkernel(x, w):
+def fftkernel(x, w, WinFunc='Gauss'):
     """
     Applies the Gauss kernel smoother to an input signal using FFT algorithm.
 
@@ -1479,17 +1479,22 @@ def fftkernel(x, w):
     f = np.arange(0, n, 1.0) / n
     f = np.concatenate((-f[:int(n / 2)], f[int(n / 2):0:-1]))
     K = np.exp(-0.5 * (w * 2 * np.pi * f) ** 2)
+    t = 2 * np.pi * f
+
+    # determine window function - evaluate kernel
+    if WinFunc == 'Boxcar':
+        a = 12**0.5 * w
+        K = 2 * np.sin(a * t / 2) / (a * t)
+        K[0] = 1
+    elif WinFunc == 'Laplace':
+        K = 1 / (1 + (w * 2 * np.pi * f)**2 / 2)
+    elif WinFunc == 'Cauchy':
+        K = np.exp(-w * np.abs(2 * np.pi * f))
+    else:  # WinFunc == 'Gauss'
+        K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
+    
     y = np.fft.ifft(X * K, n)
     y = y[:L].copy()
-    return y
-
-
-def logexp(x):
-    if x < 1e2:
-        y = np.log(1 + np.exp(x))
-    else:
-        y = x
-    return y
 
 
 def ilogexp(x):
@@ -1558,38 +1563,6 @@ def cost_function_adaptive(y_hist, N, t, dt, optws, WIN, WinFunc, g):
     Cg = np.sum(cg * dt)
 
     return Cg, yv, optwp
-
-def fftkernelWin(x, w, WinFunc):
-    # forward padded transform
-    L = x.size
-    Lmax = L + 3 * w
-    n = 2 ** np.ceil(np.log2(Lmax))
-    X = np.fft.fft(x, n.astype(np.int))
-
-    # generate kernel domain
-    f = np.linspace(start=0, stop=n-1, num=int(n)) / n
-    f = np.concatenate((-f[0: np.int(n / 2 + 1)],
-                        f[1: np.int(n / 2 - 1 + 1)][::-1]))
-    t = 2 * np.pi * f
-
-    # determine window function - evaluate kernel
-    if WinFunc == 'Boxcar':
-        a = 12**0.5 * w
-        K = 2 * np.sin(a * t / 2) / (a * t)
-        K[0] = 1
-    elif WinFunc == 'Laplace':
-        K = 1 / (1 + (w * 2 * np.pi * f)**2 / 2)
-    elif WinFunc == 'Cauchy':
-        K = np.exp(-w * np.abs(2 * np.pi * f))
-    else:  # WinFunc == 'Gauss'
-        K = np.exp(-0.5 * (w * 2 * np.pi * f)**2)
-
-    # convolve and transform back from frequency domain
-    y = np.real(np.fft.ifft(X * K, n))
-    y = y[0:L]
-
-    return y
-
 
 def Gauss(x, w):
     y = 1 / (2 * np.pi)**2 / w * np.exp(-x**2 / 2 / w**2)
