@@ -1806,7 +1806,7 @@ def adaptive_optimal_kernel_bandwidth(spiketimes, times=None,
         Win = bandwidths[i]
         C_local = np.zeros((num_bandwiths_to_evaluate, L))
         for j in range(num_bandwiths_to_evaluate):
-            C_local[j, :] = fftkernelWin(c[j, :], Win / dt, WinFunc)
+            C_local[j, :] = fftkernel(c[j, :], Win / dt, WinFunc)
         n = np.argmin(C_local, axis=0)
         optws[i, :] = bandwidths[n]
 
