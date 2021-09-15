@@ -1810,6 +1810,9 @@ def adaptive_optimal_kernel_bandwidth(spiketimes, times=None,
         n = np.argmin(C_local, axis=0)
         optws[i, :] = bandwidths[n]
 
+    optw = None
+    y = None
+
     k = 0
     gs = np.zeros((30, 1))
     C = np.zeros((30, 1))
@@ -1855,28 +1858,29 @@ def adaptive_optimal_kernel_bandwidth(spiketimes, times=None,
     confb95 = None
     yb = None
     # If bootstrap is requested, and an optimal kernel was found
-    if bootstrap and optw:
-        nbs = 1000
-        print(nbs, times.size)
-        yb = np.zeros((int(nbs), times.size))
-        for i in range(nbs):
-            Nb = np.random.poisson(lam=N)
-            idx = np.random.randint(0, N, Nb)
-            xb = spiketimes[idx]
-            thist = np.concatenate((t, (t[-1]+dt)[np.newaxis]))
-            y_histb = np.histogram(xb, thist - dt / 2)[0]
-            idx = y_histb.nonzero()
-            y_histb_nz = y_histb[idx]
-            t_nz = t[idx]
-            yb_buf = np.zeros((L, ))
-            for k in range(L):
-                yb_buf[k] = np.sum(y_histb_nz * Gauss(t[k] - t_nz, optw[k])) / Nb
-            yb_buf = yb_buf / np.sum(yb_buf * dt)
-            yb[i, :] = np.interp(times, t, yb_buf)
-        ybsort = np.sort(yb, axis=0)
-        y95b = ybsort[np.int(np.floor(0.05 * nbs)), :]
-        y95u = ybsort[np.int(np.floor(0.95 * nbs)), :]
-        confb95 = np.concatenate((y95b[np.newaxis], y95u[np.newaxis]), axis=0)
+    if bootstrap:
+        if optw is not None:
+            nbs = 1000
+            print(nbs, times.size)
+            yb = np.zeros((int(nbs), times.size))
+            for i in range(nbs):
+                Nb = np.random.poisson(lam=N)
+                idx = np.random.randint(0, N, Nb)
+                xb = spiketimes[idx]
+                thist = np.concatenate((t, (t[-1]+dt)[np.newaxis]))
+                y_histb = np.histogram(xb, thist - dt / 2)[0]
+                idx = y_histb.nonzero()
+                y_histb_nz = y_histb[idx]
+                t_nz = t[idx]
+                yb_buf = np.zeros((L, ))
+                for k in range(L):
+                    yb_buf[k] = np.sum(y_histb_nz * Gauss(t[k] - t_nz, optw[k])) / Nb
+                yb_buf = yb_buf / np.sum(yb_buf * dt)
+                yb[i, :] = np.interp(times, t, yb_buf)
+            ybsort = np.sort(yb, axis=0)
+            y95b = ybsort[np.int(np.floor(0.05 * nbs)), :]
+            y95u = ybsort[np.int(np.floor(0.95 * nbs)), :]
+            confb95 = np.concatenate((y95b[np.newaxis], y95u[np.newaxis]), axis=0)
 
     # return outputs
     # Only perform interpolation if y could be calculated
