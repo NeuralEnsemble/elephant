@@ -2035,7 +2035,7 @@ class KernelBandwidth:
             a = np.log(np.expm1(minimal_bandwidth))
             b = np.log(np.expm1(maximal_bandwidth))
             c1, c2 = self._golden_section_search_boundaries(a, b)
-            
+        
             intermediate_bandwidth_1 = np.logaddexp(0, c1)
             intermediate_bandwidth_2 = np.logaddexp(0, c2)
 
@@ -2165,7 +2165,6 @@ class KernelBandwidth:
             # determine index of optimal bandwidth
             n = np.argmin(local_costs, axis=0)
             optimal_bandwidths_per_weight_function[i, :] = self.bandwidths_to_evaluate[n]
-        ic(Win, self.WinFunc, self.dt)
             
         # golden section search for stiffness parameter of variable bandwidths
         k = 0
