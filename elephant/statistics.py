@@ -1910,7 +1910,7 @@ class KernelBandwidth:
     def __init__(self, spiketimes, n_trials=1, times=None, bandwidth=None, 
                  n_bootstraps=1000, n_bandwidths_to_evaluate=80, 
                  WinFunc='Boxcar', n_max_iters_fixed=20, n_max_iters_adaptive=30,
-                 tolerance = 1e-5):
+                 tolerance = 1e-5, n_bins=1000):
         self.spiketimes = spiketimes
         self.times = times
         self.bandwidth = bandwidth
@@ -2138,6 +2138,11 @@ class KernelBandwidth:
             pass
         else:
             self.determine_bandwidths_to_evaluate()    
+            
+        if hasattr(self, 'L'):
+            pass
+        else:
+            self.get_normalized_histogram()    
         
         global_costs = np.zeros((self.n_bandwidths_to_evaluate, self.L))
         for j, w in enumerate(self.bandwidths_to_evaluate):
