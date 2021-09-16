@@ -1921,6 +1921,7 @@ class KernelBandwidth:
         self.n_max_iters_adaptive = n_max_iters_adaptive
         self.tolerance = tolerance
         self.n_trials = n_trials
+        self.n_bins = n_bins
         
     def determine_t(self):
         if self.times is None:
@@ -1931,7 +1932,7 @@ class KernelBandwidth:
             times = np.linspace(np.min(self.spiketimes),
                                 np.max(self.spiketimes),
                                 min(int(time / dt + 0.5),
-                                    1000))  # The 1000 seems somewhat arbitrary
+                                    self.n_bins))
             self.t = times
         else:
             time = np.max(self.times) - np.min(self.times)
@@ -1942,7 +1943,7 @@ class KernelBandwidth:
             dt = np.min(isi)
             if dt > np.min(np.diff(self.times)):
                 self.t = np.linspace(np.min(self.times), np.max(self.times),
-                                min(int(time / dt + 0.5), 1000))
+                                min(int(time / dt + 0.5), self.n_bins))
             else:
                 self.t = self.times
         
