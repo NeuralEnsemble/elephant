@@ -406,11 +406,13 @@ class AbstractPointProcess:
         spiketrain : neo.SpikeTrain or np.ndarray
             The generated spike train in the specified format.
         """
-        if not as_array:
+        spikes = self._generate_spiketrain_as_array()
+        if as_array:
+            return spikes
+        else:
             return neo.SpikeTrain(
-                self._generate_spiketrain_as_array(),
+                spikes,
                 t_start=self.t_start, t_stop=self.t_stop, units=self.units)
-        return self._generate_spiketrain_as_array()
 
     def generate_n_spiketrains(
             self,
@@ -461,7 +463,7 @@ class RenewalProcess(AbstractPointProcess):
     def __init__(
             self,
             rate: pq.Quantity,
-            t_start: pq.Quantity = 0. * pq.s,
+            t_start: pq.Quantity = 0.*pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
             equilibrium: bool = True
     ):
@@ -478,9 +480,8 @@ class RenewalProcess(AbstractPointProcess):
         if self.n_expected_spikes < 0:
             raise ValueError(
                 f"Expected no. of spikes: {self.n_expected_spikes} < 0. "
-                f"The firing rate ({self.rate/self.units}) cannot be negative "
-                f"and t_stop ({self.t_stop}) must be greater than t_start "
-                f"({self.t_start}).")
+                f"The firing rate ({self.rate/self.units}) "
+                f"cannot be negative.")
 
     def _cdf_first_spike_equilibrium(self, time):
         """
@@ -587,7 +588,7 @@ class StationaryPoissonProcess(RenewalProcess):
         If `refractory_period` is not of type `pq.Quantity` nor None.
 
         If the period between two successive spikes (`1 / rate`) is smaller
-        than the `refractory_period`.
+        or equal than the `refractory_period`.
 
     Examples
     --------
@@ -703,7 +704,7 @@ class StationaryGammaProcess(RenewalProcess):
             self,
             rate: pq.Quantity,
             shape_factor: float,
-            t_start: pq.Quantity = 0. * pq.s,
+            t_start: pq.Quantity = 0.*pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
             equilibrium: bool = True
     ):
@@ -772,7 +773,7 @@ class StationaryLogNormalProcess(RenewalProcess):
             self,
             rate: pq.Quantity,
             sigma: float,
-            t_start: pq.Quantity = 0. * pq.s,
+            t_start: pq.Quantity = 0.*pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
             equilibrium: bool = True
     ):
@@ -839,7 +840,7 @@ class StationaryInverseGaussianProcess(RenewalProcess):
             self,
             rate: pq.Quantity,
             cv: float,
-            t_start: pq.Quantity = 0. * pq.s,
+            t_start: pq.Quantity = 0.*pq.s,
             t_stop: pq.Quantity = 1.*pq.s,
             equilibrium: bool = True
     ):
@@ -866,7 +867,7 @@ class RateModulatedProcess(AbstractPointProcess):
     ----------
     rate_signal : neo.AnalogSignal
         A `neo.AnalogSignal` representing the rate profile evolving over
-        time.Its values have all to be `>=0`. The generated spike trains
+        time. Its values have all to be `>=0`. The generated spike trains
         will have `t_start = rate.t_start` and `t_stop = rate.t_stop`
 
     Raises
@@ -886,7 +887,7 @@ class RateModulatedProcess(AbstractPointProcess):
                 f' Currently it is of type: {type(rate_signal)}')
         if len(rate_signal) == 0:
             raise ValueError('rate_signal can not be empty.')
-        if not all(rate_signal >= 0.):
+        if any(rate_signal < 0):
             raise ValueError(
                 'All elements of rate_signal should be positive.')
 
@@ -898,6 +899,8 @@ class RateModulatedProcess(AbstractPointProcess):
         self.mean_rate = np.mean(rate_signal.rescale(1./self.units).magnitude)
 
         if self.mean_rate == 0.:
+            # if the firing rate is zero, the init functions stops here, since
+            # the other parameters are then not needed.
             return
 
         self.sampling_period = \
@@ -1092,11 +1095,11 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     warnings.warn(
         "'homogeneous_poisson_process' is deprecated;"
         " use 'StationaryPoissonProcess'.", DeprecationWarning)
-
-    return StationaryPoissonProcess(
+    process = StationaryPoissonProcess(
         rate=rate, t_start=t_start, t_stop=t_stop,
         refractory_period=refractory_period, equilibrium=False
-    ).generate_spiketrain(as_array=as_array)
+    )
+    return process.generate_spiketrain(as_array=as_array)
 
 
 def inhomogeneous_poisson_process(rate, as_array=False,
@@ -1141,9 +1144,10 @@ def inhomogeneous_poisson_process(rate, as_array=False,
         "'inhomogeneous_poisson_process' is deprecated;"
         " use 'NonStationaryPoissonProcess'.",
         DeprecationWarning)
-    return NonStationaryPoissonProcess(
+    process = NonStationaryPoissonProcess(
         rate_signal=rate,
-        refractory_period=refractory_period).generate_spiketrain(
+        refractory_period=refractory_period)
+    return process.generate_spiketrain(
             as_array=as_array)
 
 
@@ -1198,8 +1202,7 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
         DeprecationWarning)
     process = StationaryGammaProcess(
         rate=b / a, shape_factor=a, t_stop=t_stop, t_start=t_start,
-        equilibrium=False
-    )
+        equilibrium=False)
     return process.generate_spiketrain(as_array=as_array)
 
 
@@ -1239,9 +1242,10 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
         "'inhomogeneous_gamma_process' is deprecated;"
         " use 'nonStationaryGammaProcess'.",
         DeprecationWarning)
-    return NonStationaryGammaProcess(
+    process = NonStationaryGammaProcess(
         rate_signal=rate, shape_factor=shape_factor
-    ).generate_spiketrain(as_array=as_array)
+    )
+    return process.generate_spiketrain(as_array=as_array)
 
 
 @deprecated_alias(n='n_spiketrains')
@@ -1285,7 +1289,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     # Set number n of output spike trains (specified or set to len(rate))
     if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
         raise ValueError(
-            f'n (={n_spiketrains}) must be a positive integer')
+            f'n_spiketrains (={n_spiketrains}) must be a positive integer')
 
     # one rate for all spike trains
     if rate.ndim == 0:
@@ -1384,7 +1388,7 @@ def single_interaction_process(
     # Check if n is a positive integer
     if not (isinstance(n_spiketrains, int) and n_spiketrains > 0):
         raise ValueError(
-            f'n (={n_spiketrains}) must be a positive integer')
+            f'n_spiketrains (={n_spiketrains}) must be a positive integer')
     if coincidences not in ('deterministic', 'stochastic'):
         raise ValueError(
             "coincidences must be 'deterministic' or 'stochastic'")
@@ -1402,7 +1406,7 @@ def single_interaction_process(
         rates_b = np.repeat(rate, n_spiketrains)
     else:
         rates_b = rate.flatten()
-        if not all(rates_b >= 0. * pq.Hz):
+        if not all(rates_b >= 0.*pq.Hz):
             raise ValueError('*rate* must have non-negative elements')
 
     # Check: rate>=rate_coincidence
@@ -1665,7 +1669,7 @@ def _cpp_hom_stat(amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
             for spiketrain in spiketrains]
 
 
-def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0. * pq.ms):
+def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0.*pq.ms):
     """
     Generate a Compound Poisson Process (CPP) with amplitude distribution
     A and heterogeneous firing rates r=r[0], r[1], ..., r[-1].
