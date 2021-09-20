@@ -5,11 +5,11 @@ Unit tests for the neo_tools module.
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-
+import random
 from itertools import chain
 import unittest
 
-from neo.test.generate_datasets import fake_neo, get_fake_values
+from .generate_datasets import generate_one_simple_block, generate_from_supported_objects, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
 from numpy.testing.utils import assert_array_equal
 
@@ -69,6 +69,16 @@ def strip_iter_values(targ, array_attrs=ARRAY_ATTRS):
 
 
 class GetAllObjsTestCase(unittest.TestCase):
+    def setUp(self):
+        random.seed(4245)
+        self.spiketrain = random_spiketrain('Single SpikeTrain')
+        self.spiketrain_list = [random_spiketrain('SpikeTrain'),
+            random_spiketrain('SpikeTrain')]
+        self.spiketrain_dict = {'a': random_spiketrain('SpikeTrain'),
+            123: random_spiketrain('SpikeTrain')}
+
+        self.random_epoch =  random_epoch()
+
     def test__get_all_objs__float_valueerror(self):
         value = 5.
         with self.assertRaises(ValueError):
@@ -80,7 +90,7 @@ class GetAllObjsTestCase(unittest.TestCase):
             nt._get_all_objs(value, 'Block')
 
     def test__get_all_objs__epoch_for_event_valueerror(self):
-        value = fake_neo('Epoch', n=10, seed=0)
+        value = random_epoch()
         with self.assertRaises(ValueError):
             nt._get_all_objs(value, 'Event')
 
@@ -141,18 +151,16 @@ class GetAllObjsTestCase(unittest.TestCase):
         self.assertEqual(targ, res)
 
     def test__get_all_objs__spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0)]
-        value = fake_neo('SpikeTrain', n=10, seed=0)
+        value = self.spiketrain
+        targ = [self.spiketrain]
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__list_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = [fake_neo('SpikeTrain', n=10, seed=0),
-                 fake_neo('SpikeTrain', n=10, seed=1)]
+        value = self.spiketrain_list
+        targ = self.spiketrain_list
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
@@ -169,10 +177,9 @@ class GetAllObjsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__iter_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = iter([fake_neo('SpikeTrain', n=10, seed=0),
-                      fake_neo('SpikeTrain', n=10, seed=1)])
+        targ = self.spiketrain_list
+        value = iter([self.spiketrain_list[0],
+                      self.spiketrain_list[1]])
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
@@ -189,21 +196,14 @@ class GetAllObjsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__dict_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
-                fake_neo('SpikeTrain', n=10, seed=1)]
-        value = {'a': fake_neo('SpikeTrain', n=10, seed=0),
-                 'b': fake_neo('SpikeTrain', n=10, seed=1)}
+        targ = [self.spiketrain_dict['a'], self.spiketrain_dict[123]]
+        value = self.spiketrain_dict
 
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         self.assertEqual(len(targ), len(res))
-        for i, itarg in enumerate(targ):
-            for ires in res:
-                if itarg.annotations['seed'] == ires.annotations['seed']:
-                    assert_same_sub_schema(itarg, ires)
-                    break
-            else:
-                raise ValueError('Target %s not in result' % i)
+        for t, r in zip(targ,res):
+                assert_same_sub_schema(t, r)
 
     def test__get_all_objs__nested_dict_spiketrain(self):
         targ = [fake_neo('SpikeTrain', n=10, seed=0),
@@ -223,7 +223,7 @@ class GetAllObjsTestCase(unittest.TestCase):
                 raise ValueError('Target %s not in result' % i)
 
     def test__get_all_objs__nested_many_spiketrain(self):
-        targ = [fake_neo('SpikeTrain', n=10, seed=0),
+        targ = [generate_one_simple_block('SpikeTrain', n=10, seed=0),
                 fake_neo('SpikeTrain', n=10, seed=1)]
         value = {'a': [fake_neo('SpikeTrain', n=10, seed=0)],
                  'b': iter([fake_neo('SpikeTrain', n=10, seed=1)])}
@@ -240,27 +240,15 @@ class GetAllObjsTestCase(unittest.TestCase):
                 raise ValueError('Target %s not in result' % i)
 
     def test__get_all_objs__unit_spiketrain(self):
-        value = fake_neo('Unit', n=3, seed=0)
-        targ = [fake_neo('SpikeTrain', n=3, seed=train.annotations['seed'])
-                for train in value.spiketrains]
-
-        for train in value.spiketrains:
-            train.annotations.pop('i', None)
-            train.annotations.pop('j', None)
-
+        value = generate_one_simple_block('Block', n=3, seed=0)
+        targ = [train for train in value.spiketrains]
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         assert_same_sub_schema(targ, res)
 
     def test__get_all_objs__block_epoch(self):
-        value = fake_neo('Block', n=3, seed=0)
-        targ = [fake_neo('Epoch', n=3, seed=train.annotations['seed'])
-                for train in value.list_children_by_class('Epoch')]
-
-        for epoch in value.list_children_by_class('Epoch'):
-            epoch.annotations.pop('i', None)
-            epoch.annotations.pop('j', None)
-
+        value = generate_one_simple_block('Block', n=3, seed=0)
+        targ = [train for train in value.list_children_by_class('Epoch')]
         res = nt._get_all_objs(value, 'Epoch')
 
         assert_same_sub_schema(targ, res)
