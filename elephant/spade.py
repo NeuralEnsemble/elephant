@@ -25,13 +25,15 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 
 Notes
 -----
-This modules relies on the implementation of the fp-growth algorithm contained
-in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
-and should be available in the spade_src folder (elephant/spade_src/).
-If the fim.so module is not present in the correct location or cannot be
-imported (only available for linux OS) SPADE will make use of a python
-implementation of the fast fca algorithm contained in
-`elephant/spade_src/fast_fca.py`, which is about 10 times slower.
+This modules relies on the C++ implementation of the fp-growth algorithm developed by
+Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces
+a more generic implementation of the algorithm by Christian Borgelt
+(http://www.borgelt.net/pyfim.html) that was used in previous versions of Elephant.
+If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
+be compiled on a given system during install, SPADE will make use of a pure Python implementation
+of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
+significantly slower.
+
 
 See Also
 --------
@@ -82,7 +84,7 @@ bin (i.e., detecting only synchronous patterns).
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2021 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -881,13 +883,16 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 zmin=min_z,
                 zmax=max_z,
                 report='a',
-                algo='s')
+                algo='s',
+                winlen=winlen,
+                threads=0,
+                verbose=4)
             break
     else:
         fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
     # Applying min/max conditions and computing extent (window positions)
-    fpgrowth_output = [concept for concept in fpgrowth_output
-                       if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
+    # fpgrowth_output = [concept for concept in fpgrowth_output
+    #                    if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
     # filter out subsets of patterns that are found as a side-effect
     # of using the moving window strategy
     fpgrowth_output = _filter_for_moving_window_subsets(
@@ -935,18 +940,18 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     return spectrum
 
 
-def _fpgrowth_filter(concept, winlen, max_c, min_neu):
-    """
-    Filter for selecting closed frequent items set with a minimum number of
-    neurons and a maximum number of occurrences and first spike in the first
-    bin position
-    """
-    intent = np.array(concept[0])
-    keep_concept = (min(intent % winlen) == 0
-                    and concept[1] <= max_c
-                    and np.unique(intent // winlen).shape[0] >= min_neu
-                    )
-    return keep_concept
+# def _fpgrowth_filter(concept, winlen, max_c, min_neu):
+#     """
+#     Filter for selecting closed frequent items set with a minimum number of
+#     neurons and a maximum number of occurrences and first spike in the first
+#     bin position
+#     """
+#     intent = np.array(concept[0])
+#     keep_concept = (min(intent % winlen) == 0
+#                     and concept[1] <= max_c
+#                     and np.unique(intent // winlen).shape[0] >= min_neu
+#                     )
+#     return keep_concept
 
 
 def _rereference_to_last_spike(transactions, winlen):
@@ -1362,7 +1367,8 @@ def _generate_binned_surrogates(
                 binned_surrogates,
                 bin_size=bin_size,
                 t_start=spiketrains[0].t_start,
-                t_stop=spiketrains[0].t_stop)
+                t_stop=spiketrains[0].t_stop,
+                tolerance=None)
         elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
             surrs = [instance.dithering()[0]
                      for instance in joint_isi_instances]

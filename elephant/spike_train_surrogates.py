@@ -645,7 +645,8 @@ def bin_shuffling(
                 surrogate_spiketrain,
                 bin_size=spiketrain.bin_size,
                 t_start=spiketrain.t_start,
-                t_stop=spiketrain.t_stop))
+                t_stop=spiketrain.t_stop,
+                tolerance=None))
     return surrogate_spiketrains
 
 

@@ -187,12 +187,13 @@ class StandardCSD(CSD):
         if self.vaknin_el:
             # extend lfps array by duplicating potential at endpoint contacts
             if lfp.ndim == 1:
-                self.lfp = np.empty((lfp.shape[0] + 2, )) * lfp.units
+                self.lfp = np.empty((lfp.shape[0] + 2,))
             else:
-                self.lfp = np.empty((lfp.shape[0] + 2, lfp.shape[1])) * lfp.units
-            self.lfp[0, ] = lfp[0, ]
+                self.lfp = np.empty((lfp.shape[0] + 2, lfp.shape[1]))
+            self.lfp[0,] = lfp[0,]
             self.lfp[1:-1, ] = lfp
-            self.lfp[-1, ] = lfp[-1, ]
+            self.lfp[-1,] = lfp[-1,]
+            self.lfp = self.lfp * lfp.units
         else:
             self.lfp = lfp
 
