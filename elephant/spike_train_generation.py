@@ -515,7 +515,7 @@ class RenewalProcess(AbstractPointProcess):
             derivative of the c.d.f, which is rate times
             the survival function
             """
-            self.rate * self.isi_generator.sf(time)
+            return self.rate * self.isi_generator.sf(time)
 
         # Initial guess is solution for Poisson process
         initial_guess = -np.log(1.-random_uniform)/self.rate
