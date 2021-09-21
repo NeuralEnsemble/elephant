@@ -924,7 +924,7 @@ class RateModulatedProcess(AbstractPointProcess):
         if self.mean_rate == 0.:
             # if the firing rate is zero, the init functions stops here, since
             # the other parameters are then not needed.
-            return
+            return None
 
         self.sampling_period = \
             self.rate_signal.sampling_period.rescale(self.units).magnitude
