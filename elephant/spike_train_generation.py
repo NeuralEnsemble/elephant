@@ -1097,8 +1097,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
         " use 'StationaryPoissonProcess'.", DeprecationWarning)
     process = StationaryPoissonProcess(
         rate=rate, t_start=t_start, t_stop=t_stop,
-        refractory_period=refractory_period, equilibrium=False
-    )
+        refractory_period=refractory_period, equilibrium=False)
     return process.generate_spiketrain(as_array=as_array)
 
 
@@ -1243,8 +1242,7 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
         " use 'nonStationaryGammaProcess'.",
         DeprecationWarning)
     process = NonStationaryGammaProcess(
-        rate_signal=rate, shape_factor=shape_factor
-    )
+        rate_signal=rate, shape_factor=shape_factor)
     return process.generate_spiketrain(as_array=as_array)
 
 
