@@ -365,11 +365,12 @@ class AbstractPointProcess:
         if not (isinstance(t_start, pq.Quantity) and
                 isinstance(t_stop, pq.Quantity)):
             raise ValueError("t_start and t_stop must be of type pq.Quantity")
+        if t_stop <= t_start:
+            raise ValueError('t_start must be smaller than t_stop.')
+
         self.units = t_stop.units
         self._t_stop = t_stop.item()
         self._t_start = t_start.rescale(self.units).item()
-        if self.t_stop <= self.t_start:
-            raise ValueError('t_start must be smaller than t_stop.')
 
     @property
     def t_start(self):
@@ -409,10 +410,10 @@ class AbstractPointProcess:
         spikes = self._generate_spiketrain_as_array()
         if as_array:
             return spikes
-        else:
-            return neo.SpikeTrain(
-                spikes,
-                t_start=self.t_start, t_stop=self.t_stop, units=self.units)
+        # else:
+        return neo.SpikeTrain(
+            spikes,
+            t_start=self.t_start, t_stop=self.t_stop, units=self.units)
 
     def generate_n_spiketrains(
             self,
@@ -519,7 +520,13 @@ class RenewalProcess(AbstractPointProcess):
 
         # Initial guess is solution for Poisson process
         initial_guess = -np.log(1.-random_uniform)/self.rate
-        limits_for_first_spike = (0., 10./self.rate)
+        duration = self._t_stop-self._t_start
+        limits_for_first_spike = (0., duration)
+
+        # test if solution for first spike is inside the boundaries. If not
+        # return t_stop of the spike train.
+        if self._cdf_first_spike_equilibrium(duration) <= random_uniform:
+            return self._t_stop
 
         non_shifted_position_of_first_spike = equation_solver(
                 function_to_solve,
