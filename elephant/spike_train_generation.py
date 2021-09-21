@@ -488,6 +488,8 @@ class RenewalProcess(AbstractPointProcess):
         Integral over the p.d.f. of the first spike which is:
         p(t) = rate * survival-function(t) * Heaviside(t).
         See Bouss (2020).
+
+        The parameter time is a magnitude of a time value given in seconds.
         """
         return self.rate * integrate.quad(self.isi_generator.sf, 0., time)[0]
 
@@ -500,22 +502,33 @@ class RenewalProcess(AbstractPointProcess):
         where x is drawn from a uniform distribution.
         """
         random_uniform = np.random.random()
-        return root_scalar(  # root_scalar is an equation solver
+        equation_solver = root_scalar
 
-                # integral(c.d.f(t) from 0 to t) - random-number-x)
-                lambda time:
-                self._cdf_first_spike_equilibrium(time) - random_uniform,
+        def function_to_solve(time):
+            """
+            # integral(c.d.f(t) from 0 to t) - random-number-x)
+            """
+            return self._cdf_first_spike_equilibrium(time) - random_uniform
 
-                # Initial guess is solution for Poisson process
-                x0=-np.log(1.-random_uniform)/self.rate,
+        def derivative_of_function_to_solve(time):
+            """
+            derivative of the c.d.f, which is rate times
+            the survival function
+            """
+            self.rate * self.isi_generator.sf(time)
 
-                # limits for the time of the first spike
-                bracket=(0., 10./self.rate),
+        # Initial guess is solution for Poisson process
+        initial_guess = -np.log(1.-random_uniform)/self.rate
+        limits_for_first_spike = (0., 10./self.rate)
 
-                # derivative of the c.d.f, which is rate times
-                # the survival function
-                fprime=lambda time: self.rate * self.isi_generator.sf(time)
-            ).root + self._t_start
+        non_shifted_position_of_first_spike = equation_solver(
+                function_to_solve,
+                x0=initial_guess,
+                bracket=limits_for_first_spike,
+                fprime=derivative_of_function_to_solve
+            ).root
+
+        return non_shifted_position_of_first_spike + self._t_start
 
     def _generate_spiketrain_as_array(self) -> np.ndarray:
         if self.n_expected_spikes == 0:
@@ -624,8 +637,8 @@ class StationaryPoissonProcess(RenewalProcess):
             if self.rate * self.refractory_period >= 1.:
                 raise ValueError(
                     "Period between two successive spikes must be larger "
-                    "than the dead time. Decrease either the "
-                    "firing rate or the dead time.")
+                    "than the refractory period. Decrease either the "
+                    "firing rate or the refractory period.")
         else:
             self.refractory_period = refractory_period
 
@@ -716,6 +729,9 @@ class StationaryGammaProcess(RenewalProcess):
                 a=shape_factor, scale=1./(shape_factor * self.rate))
 
     def _cdf_first_spike_equilibrium(self, time):
+        """
+        The parameter time is a magnitude of a time value given in seconds.
+        """
         if time < 0.:
             return 0.
         return self.rate * time * \
