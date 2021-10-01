@@ -735,7 +735,8 @@ def pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
                                             fs=fs,
                                             nw=nw,
                                             num_tapers=num_tapers,
-                                            peak_resolution=peak_resolution)
+                                            peak_resolution=peak_resolution,
+                                            return_onesided=False)
 
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
@@ -768,7 +769,8 @@ def ding_pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
                                             fs=fs,
                                             nw=nw,
                                             num_tapers=num_tapers,
-                                            peak_resolution=peak_resolution)
+                                            peak_resolution=peak_resolution,
+                                            return_onesided=False)
 
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
