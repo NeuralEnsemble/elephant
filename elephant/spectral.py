@@ -361,7 +361,8 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
 
 
 def multitaper_cross_spectrum(signals, fs=1, nw=4,
-                              num_tapers=None, peak_resolution=None):
+                              num_tapers=None, peak_resolution=None,
+                              return_onesided=True):
     """
     Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
     Multitaper method.
@@ -386,6 +387,10 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
         as a `float`, it is taken as frequency in Hz.
         If None, it will be determined from other parameters.
         Default: None.
+    return_onesided : bool, optional
+        If True, return a one-sided spectrum for real data.
+        If False return a two-sided spectrum.
+        Default: True.
 
     Returns
     -------
@@ -432,9 +437,6 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
 
     print(f'Number of tapers: {num_tapers}')
 
-    # Generate frequencies
-    freqs = np.fft.fftfreq(length_signal, d=1/fs)
-
     # Get slepian functions
     slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
@@ -445,13 +447,20 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
     tapered_signal = signals.T * slepian_fcts[:, np.newaxis]
     tapered_signal = tapered_signal.T  # Time, dimension, taper
 
-    # Determine Fourier transform of tapered signal
-    spectrum_estimates = np.fft.fft(tapered_signal, axis=0)
+    if return_onesided:
+        # Generate frequencies
+        freqs = np.fft.rfftfreq(length_signal, d=1/fs)
+        # Determine Fourier transform of tapered signal
+        spectrum_estimates = np.fft.rfft(tapered_signal, axis=0)
 
-    # temp = np.multiply.outer(spectrum_estimates, np.conjugate(spectrum_estimates))
-    temp = spectrum_estimates[:, np.newaxis, :, :] * \
-           np.conjugate(spectrum_estimates[:, :, np.newaxis, :])
+    else:
+        # Generate frequencies
+        freqs = np.fft.fftfreq(length_signal, d=1/fs)
+        # Determine Fourier transform of tapered signal
+        spectrum_estimates = np.fft.fft(tapered_signal, axis=0)
 
+    temp = (spectrum_estimates[:, np.newaxis, :, :]
+            * np.conjugate(spectrum_estimates[:, :, np.newaxis, :]))
 
     # Average Fourier transform windowed signal
     amp_cross_spec = np.mean(temp, axis=-1) / fs
@@ -460,7 +469,7 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
-        cross_spec = amp_cross_spec * signals.units * signals.units / pq.Hz
+        amp_cross_spec = amp_cross_spec * signals.units * signals.units / pq.Hz
         freqs = freqs * pq.Hz
 
     return freqs, phase_cross_spec, amp_cross_spec
@@ -499,10 +508,9 @@ def multitaper_coherence(signals, fs=1, nw=4, num_tapers=None,
     freqs, _, Pxy = multitaper_cross_spectrum(signals, fs, nw, num_tapers,
                                               peak_resolution)
 
-    coherence = np.abs(Pxy[:512, 0, 1]) ** 2 / \
-                (Pxy[:512, 0, 0] * Pxy[:512, 1, 1])
+    coherence = np.abs(Pxy[:, 0, 1]) ** 2 / (Pxy[:, 0, 0] * Pxy[: 1, 1])
 
-    phase_lag = np.angle(2*Pxy[:512, 0, 1])
+    phase_lag = np.angle(2*Pxy[:, 0, 1])
 
     return freqs, coherence, phase_lag
 
@@ -730,10 +738,6 @@ signals = np.random.normal(0, 1, size=(1000, 2))
 freq_m, psd_1 = multitaper_psd(signals[:, 0], fs=1000, nw=4)
 freq_m, psd_2 = multitaper_psd(signals[:, 1], fs=1000, nw=4)
 freq, phase, amp = multitaper_cross_spectrum(signals, fs=1000, nw=4)
-
-
-print(freq_m)
-
 
 def _generate_ground_truth(length_2d=30000):
     order = 2
