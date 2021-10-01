@@ -335,7 +335,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
         if num_tapers <= 0:
             raise ValueError("num_tapers must be positive")
 
-    print(f'Number of tapers: {num_tapers}')
+    #print(f'Number of tapers: {num_tapers}')
 
     # Generate frequencies
     freqs = np.fft.rfftfreq(length_signal, d=1/fs)
@@ -443,12 +443,12 @@ def multitaper_cross_spectrum(signals, fs=1, nw=4,
         elif num_tapers <= 0:
             raise ValueError("num_tapers must be positive")
 
-    print(f'Number of tapers: {num_tapers}')
+    #print(f'Number of tapers: {num_tapers}')
 
     # Get slepian functions
-    print(f'M: {length_signal}')
-    print(f'NM: {nw}')
-    print(f'Kmax: {num_tapers}')
+    #print(f'M: {length_signal}')
+    #print(f'NM: {nw}')
+    #print(f'Kmax: {num_tapers}')
     slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
                                              Kmax=num_tapers,
@@ -523,7 +523,7 @@ def multitaper_coherence(signals, fs=1, nw=4, num_tapers=None,
 
     phase_lag = np.angle(2*Pxy[:, 0, 1])
 
-    return freqs, coherence, phase_lag
+    return freqs[:n_pos], coherence, phase_lag
 
 
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',

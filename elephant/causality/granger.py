@@ -897,7 +897,11 @@ if __name__ == '__main__':
     psd_x = []
     psd_y = []
 
+<<<<<<< HEAD
     for i in range(300):
+=======
+    for i in range(50):
+>>>>>>> d371fe38a90acd616f398b2eb43dab41f404e0e8
         np.random.seed(i**2+134)
         length_2d = 1124
         signal = np.zeros((2, length_2d))
@@ -908,7 +912,11 @@ if __name__ == '__main__':
 
         weights = np.stack((weights_1, weights_2))
 
+<<<<<<< HEAD
         noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
+=======
+        noise_covariance = np.array([[1., 0.], [0., 0.7]])
+>>>>>>> d371fe38a90acd616f398b2eb43dab41f404e0e8
 
         for i in range(length_2d):
             for lag in range(order):
@@ -965,10 +973,17 @@ if __name__ == '__main__':
 
     #plt.plot(f, 2*cross_spec[:, 0, 0], label='1')
     #plt.plot(f, 2*cross_spec[:, 1, 1], label='2')
+<<<<<<< HEAD
     plt.plot(f, psd_x, label='1')
     plt.plot(f, psd_y, label='2')
     #plt.legend()
     plt.show()
+=======
+    #plt.plot(f, psd_x, label='1')
+    #plt.plot(f, psd_y, label='2')
+    #plt.legend()
+    #plt.show()
+>>>>>>> d371fe38a90acd616f398b2eb43dab41f404e0e8
 
 
     plt.plot(f, y_x, label='y->x')
