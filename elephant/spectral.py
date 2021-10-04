@@ -519,11 +519,12 @@ def multitaper_coherence(signals, fs=1, nw=4, num_tapers=None,
     freqs, _, Pxy = multitaper_cross_spectrum(signals, fs, nw, num_tapers,
                                               peak_resolution)
 
-    coherence = np.abs(Pxy[:, 0, 1]) ** 2 / (Pxy[:, 0, 0] * Pxy[: 1, 1])
+    coherence = np.abs(Pxy[:, 0, 1]) ** 2 / (Pxy[:, 0, 0].real
+                                             * Pxy[:, 1, 1].real)
 
     phase_lag = np.angle(2*Pxy[:, 0, 1])
 
-    return freqs[:n_pos], coherence, phase_lag
+    return freqs, coherence, phase_lag
 
 
 @deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
@@ -783,7 +784,7 @@ if __name__ == '__main__':
 
     fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1], frequency_resolution=0.005)
 
-    fm, Pxxm = multitaper_psd(test_data.T)
+    fm, Pxxm = multitaper_psd(test_data.T, num_tapers=20)
 
     import matplotlib.pyplot as plt
 
@@ -803,14 +804,15 @@ if __name__ == '__main__':
     plt.figure()
     plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
     plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
-    plt.semilogy(fcs[:512], 2*Pcs[:512, 0, 0],'r:', label="Pxx Multitaper")
-    plt.semilogy(fcs[:512], 2*Pcs[:512, 1, 1], 'b:', label="Pyy Multitaper")
+    plt.semilogy(fcs[:512], 2*Pcs[:512, 0, 0].real,'r:', label="Pxx Multitaper")
+    plt.semilogy(fcs[:512], 2*Pcs[:512, 1, 1].real, 'b:', label="Pyy Multitaper")
     plt.legend()
     plt.show()
 
 
+    fcs, multitaper_coh, _ =  multitaper_coherence(test_data, num_tapers=10)
     plt.figure()
     plt.plot(fc, Coh, label="Welch Coh")
-    plt.plot(fcs[:512], np.abs(Pcs[:512, 0, 1])**2 / (Pcs[:512, 0, 0] * Pcs[:512, 1, 1]), 'b:', label="Multitaper Coh")
+    plt.plot(fcs, multitaper_coh, 'b:', label="Multitaper Coh")
     plt.legend()
     plt.show()
