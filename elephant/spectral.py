@@ -596,8 +596,6 @@ def multitaper_cross_spectrum(signals, n_segments=8, len_segment=None,
         elif num_tapers <= 0:
             raise ValueError("num_tapers must be positive")
 
-    print(f'Number of tapers: {num_tapers}')
-
     # Generate frequencies
     amp_cross_spec_estimates = []
     phase_cross_spec_estimates = []
@@ -609,8 +607,6 @@ def multitaper_cross_spectrum(signals, n_segments=8, len_segment=None,
     else:
         # Generate frequencies
         freqs = np.fft.fftfreq(n_per_seg, d=1/fs)
-
-    print(data.shape)
 
     for i in range(n_segments - 2):
 
@@ -651,8 +647,6 @@ def multitaper_cross_spectrum(signals, n_segments=8, len_segment=None,
     if isinstance(signals, pq.quantity.Quantity):
         amp_cross_spec = amp_cross_spec * signals.units * signals.units / pq.Hz
         freqs = freqs * pq.Hz
-
-    print(np.shape(amp_cross_spec))
 
     return freqs, phase_cross_spec, amp_cross_spec
 
@@ -996,8 +990,6 @@ if __name__ == "__main__":
 
     fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1],
                                  frequency_resolution=0.005)
-
-    print(np.shape(test_data))
 
     fm, Pxxm = multitaper_psd(test_data.T, num_tapers=4)
 
