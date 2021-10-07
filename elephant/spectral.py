@@ -412,8 +412,6 @@ def multitaper_psd(signal, n_segments=8, len_segment=None, overlap=0.5, fs=1,
         if num_tapers <= 0:
             raise ValueError("num_tapers must be positive")
 
-    print(f'Number of tapers: {num_tapers}')
-
     psd_estimates = []
     n_offset = n_per_seg - n_overlap
 
