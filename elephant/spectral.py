@@ -245,21 +245,30 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     return freqs, psd
 
 
-def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
-                   peak_resolution=None):
+def multitaper_psd(signal, n_segments=8, len_segment=None, overlap=0.5, fs=1,
+                   nw=4, num_tapers=None, peak_resolution=None):
     """
     Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
     using Multitaper method
 
     The PSD is obtained through the following steps:
 
-    1. Calculate 'num_tapers' approximately independent estimates of the
-       spectrum by multiplying the signal with the discrete prolate spheroidal
-       functions (also known as Slepian function) and calculate the PSD of the
-       products
+    1. Cut the given data into several overlapping segments. The degree of
+       overlap can be specified by parameter `overlap` (default is 0.5,
+       i.e. segments are overlapped by the half of their length).
+       The number and the length of the segments are determined according
+       to the parameters `n_segments`, `len_segment` or `frequency_resolution`.
+       By default, the data is cut into 8 segments;
 
-    2. Average the approximately independent estimates to decrease overall
-       variance of the estimates
+    2. Calculate 'num_tapers' approximately independent estimates of the
+       spectrum by multiplying the signal with the discrete prolate spheroidal
+       functions (also known as Slepian function) and calculate the PSD of each
+       tapered segment
+
+    3. Average the approximately independent estimates of each segment to
+       decrease overall variance of the estimates
+
+    4. Average the obainted estimates for each segment
 
     Parameters
     ----------
@@ -268,14 +277,34 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
         sampling frequency should be given through keyword argument `fs`.
     fs : float, optional
         Specifies the sampling frequency of the input time series
-        Default: 1.0
+        Default: 1.0.
+    n_segments : int, optional
+        Number of segments. The length of segments is adjusted so that
+        overlapping segments cover the entire stretch of the given data. This
+        parameter is ignored if `len_segment` or `frequency_resolution` is
+        given.
+        Default: 8.
+    len_segment : int, optional
+        Length of segments. This parameter is ignored if `frequency_resolution`
+        is given. If None, it will be determined from other parameters.
+        Default: None.
+    frequency_resolution : pq.Quantity or float, optional
+        Desired frequency resolution of the obtained PSD estimate in terms of
+        the interval between adjacent frequency bins. When given as a `float`,
+        it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None.
+    overlap : float, optional
+        Overlap between segments represented as a float number between 0 (no
+        overlap) and 1 (complete overlap).
+        Default: 0.5 (half-overlapped).
     nw : float, optional
         Time bandwidth product
-        Default: 4.0
+        Default: 4.0.
     num_tapers : int, optional
         Number of tapers used in 1. to obtain estimate of PSD. By default
         [2*nw] - 1 is chosen.
-        Default: None
+        Default: None.
     peak_resolution : float, optional
         Desired frequency resolution of the obtained PSD estimate. When given
         as a `float`, it is taken as frequency in Hz.
@@ -283,10 +312,13 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
 
     Notes
     -----
-    There is a parameter hierarchy regarding nw, num_tapers and
-    peak_resolution. If peak_resolution is provided, it determines both nw and
-    the num_tapers. Specifying num_tapers has an effect only if peak_resolution
-    is not provided.
+    1. There is a paramter hierarchy regarding n_segments and len_segment. The
+       former paramter is ignored if the latter one is passed.
+
+    2. There is a parameter hierarchy regarding nw, num_tapers and
+       peak_resolution. If peak_resolution is provided, it determines both nw
+       and the num_tapers. Specifying num_tapers has an effect only if
+       peak_resolution is not provided.
 
     Returns
     -------
@@ -294,6 +326,27 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
         Frequencies associated with power estimate in `psd`
     psd : np.ndarray
         PSD estimate of the time series in `signal`
+
+    Raises
+    ------
+    ValueError
+        If `overlap` is not in the interval `[0, 1)`.
+
+        If `len_segment` is not a positive number.
+
+        If `len_segment` is greater than the length of data at `axis`.
+
+        If `len_segment` is None and `n_segments` is not a positive number.
+
+        If `len_segment` is None and `n_segments` is greater than the length of
+        data at `axis`.
+
+        If `peak_resolution` is not a positive number.
+
+        If `peak_resolution` is None and `num_tapers` not a positive number.
+
+    TypeError
+        If `peak_resolution` is None and `num_tapers` not an int.
     """
 
     # When the input is AnalogSignal, the data is added after rolling the axis
@@ -306,6 +359,30 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
     # sampling frequency
     if hasattr(signal, 'sampling_rate'):
         fs = signal.sampling_rate.rescale('Hz').magnitude
+
+    # Determine lenght per segment - n_per_seg
+    if len_segment is not None:
+        if len_segment <= 0:
+            raise ValueError("len_seg must be a positive number")
+        elif data.shape[-1] < len_segment:
+            raise ValueError("len_seg must be shorter than the data length")
+        n_per_seg = len_segment
+        n_segments = int((data.shape[-1] + overlap * n_per_seg)
+                         / (n_per_seg - overlap * n_per_seg))
+    else:
+        if n_segments <= 0:
+            raise ValueError("n_segments must be a positive number")
+        elif data.shape[-1] < n_segments:
+            raise ValueError("n_segments must be smaller than the data length")
+        # when only n_segments is given, n_per_seg is determined by solving
+        # the following equation:
+        #  n_segments * n_per_seg - (n_segments-1) * overlap * n_per_seg = data.shape[-1]
+        #  --------------------        ===============================     ^^^^^^^^^^^
+        #  summed segment lengths            total overlap                 data length
+        n_per_seg = int(data.shape[-1]
+                        / (n_segments - overlap * (n_segments - 1)))
+
+    n_overlap = int(n_per_seg * overlap)
 
     # If fs and frequency resolution is pq Quantity get magnitude
     if isinstance(fs, pq.quantity.Quantity):
@@ -337,28 +414,38 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None,
 
     print(f'Number of tapers: {num_tapers}')
 
-    # Generate frequencies
-    freqs = np.fft.rfftfreq(length_signal, d=1/fs)
+    psd_estimates = []
+    n_offset = n_per_seg - n_overlap
 
-    # Get slepian functions (sym='False' used for spectral analysis)
-    slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
-                                             NW=nw,
-                                             Kmax=num_tapers,
-                                             sym='False')
+    for i in range(n_segments - 2):
+        # Generate frequencies
+        freqs = np.fft.rfftfreq(n_per_seg, d=1/fs)
 
-    # Calculate approximately independent spectrum estimates
-    if data.ndim == 1:
-        tapered_signal = data * slepian_fcts
-    else:
-        # Use broadcasting to match dimensions for point-wise multiplication
-        tapered_signal = data[:, np.newaxis] * slepian_fcts
+        # Get slepian functions (sym='False' used for spectral analysis)
+        slepian_fcts = scipy.signal.windows.dpss(M=n_per_seg,
+                                                 NW=nw,
+                                                 Kmax=num_tapers,
+                                                 sym='False')
 
-    # Determine Fourier transform of tapered signal
-    spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1))**2
-    spectrum_estimates[..., 1:] *= 2
+        # Calculate approximately independent spectrum estimates
+        if data.ndim == 1:
+            tapered_signal = (data[i * n_offset:i * n_offset + n_per_seg]
+                              * slepian_fcts)
+        else:
+            # Use broadcasting to match dime for point-wise multiplication
+            tapered_signal = data[i * n_offset:i*n_offset + n_per_seg,
+                                  np.newaxis] * slepian_fcts
 
-    # Average Fourier transform windowed signal
-    psd = np.mean(spectrum_estimates, axis=-2) / fs
+        # Determine Fourier transform of tapered signal
+        spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1))**2
+        spectrum_estimates[..., 1:] *= 2
+
+        # Average Fourier transform windowed signal
+        psd_segment = np.mean(spectrum_estimates, axis=-2) / fs
+
+        psd_estimates.append(psd_segment)
+
+    psd = np.mean(np.asarray(psd_estimates), axis=0)
 
     # Attach proper units to return values
     if isinstance(signal, pq.quantity.Quantity):
