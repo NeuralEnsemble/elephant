@@ -430,8 +430,10 @@ def multitaper_psd(signal, n_segments=8, len_segment=None, overlap=0.5, fs=1,
                               * slepian_fcts)
         else:
             # Use broadcasting to match dime for point-wise multiplication
-            tapered_signal = data[i * n_offset:i*n_offset + n_per_seg,
-                                  np.newaxis] * slepian_fcts
+            tapered_signal = (data[:,
+                                   np.newaxis,
+                                   i * n_offset:i*n_offset + n_per_seg]
+                              * slepian_fcts)
 
         # Determine Fourier transform of tapered signal
         spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1))**2
