@@ -20,16 +20,10 @@ jobs:
     strategy:
       matrix:
         # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
-        python-version: [3.8, ]
+        python-version: [3.6, 3.7, 3.8, 3.9]
         # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [ubuntu-latest, windows-latest]
-        include:
-        - os: ubuntu-latest
-          path: ~/.cache/pip
-        #- os: macos-latest
-        #  path: ~/Library/Caches/pip
-        - os: windows-latest
-          path: ~\AppData\Local\pip\Cache  
+        os: [ubuntu-latest]
+
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
         
@@ -37,24 +31,27 @@ jobs:
       - name: Get current year-month
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
-        
       - uses: actions/checkout@v2
+      
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
           
-      - name: Cache pip
+      - name: Cache test_env
         uses: actions/cache@v2
         with:
-          path: ${{ matrix.path }}
+          path: ~/test_env
           # Look to see if there is a cache hit for the corresponding requirements files
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}-${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          # cache will be reset on changes to any requirements or every month
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}-${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
           
       - name: Install dependencies
         run: |
+          # create an environment and install everything
+          python -m venv ~/test_env
+          source ~/test_env/bin/activate
+          
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
@@ -64,28 +61,128 @@ jobs:
           
       - name: Test with pytest
         run: |
-          pytest --cov=elephant
+          source ~/test_env/bin/activate
+          pytest --cov=elephant elephant/test
           
   test-conda:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
+        
+      # do not cancel all in-progress jobs if any matrix job fails
+      fail-fast: false
+      
     steps:
     - uses: actions/checkout@v2
     
-    #- name: Set up Python 3.8
-    #  uses: actions/setup-python@v2
-    #  with:
-    #    python-version: 3.8
-        
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+    
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
+                      
     - name: Install dependencies
       run: |
+        conda update conda
         conda env update --file requirements/environment.yml --name base
         conda install pytest-cov coveralls
     
     - name: Test with pytest
       run: |
-        pytest --cov=elephant
+        $CONDA/bin/pytest --cov=elephant
+
+  test-pip:
+      runs-on: ${{ matrix.os }}
+      strategy:
+        matrix:
+          # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
+          python-version: [3.8,]
+          # OS [ubuntu-latest, macos-latest, windows-latest]
+          os: [windows-latest]
+          include:
+         # - os: ubuntu-latest
+         #  path: ~/.cache/pip
+         # - os: macos-latest
+         #   path: ~/Library/Caches/pip
+          - os: windows-latest
+            path: ~\AppData\Local\pip\Cache  
+        # do not cancel all in-progress jobs if any matrix job fails
+        fail-fast: false
+
+      steps:
+        - name: Get current year-month
+          id: date
+          run: echo "::set-output name=date::$(date +'%Y-%m')"
+
+        - uses: actions/checkout@v2
+        - name: Set up Python ${{ matrix.python-version }}
+          uses: actions/setup-python@v2
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        - name: Cache pip
+          uses: actions/cache@v2
+          with:
+            path: ${{ matrix.path }}
+            # Look to see if there is a cache hit for the corresponding requirements files
+            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}-${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
+
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip
+            pip install -r requirements/requirements-tests.txt
+            pip install -r requirements/requirements.txt
+            pip install -r requirements/requirements-extras.txt
+            pip install pytest-cov coveralls
+
+        - name: Test with pytest
+          run: |
+            pytest --cov=elephant
+
+  docs:
+       runs-on: ${{ matrix.os }}
+       strategy:
+        matrix:
+          # OS [ubuntu-latest, macos-latest, windows-latest]
+          os: [ubuntu-latest]
+
+       steps:
+
+       - name: Get current year-month
+         id: date
+         run: echo "::set-output name=date::$(date +'%Y-%m')"
+
+       - uses: actions/checkout@v2
+
+       - name: Add conda to system path
+         run: |
+            # $CONDA is an environment variable pointing to the root of the miniconda directory
+            echo $CONDA/bin >> $GITHUB_PATH
+            sudo apt install -y libopenmpi-dev openmpi-bin
+
+       - name: Cache pip
+         uses: actions/cache@v2
+         with:
+            path: ~/.cache/pip
+            # Look to see if there is a cache hit for the corresponding requirements files
+            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ steps.date.outputs.date }}
+
+       - name: Install dependencies
+         run: |
+            python -m pip install --upgrade pip
+            pip install -r requirements/requirements-docs.txt
+            pip install -r requirements/requirements-tutorials.txt
+            conda update conda
+            conda env update --file requirements/environment.yml --name base
+            conda install -c conda-forge pandoc
+       - name: make html
+         run: |
+            cd doc
+            make html
