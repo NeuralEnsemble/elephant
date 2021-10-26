@@ -1938,14 +1938,16 @@ class KernelBandwidth:
             time = np.max(self.times) - np.min(self.times)
             spiketimes_in_times = self.spiketimes[(self.spiketimes >= np.min(self.times)) &
                                     (self.spiketimes <= np.max(self.times))].copy()
-            isi = np.diff(spiketimes_in_times)
-            isi = isi[isi > 0].copy()
-            dt = np.min(isi)
-            if dt > np.min(np.diff(self.times)):
-                self.t = np.linspace(np.min(self.times), np.max(self.times),
-                                min(int(time / dt + 0.5), self.n_bins))
-            else:
-                self.t = self.times
+            # determine smallest isi and choose bins of time histogram
+            # accordingly (is it a wanted feature?)
+            # isi = np.diff(spiketimes_in_times)
+            # isi = isi[isi > 0].copy()
+            # dt = np.min(isi)
+            # if dt > np.min(np.diff(self.times)):
+            #     self.t = np.linspace(np.min(self.times), np.max(self.times),
+            #                     min(int(time / dt + 0.5), self.n_bins))
+            # else:
+            self.t = self.times
         
         self.time = time
         self.dt = np.min(np.diff(self.t))
@@ -2075,14 +2077,15 @@ class KernelBandwidth:
                     estimated_density = density_2 / np.sum(density_2 * self.dt)
                 k = k + 1
                 
-            # Only perform interpolation if estimated density could be calculated
-            if estimated_density is not None and self.times is not None:
-                estimated_density = np.interp(self.times, self.t, estimated_density)
-                
-            self.estimated_density_fixed_bandwidth = estimated_density
-            self.optimal_fixed_bandwidth = optimal_bandwidth
             self.costs_iteration_fixed = costs_iteration
             self.bandwidths_iteration_fixed = bandwidths_iteration
+        
+        # Only perform interpolation if estimated density could be calculated
+        if estimated_density is not None and self.times is not None:
+            estimated_density = np.interp(self.times, self.t, estimated_density)
+            
+        self.estimated_density_fixed_bandwidth = estimated_density
+        self.optimal_fixed_bandwidth = optimal_bandwidth
     
     def get_confidence_intervals_via_bootstrap_fixed(self):
         
@@ -2114,7 +2117,7 @@ class KernelBandwidth:
         self.densities_bootstrap_fixed = yb
         
     def get_estimated_rate_fixed(self):
-        if hasattr(self, 'estimated_density'):
+        if hasattr(self, 'estimated_density_fixed_bandwidth'):
             pass
         else:
             self.determine_fixed_optimal_bandwidth()
