@@ -15,6 +15,7 @@ on:
     
 # jobs define the steps that will be executed on the runner
 jobs:
+  # install dependencies and elephant with pip and run tests with pytest
   build-and-test-pip:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -64,6 +65,7 @@ jobs:
           source ~/test_env/bin/activate
           pytest --cov=elephant elephant/test
           
+  # install dependencies with conda and run tests with pytest          
   test-conda:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -97,7 +99,8 @@ jobs:
     - name: Test with pytest
       run: |
         $CONDA/bin/pytest --cov=elephant
-
+        
+  # install dependencies with pip and run tests with pytest
   test-pip:
       runs-on: ${{ matrix.os }}
       strategy:
@@ -145,7 +148,8 @@ jobs:
         - name: Test with pytest
           run: |
             pytest --cov=elephant
-
+            
+  # install dependencies for the documentation and buuild .html
   docs:
        runs-on: ${{ matrix.os }}
        strategy:
