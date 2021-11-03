@@ -380,7 +380,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     if isinstance(fs, pq.quantity.Quantity):
         fs = fs.rescale('Hz').magnitude
 
-    # Determine lenght per segment - n_per_seg
+    # Determine length per segment - n_per_seg
     if frequency_resolution is not None:
         if frequency_resolution <= 0:
             raise ValueError("frequency_resolution must be positive")
@@ -403,7 +403,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
             raise ValueError("n_segments must be a positive number")
         elif data.shape[axis] < n_segments:
             raise ValueError("n_segments must be smaller than the data length")
-        # when only *n_segments* is given, *nperseg* is determined by solving
+        # when only *n_segments* is given, *n_per_seg* is determined by solving
         # the following equation:
         #  n_segments * n_per_seg - (n_segments-1) * overlap * n_per_seg =
         #     data.shape[-1]
@@ -454,11 +454,11 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     n_overlap_step = n_per_seg - n_overlap
 
     for i in range(n_segments):
-        # Get slepian functions (sym='False' used for spectral analysis)
+        # Get slepian functions (sym=False used for spectral analysis)
         slepian_fcts = scipy.signal.windows.dpss(M=n_per_seg,
                                                  NW=nw,
                                                  Kmax=num_tapers,
-                                                 sym='False')
+                                                 sym=False)
 
         # Calculate approximately independent spectrum estimates
         if data.ndim == 1:
