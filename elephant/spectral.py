@@ -266,7 +266,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     3. Average the approximately independent estimates of each segment to
        decrease overall variance of the estimates
 
-    4. Average the obainted estimates for each segment
+    4. Average the obtained estimates for each segment
 
     Parameters
     ----------
