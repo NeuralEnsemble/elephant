@@ -335,10 +335,9 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     ValueError
         If `overlap` is not in the interval `[0, 1)`.
 
-
         If `peak_resolution` is not a positive number.
 
-        If `peak_resolution` is None and `num_tapers` not a positive number.
+        If `peak_resolution` is None and `num_tapers` is not a positive number.
 
         If `frequency_resolution` is not positive.
 
@@ -357,7 +356,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
         `n_segments` is greater than the length of data at `axis`.
 
     TypeError
-        If `peak_resolution` is None and `num_tapers` not an int.
+        If `peak_resolution` is None and `num_tapers` is not an int.
     """
 
     # When the input is AnalogSignal, the data is added after rolling the axis
