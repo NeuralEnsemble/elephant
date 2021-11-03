@@ -423,9 +423,8 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     if peak_resolution is not None:
         if peak_resolution <= 0:
             raise ValueError("peak_resolution must be positive")
-        else:
-            nw = n_per_seg / fs * peak_resolution / 2
-            num_tapers = int(np.floor(2*nw) - 1)
+        nw = n_per_seg / fs * peak_resolution / 2
+        num_tapers = int(np.floor(2*nw) - 1)
 
     if num_tapers is None:
         num_tapers = int(np.floor(2*nw) - 1)
