@@ -335,13 +335,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     Raises
     ------
     ValueError
-        If `overlap` is not in the interval `[0, 1)`.
-
-        If `peak_resolution` is not a positive number.
-
         If `peak_resolution` is None and `num_tapers` is not a positive number.
-
-        If `frequency_resolution` is not positive.
 
         If `frequency_resolution` is too high for the given data size.
 
