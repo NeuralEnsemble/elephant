@@ -451,7 +451,8 @@ class SurrogatesTestCase(unittest.TestCase):
 
         rate = 100. * pq.Hz
         t_stop = 1. * pq.s
-        spiketrain = stg.homogeneous_poisson_process(rate, t_stop=t_stop)
+        process = stg.StationaryPoissonProcess(rate, t_stop=t_stop)
+        spiketrain = process.generate_spiketrain()
         n_surrogates = 2
         dither = 10 * pq.ms
 
@@ -540,13 +541,12 @@ class SurrogatesTestCase(unittest.TestCase):
         self.assertEqual(len(surrogate_train), 0)
 
     def test_joint_isi_dithering_output(self):
-        spiketrain = stg.homogeneous_poisson_process(
-            rate=100. * pq.Hz,
-            refractory_period=3 * pq.ms,
-            t_stop=0.1 * pq.s)
+        process = stg.StationaryPoissonProcess(
+            rate=100. * pq.Hz, refractory_period=3 * pq.ms, t_stop=0.1 * pq.s)
+        spiketrain = process.generate_spiketrain()
         surrogate_train = surr.JointISI(spiketrain).dithering()[0]
-        ground_truth = [0.005571, 0.018363, 0.026825, 0.036336, 0.045193,
-                        0.05146, 0.058489, 0.078053]
+        ground_truth = [0.0060744,  0.01886591, 0.02732847, 0.03683888,
+                        0.04569622, 0.05196334, 0.05899197, 0.07855664]
         assert_array_almost_equal(surrogate_train.magnitude, ground_truth)
 
     def test_joint_isi_with_wrongly_ordered_spikes(self):
