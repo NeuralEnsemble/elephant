@@ -110,7 +110,7 @@ jobs:
       run: |
         activate base      
         python --version
-        pytest --cov=elephant --import-mode=importlib 
+        $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
