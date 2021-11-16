@@ -61,6 +61,7 @@ jobs:
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
+          pip install -e .
      
       - name: Build
         run: |
@@ -70,7 +71,7 @@ jobs:
       - name: Test with pytest
         run: |
           source ~/test_env/bin/activate
-          pytest --cov=elephant elephant/test
+          pytest --cov=elephant
           
   # install dependencies with conda and run tests with pytest          
   test-conda:
@@ -101,12 +102,20 @@ jobs:
       run: |
         conda update conda
         conda env update --file requirements/environment.yml --name base
-        conda install pytest-cov coveralls
+        # conda env create -f requirements/environment.yml
+        activate base
+        pip install -r requirements/requirements-tests.txt
+        pip install pytest-cov coveralls
+        pip install .
     
     - name: Test with pytest
       run: |
+        activate base      
         python --version
-        $CONDA/bin/pytest --cov=elephant
+        conda list
+        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
+        # python3 -m pytest --cov=elephant --import-mode=importlib 
+        pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
@@ -153,6 +162,7 @@ jobs:
             pip install -r requirements/requirements.txt
             pip install -r requirements/requirements-extras.txt
             pip install pytest-cov coveralls
+            pip install -e .
 
         - name: Test with pytest
           run: |
@@ -206,9 +216,7 @@ jobs:
           
       - name: Test with pytest
         run: |
-          # source ~/test_env/bin/activate
-          mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant elephant/test
-          #pytest --cov=elephant elephant/test
+          mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant
    
   # install dependencies for the documentation and build .html
   docs:
@@ -241,12 +249,15 @@ jobs:
 
        - name: Install dependencies
          run: |
+            sudo apt install -y libopenmpi-dev openmpi-bin
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             conda update conda
             conda env update --file requirements/environment.yml --name base
             conda install -c conda-forge pandoc
+            # run notebooks
+            sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
             python --version
