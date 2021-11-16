@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
-        python-version: [3.6, 3.7, 3.8, 3.9, 3.10.0]
+        python-version: [3.6, 3.7, 3.8, 3.9, 3.10]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -153,6 +153,7 @@ jobs:
             pip install -r requirements/requirements.txt
             pip install -r requirements/requirements-extras.txt
             pip install pytest-cov coveralls
+            pip install -e .
 
         - name: Test with pytest
           run: |
@@ -206,9 +207,7 @@ jobs:
           
       - name: Test with pytest
         run: |
-          # source ~/test_env/bin/activate
           mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant elephant/test
-          #pytest --cov=elephant elephant/test
    
   # install dependencies for the documentation and build .html
   docs:
@@ -241,12 +240,15 @@ jobs:
 
        - name: Install dependencies
          run: |
+            sudo apt install -y libopenmpi-dev openmpi-bin
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             conda update conda
             conda env update --file requirements/environment.yml --name base
             conda install -c conda-forge pandoc
+            # run notebooks
+            sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
             python --version
