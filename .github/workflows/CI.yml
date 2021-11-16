@@ -108,6 +108,7 @@ jobs:
     
     - name: Test with pytest
       run: |
+        activate elephant      
         python --version
         pytest --cov=elephant --import-mode=importlib 
         
