@@ -101,13 +101,13 @@ jobs:
     - name: Install dependencies
       run: |
         conda update conda
-        conda env update --file requirements/environment.yml --name base
+        conda env update -f --file requirements/environment.yml --name base
         conda install pytest-cov coveralls
     
     - name: Test with pytest
       run: |
         python --version
-        pytest --cov=elephant /usr/share/miniconda --import-mode=importlib 
+        pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
