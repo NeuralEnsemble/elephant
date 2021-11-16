@@ -100,6 +100,7 @@ jobs:
                       
     - name: Install dependencies
       run: |
+        activate base
         conda update conda
         conda env update --file requirements/environment.yml --name base
         # conda env create -f requirements/environment.yml
@@ -110,7 +111,8 @@ jobs:
       run: |
         activate base      
         python --version
-        $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
+        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
+        python -m pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
