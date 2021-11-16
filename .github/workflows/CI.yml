@@ -103,7 +103,7 @@ jobs:
         conda update conda
         # conda env update -f --file requirements/environment.yml --name base
         conda env create -f requirements/environment.yml
-        conda activate elephant
+        activate elephant
         conda install pytest-cov coveralls
     
     - name: Test with pytest
