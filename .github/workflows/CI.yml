@@ -100,6 +100,8 @@ jobs:
                       
     - name: Install dependencies
       run: |
+        bash miniconda.sh -b -p $HOME/miniconda;
+        source "$HOME/miniconda/etc/profile.d/conda.sh";
         conda update conda
         conda env update --file requirements/environment.yml --name base
         #conda env create -f requirements/environment.yml
@@ -111,8 +113,8 @@ jobs:
         activate base      
         python --version
         conda list
-        #$CONDA/bin/pytest --cov=elephant --import-mode=importlib 
-        python3 -m pytest --cov=elephant --import-mode=importlib 
+        $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
+        #python3 -m pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
