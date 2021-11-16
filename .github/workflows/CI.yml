@@ -105,6 +105,7 @@ jobs:
     
     - name: Test with pytest
       run: |
+        python --version
         $CONDA/bin/pytest --cov=elephant
         
   # install dependencies with pip and run tests with pytest
@@ -248,5 +249,6 @@ jobs:
             conda install -c conda-forge pandoc
        - name: make html
          run: |
+            python --version
             cd doc
             make html
