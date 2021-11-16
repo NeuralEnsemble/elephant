@@ -96,12 +96,11 @@ jobs:
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
+        echo /usr/share/miniconda/lib/python3.9/site-packages/elephant >> $GITHUB_PATH
                       
     - name: Install dependencies
       run: |
-        bash miniconda.sh -b -p $CONDA
-        source "$CONDA/etc/profile.d/conda.sh"
+        echo $CONDA/bin >> $GITHUB_PATH
         conda update conda
         conda env update --file requirements/environment.yml --name base
         #conda env create -f requirements/environment.yml
