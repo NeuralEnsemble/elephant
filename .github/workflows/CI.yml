@@ -103,7 +103,6 @@ jobs:
         conda update conda
         conda env update --file requirements/environment.yml --name base
         conda install pytest-cov coveralls
-        pip install -e .
     
     - name: Test with pytest
       run: |
