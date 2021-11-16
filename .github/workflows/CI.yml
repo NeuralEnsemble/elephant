@@ -112,7 +112,7 @@ jobs:
         python --version
         conda list
         # $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
-        python -m pytest --cov=elephant /usr/share/miniconda --import-mode=importlib 
+        pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
