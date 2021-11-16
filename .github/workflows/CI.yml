@@ -104,15 +104,17 @@ jobs:
         conda env update --file requirements/environment.yml --name base
         # conda env create -f requirements/environment.yml
         activate base
-        conda install pytest-cov coveralls
+        pip install -r requirements/requirements-tests.txt
+        pip install pytest-cov coveralls
+        pip install .
     
     - name: Test with pytest
       run: |
         activate base      
         python --version
         conda list
-        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
-        python3 -m pytest --cov=elephant --import-mode=importlib 
+        $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
+        # python3 -m pytest --cov=elephant --import-mode=importlib 
         
   # install dependencies with pip and run tests with pytest
   test-pip:
