@@ -101,7 +101,9 @@ jobs:
     - name: Install dependencies
       run: |
         conda update conda
-        conda env update -f --file requirements/environment.yml --name base
+        # conda env update -f --file requirements/environment.yml --name base
+        conda env create -f requirements/environment.yml
+        conda activate elephant
         conda install pytest-cov coveralls
     
     - name: Test with pytest
