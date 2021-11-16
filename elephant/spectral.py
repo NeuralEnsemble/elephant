@@ -1059,23 +1059,23 @@ if __name__ == "__main__":
     fx, Pxx = welch_psd(test_data[:, 0])
     fy, Pyy = welch_psd(test_data[:, 1])
 
-    fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1],
-                                 frequency_resolution=0.05)
+    fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1])
 
-    fm, Pxxm = multitaper_psd(test_data.T, num_tapers=4)
+    fm, Pxxm = multitaper_psd(test_data.T, num_tapers=4, n_segments=8)
 
     import matplotlib.pyplot as plt
 
     plt.figure()
-    plt.semilogy(fx, Pxx, label="Pxx")
-    plt.semilogy(fy, Pyy, label="Pyy")
+    plt.semilogy(fx, Pxx, label="Pxx welch")
+    plt.semilogy(fy, Pyy, label="Pyy welch")
     plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
     plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
     plt.legend()
     plt.show()
     print(test_data.shape)
 
-    fcs, _, Pcs = multitaper_cross_spectrum(test_data.T, num_tapers=4)
+    fcs, _, Pcs = multitaper_cross_spectrum(test_data.T, num_tapers=4,
+                                            n_segments=8)
 
     plt.figure()
     plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
