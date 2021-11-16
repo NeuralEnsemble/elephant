@@ -108,6 +108,7 @@ jobs:
       run: |
         python --version
         conda list
+        conda init bash
         conda activate base
         $CONDA/bin/pytest --cov=elephant --import-mode=importlib
         
