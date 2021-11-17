@@ -9,10 +9,10 @@ on:
     branches: [master]
     types: [synchronize, opened, reopened, ready_for_review]
     
-  # run on pushes to all branches
+  # run on pushes to master branch
   push:
-    #branches:
-      #[master]
+    branches:
+      [master]
     
 # jobs define the steps that will be executed on the runner
 jobs:
