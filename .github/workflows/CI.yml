@@ -102,7 +102,6 @@ jobs:
       run: |
         conda update conda
         conda env update --file requirements/environment.yml --name base
-        # conda env create -f requirements/environment.yml
         activate base
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
