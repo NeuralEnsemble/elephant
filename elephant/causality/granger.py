@@ -383,9 +383,9 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
     spectrum : np.ndarray
 
     '''
-
     # Get coefficients from spectrum
     causal_part = np.fft.ifft(spectrum, axis=0)
+    # Version 1
     # Throw away of acausal part
     causal_part[(num_freqs + 1) // 2:] = 0
 
@@ -432,6 +432,7 @@ def _dagger(matrix_array):
 def _spectral_factorization(cross_spectrum, num_iterations):
     '''
     '''
+    cross_spectrum = np.transpose(cross_spectrum, axes=(2, 0, 1))
 
     # spectral_density_function = np.fft.ifft(cross_spectrum, axis=0)
     spectral_density_function = np.copy(cross_spectrum)
@@ -473,8 +474,12 @@ def _spectral_factorization(cross_spectrum, num_iterations):
         if error < 1e-10:
             pass
 
-    cov_matrix = np.matmul(factorization[0].real,
-                           np.transpose(factorization[0].real))
+    #factorization[0] = factorization[0].real
+
+    #cov_matrix = np.matmul(factorization[0],
+    #                       np.transpose(factorization[0]))
+    cov_matrix = np.matmul(factorization[0],
+                           _dagger(factorization[0]))
 
     transfer_function = np.matmul(factorization,
                                   np.linalg.inv(factorization[0]))
@@ -738,7 +743,7 @@ def pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
                                             peak_resolution=peak_resolution,
                                             return_onesided=False)
 
-    C, H = _spectral_factorization(S, num_iterations=num_iterations)
+    C, H, _ = _spectral_factorization(S, num_iterations=num_iterations)
 
     # Take positive frequencies
     freqs = freqs[:(length+1)//2]
@@ -762,7 +767,7 @@ def ding_pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
                                    overlap=0.5, fs=1, nw=4, num_tapers=None,
                                    peak_resolution=None, num_iterations=20):
 
-    freqs, _, S = multitaper_cross_spectrum(signals.T,
+    freqs, _, S = multitaper_cross_spectrum(signals,
                                             n_segments=n_segments,
                                             len_segment=len_segment,
                                             overlap=overlap,
@@ -775,9 +780,9 @@ def ding_pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
     # Take positive frequencies
-    mask = [freqs >= 0]
+    mask = (freqs >= 0)
     freqs = freqs[mask]
-    S = S[mask]
+    S = np.transpose(S, axes=(2, 0, 1))[mask]
     H = H[mask]
 
     H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
@@ -805,7 +810,6 @@ def ding_pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
 
 if __name__ == '__main__':
 
-    '''
 
     # Test spectral factorization
     np.random.seed(12321)
@@ -835,18 +839,21 @@ if __name__ == '__main__':
     x = signal[0]
     y = signal[1]
 
-    f, psd_1 = multitaper_psd(x, num_tapers=15)
-    f, psd_2 = multitaper_psd(y, num_tapers=15)
+    f, psd_1 = multitaper_psd(x, num_tapers=15, n_segments=8)
+    f, psd_2 = multitaper_psd(y, num_tapers=15, n_segments=8)
 
-    _, _, cross_spectrum = multitaper_cross_spectrum(signal.T, num_tapers=15)
+    _, _, cross_spectrum = multitaper_cross_spectrum(signal, num_tapers=15,
+                                                     return_onesided=True)
+
+
 
     from matplotlib import pyplot as plt
     plt.plot(f, psd_1)
-    plt.plot(f, 2*cross_spectrum[:(n+2)//2, 0, 0])
+    plt.plot(f, 2*cross_spectrum[0,0, :(n+2)//2])
     plt.show()
 
     plt.plot(f, psd_2)
-    plt.plot(f, 2*cross_spectrum[:(n+2)//2, 1, 1])
+    plt.plot(f, 2*cross_spectrum[1,1,:(n+2)//2])
     plt.show()
 
     cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
@@ -856,40 +863,37 @@ if __name__ == '__main__':
                   _dagger(transfer_function))
 
 
-
     print('################')
 
-    plt.plot(f, cross_spectrum[:(n+2)//2, 0, 0], label='True')
+    plt.plot(f, cross_spectrum[0,0, :(n+2)//2], label='True')
     plt.plot(f, A[:(n+2)//2, 0, 0], label='Mult')
     plt.legend()
     plt.show()
 
-    plt.plot(f, np.real(cross_spectrum[:(n+2)//2, 0, 1]), label='True')
+    plt.plot(f, np.real(cross_spectrum[0, 1, :(n+2)//2]), label='True')
     plt.plot(f, np.real(A[:(n+2)//2, 0, 1]), label='Mult')
     plt.legend()
     plt.show()
 
-    plt.plot(f, np.imag(cross_spectrum[:(n+2)//2, 0, 1]), label='True')
+    plt.plot(f, np.imag(cross_spectrum[0,1, :(n+2)//2]), label='True')
     plt.plot(f, np.imag(A[:(n+2)//2, 0, 1]), label='Mult')
     plt.legend()
     plt.show()
 
-    plt.plot(f, np.real(cross_spectrum[:(n+2)//2, 1, 0]), label='True')
+    plt.plot(f, np.real(cross_spectrum[1,0, :(n+2)//2]), label='True')
     plt.plot(f, np.real(A[:(n+2)//2, 1, 0]), label='Mult')
     plt.legend()
     plt.show()
 
-    plt.plot(f, np.imag(cross_spectrum[:(n+2)//2, 1, 0]), label='True')
+    plt.plot(f, np.imag(cross_spectrum[1,0, :(n+2)//2]), label='True')
     plt.plot(f, np.imag(A[:(n+2)//2, 1, 0]), label='Mult')
     plt.legend()
     plt.show()
 
-    plt.plot(f, cross_spectrum[:(n+2)//2, 1, 1], label='True')
+    plt.plot(f, cross_spectrum[1,1,:(n+2)//2], label='True')
     plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
     plt.legend()
     plt.show()
-    '''
-
     # Test spectral granger
     length_2d = 2**15
     signal = np.zeros((2, length_2d))
@@ -914,13 +918,13 @@ if __name__ == '__main__':
 
 
     f, ding_y_x, ding_x_y, ding_inst, ding_tot = \
-            ding_pairwise_spectral_granger(signal, len_segment=500,
-                                           num_tapers=10, num_iterations=20)
+            ding_pairwise_spectral_granger(signal,
+                                           num_tapers=7, num_iterations=50)
 
     from matplotlib import pyplot as plt
 
-    #plt.plot(f, 2*cross_spec[:, 0, 0], label='1')
-    #plt.plot(f, 2*cross_spec[:, 1, 1], label='2')
+    #plt.plot(f, 2*cross_spectrum[0, 0, :(n+2)//2], label='1')
+    #plt.plot(f, 2*cross_spectrum[1, 1, :(n+2)//2], label='2')
     #plt.plot(f, psd_x, label='1')
     #plt.plot(f, psd_y, label='2')
     #plt.legend()
@@ -929,7 +933,7 @@ if __name__ == '__main__':
 
     #plt.plot(f, y_x, label='y->x')
     #plt.plot(f, x_y, label='x->y')
-    #plt.plot(f, ding_y_x, label='y->x')
+    #xplt.plot(f, ding_y_x, label='y->x')
     #plt.plot(f, ding_x_y, label='x->y')
     #plt.legend()
     #plt.show()
