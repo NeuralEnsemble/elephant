@@ -1084,11 +1084,17 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    fcs, multitaper_coh, _ =  multitaper_coherence(test_data[:, 0],
-                                                   test_data[:, 1],
-                                                   num_tapers=4)
+    fcs, multitaper_coh, _ = multitaper_coherence(test_data[:, 0],
+                                                  test_data[:, 1],
+                                                  num_tapers=4)
     plt.figure()
     plt.plot(fc, Coh, label="Welch Coh")
     plt.plot(fcs, multitaper_coh, 'b:', label="Multitaper Coh")
     plt.legend()
     plt.show()
+
+    from elephant.causality.granger import _spectral_factorization, _dagger
+
+    import IPython
+    IPython.embed()
+
