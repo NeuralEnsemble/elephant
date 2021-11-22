@@ -8,12 +8,12 @@ on:
   pull_request:
     branches: [master]
     types: [synchronize, opened, reopened, ready_for_review]
-    
-  # run on pushes to all branches
+
+  # run on pushes to master branch
   push:
-    #branches:
-      #[master]
-    
+    branches:
+      [master]
+
 # jobs define the steps that will be executed on the runner
 jobs:
   # install dependencies and elephant with pip and run tests with pytest
@@ -28,19 +28,19 @@ jobs:
 
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
-        
+
     steps:
       # used to reset cache every month
-      - name: Get current year-month 
+      - name: Get current year-month
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
       - uses: actions/checkout@v2
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-          
+
       - name: Cache test_env
         uses: actions/cache@v2
         with:
@@ -49,29 +49,30 @@ jobs:
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
             -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
-          
+
       - name: Install dependencies
         run: |
           # create an environment and install everything
           python -m venv ~/test_env
           source ~/test_env/bin/activate
-          
+
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
           pip install -e .
-     
+
       - name: Build
         run: |
           source ~/test_env/bin/activate
           python setup.py install
-          
+
       - name: Test with pytest
         run: |
           source ~/test_env/bin/activate
           pytest --cov=elephant
+
           
   # install dependencies with conda and run tests with pytest          
   test-conda:
@@ -80,43 +81,43 @@ jobs:
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
-        
+
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
-      
+
     steps:
     - uses: actions/checkout@v2
-    
+
     - name: Cache pip
       uses: actions/cache@v2
       with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
-    
+
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
-                      
+
     - name: Install dependencies
       run: |
         conda update conda
         conda env update --file requirements/environment.yml --name base
-        # conda env create -f requirements/environment.yml
+
         activate base
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install .
-    
+
     - name: Test with pytest
       run: |
-        activate base      
+        activate base
         python --version
         conda list
-        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib 
-        # python3 -m pytest --cov=elephant --import-mode=importlib 
-        pytest --cov=elephant --import-mode=importlib 
-        
+        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib
+        # python3 -m pytest --cov=elephant --import-mode=importlib
+        pytest --cov=elephant --import-mode=importlib
+
   # install dependencies with pip and run tests with pytest
   test-pip:
       runs-on: ${{ matrix.os }}
@@ -132,7 +133,7 @@ jobs:
          # - os: macos-latest
          #   path: ~/Library/Caches/pip
           - os: windows-latest
-            path: ~\AppData\Local\pip\Cache  
+            path: ~\AppData\Local\pip\Cache
         # do not cancel all in-progress jobs if any matrix job fails
         fail-fast: false
 
@@ -168,7 +169,7 @@ jobs:
           run: |
             python --version
             pytest --cov=elephant
-  
+
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
     runs-on: ${{ matrix.os }}
@@ -181,18 +182,18 @@ jobs:
 
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
-        
+
     steps:
       - name: Get current year-month
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
       - uses: actions/checkout@v2
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-          
+
       - name: Cache test_env
         uses: actions/cache@v2
         with:
@@ -201,11 +202,11 @@ jobs:
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
             -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
-          
+
       - name: Setup enviroment
         run: |
           sudo apt install -y libopenmpi-dev openmpi-bin
-          
+
           python -m pip install --upgrade pip
           pip install mpi4py
           pip install -r requirements/requirements-tests.txt
@@ -213,11 +214,11 @@ jobs:
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
           pip install -e .
-          
+
       - name: Test with pytest
         run: |
           mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant
-   
+
   # install dependencies for the documentation and build .html
   docs:
        runs-on: ${{ matrix.os }}
