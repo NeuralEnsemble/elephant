@@ -73,8 +73,7 @@ jobs:
           source ~/test_env/bin/activate
           pytest --cov=elephant
 
-          
-  # install dependencies with conda and run tests with pytest          
+  # install dependencies with conda and run tests with pytest
   test-conda:
     runs-on: ${{ matrix.os }}
     strategy:
