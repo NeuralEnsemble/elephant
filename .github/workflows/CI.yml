@@ -73,7 +73,8 @@ jobs:
           source ~/test_env/bin/activate
           pytest --cov=elephant
 
-  # install dependencies with conda and run tests with pytest
+          
+  # install dependencies with conda and run tests with pytest          
   test-conda:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -102,6 +103,7 @@ jobs:
       run: |
         conda update conda
         conda env update --file requirements/environment.yml --name base
+
         activate base
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
