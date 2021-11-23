@@ -185,10 +185,8 @@ def estimate_csd(lfp, coordinates=None, method=None,
                 raise ValueError("The order of {} filter must be \
                                   specified".format(kwargs['f_type']))
 
-        lfp = neo.AnalogSignal(np.asarray(lfp).T, units=lfp.units,
-                               sampling_rate=lfp.sampling_rate)
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
-        csd_estimator = csd_method(lfp=lfp.magnitude * lfp.units,
+        csd_estimator = csd_method(lfp=lfp.T.magnitude * lfp.units,
                                    coord_electrode=coordinates.flatten(),
                                    **kwargs)
         csd_pqarr = csd_estimator.get_csd()
