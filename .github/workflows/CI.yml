@@ -119,13 +119,12 @@ jobs:
         conda install pip
         pip install -r requirements/requirements-tests.txt
         conda install pytest-cov coveralls
-        pip install -e .
+        pip install .
 
      - name: run tests
        shell: bash -l {0}
        run: |
         conda info
-        # cd /usr/share/miniconda/envs/elephant
         pytest --cov=elephant --import-mode importlib
 
   # install dependencies with pip and run tests with pytest
