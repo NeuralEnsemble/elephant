@@ -125,7 +125,8 @@ jobs:
        shell: bash -l {0}
        run: |
         conda info
-        pytest --cov=elephant # --import-mode=importlib
+        cd /usr/share/miniconda/envs/elephant
+        pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
   test-pip:
