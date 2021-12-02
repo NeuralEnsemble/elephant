@@ -73,8 +73,8 @@ jobs:
           source ~/test_env/bin/activate
           pytest --cov=elephant
 
-          
-  # install dependencies with conda and run tests with pytest          
+
+  # install dependencies with conda and run tests with pytest
   test-conda:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -89,39 +89,28 @@ jobs:
     - uses: actions/checkout@v2
     - uses: conda-incubator/setup-miniconda@v2
       with:
-          activate-environment: anaconda-client-env
+          activate-environment: elephant
           environment-file: requirements/environment.yml
           auto-activate-base: false
-          
+
     - name: Cache pip
       uses: actions/cache@v2
       with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
 
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        # echo $CONDA/bin >> $GITHUB_PATH
-
     - name: Install dependencies
       run: |
-        #conda update conda
-        #conda env update --file requirements/environment.yml --name base
-
-        #activate base
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install -e .
 
     - name: Test with pytest
       run: |
-        #activate base
+        conda activate elephant
         python --version
         conda list
         conda info
-        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib
-        # python3 -m pytest --cov=elephant --import-mode=importlib
         pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
@@ -245,7 +234,7 @@ jobs:
             activate-environment: anaconda-client-env
             environment-file: requirements/environment.yml
             auto-activate-base: false
-           
+
        - name: Add conda to system path
          run: |
             # $CONDA is an environment variable pointing to the root of the miniconda directory
