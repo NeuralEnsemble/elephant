@@ -119,7 +119,7 @@ jobs:
        shell: bash -l {0}
        run: |
         conda info
-        pytest --cov=elephant
+        pytest --cov=elephant --import-mode importlib
 
   # install dependencies with pip and run tests with pytest
   test-pip:
@@ -262,6 +262,7 @@ jobs:
 
        - name: install openmpi
          run: |
+            shell: bash -l {0}
             sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Install dependencies
