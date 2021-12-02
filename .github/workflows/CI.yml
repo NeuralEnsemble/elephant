@@ -261,6 +261,7 @@ jobs:
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
+            conda activate base
             python --version
             cd doc
             make html
