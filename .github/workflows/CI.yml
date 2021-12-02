@@ -126,7 +126,7 @@ jobs:
        run: |
         conda info
         cd
-        pytest --cov=elephant
+        pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
   test-pip:
