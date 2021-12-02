@@ -105,6 +105,7 @@ jobs:
           activate-environment: elephant
           environment-file: requirements/environment.yml
           auto-activate-base: false
+          auto-update-conda: true
      - name: install dependencies
        shell: bash -l {0}
        run: |
@@ -257,11 +258,10 @@ jobs:
             activate-environment: elephant
             environment-file: requirements/environment.yml
             auto-activate-base: false
+            auto-update-conda: true
 
-       - name: Add conda to system path
+       - name: install openmpi
          run: |
-            # $CONDA is an environment variable pointing to the root of the miniconda directory
-            # echo $CONDA/bin >> $GITHUB_PATH
             sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Install dependencies
