@@ -108,7 +108,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        activate elephant
+        conda activate "elephant"
         python --version
         conda list
         conda info
