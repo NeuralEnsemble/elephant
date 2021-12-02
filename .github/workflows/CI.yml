@@ -86,6 +86,18 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+            path: ~/.cache/pip
+            key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+
+      - name: Cache conda
+        uses: actions/cache@v2
+        with:
+            path: ~/conda_pkgs_dir
+            key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+
     - uses: actions/checkout@v2
     - uses: conda-incubator/setup-miniconda@v2
       with:
@@ -93,32 +105,17 @@ jobs:
           environment-file: requirements/environment.yml
           auto-activate-base: false
 
-    - name: Cache pip
-      uses: actions/cache@v2
-      with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
-
-    - name: Cache conda
-      uses: actions/cache@v2
-      with:
-          path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
-
     - shell: bash -l {0}
       run: |
         conda info
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
-        #pip install -e .
+        pip install -e .
 
     - shell: bash -l {0}
       run: |
-        conda activate "elephant"
-        python --version
-        conda list
         conda info
-        pytest --cov=elephant --import-mode=importlib
+        pytest --cov=elephant
 
   # install dependencies with pip and run tests with pytest
   test-pip:
