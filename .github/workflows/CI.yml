@@ -276,7 +276,7 @@ jobs:
          run: |
             conda info
             sudo apt install -y libopenmpi-dev openmpi-bin
-            python -m pip install --upgrade pip
+            conda install pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             pip install -e .
