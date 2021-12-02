@@ -104,9 +104,9 @@ jobs:
         conda info
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
-        pip install -e .
+        #pip install -e .
 
-    - name: Test with pytest
+    - shell: bash -l {0}
       run: |
         conda activate "elephant"
         python --version
