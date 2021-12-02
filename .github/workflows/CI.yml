@@ -111,7 +111,7 @@ jobs:
        run: |
         conda info
         python -m pip install --upgrade pip
-        conda install file=requirements/requirements-tests.txt
+        pip install -r requirements/requirements-tests.txt
         conda install pytest-cov coveralls
         pip install -e .
 
