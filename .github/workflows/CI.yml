@@ -112,13 +112,14 @@ jobs:
         #activate base
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
-        pip install .
+        pip install -e .
 
     - name: Test with pytest
       run: |
         #activate base
         python --version
         conda list
+        conda info
         # $CONDA/bin/pytest --cov=elephant --import-mode=importlib
         # python3 -m pytest --cov=elephant --import-mode=importlib
         pytest --cov=elephant --import-mode=importlib
@@ -239,11 +240,16 @@ jobs:
          run: echo "::set-output name=date::$(date +'%Y-%m')"
 
        - uses: actions/checkout@v2
-
+       - uses: conda-incubator/setup-miniconda@v2
+         with:
+            activate-environment: anaconda-client-env
+            environment-file: requirements/environment.yml
+            auto-activate-base: false
+           
        - name: Add conda to system path
          run: |
             # $CONDA is an environment variable pointing to the root of the miniconda directory
-            echo $CONDA/bin >> $GITHUB_PATH
+            # echo $CONDA/bin >> $GITHUB_PATH
             sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Cache pip
@@ -259,14 +265,14 @@ jobs:
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
-            conda update conda
-            conda env update --file requirements/environment.yml --name base
+            # conda update conda
+            # conda env update --file requirements/environment.yml --name base
             conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
-            conda activate base
+            # conda activate base
             python --version
             cd doc
             make html
