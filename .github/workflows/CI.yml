@@ -262,7 +262,6 @@ jobs:
 
        - name: install openmpi
          run: |
-            shell: bash -l {0}
             sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Install dependencies
@@ -274,8 +273,6 @@ jobs:
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             pip install -e .
-            # conda update conda
-            # conda env update --file requirements/environment.yml --name base
             conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
