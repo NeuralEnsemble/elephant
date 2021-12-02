@@ -265,6 +265,7 @@ jobs:
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
+            pip install -e .
             # conda update conda
             # conda env update --file requirements/environment.yml --name base
             conda install -c conda-forge pandoc
@@ -274,5 +275,7 @@ jobs:
          run: |
             # conda activate base
             python --version
+            conda info
+            conda list
             cd doc
             make html
