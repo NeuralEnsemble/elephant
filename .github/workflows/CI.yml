@@ -116,10 +116,10 @@ jobs:
        shell: bash -l {0}
        run: |
         conda info
-        python -m pip install --upgrade pip
+        python -m pip3 install --upgrade pip
         pip install -r requirements/requirements-tests.txt
         conda install pytest-cov coveralls
-        #pip install -e .
+        pip install -e .
 
      - name: run tests
        shell: bash -l {0}
