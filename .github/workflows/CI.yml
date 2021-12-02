@@ -122,10 +122,10 @@ jobs:
         pip install -e .
 
      - name: run tests
-       shell: bash -l {0}
        run: |
         conda info
-        pytest --cov=elephant --import-mode=importlib
+        pip install -e .
+        pytest --cov=elephant # --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
   test-pip:
