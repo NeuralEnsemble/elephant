@@ -110,21 +110,22 @@ jobs:
      - name: Add conda to system path
        run: |
            # $CONDA is an environment variable pointing to the root of the miniconda directory
-            echo $CONDA/envs/elephant >> $GITHUB_PATH
+            echo $CONDA/bin >> $GITHUB_PATH
 
      - name: install dependencies
        shell: bash -l {0}
        run: |
         conda info
-        conda install pip
-        pip install -r requirements/requirements-tests.txt
+        conda install pip        
         conda install pytest-cov coveralls
+        pip install -r requirements/requirements-tests.txt
         pip install -e .
 
      - name: run tests
        shell: bash -l {0}
        run: |
         conda info
+        conda list
         pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
@@ -173,7 +174,6 @@ jobs:
             pip install -r requirements/requirements-extras.txt
             pip install pytest-cov coveralls
             pip install -e .
-            echo “::add-path:: $CONDA/envs/elephant”
         - name: Test with pytest
           run: |
             python --version
