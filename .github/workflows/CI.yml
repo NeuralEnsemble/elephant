@@ -249,16 +249,20 @@ jobs:
        - name: Install dependencies
          run: |
             sudo apt install -y libopenmpi-dev openmpi-bin
-            python -m pip install --upgrade pip
-            pip install -r requirements/requirements-docs.txt
-            pip install -r requirements/requirements-tutorials.txt
+            
             conda update conda
             conda env update --file requirements/environment.yml --name base
             conda install -c conda-forge pandoc
+           
+            python -m pip install --upgrade pip
+            pip install -r requirements/requirements-docs.txt
+            pip install -r requirements/requirements-tutorials.txt
+           
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
             python --version
+            conda list
             cd doc
             make html
