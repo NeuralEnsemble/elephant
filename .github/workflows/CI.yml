@@ -165,7 +165,7 @@ jobs:
         - name: Test with pytest
           run: |
             python --version
-            pytest --cov=elephant
+            pytest --cov=elephant --import-mode=importlib
 
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
@@ -259,7 +259,7 @@ jobs:
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
-           activate elephant
+            activate elephant
             python --version
             cd doc
             make html
