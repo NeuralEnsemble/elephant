@@ -93,6 +93,12 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
 
+    - name: Cache conda
+      uses: actions/cache@v2
+      with:
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
