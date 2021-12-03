@@ -41,14 +41,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-#      - name: Cache test_env
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/test_env
-#          # Look to see if there is a cache hit for the corresponding requirements files
-#          # cache will be reset on changes to any requirements or every month
-#          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-#            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
+      - name: Cache test_env
+        uses: actions/cache@v2
+        with:
+          path: ~/test_env
+          # Look to see if there is a cache hit for the corresponding requirements files
+          # cache will be reset on changes to any requirements or every month
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
+            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
 
       - name: Install dependencies
         run: |
@@ -83,11 +83,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Cache pip
-      uses: actions/cache@v2
-      with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+#    - name: Cache pip
+#      uses: actions/cache@v2
+#      with:
+#          path: ~/.cache/pip
+#          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
 
     - name: Add conda to system path
       run: |
@@ -224,12 +224,13 @@ jobs:
             # $CONDA is an environment variable pointing to the root of the miniconda directory
             echo $CONDA/bin >> $GITHUB_PATH
             sudo apt install -y libopenmpi-dev openmpi-bin
-       - name: Cache pip
-         uses: actions/cache@v2
-         with:
-            path: ~/.cache/pip
-            # Look to see if there is a cache hit for the corresponding requirements files
-            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ steps.date.outputs.date }}
+
+#       - name: Cache pip
+#         uses: actions/cache@v2
+#         with:
+#            path: ~/.cache/pip
+#            # Look to see if there is a cache hit for the corresponding requirements files
+#            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ steps.date.outputs.date }}
 
        - name: Install dependencies
          run: |
