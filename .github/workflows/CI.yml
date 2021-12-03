@@ -104,7 +104,7 @@ jobs:
         conda env update --file requirements/environment.yml --name base
 
         activate base
-        conda install -c conda-forge openmpi
+        #conda install -c conda-forge openmpi
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install .
@@ -114,8 +114,6 @@ jobs:
         activate base
         python --version
         conda list
-        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib
-        # python3 -m pytest --cov=elephant --import-mode=importlib
         pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
