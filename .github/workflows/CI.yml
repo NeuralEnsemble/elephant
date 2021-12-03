@@ -278,6 +278,7 @@ jobs:
             conda install -c conda-forge pandoc
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
+            python setup.py
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
             conda update --all
