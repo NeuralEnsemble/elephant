@@ -41,14 +41,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache test_env
-        uses: actions/cache@v2
-        with:
-          path: ~/test_env
-          # Look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
+#      - name: Cache test_env
+#        uses: actions/cache@v2
+#        with:
+#          path: ~/test_env
+#          # Look to see if there is a cache hit for the corresponding requirements files
+#          # cache will be reset on changes to any requirements or every month
+#          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
+#            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
 
       - name: Install dependencies
         run: |
