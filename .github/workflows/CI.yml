@@ -112,7 +112,6 @@ jobs:
         activate base
         python -m pip install --upgrade pip
         pip install -r requirements/requirements-tests.txt
-        pip install pytest==6.2.4
         pip install pytest-cov coveralls
         pip install .
 
@@ -264,6 +263,9 @@ jobs:
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
+            pip install -r requirements/requirements-extras.txt
+            pip install mpi4py
+            pip install viziphant
            
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
