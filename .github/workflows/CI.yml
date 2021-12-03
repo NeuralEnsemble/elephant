@@ -106,9 +106,9 @@ jobs:
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install -e .
-        conda update conda --all
     - name: Test with pytest
       run: |
+        conda update conda --all        
         activate base
         python --version
         conda list
@@ -253,11 +253,11 @@ jobs:
             pip install -r requirements/requirements-tutorials.txt
             
             conda install -c conda-forge pandoc
-            conda update conda --all
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
+            conda update conda --all
             activate base
             python --version
             cd doc
