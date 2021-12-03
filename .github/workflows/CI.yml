@@ -267,7 +267,7 @@ jobs:
             pip install -r requirements/requirements-extras.txt
             pip install mpi4py
             pip install viziphant # remove viziphant, once integrated into requirements-tutorials.txt
-            pip install .
+            pip install -e .
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
