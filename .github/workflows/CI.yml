@@ -110,7 +110,7 @@ jobs:
      - name: Add conda to system path
        run: |
            # $CONDA is an environment variable pointing to the root of the miniconda directory
-           # echo $CONDA/bin >> $GITHUB_PATH
+            echo $CONDA/envs/elephant >> $GITHUB_PATH
 
      - name: install dependencies
        shell: bash -l {0}
@@ -287,5 +287,6 @@ jobs:
          shell: bash -l {0}
          run: |
             conda info
+            conda list
             cd doc
             make html
