@@ -729,43 +729,9 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     return conditional_causality_xy_z_round
 
 
-def pairwise_spectral_granger(signals, fs=1, nw=4.0, num_tapers=None,
+def pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
+                              overlap=0.5, fs=1, nw=4, num_tapers=None,
                               peak_resolution=None, num_iterations=20):
-
-    length = np.size(signals[0])
-    signals[0] -= np.mean(signals[0])
-    signals[1] -= np.mean(signals[1])
-
-    freqs, _, S = multitaper_cross_spectrum(signals.T,
-                                            fs=fs,
-                                            nw=nw,
-                                            num_tapers=num_tapers,
-                                            peak_resolution=peak_resolution,
-                                            return_onesided=False)
-
-    C, H, _ = _spectral_factorization(S, num_iterations=num_iterations)
-
-    # Take positive frequencies
-    freqs = freqs[:(length+1)//2]
-    S = S[:(length+1)//2]
-    H = H[:(length+1)//2]
-
-    spectral_granger_y_x = np.log(S[:, 0, 0]
-                                  / (S[:, 0, 0]
-                                     - (C[1, 1] - C[0, 1]**2/C[0, 0])
-                                     * np.abs(H[:, 0, 1])**2))
-
-    spectral_granger_x_y = np.log(S[:, 1, 1]
-                                  / (S[:, 1, 1]
-                                     - (C[0, 0] - C[1, 0]**2/C[1, 1])
-                                     * np.abs(H[:, 1, 0])**2))
-
-    return freqs, spectral_granger_y_x, spectral_granger_x_y
-
-
-def ding_pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
-                                   overlap=0.5, fs=1, nw=4, num_tapers=None,
-                                   peak_resolution=None, num_iterations=20):
 
     freqs, _, S = multitaper_cross_spectrum(signals,
                                             n_segments=n_segments,
@@ -810,7 +776,7 @@ def ding_pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
 
 if __name__ == '__main__':
 
-
+    '''
     # Test spectral factorization
     np.random.seed(12321)
     length_2d = 1124
@@ -894,8 +860,9 @@ if __name__ == '__main__':
     plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
     plt.legend()
     plt.show()
+    '''
     # Test spectral granger
-    length_2d = 2**15
+    length_2d = 2**20
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -919,7 +886,9 @@ if __name__ == '__main__':
 
     f, ding_y_x, ding_x_y, ding_inst, ding_tot = \
             ding_pairwise_spectral_granger(signal,
-                                           num_tapers=7, num_iterations=50)
+                                           len_segment=2**12,
+                                           num_tapers=5,
+                                           num_iterations=50)
 
     from matplotlib import pyplot as plt
 
