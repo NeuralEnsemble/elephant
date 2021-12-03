@@ -100,7 +100,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        conda update conda
+        conda update conda --all
         conda env update --file requirements/environment.yml --name base
 
         activate base
@@ -248,7 +248,7 @@ jobs:
        - name: Install dependencies
          run: |
             python -m pip install --upgrade pip
-            conda update conda
+            conda update conda --all
             conda env update --file requirements/environment.yml --name base
             activate base
             pip install -r requirements/requirements-docs.txt
