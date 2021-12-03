@@ -173,7 +173,7 @@ jobs:
             pip install -r requirements/requirements-extras.txt
             pip install pytest-cov coveralls
             pip install -e .
-
+            echo “::add-path:: $CONDA/envs/elephant”
         - name: Test with pytest
           run: |
             python --version
@@ -282,6 +282,7 @@ jobs:
             conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
+            echo “::add-path:: $CONDA/envs/elephant”
        - name: make html
          shell: bash -l {0}
          run: |
