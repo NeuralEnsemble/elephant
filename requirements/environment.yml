@@ -5,7 +5,7 @@ channels:
 
 dependencies:
   - python>=3.6
-  - mpi4py<=3.1.2
+  - mpi4py
   - numpy
   - scipy
   - tqdm
