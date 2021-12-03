@@ -108,7 +108,6 @@ jobs:
         pip install -e .
     - name: Test with pytest
       run: |
-        conda update conda --all        
         activate base
         python --version
         conda list
@@ -257,7 +256,6 @@ jobs:
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
-            conda update conda --all
             activate base
             python --version
             cd doc
