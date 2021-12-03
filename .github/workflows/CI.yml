@@ -282,7 +282,7 @@ jobs:
             conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
-            echo “::add-path:: $CONDA/envs/elephant”
+            conda update --all
        - name: make html
          shell: bash -l {0}
          run: |
