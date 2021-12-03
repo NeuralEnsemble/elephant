@@ -101,7 +101,7 @@ jobs:
     - name: Install dependencies
       run: |
         conda update conda
-        conda env update --file requirements/environment.yml --name base
+        conda env update --file requirements/environment.yml --name base --prune
 
         activate base
         python -m pip install --upgrade pip
