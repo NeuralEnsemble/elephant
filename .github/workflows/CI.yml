@@ -11,8 +11,8 @@ on:
 
   # run on pushes to master branch
   push:
-    #branches:
-     # [master]
+#    branches:
+#      [master]
 
 # jobs define the steps that will be executed on the runner
 jobs:
@@ -55,20 +55,24 @@ jobs:
           # create an environment and install everything
           python -m venv ~/test_env
           source ~/test_env/bin/activate
+
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
           pip install -e .
+
       - name: Build
         run: |
           source ~/test_env/bin/activate
           python setup.py install
+
       - name: Test with pytest
         run: |
           source ~/test_env/bin/activate
           pytest --cov=elephant
+
   # install dependencies with conda and run tests with pytest
   test-conda:
     runs-on: ${{ matrix.os }}
@@ -93,20 +97,24 @@ jobs:
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
+
     - name: Install dependencies
       run: |
         conda update conda
         conda env update --file requirements/environment.yml --name base
+
         activate base
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install .
+
     - name: Test with pytest
       run: |
         activate base
         python --version
         conda list
         pytest --cov=elephant --import-mode=importlib
+
   # install dependencies with pip and run tests with pytest
   test-pip:
       runs-on: ${{ matrix.os }}
@@ -153,10 +161,12 @@ jobs:
             pip install -r requirements/requirements-extras.txt
             pip install pytest-cov coveralls
             pip install -e .
+
         - name: Test with pytest
           run: |
             python --version
             pytest --cov=elephant
+
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
     runs-on: ${{ matrix.os }}
@@ -193,6 +203,7 @@ jobs:
       - name: Setup enviroment
         run: |
           sudo apt install -y libopenmpi-dev openmpi-bin
+
           python -m pip install --upgrade pip
           pip install mpi4py
           pip install -r requirements/requirements-tests.txt
@@ -200,9 +211,11 @@ jobs:
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
           pip install -e .
+
       - name: Test with pytest
         run: |
           mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant
+
   # install dependencies for the documentation and build .html
   docs:
        runs-on: ${{ matrix.os }}
@@ -223,6 +236,7 @@ jobs:
          run: |
             # $CONDA is an environment variable pointing to the root of the miniconda directory
             echo $CONDA/bin >> $GITHUB_PATH
+            sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Cache pip
          uses: actions/cache@v2
@@ -233,15 +247,12 @@ jobs:
 
        - name: Install dependencies
          run: |
-            sudo apt install -y libopenmpi-dev openmpi-bin
-            conda update conda
-            conda env update --file requirements/environment.yml --name base
-            conda install -c conda-forge pandoc
-           
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
-           
+            conda update conda
+            conda env update --file requirements/environment.yml --name base
+            conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
