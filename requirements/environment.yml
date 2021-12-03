@@ -4,8 +4,8 @@ channels:
   - conda-forge  # required for MPI
 
 dependencies:
-  - python>=3.6,<3.10.0
-  - mpi4py
+  - python>=3.6
+  - mpi4py>=3.1.2
   - numpy
   - scipy
   - tqdm
