@@ -247,10 +247,10 @@ jobs:
 
        - name: Install dependencies
          run: |
+            python -m pip install --upgrade pip
             conda update conda
             conda env create --file requirements/environment.yml
             activate elephant
-            python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             
