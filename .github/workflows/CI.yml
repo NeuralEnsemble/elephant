@@ -259,7 +259,6 @@ jobs:
 
        - name: Install dependencies
          run: |
-            #conda install pip
             python -m pip install --upgrade pip
             pip install -r requirements/requirements.txt
             pip install -r requirements/requirements-docs.txt
@@ -272,5 +271,6 @@ jobs:
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
        - name: make html
          run: |
+            activate base
             cd doc
             make html
