@@ -260,12 +260,12 @@ jobs:
             key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ steps.date.outputs.date }}
 
 
-       - uses: conda-incubator/setup-miniconda@v2
-         with:
-            activate-environment: elephant
+      # - uses: conda-incubator/setup-miniconda@v2
+      #   with:
+      #      activate-environment: elephant
             # environment-file: requirements/environment.yml
-            auto-activate-base: false
-            auto-update-conda: true
+      #      auto-activate-base: false
+      #      auto-update-conda: true
 
        - name: install openmpi
          run: |
@@ -274,17 +274,18 @@ jobs:
        - name: Install dependencies
          shell: bash -l {0}
          run: |
-            conda install pip
-            conda install -c conda-forge pandoc
+            #conda install pip
+            python -m pip install --upgrade pip
+            pip install -r requirements/requirements.txt
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             pip install -r requirements/requirements-extras.txt
             pip install mpi4py
+            pip install pandoc
             pip install viziphant # remove viziphant, once integrated into requirements-tutorials.txt
             pip install .
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
-            conda update --all
        - name: make html
          shell: bash -l {0}
          run: |
