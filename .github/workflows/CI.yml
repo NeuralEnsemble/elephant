@@ -274,7 +274,6 @@ jobs:
        - name: Install dependencies
          shell: bash -l {0}
          run: |
-            sudo apt install -y libopenmpi-dev openmpi-bin
             conda install pip
             conda install -c conda-forge pandoc
             pip install -r requirements/requirements-docs.txt
