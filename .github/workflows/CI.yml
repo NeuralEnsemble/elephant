@@ -102,7 +102,7 @@ jobs:
       run: |
         conda update conda
         conda env update --file requirements/environment.yml --name base --prune
-
+        conda install -n base pip
         activate base
         python -m pip install --upgrade pip
         pip install -r requirements/requirements-tests.txt
