@@ -106,7 +106,7 @@ jobs:
         activate elephant
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
-        pip install .
+        pip install -e .
 
     - name: Test with pytest
       run: |
