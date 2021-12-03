@@ -273,13 +273,11 @@ jobs:
        - name: Install dependencies
          shell: bash -l {0}
          run: |
-            conda info
             sudo apt install -y libopenmpi-dev openmpi-bin
             conda install pip
+            conda install -c conda-forge pandoc
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
-            pip install .
-            conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
             conda update --all
