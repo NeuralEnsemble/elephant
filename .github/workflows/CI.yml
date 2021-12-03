@@ -101,16 +101,16 @@ jobs:
     - name: Install dependencies
       run: |
         conda update conda
-        conda env update --file requirements/environment.yml --name base
+        conda env update --file requirements/environment.yml
 
-        activate base
+        activate elephant
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install .
 
     - name: Test with pytest
       run: |
-        activate base
+        activate elephant
         python --version
         conda list
         pytest --cov=elephant --import-mode=importlib
