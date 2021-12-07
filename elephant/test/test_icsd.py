@@ -1202,31 +1202,5 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
 
-# def suite(verbosity=2):
-#    """
-#    Run unittests for the CSD toolbox
-#
-#
-#    Arguments
-#    ---------
-#    verbosity : int
-#        verbosity level
-#
-#    """
-#    suite = unittest.TestLoader().loadTestsFromTestCase(TestICSD)
-#    unittest.TextTestRunner(verbosity=verbosity).run(suite)
-#
-#
-#
-# if __name__ == '__main__':
-#    suite()
-
-
-def suite():
-    suite = unittest.makeSuite(TestICSD, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

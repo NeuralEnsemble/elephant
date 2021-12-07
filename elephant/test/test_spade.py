@@ -701,11 +701,6 @@ class SpadeTestCase(unittest.TestCase):
             alpha=0.15, winlen=1, corr='fdr_bh')
         self.assertEqual(sig_spectrum, [(2., 3., False), (2., 4., True)])
 
-def suite():
-    suite = unittest.makeSuite(SpadeTestCase, 'test')
-    return suite
-
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

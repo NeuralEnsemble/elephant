@@ -36,7 +36,7 @@ class CubicTestCase(unittest.TestCase):
             pq.dimensionless, sampling_period=1 * pq.s)
         self.data_array = numpy.array([self.xi] * n2 + [0] * n0)
         self.alpha = 0.05
-        self.ximax = 10
+        self.max_iterations = 10
 
     def test_cubic(self):
 
@@ -103,14 +103,15 @@ class CubicTestCase(unittest.TestCase):
         # Check the output for test_aborted
         self.assertEqual(test_aborted, False)
 
-    def test_cubic_ximax(self):
-        # Test exceeding ximax
+    def test_cubic_max_iterations(self):
+        # Test exceeding max_iterations
         with self.assertWarns(UserWarning):
-            xi_ximax, p_vals_ximax, k_ximax, test_aborted = cubic.cubic(
-                self.data_signal, alpha=1, max_iterations=self.ximax)
+            xi_max_iterations, p_vals_max_iterations, k_max_iterations, \
+                test_aborted = cubic.cubic(self.data_signal, alpha=1,
+                                           max_iterations=self.max_iterations)
 
         self.assertEqual(test_aborted, True)
-        self.assertEqual(xi_ximax - 1, self.ximax)
+        self.assertEqual(xi_max_iterations - 1, self.max_iterations)
 
     def test_cubic_errors(self):
 
@@ -131,21 +132,16 @@ class CubicTestCase(unittest.TestCase):
         # Negative alpha
         self.assertRaises(ValueError, cubic.cubic, self.data_array, alpha=-0.1)
 
-        # Negative number of iterations ximax
-        self.assertRaises(ValueError, cubic.cubic, self.data_array, ximax=-100)
+        # Negative number of max_iterations
+        self.assertRaises(ValueError, cubic.cubic, self.data_array,
+                          max_iterations=-100)
 
         # Checking case in which the second cumulant of the signal is smaller
-        # than the first cumulant (analitycal constrain of the method)
+        # than the first cumulant (analytical constrain of the method)
         self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
             numpy.array([1] * 1000).reshape(1000, 1), units=pq.dimensionless,
             sampling_period=10 * pq.ms), alpha=self.alpha)
 
 
-def suite():
-    suite = unittest.makeSuite(CubicTestCase, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

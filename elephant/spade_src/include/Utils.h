@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: Utils.h
  *  Copyright (c) 2020 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
@@ -240,7 +240,7 @@ void quicksort(std::vector<std::pair<A, B>>& values, const uint32_t& left, const
 //
 
 // Fill the zipped vector with pairs consisting of the
-// corresponding elements of a and b. (This assumes 
+// corresponding elements of a and b. (This assumes
 // that the vectors have equal length)
 template <typename A, typename B>
 void zip(const std::vector<A>& a, const std::vector<B>& b, std::vector<std::pair<A, B>>& zipped)
@@ -248,8 +248,8 @@ void zip(const std::vector<A>& a, const std::vector<B>& b, std::vector<std::pair
 	std::transform(std::begin(a), std::end(a), std::begin(b), std::back_inserter(zipped), [](const A& a, const B& b) { return std::make_pair(a, b); });
 }
 
-// Write the first and second element of the pairs in 
-// the given zipped vector into a and b. (This assumes 
+// Write the first and second element of the pairs in
+// the given zipped vector into a and b. (This assumes
 // that the vectors have equal length)
 template <typename A, typename B>
 void unzip(const std::vector<std::pair<A, B>>& zipped, std::vector<A>& a, std::vector<B>& b)
@@ -270,7 +270,6 @@ void zipSort(std::vector<A>& data, std::vector<B>& sortBy)
 	//	quicksort<A, B>(zipped, 0, zipped.size() - 1);
 
 	unzip(zipped, data, sortBy);
-
 }
 
 //
@@ -364,7 +363,7 @@ static inline std::string SizeWithSuffix(const int64_t& val)
 #include <psapi.h>
 #endif
 
-#ifdef __linux__ 
+#ifdef __linux__
 #include <stdio.h>
 #endif
 
