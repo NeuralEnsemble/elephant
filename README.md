@@ -6,8 +6,7 @@
 [![![PyPi]](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
 [![Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)
 [![Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![Elephant-tests](https://github.com/INM-6/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/INM-6/elephant/actions/workflows/CI.yml)
-
+[![Elephant-tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
 *Elephant* package analyses all sorts of neurophysiological data:
 spike trains, LFP, analog signals. The input-output data format is either
 [Neo](https://github.com/NeuralEnsemble/python-neo), Quantity or Numpy array.
@@ -44,4 +43,3 @@ See [acknowledgments](doc/acknowledgments.rst).
 #### Citation
 
 See [citations](doc/citation.rst).
-
