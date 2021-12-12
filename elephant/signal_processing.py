@@ -27,6 +27,8 @@ import scipy.signal
 
 from elephant.utils import deprecated_alias, check_same_units
 
+import warnings
+
 __all__ = [
     "zscore",
     "cross_correlation_function",
@@ -66,15 +68,22 @@ def zscore(signal, inplace=True):
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
         z-transformed signal, if possible, i.e when the signal type is float.
+        If the signal type is not float, the parameter is ignored and a
+        warning is raised whenever trying the in-place operation.
         If False, a copy of the original `signal` is returned.
         Default: True
 
     Returns
     -------
-    signal_ztransofrmed : neo.AnalogSignal or list of neo.AnalogSignal
+    signal_ztransformed : neo.AnalogSignal or list of neo.AnalogSignal
         The output format matches the input format: for each input
         `neo.AnalogSignal`, a corresponding `neo.AnalogSignal` is returned,
         containing the z-transformed signal with dimensionless unit.
+
+    Warns
+    -----
+    UserWarning
+        If `inplace` is True and the signal dtype is not float.
 
     Notes
     -----
@@ -153,29 +162,47 @@ def zscore(signal, inplace=True):
     mean = signal_stacked.mean(axis=0)
     std = signal_stacked.std(axis=0)
 
-    signal_ztransofrmed = []
+    signal_ztransformed = []
     for sig in signal:
-        sig_normalized = sig.magnitude.astype(mean.dtype, copy=not inplace)
+        # Perform inplace operation only if array is of dtype float.
+        # Otherwise, warn the user.
+        is_float = np.issubdtype(np.float, sig.dtype)
+        do_inplace = inplace if is_float else False
+        if inplace != do_inplace:
+            warnings.warn("Could not perform inplace operation as the "
+                          "original signal dtype is not float. Source: "
+                          f"{sig.name}")
+
+        sig_normalized = sig.magnitude.astype(mean.dtype, copy=not do_inplace)
         sig_normalized -= mean
+
         # items where std is zero are already zero
         np.divide(sig_normalized, std, out=sig_normalized, where=std != 0)
-        sig_dimless = neo.AnalogSignal(signal=sig_normalized,
-                                       units=pq.dimensionless,
-                                       dtype=sig_normalized.dtype,
-                                       copy=False,
-                                       t_start=sig.t_start,
-                                       sampling_rate=sig.sampling_rate,
-                                       name=sig.name,
-                                       file_origin=sig.file_origin,
-                                       description=sig.description,
-                                       array_annotations=sig.array_annotations,
-                                       **sig.annotations)
-        signal_ztransofrmed.append(sig_dimless)
+
+        if do_inplace:
+            # Replace unit in the original array by dimensionless
+            sig._dimensionality = pq.dimensionless.dimensionality
+            sig_dimless = sig
+        else:
+            # Create new object
+            sig_dimless = neo.AnalogSignal(signal=sig_normalized,
+                                           units=pq.dimensionless,
+                                           dtype=sig_normalized.dtype,
+                                           copy=False,
+                                           t_start=sig.t_start,
+                                           sampling_rate=sig.sampling_rate,
+                                           name=sig.name,
+                                           file_origin=sig.file_origin,
+                                           description=sig.description,
+                                           array_annotations=
+                                           sig.array_annotations,
+                                           **sig.annotations)
+        signal_ztransformed.append(sig_dimless)
 
     # Return single object, or list of objects
-    if len(signal_ztransofrmed) == 1:
-        signal_ztransofrmed = signal_ztransofrmed[0]
-    return signal_ztransofrmed
+    if len(signal_ztransformed) == 1:
+        signal_ztransformed = signal_ztransformed[0]
+    return signal_ztransformed
 
 
 @deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
