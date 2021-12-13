@@ -195,6 +195,9 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is untouched
         self.assertEqual(signal[0].magnitude, self.test_seq1[0])
 
+        # Assert original and returned objects are different
+        self.assertIsNot(result, signal)
+
     def test_zscore_single_inplace(self):
         """
         Test z-score on a single AnalogSignal, asking for an inplace
@@ -218,6 +221,9 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertEqual(signal[0].magnitude, target[0])
 
+        # Assert original and returned objects are the same
+        self.assertIs(result, signal)
+
     def test_zscore_single_multidim_dup(self):
         """
         Test z-score on a single AnalogSignal with multiple dimensions, asking
@@ -232,12 +238,14 @@ class ZscoreTestCase(unittest.TestCase):
         s = np.std(signal.magnitude, axis=0, keepdims=True)
         target = (signal.magnitude - m) / s
 
-        assert_array_almost_equal(
-            elephant.signal_processing.zscore(
-                signal, inplace=False).magnitude, target, decimal=9)
+        result = elephant.signal_processing.zscore(signal, inplace=False)
+        assert_array_almost_equal(result.magnitude, target, decimal=9)
 
         # Assert original signal is untouched
         self.assertEqual(signal[0, 0].magnitude, self.test_seq1[0])
+
+        # Assert original and returned objects are different
+        self.assertIsNot(result, signal)
 
     def test_zscore_array_annotations(self):
         signal = neo.AnalogSignal(
@@ -269,6 +277,9 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertAlmostEqual(signal[0, 0].magnitude, ground_truth[0, 0])
 
+        # Assert original and returned objects are the same
+        self.assertIs(result, signal)
+
     def test_zscore_single_dup_int(self):
         """
         Test if the z-score is correctly calculated even if the input is an
@@ -283,28 +294,28 @@ class ZscoreTestCase(unittest.TestCase):
         s = np.std(self.test_seq1)
         target = (self.test_seq1 - m) / s
 
-        assert_array_almost_equal(
-            elephant.signal_processing.zscore(signal, inplace=False).magnitude,
-            target.reshape(-1, 1), decimal=9)
+        result = elephant.signal_processing.zscore(signal, inplace=False)
+        assert_array_almost_equal(result.magnitude, target.reshape(-1, 1),
+                                  decimal=9)
 
         # Assert original signal is untouched
         self.assertEqual(signal.magnitude[0], self.test_seq1[0])
 
+        # Assert original and returned objects are different
+        self.assertIsNot(result, signal)
+
     def test_zscore_single_inplace_int(self):
         """
-        Test if the z-score is correctly calculated even if the input is an
-        AnalogSignal of type int, asking for an inplace operation.
+        Test if the z-score operation fails if the input is an
+        AnalogSignal of type int, when asking for an inplace operation.
         """
-        m = np.mean(self.test_seq1)
-        s = np.std(self.test_seq1)
-        target = (self.test_seq1 - m) / s
 
         signal = neo.AnalogSignal(
             self.test_seq1, units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=int)
-        zscored = elephant.signal_processing.zscore(signal, inplace=True)
 
-        assert_array_almost_equal(zscored.magnitude.squeeze(), target)
+        with self.assertRaises(ValueError):
+            elephant.signal_processing.zscore(signal, inplace=True)
 
     def test_zscore_list_dup(self):
         """
@@ -344,6 +355,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal1.magnitude[0, 0], self.test_seq1[0])
         self.assertEqual(signal2.magnitude[0, 1], self.test_seq2[0])
 
+        # Assert original and returned objects are different
+        self.assertIsNot(result[0], signal_list[0])
+        self.assertIsNot(result[1], signal_list[1])
+
     def test_zscore_list_inplace(self):
         """
         Test zscore on a list of AnalogSignal objects, asking for an
@@ -381,6 +396,10 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertEqual(signal1[0, 0].magnitude, target11[0])
         self.assertEqual(signal2[0, 0].magnitude, target21[0])
+
+        # Assert original and returned objects are the same
+        self.assertIs(result[0], signal_list[0])
+        self.assertIs(result[1], signal_list[1])
 
     def test_wrong_input(self):
         # wrong type
