@@ -68,8 +68,7 @@ def zscore(signal, inplace=True):
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
         z-transformed signal, if possible, i.e when the signal type is float.
-        If the signal type is not float, the parameter is ignored and a
-        warning is raised whenever trying the in-place operation.
+        If the signal type is not float, an error is raised.
         If False, a copy of the original `signal` is returned.
         Default: True
 
@@ -80,10 +79,10 @@ def zscore(signal, inplace=True):
         `neo.AnalogSignal`, a corresponding `neo.AnalogSignal` is returned,
         containing the z-transformed signal with dimensionless unit.
 
-    Warns
-    -----
-    UserWarning
-        If `inplace` is True and the signal dtype is not float.
+    Raises
+    ------
+    ValueError
+        If `inplace` is True and the type of `signal` is not float.
 
     Notes
     -----
@@ -165,38 +164,29 @@ def zscore(signal, inplace=True):
     signal_ztransformed = []
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
-        # Otherwise, warn the user.
-        is_float = np.issubdtype(np.float, sig.dtype)
-        do_inplace = inplace if is_float else False
-        if inplace != do_inplace:
-            warnings.warn("Could not perform inplace operation as the "
-                          "original signal dtype is not float. Source: "
-                          f"{sig.name}")
+        # Otherwise, raise an error.
+        if inplace and not np.issubdtype(np.float, sig.dtype):
+            raise ValueError(f"Cannot perform inplace operation as the "
+                             f"signal dtype is not float. Source: {sig.name}")
 
-        sig_normalized = sig.magnitude.astype(mean.dtype, copy=not do_inplace)
+        sig_normalized = sig.magnitude.astype(mean.dtype, copy=not inplace)
         sig_normalized -= mean
 
         # items where std is zero are already zero
         np.divide(sig_normalized, std, out=sig_normalized, where=std != 0)
 
-        if do_inplace:
+        if inplace:
             # Replace unit in the original array by dimensionless
             sig._dimensionality = pq.dimensionless.dimensionality
             sig_dimless = sig
         else:
             # Create new object
-            sig_dimless = neo.AnalogSignal(signal=sig_normalized,
-                                           units=pq.dimensionless,
-                                           dtype=sig_normalized.dtype,
-                                           copy=False,
-                                           t_start=sig.t_start,
-                                           sampling_rate=sig.sampling_rate,
-                                           name=sig.name,
-                                           file_origin=sig.file_origin,
-                                           description=sig.description,
-                                           array_annotations=
-                                           sig.array_annotations,
-                                           **sig.annotations)
+            sig_dimless = sig.duplicate_with_new_data(sig_normalized,
+                                                      units=pq.dimensionless)
+            # todo use flag once is fixed
+            #      https://github.com/NeuralEnsemble/python-neo/issues/752
+            sig_dimless.array_annotate(**sig.array_annotations)
+
         signal_ztransformed.append(sig_dimless)
 
     # Return single object, or list of objects
