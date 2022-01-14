@@ -472,12 +472,9 @@ def _spectral_factorization(cross_spectrum, num_iterations):
         diff = factorization - factorization_old
         error = np.max(np.abs(diff))
         if error < 1e-10:
-            pass
+            print(f'Spectral factorization converged after {i} steps')
+            break
 
-    #factorization[0] = factorization[0].real
-
-    #cov_matrix = np.matmul(factorization[0],
-    #                       np.transpose(factorization[0]))
     cov_matrix = np.matmul(factorization[0],
                            _dagger(factorization[0]))
 
@@ -731,7 +728,7 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
 
 def pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
                               overlap=0.5, fs=1, nw=4, num_tapers=None,
-                              peak_resolution=None, num_iterations=20):
+                              peak_resolution=None, num_iterations=300):
 
     freqs, _, S = multitaper_cross_spectrum(signals,
                                             n_segments=n_segments,
@@ -774,99 +771,8 @@ def pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
     return freqs, granger_y_x, granger_x_y, instantaneous_causality, total_interdependence
 
 
-def conditional_spectral_granger(signals, n_segments=8, len_segment=None,
-                                 overlap=0.5, fs=1, nw=4, num_tapers=None,
-                                 peak_resolution=None, num_iterations=200):
-
-    freqs, _, S_full = multitaper_cross_spectrum(
-        signals,
-        n_segments=n_segments,
-        len_segment=len_segment,
-        overlap=overlap,
-        fs=fs,
-        nw=nw,
-        num_tapers=num_tapers,
-        peak_resolution=peak_resolution,
-        return_onesided=False)
-
-    # Get first and last signal
-    signals_reduced = signals[[0,2]]
-
-    freqs, _, S_reduced = multitaper_cross_spectrum(
-        signals_reduced,
-        n_segments=n_segments,
-        len_segment=len_segment,
-        overlap=overlap,
-        fs=fs,
-        nw=nw,
-        num_tapers=num_tapers,
-        peak_resolution=peak_resolution,
-        return_onesided=False)
-
-    C_full, H_full = _spectral_factorization(S_full,
-                                             num_iterations=num_iterations)
-    A = np.matmul(np.matmul(H_full, C_full), _dagger(H_full))
-    from matplotlib import pyplot as plt
-    plt.plot(S_full[0,0].real)
-    plt.plot(A[:, 0,0].real, ":")
-    plt.show()
-    plt.plot(S_full[0,0].imag)
-    plt.plot(A[:, 0,0].imag, ":")
-    plt.show()
-    plt.plot(S_full[1,1].real)
-    plt.plot(A[:, 1,1].real, ":")
-    plt.show()
-    plt.plot(S_full[1,1].imag)
-    plt.plot(A[:, 1,1].imag, ":")
-    plt.show()
-    plt.plot(S_full[0,1].real)
-    plt.plot(A[:, 0,1].real, ":")
-    plt.show()
-    plt.plot(S_full[0,1].imag)
-    plt.plot(A[:, 0,1].imag, ":")
-    plt.show()
-    plt.plot(S_full[1,0].real)
-    plt.plot(A[:, 1,0].real, ":")
-    plt.show()
-    plt.plot(S_full[1,0].imag)
-    plt.plot(A[:, 1,0].imag, ":")
-    plt.show()
-
-    C_reduced, G = _spectral_factorization(
-        S_reduced,
-        num_iterations=num_iterations)
-
-    # Take positive frequencies
-    mask = (freqs >= 0)
-    freqs = freqs[mask]
-    S_full = np.transpose(S_full, axes=(2, 0, 1))[mask]
-    H_full = H_full[mask]
-    S_reduced = np.transpose(S_reduced, axes=(2, 0, 1))[mask]
-    G = G[mask]
-
-    H_reduced = np.zeros((len(G), 3, 3), dtype=np.complex128)
-    H_reduced[:, 0, 0] = G[:, 0, 0]
-    H_reduced[:, 0, 2] = G[:, 0, 1]
-    H_reduced[:, 1, 1] += 1
-    H_reduced[:, 2, 0] = G[:, 1, 0]
-    H_reduced[:, 2, 2] = G[:, 1, 1]
-
-    Q = np.linalg.solve(H_reduced, H_full)
-
-
-
-    granger_y_x_given_z = np.log(C_reduced[0, 0].real /
-                                 np.abs((Q[:, 0, 0]
-                                         * C_full[0, 0]
-                                         * Q[:, 0, 0].conj())))
-    #import IPython
-    #IPython.embed()
-
-    return freqs, granger_y_x_given_z
-
-
 if __name__ == '__main__':
-    '''
+
     # Test spectral factorization
     np.random.seed(12321)
     length_2d = 1124
@@ -913,7 +819,7 @@ if __name__ == '__main__':
     plt.show()
 
     cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
-                                                            num_iterations=50)
+                                                            num_iterations=100)
 
     A = np.matmul(np.matmul(transfer_function, cov_matrix),
                   _dagger(transfer_function))
@@ -976,7 +882,7 @@ if __name__ == '__main__':
 
 
     f, ding_y_x, ding_x_y, ding_inst, ding_tot = \
-            ding_pairwise_spectral_granger(signal,
+            pairwise_spectral_granger(signal,
                                            len_segment=2**12,
                                            num_tapers=5,
                                            num_iterations=50)
@@ -1003,75 +909,4 @@ if __name__ == '__main__':
     plt.plot(f, ding_inst, label='inst')
     plt.plot(f, ding_tot, label='tot')
     plt.legend()
-    plt.show()
-    '''
-    def _generate_ground_truth(length_2d=40000, causality_type="indirect"):
-        """
-        Recreated from Example 2 section 5.2 of :cite:'granger-Ding06-0608035'.
-        The following should generate three signals in one of the two ways:
-         1. "indirect" would generate data which contains no direct
-        causal influence from Y to X, but mediated through Z
-        (i.e. Y -> Z -> X).
-        2. "both" would generate data which contains both direct and indirect
-        causal influences from Y to X.
-
-        """
-        if causality_type == "indirect":
-            y_t_lag_2 = 0
-        elif causality_type == "both":
-            y_t_lag_2 = 0.2
-        else:
-            raise ValueError("causality_type should be either 'indirect' or "
-                             "'both'")
-
-        order = 2
-        signal = np.zeros((3, length_2d + order))
-
-        weights_1 = np.array([[0.8, 0, 0.4],
-                              [0, 0.9, 0],
-                              [0., 0.5, 0.5]])
-
-        weights_2 = np.array([[-0.5, y_t_lag_2, 0.],
-                              [0., -0.8, 0],
-                              [0, 0, -0.2]])
-
-        weights = np.stack((weights_1, weights_2))
-
-        noise_covariance = np.array([[0.3, 0.0, 0.0],
-                                     [0.0, 1., 0.0],
-                                     [0.0, 0.0, 0.2]])
-
-        for i in range(length_2d):
-            for lag in range(order):
-                signal[:, i + order] += np.dot(weights[lag],
-                                               signal[:, i + 1 - lag])
-            rnd_var = np.random.multivariate_normal([0, 0, 0],
-                                                    noise_covariance)
-            signal[:, i + order] += rnd_var
-
-        signal = signal[:, 2:]
-
-        # Return signals as Nx3
-        return signal.T
-
-    signal = _generate_ground_truth()
-
-    freqs, cond = conditional_spectral_granger(signal.T, num_tapers=10,
-                                               n_segments=40, num_iterations=400)
-    ''' 
-    freqs, _, S = multitaper_cross_spectrum(signal.T,
-                                            n_segments=1,
-                                            fs=1,
-                                            num_tapers=3,
-                                            return_onesided=False)
-
-    C, H = _spectral_factorization(S, num_iterations=2)
-
-    A = np.matmul(np.matmul(H, C),
-                  _dagger(H))
-    '''
-
-    from matplotlib import pyplot as plt
-
-    plt.plot(freqs, cond)
     plt.show()
