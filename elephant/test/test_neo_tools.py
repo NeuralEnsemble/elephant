@@ -2,11 +2,9 @@
 """
 Unit tests for the neo_tools module.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-
-from __future__ import division, print_function, unicode_literals
 
 from itertools import chain
 import unittest

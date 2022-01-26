@@ -110,39 +110,23 @@ class CadTestCase(unittest.TestCase):
         # check neurons in the pattern
         assert_array_equal(sorted(output_single[0]['neurons']),
                            self.elements1)
-        # check the occurrences time of the patter
+        # check the occurrences time of the pattern
         assert_array_equal(output_single[0]['times'],
-                           self.occ1)
+                           self.occ1 * self.bin_size)
         # check the lags
-        assert_array_equal(sorted(output_single[0]['lags']),
-                           self.output_lags1)
+        assert_array_equal(sorted(output_single[0]['lags']) * pq.s,
+                           self.output_lags1 * self.bin_size)
 
     # test with multiple (3) patterns injected in the data
     def test_cad_msip(self):
         # collecting cad output
         output_msip = cad.cell_assembly_detection(
             binned_spiketrain=self.msip, max_lag=self.max_lag)
-
-        elements_msip = []
-        occ_msip = []
-        lags_msip = []
-        for out in output_msip:
-            elements_msip.append(out['neurons'])
-            occ_msip.append(out['times'])
-            lags_msip.append(list(out['lags']))
-        elements_msip = sorted(elements_msip, key=lambda d: len(d))
-        occ_msip = sorted(occ_msip, key=lambda d: len(d))
-        lags_msip = sorted(lags_msip, key=lambda d: len(d))
-        elements_msip = [sorted(e) for e in elements_msip]
-        # check neurons in the patterns
-        assert_array_equal(elements_msip, self.elements_msip)
-        # check the occurrences time of the patters
-        assert_array_equal(occ_msip[0], self.occ_msip[0])
-        assert_array_equal(occ_msip[1], self.occ_msip[1])
-        assert_array_equal(occ_msip[2], self.occ_msip[2])
-        lags_msip = [sorted(e) for e in lags_msip]
-        # check the lags
-        assert_array_equal(lags_msip, self.lags_msip)
+        for i, out in enumerate(output_msip):
+            assert_array_equal(out['times'], self.occ_msip[i] * self.bin_size)
+            assert_array_equal(sorted(out['lags']) * pq.s,
+                               self.lags_msip[i] * self.bin_size)
+            assert_array_equal(sorted(out['neurons']), self.elements_msip[i])
 
     # test the errors raised
     def test_cad_raise_error(self):

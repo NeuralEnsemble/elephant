@@ -1,38 +1,36 @@
 # -*- coding: utf-8 -*-
-"""'Current Source Density analysis (CSD) is a class of methods of analysis of
+"""
+*\"Current Source Density analysis (CSD) is a class of methods of analysis of
 extracellular electric potentials recorded at multiple sites leading to
 estimates of current sources generating the measured potentials. It is usually
 applied to low-frequency part of the potential (called the Local Field
 Potential, LFP) and to simultaneous recordings or to recordings taken with
-fixed time reference to the onset of specific stimulus (Evoked Potentials)'
+fixed time reference to the onset of specific stimulus (Evoked Potentials).\"*
 (Definition by Prof.Daniel K. Wójcik for Encyclopedia of Computational
-Neuroscience)
+Neuroscience.)
 
 CSD is also called as Source Localization or Source Imaging in the EEG circles.
 Here are CSD methods for different types of electrode configurations.
 
-1D - laminar probe like electrodes.
-2D - Microelectrode Array like
-3D - UtahArray or multiple laminar probes.
+- 1D - laminar probe like electrodes.
+- 2D - Microelectrode Array like
+- 3D - UtahArray or multiple laminar probes.
 
 The following methods have been implemented so far
 
-1D - StandardCSD, DeltaiCSD, SplineiCSD, StepiCSD, KCSD1D
-2D - KCSD2D, MoIKCSD (Saline layer on top of slice)
-3D - KCSD3D
+- 1D: StandardCSD, DeltaiCSD, SplineiCSD, StepiCSD, KCSD1D
+- 2D: KCSD2D, MoIKCSD (Saline layer on top of slice)
+- 3D: KCSD3D
 
-Each of these methods listed have some advantages. The KCSD methods for
-instance can handle broken or irregular electrode configurations electrode
+Each listed method has certain advantages. The KCSD methods, for instance, can
+handle broken or irregular electrode configurations electrode.
 
-Keywords: LFP; CSD; Multielectrode; Laminar electrode; Barrel cortex
+.. autosummary::
+    :toctree: _toctree/current_source_density
 
-Citation Policy: See ./current_source_density_src/README.md
+    estimate_csd
+    generate_lfp
 
-Contributors to this  current source density estimation module are:
-Chaitanya Chintaluri(CC), Espen Hagen(EH) and Michał Czerwinski(MC).
-EH implemented the iCSD methods and StandardCSD
-CC implemented the kCSD methods, kCSD1D(MC and CC)
-CC and EH developed the interface to elephant.
 """
 
 from __future__ import division, print_function, unicode_literals
@@ -68,7 +66,7 @@ def estimate_csd(lfp, coordinates=None, method=None,
                  process_estimate=True, **kwargs):
     """
     Function call to compute the current source density (CSD) from
-    extracellular potential recordings(local-field potentials - LFP) using
+    extracellular potential recordings (local field potentials - LFP) using
     laminar electrodes or multi-contact electrodes with 2D or 3D geometries.
 
     Parameters

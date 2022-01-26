@@ -3,8 +3,44 @@
 Statistical measures of spike trains (e.g., Fano factor) and functions to
 estimate firing rates.
 
+Rate estimation
+***************
+
+.. autosummary::
+    :toctree: _toctree/statistics/
+
+    mean_firing_rate
+    instantaneous_rate
+    time_histogram
+    optimal_kernel_bandwidth
+
+
+Spike interval statistics
+*************************
+
+.. autosummary::
+    :toctree: _toctree/statistics/
+
+    isi
+    cv
+    cv2
+    lv
+    lvr
+
+
+Statistics across spike trains
+******************************
+
+.. autosummary::
+    :toctree: _toctree/statistics/
+
+    fanofactor
+    complexity_pdf
+    Complexity
+
+
 Tutorial
---------
+********
 
 :doc:`View tutorial <../tutorials/statistics>`
 
@@ -15,45 +51,14 @@ Run tutorial interactively:
             ?filepath=doc/tutorials/statistics.ipynb
 
 
-.. current_module elephant.statistics
+References
+----------
 
-Functions overview
-------------------
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: st
+   :keyprefix: statistics-
+   :style: unsrt
 
-Rate estimation
-~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: toctree/statistics/
-
-    mean_firing_rate
-    instantaneous_rate
-    time_histogram
-    optimal_kernel_bandwidth
-
-
-Spike interval statistics
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: toctree/statistics/
-
-    isi
-    cv
-    cv2
-    lv
-    lvr
-
-
-Statistics across spike trains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: toctree/statistics/
-
-    fanofactor
-    complexity_pdf
-    Complexity
 
 :copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
@@ -115,7 +120,7 @@ def isi(spiketrain, axis=-1):
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
-        Default: the last axis.
+        Default: the last axis
 
     Returns
     -------
@@ -127,6 +132,12 @@ def isi(spiketrain, axis=-1):
     UserWarning
         When the input array is not sorted, negative intervals are returned
         with a warning.
+
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.isi([0.3, 4.5, 6.7, 9.3])
+    array([4.2, 2.2, 2.6])
 
     """
     if isinstance(spiketrain, neo.SpikeTrain):
@@ -166,19 +177,19 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         If None, retrieved from the `t_start` attribute of `spiketrain`. If
         that is not present, default to 0. All spiketrain's spike times below
         this value are ignored.
-        Default: None.
+        Default: None
     t_stop : float or pq.Quantity, optional
         The stop time to use for the time points.
         If not specified, retrieved from the `t_stop` attribute of
         `spiketrain`. If that is not present, default to the maximum value of
         `spiketrain`. All spiketrain's spike times above this value are
         ignored.
-        Default: None.
+        Default: None
     axis : int, optional
         The axis over which to do the calculation; has no effect when the
         input is a neo.SpikeTrain, because a neo.SpikeTrain is always a 1-d
         vector. If None, do the calculation over the flattened array.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -195,6 +206,12 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
         `t_start` or `t_stop` is not `pq.Quantity`.
     ValueError
         If the input spiketrain is empty.
+
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
+    0.4301075268817204
 
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
@@ -227,7 +244,6 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
                                  t_stop=t_stop, axis=axis)
 
         rates = pq.Quantity(rates, units=1. / units)
-        return rates
     elif isinstance(spiketrain, (np.ndarray, list, tuple)):
         if isinstance(t_start, pq.Quantity) or isinstance(t_stop, pq.Quantity):
             raise TypeError("'t_start' and 't_stop' cannot be quantities if "
@@ -244,11 +260,11 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
             t_stop = np.expand_dims(t_stop, axis)
         rates = np.sum((spiketrain >= t_start) & (spiketrain <= t_stop),
                        axis=axis) / time_interval
-        return rates
     else:
         raise TypeError("Invalid input spiketrain type: '{}'. Allowed: "
                         "neo.SpikeTrain, Quantity, ndarray".
                         format(type(spiketrain)))
+    return rates
 
 
 def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
@@ -276,7 +292,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         In case of a list of input neo.SpikeTrains, if their durations vary by
         more than `warn_tolerence` in their absolute values, throw a warning
         (see Notes).
-        Default: 0.1 ms.
+        Default: 0.1 ms
 
     Returns
     -------
@@ -296,6 +312,18 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     The check for the equal duration of the input spike trains is performed
     only if the input is of type`neo.SpikeTrain`: if you pass a numpy array,
     please make sure that they all have the same duration manually.
+
+    Examples
+    --------
+    >>> import neo
+    >>> from elephant import statistics
+    >>> spiketrains = [
+    ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
+    ...     neo.SpikeTrain([1.4, 3.3, 8.2], t_stop=10, units='s')
+    ... ]
+    >>> statistics.fanofactor(spiketrains)
+    0.07142857142857142
+
     """
     # Build array of spike counts (one per spike train)
     spike_counts = np.array([len(st) for st in spiketrains])
@@ -335,10 +363,9 @@ def __variation_check(v, with_nan):
                           "an input with more than 1 entry. Returning `NaN`"
                           "since the argument `with_nan` is `True`")
             return np.NaN
-        else:
-            raise ValueError("Input size is too small. Please provide "
-                             "an input with more than 1 entry. Set 'with_nan' "
-                             "to True to replace the error by a warning.")
+        raise ValueError("Input size is too small. Please provide "
+                         "an input with more than 1 entry. Set 'with_nan' "
+                         "to True to replace the error by a warning.")
 
     return None
 
@@ -347,7 +374,7 @@ def __variation_check(v, with_nan):
 def cv2(time_intervals, with_nan=False):
     r"""
     Calculate the measure of Cv2 for a sequence of time intervals between
-    events.
+    events :cite:`statistics-Holt1996_1806`.
 
     Given a vector :math:`I` containing a sequence of intervals, the Cv2 is
     defined as:
@@ -371,7 +398,7 @@ def cv2(time_intervals, with_nan=False):
         np.NaN value and a warning is raised.
         If False, `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -393,12 +420,11 @@ def cv2(time_intervals, with_nan=False):
         If `with_nan` is True and `cv2` is calculated for a sequence with less
         than two entries, generating a np.NaN.
 
-    References
-    ----------
-    .. [1] G. R. Holt, W. R. Softky, C. Koch, & R. J. Douglas, "Comparison of
-           discharge variability in vitro and in vivo in cat visual cortex
-           neurons," Journal of Neurophysiology, vol. 75, no. 5, pp. 1806-1814,
-           1996.
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
+    0.8226190476190478
 
     """
     # convert to array, cast to float
@@ -416,7 +442,7 @@ def cv2(time_intervals, with_nan=False):
 def lv(time_intervals, with_nan=False):
     r"""
     Calculate the measure of local variation Lv for a sequence of time
-    intervals between events.
+    intervals between events :cite:`statistics-Shinomoto2003_2823`.
 
     Given a vector :math:`I` containing a sequence of intervals, the Lv is
     defined as:
@@ -440,7 +466,7 @@ def lv(time_intervals, with_nan=False):
         `np.NaN` value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -462,11 +488,11 @@ def lv(time_intervals, with_nan=False):
         If `with_nan` is True and the Lv is calculated for a spike train
         with less than two spikes, generating a np.NaN.
 
-    References
-    ----------
-    .. [1] S. Shinomoto, K. Shima, & J. Tanji, "Differences in spiking
-           patterns among cortical neurons," Neural Computation, vol. 15,
-           pp. 2823–2842, 2003.
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
+    0.8306154336734695
 
     """
     # convert to array, cast to float
@@ -482,7 +508,7 @@ def lv(time_intervals, with_nan=False):
 def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     r"""
     Calculate the measure of revised local variation LvR for a sequence of time
-    intervals between events.
+    intervals between events :cite:`statistics-Shinomoto2009_e1000433`.
 
     Given a vector :math:`I` containing a sequence of intervals, the LvR is
     defined as:
@@ -496,7 +522,8 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     The LvR is a revised version of the Lv, with enhanced invariance to firing
     rate fluctuations by introducing a refractoriness constant R. The LvR with
     `R=5ms` was shown to outperform other ISI variability measures in spike
-    trains with firing rate fluctuatins and sensory stimuli [1]_.
+    trains with firing rate fluctuations and sensory stimuli
+    :cite:`statistics-Shinomoto2009_e1000433`.
 
     Parameters
     ----------
@@ -506,13 +533,13 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     R : pq.Quantity or int or float
         Refractoriness constant (R >= 0). If no quantity is passed `ms` are
         assumed.
-        Default: 5 ms.
+        Default: 5 ms
     with_nan : bool, optional
         If True, LvR of a spike train with less than two spikes results in a
         np.NaN value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True.
+        Default: True
 
     Returns
     -------
@@ -535,12 +562,11 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
         with less than two spikes, generating a np.NaN.
         If R is passed without any units attached milliseconds are assumed.
 
-    References
-    ----------
-    .. [1] S. Shinomoto, H. Kim, T. Shimokawa et al. "Relating Neuronal Firing
-           Patterns to Functional Differentiation of Cerebral Cortex" PLOS
-           Computational Biology 5(7): e1000433, 2009.
-
+    Examples
+    --------
+    >>> from elephant import statistics
+    >>> statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005)
+    0.833907445980624
     """
     if isinstance(R, pq.Quantity):
         R = R.rescale('ms').magnitude
@@ -598,25 +624,26 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
         If 'auto', the optimized kernel width for the rate estimation is
-        calculated according to [1]_ and with this width a gaussian kernel is
-        constructed. Automatized calculation of the kernel width is not
-        available for other than gaussian kernel shapes.
-        Default: 'auto'.
+        calculated according to :cite:`statistics-Shimazaki2010_171` and with
+        this width a gaussian kernel is constructed. Automatized calculation
+        of the kernel width is not available for other than gaussian kernel
+        shapes.
+        Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
         the kernel, i.e., the considered width of the kernel in terms of
         multiples of the standard deviation sigma.
-        Default: 5.0.
+        Default: 5.0
     t_start : pq.Quantity, optional
         Start time of the interval used to compute the firing rate.
         If None, `t_start` is assumed equal to `t_start` attribute of
         `spiketrain`.
-        Default: None.
+        Default: None
     t_stop : pq.Quantity, optional
         End time of the interval used to compute the firing rate (included).
         If None, `t_stop` is assumed equal to `t_stop` attribute of
         `spiketrain`.
-        Default: None.
+        Default: None
     trim : bool, optional
         Accounts for the asymmetry of a kernel.
         If False, the output of the Fast Fourier Transformation being a longer
@@ -630,7 +657,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         Transformation by a total of two times the size of the kernel, and
         `t_start` and `t_stop` are adjusted. True (trimming) is equivalent to
         'valid' convolution mode for symmetrical kernels.
-        Default: False.
+        Default: False
     center_kernel : bool, optional
         If set to True, the kernel will be translated such that its median is
         centered on the spike, thus putting equal weight before and after the
@@ -680,21 +707,52 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     The resulting instantaneous firing rate values smaller than ``0``, which
     can happen due to machine precision errors, are clipped to zero.
 
-    References
-    ----------
-    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
-           spike rate estimation," J Comput Neurosci, vol. 29, pp. 171–182,
-           2010.
-
     Examples
     --------
+    Example 1. Automatic kernel estimation.
+
+    >>> import neo
     >>> import quantities as pq
+    >>> from elephant import statistics
+    >>> spiketrain = neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s')
+    >>> rate = statistics.instantaneous_rate(spiketrain,
+    ...                                      sampling_period=10 * pq.ms,
+    ...                                      kernel='auto')
+    >>> rate
+    AnalogSignal with 1 channels of length 1000; units Hz; datatype float64
+    annotations: {'t_stop': array(10.) * s,
+      'kernel': {'type': 'GaussianKernel',
+       'sigma': '7.273225922958104 s',
+       'invert': False}}
+    sampling rate: 0.1 1/ms
+    time: 0.0 s to 10.0 s
+
+    Example 2. Manually set kernel.
+
     >>> from elephant import kernels
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> spiketrain = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=5*pq.s)
-    >>> kernel = kernels.AlphaKernel(sigma=0.05*pq.s, invert=True)
-    >>> rate = instantaneous_rate(spiketrain, sampling_period=2*pq.ms,
-    ...        kernel=kernel)
+    >>> spiketrain = neo.SpikeTrain([0], t_stop=1, units='s')
+    >>> kernel = kernels.GaussianKernel(sigma=300 * pq.ms)
+    >>> rate = statistics.instantaneous_rate(spiketrain,
+    ...        sampling_period=200 * pq.ms, kernel=kernel, t_start=-1 * pq.s)
+    >>> rate
+    AnalogSignal with 1 channels of length 10; units Hz; datatype float64
+    annotations: {'t_stop': array(1.) * s,
+      'kernel': {'type': 'GaussianKernel',
+       'sigma': '300.0 ms',
+       'invert': False}}
+    sampling rate: 0.005 1/ms
+    time: -1.0 s to 1.0 s
+    >>> rate.magnitude
+    array([[0.01007419],
+       [0.05842767],
+       [0.22928759],
+       [0.60883028],
+       [1.0938699 ],
+       [1.3298076 ],
+       [1.0938699 ],
+       [0.60883028],
+       [0.22928759],
+       [0.05842767]])
 
     """
     def optimal_kernel(st):
@@ -912,13 +970,32 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     --------
     elephant.conversion.BinnedSpikeTrain
 
+    Examples
+    --------
+    >>> import neo
+    >>> import quantities as pq
+    >>> from elephant import statistics
+    >>> spiketrains = [
+    ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
+    ...     neo.SpikeTrain([0.7, 4.3, 8.2], t_stop=10, units='s')
+    ... ]
+    >>> hist = statistics.time_histogram(spiketrains, bin_size=1 * pq.s)
+    >>> hist
+    AnalogSignal with 1 channels of length 10; units dimensionless; datatype
+    int64
+    annotations: {'normalization': 'counts'}
+    sampling rate: 1.0 1/s
+    time: 0.0 s to 10.0 s
+    >>> hist.magnitude.flatten()
+    array([2, 0, 0, 0, 2, 0, 1, 0, 1, 1])
+
     """
     # Bin the spike trains and sum across columns
     bs = BinnedSpikeTrain(spiketrains, t_start=t_start, t_stop=t_stop,
                           bin_size=bin_size)
 
     if binary:
-        bs = bs.binarize()
+        bs = bs.binarize(copy=False)
     bin_hist = bs.get_num_of_spikes(axis=0)
     # Flatten array
     bin_hist = np.ravel(bin_hist)
@@ -945,10 +1022,10 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 @deprecated_alias(binsize='bin_size')
 def complexity_pdf(spiketrains, bin_size):
     """
-    Deprecated in favor of the complexity class which has a pdf attribute.
-    Will be removed in the next release!
+    Complexity Distribution of a list of `neo.SpikeTrain` objects
+    :cite:`statistics-Gruen2007_96`.
 
-    Complexity Distribution of a list of `neo.SpikeTrain` objects.
+    Deprecated in favor of :meth:`Complexity.pdf`.
 
     Probability density computed from the complexity histogram which is the
     histogram of the entries of the population histogram of clipped (binary)
@@ -956,8 +1033,6 @@ def complexity_pdf(spiketrains, bin_size):
     It provides for each complexity (== number of active neurons per bin) the
     number of occurrences. The normalization of that histogram to 1 is the
     probability density.
-
-    Implementation is based on [1]_.
 
     Parameters
     ----------
@@ -976,18 +1051,9 @@ def complexity_pdf(spiketrains, bin_size):
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
-
-    References
-    ----------
-    .. [1] S. Gruen, M. Abeles, & M. Diesmann, "Impact of higher-order
-           correlations on coincidence distributions of massively parallel
-           data," In "Dynamic Brain - from Neural Spikes to Behaviors",
-           pp. 96-114, Springer Berlin Heidelberg, 2008.
-
     """
-    warnings.warn("complexity_pdf is deprecated in favor of the complexity "
-                  "class which has a pdf attribute. complexity_pdf will be "
-                  "removed in the next Elephant release.", DeprecationWarning)
+    warnings.warn("'complexity_pdf' is deprecated in favor of the Complexity "
+                  "class which has a 'pdf' method", DeprecationWarning)
 
     complexity = Complexity(spiketrains, bin_size=bin_size)
 
@@ -997,13 +1063,13 @@ def complexity_pdf(spiketrains, bin_size):
 class Complexity(object):
     """
     Class for complexity distribution (i.e. number of synchronous spikes found)
-    of a list of `neo.SpikeTrain` objects.
+    :cite:`statistics-Gruen2007_96` of a list of `neo.SpikeTrain` objects.
 
     Complexity is calculated by counting the number of spikes (i.e. non-empty
     bins) that occur separated by `spread - 1` or less empty bins, within and
     across spike trains in the `spiketrains` list.
 
-    Implementation (without spread) is based on [1]_.
+    Implementation (without spread) is based on the cited above paper.
 
     Parameters
     ----------
@@ -1105,27 +1171,19 @@ class Complexity(object):
     elephant.conversion.BinnedSpikeTrain
     elephant.spike_train_synchrony.Synchrotool
 
-    References
-    ----------
-    .. [1] S. Gruen, M. Abeles, & M. Diesmann, "Impact of higher-order
-           correlations on coincidence distributions of massively parallel
-           data," In "Dynamic Brain - from Neural Spikes to Behaviors",
-           pp. 96-114, Springer Berlin Heidelberg, 2008.
-
     Examples
     --------
     >>> import neo
     >>> import quantities as pq
     >>> from elephant.statistics import Complexity
 
-    >>> sr = 1/pq.ms
-
+    >>> sampling_rate = 1/pq.ms
     >>> st1 = neo.SpikeTrain([1, 4, 6] * pq.ms, t_stop=10.0 * pq.ms)
     >>> st2 = neo.SpikeTrain([1, 5, 8] * pq.ms, t_stop=10.0 * pq.ms)
     >>> sts = [st1, st2]
 
     >>> # spread = 0, a simple bincount
-    >>> cpx = Complexity(sts, sampling_rate=sr)
+    >>> cpx = Complexity(sts, sampling_rate=sampling_rate)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [5 4 1]
@@ -1135,7 +1193,7 @@ class Complexity(object):
     [0. 1. 2. 3. 4. 5. 6. 7. 8. 9.] ms
 
     >>> # spread = 1, consecutive spikes
-    >>> cpx = Complexity(sts, sampling_rate=sr, spread=1)
+    >>> cpx = Complexity(sts, sampling_rate=sampling_rate, spread=1)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [5 4 1]
@@ -1143,12 +1201,22 @@ class Complexity(object):
     [0 2 0 0 3 3 3 0 1 0] dimensionless
 
     >>> # spread = 2, consecutive spikes and separated by 1 empty bin
-    >>> cpx = Complexity(sts, sampling_rate=sr, spread=2)
+    >>> cpx = Complexity(sts, sampling_rate=sampling_rate, spread=2)
     Complexity calculated at sampling rate precision
     >>> print(cpx.complexity_histogram)
     [4 0 1 0 1]
     >>> print(cpx.time_histogram.flatten())
     [0 2 0 0 4 4 4 4 4 0] dimensionless
+    >>> pdf = cpx.pdf()
+    >>> pdf
+    AnalogSignal with 1 channels of length 3; units dimensionless;
+    datatype float64
+    sampling rate: 1.0 dimensionless
+    time: 0.0 dimensionless to 3.0 dimensionless
+    >>> pdf.magnitude
+    array([[0.5],
+           [0.4],
+           [0.1]])
     """
 
     def __init__(self, spiketrains,
@@ -1293,11 +1361,12 @@ class Complexity(object):
                           'Note that using the complexity epoch to get '
                           'precise spike times can lead to rounding errors.')
 
+        complexity = self.time_histogram.magnitude.flatten()
+        complexity = complexity.astype(np.uint16)
+
         epoch = neo.Epoch(left_edges,
                           durations=durations,
-                          array_annotations={
-                              'complexity':
-                              self.time_histogram.magnitude.flatten()})
+                          array_annotations={'complexity': complexity})
         return epoch
 
     def _epoch_with_spread(self):
@@ -1309,7 +1378,7 @@ class Complexity(object):
                                     tolerance=self.tolerance)
 
         if self.binary:
-            bst = bst.binarize()
+            bst = bst.binarize(copy=False)
         bincount = bst.get_num_of_spikes(axis=0)
 
         nonzero_indices = np.nonzero(bincount)[0]
@@ -1345,7 +1414,7 @@ class Complexity(object):
         sorting = np.argsort(combined_starts, kind='mergesort')
         left_edges = bst.bin_edges[combined_starts[sorting]]
         right_edges = bst.bin_edges[combined_stops[sorting]]
-        complexities = combined_complexities[sorting].astype(int)
+        complexities = combined_complexities[sorting].astype(np.uint16)
 
         if self.sampling_rate:
             # ensure that spikes are not on the bin edges
@@ -1367,20 +1436,6 @@ class Complexity(object):
                                                         complexities})
 
         return complexity_epoch
-
-
-"""
-Kernel Bandwidth Optimization.
-
-Python implementation by Subhasis Ray.
-
-Original matlab code (sskernel.m) here:
-http://2000.jukuin.keio.ac.jp/shimazaki/res/kernel.html
-
-This was translated into Python by Subhasis Ray, NCBS. Tue Jun 10
-23:01:43 IST 2014
-
-"""
 
 
 def nextpow2(x):
@@ -1466,26 +1521,31 @@ def cost_function(x, N, w, dt):
 def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                              bootstrap=False):
     """
-    Calculates optimal fixed kernel bandwidth, given as the standard deviation
+    Calculates optimal fixed kernel bandwidth
+    :cite:`statistics-Shimazaki2010_171`, given as the standard deviation
     sigma.
+
+    Original matlab code (sskernel.m)
+    http://2000.jukuin.keio.ac.jp/shimazaki/res/kernel.html has been ported to
+    Python by Subhasis Ray, NCBS.
 
     Parameters
     ----------
     spiketimes : np.ndarray
         Sequence of spike times (sorted to be ascending).
-    times : np.ndarray, optional
+    times : np.ndarray or None, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
-        Default: None.
-    bandwidth : np.ndarray, optional
+        Default: None
+    bandwidth : np.ndarray or None, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
         If None, `bandwidth` is obtained through a golden-section search on a
         log-exp scale.
-        Default: None.
+        Default: None
     bootstrap : bool, optional
         If True, calculates the 95% confidence interval using Bootstrap.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -1509,12 +1569,6 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
 
         If no optimal kernel could be found, all entries of the dictionary are
         set to None.
-
-    References
-    ----------
-    .. [1] H. Shimazaki, & S. Shinomoto, "Kernel bandwidth optimization in
-           spike rate estimation," Journal of Computational Neuroscience,
-           vol. 29, no. 1-2, pp. 171-82, 2010. doi:10.1007/s10827-009-0180-4.
 
     """
 

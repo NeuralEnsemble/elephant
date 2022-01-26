@@ -5,7 +5,6 @@ channels:
 
 dependencies:
   - python>=3.6
-  - pip
   - mpi4py
   - numpy
   - scipy
@@ -13,5 +12,8 @@ dependencies:
   - pandas
   - scikit-learn
   - statsmodels
+  - jinja2
   - pip:
-     - -r file:requirements.txt
+    - neo>=0.9.0,<0.10.0
+    - viziphant
+    # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt
