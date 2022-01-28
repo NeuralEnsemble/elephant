@@ -65,6 +65,7 @@ setup(
     author_email="contact@python-elephant.org",
     description="Elephant is a package for analysis of electrophysiology data in Python",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     license="BSD",
     url='http://python-elephant.org',
     classifiers=[
