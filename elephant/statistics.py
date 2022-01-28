@@ -779,7 +779,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if border_correction and not \
             (kernel == 'auto' or isinstance(kernel, kernels.GaussianKernel)):
         raise ValueError(
-            'The boundary correction is only implemented'
+            'The border correction is only implemented'
             ' for Gaussian kernels.')
 
     if isinstance(spiketrains, neo.SpikeTrain):
