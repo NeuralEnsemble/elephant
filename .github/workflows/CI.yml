@@ -1,8 +1,8 @@
 # This workflow will setup GitHub-hosted runners and install the required dependencies for elephant tests.
 # On a pull requests and on pushes to master it will run different tests for elephant.
 
-name: Elephant-tests
-# define events that trigger workflow 'Elephant-tests'
+name: tests
+# define events that trigger workflow 'tests'
 on:
   # run on pull requests to master branch
   pull_request:
