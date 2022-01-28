@@ -32,7 +32,7 @@ Modified BSD License, see [LICENSE.txt](LICENSE.txt) for details.
 
 #### Copyright
 
-:copyright: 2014-2021 by the [Elephant team](doc/authors.rst).
+:copyright: 2014-2022 by the [Elephant team](doc/authors.rst).
 
 
 #### Acknowledgments
@@ -43,4 +43,3 @@ See [acknowledgments](doc/acknowledgments.rst).
 #### Citation
 
 See [citations](doc/citation.rst).
-
