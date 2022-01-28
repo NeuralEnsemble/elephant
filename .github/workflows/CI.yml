@@ -1,8 +1,8 @@
 # This workflow will setup GitHub-hosted runners and install the required dependencies for elephant tests.
 # On a pull requests and on pushes to master it will run different tests for elephant.
 
-name: Elephant-tests
-# define events that trigger workflow 'Elephant-tests'
+name: tests
+# define events that trigger workflow 'tests'
 on:
   # run on pull requests to master branch
   pull_request:
@@ -11,8 +11,8 @@ on:
 
   # run on pushes to master branch
   push:
-    branches:
-      [master]
+    #branches:
+     # [master]
 
 # jobs define the steps that will be executed on the runner
 jobs:
@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
-        python-version: [3.6, 3.7, 3.8, 3.9, 3.10.0]
+        python-version: [3.6, 3.7, 3.8, 3.9, "3.10"]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -104,6 +104,7 @@ jobs:
         conda env update --file requirements/environment.yml --name base
 
         activate base
+        conda install -c conda-forge openmpi
         pip install -r requirements/requirements-tests.txt
         pip install pytest-cov coveralls
         pip install .
@@ -113,8 +114,6 @@ jobs:
         activate base
         python --version
         conda list
-        # $CONDA/bin/pytest --cov=elephant --import-mode=importlib
-        # python3 -m pytest --cov=elephant --import-mode=importlib
         pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
@@ -255,6 +254,7 @@ jobs:
             pip install -r requirements/requirements-tutorials.txt
             conda update conda
             conda env update --file requirements/environment.yml --name base
+            conda install -c conda-forge openmpi
             conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
