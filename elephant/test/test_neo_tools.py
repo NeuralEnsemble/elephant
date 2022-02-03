@@ -7,11 +7,13 @@ Unit tests for the neo_tools module.
 """
 import random
 from itertools import chain
+import copy
 import unittest
 
 import neo.core
 
-from .generate_datasets import generate_one_simple_block, generate_from_supported_objects, random_epoch, random_spiketrain
+from .generate_datasets import generate_one_simple_block, generate_one_simple_segment, \
+    random_event, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
 from numpy.testing.utils import assert_array_equal
 
@@ -1150,8 +1152,17 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 
 
 class GetAllEventsTestCase(unittest.TestCase):
+    def setUp(self):
+        random.seed(4245)
+        self.event=random_event()
+        self.block=generate_one_simple_block(
+            nb_segment=2,
+            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event])
+        self.segment=generate_one_simple_segment(
+            supported_objects=[neo.core.Segment, neo.core.Event])
+
     def test__get_all_events__event(self):
-        obj = fake_neo('Event', seed=0, n=5)
+        obj = self.event
         res0 = nt.get_all_events(obj)
 
         targ = obj
@@ -1161,11 +1172,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0[0])
 
     def test__get_all_events__segment(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = copy.deepcopy(self.segment)
         obj.events.extend(obj.events)
         res0 = nt.get_all_events(obj)
 
-        targ = fake_neo('Segment', seed=0, n=5).events
+        targ = self.segment.events
 
         self.assertTrue(len(res0) > 0)
 
