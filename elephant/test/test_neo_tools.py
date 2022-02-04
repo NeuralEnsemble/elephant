@@ -25,7 +25,7 @@ ARRAY_ATTRS = ['waveforms',
                'times',
                'durations',
                'labels',
-               'index',
+               # 'index',
                'channel_names',
                'channel_ids',
                'coordinates',
@@ -270,7 +270,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.maxDiff = None
         self.block = generate_one_simple_block(
             nb_segment=3,
-            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain, neo.core.Event, neo.core.Epoch])
+            supported_objects=[
+                neo.core.Block, neo.core.Segment,
+                neo.core.SpikeTrain,
+                neo.core.Event, neo.core.Epoch])
 
     def assert_dicts_equal(self, d1, d2):
         """Assert that two dictionaries are equal, taking into account arrays.
@@ -468,10 +471,11 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         return obj
 
     def test__extract_neo_attrs__epoch_parents_empty_array(self):
-        obj = fake_neo('Epoch', seed=0)
-        targ = get_fake_values('Epoch', seed=0)
+        obj = random_epoch()
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
 
-        obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
@@ -509,8 +513,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assert_dicts_equal(targ, res211)
 
     def test__extract_neo_attrs__event_parents_empty_array(self):
-        obj = fake_neo('Event', seed=0)
-        targ = get_fake_values('Event', seed=0)
+        obj = random_event()
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
@@ -571,7 +577,13 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__epoch_noparents_noarray(self):
         obj = self.block.list_children_by_class('Epoch')[0]
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
+
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -579,13 +591,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                          child_first=True)
         res2 = nt.extract_neo_attributes(obj, parents=False, skip_array=True,
                                          child_first=False)
-
-        del res0['i']
-        del res1['i']
-        del res2['i']
-        del res0['j']
-        del res1['j']
-        del res2['j']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -593,7 +598,11 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__event_noparents_noarray(self):
         obj = self.block.list_children_by_class('Event')[0]
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
+
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -601,13 +610,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                          child_first=True)
         res2 = nt.extract_neo_attributes(obj, parents=False, skip_array=True,
                                          child_first=False)
-
-        del res0['i']
-        del res1['i']
-        del res2['i']
-        del res0['j']
-        del res1['j']
-        del res2['j']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -657,7 +659,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
             targ[attr[0]] = getattr(obj, attr[0])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
-        # obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
@@ -670,19 +671,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res21 = nt.extract_neo_attributes(
             obj, parents=False, child_first=False)
 
-        # del res00['i']
-        # del res10['i']
-        # del res20['i']
-        # del res01['i']
-        # del res11['i']
-        # del res21['i']
-        # del res00['j']
-        # del res10['j']
-        # del res20['j']
-        # del res01['j']
-        # del res11['j']
-        # del res21['j']
-        #
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
         self.assert_dicts_equal(targ, res20)
@@ -692,7 +680,13 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__event_noparents_array(self):
         obj = self.block.list_children_by_class('Event')[0]
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
+
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
@@ -704,19 +698,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res11 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
         res21 = nt.extract_neo_attributes(
             obj, parents=False, child_first=False)
-
-        del res00['i']
-        del res10['i']
-        del res20['i']
-        del res01['i']
-        del res11['i']
-        del res21['i']
-        del res00['j']
-        del res10['j']
-        del res20['j']
-        del res01['j']
-        del res11['j']
-        del res21['j']
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -761,22 +742,24 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
+        targ = copy.deepcopy(blk.annotations)
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(obj.annotations))
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True)
         res1 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
                                          child_first=True)
-
-        del res0['i']
-        del res1['i']
-        del res0['j']
-        del res1['j']
-        # name clash between Block.index and ChannelIndex.index
-        del res0['index']
-        del res1['index']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -786,22 +769,23 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Event', seed=obj.annotations['seed']))
+        targ = copy.deepcopy(blk.annotations)
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(obj.annotations))
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True)
         res1 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
                                          child_first=True)
-
-        del res0['i']
-        del res1['i']
-        del res0['j']
-        del res1['j']
-        # name clash between Block.index and ChannelIndex.index
-        del res0['index']
-        del res1['index']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -836,18 +820,23 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(blk.annotations))
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
                                          child_first=False)
-
-        del res0['i']
-        del res0['j']
-        # name clash between Block.index and ChannelIndex.index
-        del res0['index']
 
         self.assertEqual(targ, res0)
 
@@ -856,18 +845,23 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(blk.annotations))
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
                                          child_first=False)
-
-        del res0['i']
-        del res0['j']
-        # name clash between Block.index and ChannelIndex.index
-        del res0['index']
 
         self.assertEqual(targ, res0)
 
@@ -906,11 +900,19 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Epoch', seed=obj.annotations['seed']))
+        targ = copy.deepcopy(blk.annotations)
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
 
-        obj = self._fix_neo_issue_749(obj, targ)
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(obj.annotations))
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
@@ -918,11 +920,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                           child_first=True)
         res01 = nt.extract_neo_attributes(obj, parents=True)
         res11 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
-
-        ignore_annotations = ('i', 'j')
-        for res in (res00, res01, res10, res11):
-            for attr in ignore_annotations:
-                del res[attr]
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -934,9 +931,19 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Event', seed=obj.annotations['seed']))
+        targ = copy.deepcopy(blk.annotations)
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(obj.annotations))
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
@@ -944,15 +951,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                           child_first=True)
         res01 = nt.extract_neo_attributes(obj, parents=True)
         res11 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
-
-        del res00['i']
-        del res10['i']
-        del res01['i']
-        del res11['i']
-        del res00['j']
-        del res10['j']
-        del res01['j']
-        del res11['j']
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -990,21 +988,24 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
 
-        obj = self._fix_neo_issue_749(obj, targ)
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(blk.annotations))
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
         del targ['times']
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                          child_first=False)
         res1 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
-
-        del res0['i']
-        del res1['i']
-        del res0['j']
-        del res1['j']
 
         self.assert_dicts_equal(targ, res0)
         self.assert_dicts_equal(targ, res1)
@@ -1014,19 +1015,24 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         blk = self.block
         seg = self.block.segments[0]
 
-        targ = get_fake_values('Event', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(blk.annotations))
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
         del targ['times']
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                          child_first=False)
         res1 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
-
-        del res0['i']
-        del res1['i']
-        del res0['j']
-        del res1['j']
 
         self.assert_dicts_equal(targ, res0)
         self.assert_dicts_equal(targ, res1)
