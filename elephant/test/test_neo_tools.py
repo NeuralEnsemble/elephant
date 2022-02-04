@@ -12,7 +12,7 @@ import unittest
 
 import neo.core
 
-from .generate_datasets import generate_one_simple_block, generate_one_simple_segment, \
+from neo.test.generate_datasets import generate_one_simple_block, generate_one_simple_segment, \
     random_event, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
 from numpy.testing.utils import assert_array_equal
