@@ -1017,7 +1017,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
 class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__spiketrain(self):
-        obj = fake_neo('SpikeTrain', seed=0, n=5)
+        obj = random_spiketrain()
         res0 = nt.get_all_spiketrains(obj)
 
         targ = obj
@@ -1026,25 +1026,32 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 
         assert_same_sub_schema(targ, res0[0])
 
-    def test__get_all_spiketrains__unit(self):
-        obj = fake_neo('Unit', seed=0, n=7)
-        obj.spiketrains.append(obj.spiketrains[0])
-        res0 = nt.get_all_spiketrains(obj)
-
-        targ = fake_neo('Unit', seed=0, n=7).spiketrains
-
-        self.assertTrue(len(res0) > 0)
-
-        self.assertEqual(len(targ), len(res0))
-
-        assert_same_sub_schema(targ, res0)
+    # Todo: Units are no longer supported, but is a test for neo.Group required instead?
+    # def test__get_all_spiketrains__unit(self):
+    #     obj = generate_one_simple_block(
+    #         nb_segment=3,
+    #         supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain, neo.core.Group])
+    #     targ = copy.deepcopy(obj)
+    #
+    #     obj.groups[0].spiketrains.append(obj.groups[0].spiketrains[0])
+    #     res0 = nt.get_all_spiketrains(obj)
+    #
+    #     targ = targ.spiketrains
+    #
+    #     self.assertTrue(len(res0) > 0)
+    #
+    #     self.assertEqual(len(targ), len(res0))
+    #
+    #     assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__segment(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_one_simple_segment(
+            supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
+        targ = copy.deepcopy(obj)
         obj.spiketrains.extend(obj.spiketrains)
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = fake_neo('Segment', seed=0, n=5).spiketrains
+        targ = targ.spiketrains
 
         self.assertTrue(len(res0) > 0)
 
@@ -1053,14 +1060,17 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__block(self):
-        obj = fake_neo('Block', seed=0, n=3)
-        iobj1 = obj.channel_indexes[0].units[0]
-        obj.channel_indexes[0].units.append(iobj1)
-        iobj2 = obj.channel_indexes[0].units[2].spiketrains[1]
-        obj.channel_indexes[1].units[1].spiketrains.append(iobj2)
+        obj = generate_one_simple_block(
+            nb_segment=3,
+            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+        targ = copy.deepcopy(obj)
+
+        iobj1 = obj.segments[0]
+        obj.segments.append(iobj1)
+        iobj2 = obj.segments[0].spiketrains[1]
+        obj.segments[1].spiketrains.append(iobj2)
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = fake_neo('Block', seed=0, n=3)
         targ = targ.list_children_by_class('SpikeTrain')
 
         self.assertTrue(len(res0) > 0)
@@ -1070,16 +1080,18 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__list(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
-        obj.append(obj[-1])
-        iobj1 = obj[2].channel_indexes[0].units[0]
-        obj[2].channel_indexes[0].units.append(iobj1)
-        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
-        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+        targ = copy.deepcopy(obj)
+        iobj1 = obj[2].segments[0]
+        obj[2].segments.append(iobj1)
+        iobj2 = obj[1].segments[2].spiketrains[1]
+        obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1090,16 +1102,19 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__tuple(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].channel_indexes[0].units[0]
-        obj[2].channel_indexes[0].units.append(iobj1)
-        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
-        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
-        obj.append(obj[0])
+        iobj1 = obj[2].segments[0]
+        obj[2].segments.append(iobj1)
+        iobj2 = obj[1].segments[2].spiketrains[1]
+        obj[2].segments[1].spiketrains.append(iobj2)
+        obj.append(obj[-1])
         res0 = nt.get_all_spiketrains(tuple(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1110,16 +1125,19 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__iter(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+        targ = copy.deepcopy(obj)
+        iobj1 = obj[2].segments[0]
+        obj[2].segments.append(iobj1)
+        iobj2 = obj[1].segments[2].spiketrains[1]
+        obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
-        iobj1 = obj[2].channel_indexes[0].units[0]
-        obj[2].channel_indexes[0].units.append(iobj1)
-        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
-        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
-        obj.append(obj[1])
+        res0 = nt.get_all_spiketrains(obj)
         res0 = nt.get_all_spiketrains(iter(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1130,17 +1148,20 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__dict(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+        targ = copy.deepcopy(obj)
+        iobj1 = obj[2].segments[0]
+        obj[2].segments.append(iobj1)
+        iobj2 = obj[1].segments[2].spiketrains[1]
+        obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
-        iobj1 = obj[2].channel_indexes[0].units[0]
-        obj[2].channel_indexes[0].units.append(iobj1)
-        iobj2 = obj[1].channel_indexes[1].units[2].spiketrains[1]
-        obj[2].channel_indexes[0].units[1].spiketrains.append(iobj2)
-        obj.append(obj[1])
+        res0 = nt.get_all_spiketrains(obj)
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1152,9 +1173,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 
 
 class GetAllEventsTestCase(unittest.TestCase):
-    def setUp(self):
-        random.seed(4245)
-
     def test__get_all_events__event(self):
         obj = random_event()
         res0 = nt.get_all_events(obj)
@@ -1297,7 +1315,7 @@ class GetAllEventsTestCase(unittest.TestCase):
 
 class GetAllEpochsTestCase(unittest.TestCase):
     def test__get_all_epochs__epoch(self):
-        obj = fake_neo('Epoch', seed=0, n=5)
+        obj = random_epoch()
         res0 = nt.get_all_epochs(obj)
 
         targ = obj
@@ -1307,11 +1325,13 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0[0])
 
     def test__get_all_epochs__segment(self):
-        obj = fake_neo('Segment', seed=0, n=5)
+        obj = generate_one_simple_segment(
+            supported_objects=[neo.core.Segment, neo.core.Epoch])
+        targ = copy.deepcopy(obj)
         obj.epochs.extend(obj.epochs)
         res0 = nt.get_all_epochs(obj)
 
-        targ = fake_neo('Segment', seed=0, n=5).epochs
+        targ = targ.epochs
 
         self.assertTrue(len(res0) > 0)
 
@@ -1320,14 +1340,17 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__block(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_one_simple_block(
+            nb_segment=3,
+            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch])
+        targ = copy.deepcopy(obj)
+
         iobj1 = obj.segments[0]
         obj.segments.append(iobj1)
         iobj2 = obj.segments[0].epochs[1]
         obj.segments[1].epochs.append(iobj2)
         res0 = nt.get_all_epochs(obj)
 
-        targ = fake_neo('Block', seed=0, n=3)
         targ = targ.list_children_by_class('Epoch')
 
         self.assertTrue(len(res0) > 0)
@@ -1337,7 +1360,11 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__list(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1346,7 +1373,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj.append(obj[-1])
         res0 = nt.get_all_epochs(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1357,7 +1383,11 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__tuple(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1366,7 +1396,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_epochs(tuple(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1377,7 +1406,11 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__iter(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1386,7 +1419,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_epochs(iter(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1397,7 +1429,11 @@ class GetAllEpochsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_epochs__dict(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1407,7 +1443,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_epochs(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Epoch') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
