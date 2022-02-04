@@ -423,8 +423,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__spiketrain_parents_empty_array(self):
-        obj = fake_neo('SpikeTrain', seed=0)
-        targ = get_fake_values('SpikeTrain', seed=0)
+        obj = random_spiketrain()
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         del targ['times']
 
         res000 = nt.extract_neo_attributes(obj, parents=False)
@@ -555,7 +557,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__spiketrain_noparents_noarray(self):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -563,13 +568,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                          child_first=True)
         res2 = nt.extract_neo_attributes(obj, parents=False, skip_array=True,
                                          child_first=False)
-
-        del res0['i']
-        del res1['i']
-        del res2['i']
-        del res0['j']
-        del res1['j']
-        del res2['j']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -617,7 +615,13 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__spiketrain_noparents_array(self):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
+
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
@@ -629,19 +633,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res11 = nt.extract_neo_attributes(obj, parents=False, child_first=True)
         res21 = nt.extract_neo_attributes(
             obj, parents=False, child_first=False)
-
-        del res00['i']
-        del res10['i']
-        del res20['i']
-        del res01['i']
-        del res11['i']
-        del res21['i']
-        del res00['j']
-        del res10['j']
-        del res20['j']
-        del res01['j']
-        del res11['j']
-        del res21['j']
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -710,29 +701,24 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.channel_indexes[0]
-        unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('ChannelIndex',
-                                    seed=rcg.annotations['seed']))
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('SpikeTrain',
-                                    seed=obj.annotations['seed']))
+        targ = copy.deepcopy(blk.annotations)
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(obj.annotations))
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True)
         res1 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
                                          child_first=True)
-
-        del res0['i']
-        del res1['i']
-        del res0['j']
-        del res1['j']
-        # name clash between Block.index and ChannelIndex.index
-        del res0['index']
-        del res1['index']
 
         self.assertEqual(targ, res0)
         self.assertEqual(targ, res1)
@@ -794,24 +780,23 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        rcg = self.block.channel_indexes[0]
-        unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('ChannelIndex',
-                                    seed=rcg.annotations['seed']))
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(blk.annotations))
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
         targ = strip_iter_values(targ)
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=True,
                                          child_first=False)
-
-        del res0['i']
-        del res0['j']
-        # name clash between Block.index and ChannelIndex.index
-        del res0['index']
 
         self.assertEqual(targ, res0)
 
@@ -869,13 +854,20 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('Block', seed=blk.annotations['seed'])
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('SpikeTrain',
-                                    seed=obj.annotations['seed']))
+        targ = copy.deepcopy(blk.annotations)
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(obj.annotations))
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=True, skip_array=False)
@@ -883,12 +875,6 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                                           child_first=True)
         res01 = nt.extract_neo_attributes(obj, parents=True)
         res11 = nt.extract_neo_attributes(obj, parents=True, child_first=True)
-
-        ignore_annotations = ('i', 'j', 'channel_names',
-                              'channel_ids', 'coordinates')
-        for res in (res00, res01, res10, res11):
-            for attr in ignore_annotations:
-                del res[attr]
 
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
@@ -961,24 +947,25 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         blk = self.block
         seg = self.block.segments[0]
-        unit = self.block.channel_indexes[0].units[0]
 
-        targ = get_fake_values('SpikeTrain', seed=obj.annotations['seed'])
-        targ.update(get_fake_values('Segment', seed=seg.annotations['seed']))
-        targ.update(get_fake_values('Unit', seed=unit.annotations['seed']))
-        targ.update(get_fake_values('Block', seed=blk.annotations['seed']))
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
+
+        targ.update(copy.deepcopy(seg.annotations))
+        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+            targ[attr[0]] = getattr(seg, attr[0])
+
+        targ.update(copy.deepcopy(blk.annotations))
+        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+            targ[attr[0]] = getattr(blk, attr[0])
+
         del targ['times']
-        del targ['index']
 
         res0 = nt.extract_neo_attributes(obj, parents=True, skip_array=False,
                                          child_first=False)
         res1 = nt.extract_neo_attributes(obj, parents=True, child_first=False)
-
-        ignore_annotations = ('i', 'j', 'index', 'channel_names',
-                              'channel_ids', 'coordinates')
-        for res in (res0, res1):
-            for attr in ignore_annotations:
-                del res[attr]
 
         self.assert_dicts_equal(targ, res0)
         self.assert_dicts_equal(targ, res1)
