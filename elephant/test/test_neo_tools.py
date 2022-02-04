@@ -100,7 +100,7 @@ class GetAllObjsTestCase(unittest.TestCase):
             nt._get_all_objs(value, 'Block')
 
     def test__get_all_objs__epoch_for_event_valueerror(self):
-        value = random_epoch()
+        value = self.epoch
         with self.assertRaises(ValueError):
             nt._get_all_objs(value, 'Event')
 
@@ -268,7 +268,9 @@ class GetAllObjsTestCase(unittest.TestCase):
 class ExtractNeoAttrsTestCase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        self.block = fake_neo('Block', seed=0)
+        self.block = generate_one_simple_block(
+            nb_segment=3,
+            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain, neo.core.Event, neo.core.Epoch])
 
     def assert_dicts_equal(self, d1, d2):
         """Assert that two dictionaries are equal, taking into account arrays.
@@ -310,8 +312,11 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
                     raise
 
     def test__extract_neo_attrs__spiketrain_noarray(self):
-        obj = fake_neo('SpikeTrain', seed=0)
-        targ = get_fake_values('SpikeTrain', seed=0)
+        obj = random_spiketrain()
+
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -333,9 +338,13 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__spiketrain_noarray_skip_none(self):
-        obj = fake_neo('SpikeTrain', seed=0)
-        targ = get_fake_values('SpikeTrain', seed=0)
+        obj = random_spiketrain()
+
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
+
         for key, value in targ.copy().items():
             if value is None:
                 del targ[key]
@@ -361,8 +370,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__epoch_noarray(self):
-        obj = fake_neo('Epoch', seed=0)
-        targ = get_fake_values('Epoch', seed=0)
+        obj = random_epoch()
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -384,8 +395,10 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         self.assertEqual(targ, res21)
 
     def test__extract_neo_attrs__event_noarray(self):
-        obj = fake_neo('Event', seed=0)
-        targ = get_fake_values('Event', seed=0)
+        obj = random_event()
+        targ = copy.deepcopy(obj.annotations)
+        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=True)
@@ -637,10 +650,14 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     def test__extract_neo_attrs__epoch_noparents_array(self):
         obj = self.block.list_children_by_class('Epoch')[0]
-        targ = get_fake_values('Epoch', seed=obj.annotations['seed'])
+
+        targ = copy.deepcopy(obj.annotations)
+        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
+        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+            targ[attr[0]] = getattr(obj, attr[0])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
-        obj = self._fix_neo_issue_749(obj, targ)
+        # obj = self._fix_neo_issue_749(obj, targ)
         del targ['times']
 
         res00 = nt.extract_neo_attributes(obj, parents=False, skip_array=False)
@@ -653,19 +670,19 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         res21 = nt.extract_neo_attributes(
             obj, parents=False, child_first=False)
 
-        del res00['i']
-        del res10['i']
-        del res20['i']
-        del res01['i']
-        del res11['i']
-        del res21['i']
-        del res00['j']
-        del res10['j']
-        del res20['j']
-        del res01['j']
-        del res11['j']
-        del res21['j']
-
+        # del res00['i']
+        # del res10['i']
+        # del res20['i']
+        # del res01['i']
+        # del res11['i']
+        # del res21['i']
+        # del res00['j']
+        # del res10['j']
+        # del res20['j']
+        # del res01['j']
+        # del res11['j']
+        # del res21['j']
+        #
         self.assert_dicts_equal(targ, res00)
         self.assert_dicts_equal(targ, res10)
         self.assert_dicts_equal(targ, res20)
