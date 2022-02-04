@@ -1154,15 +1154,9 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 class GetAllEventsTestCase(unittest.TestCase):
     def setUp(self):
         random.seed(4245)
-        self.event=random_event()
-        self.block=generate_one_simple_block(
-            nb_segment=2,
-            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event])
-        self.segment=generate_one_simple_segment(
-            supported_objects=[neo.core.Segment, neo.core.Event])
 
     def test__get_all_events__event(self):
-        obj = self.event
+        obj = random_event()
         res0 = nt.get_all_events(obj)
 
         targ = obj
@@ -1172,11 +1166,14 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0[0])
 
     def test__get_all_events__segment(self):
-        obj = copy.deepcopy(self.segment)
+        obj = generate_one_simple_segment(
+            supported_objects=[neo.core.Segment, neo.core.Event])
+        targ = copy.deepcopy(obj)
+
         obj.events.extend(obj.events)
         res0 = nt.get_all_events(obj)
 
-        targ = self.segment.events
+        targ = targ.events
 
         self.assertTrue(len(res0) > 0)
 
@@ -1185,14 +1182,17 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__block(self):
-        obj = fake_neo('Block', seed=0, n=3)
+        obj = generate_one_simple_block(
+            nb_segment=3,
+            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event])
+        targ = copy.deepcopy(obj)
+
         iobj1 = obj.segments[0]
         obj.segments.append(iobj1)
         iobj2 = obj.segments[0].events[1]
         obj.segments[1].events.append(iobj2)
         res0 = nt.get_all_events(obj)
 
-        targ = fake_neo('Block', seed=0, n=3)
         targ = targ.list_children_by_class('Event')
 
         self.assertTrue(len(res0) > 0)
@@ -1202,7 +1202,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__list(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1211,7 +1215,6 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj.append(obj[-1])
         res0 = nt.get_all_events(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1222,7 +1225,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__tuple(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1231,7 +1238,6 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_events(tuple(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1242,7 +1248,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__iter(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1251,7 +1261,6 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj.append(obj[0])
         res0 = nt.get_all_events(iter(obj))
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
@@ -1262,7 +1271,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_events__dict(self):
-        obj = [fake_neo('Block', seed=i, n=3) for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=3,
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+        targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1272,7 +1285,6 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = dict((i, iobj) for i, iobj in enumerate(obj))
         res0 = nt.get_all_events(obj)
 
-        targ = [fake_neo('Block', seed=i, n=3) for i in range(3)]
         targ = [iobj.list_children_by_class('Event') for iobj in targ]
         targ = list(chain.from_iterable(targ))
 
