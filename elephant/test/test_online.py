@@ -5,7 +5,8 @@ import quantities as pq
 from numpy.testing import assert_array_almost_equal
 
 from elephant import statistics
-from elephant.online import MeanOnline, VarianceOnline
+from elephant.online import MeanOnline, VarianceOnline, CovarianceOnline, \
+    PearsonCorrelationCoefficientOnline
 from elephant.spike_train_generation import homogeneous_poisson_process
 from elephant.spike_train_synchrony import spike_contrast
 
@@ -230,6 +231,215 @@ class TestVarianceOnline(unittest.TestCase):
         isi_mean, isi_std = online.get_mean_std(unbiased=False)
         cv_online = isi_std / isi_mean
         self.assertAlmostEqual(cv_online, cv_target, places=3)
+
+
+class TestCovarianceOnline(unittest.TestCase):
+    def test_simple_small_sets_XY_unbatched(self):
+        X = np.array([1, 2, 3, 2, 3])
+        Y = np.array([4, 4, 3, 3, 4])
+        online_cov = CovarianceOnline(batch_mode=False)
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i])
+        self.assertIsNone(online_cov.units)
+        for unbiased in (False, True):  # -0.12 (biased) / -0.15 (unbiased)
+            self.assertAlmostEqual(online_cov.get_cov(unbiased=unbiased),
+                                   np.cov([X, Y], bias=not unbiased)[0][1])
+
+    def test_simple_small_sets_XY_batched(self):
+        X = np.array([[1, 2, 3, 2, 3], [1, 2, 3, 2, 3], [1, 2, 3, 2, 3]])
+        Y = np.array([[4, 4, 3, 3, 4], [4, 4, 3, 3, 4], [4, 4, 3, 3, 4]])
+        online_cov = CovarianceOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i])
+        self.assertIsNone(online_cov.units)
+        for unbiased in (False, True):  # -0.12 (biased) / -0.15 (unbiased)
+            self.assertAlmostEqual(online_cov.get_cov(unbiased=unbiased),
+                                   np.cov([X.reshape(15), Y.reshape(15)],
+                                          bias=not unbiased)[0][1])
+
+    def test_floats(self):
+        np.random.seed(0)
+        X = np.random.rand(100)
+        Y = np.random.rand(100)
+        online_cov = CovarianceOnline()
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i])
+        self.assertIsNone(online_cov.units)
+        self.assertIsInstance(online_cov.get_cov(), float)
+        for unbiased in (False, True):
+            self.assertAlmostEqual(online_cov.get_cov(unbiased=unbiased),
+                                   np.cov([X, Y], bias=not unbiased)[0][1])
+
+    def test_numpy_array(self):
+        np.random.seed(1)
+        X = np.random.rand(10, 100)
+        Y = np.random.rand(10, 100)
+        online_cov = CovarianceOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i])
+        self.assertIsNone(online_cov.units)
+        self.assertIsInstance(online_cov.get_cov(), float)
+        for unbiased in (False, True):
+            self.assertAlmostEqual(online_cov.get_cov(unbiased=unbiased),
+                                   np.cov(X.reshape(10*100), Y.reshape(10*100),
+                                          bias=not unbiased)[0][1], places=5)
+
+    def test_quantity_scaler(self):
+        np.random.seed(2)
+        X = np.random.rand(100) * pq.Hz
+        Y = np.random.rand(100) * pq.Hz
+        online_cov = CovarianceOnline()
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i] * X.units)
+        self.assertEqual(online_cov.units, X.units)
+        self.assertIsInstance(online_cov.get_cov(), float)
+        for unbiased in (False, True):
+            self.assertAlmostEqual(
+                online_cov.get_cov(unbiased=unbiased),
+                np.cov([X, Y], bias=not unbiased)[0][1])
+
+    def test_quantities_vector(self):
+        np.random.seed(3)
+        X = np.random.rand(10, 100) * pq.ms
+        Y = np.random.rand(10, 100) * pq.ms
+        online_cov = CovarianceOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i] * X.units)
+        self.assertEqual(online_cov.units, X.units)
+        self.assertIsInstance(online_cov.get_cov(), float)
+        for unbiased in (False, True):
+            self.assertAlmostEqual(
+                online_cov.get_cov(unbiased=unbiased),
+                np.cov(X.reshape(10*100), Y.reshape(10*100),
+                       bias=not unbiased)[0][1], places=4)
+
+    def test_reset(self):
+        X = np.array([1, 2, 3, 2, 3])
+        Y = np.array([4, 4, 3, 3, 4])
+        online_cov = CovarianceOnline()
+        for x_i, y_i in zip(X, Y):
+            online_cov.update([x_i, y_i])
+        self.assertEqual(online_cov.get_cov(), -0.12)
+        online_cov.reset()
+        self.assertIsNone(online_cov.var_x.mean)
+        self.assertIsNone(online_cov.var_y.mean)
+        self.assertIsNone(online_cov.units)
+        self.assertEqual(online_cov.count, 0)
+        self.assertEqual(online_cov.covariance_sum, 0.)
+
+    def test_units(self):
+        X = [[1, 2, 3, 2, 3], [1, 2, 3, 2, 3]]
+        Y = [[4, 4, 3, 3, 4], [4, 4, 3, 3, 4]]
+        online_cov = CovarianceOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            if online_cov.count == 5:
+                np.testing.assert_raises(ValueError, online_cov.update,
+                                         [x_i, y_i]*pq.ms)
+            else:
+                online_cov.update([x_i, y_i]*pq.s)
+
+
+class TestPearsonCorrelationCoefficientOnline(unittest.TestCase):
+    def test_simple_small_sets_XY_unbatched(self):
+        X = np.array([1, 2, 3, 2, 3])
+        Y = np.array([4, 4, 3, 3, 4])
+        online_pcc = PearsonCorrelationCoefficientOnline(batch_mode=False)
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i])
+        self.assertIsNone(online_pcc.units)
+        self.assertAlmostEqual(online_pcc.get_pcc(), np.corrcoef([X, Y])[0][1])
+
+    def test_simple_small_sets_XY_batched(self):
+        X = np.array([[1, 2, 3, 2, 3], [1, 2, 3, 2, 3], [1, 2, 3, 2, 3]])
+        Y = np.array([[4, 4, 3, 3, 4], [4, 4, 3, 3, 4], [4, 4, 3, 3, 4]])
+        online_pcc = PearsonCorrelationCoefficientOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i])
+        self.assertIsNone(online_pcc.units)
+        self.assertAlmostEqual(online_pcc.get_pcc(),
+                               np.corrcoef([X.reshape(15), Y.reshape(15)])[0][1])
+
+    def test_floats(self):
+        np.random.seed(0)
+        X = np.random.rand(100)
+        Y = np.random.rand(100)
+        online_pcc = PearsonCorrelationCoefficientOnline()
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i])
+        self.assertIsNone(online_pcc.units)
+        self.assertIsInstance(online_pcc.get_pcc(), float)
+        self.assertAlmostEqual(online_pcc.get_pcc(), np.corrcoef([X, Y])[0][1])
+
+    def test_numpy_array(self):
+        np.random.seed(1)
+        X = np.random.rand(10, 100)
+        Y = np.random.rand(10, 100)
+        online_pcc = PearsonCorrelationCoefficientOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i])
+        self.assertIsNone(online_pcc.units)
+        self.assertIsInstance(online_pcc.get_pcc(), float)
+        self.assertAlmostEqual(online_pcc.get_pcc(),
+                               np.corrcoef([X.reshape(10*100),
+                                            Y.reshape(10*100)])[0][1], places=3)
+
+    def test_quantity_scaler(self):
+        np.random.seed(2)
+        X = np.random.rand(100) * pq.Hz
+        Y = np.random.rand(100) * pq.Hz
+        online_pcc = PearsonCorrelationCoefficientOnline()
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i] * X.units)
+        self.assertEqual(online_pcc.units, X.units)
+        self.assertIsInstance(online_pcc.get_pcc(), float)
+        self.assertAlmostEqual(online_pcc.get_pcc(), np.corrcoef([X, Y])[0][1])
+
+    def test_quantities_vector(self):
+        np.random.seed(3)
+        X = np.random.rand(10, 100) * pq.ms
+        Y = np.random.rand(10, 100) * pq.ms
+        online_pcc = PearsonCorrelationCoefficientOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i] * X.units)
+        self.assertEqual(online_pcc.units, X.units)
+        self.assertIsInstance(online_pcc.get_pcc(), float)
+        self.assertAlmostEqual(
+            online_pcc.get_pcc(),
+            np.corrcoef(X.reshape(10*100), Y.reshape(10*100))[0][1], places=2)
+
+    def test_reset(self):
+        X = np.array([1, 2, 3, 2, 3])
+        Y = X
+        online_pcc = PearsonCorrelationCoefficientOnline()
+        for x_i, y_i in zip(X, Y):
+            online_pcc.update([x_i, y_i])
+        self.assertEqual(online_pcc.get_pcc(), 1)
+        online_pcc.reset()
+        self.assertIsNone(online_pcc.covariance_xy.var_x.mean)
+        self.assertEqual(online_pcc.covariance_xy.var_x.variance_sum, 0.)
+        self.assertEqual(online_pcc.covariance_xy.var_x.count, 0)
+        self.assertIsNone(online_pcc.covariance_xy.var_x.units)
+        self.assertIsNone(online_pcc.covariance_xy.var_y.mean)
+        self.assertEqual(online_pcc.covariance_xy.var_y.variance_sum, 0.)
+        self.assertEqual(online_pcc.covariance_xy.var_y.count, 0)
+        self.assertIsNone(online_pcc.covariance_xy.var_y.units)
+        self.assertIsNone(online_pcc.covariance_xy.units)
+        self.assertEqual(online_pcc.covariance_xy.covariance_sum, 0.)
+        self.assertEqual(online_pcc.covariance_xy.count, 0)
+        self.assertIsNone(online_pcc.units)
+        self.assertEqual(online_pcc.count, 0)
+        self.assertEqual(online_pcc.R_xy, 0.)
+
+    def test_units(self):
+        X = [[1, 2, 3, 2, 3], [1, 2, 3, 2, 3]]
+        Y = [[4, 4, 3, 3, 4], [4, 4, 3, 3, 4]]
+        online_pcc = PearsonCorrelationCoefficientOnline(batch_mode=True)
+        for x_i, y_i in zip(X, Y):
+            if online_pcc.count == 5:
+                np.testing.assert_raises(ValueError, online_pcc.update,
+                                         [x_i, y_i]*pq.ms)
+            else:
+                online_pcc.update([x_i, y_i]*pq.s)
 
 
 if __name__ == '__main__':

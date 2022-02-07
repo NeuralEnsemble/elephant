@@ -91,3 +91,107 @@ class VarianceOnline(MeanOnline):
     def reset(self):
         super(VarianceOnline, self).reset()
         self.variance_sum = 0.
+
+
+class CovarianceOnline(object):
+    def __init__(self, batch_mode=False):
+        self.batch_mode = batch_mode
+        self.var_x = VarianceOnline(batch_mode=batch_mode)
+        self.var_y = VarianceOnline(batch_mode=batch_mode)
+        self.units = None
+        self.covariance_sum = 0.
+        self.count = 0
+
+    def update(self, new_val_pair):
+        units = None
+        if isinstance(new_val_pair, pq.Quantity):
+            units = new_val_pair.units
+            new_val_pair = new_val_pair.magnitude
+        if self.count == 0:
+            self.var_x.mean = 0.
+            self.var_y.mean = 0.
+            self.covariance_sum = 0.
+            self.units = units
+        elif units != self.units:
+            raise ValueError("Each batch must have the same units.")
+        if self.batch_mode:
+            self.var_x.update(new_val_pair[0])
+            self.var_y.update(new_val_pair[1])
+            delta_var_x = new_val_pair[0] - self.var_x.mean
+            delta_var_y = new_val_pair[1] - self.var_y.mean
+            delta_covar = delta_var_x * delta_var_y
+            batch_size = len(new_val_pair[0])
+            self.count += batch_size
+            delta_covar = delta_covar.sum(axis=0)
+            self.covariance_sum += delta_covar
+        else:
+            delta_var_x = new_val_pair[0] - self.var_x.mean
+            delta_var_y = new_val_pair[1] - self.var_y.mean
+            delta_covar = delta_var_x * delta_var_y
+            self.var_x.update(new_val_pair[0])
+            self.var_y.update(new_val_pair[1])
+            self.count += 1
+            self.covariance_sum += ((self.count - 1) / self.count) * delta_covar
+
+    def get_cov(self, unbiased=False):
+        if self.var_x.mean is None and self.var_y.mean is None:
+            return None
+        if self.count > 1:
+            count = self.count - 1 if unbiased else self.count
+            cov = self.covariance_sum / count
+        else:
+            cov = 0.
+        return cov
+
+    def reset(self):
+        self.var_x.reset()
+        self.var_y.reset()
+        self.units = None
+        self.covariance_sum = 0.
+        self.count = 0
+
+
+class PearsonCorrelationCoefficientOnline(object):
+    def __init__(self, batch_mode=False):
+        self.batch_mode = batch_mode
+        self.covariance_xy = CovarianceOnline(batch_mode=batch_mode)
+        self.units = None
+        self.R_xy = 0.
+        self.count = 0
+
+    def update(self, new_val_pair):
+        units = None
+        if isinstance(new_val_pair, pq.Quantity):
+            units = new_val_pair.units
+            new_val_pair = new_val_pair.magnitude
+        if self.count == 0:
+            self.covariance_xy.var_y.mean = 0.
+            self.covariance_xy.var_y.mean = 0.
+            self.units = units
+        elif units != self.units:
+            raise ValueError("Each batch must have the same units.")
+        self.covariance_xy.update(new_val_pair)
+        if self.batch_mode:
+            batch_size = len(new_val_pair[0])
+            self.count += batch_size
+        else:
+            self.count += 1
+        if self.count > 1:
+            self.R_xy = np.divide(
+                self.covariance_xy.covariance_sum,
+                (np.sqrt(self.covariance_xy.var_x.variance_sum *
+                 self.covariance_xy.var_y.variance_sum)))
+
+    def get_pcc(self):
+        if self.count == 0:
+            return None
+        elif self.count == 1:
+            return 0.
+        else:
+            return self.R_xy
+
+    def reset(self):
+        self.count = 0
+        self.units = None
+        self.R_xy = 0.
+        self.covariance_xy.reset()
