@@ -11,18 +11,19 @@ import copy
 import unittest
 
 import neo.core
-# TODO: In Neo 0.10.0, SpikeTrainList ist not exposed in __init__.py of neo.core. Remove the
-# following line if SpikeTrainList is accessible via neo.core
+# TODO: In Neo 0.10.0, SpikeTrainList ist not exposed in __init__.py of
+# neo.core. Remove the following line if SpikeTrainList is accessible via
+# neo.core
 from neo.core.spiketrainlist import SpikeTrainList
 
-from neo.test.generate_datasets import generate_one_simple_block, generate_one_simple_segment, \
+from neo.test.generate_datasets import generate_one_simple_block, \
+    generate_one_simple_segment, \
     random_event, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
 
 from numpy.testing.utils import assert_array_equal
 
 import elephant.neo_tools as nt
-
 
 # A list of neo object attributes that contain arrays.
 ARRAY_ATTRS = ['waveforms',
@@ -79,7 +80,8 @@ def strip_iter_values(targ, array_attrs=ARRAY_ATTRS):
 class GetAllObjsTestCase(unittest.TestCase):
     def setUp(self):
         random.seed(4245)
-        self.spiketrain = random_spiketrain('Single SpikeTrain', seed=random.random())
+        self.spiketrain = random_spiketrain(
+            'Single SpikeTrain', seed=random.random())
         self.spiketrain_list = [
             random_spiketrain('SpikeTrain', seed=random.random()),
             random_spiketrain('SpikeTrain', seed=random.random())]
@@ -158,7 +160,7 @@ class GetAllObjsTestCase(unittest.TestCase):
 
     def test__get_all_objs__empty_nested_many(self):
         targ = []
-        value = iter([[], {'c': [], 'd':(iter([]),)}])
+        value = iter([[], {'c': [], 'd': (iter([]),)}])
 
         res = nt._get_all_objs(value, 'Block')
 
@@ -212,8 +214,8 @@ class GetAllObjsTestCase(unittest.TestCase):
         res = nt._get_all_objs(value, 'SpikeTrain')
 
         self.assertEqual(len(targ), len(res))
-        for t, r in zip(targ,res):
-                assert_same_sub_schema(t, r)
+        for t, r in zip(targ, res):
+            assert_same_sub_schema(t, r)
 
     def test__get_all_objs__nested_dict_spiketrain(self):
         targ = self.spiketrain_list
@@ -322,7 +324,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = random_spiketrain()
 
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -348,7 +352,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = random_spiketrain()
 
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -379,7 +385,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__epoch_noarray(self):
         obj = random_epoch()
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -404,7 +412,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__event_noarray(self):
         obj = random_event()
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -429,7 +439,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__spiketrain_parents_empty_array(self):
         obj = random_spiketrain()
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         del targ['times']
 
@@ -479,7 +491,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__epoch_parents_empty_array(self):
         obj = random_epoch()
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         del targ['times']
@@ -521,7 +535,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
     def test__extract_neo_attrs__event_parents_empty_array(self):
         obj = random_event()
         targ = copy.deepcopy(obj.annotations)
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         del targ['times']
 
@@ -563,7 +579,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         obj = self.block.list_children_by_class('SpikeTrain')[0]
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -582,7 +600,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
@@ -603,7 +623,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -622,7 +644,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
@@ -650,7 +674,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
@@ -678,7 +704,9 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         # 'times' is not in obj._necessary_attrs + obj._recommended_attrs
@@ -707,16 +735,22 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(blk.annotations)
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(obj.annotations))
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -733,16 +767,22 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(blk.annotations)
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(obj.annotations))
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ = strip_iter_values(targ)
@@ -760,16 +800,22 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(blk.annotations)
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(obj.annotations))
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
         targ = strip_iter_values(targ)
 
@@ -787,15 +833,21 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(blk.annotations))
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
         targ = strip_iter_values(targ)
 
@@ -811,15 +863,21 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(blk.annotations))
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ = strip_iter_values(targ)
@@ -836,15 +894,21 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(blk.annotations))
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ = strip_iter_values(targ)
@@ -860,16 +924,22 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(blk.annotations)
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(obj.annotations))
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         del targ['times']
@@ -891,16 +961,22 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(blk.annotations)
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(obj.annotations))
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         del targ['times']
@@ -922,16 +998,22 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(blk.annotations)
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(obj.annotations))
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         del targ['times']
@@ -954,15 +1036,21 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.SpikeTrain._necessary_attrs + neo.SpikeTrain._recommended_attrs):
+        for i, attr in enumerate(
+                neo.SpikeTrain._necessary_attrs +
+                neo.SpikeTrain._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(blk.annotations))
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         del targ['times']
@@ -981,15 +1069,21 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
         targ = copy.deepcopy(obj.annotations)
         targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Epoch._necessary_attrs + neo.Epoch._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Epoch._necessary_attrs +
+                neo.Epoch._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(blk.annotations))
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         del targ['times']
@@ -1007,16 +1101,23 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
         seg = self.block.segments[0]
 
         targ = copy.deepcopy(obj.annotations)
-        targ["array_annotations"] = copy.deepcopy(dict(obj.array_annotations))
-        for i, attr in enumerate(neo.Event._necessary_attrs + neo.Event._recommended_attrs):
+        targ["array_annotations"] = copy.deepcopy(
+            dict(obj.array_annotations))
+        for i, attr in enumerate(
+                neo.Event._necessary_attrs +
+                neo.Event._recommended_attrs):
             targ[attr[0]] = getattr(obj, attr[0])
 
         targ.update(copy.deepcopy(seg.annotations))
-        for i, attr in enumerate(neo.Segment._necessary_attrs + neo.Segment._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Segment._necessary_attrs +
+                neo.Segment._recommended_attrs):
             targ[attr[0]] = getattr(seg, attr[0])
 
         targ.update(copy.deepcopy(blk.annotations))
-        for i, attr in enumerate(neo.Block._necessary_attrs + neo.Block._recommended_attrs):
+        for i, attr in enumerate(
+                neo.Block._necessary_attrs +
+                neo.Block._recommended_attrs):
             targ[attr[0]] = getattr(blk, attr[0])
 
         del targ['times']
@@ -1044,7 +1145,9 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     # def test__get_all_spiketrains__unit(self):
     #     obj = generate_one_simple_block(
     #         nb_segment=3,
-    #         supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain, neo.core.Group])
+    #         supported_objects=[
+    #             neo.core.Block, neo.core.Segment,
+    #             neo.core.SpikeTrain, neo.core.Group])
     #     targ = copy.deepcopy(obj)
     #
     #     obj.groups[0].spiketrains.append(obj.groups[0].spiketrains[0])
@@ -1063,7 +1166,8 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
             supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
         obj.spiketrains.append(obj.spiketrains[0])
-        # TODO: The following is the original line of the test, however, this fails with Neo 0.10.0
+        # TODO: The following is the original line of the test, however, this
+        # fails with Neo 0.10.0
         # Reinstate once issue is fixed
         # obj.spiketrains.extend(obj.spiketrains)
 
@@ -1123,7 +1227,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1146,7 +1250,9 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+            for i in range(3)]
         targ = copy.deepcopy(obj)
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1169,7 +1275,9 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1241,7 +1349,9 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Event])
+            for i in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1264,7 +1374,9 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Event])
+            for i in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1287,7 +1399,9 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Event])
+            for i in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1310,7 +1424,9 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Event])
+            for i in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1360,7 +1476,8 @@ class GetAllEpochsTestCase(unittest.TestCase):
     def test__get_all_epochs__block(self):
         obj = generate_one_simple_block(
             nb_segment=3,
-            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch])
+            supported_objects=[
+                neo.core.Block, neo.core.Segment, neo.core.Epoch])
         targ = copy.deepcopy(obj)
 
         iobj1 = obj.segments[0]
@@ -1381,7 +1498,9 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Epoch])
+            for i in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1404,7 +1523,9 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Epoch])
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1427,7 +1548,9 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Epoch])
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1450,7 +1573,9 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Epoch]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.Epoch])
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]

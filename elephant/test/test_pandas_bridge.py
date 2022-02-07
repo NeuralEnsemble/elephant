@@ -276,7 +276,8 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('SpikeTrain'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('SpikeTrain')[0]
@@ -332,7 +333,8 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('SpikeTrain'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('SpikeTrain')[0]
@@ -393,7 +395,8 @@ class SpiketrainToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('SpikeTrain'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('SpikeTrain')[0]
@@ -547,7 +550,8 @@ class EventToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('Event'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('Event')[0]
@@ -603,7 +607,8 @@ class EventToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('Event'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('Event')[0]
@@ -668,7 +673,8 @@ class EventToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('Event'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('Event')[0]
@@ -848,7 +854,8 @@ class EpochToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('Epoch'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('Epoch')[0]
@@ -915,7 +922,8 @@ class EpochToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('Epoch'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('Epoch')[0]
@@ -993,7 +1001,8 @@ class EpochToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in blk.list_children_by_class('Epoch'):
             objs.annotate(test=5)
         obj = blk.list_children_by_class('Epoch')[0]
@@ -1134,7 +1143,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('SpikeTrain'):
             objs.annotate(test1=5)
 
@@ -1171,7 +1181,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('SpikeTrain'):
             objs.annotate(test1=5)
 
@@ -1225,7 +1236,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('SpikeTrain'):
             objs.annotate(test1=5)
 
@@ -1284,7 +1296,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('SpikeTrain'):
             objs.annotate(test1=5)
 
@@ -1331,7 +1344,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
@@ -1388,7 +1402,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
@@ -1450,7 +1465,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
@@ -1500,7 +1516,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
@@ -1541,7 +1558,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
@@ -1582,7 +1600,8 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
                 nb_segment=1,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment,
-                    neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event]))
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event]))
             for i in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('SpikeTrain'):
@@ -1708,7 +1727,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Event'):
             objs.annotate(test1=5)
 
@@ -1750,7 +1770,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Event'):
             objs.annotate(test1=5)
 
@@ -1811,7 +1832,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Event'):
             objs.annotate(test1=5)
 
@@ -1879,7 +1901,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Event'):
             objs.annotate(test1=5)
 
@@ -1931,7 +1954,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
@@ -1995,7 +2019,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
@@ -2066,7 +2091,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
@@ -2121,7 +2147,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)])
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
@@ -2166,7 +2193,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
@@ -2211,7 +2239,8 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
                 nb_segment=1,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment,
-                    neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event]))
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event]))
             for i in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('Event'):
@@ -2341,7 +2370,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Epoch'):
             objs.annotate(test1=5)
 
@@ -2382,7 +2412,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=2,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Epoch'):
             objs.annotate(test1=5)
 
@@ -2443,7 +2474,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Epoch'):
             objs.annotate(test=5)
 
@@ -2511,7 +2543,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
         for objs in obj.list_children_by_class('Epoch'):
             objs.annotate(test=5)
 
@@ -2563,7 +2596,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
@@ -2627,7 +2661,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
@@ -2753,7 +2788,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)])
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
@@ -2798,7 +2834,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
@@ -2843,7 +2880,8 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
                 nb_segment=1,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment,
-                    neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event]))
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event]))
             for i in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('Epoch'):
@@ -2891,7 +2929,8 @@ class SliceSpiketrainTestCase(unittest.TestCase):
             nb_segment=1,
             supported_objects=[
                 neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
+                neo.core.SpikeTrain, neo.core.AnalogSignal,
+                neo.core.Epoch, neo.core.Event])
             for i in range(10)]
         self.obj = ep.multi_spiketrains_to_dataframe(obj)
 
