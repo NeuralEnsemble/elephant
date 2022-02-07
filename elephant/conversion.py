@@ -1244,6 +1244,8 @@ def _check_neo_spiketrain(query):
         return True
     # Check for list, tuple, or SpikeTrainList
     try:
-         return all(map(_check_neo_spiketrain, query))
-    except:
-        return False
+        return all(map(_check_neo_spiketrain, query))
+    except TypeError:
+        pass
+
+    return False

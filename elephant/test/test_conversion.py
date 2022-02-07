@@ -189,7 +189,8 @@ class binarize_TestCase(unittest.TestCase):
     def test_regression_431(self):
         """
         Addresses issue 431
-        This unittest addresses an issue where a SpikeTrainList obejct was not correctly handled by the constructor
+        This unittest addresses an issue where a SpikeTrainList obejct was not
+        correctly handled by the constructor
         """
         st1 = neo.SpikeTrain(
             times=np.array([1, 2, 3]) * pq.ms,
@@ -201,9 +202,11 @@ class binarize_TestCase(unittest.TestCase):
         spiketrainlist = SpikeTrainList([st1, st2])
 
         real_list_binary = cv.BinnedSpikeTrain(real_list, bin_size=1*pq.ms)
-        spiketrainlist_binary = cv.BinnedSpikeTrain(spiketrainlist, bin_size=1 * pq.ms)
+        spiketrainlist_binary = cv.BinnedSpikeTrain(
+            spiketrainlist, bin_size=1 * pq.ms)
 
-        assert_array_equal(real_list_binary.to_array(), spiketrainlist_binary.to_array())
+        assert_array_equal(
+            real_list_binary.to_array(), spiketrainlist_binary.to_array())
 
 
 class BinnedSpikeTrainTestCase(unittest.TestCase):
