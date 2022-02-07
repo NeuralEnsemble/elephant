@@ -3,6 +3,8 @@ from copy import deepcopy
 import numpy as np
 import quantities as pq
 
+from elephant.statistics import isi
+
 
 class MeanOnline(object):
     def __init__(self, batch_mode=False):
@@ -92,6 +94,56 @@ class VarianceOnline(MeanOnline):
         super(VarianceOnline, self).reset()
         self.variance_sum = 0.
 
+
+class InterSpikeIntervalOnline(object):
+    def __init__(self, bin_size=0.0005, max_isi_value=1, batch_mode=False):
+        self.max_isi_value = max_isi_value  # in sec
+        self.last_spike_time = None
+        self.bin_size = bin_size  # in sec
+        self.num_bins = int(self.max_isi_value / self.bin_size)
+        self.bin_edges = np.linspace(start=0, stop=self.max_isi_value,
+                                     num=self.num_bins + 1)
+        self.current_isi_histogram = np.zeros(shape=self.num_bins)
+        self.bach_mode = batch_mode
+        self.units = None
+
+    def update(self, new_val):
+        units = None
+        if isinstance(new_val, pq.Quantity):
+            units = new_val.units
+            new_val = new_val.magnitude
+        if self.last_spike_time is None:  # for first batch
+            if self.bach_mode:
+                new_isi = isi(new_val)
+                self.last_spike_time = new_val[-1]
+            else:
+                new_isi = np.array([])
+                self.last_spike_time = new_val
+            self.units = units
+        else:  # for second to last batch
+            if units != self.units:
+                raise ValueError("Each batch must have the same units.")
+            if self.bach_mode:
+                new_isi = isi(np.append(self.last_spike_time, new_val))
+                self.last_spike_time = new_val[-1]
+            else:
+                new_isi = np.array([new_val - self.last_spike_time])
+                self.last_spike_time = new_val
+        isi_hist, _ = np.histogram(new_isi, bins=self.bin_edges)
+        self.current_isi_histogram += isi_hist
+
+    def as_units(self, val):
+        if self.units is None:
+            return val
+        return pq.Quantity(val, units=self.units, copy=False)
+
+    def get_isi(self):
+        return self.as_units(deepcopy(self.current_isi_histogram))
+
+    def reset(self):
+        self.last_spike_time = None
+        self.units = None
+        self.current_isi_histogram = np.zeros(shape=self.num_bins)
 
 class CovarianceOnline(object):
     def __init__(self, batch_mode=False):
@@ -195,3 +247,4 @@ class PearsonCorrelationCoefficientOnline(object):
         self.units = None
         self.R_xy = 0.
         self.covariance_xy.reset()
+

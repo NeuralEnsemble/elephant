@@ -5,8 +5,10 @@ import quantities as pq
 from numpy.testing import assert_array_almost_equal
 
 from elephant import statistics
+
 from elephant.online import MeanOnline, VarianceOnline, CovarianceOnline, \
-    PearsonCorrelationCoefficientOnline
+    PearsonCorrelationCoefficientOnline, InterSpikeIntervalOnline
+
 from elephant.spike_train_generation import homogeneous_poisson_process
 from elephant.spike_train_synchrony import spike_contrast
 
@@ -233,6 +235,72 @@ class TestVarianceOnline(unittest.TestCase):
         self.assertAlmostEqual(cv_online, cv_target, places=3)
 
 
+class TestInterSpikeIntervalOnline(unittest.TestCase):
+    def test_single_floats(self):
+        np.random.seed(0)
+        arr = np.sort(np.random.rand(100))
+        online_isi = InterSpikeIntervalOnline()
+        for val in arr:
+            online_isi.update(val)
+        self.assertIsNone(online_isi.units)
+        standard_isi_histo, _ = np.histogram(statistics.isi(arr),
+                                             bins=online_isi.bin_edges)
+        np.testing.assert_allclose(online_isi.get_isi(), standard_isi_histo,
+                                   rtol=1e-15, atol=1e-15)
+
+    def test_numpy_array(self):
+        np.random.seed(1)
+        arr = np.sort(np.random.rand(10 * 100)).reshape(10, 100)
+        online_isi = InterSpikeIntervalOnline(batch_mode=True)
+        for arr_vec in arr:
+            online_isi.update(arr_vec)
+        self.assertIsNone(online_isi.units)
+        standard_isi_histo, _ = np.histogram(
+            statistics.isi(arr.reshape(1, 10*100)), bins=online_isi.bin_edges)
+        np.testing.assert_allclose(online_isi.get_isi(), standard_isi_histo,
+                                   rtol=1e-15, atol=1e-15)
+
+    def test_quantity_scalar(self):
+        np.random.seed(2)
+        arr = np.sort(np.random.rand(100)) * pq.s
+        online_isi = InterSpikeIntervalOnline()
+        for val in arr:
+            online_isi.update(val)
+        self.assertEqual(online_isi.units, arr.units)
+        standard_isi_histo, _ = np.histogram(statistics.isi(arr),
+                                             bins=online_isi.bin_edges)
+        np.testing.assert_allclose(online_isi.get_isi().magnitude,
+                                   standard_isi_histo, rtol=1e-15, atol=1e-15)
+
+    def test_quantities_vector(self):
+        np.random.seed(3)
+        arr = np.sort(np.random.rand(10 * 100)).reshape(10, 100) * pq.s
+        online_isi = InterSpikeIntervalOnline(batch_mode=True)
+        for arr_vec in arr:
+            online_isi.update(arr_vec)
+        self.assertEqual(online_isi.units, arr.units)
+        standard_isi_histo, _ = np.histogram(
+            statistics.isi(arr.reshape(1, 10 * 100)), bins=online_isi.bin_edges)
+        np.testing.assert_allclose(online_isi.get_isi().magnitude,
+                                   standard_isi_histo, rtol=1e-15, atol=1e-15)
+
+    def test_reset(self):
+        np.random.seed(4)
+        arr = np.sort(np.random.rand(100)) * pq.s
+        online_isi = InterSpikeIntervalOnline()
+        for val in arr:
+            online_isi.update(val)
+        self.assertEqual(online_isi.units, arr.units)
+        standard_isi_histo, _ = np.histogram(statistics.isi(arr),
+                                             bins=online_isi.bin_edges)
+        np.testing.assert_allclose(online_isi.get_isi().magnitude,
+                                   standard_isi_histo, rtol=1e-15, atol=1e-15)
+        online_isi.reset()
+        self.assertIsNone(online_isi.units)
+        self.assertIsNone(online_isi.last_spike_time)
+        np.testing.assert_allclose(online_isi.current_isi_histogram,
+                                   np.zeros(shape=online_isi.num_bins))
+
 class TestCovarianceOnline(unittest.TestCase):
     def test_simple_small_sets_XY_unbatched(self):
         X = np.array([1, 2, 3, 2, 3])
@@ -440,7 +508,6 @@ class TestPearsonCorrelationCoefficientOnline(unittest.TestCase):
                                          [x_i, y_i]*pq.ms)
             else:
                 online_pcc.update([x_i, y_i]*pq.s)
-
 
 if __name__ == '__main__':
     unittest.main()
