@@ -2905,7 +2905,7 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
                         neo.core.Block, neo.core.Segment,
                         neo.core.SpikeTrain, neo.core.AnalogSignal,
                         neo.core.Epoch, neo.core.Event]))
-                for i in range(3))
+            for i in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('Epoch'):
                 objs.annotate(test=5)
