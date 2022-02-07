@@ -11,10 +11,14 @@ import copy
 import unittest
 
 import neo.core
+# TODO: In Neo 0.10.0, SpikeTrainList ist not exposed in __init__.py of neo.core. Remove the
+# following line if SpikeTrainList is accessible via neo.core
+from neo.core.spiketrainlist import SpikeTrainList
 
 from neo.test.generate_datasets import generate_one_simple_block, generate_one_simple_segment, \
     random_event, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
+
 from numpy.testing.utils import assert_array_equal
 
 import elephant.neo_tools as nt
@@ -1058,7 +1062,11 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
-        obj.spiketrains.extend(obj.spiketrains)
+        obj.spiketrains.append(obj.spiketrains[0])
+        # TODO: The following is the original line of the test, however, this fails with Neo 0.10.0
+        # Reinstate once issue is fixed
+        # obj.spiketrains.extend(obj.spiketrains)
+
         res0 = nt.get_all_spiketrains(obj)
 
         targ = targ.spiketrains
@@ -1081,7 +1089,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj.segments[1].spiketrains.append(iobj2)
         res0 = nt.get_all_spiketrains(obj)
 
-        targ = targ.list_children_by_class('SpikeTrain')
+        targ = SpikeTrainList(targ.list_children_by_class('SpikeTrain'))
 
         self.assertTrue(len(res0) > 0)
 
@@ -1103,7 +1111,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         res0 = nt.get_all_spiketrains(obj)
 
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
-        targ = list(chain.from_iterable(targ))
+        targ = SpikeTrainList(list(chain.from_iterable(targ)))
 
         self.assertTrue(len(res0) > 0)
 
@@ -1126,7 +1134,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         res0 = nt.get_all_spiketrains(tuple(obj))
 
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
-        targ = list(chain.from_iterable(targ))
+        targ = SpikeTrainList(list(chain.from_iterable(targ)))
 
         self.assertTrue(len(res0) > 0)
 
@@ -1149,7 +1157,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         res0 = nt.get_all_spiketrains(iter(obj))
 
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
-        targ = list(chain.from_iterable(targ))
+        targ = SpikeTrainList(list(chain.from_iterable(targ)))
 
         self.assertTrue(len(res0) > 0)
 
@@ -1173,7 +1181,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         res0 = nt.get_all_spiketrains(obj)
 
         targ = [iobj.list_children_by_class('SpikeTrain') for iobj in targ]
-        targ = list(chain.from_iterable(targ))
+        targ = SpikeTrainList(list(chain.from_iterable(targ)))
 
         self.assertTrue(len(res0) > 0)
 
