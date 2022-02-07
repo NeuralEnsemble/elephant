@@ -14,7 +14,8 @@ from itertools import chain
 import numpy as np
 import quantities as pq
 import neo.core
-from neo.test.generate_datasets import generate_one_simple_block, generate_one_simple_segment, \
+from neo.test.generate_datasets import generate_one_simple_block, \
+    generate_one_simple_segment, \
     random_event, random_epoch, random_spiketrain
 from numpy.testing import assert_array_equal
 
@@ -1340,13 +1341,14 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_spiketrains_to_dataframe__list_noparents(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
                 objs.annotate(test=5)
@@ -1398,13 +1400,14 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_spiketrains_to_dataframe__list_parents_childfirst(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
                 objs.annotate(test=5)
@@ -1461,13 +1464,14 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_spiketrains_to_dataframe__list_parents_parentfirst(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
                 objs.annotate(test=5)
@@ -1512,13 +1516,14 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_spiketrains_to_dataframe__tuple_default(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
                 objs.annotate(test=5)
@@ -1554,13 +1559,14 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_spiketrains_to_dataframe__iter_default(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('SpikeTrain'):
                 objs.annotate(test=5)
@@ -1596,13 +1602,15 @@ class MultiSpiketrainsToDataframeTestCase(unittest.TestCase):
 
     def test__multi_spiketrains_to_dataframe__dict_default(self):
         obj = dict(
-            (i, generate_one_simple_block(
-                nb_segment=1,
-                supported_objects=[
-                    neo.core.Block, neo.core.Segment,
-                    neo.core.SpikeTrain, neo.core.AnalogSignal,
-                    neo.core.Epoch, neo.core.Event]))
-            for i in range(3))
+            (
+                i,
+                generate_one_simple_block(
+                    nb_segment=1,
+                    supported_objects=[
+                        neo.core.Block, neo.core.Segment,
+                        neo.core.SpikeTrain, neo.core.AnalogSignal,
+                        neo.core.Epoch, neo.core.Event]))
+            for _ in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('SpikeTrain'):
                 objs.annotate(test=5)
@@ -1950,13 +1958,14 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_events_to_dataframe__list_noparents(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
                 objs.annotate(test=5)
@@ -2015,13 +2024,14 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_events_to_dataframe__list_parents_childfirst(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
                 objs.annotate(test=5)
@@ -2087,13 +2097,14 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_events_to_dataframe__list_parents_parentfirst(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
                 objs.annotate(test=5)
@@ -2143,13 +2154,14 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_events_to_dataframe__tuple_default(self):
-        obj = tuple([generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)])
+        obj = tuple([
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)])
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
                 objs.annotate(test=5)
@@ -2189,13 +2201,14 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_events_to_dataframe__iter_default(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Event'):
                 objs.annotate(test=5)
@@ -2235,13 +2248,15 @@ class MultiEventsToDataframeTestCase(unittest.TestCase):
 
     def test__multi_events_to_dataframe__dict_default(self):
         obj = dict(
-            (i, generate_one_simple_block(
-                nb_segment=1,
-                supported_objects=[
-                    neo.core.Block, neo.core.Segment,
-                    neo.core.SpikeTrain, neo.core.AnalogSignal,
-                    neo.core.Epoch, neo.core.Event]))
-            for i in range(3))
+            (
+                i,
+                generate_one_simple_block(
+                    nb_segment=1,
+                    supported_objects=[
+                        neo.core.Block, neo.core.Segment,
+                        neo.core.SpikeTrain, neo.core.AnalogSignal,
+                        neo.core.Epoch, neo.core.Event]))
+            for _ in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('Event'):
                 objs.annotate(test=5)
@@ -2592,13 +2607,14 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_epochs_to_dataframe__list_noparents(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
                 objs.annotate(test=5)
@@ -2657,13 +2673,14 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res2)
 
     def test__multi_epochs_to_dataframe__list_parents_childfirst(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
                 objs.annotate(test=5)
@@ -2729,12 +2746,14 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res3)
 
     def test__multi_epochs_to_dataframe__list_parents_parentfirst(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal, neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
                 objs.annotate(test=5)
@@ -2784,13 +2803,14 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res1)
 
     def test__multi_epochs_to_dataframe__tuple_default(self):
-        obj = tuple([generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)])
+        obj = tuple([
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)])
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
                 objs.annotate(test=5)
@@ -2830,13 +2850,14 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
         assert_frame_equal(targ, res0)
 
     def test__multi_epochs_to_dataframe__iter_default(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(3)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(3)]
         for iobj in obj:
             for objs in iobj.list_children_by_class('Epoch'):
                 objs.annotate(test=5)
@@ -2876,13 +2897,15 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
 
     def test__multi_epochs_to_dataframe__dict_default(self):
         obj = dict(
-            (i, generate_one_simple_block(
-                nb_segment=1,
-                supported_objects=[
-                    neo.core.Block, neo.core.Segment,
-                    neo.core.SpikeTrain, neo.core.AnalogSignal,
-                    neo.core.Epoch, neo.core.Event]))
-            for i in range(3))
+            (
+                i,
+                generate_one_simple_block(
+                    nb_segment=1,
+                    supported_objects=[
+                        neo.core.Block, neo.core.Segment,
+                        neo.core.SpikeTrain, neo.core.AnalogSignal,
+                        neo.core.Epoch, neo.core.Event]))
+                for _ in range(3))
         for iobj in obj:
             for objs in obj[iobj].list_children_by_class('Epoch'):
                 objs.annotate(test=5)
@@ -2925,13 +2948,14 @@ class MultiEpochsToDataframeTestCase(unittest.TestCase):
 @unittest.skipUnless(HAVE_PANDAS, 'requires pandas')
 class SliceSpiketrainTestCase(unittest.TestCase):
     def setUp(self):
-        obj = [generate_one_simple_block(
-            nb_segment=1,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment,
-                neo.core.SpikeTrain, neo.core.AnalogSignal,
-                neo.core.Epoch, neo.core.Event])
-            for i in range(10)]
+        obj = [
+            generate_one_simple_block(
+                nb_segment=1,
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment,
+                    neo.core.SpikeTrain, neo.core.AnalogSignal,
+                    neo.core.Epoch, neo.core.Event])
+            for _ in range(10)]
         self.obj = ep.multi_spiketrains_to_dataframe(obj)
 
     def test_single_none(self):

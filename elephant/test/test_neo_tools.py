@@ -1141,7 +1141,8 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
 
         assert_same_sub_schema(targ, res0[0])
 
-    # Todo: Units are no longer supported, but is a test for neo.Group required instead?
+    # Todo: Units are no longer supported, but is a test for
+    # neo.Group required instead?
     # def test__get_all_spiketrains__unit(self):
     #     obj = generate_one_simple_block(
     #         nb_segment=3,
@@ -1184,7 +1185,8 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     def test__get_all_spiketrains__block(self):
         obj = generate_one_simple_block(
             nb_segment=3,
-            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+            supported_objects=[
+                neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
 
         iobj1 = obj.segments[0]
@@ -1205,7 +1207,9 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for i in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1227,7 +1231,9 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = [
             generate_one_simple_block(
                 nb_segment=3,
-                supported_objects=[neo.core.Block, neo.core.Segment, neo.core.SpikeTrain]) for _ in range(3)]
+                supported_objects=[
+                    neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1252,7 +1258,7 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
                 nb_segment=3,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
-            for i in range(3)]
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         iobj1 = obj[2].segments[0]
         obj[2].segments.append(iobj1)
@@ -1328,7 +1334,8 @@ class GetAllEventsTestCase(unittest.TestCase):
     def test__get_all_events__block(self):
         obj = generate_one_simple_block(
             nb_segment=3,
-            supported_objects=[neo.core.Block, neo.core.Segment, neo.core.Event])
+            supported_objects=[
+                neo.core.Block, neo.core.Segment, neo.core.Event])
         targ = copy.deepcopy(obj)
 
         iobj1 = obj.segments[0]
@@ -1351,7 +1358,7 @@ class GetAllEventsTestCase(unittest.TestCase):
                 nb_segment=3,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment, neo.core.Event])
-            for i in range(3)]
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1376,7 +1383,7 @@ class GetAllEventsTestCase(unittest.TestCase):
                 nb_segment=3,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment, neo.core.Event])
-            for i in range(3)]
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1401,7 +1408,7 @@ class GetAllEventsTestCase(unittest.TestCase):
                 nb_segment=3,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment, neo.core.Event])
-            for i in range(3)]
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1426,7 +1433,7 @@ class GetAllEventsTestCase(unittest.TestCase):
                 nb_segment=3,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment, neo.core.Event])
-            for i in range(3)]
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
@@ -1500,7 +1507,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
                 nb_segment=3,
                 supported_objects=[
                     neo.core.Block, neo.core.Segment, neo.core.Epoch])
-            for i in range(3)]
+            for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
         iobj1 = obj[2].segments[0]
