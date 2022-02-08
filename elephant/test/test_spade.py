@@ -183,14 +183,15 @@ class SpadeTestCase(unittest.TestCase):
 
     # Testing with multiple patterns input
     def test_spade_msip_spiketrainlist(self):
-        output_msip = spade.spade(SpikeTrainList(self.msip), self.bin_size, self.winlen,
-                                  approx_stab_pars=dict(
-                                      n_subsets=self.n_subset,
-                                      stability_thresh=self.stability_thresh),
-                                  n_surr=self.n_surr, alpha=self.alpha,
-                                  psr_param=self.psr_param,
-                                  stat_corr='no',
-                                  output_format='patterns')['patterns']
+        output_msip = spade.spade(
+            SpikeTrainList(self.msip), self.bin_size, self.winlen,
+            approx_stab_pars=dict(
+            n_subsets=self.n_subset,
+            stability_thresh=self.stability_thresh),
+            n_surr=self.n_surr, alpha=self.alpha,
+            psr_param=self.psr_param,
+            stat_corr='no',
+            output_format='patterns')['patterns']
         elements_msip = []
         occ_msip = []
         lags_msip = []
