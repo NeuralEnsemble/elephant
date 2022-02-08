@@ -345,8 +345,8 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
 
     Notes
     -----
-    1. There is a paramter hierarchy regarding n_segments and len_segment. The
-       former paramter is ignored if the latter one is passed.
+    1. There is a parameter hierarchy regarding n_segments and len_segment. The
+       former parameter is ignored if the latter one is passed.
 
     2. There is a parameter hierarchy regarding nw, num_tapers and
        peak_resolution. If peak_resolution is provided, it determines both nw
@@ -490,7 +490,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
                                    i * n_overlap_step + n_per_seg]
                               * slepian_fcts)
         else:
-            # Use broadcasting to match dime for point-wise multiplication
+            # Use broadcasting to match dim for point-wise multiplication
             tapered_signal = (data[:,
                                    np.newaxis,
                                    i * n_overlap_step:

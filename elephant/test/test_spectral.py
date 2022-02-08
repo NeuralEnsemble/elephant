@@ -161,7 +161,7 @@ class WelchPSDTestCase(unittest.TestCase):
 
 class MultitaperPSDTestCase(unittest.TestCase):
     def test_multitaper_psd_errors(self):
-        # generate a dummy data
+        # generate dummy data
         signal = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
                                 units='mV')
         fs = 1000 * pq.Hz
