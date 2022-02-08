@@ -10,6 +10,7 @@ import unittest
 import random
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 from numpy.testing.utils import assert_array_equal
@@ -155,6 +156,34 @@ class SpadeTestCase(unittest.TestCase):
     # Testing with multiple patterns input
     def test_spade_msip(self):
         output_msip = spade.spade(self.msip, self.bin_size, self.winlen,
+                                  approx_stab_pars=dict(
+                                      n_subsets=self.n_subset,
+                                      stability_thresh=self.stability_thresh),
+                                  n_surr=self.n_surr, alpha=self.alpha,
+                                  psr_param=self.psr_param,
+                                  stat_corr='no',
+                                  output_format='patterns')['patterns']
+        elements_msip = []
+        occ_msip = []
+        lags_msip = []
+        # collecting spade output
+        for out in output_msip:
+            elements_msip.append(out['neurons'])
+            occ_msip.append(list(out['times'].magnitude))
+            lags_msip.append(list(out['lags'].magnitude))
+        elements_msip = sorted(elements_msip, key=len)
+        occ_msip = sorted(occ_msip, key=len)
+        lags_msip = sorted(lags_msip, key=len)
+        # check neurons in the patterns
+        assert_array_equal(elements_msip, self.elements_msip)
+        # check the occurrences time of the patters
+        assert_array_equal(occ_msip, self.occ_msip)
+        # check the lags
+        assert_array_equal(lags_msip, self.lags_msip)
+
+    # Testing with multiple patterns input
+    def test_spade_msip_spiketrainlist(self):
+        output_msip = spade.spade(SpikeTrainList(self.msip), self.bin_size, self.winlen,
                                   approx_stab_pars=dict(
                                       n_subsets=self.n_subset,
                                       stability_thresh=self.stability_thresh),
