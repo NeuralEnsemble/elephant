@@ -1,0 +1,19 @@
+name: elephant
+
+channels:
+  - conda-forge  # required for MPI
+
+dependencies:
+  - python>=3.6
+  - mpi4py
+  - numpy
+  - scipy
+  - tqdm
+  - pandas
+  - scikit-learn
+  - statsmodels
+  - jinja2
+  - pip:
+    - neo>=0.9.0,<0.10.0
+    - viziphant
+    # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt
