@@ -12,7 +12,7 @@ from quantities import Hz, ms, second
 import elephant.spike_train_generation as stgen
 from elephant.spike_train_synchrony import Synchrotool, spike_contrast, \
     _get_theta_and_n_per_bin, _binning_half_overlap
-from elephant.test.download import download, unzip
+from elephant.testutils.download import download, unzip
 
 
 class TestSpikeContrast(unittest.TestCase):
