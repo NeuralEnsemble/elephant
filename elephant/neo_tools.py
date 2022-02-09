@@ -181,7 +181,7 @@ def get_all_spiketrains(container):
     Returns
     -------
     list
-        A list of the unique `neo.SpikeTrain` objects in `container`.
+        A `neo.SpikeTrainList` object of the unique `neo.SpikeTrain` objects in `container`.
 
     """
     return SpikeTrainList(_get_all_objs(container, 'SpikeTrain'))
