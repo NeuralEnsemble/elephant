@@ -6,7 +6,7 @@
 [![![PyPi]](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
 [![Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)
 [![Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![DOI](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
+[![DOI Latest Release](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
 
 
 *Elephant* package analyses all sorts of neurophysiological data:
