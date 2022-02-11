@@ -1,11 +1,8 @@
 name: Build Wheels
 
-# Trigger the workflow on push or pull request of the master
+# Trigger the workflow on push to master. (this is equal to: PR is merged)
 on:
   push:
-    branches:
-      - master
-  pull_request:
     branches:
       - master
 
