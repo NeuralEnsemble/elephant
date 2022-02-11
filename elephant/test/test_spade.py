@@ -310,7 +310,7 @@ class SpadeTestCase(unittest.TestCase):
             transactions,
             rel_matrix=rel_matrix)
         print(
-            '#################################################################')
+            '################################################################')
         print('mining results fpg', mining_results_fpg)
         # mining the data with C fim
         mining_results_ffca = spade._fast_fca(context)

@@ -983,7 +983,7 @@ class DerivativeTestCase(unittest.TestCase):
 
         # test that all times are correct
         target_times = self.times[:-1] * self.test_signal1.times.units \
-                       + derivative.sampling_period / 2
+            + derivative.sampling_period / 2
         assert_array_almost_equal(derivative.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -1081,7 +1081,7 @@ class RAUCTestCase(unittest.TestCase):
         target_times = np.arange(self.tmin,
                                  self.tmax,
                                  bin_duration.magnitude) \
-                       * bin_duration.units + bin_duration / 2
+            * bin_duration.units + bin_duration / 2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -1092,8 +1092,8 @@ class RAUCTestCase(unittest.TestCase):
 
     def test_rauc_times_with_overextending_bin(self):
         """Test rauc returns correct times when signal is NOT binned evenly"""
-
-        bin_duration = 0.99 * pq.s  # results in one bin center > original t_stop
+        # results in one bin center > original t_stop
+        bin_duration = 0.99 * pq.s
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
@@ -1105,7 +1105,7 @@ class RAUCTestCase(unittest.TestCase):
         target_times = np.arange(self.tmin,
                                  self.tmax,
                                  bin_duration.magnitude) \
-                       * bin_duration.units + bin_duration / 2
+            * bin_duration.units + bin_duration / 2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct

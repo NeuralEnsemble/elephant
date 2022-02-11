@@ -334,8 +334,8 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     nrep = m.shape[1]
     # multipyling the marginal probability of neurons with regard to the
     # pattern
-    pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) + \
-           np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
+    pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) \
+        + np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
     return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 

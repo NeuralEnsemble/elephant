@@ -226,8 +226,9 @@ class sta_TestCase(unittest.TestCase):
 # Tests for new scipy verison (with scipy.signal.coherence)
 # =========================================================================
 
-@unittest.skipIf(not hasattr(scipy.signal, 'coherence'), "Please update scipy "
-                                                         "to a version >= 0.16")
+@unittest.skipIf(not hasattr(scipy.signal, 'coherence'),
+                 "Please update scipy "
+                 "to a version >= 0.16")
 class sfc_TestCase_new_scipy(unittest.TestCase):
 
     def setUp(self):
@@ -264,7 +265,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
             np.array([
                 np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
                 np.sin(4 * np.pi * (f0 * t0).simplified.magnitude)]).
-                transpose(),
+            transpose(),
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
 
         # shortened spike train

@@ -402,7 +402,7 @@ class SurrogatesTestCase(unittest.TestCase):
         surr_method_kwargs = \
             {'dither_spikes': {},
              'dither_spikes_with_refractory_period': {'refractory_period':
-                                                          3 * pq.ms},
+                                                      3 * pq.ms},
              'randomise_spikes': {},
              'shuffle_isis': {},
              'dither_spike_train': {},
