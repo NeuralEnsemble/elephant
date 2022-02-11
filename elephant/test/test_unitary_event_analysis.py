@@ -482,7 +482,7 @@ class UETestCase(unittest.TestCase):
                         (indices_unique * bin_size < t_winpos[j] + winsize))]
                     indices_unique_significant.extend(significant)
                 x_tmp = np.unique(indices_unique_significant) * \
-                    bin_size.magnitude
+                        bin_size.magnitude
                 if len(x_tmp) > 0:
                     ue_trial = np.sort(extracted_data['ue'][y_cnt])
                     diff_UE_rep = np.append(

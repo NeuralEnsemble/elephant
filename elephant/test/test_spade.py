@@ -20,6 +20,7 @@ import elephant.spike_train_generation as stg
 
 try:
     import statsmodels
+
     HAVE_STATSMODELS = True
 except ImportError:
     HAVE_STATSMODELS = False
@@ -308,8 +309,9 @@ class SpadeTestCase(unittest.TestCase):
         mining_results_fpg = spade._fpgrowth(
             transactions,
             rel_matrix=rel_matrix)
-        print('#################################################################')
-        print('mining results fpg',mining_results_fpg)
+        print(
+            '#################################################################')
+        print('mining results fpg', mining_results_fpg)
         # mining the data with C fim
         mining_results_ffca = spade._fast_fca(context)
 
@@ -441,92 +443,92 @@ class SpadeTestCase(unittest.TestCase):
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4.1, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4.1, stat_corr='no')
         # Test min_spikes not int
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, min_spikes=3.4, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, min_spikes=3.4, stat_corr='no')
         # Test min_occ not int
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, min_occ=3.4, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, min_occ=3.4, stat_corr='no')
         # Test max_spikes not int
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, max_spikes=3.4, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, max_spikes=3.4, stat_corr='no')
         # Test max_occ not int
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, max_occ=3.4, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, max_occ=3.4, stat_corr='no')
         # Test min_neu not int
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, min_neu=3.4, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, min_neu=3.4, stat_corr='no')
         # Test wrong stability params
         self.assertRaises(
             ValueError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, approx_stab_pars={'wrong key': 0},
+            bin_size=1. * pq.ms, winlen=4, approx_stab_pars={'wrong key': 0},
             stat_corr='no')
         # Test n_surr not int
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=3.4, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, n_surr=3.4, stat_corr='no')
         # Test dither not pq.Quantity
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=100, alpha=0.05,
+            bin_size=1. * pq.ms, winlen=4, n_surr=100, alpha=0.05,
             dither=15., stat_corr='no')
         # Test wrong alpha
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=100, alpha='5 %',
-            dither=15.*pq.ms, stat_corr='no')
+            bin_size=1. * pq.ms, winlen=4, n_surr=100, alpha='5 %',
+            dither=15. * pq.ms, stat_corr='no')
         # Test wrong statistical correction
         self.assertRaises(
             ValueError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=100, alpha=0.05,
-            dither=15.*pq.ms, stat_corr='wrong correction')
+            bin_size=1. * pq.ms, winlen=4, n_surr=100, alpha=0.05,
+            dither=15. * pq.ms, stat_corr='wrong correction')
         # Test wrong psr_params
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=100, alpha=0.05,
-            dither=15.*pq.ms, stat_corr='no', psr_param=(2.5, 3.4, 2.1))
+            bin_size=1. * pq.ms, winlen=4, n_surr=100, alpha=0.05,
+            dither=15. * pq.ms, stat_corr='no', psr_param=(2.5, 3.4, 2.1))
         # Test wrong psr_params
         self.assertRaises(
             TypeError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=100, alpha=0.05,
-            dither=15.*pq.ms, stat_corr='no', psr_param=3.1)
+            bin_size=1. * pq.ms, winlen=4, n_surr=100, alpha=0.05,
+            dither=15. * pq.ms, stat_corr='no', psr_param=3.1)
         # Test output format
         self.assertRaises(
             ValueError, spade.spade,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            bin_size=1.*pq.ms, winlen=4, n_surr=100, alpha=0.05,
-            dither=15.*pq.ms, stat_corr='no', output_format='wrong_output')
+            bin_size=1. * pq.ms, winlen=4, n_surr=100, alpha=0.05,
+            dither=15. * pq.ms, stat_corr='no', output_format='wrong_output')
         # Test wrong spectrum parameter
         self.assertRaises(
             ValueError, spade.spade,
@@ -543,7 +545,7 @@ class SpadeTestCase(unittest.TestCase):
             ValueError, spade.pvalue_spectrum,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=6 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=6 * pq.s)],
-            1 * pq.ms, 4, dither=10*pq.ms, n_surr=1,
+            1 * pq.ms, 4, dither=10 * pq.ms, n_surr=1,
             spectrum='invalid_key')
         # Test negative minimum number of spikes
         self.assertRaises(
@@ -562,7 +564,7 @@ class SpadeTestCase(unittest.TestCase):
             ValueError, spade.pvalue_spectrum,
             [neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=5 * pq.s),
              neo.SpikeTrain([3, 4, 5] * pq.s, t_stop=5 * pq.s)],
-            1 * pq.ms, 4, dither=10*pq.ms, n_surr=100,
+            1 * pq.ms, 4, dither=10 * pq.ms, n_surr=100,
             surr_method='invalid_key')
         # Test negative number of surrogates
         self.assertRaises(

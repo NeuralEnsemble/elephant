@@ -24,6 +24,7 @@ except ImportError:
     pandas_version = StrictVersion('0.0.0')
 else:
     import elephant.pandas_bridge as ep
+
     HAVE_PANDAS = True
     pandas_version = StrictVersion(pd.__version__)
 

@@ -26,16 +26,16 @@ class sta_TestCase(unittest.TestCase):
     def setUp(self):
         self.asiga0 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.asiga1 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)),
             np.cos(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.asiga2 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)),
             np.cos(np.arange(0, 20 * math.pi, 0.1)),
             np.tan(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.st0 = SpikeTrain(
             [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
             units='ms', t_stop=self.asiga0.t_stop)
@@ -76,7 +76,7 @@ class sta_TestCase(unittest.TestCase):
     def test_only_one_spike(self):
         """The output should be the same as the input"""
         x = np.arange(0, 20, 0.1)
-        y = x**2
+        y = x ** 2
         sr = 10 / ms
         z = AnalogSignal(np.array([y]).T, units='mV', sampling_rate=sr)
         spiketime = 8 * ms
@@ -227,7 +227,7 @@ class sta_TestCase(unittest.TestCase):
 # =========================================================================
 
 @unittest.skipIf(not hasattr(scipy.signal, 'coherence'), "Please update scipy "
-                 "to a version >= 0.16")
+                                                         "to a version >= 0.16")
 class sfc_TestCase_new_scipy(unittest.TestCase):
 
     def setUp(self):
@@ -264,7 +264,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
             np.array([
                 np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
                 np.sin(4 * np.pi * (f0 * t0).simplified.magnitude)]).
-            transpose(),
+                transpose(),
             units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
 
         # shortened spike train
@@ -278,7 +278,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         self.st4 = SpikeTrain(np.arange(
             (tlen0.rescale(pq.ms).magnitude * .25),
             (tlen0.rescale(pq.ms).magnitude * .75), 50) * pq.ms,
-            t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
+                              t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
         self.bst4 = BinnedSpikeTrain(self.st4, bin_size=fs0)
 
         # spike train with incompatible bin_size

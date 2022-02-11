@@ -15,7 +15,6 @@ from numpy.testing.utils import assert_array_equal
 
 import elephant.neo_tools as nt
 
-
 # A list of neo object attributes that contain arrays.
 ARRAY_ATTRS = ['waveforms',
                'times',
@@ -134,7 +133,7 @@ class GetAllObjsTestCase(unittest.TestCase):
 
     def test__get_all_objs__empty_nested_many(self):
         targ = []
-        value = iter([[], {'c': [], 'd':(iter([]),)}])
+        value = iter([[], {'c': [], 'd': (iter([]),)}])
 
         res = nt._get_all_objs(value, 'Block')
 

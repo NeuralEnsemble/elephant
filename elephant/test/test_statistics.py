@@ -931,10 +931,10 @@ class ComplexityTestCase(unittest.TestCase):
             spiketrain_a, spiketrain_b, spiketrain_c]
         # runs the previous function which will be deprecated
         targ = np.array([0.92, 0.01, 0.01, 0.06])
-        complexity = statistics.complexity_pdf(spiketrains, binsize=0.1*pq.s)
+        complexity = statistics.complexity_pdf(spiketrains, binsize=0.1 * pq.s)
         assert_array_equal(targ, complexity.magnitude[:, 0])
         self.assertEqual(1, complexity.magnitude[:, 0].sum())
-        self.assertEqual(len(spiketrains)+1, len(complexity))
+        self.assertEqual(len(spiketrains) + 1, len(complexity))
         self.assertIsInstance(complexity, neo.AnalogSignal)
         self.assertEqual(complexity.units, 1 * pq.dimensionless)
 
@@ -954,18 +954,17 @@ class ComplexityTestCase(unittest.TestCase):
         pdf = complexity_obj.pdf()
         assert_array_equal(targ, complexity_obj.pdf().magnitude[:, 0])
         self.assertEqual(1, pdf.magnitude[:, 0].sum())
-        self.assertEqual(len(spiketrains)+1, len(pdf))
+        self.assertEqual(len(spiketrains) + 1, len(pdf))
         self.assertIsInstance(pdf, neo.AnalogSignal)
-        self.assertEqual(pdf.units, 1*pq.dimensionless)
+        self.assertEqual(pdf.units, 1 * pq.dimensionless)
 
     def test_complexity_histogram_spread_0(self):
-
         sampling_rate = 1 / pq.s
 
         spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
-                                      t_stop=20*pq.s),
+                                      t_stop=20 * pq.s),
                        neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
-                                      t_stop=20*pq.s)]
+                                      t_stop=20 * pq.s)]
 
         correct_histogram = np.array([10, 8, 2])
 
@@ -984,13 +983,12 @@ class ComplexityTestCase(unittest.TestCase):
             correct_time_histogram)
 
     def test_complexity_epoch_spread_0(self):
-
         sampling_rate = 1 / pq.s
 
         spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
-                                      t_stop=20*pq.s),
+                                      t_stop=20 * pq.s),
                        neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
-                                      t_stop=20*pq.s)]
+                                      t_stop=20 * pq.s)]
 
         complexity_obj = statistics.Complexity(spiketrains,
                                                sampling_rate=sampling_rate,
@@ -1000,13 +998,12 @@ class ComplexityTestCase(unittest.TestCase):
                               neo.Epoch)
 
     def test_complexity_histogram_spread_1(self):
-
         sampling_rate = 1 / pq.s
 
         spiketrains = [neo.SpikeTrain([0, 1, 5, 9, 11, 13, 20] * pq.s,
-                                      t_stop=21*pq.s),
+                                      t_stop=21 * pq.s),
                        neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
-                                      t_stop=21*pq.s)]
+                                      t_stop=21 * pq.s)]
 
         correct_histogram = np.array([9, 5, 1, 2])
 
@@ -1025,13 +1022,12 @@ class ComplexityTestCase(unittest.TestCase):
             correct_time_histogram)
 
     def test_complexity_histogram_spread_2(self):
-
         sampling_rate = 1 / pq.s
 
         spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
-                                      t_stop=21*pq.s),
+                                      t_stop=21 * pq.s),
                        neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
-                                      t_stop=21*pq.s)]
+                                      t_stop=21 * pq.s)]
 
         correct_histogram = np.array([5, 0, 1, 1, 0, 0, 0, 1])
 
@@ -1051,9 +1047,9 @@ class ComplexityTestCase(unittest.TestCase):
 
     def test_wrong_input_errors(self):
         spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
-                                      t_stop=21*pq.s),
+                                      t_stop=21 * pq.s),
                        neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
-                                      t_stop=21*pq.s)]
+                                      t_stop=21 * pq.s)]
 
         self.assertRaises(ValueError,
                           statistics.Complexity,
@@ -1062,22 +1058,21 @@ class ComplexityTestCase(unittest.TestCase):
         self.assertRaises(ValueError,
                           statistics.Complexity,
                           spiketrains,
-                          sampling_rate=1*pq.s,
+                          sampling_rate=1 * pq.s,
                           spread=-7)
 
     def test_sampling_rate_warning(self):
         spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 13, 20] * pq.s,
-                                      t_stop=21*pq.s),
+                                      t_stop=21 * pq.s),
                        neo.SpikeTrain([1, 4, 7, 12, 16, 18] * pq.s,
-                                      t_stop=21*pq.s)]
+                                      t_stop=21 * pq.s)]
 
         with self.assertWarns(UserWarning):
             statistics.Complexity(spiketrains,
-                                  bin_size=1*pq.s,
+                                  bin_size=1 * pq.s,
                                   spread=1)
 
     def test_binning_for_input_with_rounding_errors(self):
-
         # a test with inputs divided by 30000 which leads to rounding errors
         # these errors have to be accounted for by proper binning;
         # check if we still get the correct result

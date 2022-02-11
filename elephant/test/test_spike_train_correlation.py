@@ -15,7 +15,7 @@ from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
-from elephant.spike_train_generation import homogeneous_poisson_process,\
+from elephant.spike_train_generation import homogeneous_poisson_process, \
     homogeneous_gamma_process
 import math
 
@@ -560,7 +560,7 @@ class CrossCorrelationHistogramTest(unittest.TestCase):
             border_correction=True, binary=False, kernel=None)
         valid_lags = sc._CrossCorrHist.get_valid_lags(self.binned_st1,
                                                       self.binned_st2)
-        left_edge, right_edge = valid_lags[(0, -1), ]
+        left_edge, right_edge = valid_lags[(0, -1),]
         cch_builder = sc._CrossCorrHist(self.binned_st1, self.binned_st2,
                                         window=(left_edge, right_edge))
         cch_valid = cch_builder.correlate_speed(cch_mode='valid')
@@ -640,7 +640,7 @@ class CrossCorrelationHistDifferentTStartTStopTest(unittest.TestCase):
                     bin_size = 1 * pq.s
                     st1_binned = conv.BinnedSpikeTrain(st1, bin_size=bin_size)
                     st2_binned = conv.BinnedSpikeTrain(st2, bin_size=bin_size)
-                    left, right = lags_true[window][(0, -1), ]
+                    left, right = lags_true[window][(0, -1),]
                     cch_window, lags_window = sc.cross_correlation_histogram(
                         st1_binned, st2_binned, window=(left, right),
                         method=method,

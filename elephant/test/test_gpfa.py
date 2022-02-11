@@ -20,6 +20,7 @@ try:
     from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
+
     HAVE_SKLEARN = True
 except ImportError:
     HAVE_SKLEARN = False

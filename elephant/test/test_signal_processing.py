@@ -664,7 +664,6 @@ class HilbertTestCase(unittest.TestCase):
         """
         # Performing test using all pad types
         for padding in ['nextpow', 'none', 16384]:
-
             h = elephant.signal_processing.hilbert(
                 self.long_signals, padding=padding)
 
@@ -692,7 +691,7 @@ class HilbertTestCase(unittest.TestCase):
             # amplitude
             amplitudediff = \
                 amplitude[ind1:ind2, :] - self.amplitude[ind1:ind2, :]
-#
+            #
             assert_allclose(phasediff, 0, atol=0.1)
             assert_allclose(amplitudediff, 0, atol=0.5)
 
@@ -710,7 +709,6 @@ class HilbertTestCase(unittest.TestCase):
 
         # Performing test using both pad types
         for padding in ['nextpow', 'none', 512]:
-
             h = elephant.signal_processing.hilbert(
                 self.one_period, padding=padding)
 
@@ -985,7 +983,7 @@ class DerivativeTestCase(unittest.TestCase):
 
         # test that all times are correct
         target_times = self.times[:-1] * self.test_signal1.times.units \
-            + derivative.sampling_period / 2
+                       + derivative.sampling_period / 2
         assert_array_almost_equal(derivative.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -1083,7 +1081,7 @@ class RAUCTestCase(unittest.TestCase):
         target_times = np.arange(self.tmin,
                                  self.tmax,
                                  bin_duration.magnitude) \
-            * bin_duration.units + bin_duration / 2
+                       * bin_duration.units + bin_duration / 2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct
@@ -1107,7 +1105,7 @@ class RAUCTestCase(unittest.TestCase):
         target_times = np.arange(self.tmin,
                                  self.tmax,
                                  bin_duration.magnitude) \
-            * bin_duration.units + bin_duration / 2
+                       * bin_duration.units + bin_duration / 2
         assert_array_almost_equal(rauc_arr.times, target_times)
 
         # test that t_start and t_stop are correct

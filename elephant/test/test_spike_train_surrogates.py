@@ -240,16 +240,16 @@ class SurrogatesTestCase(unittest.TestCase):
         n_surr = 30
         dither = 15 * pq.ms
         spiketrain = neo.SpikeTrain(
-            [39.65696411,  98.93868274, 120.2417674,  134.70971166,
+            [39.65696411, 98.93868274, 120.2417674, 134.70971166,
              154.20788924,
              160.29077989, 179.19884034, 212.86773029, 247.59488061,
              273.04095041,
              297.56437605, 344.99204215, 418.55696486, 460.54298334,
              482.82299125,
-             524.236052,   566.38966742, 597.87562722, 651.26965293,
+             524.236052, 566.38966742, 597.87562722, 651.26965293,
              692.39802855,
-             740.90285815, 849.45874695, 974.57724848,   8.79247605],
-            t_start=0.*pq.ms, t_stop=1000.*pq.ms, units=pq.ms)
+             740.90285815, 849.45874695, 974.57724848, 8.79247605],
+            t_start=0. * pq.ms, t_stop=1000. * pq.ms, units=pq.ms)
         surr.surrogates(spiketrain, n_surrogates=n_surr, method=surr_method,
                         dt=dither)
 
@@ -352,13 +352,13 @@ class SurrogatesTestCase(unittest.TestCase):
         bin_ids_orig = np.array(
             (spiketrain.view(
                 pq.Quantity) /
-                bin_size).rescale(
+             bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
         bin_ids_surr = np.array(
             (surrogate_train.view(
                 pq.Quantity) /
-                bin_size).rescale(
+             bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
         self.assertTrue(np.all(bin_ids_orig == bin_ids_surr))
@@ -379,13 +379,13 @@ class SurrogatesTestCase(unittest.TestCase):
         bin_ids_orig = np.array(
             (spiketrain.view(
                 pq.Quantity) /
-                bin_size).rescale(
+             bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
         bin_ids_surr = np.array(
             (surrogate_train.view(
                 pq.Quantity) /
-                bin_size).rescale(
+             bin_size).rescale(
                 pq.dimensionless).magnitude,
             dtype=int)
 
@@ -402,16 +402,16 @@ class SurrogatesTestCase(unittest.TestCase):
         surr_method_kwargs = \
             {'dither_spikes': {},
              'dither_spikes_with_refractory_period': {'refractory_period':
-                                                      3*pq.ms},
+                                                          3 * pq.ms},
              'randomise_spikes': {},
              'shuffle_isis': {},
              'dither_spike_train': {},
              'jitter_spikes': {},
-             'bin_shuffling': {'bin_size': 3*pq.ms},
+             'bin_shuffling': {'bin_size': 3 * pq.ms},
              'joint_isi_dithering': {},
              'isi_dithering': {},
-             'trial_shifting': {'trial_length': 200*pq.ms,
-                                'trial_separation': 50*pq.ms}}
+             'trial_shifting': {'trial_length': 200 * pq.ms,
+                                'trial_separation': 50 * pq.ms}}
 
         dt = 15 * pq.ms
         spiketrain = neo.SpikeTrain(
@@ -445,7 +445,7 @@ class SurrogatesTestCase(unittest.TestCase):
                           method='dither_spikes', dt=None)
 
         self.assertRaises(TypeError, surr.surrogates, spiketrain.magnitude,
-                          method='dither_spikes', dt=10*pq.ms)
+                          method='dither_spikes', dt=10 * pq.ms)
 
     def test_joint_isi_dithering_format(self):
 
@@ -517,7 +517,7 @@ class SurrogatesTestCase(unittest.TestCase):
         # Test surrogate methods wrapper
         surrogate_trains = surr.surrogates(
             spiketrain,
-            dt=15*pq.ms,
+            dt=15 * pq.ms,
             n_surrogates=n_surrogates,
             method='joint_isi_dithering')
         self.assertIsInstance(surrogate_trains, list)
@@ -545,7 +545,7 @@ class SurrogatesTestCase(unittest.TestCase):
             rate=100. * pq.Hz, refractory_period=3 * pq.ms, t_stop=0.1 * pq.s)
         spiketrain = process.generate_spiketrain()
         surrogate_train = surr.JointISI(spiketrain).dithering()[0]
-        ground_truth = [0.0060744,  0.01886591, 0.02732847, 0.03683888,
+        ground_truth = [0.0060744, 0.01886591, 0.02732847, 0.03683888,
                         0.04569622, 0.05196334, 0.05899197, 0.07855664]
         assert_array_almost_equal(surrogate_train.magnitude, ground_truth)
 
@@ -554,16 +554,16 @@ class SurrogatesTestCase(unittest.TestCase):
         n_surr = 30
         dither = 15 * pq.ms
         spiketrain = neo.SpikeTrain(
-            [39.65696411,  98.93868274, 120.2417674,  134.70971166,
+            [39.65696411, 98.93868274, 120.2417674, 134.70971166,
              154.20788924,
              160.29077989, 179.19884034, 212.86773029, 247.59488061,
              273.04095041,
              297.56437605, 344.99204215, 418.55696486, 460.54298334,
              482.82299125,
-             524.236052,   566.38966742, 597.87562722, 651.26965293,
+             524.236052, 566.38966742, 597.87562722, 651.26965293,
              692.39802855,
-             740.90285815, 849.45874695, 974.57724848,   8.79247605],
-            t_start=0.*pq.ms, t_stop=1000.*pq.ms, units=pq.ms)
+             740.90285815, 849.45874695, 974.57724848, 8.79247605],
+            t_start=0. * pq.ms, t_stop=1000. * pq.ms, units=pq.ms)
         surr.surrogates(spiketrain, n_surrogates=n_surr, method=surr_method,
                         dt=dither)
 
@@ -572,21 +572,21 @@ class SurrogatesTestCase(unittest.TestCase):
         n_surr = 30
         dither = 15 * pq.ms
         spiketrain = neo.SpikeTrain(
-            [4.,   28.,   45.,  51.,   83.,   87.,   96., 111., 126.,  131.,
-             138.,  150.,
-             209.,  232.,  253.,  275.,  279.,  303.,  320.,  371.,  396.,
-             401.,  429.,  447.,
-             479.,  511.,  535.,  549.,  581.,  585.,  605.,  607.,  626.,
-             630.,  644.,  714.,
-             832.,  835.,  853.,  858.,  878.,  905.,  909.,  932.,  950.,
-             961.,  999.,  1000.],
-            t_start=0.*pq.ms, t_stop=1000.*pq.ms, units=pq.ms)
+            [4., 28., 45., 51., 83., 87., 96., 111., 126., 131.,
+             138., 150.,
+             209., 232., 253., 275., 279., 303., 320., 371., 396.,
+             401., 429., 447.,
+             479., 511., 535., 549., 581., 585., 605., 607., 626.,
+             630., 644., 714.,
+             832., 835., 853., 858., 878., 905., 909., 932., 950.,
+             961., 999., 1000.],
+            t_start=0. * pq.ms, t_stop=1000. * pq.ms, units=pq.ms)
         surr.surrogates(
             spiketrain, n_surrogates=n_surr, method=surr_method, dt=dither)
 
     def test_bin_shuffling_output_format(self):
 
-        self.bin_size = 3*pq.ms
+        self.bin_size = 3 * pq.ms
         self.max_displacement = 10
         spiketrain = neo.SpikeTrain([90, 93, 97, 100, 105,
                                      150, 180, 350] * pq.ms, t_stop=.5 * pq.s)
