@@ -555,8 +555,8 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         return signal_out
     if isinstance(signal, pq.quantity.Quantity):
         return filtered_data * signal.units
-    else:
-        return filtered_data
+
+    return filtered_data
 
 
 @deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
