@@ -91,6 +91,12 @@ jobs:
           source ~/test_env/bin/activate
           python setup.py install
 
+      - name: List packages
+        run: |
+          source ~/test_env/bin/activate
+          pip list
+          python --version
+
       - name: Test with pytest
         run: |
           source ~/test_env/bin/activate
@@ -132,6 +138,13 @@ jobs:
         pip install pytest==6.2.5 # hotfix for pytest 7.0.0, remove once fixed
         pip install pytest-cov coveralls
         pip install .
+
+    - name: List packages
+      run: |
+        activate base
+        pip list
+        conda list
+        python --version
 
     - name: Test with pytest
       run: |
@@ -187,6 +200,11 @@ jobs:
             pip install pytest-cov coveralls
             pip install -e .
 
+        - name: List packages
+          run: |
+            pip list
+            python --version
+
         - name: Test with pytest
           run: |
             python --version
@@ -237,6 +255,11 @@ jobs:
           pip install pytest-cov coveralls
           pip install -e .
 
+      - name: List packages
+        run: |
+          pip list
+          python --version
+
       - name: Test with pytest
         run: |
           mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant
@@ -282,6 +305,13 @@ jobs:
             conda install -c conda-forge pandoc
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
+
+       - name: List packages
+         run: |
+            pip list
+            conda list
+            python --version
+
        - name: make html
          run: |
             python --version
