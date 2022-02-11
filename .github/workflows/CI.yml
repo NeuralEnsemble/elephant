@@ -289,7 +289,7 @@ jobs:
          with:
             path: ~/.cache/pip
             # Look to see if there is a cache hit for the corresponding requirements files
-            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ steps.date.outputs.date }}
+            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}-${{ steps.date.outputs.date }}
 
        - name: Install dependencies
          run: |
@@ -298,7 +298,7 @@ jobs:
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
             conda update conda
-            conda env update --file requirements/environment-tests.yml --name base
+            conda env update --file requirements/environment-docs.yml --name base
             conda install -c conda-forge openmpi
             conda install -c conda-forge pandoc
             # run notebooks
@@ -312,6 +312,5 @@ jobs:
 
        - name: make html
          run: |
-            python --version
             cd doc
             make html
