@@ -149,8 +149,6 @@ jobs:
     - name: Test with pytest
       run: |
         activate base
-        python --version
-        conda list
         pytest --cov=elephant --import-mode=importlib
 
   # install dependencies with pip and run tests with pytest
