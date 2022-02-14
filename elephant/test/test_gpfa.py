@@ -216,15 +216,5 @@ class GPFATestCase(unittest.TestCase):
         assert_array_almost_equal(logdet_fast, logdet_ground_truth)
 
 
-def suite():
-    suite = unittest.makeSuite(GPFATestCase, 'test')
-    return suite
-
-
-def run():
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
-
-
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)

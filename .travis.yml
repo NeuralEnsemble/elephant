@@ -64,6 +64,7 @@ install:
 
   - pip -V
   - pip install -r requirements/requirements-tests.txt
+  - pip install pytest==6.2.5 # hotfix as pytest 7.0.0 breaks CI workflows with --import-mode=importlib
   - pip install pytest-cov coveralls
   - pip install .
   - python -c "import sys; sys.path.remove(''); import elephant; print(elephant.__file__, elephant.__version__)"
@@ -73,3 +74,4 @@ install:
 
 script:
   pytest --cov=elephant --import-mode=importlib
+  
