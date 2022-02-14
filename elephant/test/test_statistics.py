@@ -19,7 +19,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal, \
     assert_array_less
 import elephant.kernels as kernels
 from elephant import statistics
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
 
 
 class isi_TestCase(unittest.TestCase):
@@ -138,7 +138,8 @@ class mean_firing_rate_TestCase(unittest.TestCase):
 
     def test_mean_firing_rate_typical_use_case(self):
         np.random.seed(92)
-        st = homogeneous_poisson_process(rate=100 * pq.Hz, t_stop=100 * pq.s)
+        st = StationaryPoissonProcess(
+            rate=100 * pq.Hz, t_stop=100 * pq.s).generate_spiketrain()
         rate1 = statistics.mean_firing_rate(st)
         rate2 = statistics.mean_firing_rate(st, t_start=st.t_start,
                                             t_stop=st.t_stop)
@@ -620,9 +621,9 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_regression_288(self):
         np.random.seed(9)
         sampling_period = 200 * pq.ms
-        spiketrain = homogeneous_poisson_process(10 * pq.Hz,
-                                                 t_start=0 * pq.s,
-                                                 t_stop=10 * pq.s)
+        spiketrain = StationaryPoissonProcess(
+            10 * pq.Hz,  t_start=0 * pq.s, t_stop=10 * pq.s
+        ).generate_spiketrain()
         kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
         # check that instantaneous_rate "works" for kernels with small sigma
         # without triggering an incomprehensible error
@@ -640,9 +641,9 @@ class InstantaneousRateTest(unittest.TestCase):
         sampling_period = 200 * pq.ms
         sigma = 5 * pq.ms
         rate_expected = 10 * pq.Hz
-        spiketrain = homogeneous_poisson_process(rate_expected,
-                                                 t_start=0 * pq.s,
-                                                 t_stop=10 * pq.s)
+        spiketrain = StationaryPoissonProcess(
+            rate_expected, t_start=0 * pq.s, t_stop=10 * pq.s
+        ).generate_spiketrain()
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
@@ -781,8 +782,8 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_instantaneous_rate_grows_with_sampling_period(self):
         np.random.seed(0)
         rate_expected = 10 * pq.Hz
-        spiketrain = homogeneous_poisson_process(rate=rate_expected,
-                                                 t_stop=10 * pq.s)
+        spiketrain = StationaryPoissonProcess(
+            rate=rate_expected, t_stop=10 * pq.s).generate_spiketrain()
         kernel = kernels.GaussianKernel(sigma=100 * pq.ms)
         rates_mean = []
         for sampling_period in np.linspace(1, 1000, num=10) * pq.ms:
@@ -848,16 +849,16 @@ class InstantaneousRateTest(unittest.TestCase):
 
     def test_border_correction(self):
         np.random.seed(0)
-        n_spiketrains = 75
+        n_spiketrains = 125
         rate = 50. * pq.Hz
         t_start = 0. * pq.ms
         t_stop = 1000. * pq.ms
 
         sampling_period = 0.1 * pq.ms
 
-        trial_list = [homogeneous_poisson_process(
-            rate=rate, t_start=t_start,
-            t_stop=t_stop) for _ in range(n_spiketrains)]
+        trial_list = StationaryPoissonProcess(
+            rate=rate, t_start=t_start, t_stop=t_stop
+        ).generate_n_spiketrains(n_spiketrains)
 
         for correction in (True, False):
             rates = []
@@ -958,8 +959,9 @@ class TimeHistogramTestCase(unittest.TestCase):
 
     def test_annotations(self):
         np.random.seed(1)
-        spiketrains = [homogeneous_poisson_process(
-            rate=10 * pq.Hz, t_stop=10 * pq.s) for _ in range(10)]
+        spiketrains = StationaryPoissonProcess(
+            rate=10 * pq.Hz, t_stop=10 * pq.s).generate_n_spiketrains(
+            n_spiketrains=10)
         for output in ("counts", "mean", "rate"):
             histogram = statistics.time_histogram(spiketrains,
                                                   bin_size=3 * pq.ms,
@@ -980,7 +982,8 @@ class ComplexityTestCase(unittest.TestCase):
             spiketrain_a, spiketrain_b, spiketrain_c]
         # runs the previous function which will be deprecated
         targ = np.array([0.92, 0.01, 0.01, 0.06])
-        complexity = statistics.complexity_pdf(spiketrains, binsize=0.1*pq.s)
+        complexity = statistics.complexity_pdf(
+            spiketrains, bin_size=0.1*pq.s)
         assert_array_equal(targ, complexity.magnitude[:, 0])
         self.assertEqual(1, complexity.magnitude[:, 0].sum())
         self.assertEqual(len(spiketrains)+1, len(complexity))
