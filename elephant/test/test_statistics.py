@@ -20,7 +20,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal, \
 
 import elephant.kernels as kernels
 from elephant import statistics
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess as SPP
 
 
 class isi_TestCase(unittest.TestCase):
@@ -139,7 +139,7 @@ class mean_firing_rate_TestCase(unittest.TestCase):
 
     def test_mean_firing_rate_typical_use_case(self):
         np.random.seed(92)
-        st = homogeneous_poisson_process(rate=100 * pq.Hz, t_stop=100 * pq.s)
+        st = SPP(rate=100 * pq.Hz, t_stop=100 * pq.s).generate_spiketrain()
         rate1 = statistics.mean_firing_rate(st)
         rate2 = statistics.mean_firing_rate(st, t_start=st.t_start,
                                             t_stop=st.t_stop)
@@ -616,9 +616,9 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_regression_288(self):
         np.random.seed(9)
         sampling_period = 200 * pq.ms
-        spiketrain = homogeneous_poisson_process(10 * pq.Hz,
-                                                 t_start=0 * pq.s,
-                                                 t_stop=10 * pq.s)
+        spiketrain = SPP(10 * pq.Hz,
+                         t_start=0 * pq.s,
+                         t_stop=10 * pq.s).generate_spiketrain()
         kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
         # check that instantaneous_rate "works" for kernels with small sigma
         # without triggering an incomprehensible error
@@ -636,9 +636,9 @@ class InstantaneousRateTest(unittest.TestCase):
         sampling_period = 200 * pq.ms
         sigma = 5 * pq.ms
         rate_expected = 10 * pq.Hz
-        spiketrain = homogeneous_poisson_process(rate_expected,
-                                                 t_start=0 * pq.s,
-                                                 t_stop=10 * pq.s)
+        spiketrain = SPP(rate_expected,
+                         t_start=0 * pq.s,
+                         t_stop=10 * pq.s).generate_spiketrain()
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
@@ -777,8 +777,8 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_instantaneous_rate_grows_with_sampling_period(self):
         np.random.seed(0)
         rate_expected = 10 * pq.Hz
-        spiketrain = homogeneous_poisson_process(rate=rate_expected,
-                                                 t_stop=10 * pq.s)
+        spiketrain = SPP(rate=rate_expected,
+                         t_stop=10 * pq.s).generate_spiketrain()
         kernel = kernels.GaussianKernel(sigma=100 * pq.ms)
         rates_mean = []
         for sampling_period in np.linspace(1, 1000, num=10) * pq.ms:
@@ -909,8 +909,9 @@ class TimeHistogramTestCase(unittest.TestCase):
 
     def test_annotations(self):
         np.random.seed(1)
-        spiketrains = [homogeneous_poisson_process(
-            rate=10 * pq.Hz, t_stop=10 * pq.s) for _ in range(10)]
+        spiketrains = [SPP(rate=10 * pq.Hz,
+                           t_stop=10 * pq.s).generate_spiketrain()
+                       for _ in range(10)]
         for output in ("counts", "mean", "rate"):
             histogram = statistics.time_histogram(spiketrains,
                                                   bin_size=3 * pq.ms,
