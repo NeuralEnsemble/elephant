@@ -930,7 +930,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
 
             # Check difference between start of recording and single spike
             if spiketrain[0] - spiketrain.t_start < dt:
-                time_A += spiketrain[0] - spiketrain.t_start
+                time_A += - dt + spiketrain[0] - spiketrain.t_start
 
             # Check difference between single spike and end of recording
             elif spiketrain[0] + dt > spiketrain.t_stop:
