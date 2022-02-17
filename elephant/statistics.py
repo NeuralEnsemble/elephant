@@ -73,6 +73,7 @@ import neo
 import numpy as np
 import quantities as pq
 import scipy.stats
+import scipy.signal
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
