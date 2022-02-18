@@ -844,6 +844,21 @@ class InstantaneousRateTest(unittest.TestCase):
         self.assertIn('kernel', rate.annotations)
         self.assertEqual(rate.annotations['kernel'], kernel_annotation)
 
+    def test_regression_374(self):
+        # check length of outputs for sampling_period as integer and not
+        # integer multiple of the duration (t_start - t_stop)
+        st = self.spike_train
+        periods = [1, 0.99, 0.35, st.duration]*pq.s
+        for period in periods:
+            rate = statistics.instantaneous_rate(st,
+                                                 sampling_period=period,
+                                                 kernel=self.kernel,
+                                                 center_kernel=True,
+                                                 trim=False)
+            self.assertEqual(len(np.arange(st.t_start.item(), st.t_stop.item(),
+                                           period.item())),
+                             len(rate))
+
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):
