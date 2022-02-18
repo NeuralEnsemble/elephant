@@ -20,10 +20,10 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal, \
 
 import elephant.kernels as kernels
 from elephant import statistics
-from elephant.spike_train_generation import StationaryPoissonProcess as SPP
+from elephant.spike_train_generation import StationaryPoissonProcess as StatPP
 
 
-class isi_TestCase(unittest.TestCase):
+class IsiTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array_2d = np.array([[0.3, 0.56, 0.87, 1.23],
                                        [0.02, 0.71, 1.82, 8.46],
@@ -83,10 +83,10 @@ class isi_TestCase(unittest.TestCase):
         np.random.seed(0)
         array = np.random.rand(100)
         with self.assertWarns(UserWarning):
-            isi = statistics.isi(array)
+            statistics.isi(array)
 
 
-class isi_cv_TestCase(unittest.TestCase):
+class IsiCvTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array_regular = np.arange(1, 6)
 
@@ -103,7 +103,7 @@ class isi_cv_TestCase(unittest.TestCase):
         self.assertEqual(res, targ)
 
 
-class mean_firing_rate_TestCase(unittest.TestCase):
+class MeanFiringRateTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array_3d = np.ones([5, 7, 13])
         self.test_array_2d = np.array([[0.3, 0.56, 0.87, 1.23],
@@ -139,7 +139,7 @@ class mean_firing_rate_TestCase(unittest.TestCase):
 
     def test_mean_firing_rate_typical_use_case(self):
         np.random.seed(92)
-        st = SPP(rate=100 * pq.Hz, t_stop=100 * pq.s).generate_spiketrain()
+        st = StatPP(rate=100 * pq.Hz, t_stop=100 * pq.s).generate_spiketrain()
         rate1 = statistics.mean_firing_rate(st)
         rate2 = statistics.mean_firing_rate(st, t_start=st.t_start,
                                             t_stop=st.t_stop)
@@ -517,7 +517,7 @@ class InstantaneousRateTest(unittest.TestCase):
         self.assertEqual(
             inst_rate.sampling_period.simplified, sampling_period.simplified)
         self.assertEqual(inst_rate.simplified.units, pq.Hz)
-        self.assertEqual(inst_rate.t_stop.simplified, st.t_stop.simplified)
+        self.assertEqual(st.t_stop.simplified, inst_rate.t_stop.simplified)
         self.assertEqual(inst_rate.t_start.simplified, st.t_start.simplified)
 
     def test_error_instantaneous_rate(self):
@@ -616,9 +616,9 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_regression_288(self):
         np.random.seed(9)
         sampling_period = 200 * pq.ms
-        spiketrain = SPP(10 * pq.Hz,
-                         t_start=0 * pq.s,
-                         t_stop=10 * pq.s).generate_spiketrain()
+        spiketrain = StatPP(10 * pq.Hz,
+                            t_start=0 * pq.s,
+                            t_stop=10 * pq.s).generate_spiketrain()
         kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
         # check that instantaneous_rate "works" for kernels with small sigma
         # without triggering an incomprehensible error
@@ -636,9 +636,9 @@ class InstantaneousRateTest(unittest.TestCase):
         sampling_period = 200 * pq.ms
         sigma = 5 * pq.ms
         rate_expected = 10 * pq.Hz
-        spiketrain = SPP(rate_expected,
-                         t_start=0 * pq.s,
-                         t_stop=10 * pq.s).generate_spiketrain()
+        spiketrain = StatPP(rate_expected,
+                            t_start=0 * pq.s,
+                            t_stop=10 * pq.s).generate_spiketrain()
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
@@ -661,6 +661,7 @@ class InstantaneousRateTest(unittest.TestCase):
         # spiketrain (see test_rate_estimation_consistency)
         cutoff = 5
         sampling_period = 0.01 * pq.s
+        # with t_spikes = [-5, 5]s the isi is 10s, so 1/isi 0.1 Hz
         t_spikes = np.array([-cutoff, cutoff]) * pq.s
         spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
                                     t_stop=t_spikes[-1])
@@ -680,7 +681,7 @@ class InstantaneousRateTest(unittest.TestCase):
                     kernel=kernel,
                     cutoff=cutoff, trim=True,
                     center_kernel=center_kernel)
-                assert_array_almost_equal(rate.magnitude, 0, decimal=3)
+                assert_array_almost_equal(rate.magnitude, 0, decimal=2)
 
     def test_trim_as_convolve_mode(self):
         cutoff = 5
@@ -701,7 +702,8 @@ class InstantaneousRateTest(unittest.TestCase):
             for trim in (False, True):
                 rate_centered = statistics.instantaneous_rate(
                     spiketrain, sampling_period=sampling_period,
-                    kernel=kernel, cutoff=cutoff, trim=trim)
+                    kernel=kernel, cutoff=cutoff, trim=trim,
+                    center_kernel=True)
 
                 rate_convolve = statistics.instantaneous_rate(
                     spiketrain, sampling_period=sampling_period,
@@ -750,7 +752,7 @@ class InstantaneousRateTest(unittest.TestCase):
         # This test makes sure that the correct kernel width is chosen when
         # selecting 'auto' as kernel
         spiketrain = neo.SpikeTrain(
-            range(1, 30) * pq.ms, t_start=0 * pq.ms, t_stop=30 * pq.ms)
+            pq.ms * range(1, 30), t_start=0 * pq.ms, t_stop=30 * pq.ms)
 
         # This is the correct procedure to attain the kernel: first, the result
         # of sskernel retrieves the kernel bandwidth of an optimal Gaussian
@@ -777,8 +779,8 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_instantaneous_rate_grows_with_sampling_period(self):
         np.random.seed(0)
         rate_expected = 10 * pq.Hz
-        spiketrain = SPP(rate=rate_expected,
-                         t_stop=10 * pq.s).generate_spiketrain()
+        spiketrain = StatPP(rate=rate_expected,
+                            t_stop=10 * pq.s).generate_spiketrain()
         kernel = kernels.GaussianKernel(sigma=100 * pq.ms)
         rates_mean = []
         for sampling_period in np.linspace(1, 1000, num=10) * pq.ms:
@@ -909,8 +911,8 @@ class TimeHistogramTestCase(unittest.TestCase):
 
     def test_annotations(self):
         np.random.seed(1)
-        spiketrains = [SPP(rate=10 * pq.Hz,
-                           t_stop=10 * pq.s).generate_spiketrain()
+        spiketrains = [StatPP(rate=10 * pq.Hz,
+                              t_stop=10 * pq.s).generate_spiketrain()
                        for _ in range(10)]
         for output in ("counts", "mean", "rate"):
             histogram = statistics.time_histogram(spiketrains,

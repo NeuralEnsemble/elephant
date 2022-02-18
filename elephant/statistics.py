@@ -648,8 +648,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     trim : bool, optional
         Accounts for the asymmetry of a kernel.
         If False, the output of the Fast Fourier Transformation being a longer
-        vector than the input vector by the size of the kernel is reduced back
-        to the original size of the considered time interval of the
+        vector than the input vector (ouput = input + kernel - 1) is reduced
+        back to the original size of the considered time interval of the
         `spiketrain` using the median of the kernel. False (no trimming) is
         equivalent to 'same' convolution mode for symmetrical kernels.
         If True, only the region of the convolved signal is returned, where
@@ -823,10 +823,17 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     t_start = t_start.rescale(spiketrains[0].units)
     t_stop = t_stop.rescale(spiketrains[0].units)
 
-    n_bins = int(((t_stop - t_start) / sampling_period).simplified) + 1
-    time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
+    n_bins = int(((t_stop - t_start) / sampling_period).simplified)
+    # if the sampling period is not an integer multiple of (t_stop - t_start)
+    # add one bin
+    if n_bins * sampling_period != t_stop:
+        n_bins += 1
+
     hist_range_end = t_stop + sampling_period.rescale(spiketrains[0].units)
     hist_range = (t_start.item(), hist_range_end.item())
+
+    # preallocation
+    time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
     for i, st in enumerate(spiketrains):
         time_vectors[i], _ = np.histogram(st.magnitude, bins=n_bins,
                                           range=hist_range)
@@ -850,7 +857,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         median = kernel.icdf(0.5).rescale(units).item()
     else:
         median = 0
-    t_arr = np.linspace(-cutoff_sigma + median, stop=cutoff_sigma + median,
+    # shift kernel using the calculated median
+    t_arr = np.linspace(start=-cutoff_sigma + median,
+                        stop=cutoff_sigma + median,
                         num=2 * n_half + 1, endpoint=True) * units
 
     if center_kernel:
@@ -872,23 +881,25 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     # the convolution of non-negative vectors is non-negative
     rate = np.clip(rate, a_min=0, a_max=None, out=rate)
 
-    if center_kernel:  # account for the kernel asymmetry
+    # cut off the wings from the result of "full" convolution
+    if center_kernel:
         median_id = kernel.median_index(t_arr)
         # the size of kernel() output matches the input size, len(t_arr)
         kernel_array_size = len(t_arr)
         if not trim:
-            rate = rate[median_id: -kernel_array_size + median_id]
+            if -kernel_array_size + median_id + 1 == 0:
+                rate = rate[median_id::]
+            else:
+                rate = rate[median_id: -kernel_array_size + median_id + 1]
         else:
-            rate = rate[2 * median_id: -2 * (kernel_array_size - median_id)]
+            if -2 * (kernel_array_size - median_id - 1) == 0:
+                rate = rate[2 * median_id::]
+            else:
+                rate = rate[2 * median_id:
+                            -2 * (kernel_array_size - median_id - 1)]
+
             t_start = t_start + median_id * units
             t_stop = t_stop - (kernel_array_size - median_id) * units
-    else:
-        # FIXME: don't shrink the output array
-        # (to be consistent with center_kernel=True)
-        # n points have n-1 intervals;
-        # instantaneous rate is a list of intervals;
-        # hence, the last element is excluded
-        rate = rate[:-1]
 
     kernel_annotation = dict(type=type(kernel).__name__,
                              sigma=str(kernel.sigma),
