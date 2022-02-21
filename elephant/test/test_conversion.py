@@ -702,5 +702,43 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                            np.arange(120000))
 
 
+class DiscretiseSpiketrainsTestCase(unittest.TestCase):
+    def setUp(self):
+        times = (np.arange(10) + np.random.uniform(size=10)) * pq.ms
+        self.spiketrains = [neo.SpikeTrain(times, t_stop=10*pq.ms)] * 5
+
+    def test_list_of_spiketrains(self):
+        discretised_spiketrains = cv.discretise_spiketimes(self.spiketrains,
+                                                           1 / pq.ms)
+        for idx in range(len(self.spiketrains)):
+            np.testing.assert_array_equal(discretised_spiketrains[idx].times,
+                                          np.arange(10) * pq.ms)
+
+    def test_single_spiketrain(self):
+        discretised_spiketrain = cv.discretise_spiketimes(self.spiketrains[0],
+                                                          1 / pq.ms)
+        np.testing.assert_array_equal(discretised_spiketrain.times,
+                                      np.arange(10) * pq.ms)
+
+    def test_preserve_t_start(self):
+        spiketrain = neo.SpikeTrain([0.7, 5.1]*pq.ms,
+                                    t_start=0.5*pq.ms, t_stop=10*pq.ms)
+        with self.assertWarns(UserWarning):
+            discretised_spiketrain = cv.discretise_spiketimes(spiketrain,
+                                                              1 / pq.ms)
+        np.testing.assert_array_equal(discretised_spiketrain.times,
+                                      [0.5, 5] * pq.ms)
+
+    def test_binning_consistency(self):
+        discretised_spiketrains = cv.discretise_spiketimes(self.spiketrains,
+                                                           1 / pq.ms)
+        bsts = cv.BinnedSpikeTrain(self.spiketrains,
+                                   bin_size=1 * pq.ms)
+        bsts_discretised = cv.BinnedSpikeTrain(discretised_spiketrains,
+                                               bin_size=1 * pq.ms)
+        np.testing.assert_array_equal(bsts.to_array(),
+                                      bsts_discretised.to_array())
+
+
 if __name__ == '__main__':
     unittest.main()
