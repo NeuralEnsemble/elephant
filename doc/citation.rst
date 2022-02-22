@@ -3,23 +3,25 @@ Citing Elephant
 ***************
 DOI
 ===============
-To cite all versions of elephant use:
+**Concept DOI**, to cite the concept/ all versions of elephant use:
 
-* all: `<DOI 10.5281/zenodo.1186602>`_.
+* all versions: `10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.4582366>`_
+
 *This DOI represents all versions, and will always resolve to the latest one.*
+*Use this to refer to the concept of elephant and all versions.*
 
-To cite a specific version use:
+**Version DOI**, to cite a specific version of elephant use the following:
 
-* v0.10.0: `<10.5281/zenodo.4582366>`_.
-* v0.9.0: `<10.5281/zenodo.4271489>`_.
-* v0.8.0 `<10.5281/zenodo.3975676>`_.
-* v0.7.0 `<10.5281/zenodo.3695277>`_.
-* v0.6.4 `<10.5281/zenodo.3524331>`_.
-* v0.6.3 `<10.5281/zenodo.3346596>`_.
-* v0.6.1 `<10.5281/zenodo.2620229>`_.
-* v0.5.0 `<10.5281/zenodo.1216145>`_.
-* v0.4.3 `<10.5281/zenodo.1187084>`_.
-* v0.4.2 `<10.5281/zenodo.1186603>`_.
+* v0.10.0: `10.5281/zenodo.4582366 <https://doi.org/10.5281/zenodo.4582366>`_
+* v0.9.0: `10.5281/zenodo.4271489 <https://doi.org/10.5281/zenodo.4271489>`_
+* v0.8.0 `10.5281/zenodo.3975676 <https://doi.org/10.5281/zenodo.3975676>`_
+* v0.7.0 `10.5281/zenodo.3695277 <https://doi.org/10.5281/zenodo.3695277>`_
+* v0.6.4 `10.5281/zenodo.3524331 <https://doi.org/10.5281/zenodo.3524331>`_
+* v0.6.3 `10.5281/zenodo.3346596 <https://doi.org/10.5281/zenodo.3346596>`_
+* v0.6.1 `10.5281/zenodo.2620229 <https://doi.org/10.5281/zenodo.2620229>`_
+* v0.5.0 `10.5281/zenodo.1216145 <https://doi.org/10.5281/zenodo.1216145>`_
+* v0.4.3 `10.5281/zenodo.1187084 <https://doi.org/10.5281/zenodo.1187084>`_
+* v0.4.2 `10.5281/zenodo.1186603 <https://doi.org/10.5281/zenodo.1186603>`_
 
 RRID
 ===============
