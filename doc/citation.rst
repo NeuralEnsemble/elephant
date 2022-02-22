@@ -1,16 +1,24 @@
 ***************
 Citing Elephant
 ***************
-DOI
+DOIs
 ===============
-**Concept DOI**, to cite the concept/ all versions of elephant use:
+**Concept DOI**
 
-* all versions: `10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.4582366>`_
+The Concept DOI represents all versions when it is desirable to
+cite the concept of elephant, without being specific about the version.
 
-*This DOI represents all versions, and will always resolve to the latest one.*
-*Use this to refer to the concept of elephant and all versions.*
+* concept: `10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.4582366>`_
 
-**Version DOI**, to cite a specific version of elephant use the following:
+*This DOI represents all versions, and will always resolve to the latest
+version.*
+
+**Version DOI**
+
+In most cases it is reasonable to use the Version DOI to refer to a specific
+version of elephant.
+This is to ensure that other researchers can access the exact version for
+reproducibility.
 
 * v0.10.0: `10.5281/zenodo.4582366 <https://doi.org/10.5281/zenodo.4582366>`_
 * v0.9.0: `10.5281/zenodo.4271489 <https://doi.org/10.5281/zenodo.4271489>`_
