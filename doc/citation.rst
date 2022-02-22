@@ -1,11 +1,32 @@
 ***************
 Citing Elephant
 ***************
+DOI
+===============
+To cite all versions of elephant use:
 
+* all: `<DOI 10.5281/zenodo.1186602>`_.
+*This DOI represents all versions, and will always resolve to the latest one.*
+
+To cite a specific version use:
+
+* v0.10.0: `<10.5281/zenodo.4582366>`_.
+* v0.9.0: `<10.5281/zenodo.4271489>`_.
+* v0.8.0 `<10.5281/zenodo.3975676>`_.
+* v0.7.0 `<10.5281/zenodo.3695277>`_.
+* v0.6.4 `<10.5281/zenodo.3524331>`_.
+* v0.6.3 `<10.5281/zenodo.3346596>`_.
+* v0.6.1 `<10.5281/zenodo.2620229>`_.
+* v0.5.0 `<10.5281/zenodo.1216145>`_.
+* v0.4.3 `<10.5281/zenodo.1187084>`_.
+* v0.4.2 `<10.5281/zenodo.1186603>`_.
+
+RRID
+===============
 To refer to the Elephant software package in publications, please use:
 **Elephant (RRID:SCR_003833)**.
 
-    
+
 To cite Elephant, please use:
 
 **Denker M, Yegenoglu A, Grün S (2018) Collaborative HPC-enabled workflows on
@@ -27,7 +48,7 @@ A BibTeX entry for LaTeX users is:
     }
 
 
-Further publications directly related to Elephant development 
+Further publications directly related to Elephant development
 :cite:`citations-Rostami17_3,citations-Stella19_104022` (see a list of full
 `BibTex references <https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_
 used in Elephant documentation).
