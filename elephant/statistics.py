@@ -824,12 +824,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     t_stop = t_stop.rescale(spiketrains[0].units)
 
     n_bins = int(((t_stop - t_start) / sampling_period).simplified)
-    # if the sampling period is not an integer multiple of (t_stop - t_start)
-    # add one bin
-    if n_bins * sampling_period != t_stop:
-        n_bins += 1
 
-    hist_range_end = t_stop + sampling_period.rescale(spiketrains[0].units)
+    hist_range_end = t_start + n_bins * \
+        sampling_period.rescale(spiketrains[0].units)
     hist_range = (t_start.item(), hist_range_end.item())
 
     # preallocation
@@ -862,11 +859,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                         stop=cutoff_sigma + median,
                         num=2 * n_half + 1, endpoint=True) * units
 
-    if center_kernel:
-        # keep the full convolve range and do the trimming afterwards;
-        # trimming is performed according to the kernel median index
-        fft_mode = 'full'
-    elif trim:
+    if trim:
         # no median index trimming is involved
         fft_mode = 'valid'
     else:
@@ -881,25 +874,11 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     # the convolution of non-negative vectors is non-negative
     rate = np.clip(rate, a_min=0, a_max=None, out=rate)
 
-    # cut off the wings from the result of "full" convolution
-    if center_kernel:
+    if fft_mode == 'valid':  # adjust t_start and t_stop
         median_id = kernel.median_index(t_arr)
-        # the size of kernel() output matches the input size, len(t_arr)
-        kernel_array_size = len(t_arr)
-        if not trim:
-            if -kernel_array_size + median_id + 1 == 0:
-                rate = rate[median_id::]
-            else:
-                rate = rate[median_id: -kernel_array_size + median_id + 1]
-        else:
-            if -2 * (kernel_array_size - median_id - 1) == 0:
-                rate = rate[2 * median_id::]
-            else:
-                rate = rate[2 * median_id:
-                            -2 * (kernel_array_size - median_id - 1)]
-
-            t_start = t_start + median_id * units
-            t_stop = t_stop - (kernel_array_size - median_id) * units
+        kernel_array_size = len(kernel_arr)
+        t_start = t_start + median_id * units
+        t_stop = t_stop - (kernel_array_size - median_id) * units
 
     kernel_annotation = dict(type=type(kernel).__name__,
                              sigma=str(kernel.sigma),
