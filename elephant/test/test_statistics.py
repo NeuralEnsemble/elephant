@@ -859,8 +859,8 @@ class InstantaneousRateTest(unittest.TestCase):
             self.assertEqual(len_rate, len(rate))
 
     def test_rate_times(self):
-        # check the differences between the rate.times is equal to the sampling
-        # period
+        # check if the differences between the rate.times is equal to
+        # sampling_period
         st = self.spike_train
         periods = [1, 0.99, 0.35, st.duration]*pq.s
         for period in periods:
@@ -873,6 +873,7 @@ class InstantaneousRateTest(unittest.TestCase):
             period_times = np.full_like(rate_times_diff, period)
             assert_array_almost_equal(rate_times_diff, period_times,
                                       decimal=14)
+
 
 class TimeHistogramTestCase(unittest.TestCase):
     def setUp(self):

@@ -818,13 +818,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if t_stop is None:
         t_stop = spiketrains[0].t_stop
 
+    # rescale units for consistency
     units = pq.CompoundUnit(
         "{}*s".format(sampling_period.rescale('s').item()))
     t_start = t_start.rescale(spiketrains[0].units)
     t_stop = t_stop.rescale(spiketrains[0].units)
 
+    # calculate parameters for np.histogram
     n_bins = int(((t_stop - t_start) / sampling_period).simplified)
-
     hist_range_end = t_start + n_bins * \
         sampling_period.rescale(spiketrains[0].units)
     hist_range = (t_start.item(), hist_range_end.item())
@@ -835,6 +836,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         time_vectors[i], _ = np.histogram(st.magnitude, bins=n_bins,
                                           range=hist_range)
 
+    time_vectors = time_vectors.T  # make it (time, units)
+
+    # Kernel
     if cutoff < kernel.min_cutoff:
         cutoff = kernel.min_cutoff
         warnings.warn("The width of the kernel was adjusted to a minimally "
@@ -859,6 +863,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                         stop=cutoff_sigma + median,
                         num=2 * n_half + 1, endpoint=True) * units
 
+    kernel_arr = np.expand_dims(kernel(t_arr).rescale(pq.Hz).magnitude, axis=1)
+
+    # Parameters for scipy.signal.fftconvolve
     if trim:
         # no median index trimming is involved
         fft_mode = 'valid'
@@ -866,15 +873,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         # no median index trimming is involved
         fft_mode = 'same'
 
-    time_vectors = time_vectors.T  # make it (time, units)
-    kernel_arr = np.expand_dims(kernel(t_arr).rescale(pq.Hz).magnitude, axis=1)
     rate = scipy.signal.fftconvolve(time_vectors,
                                     kernel_arr,
                                     mode=fft_mode)
     # the convolution of non-negative vectors is non-negative
     rate = np.clip(rate, a_min=0, a_max=None, out=rate)
 
-    if fft_mode == 'valid':  # adjust t_start and t_stop
+    # adjust t_start and t_stop
+    if fft_mode == 'valid':
         median_id = kernel.median_index(t_arr)
         kernel_array_size = len(kernel_arr)
         t_start = t_start + median_id * units
