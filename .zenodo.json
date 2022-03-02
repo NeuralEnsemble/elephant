@@ -64,7 +64,9 @@
     "data-analysis"
     ],
 
-    "license": "BSD 3-Clause",
+    "license": {
+      "id": "BSD-3-Clause"
+    },
 
     "related_identifiers": [
         {
