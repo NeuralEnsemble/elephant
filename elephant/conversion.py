@@ -1267,7 +1267,7 @@ def discretise_spiketimes(spiketrains, sampling_rate):
     """
     # spiketrains type check
     was_single_spiketrain = False
-    if isinstance(spiketrains, (neo.SpikeTrain)):
+    if isinstance(spiketrains, neo.SpikeTrain):
         spiketrains = [spiketrains]
         was_single_spiketrain = True
     elif isinstance(spiketrains, list):
