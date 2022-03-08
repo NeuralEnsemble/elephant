@@ -1281,6 +1281,11 @@ def discretise_spiketimes(spiketrains, sampling_rate):
             "spiketrains must be a SpikeTrain or a list of SpikeTrain objects,"
             " not %s." % type(spiketrains))
 
+    if not isinstance(sampling_rate, pq.Quantity):
+        raise TypeError(
+             "The 'sampling_rate' must be pq.Quantity.\n"
+             "Found: %s." % type(sampling_rate))
+
     units = spiketrains[0].times.units
     mag_sampling_rate = sampling_rate.rescale(1/units).magnitude.flatten()
 
