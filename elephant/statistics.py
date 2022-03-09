@@ -601,7 +601,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
-                       center_kernel=True):
+                       center_kernel=True, endpoint=False):
     """
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -621,7 +621,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         The string 'auto' or callable object of class `kernels.Kernel`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
-        rate estimation. Currently implemented kernel forms are rectangular,
+        rate estimation. Currently, implemented kernel forms are rectangular,
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
         If 'auto', the optimized kernel width for the rate estimation is
@@ -641,7 +641,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         `spiketrain`.
         Default: None
     t_stop : pq.Quantity, optional
-        End time of the interval used to compute the firing rate (included).
+        End time of the interval used to compute the firing rate.
         If None, `t_stop` is assumed equal to `t_stop` attribute of
         `spiketrain`.
         Default: None
@@ -664,6 +664,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         centered on the spike, thus putting equal weight before and after the
         spike. If False, no adjustment is performed such that the spike sits at
         the origin of the kernel.
+        Default: True
+    endpoint: bool, optional
+        If set to True, the estimation of the instantaneous firing rate will
+        be based on all spikes in the interval `[t_start, t_stop]`.
+        If False, only spikes in the interval `[t_start, n * sampling_period]`
+        are considered. Here `n` is an integer and defined as:
+        `n = int((t_stop - t_start) / sampling_period)`.
         Default: True
 
     Returns
@@ -706,7 +713,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     Notes
     -----
     The resulting instantaneous firing rate values smaller than ``0``, which
-    can happen due to machine precision errors, are clipped to zero.
+    may happen due to machine precision errors, are clipped to zero.
 
     Examples
     --------
@@ -802,6 +809,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if not isinstance(trim, bool):
         raise TypeError("'trim' must be bool")
 
+    if not isinstance(endpoint, bool):
+        raise TypeError("'endpoint' must be bool")
+
     check_neo_consistency(spiketrains,
                           object_type=neo.SpikeTrain,
                           t_start=t_start, t_stop=t_stop)
@@ -818,19 +828,21 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if t_stop is None:
         t_stop = spiketrains[0].t_stop
 
-    # rescale units for consistency
+    # Rescale units for consistent calculation
     units = pq.CompoundUnit(
         "{}*s".format(sampling_period.rescale('s').item()))
     t_start = t_start.rescale(spiketrains[0].units)
     t_stop = t_stop.rescale(spiketrains[0].units)
 
-    # calculate parameters for np.histogram
+    # Calculate parameters for np.histogram
     n_bins = int(((t_stop - t_start) / sampling_period).simplified)
+    if endpoint:
+        n_bins += 1
     hist_range_end = t_start + n_bins * \
         sampling_period.rescale(spiketrains[0].units)
     hist_range = (t_start.item(), hist_range_end.item())
 
-    # preallocation
+    # Preallocation
     time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
     for i, st in enumerate(spiketrains):
         time_vectors[i], _ = np.histogram(st.magnitude, bins=n_bins,
@@ -858,44 +870,43 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         median = kernel.icdf(0.5).rescale(units).item()
     else:
         median = 0
-    # shift kernel using the calculated median
+    # Shift kernel using the calculated median
     t_arr = np.linspace(start=-cutoff_sigma + median,
                         stop=cutoff_sigma + median,
                         num=2 * n_half + 1, endpoint=True) * units
-
+    # Calculate the kernel values with t_arr
     kernel_arr = np.expand_dims(kernel(t_arr).rescale(pq.Hz).magnitude, axis=1)
 
-    # Parameters for scipy.signal.fftconvolve
+    # Define mode for scipy.signal.fftconvolve
     if trim:
-        # no median index trimming is involved
         fft_mode = 'valid'
     else:
-        # no median index trimming is involved
         fft_mode = 'same'
 
     rate = scipy.signal.fftconvolve(time_vectors,
                                     kernel_arr,
                                     mode=fft_mode)
-    # the convolution of non-negative vectors is non-negative
+    # The convolution of non-negative vectors is non-negative
     rate = np.clip(rate, a_min=0, a_max=None, out=rate)
 
-    # adjust t_start and t_stop
+    # Adjust t_start and t_stop
     if fft_mode == 'valid':
         median_id = kernel.median_index(t_arr)
         kernel_array_size = len(kernel_arr)
         t_start = t_start + median_id * units
         t_stop = t_stop - (kernel_array_size - median_id) * units
 
+    if endpoint:  # last bin is used for calculation but no estimation is given
+        rate = rate[::-1]
+
     kernel_annotation = dict(type=type(kernel).__name__,
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    rate = neo.AnalogSignal(signal=rate,
+    return neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
                             units=pq.Hz, t_start=t_start, t_stop=t_stop,
                             kernel=kernel_annotation)
-
-    return rate
 
 
 @deprecated_alias(binsize='bin_size')
