@@ -601,7 +601,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
-                       center_kernel=True, endpoint=False):
+                       center_kernel=True):
     """
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -629,21 +629,25 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         this width a gaussian kernel is constructed. Automatized calculation
         of the kernel width is not available for other than gaussian kernel
         shapes.
+
         Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
         the kernel, i.e., the considered width of the kernel in terms of
         multiples of the standard deviation sigma.
+
         Default: 5.0
     t_start : pq.Quantity, optional
         Start time of the interval used to compute the firing rate.
         If None, `t_start` is assumed equal to `t_start` attribute of
         `spiketrain`.
+
         Default: None
     t_stop : pq.Quantity, optional
         End time of the interval used to compute the firing rate.
         If None, `t_stop` is assumed equal to `t_stop` attribute of
         `spiketrain`.
+
         Default: None
     trim : bool, optional
         Accounts for the asymmetry of a kernel.
@@ -658,19 +662,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         Transformation by a total of two times the size of the kernel, and
         `t_start` and `t_stop` are adjusted. True (trimming) is equivalent to
         'valid' convolution mode for symmetrical kernels.
+
         Default: False
     center_kernel : bool, optional
         If set to True, the kernel will be translated such that its median is
         centered on the spike, thus putting equal weight before and after the
         spike. If False, no adjustment is performed such that the spike sits at
         the origin of the kernel.
-        Default: True
-    endpoint: bool, optional
-        If set to True, the estimation of the instantaneous firing rate will
-        be based on all spikes in the interval `[t_start, t_stop]`.
-        If False, only spikes in the interval `[t_start, n * sampling_period]`
-        are considered. Here `n` is an integer and defined as:
-        `n = int((t_stop - t_start) / sampling_period)`.
+
         Default: True
 
     Returns
@@ -712,8 +711,30 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Notes
     -----
-    The resulting instantaneous firing rate values smaller than ``0``, which
-    may happen due to machine precision errors, are clipped to zero.
+    *  The resulting instantaneous firing rate values smaller than ``0``, which
+       may happen due to machine precision errors, are clipped to zero.
+
+    *  The instantaneous firing rate estimate is calculated based on half-open
+       intervals ``[)``, except the last one e.g. if ``t_start = 0s``,
+       ``t_stop = 4s`` and ``sampling_period = 1s``, the intervals are:
+
+       ``[0, 1)`` ``[1, 2)`` ``[2, 3)`` ``[3, 4]``.
+
+       This induces a sampling bias, which can lead to a time shift of the
+       estimated rate, if the `sampling_period` is chosen large relative to the
+       duration ``(t_stop - t_start)``. One possibility to counteract this is
+       to choose a smaller `sampling_period`.
+
+    *  The last interval of the given duration ``(t_stop - t_start)`` is
+       dropped if it is shorter than `sampling_period`,
+       e.g. if ``t_start = 0s``, ``t_stop = 4.5s`` and
+       ``sampling_period = 1s``, the intervals considered are:
+
+       ``[0, 1)`` ``[1, 2)`` ``[2, 3)`` ``[3, 4]``,
+
+       the last interval ``[4, 4.5]`` is excluded from all calculations.
+
+
 
     Examples
     --------
@@ -809,9 +830,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     if not isinstance(trim, bool):
         raise TypeError("'trim' must be bool")
 
-    if not isinstance(endpoint, bool):
-        raise TypeError("'endpoint' must be bool")
-
     check_neo_consistency(spiketrains,
                           object_type=neo.SpikeTrain,
                           t_start=t_start, t_stop=t_stop)
@@ -829,26 +847,28 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         t_stop = spiketrains[0].t_stop
 
     # Rescale units for consistent calculation
-    units = pq.CompoundUnit(
-        "{}*s".format(sampling_period.rescale('s').item()))
     t_start = t_start.rescale(spiketrains[0].units)
     t_stop = t_stop.rescale(spiketrains[0].units)
 
     # Calculate parameters for np.histogram
     n_bins = int(((t_stop - t_start) / sampling_period).simplified)
-    if endpoint:
-        n_bins += 1
     hist_range_end = t_start + n_bins * \
         sampling_period.rescale(spiketrains[0].units)
+
+    if hist_range_end != t_stop:
+        warnings.warn(f"The last interval from {hist_range_end} to {t_stop} "
+                      f"was dropped. Length of interval: "
+                      f"{t_stop-hist_range_end}")
+
     hist_range = (t_start.item(), hist_range_end.item())
 
     # Preallocation
-    time_vectors = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
+    histogram_arr = np.zeros((len(spiketrains), n_bins), dtype=np.float64)
     for i, st in enumerate(spiketrains):
-        time_vectors[i], _ = np.histogram(st.magnitude, bins=n_bins,
-                                          range=hist_range)
+        histogram_arr[i], _ = np.histogram(st.magnitude, bins=n_bins,
+                                           range=hist_range)
 
-    time_vectors = time_vectors.T  # make it (time, units)
+    histogram_arr = histogram_arr.T  # make it (time, units)
 
     # Kernel
     if cutoff < kernel.min_cutoff:
@@ -856,26 +876,33 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         warnings.warn("The width of the kernel was adjusted to a minimally "
                       "allowed width.")
 
-    # An odd number of points correctly resolves the median index and the
-    # fact that the peak of an instantaneous rate should be centered at t=0
-    # for symmetric kernels applied on a single spike at t=0.
-    # See issue https://github.com/NeuralEnsemble/elephant/issues/360
-    n_half = math.ceil(cutoff * (
-            kernel.sigma / sampling_period).simplified.item())
-    cutoff_sigma = cutoff * kernel.sigma.rescale(units).magnitude
-    if center_kernel:
-        # t_arr must be centered at the kernel median.
-        # Not centering on the kernel median leads to underestimating the
-        # instantaneous rate in cases when sampling_period >> kernel.sigma.
-        median = kernel.icdf(0.5).rescale(units).item()
+    scaling_unit = pq.CompoundUnit(f"{sampling_period.rescale('s').item()}*s")
+    cutoff_sigma = cutoff * kernel.sigma.rescale(scaling_unit).magnitude
+    if center_kernel:  # t_arr is centered on the kernel median.
+        median = kernel.icdf(0.5).rescale(scaling_unit).item()
     else:
         median = 0
+
+    # An odd number of points correctly resolves the median index of the
+    # kernel. This avoids a timeshift in the rate estimate for symmetric
+    # kernels. A number x given by 'x = 2 * n + 1' with n being an integer is
+    # always odd. Using `math.ceil` to calculate `t_arr_kernel_half` ensures an
+    # integer value, hence the number of points for the kernel (num) given by
+    # `num=2 * t_arr_kernel_half + 1` is always odd.
+    # (See Issue #360, https://github.com/NeuralEnsemble/elephant/issues/360)
+    t_arr_kernel_half = math.ceil(
+        cutoff * (kernel.sigma / sampling_period).simplified.item())
+    t_arr_kernel_length = 2 * t_arr_kernel_half + 1
+
     # Shift kernel using the calculated median
-    t_arr = np.linspace(start=-cutoff_sigma + median,
-                        stop=cutoff_sigma + median,
-                        num=2 * n_half + 1, endpoint=True) * units
+    t_arr_kernel = np.linspace(start=-cutoff_sigma + median,
+                               stop=cutoff_sigma + median,
+                               num=t_arr_kernel_length,
+                               endpoint=True) * scaling_unit
+
     # Calculate the kernel values with t_arr
-    kernel_arr = np.expand_dims(kernel(t_arr).rescale(pq.Hz).magnitude, axis=1)
+    kernel_arr = np.expand_dims(
+        kernel(t_arr_kernel).rescale(pq.Hz).magnitude, axis=1)
 
     # Define mode for scipy.signal.fftconvolve
     if trim:
@@ -883,7 +910,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     else:
         fft_mode = 'same'
 
-    rate = scipy.signal.fftconvolve(time_vectors,
+    rate = scipy.signal.fftconvolve(histogram_arr,
                                     kernel_arr,
                                     mode=fft_mode)
     # The convolution of non-negative vectors is non-negative
@@ -891,13 +918,10 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     # Adjust t_start and t_stop
     if fft_mode == 'valid':
-        median_id = kernel.median_index(t_arr)
+        median_id = kernel.median_index(t_arr_kernel)
         kernel_array_size = len(kernel_arr)
-        t_start = t_start + median_id * units
-        t_stop = t_stop - (kernel_array_size - median_id) * units
-
-    if endpoint:  # last bin is used for calculation but no estimation is given
-        rate = rate[::-1]
+        t_start = t_start + median_id * scaling_unit
+        t_stop = t_stop - (kernel_array_size - median_id) * scaling_unit
 
     kernel_annotation = dict(type=type(kernel).__name__,
                              sigma=str(kernel.sigma),
@@ -940,10 +964,11 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
         Default: None
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
-        * 'counts': spike counts at each bin (as integer numbers)
-        * 'mean': mean spike counts per spike train
-        * 'rate': mean spike rate per spike train. Like 'mean', but the
-          counts are additionally normalized by the bin width.
+        *  'counts': spike counts at each bin (as integer numbers).
+        *  'mean': mean spike counts per spike train.
+        *  'rate': mean spike rate per spike train. Like 'mean', but the
+        counts are additionally normalized by the bin width.
+
         Default: 'counts'
     binary : bool, optional
         If True, indicates whether all `neo.SpikeTrain` objects should first
@@ -1092,25 +1117,28 @@ class Complexity(object):
     bin_size : pq.Quantity or None, optional
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
-          * If None and the `sampling_rate` is available
-          1/`sampling_rate` is used.
-          * If both are given then `bin_size` is used.
+        *  If None and the `sampling_rate` is available
+        1/`sampling_rate` is used.
+        *  If both are given then `bin_size` is used.
+
         Default: None
     binary : bool, optional
-          * If True then the time histograms will be binary.
-          * If False the total number of synchronous spikes is counted in the
-            time histogram.
+        *  If True then the time histograms will be binary.
+        *  If False the total number of synchronous spikes is counted in the
+           time histogram.
+
         Default: True
     spread : int, optional
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
-          * ``spread = 0`` corresponds to a bincount accross spike trains.
-          * ``spread = 1`` corresponds to counting consecutive spikes.
-          * ``spread = 2`` corresponds to counting consecutive spikes and
-            spikes separated by exactly 1 empty bin.
-          * ``spread = n`` corresponds to counting spikes separated by exactly
-            or less than `n - 1` empty bins.
+        *  ``spread = 0`` corresponds to a bincount accross spike trains.
+        *  ``spread = 1`` corresponds to counting consecutive spikes.
+        *  ``spread = 2`` corresponds to counting consecutive spikes and
+        spikes separated by exactly 1 empty bin.
+        *  ``spread = n`` corresponds to counting spikes separated by exactly
+        or less than `n - 1` empty bins.
+
         Default: 0
     tolerance : float or None, optional
         Tolerance for rounding errors in the binning process and in the input
@@ -1123,18 +1151,20 @@ class Complexity(object):
     epoch : neo.Epoch
         An epoch object containing complexity values, left edges and durations
         of all intervals with at least one spike.
-          * ``epoch.array_annotations['complexity']`` contains the
-            complexity values per spike.
-          * ``epoch.times`` contains the left edges.
-          * ``epoch.durations`` contains the durations.
+        *  ``epoch.array_annotations['complexity']`` contains the
+        complexity values per spike.
+        *  ``epoch.times`` contains the left edges.
+        *  ``epoch.durations`` contains the durations.
+
     time_histogram : neo.Analogsignal
         A `neo.AnalogSignal` object containing the histogram values.
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
-          * If ``binary = True`` : Number of neurons that spiked in each bin,
-            regardless of the number of spikes.
-          * If ``binary = False`` : Number of neurons and spikes per neurons
-            in each bin.
+        *  If ``binary = True`` : Number of neurons that spiked in each bin,
+        regardless of the number of spikes.
+        *  If ``binary = False`` : Number of neurons and spikes per neurons
+        in each bin.
+
     complexity_histogram : np.ndarray
         The number of occurrences of events of different complexities.
         `complexity_hist[i]` corresponds to the number of events of
@@ -1168,11 +1198,11 @@ class Complexity(object):
 
     Notes
     -----
-    * Note that with most common parameter combinations spike times can end up
-      on bin edges. This makes the binning susceptible to rounding errors which
-      is accounted for by moving spikes which are within tolerance of the next
-      bin edge into the following bin. This can be adjusted using the tolerance
-      parameter and turned off by setting `tolerance=None`.
+    Note that with most common parameter combinations spike times can end up
+    on bin edges. This makes the binning susceptible to rounding errors which
+    is accounted for by moving spikes which are within tolerance of the next
+    bin edge into the following bin. This can be adjusted using the tolerance
+    parameter and turned off by setting `tolerance=None`.
 
     See also
     --------
