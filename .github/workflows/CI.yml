@@ -302,7 +302,7 @@ jobs:
             conda env update --file requirements/environment-docs.yml --name base
             conda install -c conda-forge openmpi
             conda install -c conda-forge pandoc
-            pip install .
+            pip install -e .[extras]
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
