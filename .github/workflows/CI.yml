@@ -36,6 +36,9 @@ on:
       #- review_request_removed
       #- auto_merge_enabled
       #- auto_merge_disabled
+  push:
+    branches:
+      - master
 
 # jobs define the steps that will be executed on the runner
 jobs:
