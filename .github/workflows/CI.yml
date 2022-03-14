@@ -284,7 +284,6 @@ jobs:
          run: |
             # $CONDA is an environment variable pointing to the root of the miniconda directory
             echo $CONDA/bin >> $GITHUB_PATH
-            sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Cache pip
          uses: actions/cache@v2
@@ -299,6 +298,7 @@ jobs:
             python -m pip install --upgrade pip
             pip install -r requirements/requirements-docs.txt
             pip install -r requirements/requirements-tutorials.txt
+            pip install .
             conda update conda
             conda env update --file requirements/environment-docs.yml --name base
             conda install -c conda-forge openmpi
