@@ -70,6 +70,7 @@ import math
 import warnings
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 import scipy.stats
@@ -769,7 +770,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         if kernel == 'auto':
             kernel = optimal_kernel(spiketrains)
         spiketrains = [spiketrains]
-    elif not isinstance(spiketrains, (list, tuple)):
+    elif not isinstance(spiketrains, (list, tuple, SpikeTrainList)):
         raise TypeError(
             "'spiketrains' must be a list of neo.SpikeTrain's or a single "
             "neo.SpikeTrain. Found: '{}'".format(type(spiketrains)))
