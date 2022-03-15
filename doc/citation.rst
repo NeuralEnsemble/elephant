@@ -3,10 +3,10 @@ Citing Elephant
 ***************
 To refer to the Elephant software package in publications, please use:
 
-(DOI: `doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.4582366>`_;
+Elephant (`doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.4582366>`_;
 `RRID:SCR_003833 <https://scicrunch.org/resolver/RRID:SCR_003833>`_)
 
-To cite a specific version of elephant use:
+To cite a specific version of Elephant use:
 
 * v0.10.0 `doi:10.5281/zenodo.4582366 <https://doi.org/10.5281/zenodo.4582366>`_
 * v0.9.0 `doi:10.5281/zenodo.4271489 <https://doi.org/10.5281/zenodo.4271489>`_
