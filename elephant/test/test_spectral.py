@@ -265,7 +265,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
             download_elephant_data(gin_path=f"{gin_path}/{filename}",
                                    checksum=checksum)
 
-        time_series = np.load / 'time_series.npy')
+        time_series = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
         psd_nitime = np.load(ELEPHANT_TMP_DIR / 'psd_nitime.npy')
 
         freqs, psd_multitaper = elephant.spectral.multitaper_psd(
