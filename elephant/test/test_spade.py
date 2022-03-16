@@ -7,12 +7,11 @@ Unit tests for the spade module.
 from __future__ import division
 
 import unittest
-import random
 
 import neo
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 
 import elephant.conversion as conv
 import elephant.spade as spade
@@ -259,8 +258,6 @@ class SpadeTestCase(unittest.TestCase):
         elements_msip_max_spikes = []
         for out in output_msip_max_spikes:
             elements_msip_max_spikes.append(out['neurons'])
-        elements_msip_max_spikes = sorted(
-            elements_msip_max_spikes, key=len)
         lags_msip_max_spikes = []
         for out in output_msip_max_spikes:
             lags_msip_max_spikes.append(list(out['lags'].magnitude))
@@ -271,29 +268,6 @@ class SpadeTestCase(unittest.TestCase):
             [len(lags) < self.max_spikes
              for lags in lags_msip_max_spikes],
             [True] * len(lags_msip_max_spikes))
-
-        # TODO: does not work with new FIM module
-        # test max_occ parameter
-        # output_msip_max_occ = spade.spade(
-        #     self.msip,
-        #     self.bin_size,
-        #     self.winlen,
-        #     max_occ=self.max_occ,
-        #     approx_stab_pars=dict(
-        #         n_subsets=self.n_subset),
-        #     n_surr=self.n_surr,
-        #     alpha=self.alpha,
-        #     psr_param=self.psr_param,
-        #     stat_corr='no',
-        #     output_format='patterns')['patterns']
-        # # collect spade output
-        # occ_msip_max_occ = []
-        # for out in output_msip_max_occ:
-        #     occ_msip_max_occ.append(list(out['times'].magnitude))
-        # occ_msip_max_occ = sorted(occ_msip_max_occ, key=len)
-        # # test occurrences time
-        # assert_array_equal(occ_msip_max_occ, [
-        #     occ for occ in self.occ_msip if len(occ) <= self.max_occ])
 
     # test to compare the python and the C implementation of FIM
     # skip this test if C code not available
