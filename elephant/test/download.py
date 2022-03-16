@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
+from os import getenv
 
 from tqdm import tqdm
 
@@ -58,6 +59,14 @@ def download(url, filepath=None, checksum=None, verbose=True):
                   desc=desc, disable=not verbose) as t:
         urlretrieve(url, filename=filepath, reporthook=t.update_to)
     return filepath
+
+
+def download_elephant_data(gin_path, filepath=None, checksum=None,
+                           verbose=True):
+    default = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
+    url = f"{getenv('ELEPHANT_DATA_URL', default)}/{gin_path}"
+
+    return download(url, filepath, checksum, verbose)
 
 
 def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):
