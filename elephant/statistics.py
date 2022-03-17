@@ -602,12 +602,11 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True):
-    """
+    r"""
     Estimates instantaneous firing rate by kernel convolution.
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.statistics.plot_instantaneous_rates_colormesh`.
-
 
     Parameters
     ----------
@@ -684,30 +683,24 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     Raises
     ------
     TypeError
-        If `spiketrain` is not an instance of `neo.SpikeTrain`.
-
-        If `sampling_period` is not a `pq.Quantity`.
-
-        If `sampling_period` is not larger than zero.
-
-        If `kernel` is neither instance of `kernels.Kernel` nor string 'auto'.
-
-        If `cutoff` is neither `float` nor `int`.
-
-        If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
-
-        If `trim` is not `bool`.
+        *  If `spiketrain` is not an instance of `neo.SpikeTrain`.
+        *  If `sampling_period` is not a `pq.Quantity`.
+        *  If `sampling_period` is not larger than zero.
+        *  If `kernel` is neither instance of `kernels.Kernel` nor string
+           'auto'.
+        *  If `cutoff` is neither `float` nor `int`.
+        *  If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
+        *  If `trim` is not `bool`.
     ValueError
-        If `sampling_period` is smaller than zero.
-
-        If `kernel` is 'auto' and the function was unable to calculate optimal
-        kernel width for instantaneous rate from input data.
+        *  If `sampling_period` is smaller than zero.
+        *  If `kernel` is 'auto' and the function was unable to calculate
+           optimal kernel width for instantaneous rate from input data.
 
     Warns
     -----
     UserWarning
-        If `cutoff` is less than `min_cutoff` attribute of `kernel`, the width
-        of the kernel is adjusted to a minimally allowed width.
+        *  If `cutoff` is less than `min_cutoff` attribute of `kernel`, the
+           width of the kernel is adjusted to a minimally allowed width.
 
     Notes
     -----
@@ -854,11 +847,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     n_bins = int(((t_stop - t_start) / sampling_period).simplified)
     hist_range_end = t_start + n_bins * \
         sampling_period.rescale(spiketrains[0].units)
-
-    if hist_range_end != t_stop:
-        warnings.warn(f"The last interval from {hist_range_end} to {t_stop} "
-                      f"was dropped. Length of interval: "
-                      f"{t_stop-hist_range_end}")
 
     hist_range = (t_start.item(), hist_range_end.item())
 
