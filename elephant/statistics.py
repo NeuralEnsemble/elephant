@@ -791,32 +791,29 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         if kernel == 'auto':
             kernel = optimal_kernel(spiketrains)
         spiketrains = [spiketrains]
-    elif not isinstance(spiketrains, (list, tuple)):
-        raise TypeError(
-            "'spiketrains' must be a list of neo.SpikeTrain's or a single "
-            "neo.SpikeTrain. Found: '{}'".format(type(spiketrains)))
+
+    if not all([isinstance(elem, neo.SpikeTrain) for elem in spiketrains]):
+        raise TypeError(f"'spiketrains' must be a list of neo.SpikeTrain's or "
+                        f"a single neo.SpikeTrain. Found: {type(spiketrains)}")
 
     if not is_time_quantity(sampling_period):
-        raise TypeError(
-            "The 'sampling_period' must be a time Quantity. \n"
-            "Found: {}".format(type(sampling_period)))
+        raise TypeError(f"The 'sampling_period' must be a time Quantity."
+                        f"Found: {type(sampling_period)}")
 
     if sampling_period.magnitude < 0:
-        raise ValueError("The 'sampling_period' ({}) must be non-negative.".
-                         format(sampling_period))
+        raise ValueError(f"The 'sampling_period' ({sampling_period}) "
+                         f"must be non-negative.")
 
     if not (isinstance(kernel, kernels.Kernel) or kernel == 'auto'):
-        raise TypeError(
-            "'kernel' must be either instance of class elephant.kernels.Kernel"
-            " or the string 'auto'. Found: %s, value %s" % (type(kernel),
-                                                            str(kernel)))
+        raise TypeError(f"'kernel' must be instance of class "
+                        f"elephant.kernels.Kernel or string 'auto'. Found: "
+                        f"{type(kernel)}, value {str(kernel)}")
 
     if not isinstance(cutoff, (float, int)):
         raise TypeError("'cutoff' must be float or integer")
 
     if not is_time_quantity(t_start, allow_none=True):
         raise TypeError("'t_start' must be a time Quantity")
-
     if not is_time_quantity(t_stop, allow_none=True):
         raise TypeError("'t_stop' must be a time Quantity")
 
@@ -826,6 +823,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     check_neo_consistency(spiketrains,
                           object_type=neo.SpikeTrain,
                           t_start=t_start, t_stop=t_stop)
+
     if kernel == 'auto':
         if len(spiketrains) == 1:
             kernel = optimal_kernel(spiketrains[0])
