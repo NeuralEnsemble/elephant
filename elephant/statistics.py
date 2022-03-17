@@ -70,6 +70,7 @@ import math
 import warnings
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 import scipy.stats

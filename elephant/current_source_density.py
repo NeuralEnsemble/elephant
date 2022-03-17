@@ -62,7 +62,7 @@ py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 
 
 @deprecated_alias(coords='coordinates')
-def estimate_csd(lfp, coordinates=None, method=None,
+def estimate_csd(lfp, coordinates='coordinates', method=None,
                  process_estimate=True, **kwargs):
     """
     Function call to compute the current source density (CSD) from
@@ -72,12 +72,16 @@ def estimate_csd(lfp, coordinates=None, method=None,
     Parameters
     ----------
     lfp : neo.AnalogSignal
-        positions of electrodes can be added as neo.RecordingChannel
-        coordinate or sent externally as a func argument (See coords)
-    coordinates : [Optional] corresponding spatial coordinates of the
-        electrodes.
-        Defaults to None
-        Otherwise looks for ChannelIndex coordinate
+        Positions of electrodes can be added as an array annotation
+    coordinates : array-like Quantity or string
+        Specifies the corresponding spatial coordinates of the electrodes.
+        Coordinates can be directly supplied by a NxM array-like Quantity
+        with dimension of space, where M is the number of signals in 'lfp',
+        and N is equal to the dimensionality of the method.
+        Alternatively, if coordinates is a string, the function will fetch the
+        coordinates, supplied in the same format, as annotation of 'lfp' by that
+        name.
+        Default: 'coordinates'
     method : string
         Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
@@ -114,17 +118,19 @@ def estimate_csd(lfp, coordinates=None, method=None,
     """
     if not isinstance(lfp, neo.AnalogSignal):
         raise TypeError('Parameter `lfp` must be a neo.AnalogSignal object')
-    if coordinates is None:
-        coordinates = lfp.channel_index.coordinates
-    else:
-        scaled_coords = []
-        for coord in coordinates:
-            try:
-                scaled_coords.append(coord.rescale(pq.mm))
-            except AttributeError:
-                raise AttributeError('No units given for electrode spatial \
-                coordinates')
-        coordinates = scaled_coords
+    if isinstance(coordinates, str):
+        coordinates = lfp.annotations[coordinates]
+
+    # Scale all coordinates to mm as common basis
+    scaled_coords = []
+    for coord in coordinates:
+        try:
+            scaled_coords.append(coord.rescale(pq.mm))
+        except AttributeError:
+            raise AttributeError('No units given for electrode spatial \
+            coordinates')
+    coordinates = scaled_coords
+
     if method is None:
         raise ValueError('Must specify a method of CSD implementation')
     if len(coordinates) != lfp.shape[1]:
@@ -249,7 +255,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     -------
     LFP : neo.AnalogSignal
        The potentials created by the csd profile at the electrode positions.
-       The electrode positions are attached as RecordingChannel's coordinate.
+       The electrode positions are attached as an annotation named
+       'coordinates'.
     """
 
     def integrate_1D(x0, csd_x, csd, h):
@@ -327,10 +334,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         pots /= 4 * np.pi * sigma
         ele_pos = np.vstack((x_positions, y_positions, z_positions)).T
     ele_pos = ele_pos * pq.mm
-    ch = neo.ChannelIndex(index=range(len(pots)))
+
     asig = neo.AnalogSignal(np.expand_dims(pots, axis=0),
                             sampling_rate=pq.kHz, units='mV')
-    ch.coordinates = ele_pos
-    ch.analogsignals.append(asig)
-    ch.create_relationship()
+    asig.annotate(coordinates=ele_pos)
     return asig
