@@ -63,8 +63,64 @@ def download(url, filepath=None, checksum=None, verbose=True):
 
 def download_elephant_data(gin_path, filepath=None, checksum=None,
                            verbose=True):
-    default = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
-    url = f"{getenv('ELEPHANT_DATA_URL', default)}/{gin_path}"
+    r"""
+        This function can be used to download files from elephant-data using
+        only the path relative to the root of the elephant-data repository.
+        The used elephant-data version depends on the default URL.
+        This default URL points to a specific version of elephant-data.
+        Different versions of the elephant package may require different
+        versions of elephant-data.
+        e.g. the follwoing URLs:
+        -  https://web.gin.g-node.org/INM-6/elephant-data/raw/0.0.1
+           points to release v0.0.1.
+        -  https://we.gin.g-node.org/INM-6/elephant-data/raw/master
+           always points to the latest state of elephant-data.
+
+        The change this URL, use the environment variable `ELEPHANT_DATA_URL`. 
+        When using data, which is not yet conatined in
+        the master branch or a release of elephant data, e.g. during
+        development, this variable can be used to change the default URL.
+        For example to use data on branch `multitaper`, change the
+        `ELEPHANT_DATA_URL` to
+        https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper, for a
+        complete example, see Examples section.
+
+        Parameters
+        ----------
+        gin_path : str
+            String denoting the path relative to elephant-data repository root
+        filepath : str, optional
+            Path to temporary folder where the downloaded files will be stored
+        checksum : str, otpional
+            Checksum to verify dara integrity after download
+        verbose : bool, optional
+            Whether to disable the entire progressbar wrapper [].
+            If set to None, disable on non-TTY.
+            Default: True
+
+        Returns
+        -------
+        filepath : str
+            Path to downloaded files
+
+        Notes
+        -----
+        The default URL is changed with every release of elephant-data. Please
+        do not change its value. For development purposes use environment
+        variable 'ELEPHANT_DATA_URL'.
+
+        Examples
+        --------
+        The following example downloads a file from elephant-data branch
+        'multitaper', by setting the environment variable with the branch URL:
+
+        >>> import os
+        >>> from elephant.test.download import download_elephant_data
+        >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper" # noqa
+        >>> download_elephant_data("unittest/spectral/multitaper_psd/data/time_series.npy")
+        """
+    default_URL = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
+    url = f"{getenv('ELEPHANT_DATA_URL', default_URL)}/{gin_path}"
 
     return download(url, filepath, checksum, verbose)
 
