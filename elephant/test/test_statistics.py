@@ -642,9 +642,8 @@ class InstantaneousRateTest(unittest.TestCase):
                 10 * pq.Hz, t_start=0 * pq.s,
                 t_stop=10 * pq.s).generate_spiketrain()
             kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
-            rate = statistics.instantaneous_rate(spiketrain,
-                                                 sampling_period=sampling_period,
-                                                 kernel=kernel)
+            rate = statistics.instantaneous_rate(
+                spiketrain, sampling_period=sampling_period, kernel=kernel)
         except ValueError:
             self.fail('When providing a kernel on a much smaller time scale '
                       'than sampling rate requested the instantaneous rate '
@@ -924,7 +923,7 @@ class InstantaneousRateTest(unittest.TestCase):
             sampling_period=sampling_period,
             kernel=kernel, center_kernel=True, trim=False)
         self.assertAlmostEqual(spike_times[3].magnitude.item(),
-                         rate.times[rate.argmax()].magnitude.item())
+                               rate.times[rate.argmax()].magnitude.item())
 
 
 class TimeHistogramTestCase(unittest.TestCase):
