@@ -254,7 +254,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
         Please follow the link below for more details:
         https://gin.g-node.org/INM-6/elephant-data/src/master/unittest/spectral/multitaper_psd
         """
-        gin_path = r"unittest/spectral/multitaper_psd/data"
+        repo_path = r"unittest/spectral/multitaper_psd/data"
 
         files_to_download = [
             ("time_series.npy", "ff43797e2ac94613f510b20a31e2e80e"),
@@ -262,7 +262,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
         ]
 
         for filename, checksum in files_to_download:
-            download_elephant_data(gin_path=f"{gin_path}/{filename}",
+            download_elephant_data(repo_path=f"{repo_path}/{filename}",
                                    checksum=checksum)
 
         time_series = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')

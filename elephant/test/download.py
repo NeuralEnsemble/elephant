@@ -61,13 +61,12 @@ def download(url, filepath=None, checksum=None, verbose=True):
     return filepath
 
 
-def download_elephant_data(gin_path, filepath=None, checksum=None,
+def download_elephant_data(repo_path, filepath=None, checksum=None,
                            verbose=True):
     r"""
         This function can be used to download files from elephant-data using
         only the path relative to the root of the elephant-data repository.
-        The used elephant-data version depends on the default URL.
-        This default URL points to a specific version of elephant-data.
+        The default URL used, points to a specific release of elephant-data.
         Different versions of the elephant package may require different
         versions of elephant-data.
         e.g. the follwoing URLs:
@@ -77,17 +76,17 @@ def download_elephant_data(gin_path, filepath=None, checksum=None,
            always points to the latest state of elephant-data.
 
         The change this URL, use the environment variable `ELEPHANT_DATA_URL`.
-        When using data, which is not yet conatined in
-        the master branch or a release of elephant data, e.g. during
-        development, this variable can be used to change the default URL.
+        When using data, which is not yet conatined in the master branch or a
+        release of elephant data, e.g. during development, this variable can
+        be used to change the default URL.
         For example to use data on branch `multitaper`, change the
         `ELEPHANT_DATA_URL` to
-        https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper, for a
-        complete example, see Examples section.
+        https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper.
+        For a complete example, see Examples section.
 
         Parameters
         ----------
-        gin_path : str
+        repo_path : str
             String denoting the path relative to elephant-data repository root
         filepath : str, optional
             Path to temporary folder where the downloaded files will be stored
@@ -112,7 +111,7 @@ def download_elephant_data(gin_path, filepath=None, checksum=None,
         Examples
         --------
         The following example downloads a file from elephant-data branch
-        'multitaper', by setting the environment variable with the branch URL:
+        'multitaper', by setting the environment variable to the branch URL:
 
         >>> import os
         >>> from elephant.test.download import download_elephant_data
@@ -120,8 +119,8 @@ def download_elephant_data(gin_path, filepath=None, checksum=None,
         >>> download_elephant_data("unittest/spectral/multitaper_psd/data/time_series.npy")
         """
 
-    default_URL = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
-    url = f"{getenv('ELEPHANT_DATA_URL', default_URL)}/{gin_path}"
+    default_url = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
+    url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
 
     return f"{download(url, filepath, checksum, verbose)}"
 
