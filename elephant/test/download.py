@@ -76,7 +76,7 @@ def download_elephant_data(gin_path, filepath=None, checksum=None,
         -  https://we.gin.g-node.org/INM-6/elephant-data/raw/master
            always points to the latest state of elephant-data.
 
-        The change this URL, use the environment variable `ELEPHANT_DATA_URL`. 
+        The change this URL, use the environment variable `ELEPHANT_DATA_URL`.
         When using data, which is not yet conatined in
         the master branch or a release of elephant data, e.g. during
         development, this variable can be used to change the default URL.
@@ -119,10 +119,11 @@ def download_elephant_data(gin_path, filepath=None, checksum=None,
         >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper" # noqa
         >>> download_elephant_data("unittest/spectral/multitaper_psd/data/time_series.npy")
         """
+
     default_URL = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
     url = f"{getenv('ELEPHANT_DATA_URL', default_URL)}/{gin_path}"
 
-    return download(url, filepath, checksum, verbose)
+    return f"{download(url, filepath, checksum, verbose)}"
 
 
 def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):
