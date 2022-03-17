@@ -99,7 +99,7 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
 
         Returns
         -------
-        filepath : str
+        filepath : PosixPath
             Path to downloaded files
 
         Notes
@@ -122,7 +122,7 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
     default_url = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
     url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
 
-    return f"{download(url, filepath, checksum, verbose)}"
+    return download(url, filepath, checksum, verbose)
 
 
 def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):

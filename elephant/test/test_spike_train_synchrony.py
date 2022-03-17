@@ -166,7 +166,7 @@ class TestSpikeContrast(unittest.TestCase):
 
         izhikevich_gin = r"dataset-3/Data_Izhikevich_network.zip"
         checksum = "70e848500c1d9c6403b66de8c741d849"
-        filepath_zip = download_elephant_data(gin_path=izhikevich_gin,
+        filepath_zip = download_elephant_data(repo_path=izhikevich_gin,
                                               checksum=checksum)
         unzip(filepath_zip)
         filepath_json = filepath_zip.with_suffix(".json")
