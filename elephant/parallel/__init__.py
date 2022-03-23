@@ -42,10 +42,11 @@ from .parallel import ProcessPoolExecutor, SingleProcess
 
 try:
     from .mpi import MPIPoolExecutor, MPICommExecutor
-except ImportError:
+except ImportError as error:  # pragma: no cover
     # mpi4py is missing
-    warnings.warn("mpi4py package is missing. Please run 'pip install mpi4py' "
-                  "in a terminal to activate MPI features.")
+    error.msg += "mpi4py package is missing. Please run 'pip install mpi4py'" \
+                 " in a terminal to activate MPI features."
+    print(error.msg)
 
 __all__ = [
     "ProcessPoolExecutor",
