@@ -66,6 +66,11 @@ https://users.ece.cmu.edu/~byronyu/software.shtml
 
 :copyright: Copyright 2014-2020 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
+
+Notes
+-------------
+Requires installation of elephant with extras, see :ref:`installation`.
+
 """
 
 from __future__ import division, print_function, unicode_literals

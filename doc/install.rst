@@ -42,6 +42,7 @@ Elephant requires `Python <http://python.org/>`_ 3.6, 3.7, 3.8, or 3.9.
 
            sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
 
+.. _installation:
 
 ************
 Installation

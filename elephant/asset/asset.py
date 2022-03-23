@@ -39,6 +39,12 @@ Run tutorial interactively:
    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/asset.ipynb
 
+Notes
+--------
+To visualize them, refer to Viziphant documentation and an example plot
+:func:`viziphant.asset.plot_synchronous_events`.
+
+Requires installation of elephant with extras, see :ref:`installation`
 
 Examples
 --------
@@ -110,9 +116,6 @@ The ASSET found the following sequences of synchronous events:
   (47, 14): {7},
   (48, 15): {0},
   (50, 17): {9}}}
-
-To visualize them, refer to Viziphant documentation and an example plot
-:func:`viziphant.asset.plot_synchronous_events`.
 
 """
 from __future__ import division, print_function, unicode_literals

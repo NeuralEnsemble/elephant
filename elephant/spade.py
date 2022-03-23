@@ -293,6 +293,9 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     -----
     If detected, this function will use MPI to parallelize the analysis.
 
+    Requires installation of elephant with extras, see
+    :ref:`installation`.
+
     Examples
     --------
     The following example applies SPADE to `spiketrains` (list of
