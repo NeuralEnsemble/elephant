@@ -7,13 +7,12 @@ Unit tests for the spade module.
 from __future__ import division
 
 import unittest
-import random
 
 import neo
 from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 
 import elephant.conversion as conv
 import elephant.spade as spade
@@ -289,8 +288,6 @@ class SpadeTestCase(unittest.TestCase):
         elements_msip_max_spikes = []
         for out in output_msip_max_spikes:
             elements_msip_max_spikes.append(out['neurons'])
-        elements_msip_max_spikes = sorted(
-            elements_msip_max_spikes, key=len)
         lags_msip_max_spikes = []
         for out in output_msip_max_spikes:
             lags_msip_max_spikes.append(list(out['lags'].magnitude))
