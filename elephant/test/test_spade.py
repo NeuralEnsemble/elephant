@@ -7,12 +7,12 @@ Unit tests for the spade module.
 from __future__ import division
 
 import unittest
-import random
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 
 import elephant.conversion as conv
 import elephant.spade as spade
@@ -180,6 +180,35 @@ class SpadeTestCase(unittest.TestCase):
         # check the lags
         assert_array_equal(lags_msip, self.lags_msip)
 
+    # Testing with multiple patterns input
+    def test_spade_msip_spiketrainlist(self):
+        output_msip = spade.spade(
+            SpikeTrainList(self.msip), self.bin_size, self.winlen,
+            approx_stab_pars=dict(
+            n_subsets=self.n_subset,
+            stability_thresh=self.stability_thresh),
+            n_surr=self.n_surr, alpha=self.alpha,
+            psr_param=self.psr_param,
+            stat_corr='no',
+            output_format='patterns')['patterns']
+        elements_msip = []
+        occ_msip = []
+        lags_msip = []
+        # collecting spade output
+        for out in output_msip:
+            elements_msip.append(out['neurons'])
+            occ_msip.append(list(out['times'].magnitude))
+            lags_msip.append(list(out['lags'].magnitude))
+        elements_msip = sorted(elements_msip, key=len)
+        occ_msip = sorted(occ_msip, key=len)
+        lags_msip = sorted(lags_msip, key=len)
+        # check neurons in the patterns
+        assert_array_equal(elements_msip, self.elements_msip)
+        # check the occurrences time of the patters
+        assert_array_equal(occ_msip, self.occ_msip)
+        # check the lags
+        assert_array_equal(lags_msip, self.lags_msip)
+
     def test_parameters(self):
         """
         Test under different configuration of parameters than the default one
@@ -259,8 +288,6 @@ class SpadeTestCase(unittest.TestCase):
         elements_msip_max_spikes = []
         for out in output_msip_max_spikes:
             elements_msip_max_spikes.append(out['neurons'])
-        elements_msip_max_spikes = sorted(
-            elements_msip_max_spikes, key=len)
         lags_msip_max_spikes = []
         for out in output_msip_max_spikes:
             lags_msip_max_spikes.append(list(out['lags'].magnitude))
