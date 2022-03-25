@@ -1,9 +1,13 @@
 import hashlib
 import tempfile
+import warnings
+
+from elephant import _get_version
 from pathlib import Path
-from urllib.request import urlretrieve
+from urllib.request import urlretrieve, urlopen
+from urllib.error import HTTPError
 from zipfile import ZipFile
-from os import getenv
+from os import environ, getenv
 
 from tqdm import tqdm
 
@@ -66,7 +70,8 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
     r"""
         This function can be used to download files from elephant-data using
         only the path relative to the root of the elephant-data repository.
-        The default URL used, points to a specific release of elephant-data.
+        The default URL used, points to elephants corresponding release of
+        elephant-data.
         Different versions of the elephant package may require different
         versions of elephant-data.
         e.g. the follwoing URLs:
@@ -74,9 +79,11 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
            points to release v0.0.1.
         -  https://we.gin.g-node.org/INM-6/elephant-data/raw/master
            always points to the latest state of elephant-data.
+        -  http://datasets.python-elephant.org/
+           points to the root of elephant data
 
-        The change this URL, use the environment variable `ELEPHANT_DATA_URL`.
-        When using data, which is not yet conatined in the master branch or a
+        To change this URL, use the environment variable `ELEPHANT_DATA_URL`.
+        When using data, which is not yet contained in the master branch or a
         release of elephant data, e.g. during development, this variable can
         be used to change the default URL.
         For example to use data on branch `multitaper`, change the
@@ -104,8 +111,8 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
 
         Notes
         -----
-        The default URL is changed with every release of elephant-data. Please
-        do not change its value. For development purposes use environment
+        The default URL always points to elephant-data. Please
+        do not change its value. For development purposes use the environment
         variable 'ELEPHANT_DATA_URL'.
 
         Examples
@@ -119,7 +126,24 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
         >>> download_elephant_data("unittest/spectral/multitaper_psd/data/time_series.npy")
         """
 
-    default_url = "https://web.gin.g-node.org/INM-6/elephant-data/raw/master"
+    url_to_root = "http://datasets.python-elephant.org/"
+    # get URL to version of elephant data
+    default_url = url_to_root + f"raw/{_get_version()}"
+
+    if 'ELEPHANT_DATA_URL' not in environ:  # user did not set URL
+        try:  # is 'version-URL' available? (not for elephant development)
+            urlopen(default_url)
+        except HTTPError as error:
+            # if corresponding elephant-data version is not found,
+            # use latest commit of elephant-data
+            default_url = url_to_root + f"raw/master"
+
+            warnings.warn(f"No corresponding version of elephant-data found.\n"
+                          f"Elephant version: {_get_version()}. "
+                          f"Data URL:{error.url}, error: {error}.\n"
+                          f"Using elephant-data latest instead (This is "
+                          f"expected for elephant development versions).")
+
     url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
 
     return download(url, filepath, checksum, verbose)
