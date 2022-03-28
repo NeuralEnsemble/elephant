@@ -36,6 +36,9 @@ on:
       #- review_request_removed
       #- auto_merge_enabled
       #- auto_merge_disabled
+  push:
+    branches:
+      - master
 
 # jobs define the steps that will be executed on the runner
 jobs:
@@ -44,8 +47,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
+        python-version: [3.7, 3.8, 3.9, "3.10"]
+
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -214,7 +218,8 @@ jobs:
     strategy:
       matrix:
         # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
-        python-version: [3.6]
+        python-version: [3.9]
+
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -282,7 +287,6 @@ jobs:
          run: |
             # $CONDA is an environment variable pointing to the root of the miniconda directory
             echo $CONDA/bin >> $GITHUB_PATH
-            sudo apt install -y libopenmpi-dev openmpi-bin
 
        - name: Cache pip
          uses: actions/cache@v2
@@ -301,6 +305,7 @@ jobs:
             conda env update --file requirements/environment-docs.yml --name base
             conda install -c conda-forge openmpi
             conda install -c conda-forge pandoc
+            pip install -e .[extras]
             # run notebooks
             sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 

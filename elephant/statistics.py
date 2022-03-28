@@ -75,6 +75,7 @@ import numpy as np
 import quantities as pq
 import scipy.stats
 import scipy.signal
+from scipy.special import erf
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -602,7 +603,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
-                       center_kernel=True):
+                       center_kernel=True, border_correction=False):
     r"""
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -625,11 +626,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
         If 'auto', the optimized kernel width for the rate estimation is
-        calculated according to :cite:`statistics-Shimazaki2010_171` and with
-        this width a gaussian kernel is constructed. Automatized calculation
-        of the kernel width is not available for other than gaussian kernel
+        calculated according to :cite:`statistics-Shimazaki2010_171` and a
+        Gaussian kernel is constructed with this width. Automatized calculation
+        of the kernel width is not available for other than Gaussian kernel
         shapes.
 
+        Note: The kernel width is not adaptive, i.e., it is calculated as
+        global optimum across the data.
+        
         Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
@@ -671,6 +675,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         the origin of the kernel.
 
         Default: True
+    border_correction : bool, optional
+        Apply a border correction to prevent underestimating the firing rates
+        at the borders of the spike trains, i.e., close to t_start and t_stop.
+        The correction is done by estimating the mass of the kernel outside
+        these spike train borders under the assumption that the rate does not
+        change strongly.
+        Only possible in the case of a Gaussian kernel.
+        Default: False
 
     Returns
     -------
@@ -787,6 +799,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             raise ValueError("Unable to calculate optimal kernel width for "
                              "instantaneous rate from input data.")
         return kernels.GaussianKernel(width_sigma * st.units)
+
+    if border_correction and not \
+            (kernel == 'auto' or isinstance(kernel, kernels.GaussianKernel)):
+        raise ValueError(
+            'The border correction is only implemented'
+            ' for Gaussian kernels.')
 
     if isinstance(spiketrains, neo.SpikeTrain):
         if kernel == 'auto':
@@ -918,6 +936,26 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                             sampling_period=sampling_period,
                             units=pq.Hz, t_start=t_start, t_stop=t_stop,
                             kernel=kernel_annotation)
+
+    if border_correction:
+        sigma = kernel.sigma.simplified.magnitude
+        times = rate.times.simplified.magnitude
+        correction_factor = 2 / (
+                erf((t_stop.simplified.magnitude - times) / (
+                            np.sqrt(2.) * sigma))
+                - erf((t_start.simplified.magnitude - times) / (
+                    np.sqrt(2.) * sigma)))
+
+        rate *= correction_factor[:, None]
+
+        duration = t_stop.simplified.magnitude - t_start.simplified.magnitude
+        # ensure integral over firing rate yield the exact number of spikes
+        for i, spiketrain in enumerate(spiketrains):
+            if len(spiketrain) > 0:
+                rate[:, i] *= len(spiketrain) /\
+                              (np.mean(rate[:, i]).magnitude * duration)
+
+    return rate
 
 
 @deprecated_alias(binsize='bin_size')
