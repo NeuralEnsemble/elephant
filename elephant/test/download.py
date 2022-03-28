@@ -128,7 +128,7 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
 
     url_to_root = "http://datasets.python-elephant.org/"
     # get URL to version of elephant data
-    default_url = url_to_root + f"raw/{_get_version()}"
+    default_url = url_to_root + f"raw/v{_get_version()}"
 
     if 'ELEPHANT_DATA_URL' not in environ:  # user did not set URL
         try:  # is 'version-URL' available? (not for elephant development)
