@@ -15,7 +15,7 @@ import neo.core as n
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 import elephant.spectral
-from elephant.test.download import download_elephant_data, ELEPHANT_TMP_DIR
+from elephant.data_utils import download_elephant_data, ELEPHANT_TMP_DIR
 
 
 class WelchPSDTestCase(unittest.TestCase):
