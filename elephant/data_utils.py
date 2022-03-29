@@ -1,7 +1,7 @@
 import hashlib
 import tempfile
 import warnings
-import certifi
+import ssl
 
 from elephant import _get_version
 from pathlib import Path
@@ -62,7 +62,12 @@ def download(url, filepath=None, checksum=None, verbose=True):
     desc = f"Downloading {url} to '{filepath}'"
     with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1,
                   desc=desc, disable=not verbose) as t:
-        urlretrieve(url, filename=filepath, reporthook=t.update_to)
+        try:
+            urlretrieve(url, filename=filepath, reporthook=t.update_to)
+        except URLError:
+            urlretrieve(url, filename=filepath, reporthook=t.update_to,
+                        data=ssl._create_unverified_context())
+
     return filepath
 
 
@@ -107,8 +112,9 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
 
         Returns
         -------
-        filepath : PosixPath
-            Path to downloaded files
+        filepath : pathlib.Path
+            Path to downloaded files.
+
 
         Notes
         -----
@@ -127,15 +133,17 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
         >>> download_elephant_data("unittest/spectral/multitaper_psd/data/time_series.npy")
         """
 
+    # this url redirects to the current location of elephant-data
     url_to_root = "http://datasets.python-elephant.org/"
-    # get URL to version of elephant data
+
+    # get URL to corresponding version of elephant data
+    # (version elephant is equal to version elephant-data)
     default_url = url_to_root + f"raw/v{_get_version()}"
 
     if 'ELEPHANT_DATA_URL' not in environ:  # user did not set URL
-        try:  # is 'version-URL' available? (not for elephant development)
-            # urlopen(default_url+'/README.md')
-            with urlopen(default_url+'/README.md') as response:
-                response.read()
+        # is 'version-URL' available? (not for elephant development version)
+        try:
+            urlopen(default_url+'/README.md')
 
         except HTTPError as error:
             # if corresponding elephant-data version is not found,
@@ -147,12 +155,18 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
                           f"Data URL:{error.url}, error: {error}.\n"
                           f"Using elephant-data latest instead (This is "
                           f"expected for elephant development versions).")
-        except URLError as error:
-            # if corresponding elephant-data version is not found,
-            # sometimes verification error is raised
-            default_url = url_to_root + f"raw/master"
 
-            warnings.warn(f"Data URL:{default_url}, error: {error.reason}.")
+        except URLError as error:
+            # if verification of SSL certificate fails, do not verify cert
+            try:  # try again without certificate verification
+                urlopen(default_url + '/README.md',
+                        context=ssl._create_unverified_context())
+            except HTTPError as http_error:  # e.g. 404:
+                default_url = url_to_root + f"raw/master"
+
+            warnings.warn(f"Data URL:{default_url}, error: {http_error}."
+                          f"{error.reason}")
+
 
     url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
 
