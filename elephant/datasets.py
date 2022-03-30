@@ -164,7 +164,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             except HTTPError as http_error:  # e.g. 404:
                 default_url = url_to_root + f"raw/master"
 
-            warnings.warn(f"Data URL:{default_url}, error: {http_error}."
+            warnings.warn(f"Data URL:{default_url}, error: {error}."
                           f"{error.reason}")
 
     url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
