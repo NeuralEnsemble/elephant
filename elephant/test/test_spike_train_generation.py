@@ -865,7 +865,7 @@ class NonStationaryGammaTestCase(unittest.TestCase):
                 rate_recovered = rate_recovered.flatten().magnitude
                 trim = (rate_profile.shape[0] - rate_recovered.shape[0]) // 2
                 rate_profile_valid = rate_profile.magnitude.squeeze()
-                rate_profile_valid = rate_profile_valid[trim: -trim - 1]
+                rate_profile_valid = rate_profile_valid[trim: -trim]
                 assert_allclose(rate_recovered, rate_profile_valid,
                                 rtol=0, atol=rtol * rate.item())
 

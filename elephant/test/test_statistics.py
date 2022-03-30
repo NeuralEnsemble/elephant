@@ -22,7 +22,7 @@ from elephant import statistics
 from elephant.spike_train_generation import StationaryPoissonProcess
 
 
-class isi_TestCase(unittest.TestCase):
+class IsiTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array_2d = np.array([[0.3, 0.56, 0.87, 1.23],
                                        [0.02, 0.71, 1.82, 8.46],
@@ -82,10 +82,10 @@ class isi_TestCase(unittest.TestCase):
         np.random.seed(0)
         array = np.random.rand(100)
         with self.assertWarns(UserWarning):
-            isi = statistics.isi(array)
+            statistics.isi(array)
 
 
-class isi_cv_TestCase(unittest.TestCase):
+class IsiCvTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array_regular = np.arange(1, 6)
 
@@ -102,7 +102,7 @@ class isi_cv_TestCase(unittest.TestCase):
         self.assertEqual(res, targ)
 
 
-class mean_firing_rate_TestCase(unittest.TestCase):
+class MeanFiringRateTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array_3d = np.ones([5, 7, 13])
         self.test_array_2d = np.array([[0.3, 0.56, 0.87, 1.23],
@@ -504,67 +504,77 @@ class InstantaneousRateTest(unittest.TestCase):
 
         # generation of a multiply used specific kernel
         self.kernel = kernels.TriangularKernel(sigma=0.03 * pq.s)
+        # calculate instantaneous rate
+        self.sampling_period = 0.01 * pq.s
+        self.inst_rate = statistics.instantaneous_rate(
+                self.spike_train, self.sampling_period, self.kernel, cutoff=0)
 
-    def test_instantaneous_rate_and_warnings(self):
-        st = self.spike_train
-        sampling_period = 0.01 * pq.s
+    def test_instantaneous_rate_warnings(self):
         with self.assertWarns(UserWarning):
             # Catches warning: The width of the kernel was adjusted to a
             # minimally allowed width.
-            inst_rate = statistics.instantaneous_rate(
-                st, sampling_period, self.kernel, cutoff=0)
-        self.assertIsInstance(inst_rate, neo.core.AnalogSignal)
-        self.assertEqual(
-            inst_rate.sampling_period.simplified, sampling_period.simplified)
-        self.assertEqual(inst_rate.simplified.units, pq.Hz)
-        self.assertEqual(inst_rate.t_stop.simplified, st.t_stop.simplified)
-        self.assertEqual(inst_rate.t_start.simplified, st.t_start.simplified)
+            statistics.instantaneous_rate(self.spike_train,
+                                          self.sampling_period,
+                                          self.kernel, cutoff=0)
 
-    def test_error_instantaneous_rate(self):
-        self.assertRaises(
+    def test_instantaneous_rate_errors(self):
+        self.assertRaises(  # input is not neo.SpikeTrain
             TypeError, statistics.instantaneous_rate,
             spiketrains=[1, 2, 3] * pq.s,
             sampling_period=0.01 * pq.ms, kernel=self.kernel)
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=[1, 2, 3],
-            sampling_period=0.01 * pq.ms, kernel=self.kernel)
-        st = self.spike_train
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=0.01, kernel=self.kernel)
-        self.assertRaises(
-            ValueError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=-0.01 * pq.ms, kernel=self.kernel)
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=0.01 * pq.ms, kernel='NONE')
-        self.assertRaises(TypeError, statistics.instantaneous_rate,
-                          self.spike_train,
-                          sampling_period=0.01 * pq.s, kernel='wrong_string',
-                          t_start=self.st_tr[0] * pq.s,
-                          t_stop=self.st_tr[1] * pq.s,
-                          trim=False)
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=0.01 * pq.ms, kernel=self.kernel,
-            cutoff=20 * pq.ms)
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=0.01 * pq.ms, kernel=self.kernel, t_start=2)
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=0.01 * pq.ms, kernel=self.kernel,
-            t_stop=20 * pq.mV)
-        self.assertRaises(
-            TypeError, statistics.instantaneous_rate, spiketrains=st,
-            sampling_period=0.01 * pq.ms, kernel=self.kernel, trim=1)
+        self.assertRaises(  # sampling period is not time quantity
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, kernel=self.kernel,
+            sampling_period=0.01)
+        self.assertRaises(  # sampling period is < 0
+            ValueError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, kernel=self.kernel,
+            sampling_period=-0.01 * pq.ms)
+        self.assertRaises(  # no kernel or kernel='auto'
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, sampling_period=0.01 * pq.ms,
+            kernel='NONE')
+        self.assertRaises(  # wrong string for kernel='string'
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, sampling_period=0.01 * pq.s,
+            kernel='wrong_string')
+        self.assertRaises(  # cutoff is not float or int
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, sampling_period=0.01 * pq.ms,
+            kernel=self.kernel, cutoff=20 * pq.ms)
+        self.assertRaises(  # t_start not time quantity
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, sampling_period=0.01 * pq.ms,
+            kernel=self.kernel, t_start=2)
+        self.assertRaises(  # t_stop not time quantity
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, sampling_period=0.01 * pq.ms,
+            kernel=self.kernel, t_stop=20 * pq.mV)
+        self.assertRaises(  # trim is not bool
+            TypeError, statistics.instantaneous_rate,
+            spiketrains=self.spike_train, sampling_period=0.01 * pq.ms,
+            kernel=self.kernel, trim=1)
+        self.assertRaises(  # can't estimate a kernel for a list of spiketrains
+            ValueError, statistics.instantaneous_rate,
+            spiketrains=[self.spike_train, self.spike_train],
+            sampling_period=10 * pq.ms, kernel='auto')
 
-        # cannot estimate a kernel for a list of spiketrains
-        self.assertRaises(ValueError, statistics.instantaneous_rate,
-                          spiketrains=[st, st], sampling_period=10 * pq.ms,
-                          kernel='auto')
+    def test_instantaneous_rate_output(self):
+        # return type correct
+        self.assertIsInstance(self.inst_rate, neo.core.AnalogSignal)
+        # sampling_period input and output same
+        self.assertEqual(self.inst_rate.sampling_period.simplified,
+                         self.sampling_period.simplified)
+        # return correct units pq.Hz
+        self.assertEqual(self.inst_rate.simplified.units, pq.Hz)
+        # input and output t_stop same
+        self.assertEqual(self.spike_train.t_stop.simplified,
+                         self.inst_rate.t_stop.simplified)
+        # input and output t_start same
+        self.assertEqual(self.inst_rate.t_start.simplified,
+                         self.spike_train.t_start.simplified)
 
-    def test_rate_estimation_consistency(self):
+    def test_instantaneous_rate_rate_estimation_consistency(self):
         """
         Test, whether the integral of the rate estimation curve is (almost)
         equal to the number of spikes of the spike train.
@@ -575,6 +585,7 @@ class InstantaneousRateTest(unittest.TestCase):
             issubclass(kern_cls, kernels.Kernel) and
             kern_cls is not kernels.Kernel and
             kern_cls is not kernels.SymmetricKernel)
+        # set sigma
         kernels_available = [kern_cls(sigma=0.5 * pq.s, invert=False)
                              for kern_cls in kernel_types]
         kernels_available.append('auto')
@@ -595,45 +606,54 @@ class InstantaneousRateTest(unittest.TestCase):
                     border_correction=border_correction
                 )
                 num_spikes = len(self.spike_train)
-                auc = spint.cumtrapz(
+                area_under_curve = spint.cumtrapz(
                     y=rate_estimate.magnitude[:, 0],
                     x=rate_estimate.times.rescale('s').magnitude)[-1]
-                self.assertAlmostEqual(num_spikes, auc,
+                self.assertAlmostEqual(num_spikes, area_under_curve,
                                        delta=0.01 * num_spikes)
 
-    def test_not_center_kernel(self):
-        # issue 107
+    def test_instantaneous_rate_regression_107(self):
+        # Create a spiketrain with t_start=0s, t_stop=2s and a single spike at
+        # t=1s. Now choose an asymmetric kernel starting at t=0 to avoid a rise
+        # in firing rate before the response onset, so to say to avoid 'looking
+        # into the future' from the perspective of the neuron.
         t_spike = 1 * pq.s
-        st = neo.SpikeTrain([t_spike], t_start=0 * pq.s, t_stop=2 * pq.s,
-                            units=pq.s)
+        spiketrain = neo.SpikeTrain(
+            [t_spike], t_start=0 * pq.s, t_stop=2 * pq.s, units=pq.s)
         kernel = kernels.AlphaKernel(200 * pq.ms)
-        fs = 0.1 * pq.ms
-        rate = statistics.instantaneous_rate(st,
-                                             sampling_period=fs,
-                                             kernel=kernel,
-                                             center_kernel=False)
+        sampling_period = 0.1 * pq.ms
+        rate = statistics.instantaneous_rate(
+            spiketrains=spiketrain, sampling_period=sampling_period,
+            kernel=kernel, center_kernel=False)
+        # find positive nonezero rate estimates
         rate_nonzero_index = np.nonzero(rate > 1e-6)[0]
-        # where the mass is concentrated
-        rate_mass = rate.times.rescale(t_spike.units)[rate_nonzero_index]
-        all_after_response_onset = (rate_mass >= t_spike).all()
+        # find times, where the mass is concentrated, i.e. rate is estimated>0
+        rate_mass_times = rate.times.rescale(t_spike.units)[rate_nonzero_index]
+        # all times, where rate is >0 should occur after response onset
+        # (t_spike is at 1s)
+        all_after_response_onset = (rate_mass_times >= t_spike).all()
         self.assertTrue(all_after_response_onset)
 
-    def test_regression_288(self):
-        np.random.seed(9)
-        sampling_period = 200 * pq.ms
-        spiketrain = StationaryPoissonProcess(
-            10 * pq.Hz,  t_start=0 * pq.s, t_stop=10 * pq.s
-        ).generate_spiketrain()
-        kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
+    def test_instantaneous_rate_regression_288(self):
         # check that instantaneous_rate "works" for kernels with small sigma
-        # without triggering an incomprehensible error
-        rate = statistics.instantaneous_rate(spiketrain,
-                                             sampling_period=sampling_period,
-                                             kernel=kernel)
-        self.assertEqual(
-            len(rate), (spiketrain.t_stop / sampling_period).simplified.item())
+        # without triggering an incomprehensible error:
+        # ValueError: zero-size array to reduction operation minimum which has
+        # no identity
+        try:
+            np.random.seed(9)
+            sampling_period = 200 * pq.ms
+            spiketrain = StationaryPoissonProcess(
+                10 * pq.Hz, t_start=0 * pq.s,
+                t_stop=10 * pq.s).generate_spiketrain()
+            kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
+            rate = statistics.instantaneous_rate(
+                spiketrain, sampling_period=sampling_period, kernel=kernel)
+        except ValueError:
+            self.fail('When providing a kernel on a much smaller time scale '
+                      'than sampling rate requested the instantaneous rate '
+                      'estimation will fail on numpy level ')
 
-    def test_small_kernel_sigma(self):
+    def test_instantaneous_rate_small_kernel_sigma(self):
         # Test that the instantaneous rate is overestimated when
         # kernel.sigma << sampling_period and center_kernel is True.
         # The setup is set to match the issue 288.
@@ -642,8 +662,9 @@ class InstantaneousRateTest(unittest.TestCase):
         sigma = 5 * pq.ms
         rate_expected = 10 * pq.Hz
         spiketrain = StationaryPoissonProcess(
-            rate_expected, t_start=0 * pq.s, t_stop=10 * pq.s
-        ).generate_spiketrain()
+            rate_expected, t_start=0 * pq.s,
+            t_stop=10 * pq.s).generate_spiketrain()
+
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
@@ -659,13 +680,14 @@ class InstantaneousRateTest(unittest.TestCase):
                     kernel=kernel, center_kernel=True)
                 self.assertGreater(rate.mean(), rate_expected)
 
-    def test_spikes_on_edges(self):
+    def test_instantaneous_rate_spikes_on_edges(self):
         # this test demonstrates that the trimming (convolve valid mode)
-        # removes the edge spikes, underestimating the true firing rate and
-        # thus is not able to reconstruct the number of spikes in a
-        # spiketrain (see test_rate_estimation_consistency)
+        # removes the edges of the rate estimate, underestimating the true
+        # firing rate and thus is not able to reconstruct the number of spikes
+        # in a spiketrain (see test_rate_estimation_consistency)
         cutoff = 5
         sampling_period = 0.01 * pq.s
+        # with t_spikes = [-5, 5]s the isi is 10s, so 1/isi 0.1 Hz
         t_spikes = np.array([-cutoff, cutoff]) * pq.s
         spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
                                     t_stop=t_spikes[-1])
@@ -685,9 +707,14 @@ class InstantaneousRateTest(unittest.TestCase):
                     kernel=kernel,
                     cutoff=cutoff, trim=True,
                     center_kernel=center_kernel)
-                assert_array_almost_equal(rate.magnitude, 0, decimal=3)
+                assert_array_almost_equal(rate.magnitude, 0, decimal=2)
 
-    def test_trim_as_convolve_mode(self):
+    def test_instantaneous_rate_center_kernel(self):
+        # this test is obsolete since trimming is now always done by
+        # np.fftconvolve, in earlier version trimming was implemented for
+        # center_kernel = True
+        # This test now verifies, that an already centered kernel is not
+        # affected by center_kernel = True.
         cutoff = 5
         sampling_period = 0.01 * pq.s
         t_spikes = np.linspace(-cutoff, cutoff, num=(2 * cutoff + 1)) * pq.s
@@ -706,15 +733,16 @@ class InstantaneousRateTest(unittest.TestCase):
             for trim in (False, True):
                 rate_centered = statistics.instantaneous_rate(
                     spiketrain, sampling_period=sampling_period,
-                    kernel=kernel, cutoff=cutoff, trim=trim)
+                    kernel=kernel, cutoff=cutoff, trim=trim,
+                    center_kernel=True)
 
-                rate_convolve = statistics.instantaneous_rate(
+                rate_not_centered = statistics.instantaneous_rate(
                     spiketrain, sampling_period=sampling_period,
                     kernel=kernel, cutoff=cutoff, trim=trim,
                     center_kernel=False)
-                assert_array_almost_equal(rate_centered, rate_convolve)
+                assert_array_almost_equal(rate_centered, rate_not_centered)
 
-    def test_instantaneous_rate_spiketrainlist(self):
+    def test_instantaneous_rate_list_of_spiketrains(self):
         np.random.seed(19)
         duration_effective = self.st_dur - 2 * self.st_margin
         st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
@@ -725,37 +753,37 @@ class InstantaneousRateTest(unittest.TestCase):
         spike_train2 = neo.SpikeTrain(spike_train2 * pq.s,
                                       t_start=self.st_tr[0] * pq.s,
                                       t_stop=self.st_tr[1] * pq.s)
-        st_rate_1 = statistics.instantaneous_rate(self.spike_train,
-                                                  sampling_period=0.01 * pq.s,
-                                                  kernel=self.kernel)
-        st_rate_2 = statistics.instantaneous_rate(spike_train2,
-                                                  sampling_period=0.01 * pq.s,
-                                                  kernel=self.kernel)
-        combined_rate = statistics.instantaneous_rate(
-            [self.spike_train, spike_train2],
-            sampling_period=0.01 * pq.s,
+
+        st_rate_1 = statistics.instantaneous_rate(
+            self.spike_train, sampling_period=self.sampling_period,
+            kernel=self.kernel)
+        st_rate_2 = statistics.instantaneous_rate(
+            spike_train2, sampling_period=self.sampling_period,
             kernel=self.kernel)
         rate_concat = np.c_[st_rate_1, st_rate_2]
+
+        combined_rate = statistics.instantaneous_rate(
+            [self.spike_train, spike_train2],
+            sampling_period=self.sampling_period,
+            kernel=self.kernel)
         # 'time_vector.dtype' in instantaneous_rate() is changed from float64
         # to float32 which results in 3e-6 abs difference
         assert_array_almost_equal(combined_rate.magnitude,
                                   rate_concat.magnitude, decimal=5)
 
-    # Regression test for #144
     def test_instantaneous_rate_regression_144(self):
         # The following spike train contains spikes that are so close to each
         # other, that the optimal kernel cannot be detected. Therefore, the
         # function should react with a ValueError.
         st = neo.SpikeTrain([2.12, 2.13, 2.15] * pq.s, t_stop=10 * pq.s)
-        self.assertRaises(ValueError, statistics.instantaneous_rate, st,
-                          1 * pq.ms)
+        self.assertRaises(
+            ValueError, statistics.instantaneous_rate, st, 1 * pq.ms)
 
-    # Regression test for #245
     def test_instantaneous_rate_regression_245(self):
         # This test makes sure that the correct kernel width is chosen when
         # selecting 'auto' as kernel
         spiketrain = neo.SpikeTrain(
-            range(1, 30) * pq.ms, t_start=0 * pq.ms, t_stop=30 * pq.ms)
+            pq.ms * range(1, 30), t_start=0 * pq.ms, t_stop=30 * pq.ms)
 
         # This is the correct procedure to attain the kernel: first, the result
         # of sskernel retrieves the kernel bandwidth of an optimal Gaussian
@@ -789,17 +817,16 @@ class InstantaneousRateTest(unittest.TestCase):
         for sampling_period in np.linspace(1, 1000, num=10) * pq.ms:
             with self.subTest(sampling_period=sampling_period):
                 rate = statistics.instantaneous_rate(
-                    spiketrain,
-                    sampling_period=sampling_period,
-                    kernel=kernel)
+                    spiketrain, sampling_period=sampling_period, kernel=kernel)
                 rates_mean.append(rate.mean())
         # rate means are greater or equal the expected rate
         assert_array_less(rate_expected, rates_mean)
         # check sorted
         self.assertTrue(np.all(rates_mean[:-1] < rates_mean[1:]))
 
-    # Regression test for #360
-    def test_centered_at_origin(self):
+    def test_instantaneous_rate_regression_360(self):
+        # This test check if the resulting rate is centered for a spiketrain
+        # with spikes at [-0.0001, 0, 0.0001].
         # Skip RectangularKernel because it doesn't have a strong peak.
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
@@ -818,11 +845,11 @@ class InstantaneousRateTest(unittest.TestCase):
             rate = statistics.instantaneous_rate(spiketrain,
                                                  sampling_period=20 * pq.ms,
                                                  kernel=kernel)
-            # the peak time must be centered at origin
+            # the peak time must be centered at origin t=0
             self.assertEqual(rate.times[np.argmax(rate)], 0)
 
         # second part: a single spike at t=0
-        periods = [2 ** c for c in range(-3, 6)]
+        periods = [2 ** exp for exp in range(-3, 6)]
         for period in periods:
             with self.subTest(period=period):
                 spiketrain = neo.SpikeTrain(np.array([0]) * pq.s,
@@ -835,7 +862,7 @@ class InstantaneousRateTest(unittest.TestCase):
                         kernel=kernel)
                     self.assertEqual(rate.times[np.argmax(rate)], 0)
 
-    def test_annotations(self):
+    def test_instantaneous_rate_annotations(self):
         spiketrain = neo.SpikeTrain([1, 2], t_stop=2 * pq.s, units=pq.s)
         kernel = kernels.AlphaKernel(sigma=100 * pq.ms)
         rate = statistics.instantaneous_rate(spiketrain,
@@ -847,30 +874,86 @@ class InstantaneousRateTest(unittest.TestCase):
         self.assertIn('kernel', rate.annotations)
         self.assertEqual(rate.annotations['kernel'], kernel_annotation)
 
-    def test_border_correction(self):
-        np.random.seed(0)
-        n_spiketrains = 125
-        rate = 50. * pq.Hz
-        t_start = 0. * pq.ms
-        t_stop = 1000. * pq.ms
+    def test_instantaneous_rate_regression_374(self):
+        # Check if the last interval is dropped.
+        # In this example a spiketrain with t_start=0, t_stop=9.8, and spikes
+        # at [9.65, 9.7, 9.75]s is used. When calculating the rate estimate
+        # with a sampling_period of 1s, the last interval [9.0, 9.8) should be
+        # dropped and not be considered in the calculation.
+        spike_times = np.array([9.65, 9.7, 9.75]) * pq.s
 
-        sampling_period = 0.1 * pq.ms
+        spiketrain = neo.SpikeTrain(spike_times,
+                                    t_start=0,
+                                    t_stop=9.8)
+        kernel = kernels.GaussianKernel(sigma=250 * pq.ms)
+        sampling_period = 1000 * pq.ms
+        rate = statistics.instantaneous_rate(
+            spiketrain,
+            sampling_period=sampling_period,
+            kernel=kernel, center_kernel=False, trim=False, cutoff=1)
+        assert_array_almost_equal(rate.magnitude, 0)
 
-        trial_list = StationaryPoissonProcess(
-            rate=rate, t_start=t_start, t_stop=t_stop
-        ).generate_n_spiketrains(n_spiketrains)
+    def test_instantaneous_rate_rate_times(self):
+        # check if the differences between the rate.times is equal to
+        # sampling_period
+        st = self.spike_train
+        periods = [1, 0.99, 0.35, 11, st.duration]*pq.s
+        for period in periods:
+            rate = statistics.instantaneous_rate(st,
+                                                 sampling_period=period,
+                                                 kernel=self.kernel,
+                                                 center_kernel=True,
+                                                 trim=False)
+            rate_times_diff = np.diff(rate.times)
+            period_times = np.full_like(rate_times_diff, period)
+            assert_array_almost_equal(rate_times_diff, period_times)
 
-        for correction in (True, False):
-            rates = []
-            for trial in trial_list:
-                # calculate the instantaneous rate, discard extra dimension
-                instantaneous_rate = statistics.instantaneous_rate(
-                    spiketrains=trial,
-                    sampling_period=sampling_period,
-                    kernel='auto',
-                    border_correction=correction
-                )
-                rates.append(instantaneous_rate)
+    def test_instantaneous_rate_bin_edges(self):
+        # This test checks if the bin edges used to calculate the rate estimate
+        # are multiples of the sampling rate. In the following example, the
+        # rate maximum is expected to be at 5.785s.
+        # See PR#453  https://github.com/NeuralEnsemble/elephant/pull/453
+        spike_times = np.array(
+            [4.45, 4.895, 5.34, 5.785, 6.23, 6.675, 7.12]) * pq.s
+        # add 0.01 s
+        shifted_spike_times = spike_times + .01 * pq.s
+
+        spiketrain = neo.SpikeTrain(shifted_spike_times,
+                                    t_start=0,
+                                    t_stop=10)
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+        sampling_period = 445 * pq.ms
+        rate = statistics.instantaneous_rate(
+            spiketrain,
+            sampling_period=sampling_period,
+            kernel=kernel, center_kernel=True, trim=False)
+        self.assertAlmostEqual(spike_times[3].magnitude.item(),
+                               rate.times[rate.argmax()].magnitude.item())
+
+        def test_instantaneous_rate_border_correction(self):
+            np.random.seed(0)
+            n_spiketrains = 125
+            rate = 50. * pq.Hz
+            t_start = 0. * pq.ms
+            t_stop = 1000. * pq.ms
+
+            sampling_period = 0.1 * pq.ms
+
+            trial_list = StationaryPoissonProcess(
+                rate=rate, t_start=t_start, t_stop=t_stop
+            ).generate_n_spiketrains(n_spiketrains)
+
+            for correction in (True, False):
+                rates = []
+                for trial in trial_list:
+                    # calculate the instantaneous rate, discard extra dimension
+                    instantaneous_rate = statistics.instantaneous_rate(
+                        spiketrains=trial,
+                        sampling_period=sampling_period,
+                        kernel='auto',
+                        border_correction=correction
+                    )
+                    rates.append(instantaneous_rate)
 
             # The average estimated rate gives the average estimated value of
             # the firing rate in each time bin.
