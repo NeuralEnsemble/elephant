@@ -2,7 +2,7 @@
 """
 Unit tests for the pandas bridge module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -27,6 +27,7 @@ except ImportError:
     pandas_version = StrictVersion('0.0.0')
 else:
     import elephant.pandas_bridge as ep
+
     HAVE_PANDAS = True
     pandas_version = StrictVersion(pd.__version__)
 

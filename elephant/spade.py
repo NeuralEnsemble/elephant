@@ -84,7 +84,7 @@ bin (i.e., detecting only synchronous patterns).
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2021 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
