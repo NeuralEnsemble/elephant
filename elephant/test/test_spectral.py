@@ -15,7 +15,7 @@ import neo.core as n
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 import elephant.spectral
-from elephant.data_utils import download_elephant_data, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
 class WelchPSDTestCase(unittest.TestCase):
@@ -262,8 +262,8 @@ class MultitaperPSDTestCase(unittest.TestCase):
         ]
 
         for filename, checksum in files_to_download:
-            download_elephant_data(repo_path=f"{repo_path}/{filename}",
-                                   checksum=checksum)
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
 
         time_series = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
         psd_nitime = np.load(ELEPHANT_TMP_DIR / 'psd_nitime.npy')

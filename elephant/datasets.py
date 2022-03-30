@@ -71,8 +71,8 @@ def download(url, filepath=None, checksum=None, verbose=True):
     return filepath
 
 
-def download_elephant_data(repo_path, filepath=None, checksum=None,
-                           verbose=True):
+def download_datasets(repo_path, filepath=None, checksum=None,
+                      verbose=True):
     r"""
         This function can be used to download files from elephant-data using
         only the path relative to the root of the elephant-data repository.
@@ -128,9 +128,9 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
         'multitaper', by setting the environment variable to the branch URL:
 
         >>> import os
-        >>> from elephant.data_utils import download_elephant_data
+        >>> from elephant.datasets import download_datasets
         >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper" # noqa
-        >>> download_elephant_data("unittest/spectral/multitaper_psd/data/time_series.npy")
+        >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy")
         """
 
     # this url redirects to the current location of elephant-data
@@ -166,7 +166,6 @@ def download_elephant_data(repo_path, filepath=None, checksum=None,
 
             warnings.warn(f"Data URL:{default_url}, error: {http_error}."
                           f"{error.reason}")
-
 
     url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
 
