@@ -931,29 +931,29 @@ class InstantaneousRateTest(unittest.TestCase):
                                rate.times[rate.argmax()].magnitude.item())
 
         def test_instantaneous_rate_border_correction(self):
-        np.random.seed(0)
-        n_spiketrains = 125
-        rate = 50. * pq.Hz
-        t_start = 0. * pq.ms
-        t_stop = 1000. * pq.ms
+            np.random.seed(0)
+            n_spiketrains = 125
+            rate = 50. * pq.Hz
+            t_start = 0. * pq.ms
+            t_stop = 1000. * pq.ms
 
-        sampling_period = 0.1 * pq.ms
+            sampling_period = 0.1 * pq.ms
 
-        trial_list = StationaryPoissonProcess(
-            rate=rate, t_start=t_start, t_stop=t_stop
-        ).generate_n_spiketrains(n_spiketrains)
+            trial_list = StationaryPoissonProcess(
+                rate=rate, t_start=t_start, t_stop=t_stop
+            ).generate_n_spiketrains(n_spiketrains)
 
-        for correction in (True, False):
-            rates = []
-            for trial in trial_list:
-                # calculate the instantaneous rate, discard extra dimension
-                instantaneous_rate = statistics.instantaneous_rate(
-                    spiketrains=trial,
-                    sampling_period=sampling_period,
-                    kernel='auto',
-                    border_correction=correction
-                )
-                rates.append(instantaneous_rate)
+            for correction in (True, False):
+                rates = []
+                for trial in trial_list:
+                    # calculate the instantaneous rate, discard extra dimension
+                    instantaneous_rate = statistics.instantaneous_rate(
+                        spiketrains=trial,
+                        sampling_period=sampling_period,
+                        kernel='auto',
+                        border_correction=correction
+                    )
+                    rates.append(instantaneous_rate)
 
             # The average estimated rate gives the average estimated value of
             # the firing rate in each time bin.
