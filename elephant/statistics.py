@@ -633,7 +633,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
         Note: The kernel width is not adaptive, i.e., it is calculated as
         global optimum across the data.
-        
+
         Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
@@ -932,7 +932,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    return neo.AnalogSignal(signal=rate,
+    rate = neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
                             units=pq.Hz, t_start=t_start, t_stop=t_stop,
                             kernel=kernel_annotation)
