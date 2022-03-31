@@ -2,7 +2,7 @@
 """
 Unit tests for the spectral module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -15,7 +15,7 @@ import neo.core as n
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 import elephant.spectral
-from elephant.test.download import download, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
 class WelchPSDTestCase(unittest.TestCase):
@@ -88,7 +88,7 @@ class WelchPSDTestCase(unittest.TestCase):
                                                  noverlap=0, **{key: val})
             self.assertTrue(
                 (freqs == freqs_spsig).all() and (
-                    psd == psd_spsig).all())
+                        psd == psd_spsig).all())
 
         # - generate multidimensional data for check of parameter `axis`
         num_channel = 4
@@ -126,10 +126,10 @@ class WelchPSDTestCase(unittest.TestCase):
         # check if the results from different input types are identical
         self.assertTrue(
             (freqs_neo == freqs_pq).all() and (
-                psd_neo == psd_pq).all())
+                    psd_neo == psd_pq).all())
         self.assertTrue(
             (freqs_neo == freqs_np).all() and (
-                psd_neo == psd_np).all())
+                    psd_neo == psd_np).all())
 
     def test_welch_psd_multidim_input(self):
         # generate multidimensional data
@@ -254,7 +254,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
         Please follow the link below for more details:
         https://gin.g-node.org/INM-6/elephant-data/src/master/unittest/spectral/multitaper_psd
         """
-        data_url = r"https://web.gin.g-node.org/INM-6/elephant-data/raw/master/unittest/spectral/multitaper_psd/data"  # noqa
+        repo_path = r"unittest/spectral/multitaper_psd/data"
 
         files_to_download = [
             ("time_series.npy", "ff43797e2ac94613f510b20a31e2e80e"),
@@ -262,7 +262,8 @@ class MultitaperPSDTestCase(unittest.TestCase):
         ]
 
         for filename, checksum in files_to_download:
-            download(url=f"{data_url}/{filename}", checksum=checksum)
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
 
         time_series = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
         psd_nitime = np.load(ELEPHANT_TMP_DIR / 'psd_nitime.npy')
@@ -372,7 +373,7 @@ class WelchCohereTestCase(unittest.TestCase):
                                places=2)
         self.assertAlmostEqual(phase_lag[coherency.argmax()], -np.pi / 2,
                                places=2)
-        freqs_np, coherency_np, phase_lag_np =\
+        freqs_np, coherency_np, phase_lag_np = \
             elephant.spectral.welch_coherence(x.magnitude.flatten(),
                                               y.magnitude.flatten(),
                                               fs=1 / sampling_period,
@@ -386,7 +387,7 @@ class WelchCohereTestCase(unittest.TestCase):
         data_length = 5000
         x_multidim = np.random.normal(size=(num_channel, data_length))
         y_multidim = np.random.normal(size=(num_channel, data_length))
-        freqs, coherency, phase_lag =\
+        freqs, coherency, phase_lag = \
             elephant.spectral.welch_coherence(x_multidim, y_multidim)
         freqs_T, coherency_T, phase_lag_T = elephant.spectral.welch_coherence(
             x_multidim.T, y_multidim.T, axis=0)
@@ -406,13 +407,13 @@ class WelchCohereTestCase(unittest.TestCase):
 
         # outputs from AnalogSignal input are of Quantity type
         # (standard usage)
-        freqs_neo, coherency_neo, phase_lag_neo =\
+        freqs_neo, coherency_neo, phase_lag_neo = \
             elephant.spectral.welch_coherence(x, y)
         self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
         self.assertTrue(isinstance(phase_lag_neo, pq.quantity.Quantity))
 
         # outputs from Quantity array input are of Quantity type
-        freqs_pq, coherency_pq, phase_lag_pq = elephant.spectral\
+        freqs_pq, coherency_pq, phase_lag_pq = elephant.spectral \
             .welch_coherence(x.magnitude.flatten() * x.units,
                              y.magnitude.flatten() * y.units,
                              fs=1 / sampling_period)
@@ -420,7 +421,7 @@ class WelchCohereTestCase(unittest.TestCase):
         self.assertTrue(isinstance(phase_lag_pq, pq.quantity.Quantity))
 
         # outputs from Numpy ndarray input are NOT of Quantity type
-        freqs_np, coherency_np, phase_lag_np = elephant.spectral\
+        freqs_np, coherency_np, phase_lag_np = elephant.spectral \
             .welch_coherence(x.magnitude.flatten(),
                              y.magnitude.flatten(),
                              fs=1 / sampling_period)
@@ -455,11 +456,11 @@ class WelchCohereTestCase(unittest.TestCase):
                                     sampling_period=sampling_period * pq.s)
 
         # check if the results from different input types are identical
-        freqs_np, coherency_np, phase_lag_np = elephant.spectral\
+        freqs_np, coherency_np, phase_lag_np = elephant.spectral \
             .welch_coherence(x_np, y_np, fs=1 / sampling_period)
-        freqs_neo, coherency_neo, phase_lag_neo =\
+        freqs_neo, coherency_neo, phase_lag_neo = \
             elephant.spectral.welch_coherence(x_neo, y_neo)
-        freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim =\
+        freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim = \
             elephant.spectral.welch_coherence(x_neo_1dim, y_neo_1dim)
         self.assertTrue(np.all(freqs_np == freqs_neo))
         self.assertTrue(np.all(coherency_np.T == coherency_neo))

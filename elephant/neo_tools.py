@@ -10,7 +10,7 @@ Tools to manipulate Neo objects.
     get_all_events
     get_all_epochs
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -19,6 +19,7 @@ import warnings
 
 from itertools import chain
 
+from neo.core.spiketrainlist import SpikeTrainList
 from neo.core.container import unique_objs
 from elephant.utils import deprecated_alias
 
@@ -180,10 +181,10 @@ def get_all_spiketrains(container):
     Returns
     -------
     list
-        A list of the unique `neo.SpikeTrain` objects in `container`.
+        A `neo.SpikeTrainList` object of the unique `neo.SpikeTrain` objects in `container`.
 
     """
-    return _get_all_objs(container, 'SpikeTrain')
+    return SpikeTrainList(_get_all_objs(container, 'SpikeTrain'))
 
 
 def get_all_events(container):
