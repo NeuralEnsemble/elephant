@@ -94,3 +94,4 @@ Additional
     tutorials/statistics.ipynb
     tutorials/unitary_event_analysis.ipynb
     tutorials/granger_causality.ipynb
+    tutorials/spade.ipynb

@@ -12,7 +12,7 @@ from quantities import Hz, ms, second
 import elephant.spike_train_generation as stgen
 from elephant.spike_train_synchrony import Synchrotool, spike_contrast, \
     _get_theta_and_n_per_bin, _binning_half_overlap
-from elephant.test.download import download, unzip
+from elephant.datasets import download_datasets, unzip
 
 
 class TestSpikeContrast(unittest.TestCase):
@@ -140,9 +140,9 @@ class TestSpikeContrast(unittest.TestCase):
             [1, 2, 2.5]
         ]
         theta, n = _get_theta_and_n_per_bin(spike_trains,
-                                                t_start=0,
-                                                t_stop=10,
-                                                bin_size=5)
+                                            t_start=0,
+                                            t_stop=10,
+                                            bin_size=5)
         assert_array_equal(theta, [9, 3, 2])
         assert_array_equal(n, [3, 3, 2])
 
@@ -164,11 +164,10 @@ class TestSpikeContrast(unittest.TestCase):
         # The default unit time is seconds. Each simulation lasted 2 seconds,
         # starting from 0.
 
-        izhikevich_url = r"https://web.gin.g-node.org/INM-6/" \
-                         r"elephant-data/raw/master/" \
-                         r"dataset-3/Data_Izhikevich_network.zip"
-        filepath_zip = download(url=izhikevich_url,
-                                checksum="70e848500c1d9c6403b66de8c741d849")
+        izhikevich_gin = r"dataset-3/Data_Izhikevich_network.zip"
+        checksum = "70e848500c1d9c6403b66de8c741d849"
+        filepath_zip = download_datasets(repo_path=izhikevich_gin,
+                                         checksum=checksum)
         unzip(filepath_zip)
         filepath_json = filepath_zip.with_suffix(".json")
         with open(filepath_json) as read_file:

@@ -2,7 +2,7 @@
 """
 Unit tests for the spike_train_generation module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -160,7 +160,7 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
 
         for rate in [123.0 * pq.Hz, 0.123 * pq.kHz]:
             for t_stop in [2345 * pq.ms, 2.345 * pq.s]:
-                for refractory_period in (None, 3.*pq.ms):
+                for refractory_period in (None, 3. * pq.ms):
                     np.random.seed(seed=123456)
                     spiketrain_old = stg.homogeneous_poisson_process(
                         rate, t_stop=t_stop,
@@ -204,8 +204,8 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
                     else:
                         refractory_period = refractory_period.rescale(
                             t_stop.units).item()
-                        measured_rate = 1./expected_mean_isi.rescale(
-                                    t_stop.units).item()
+                        measured_rate = 1. / expected_mean_isi.rescale(
+                            t_stop.units).item()
                         effective_rate = measured_rate / (
                                 1. - measured_rate * refractory_period)
 
@@ -214,7 +214,7 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
                             intervals.rescale(t_stop.units).magnitude,
                             "expon",
                             # args are (loc, scale)
-                            args=(refractory_period, 1./effective_rate),
+                            args=(refractory_period, 1. / effective_rate),
                             alternative='two-sided')
                     self.assertGreater(p, 0.001)
                     self.assertLess(D, 0.12)
@@ -293,9 +293,9 @@ class StationaryPoissonProcessTestCase(unittest.TestCase):
         rate_expected = 10 * pq.Hz
         refractory_period = 90 * pq.ms  # 10 ms of effective ISI
         spiketrain = stg.StationaryPoissonProcess(
-                rate_expected, t_stop=1000 * pq.s,
-                refractory_period=refractory_period
-            ).generate_spiketrain()
+            rate_expected, t_stop=1000 * pq.s,
+            refractory_period=refractory_period
+        ).generate_spiketrain()
         rate_obtained = len(spiketrain) / spiketrain.t_stop
         rate_obtained = rate_obtained.simplified
         self.assertAlmostEqual(rate_expected.simplified,
@@ -339,7 +339,7 @@ class StationaryGammaProcessTestCase(unittest.TestCase):
                     a, b, t_stop=t_stop)
                 np.random.seed(seed=12345)
                 spiketrain = stg.StationaryGammaProcess(
-                    rate=b/a, shape_factor=a, t_stop=t_stop,
+                    rate=b / a, shape_factor=a, t_stop=t_stop,
                     equilibrium=False
                 ).generate_spiketrain()
                 assert_allclose(spiketrain_old.magnitude, spiketrain.magnitude)
@@ -378,7 +378,8 @@ class StationaryGammaProcessTestCase(unittest.TestCase):
         b = 10 * pq.Hz
         np.random.seed(27)
         spiketrain = stg.StationaryGammaProcess(
-            rate=b/a, shape_factor=a, equilibrium=False).generate_spiketrain()
+            rate=b / a, shape_factor=a,
+            equilibrium=False).generate_spiketrain()
         self.assertIsInstance(spiketrain, neo.SpikeTrain)
         np.random.seed(27)
         spiketrain_array = stg.StationaryGammaProcess(
@@ -429,7 +430,7 @@ class StationaryLogNormalProcessTestCase(unittest.TestCase):
                               "lognorm",
                               # args are (s, loc, scale)
                               args=(sigma, 0,
-                                    (1/rate * np.exp(- sigma**2/2)
+                                    (1 / rate * np.exp(- sigma ** 2 / 2)
                                      ).rescale(t_stop.units)),
                               alternative='two-sided')
                 self.assertGreater(p, 0.001)
@@ -492,8 +493,9 @@ class StationaryInverseGaussianProcessTestCase(unittest.TestCase):
                 D, p = kstest(intervals.rescale(t_stop.units),
                               "invgauss",
                               # args are (mu, loc, scale)
-                              args=(cv**2, 0,
-                                    (1/(rate*cv**2)).rescale(t_stop.units)),
+                              args=(cv ** 2, 0,
+                                    (1 / (rate * cv ** 2)).rescale(
+                                        t_stop.units)),
                               alternative='two-sided')
                 self.assertGreater(p, 0.001)
                 self.assertLess(D, 0.25)
@@ -518,7 +520,7 @@ class FirstSpikeCvTestCase(unittest.TestCase):
     def setUp(self):
         np.random.seed(987654321)
         self.rate = 100. * pq.Hz
-        self.t_stop = 10.*pq.s
+        self.t_stop = 10. * pq.s
         self.n_spiketrains = 10
 
         # can only have CV equal to 1.
@@ -534,7 +536,7 @@ class FirstSpikeCvTestCase(unittest.TestCase):
             t_stop=self.t_stop,
             equilibrium=False)
 
-        self.poisson_refractory_period_equilibrium =\
+        self.poisson_refractory_period_equilibrium = \
             stg.StationaryPoissonProcess(
                 rate=self.rate,
                 refractory_period=0.5 / self.rate,
@@ -557,7 +559,7 @@ class FirstSpikeCvTestCase(unittest.TestCase):
         # CV = sqrt(exp(sigma**2) - 1)
         self.log_normal_process_ordinary = stg.StationaryLogNormalProcess(
             rate=self.rate,
-            sigma=np.sqrt(np.log(5./4.)),
+            sigma=np.sqrt(np.log(5. / 4.)),
             t_stop=self.t_stop,
             equilibrium=False)
 
@@ -570,7 +572,7 @@ class FirstSpikeCvTestCase(unittest.TestCase):
         self.inverse_gaussian_process_ordinary = \
             stg.StationaryInverseGaussianProcess(
                 rate=self.rate,
-                cv=1/2,
+                cv=1 / 2,
                 t_stop=self.t_stop,
                 equilibrium=False)
 
@@ -737,7 +739,6 @@ class NonStationaryPoissonProcessTestCase(unittest.TestCase):
 
     def test_zero_rate(self):
         for refractory_period in (3 * pq.ms, None):
-
             process = stg.NonStationaryPoissonProcess
             spiketrain = process(
                 self.rate_profile_0, refractory_period=refractory_period
@@ -806,7 +807,7 @@ class NonStationaryGammaTestCase(unittest.TestCase):
         # Testing type
         spiketrain_as_array = stg.NonStationaryGammaProcess(
             rate, shape_factor=shape_factor).generate_spiketrain(
-                as_array=True)
+            as_array=True)
         self.assertTrue(isinstance(spiketrain_as_array, np.ndarray))
         self.assertTrue(isinstance(spiketrain, neo.SpikeTrain))
 
@@ -864,7 +865,7 @@ class NonStationaryGammaTestCase(unittest.TestCase):
                 rate_recovered = rate_recovered.flatten().magnitude
                 trim = (rate_profile.shape[0] - rate_recovered.shape[0]) // 2
                 rate_profile_valid = rate_profile.magnitude.squeeze()
-                rate_profile_valid = rate_profile_valid[trim: -trim - 1]
+                rate_profile_valid = rate_profile_valid[trim: -trim]
                 assert_allclose(rate_recovered, rate_profile_valid,
                                 rtol=0, atol=rtol * rate.item())
 
@@ -878,7 +879,6 @@ class NPoissonTestCase(unittest.TestCase):
         self.t_stop = 10000 * pq.ms
 
     def test_poisson(self):
-
         # Check the output types for input rate + n number of neurons
         pp = stg._n_poisson(
             rate=self.rate,
@@ -897,7 +897,6 @@ class NPoissonTestCase(unittest.TestCase):
         self.assertEqual(len(pp), self.n)
 
     def test_poisson_error(self):
-
         # Dimensionless rate
         self.assertRaises(
             ValueError, stg._n_poisson, rate=5, t_stop=self.t_stop)
@@ -937,7 +936,6 @@ class SingleInteractionProcessTestCase(unittest.TestCase):
         self.assertEqual(len(sip), self.n)
 
     def test_sip(self):
-
         # Generate an example SIP mode
         sip, coinc = stg.single_interaction_process(
             n_spiketrains=self.n, t_stop=self.t_stop, rate=self.rate,

@@ -13,7 +13,7 @@ Synchrony Measures
     Synchrotool
 
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -349,7 +349,11 @@ class Synchrotool(Complexity):
                     # replace link to spiketrain in segment
                     new_index = self._get_spiketrain_index(
                         segment.spiketrains, st)
-                    segment.spiketrains[new_index] = new_st
+                    # Todo: Simplify following lines once Neo SpikeTrainList
+                    # implments indexed assignment of entries (i.e., stl[i]=st)
+                    spiketrainlist = list(segment.spiketrains)
+                    spiketrainlist[new_index] = new_st
+                    segment.spiketrains = spiketrainlist
                 except ValueError:
                     # st is not in this segment even though it points to it
                     warnings.warn(f"The SpikeTrain at index {idx} of the "

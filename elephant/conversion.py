@@ -70,7 +70,7 @@ Rescale the units of a binned spike train without changing the data.
 BinnedSpikeTrain(t_start=0.0 ms, t_stop=9000.0 ms, bin_size=1000.0 ms;
 shape=(2, 9))
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 
@@ -1223,14 +1223,14 @@ class BinnedSpikeTrainView(BinnedSpikeTrain):
         self.tolerance = tolerance
 
 
-def _check_neo_spiketrain(matrix):
+def _check_neo_spiketrain(query):
     """
     Checks if given input contains neo.SpikeTrain objects
 
     Parameters
     ----------
-    matrix
-        Object to test for `neo.SpikeTrain`s
+    query
+        Object to test for `neo.SpikeTrain` objects
 
     Returns
     -------
@@ -1240,11 +1240,14 @@ def _check_neo_spiketrain(matrix):
 
     """
     # Check for single spike train
-    if isinstance(matrix, neo.SpikeTrain):
+    if isinstance(query, neo.SpikeTrain):
         return True
-    # Check for list or tuple
-    if isinstance(matrix, (list, tuple)):
-        return all(map(_check_neo_spiketrain, matrix))
+    # Check for list, tuple, or SpikeTrainList
+    try:
+        return all(map(_check_neo_spiketrain, query))
+    except TypeError:
+        pass
+
     return False
 
 
