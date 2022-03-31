@@ -926,26 +926,34 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
         N = len(spiketrain)
         time_A = 2 * N * dt  # maximum possible time
 
-        if N == 1:  # for just one spike in train
-            if spiketrain[0] - spiketrain.t_start < dt:
-                time_A += -dt + spiketrain[0] - spiketrain.t_start
-            if spiketrain[0] + dt > spiketrain.t_stop:
-                time_A += -dt - spiketrain[0] + spiketrain.t_stop
-        else:  # if more than one spike in train
-            # Vectorized loop of spike time differences
-            diff = np.diff(spiketrain)
-            diff_overlap = diff[diff < 2 * dt]
-            # Subtract overlap
-            time_A += -2 * dt * len(diff_overlap) + np.sum(diff_overlap)
+        if N == 1:  # for only a single spike in the train
 
-            # check if spikes are within dt of the start and/or end
-            # if so subtract overlap of first and/or last spike
+            # Check difference between start of recording and single spike
+            if spiketrain[0] - spiketrain.t_start < dt:
+                time_A += - dt + spiketrain[0] - spiketrain.t_start
+
+            # Check difference between single spike and end of recording
+            elif spiketrain[0] + dt > spiketrain.t_stop:
+                time_A += - dt - spiketrain[0] + spiketrain.t_stop
+
+        else:  # if more than a single spike in the train
+
+            # Calculate difference between consecutive spikes
+            diff = np.diff(spiketrain)
+
+            # Find spikes whose tiles overlap
+            idx = np.where(diff < 2 * dt)[0]
+            # Subtract overlapping "2*dt" tiles and add differences instead
+            time_A += - 2 * dt * len(idx) + diff[idx].sum()
+
+            # Check if spikes are within +/-dt of the start and/or end
+            # if so, subtract overlap of first and/or last spike
             if (spiketrain[0] - spiketrain.t_start) < dt:
                 time_A += spiketrain[0] - dt - spiketrain.t_start
-
             if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
-                time_A += -spiketrain[-1] - dt + spiketrain.t_stop
+                time_A += - spiketrain[-1] - dt + spiketrain.t_stop
 
+        # Calculate the proportion of total recorded time to "tiled" time
         T = time_A / (spiketrain.t_stop - spiketrain.t_start)
         return T.simplified.item()  # enforce simplification, strip units
 
