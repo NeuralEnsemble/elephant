@@ -14,7 +14,7 @@ signal, or filtering a signal).
     rauc
     derivative
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -26,6 +26,8 @@ import quantities as pq
 import scipy.signal
 
 from elephant.utils import deprecated_alias, check_same_units
+
+import warnings
 
 __all__ = [
     "zscore",
@@ -66,15 +68,21 @@ def zscore(signal, inplace=True):
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
         z-transformed signal, if possible, i.e when the signal type is float.
+        If the signal type is not float, an error is raised.
         If False, a copy of the original `signal` is returned.
         Default: True
 
     Returns
     -------
-    signal_ztransofrmed : neo.AnalogSignal or list of neo.AnalogSignal
+    signal_ztransformed : neo.AnalogSignal or list of neo.AnalogSignal
         The output format matches the input format: for each input
         `neo.AnalogSignal`, a corresponding `neo.AnalogSignal` is returned,
         containing the z-transformed signal with dimensionless unit.
+
+    Raises
+    ------
+    ValueError
+        If `inplace` is True and the type of `signal` is not float.
 
     Notes
     -----
@@ -153,29 +161,38 @@ def zscore(signal, inplace=True):
     mean = signal_stacked.mean(axis=0)
     std = signal_stacked.std(axis=0)
 
-    signal_ztransofrmed = []
+    signal_ztransformed = []
     for sig in signal:
+        # Perform inplace operation only if array is of dtype float.
+        # Otherwise, raise an error.
+        if inplace and not np.issubdtype(np.float, sig.dtype):
+            raise ValueError(f"Cannot perform inplace operation as the "
+                             f"signal dtype is not float. Source: {sig.name}")
+
         sig_normalized = sig.magnitude.astype(mean.dtype, copy=not inplace)
         sig_normalized -= mean
+
         # items where std is zero are already zero
         np.divide(sig_normalized, std, out=sig_normalized, where=std != 0)
-        sig_dimless = neo.AnalogSignal(signal=sig_normalized,
-                                       units=pq.dimensionless,
-                                       dtype=sig_normalized.dtype,
-                                       copy=False,
-                                       t_start=sig.t_start,
-                                       sampling_rate=sig.sampling_rate,
-                                       name=sig.name,
-                                       file_origin=sig.file_origin,
-                                       description=sig.description,
-                                       array_annotations=sig.array_annotations,
-                                       **sig.annotations)
-        signal_ztransofrmed.append(sig_dimless)
+
+        if inplace:
+            # Replace unit in the original array by dimensionless
+            sig._dimensionality = pq.dimensionless.dimensionality
+            sig_dimless = sig
+        else:
+            # Create new object
+            sig_dimless = sig.duplicate_with_new_data(sig_normalized,
+                                                      units=pq.dimensionless)
+            # todo use flag once is fixed
+            #      https://github.com/NeuralEnsemble/python-neo/issues/752
+            sig_dimless.array_annotate(**sig.array_annotations)
+
+        signal_ztransformed.append(sig_dimless)
 
     # Return single object, or list of objects
-    if len(signal_ztransofrmed) == 1:
-        signal_ztransofrmed = signal_ztransofrmed[0]
-    return signal_ztransofrmed
+    if len(signal_ztransformed) == 1:
+        signal_ztransformed = signal_ztransformed[0]
+    return signal_ztransformed
 
 
 @deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
@@ -536,10 +553,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         #      https://github.com/NeuralEnsemble/python-neo/issues/752
         signal_out.array_annotate(**signal.array_annotations)
         return signal_out
-    elif isinstance(signal, pq.quantity.Quantity):
+    if isinstance(signal, pq.quantity.Quantity):
         return filtered_data * signal.units
-    else:
-        return filtered_data
+
+    return filtered_data
 
 
 @deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
@@ -961,12 +978,11 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         # return a single value for each channel
         return rauc.squeeze()
 
-    else:
-        # return an AnalogSignal with times corresponding to center of each bin
-        t_start = signal.t_start.rescale(bin_duration.units) + bin_duration / 2
-        rauc_sig = neo.AnalogSignal(rauc, t_start=t_start,
-                                    sampling_period=bin_duration)
-        return rauc_sig
+    # return an AnalogSignal with times corresponding to center of each bin
+    t_start = signal.t_start.rescale(bin_duration.units) + bin_duration / 2
+    rauc_sig = neo.AnalogSignal(rauc, t_start=t_start,
+                                sampling_period=bin_duration)
+    return rauc_sig
 
 
 def derivative(signal):

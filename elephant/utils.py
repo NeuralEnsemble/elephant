@@ -16,6 +16,7 @@ import warnings
 from functools import wraps
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 
@@ -188,7 +189,7 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
     ValueError
         If input object units, t_start, or t_stop do not match across trials.
     """
-    if not isinstance(neo_objects, (list, tuple)):
+    if not isinstance(neo_objects, (list, tuple, SpikeTrainList)):
         neo_objects = [neo_objects]
     try:
         units = neo_objects[0].units
