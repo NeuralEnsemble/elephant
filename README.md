@@ -7,7 +7,7 @@
 [![Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)
 [![Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![DOI Latest Release](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
-
+[![tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
 
 *Elephant* package analyses all sorts of neurophysiological data:
 spike trains, LFP, analog signals. The input-output data format is either
@@ -34,7 +34,7 @@ Modified BSD License, see [LICENSE.txt](LICENSE.txt) for details.
 
 #### Copyright
 
-:copyright: 2014-2021 by the [Elephant team](doc/authors.rst).
+:copyright: 2014-2022 by the [Elephant team](doc/authors.rst).
 
 
 #### Acknowledgments
@@ -45,4 +45,3 @@ See [acknowledgments](doc/acknowledgments.rst).
 #### Citation
 
 See [citations](doc/citation.rst).
-

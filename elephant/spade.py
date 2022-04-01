@@ -84,7 +84,7 @@ bin (i.e., detecting only synchronous patterns).
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2021 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -97,6 +97,7 @@ from functools import reduce
 from itertools import chain, combinations
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 from scipy import sparse
@@ -617,7 +618,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # if spiketrains is list of neo.SpikeTrain convert to conv.BinnedSpikeTrain
-    if isinstance(spiketrains, list) and \
+    if isinstance(spiketrains, (list, SpikeTrainList)) and \
             isinstance(spiketrains[0], neo.SpikeTrain):
         spiketrains = conv.BinnedSpikeTrain(
             spiketrains, bin_size=bin_size, tolerance=None)
