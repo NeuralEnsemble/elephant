@@ -6,40 +6,38 @@ Elephant is a package for the analysis of neurophysiology data, based on Neo.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from . import (statistics,
-               spike_train_generation,
-               spike_train_correlation,
-               unitary_event_analysis,
-               cubic,
-               spectral,
-               kernels,
-               spike_train_dissimilarity,
-               spike_train_surrogates,
-               signal_processing,
-               current_source_density,
-               change_point_detection,
-               phase_analysis,
-               sta,
-               conversion,
-               neo_tools,
-               cell_assembly_detection,
-               spade,
-               waveform_features,
-               gpfa)
+from . import (
+    cell_assembly_detection,
+    change_point_detection,
+    conversion,
+    cubic,
+    current_source_density,
+    kernels,
+    neo_tools,
+    phase_analysis,
+    signal_processing,
+    spade,
+    spectral,
+    spike_train_correlation,
+    spike_train_dissimilarity,
+    spike_train_generation,
+    spike_train_surrogates,
+    spike_train_synchrony,
+    sta,
+    statistics,
+    unitary_event_analysis,
+    waveform_features,
+)
 
 # not included modules on purpose:
 #   parallel: avoid warns when elephant is imported
 
-try:
+try:  # the following require requirements-extras
     from . import asset
-    from . import spade
-except ImportError as error:  # pragma: no cover
+    from . import gpfa
+except ImportError:  # pragma: no cover
     # requirements-extras are missing
     # please install Elephant with `pip install elephant[extras]`
-    error.msg += ', consider installing elephant with extras: run command ' \
-                 '`pip install -r requirements-extras.txt or pip install ' \
-                 'elephant[extras]'
-    print(error.msg)
     pass
 
 

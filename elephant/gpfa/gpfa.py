@@ -78,7 +78,16 @@ from __future__ import division, print_function, unicode_literals
 import neo
 import numpy as np
 import quantities as pq
-import sklearn
+try:
+    import sklearn
+except ImportError as error:  # pragma: no cover
+    # requirements-extras are missing
+    error.msg += ', to use GPFA consider installing elephant with ' \
+                 'extras: run command ' \
+                 '`pip install -r requirements-extras.txt or ' \
+                 'pip install elephant[extras]'
+    raise error
+
 import warnings
 
 from elephant.gpfa import gpfa_core, gpfa_util

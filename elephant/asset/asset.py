@@ -133,8 +133,6 @@ import numpy as np
 import quantities as pq
 import scipy.spatial
 import scipy.stats
-from sklearn.cluster import dbscan
-from sklearn.metrics import pairwise_distances, pairwise_distances_chunked
 from tqdm import trange, tqdm
 
 import elephant.conversion as conv
@@ -417,6 +415,15 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
         return _stretch_mat
 
     if working_memory is None:
+        try:
+            from sklearn.metrics import pairwise_distances
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
         # Compute the matrix D[i, j] of euclidean distances among points
         # i and j
         D = pairwise_distances(points)
@@ -434,6 +441,15 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
 
         stretch_mat = calculate_stretch_mat(theta, D)
     else:
+        try:
+            from sklearn.metrics import pairwise_distances_chunked
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
         start = 0
         # x and y sizes are the same
         stretch_mat = np.empty((len(x), len(y)), dtype=np.float32)
@@ -699,7 +715,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         return P_total
 
     def _compile_template(self, template_name, **kwargs):
-        from jinja2 import Template
+        try:
+            from jinja2 import Template
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
+
         cu_template_path = Path(__file__).parent / template_name
         cu_template = Template(cu_template_path.read_text())
         asset_cu = cu_template.render(
@@ -709,8 +734,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         return asset_cu
 
     def pyopencl(self, log_du, device_id=0):
-        import pyopencl as cl
-        import pyopencl.array as cl_array
+        try:
+            import pyopencl as cl
+            import pyopencl.array as cl_array
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
 
         self._check_input(log_du)
 
@@ -1052,9 +1085,17 @@ class _PMatNeighbors(_GPUBackend):
             raise ValueError("The input matrix dtype must be float32.")
 
     def pyopencl(self, mat):
-        import pyopencl as cl
-        import pyopencl.array as cl_array
-        from jinja2 import Template
+        try:
+            import pyopencl as cl
+            import pyopencl.array as cl_array
+            from jinja2 import Template
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
 
         context = cl.create_some_context(interactive=False)
         device = context.devices[0]
@@ -1132,7 +1173,15 @@ class _PMatNeighbors(_GPUBackend):
         return lmat_padded
 
     def pycuda(self, mat):
-        from jinja2 import Template
+        try:
+            from jinja2 import Template
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
         try:
             # PyCuda should not be in requirements-extra because CPU limited
             # users won't be able to install Elephant.
@@ -2456,10 +2505,19 @@ class ASSET(object):
             raise MemoryError("Set 'working_memory=100' or another value to "
                               "chunk the data") from err
 
-        # Cluster positions of significant pixels via dbscan
-        core_samples, config = dbscan(
-            D, eps=max_distance, min_samples=min_neighbors,
-            metric='precomputed')
+        try:
+            from sklearn.cluster import dbscan
+            # Cluster positions of significant pixels via dbscan
+            core_samples, config = dbscan(
+                D, eps=max_distance, min_samples=min_neighbors,
+                metric='precomputed')
+        except ImportError as error:  # pragma: no cover
+            # requirements-extras are missing
+            error.msg += ', to use ASSET consider installing elephant with ' \
+                         'extras: run command ' \
+                         '`pip install -r requirements-extras.txt or ' \
+                         'pip install elephant[extras]'
+            raise error
 
         # Construct the clustered matrix, where each element has value
         # * i = 1 to k if it belongs to a cluster i,
