@@ -2,6 +2,65 @@
 Release Notes
 =============
 
+Elephant 0.11.0 release notes
+=============================
+
+Breaking changes
+-------------
+
+* For current source density measures electrode coordinates can no longer be supplied via a `RecordingChannelGroup` object as it is no longer supported in Neo v0.10.0 (#447)
+
+New functionality and features
+-------------
+
+* Redesigned `elephant.spike_train_generation` module using classes (old API is retained for compatibility) (#416)
+* Added function to calculate the multitaper power spectral density estimate in `elephant.spectral` (#417)
+* Added a boundary correction for the firing rate estimator `elephant.statistics.instantaneous_rate` with Gaussian kernels (#414)
+* Function to discretise spiketimes for a given spiketrain in `elephant.conversion` (#454)
+* Support for the new `SpikeTrainList` object of Neo (#447)
+
+Bug fixes
+-------------
+
+* Issue with unit scaling in `BinnedSpikeTrain` (#425)
+* Changed `BinnedSpikeTrain` to support quantities<0.12.4 (#418)
+* Fix `FloatingPointError` in ICSD (#421)
+* `t_start` information was lost while transposing LFP for `current_source_density` module (#432)
+* Fix `neo_tools` unit tests to work with Neo 0.10.0+ (#446)
+* Fixed various issues with consistency of bin boundaries of instantaneous rates (#453)
+
+Documentation
+-------------
+
+* Update tutorials ASSET and UE tutorial and datasets to use nixio >=1.5.0 (#441)
+* Updated `spade` tutorial to work with viziphant 0.2.0 (#444)
+* Fixed figures in the Granger causality tutorial (#434)
+* Add DOIs to documentation (#456)
+* Fixed random seed selection in some tutorials (#430)
+
+Optimizations
+-------------
+
+* Highly optimized run-time of the SPADE analysis (#419)
+* More efficient storage of spike complexities by the `elephant.statistics.Complexity` class (#412)
+* Updated `elephant.signal_processing.zscore` function for in-place operations (#440)
+
+Other changes
+-------------
+
+* Continuous Integration (CI) was moved to github actions (#451)
+* Change test framework from Nose to pytest (#413)
+* Added DOI with zenodo (#445)
+* Versioning for associated `elephant-data` repository for example datasets introduced (#463)
+
+
+Selected dependency changes
+-------------
+* nixio >= 1.5.0
+* neo >= 0.10.0
+* python >= 3.7
+
+
 Elephant 0.10.0 release notes
 =============================
 

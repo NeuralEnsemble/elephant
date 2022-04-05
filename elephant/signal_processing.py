@@ -14,7 +14,7 @@ signal, or filtering a signal).
     rauc
     derivative
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -553,10 +553,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         #      https://github.com/NeuralEnsemble/python-neo/issues/752
         signal_out.array_annotate(**signal.array_annotations)
         return signal_out
-    elif isinstance(signal, pq.quantity.Quantity):
+    if isinstance(signal, pq.quantity.Quantity):
         return filtered_data * signal.units
-    else:
-        return filtered_data
+
+    return filtered_data
 
 
 @deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
@@ -978,12 +978,11 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         # return a single value for each channel
         return rauc.squeeze()
 
-    else:
-        # return an AnalogSignal with times corresponding to center of each bin
-        t_start = signal.t_start.rescale(bin_duration.units) + bin_duration / 2
-        rauc_sig = neo.AnalogSignal(rauc, t_start=t_start,
-                                    sampling_period=bin_duration)
-        return rauc_sig
+    # return an AnalogSignal with times corresponding to center of each bin
+    t_start = signal.t_start.rescale(bin_duration.units) + bin_duration / 2
+    rauc_sig = neo.AnalogSignal(rauc, t_start=t_start,
+                                sampling_period=bin_duration)
+    return rauc_sig
 
 
 def derivative(signal):

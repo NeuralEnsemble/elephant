@@ -9,7 +9,7 @@ spectrum).
     welch_psd
     welch_coherence
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -710,13 +710,13 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     elif len_segment is not None:
         if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
-        elif xdata.shape[axis] < len_segment:
+        if xdata.shape[axis] < len_segment:
             raise ValueError("len_seg must be shorter than the data length")
         nperseg = len_segment
     else:
         if n_segments <= 0:
             raise ValueError("n_segments must be a positive number")
-        elif xdata.shape[axis] < n_segments:
+        if xdata.shape[axis] < n_segments:
             raise ValueError("n_segments must be smaller than the data length")
         # when only *n_segments* is given, *nperseg* is determined by solving
         # the following equation:

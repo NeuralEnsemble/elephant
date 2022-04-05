@@ -2,7 +2,7 @@
 """
 Unit tests for the signal_processing module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
@@ -664,7 +664,6 @@ class HilbertTestCase(unittest.TestCase):
         """
         # Performing test using all pad types
         for padding in ['nextpow', 'none', 16384]:
-
             h = elephant.signal_processing.hilbert(
                 self.long_signals, padding=padding)
 
@@ -692,7 +691,7 @@ class HilbertTestCase(unittest.TestCase):
             # amplitude
             amplitudediff = \
                 amplitude[ind1:ind2, :] - self.amplitude[ind1:ind2, :]
-#
+            #
             assert_allclose(phasediff, 0, atol=0.1)
             assert_allclose(amplitudediff, 0, atol=0.5)
 
@@ -710,7 +709,6 @@ class HilbertTestCase(unittest.TestCase):
 
         # Performing test using both pad types
         for padding in ['nextpow', 'none', 512]:
-
             h = elephant.signal_processing.hilbert(
                 self.one_period, padding=padding)
 
@@ -1094,8 +1092,8 @@ class RAUCTestCase(unittest.TestCase):
 
     def test_rauc_times_with_overextending_bin(self):
         """Test rauc returns correct times when signal is NOT binned evenly"""
-
-        bin_duration = 0.99 * pq.s  # results in one bin center > original t_stop
+        # results in one bin center > original t_stop
+        bin_duration = 0.99 * pq.s
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))

@@ -70,7 +70,7 @@ Rescale the units of a binned spike train without changing the data.
 BinnedSpikeTrain(t_start=0.0 ms, t_stop=9000.0 ms, bin_size=1000.0 ms;
 shape=(2, 9))
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 
@@ -1223,14 +1223,14 @@ class BinnedSpikeTrainView(BinnedSpikeTrain):
         self.tolerance = tolerance
 
 
-def _check_neo_spiketrain(matrix):
+def _check_neo_spiketrain(query):
     """
     Checks if given input contains neo.SpikeTrain objects
 
     Parameters
     ----------
-    matrix
-        Object to test for `neo.SpikeTrain`s
+    query
+        Object to test for `neo.SpikeTrain` objects
 
     Returns
     -------
@@ -1240,9 +1240,78 @@ def _check_neo_spiketrain(matrix):
 
     """
     # Check for single spike train
-    if isinstance(matrix, neo.SpikeTrain):
+    if isinstance(query, neo.SpikeTrain):
         return True
-    # Check for list or tuple
-    if isinstance(matrix, (list, tuple)):
-        return all(map(_check_neo_spiketrain, matrix))
+    # Check for list, tuple, or SpikeTrainList
+    try:
+        return all(map(_check_neo_spiketrain, query))
+    except TypeError:
+        pass
+
     return False
+
+
+def discretise_spiketimes(spiketrains, sampling_rate):
+    """
+    Rounds down all spike times in the input spike train(s)
+    to multiples of the sampling_rate
+
+    Parameters
+    ----------
+    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
+        The spiketrain(s) to discretise
+    sampling_rate : pq.Quantity
+        The desired sampling rate
+
+    Returns
+    -------
+    neo.SpikeTrain or list of neo.SpikeTrain
+        The discretised spiketrain(s)
+    """
+    # spiketrains type check
+    was_single_spiketrain = False
+    if isinstance(spiketrains, neo.SpikeTrain):
+        spiketrains = [spiketrains]
+        was_single_spiketrain = True
+    elif isinstance(spiketrains, list):
+        for st in spiketrains:
+            if not isinstance(st, (np.ndarray, neo.SpikeTrain)):
+                raise TypeError(
+                    "spiketrains must be a SpikeTrain, a numpy ndarray, or a "
+                    "list of one of those, not %s." % type(spiketrains))
+    else:
+        raise TypeError(
+            "spiketrains must be a SpikeTrain or a list of SpikeTrain objects,"
+            " not %s." % type(spiketrains))
+
+    if not isinstance(sampling_rate, pq.Quantity):
+        raise TypeError(
+             "The 'sampling_rate' must be pq.Quantity.\n"
+             "Found: %s." % type(sampling_rate))
+
+    units = spiketrains[0].times.units
+    mag_sampling_rate = sampling_rate.rescale(1/units).magnitude.flatten()
+
+    new_spiketrains = []
+    for spiketrain in spiketrains:
+        mag_t_start = spiketrain.t_start.rescale(units).magnitude.flatten()
+        mag_times = spiketrain.times.magnitude.flatten()
+        discrete_times = (mag_times // (1 / mag_sampling_rate)
+                          / mag_sampling_rate)
+        mask = discrete_times < mag_t_start
+
+        if np.any(mask):
+            warnings.warn(f'{mask.sum()} spike(s) would be before t_start '
+                          'and are set to t_start instead.')
+            discrete_times[mask] = mag_t_start
+
+        discrete_times *= units
+        new_spiketrain = spiketrain.duplicate_with_new_data(discrete_times)
+        new_spiketrain.annotations = spiketrain.annotations
+        new_spiketrain.sampling_rate = sampling_rate
+        new_spiketrains.append(new_spiketrain)
+
+    if was_single_spiketrain:
+        new_spiketrains = new_spiketrains[0]
+
+    return new_spiketrains
