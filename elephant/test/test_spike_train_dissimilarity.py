@@ -5,6 +5,7 @@ Tests for the spike train dissimilarity measures module.
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
+import os
 import tempfile
 import unittest
 from neo import SpikeTrain
@@ -18,9 +19,7 @@ import elephant.spike_train_generation as stg
 import elephant.spike_train_dissimilarity as stds
 from pathlib import Path
 
-from elephant.test.download import download, ELEPHANT_TMP_DIR
-
-#ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
 class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
@@ -390,15 +389,18 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
 
     def test_victor_purpura_matlab_comparison(self):
 
-        data_url = r"https://gin.g-node.org/INM-6/elephant-data/raw/newData/victor_purpura/unittest/spike_train_dissimilarity/victor_purpura_distance/data"
+        repo_path = r"unittest/spike_train_dissimilarity/victor_purpura_distance/data"
 
         files_to_download = [("times_int.npy", "aa1411c04da3f58d8b8913ae2f935057"),
                              ("matlab_results_int.npy", "7edd32e50edde12dc1ef4aa5f57f70fb"),
                              ("times_float.npy", "ed1ff4d2c0eeed4a2b50a456803656be"),
                              ("matlab_results_float.npy", "a17f049e7ad0ddf7ca812e86fdb92646")]
 
+        os.environ["ELEPHANT_DATA_URL"] = "https://gin.g-node.org/INM-6/elephant-data/raw/newData/victor_purpura"
+
         for filename, checksum in files_to_download:
-            download(url=f"{data_url}/{filename}", checksum=checksum)
+            download_datasets(repo_path=f"{repo_path}/{filename}", checksum=checksum)
+
 
 
         times_int = np.load(ELEPHANT_TMP_DIR / 'times_int.npy')
