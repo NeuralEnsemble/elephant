@@ -2200,8 +2200,7 @@ class ASSET(object):
             significant value in `pmat` (extreme case: `pmat[i, j] = 1`) yields
             joint significance of itself and its neighbors.
             Default: 1e-5
-<<<<<<< HEAD:elephant/asset.py
-=======
+
         precision : {'float', 'double'}, optional
             Single or double floating-point precision for the resulting `jmat`
             matrix.
@@ -2237,7 +2236,6 @@ class ASSET(object):
             resulting joint prob. matrix values are outside of the acceptable
             range ``[-tolerance, 1.0 + tolerance]``.
             Default: 1e-5
->>>>>>> master:elephant/asset/asset.py
 
         Returns
         -------

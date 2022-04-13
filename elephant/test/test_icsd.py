@@ -130,9 +130,9 @@ def potential_of_cylinder(z_j,
 
     Tested with
 
-    >>>from sympy import *
-    >>>C_i, z_i, h, z_j, z_j, sigma, R = symbols('C_i z_i h z z_j sigma R')
-    >>>C_i*integrate(1/(2*sigma)*(sqrt((z-z_j)**2 + R**2) -
+    >>> from sympy import *
+    >>> C_i, z_i, h, z_j, z_j, sigma, R = symbols('C_i z_i h z z_j sigma R')
+    >>> C_i*integrate(1/(2*sigma)*(sqrt((z-z_j)**2 + R**2) -
     ... abs(z-z_j)), (z, z_i-h/2, z_i+h/2))
 
 
