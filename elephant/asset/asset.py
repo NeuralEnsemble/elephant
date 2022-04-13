@@ -427,7 +427,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
         dY = y_array.T - y_array
 
         # Compute the matrix Theta of angles between each pair of points
-        theta = np.arctan2(dY, dX, dtype=np.float32)
+        theta = np.arctan2(dY, dX, dtype=np.float64)
 
         stretch_mat = calculate_stretch_mat(theta, D)
     else:
