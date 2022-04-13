@@ -64,7 +64,7 @@ setup_kwargs = {
     "extras_require": extras_require,
     "author": "Elephant authors and contributors",
     "author_email": "contact@python-elephant.org",
-    "description": "Elephant is a package for analysis of electrophysiology data in Python", # noqa
+    "description": "Elephant is a package for analysis of electrophysiology data in Python",  # noqa
     "long_description": long_description,
     "long_description_content_type": "text/markdown",
     "license": "BSD",
