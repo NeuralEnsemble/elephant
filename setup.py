@@ -84,6 +84,6 @@ setup_kwargs = {
 }
 # do not compile external modules on darwin
 if platform.system() in ["Windows", "Linux"]:
-    setup_kwargs["ext_modules"] = fim_module
+    setup_kwargs["ext_modules"] = [fim_module]
 
 setup(**setup_kwargs)
