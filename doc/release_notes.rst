@@ -2,6 +2,36 @@
 Release Notes
 =============
 
+Elephant 0.11.1 release notes
+=============================
+
+Breaking changes
+-------------
+
+New functionality and features
+-------------
+
+Bug fixes
+-------------
+* disable installation of fim extension on macOS in `setup.py` (#472)
+* fix asset on macOS: changed precision from single to double (#474 )
+
+Documentation
+-------------
+* added example to `asset.discretise_spiketimes` docstring (#468)
+
+Optimizations
+-------------
+* Improvement of Spike Time Tiling Coefficient (STTC) (#438)
+
+Other changes
+-------------
+* Continuous Integration (CI): added two workflows for macOS (#474)
+
+Selected dependency changes
+-------------
+* scipy >=1.5.4 (#473)
+
 Elephant 0.11.0 release notes
 =============================
 
