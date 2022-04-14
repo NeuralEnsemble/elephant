@@ -4,7 +4,6 @@ import platform
 
 from setuptools import setup, Extension
 
-print(platform.system())
 with open(os.path.join(os.path.dirname(__file__),
                        "elephant", "VERSION")) as version_file:
     version = version_file.read().strip()
