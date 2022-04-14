@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
+import os.path
 import platform
 
 from setuptools import setup, Extension
@@ -40,7 +40,7 @@ elif platform.system() == "Darwin":
             '-Weffc++', '-Wunused-result', '-Werror', '-Werror=return-type',
             '-Xpreprocessor',
             '-fopenmp', '-std=gnu++17'])
-else:
+elif platform.system() == "Linux":
     fim_module = Extension(
         name='elephant.spade_src.fim',
         sources=['elephant/spade_src/src/fim.cpp'],
@@ -53,23 +53,22 @@ else:
             '-Weffc++', '-Wunused-result', '-Werror',
             '-fopenmp', '-std=gnu++17'])
 
-setup(
-    name="elephant",
-    version=version,
-    packages=['elephant', 'elephant.test'],
-    include_package_data=True,
-    ext_modules=[fim_module],
-    install_requires=install_requires,
-    extras_require=extras_require,
-    author="Elephant authors and contributors",
-    author_email="contact@python-elephant.org",
-    description="Elephant is a package for analysis of electrophysiology data in Python",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    license="BSD",
-    url='http://python-elephant.org',
-    python_requires=">=3.7",
-    classifiers=[
+setup_kwargs = {
+    "name": "elephant",
+    "version": version,
+    "packages": ['elephant', 'elephant.test'],
+    "include_package_data": True,
+    "install_requires": install_requires,
+    "extras_require": extras_require,
+    "author": "Elephant authors and contributors",
+    "author_email": "contact@python-elephant.org",
+    "description": "Elephant is a package for analysis of electrophysiology data in Python",  # noqa
+    "long_description": long_description,
+    "long_description_content_type": "text/markdown",
+    "license": "BSD",
+    "url": 'http://python-elephant.org',
+    "python_requires": ">=3.7",
+    "classifiers": [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
@@ -82,4 +81,9 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Scientific/Engineering']
-)
+}
+# do not compile external modules on darwin
+if platform.system() in ["Windows", "Linux"]:
+    setup_kwargs["ext_modules"] = [fim_module]
+
+setup(**setup_kwargs)
