@@ -40,7 +40,7 @@ elif platform.system() == "Darwin":
             '-Weffc++', '-Wunused-result', '-Werror', '-Werror=return-type',
             '-Xpreprocessor',
             '-fopenmp', '-std=gnu++17'])
-else:
+elif platform.system() == "Linux":
     fim_module = Extension(
         name='elephant.spade_src.fim',
         sources=['elephant/spade_src/src/fim.cpp'],
@@ -58,7 +58,6 @@ setup_kwargs = {
     "version": version,
     "packages": ['elephant', 'elephant.test'],
     "include_package_data": True,
-    "ext_modules": [fim_module],
     "install_requires": install_requires,
     "extras_require": extras_require,
     "author": "Elephant authors and contributors",
@@ -84,7 +83,7 @@ setup_kwargs = {
         'Topic :: Scientific/Engineering']
 }
 # do not compile external modules on darwin
-if platform.system() == "Darwin":
-    del setup_kwargs["ext_modules"]
+if platform.system() in ["Windows", "Linux"]:
+    setup_kwargs["ext_modules"] = fim_module
 
 setup(**setup_kwargs)
