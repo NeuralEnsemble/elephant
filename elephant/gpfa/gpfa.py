@@ -191,13 +191,6 @@ class GPFA(sklearn.base.BaseEstimator):
             mapping between the neuronal data space and the orthonormal
             latent variable space
 
-    Methods
-    -------
-    fit
-    transform
-    fit_transform
-    score
-
     Raises
     ------
     ValueError

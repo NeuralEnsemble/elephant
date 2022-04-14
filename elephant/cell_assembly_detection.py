@@ -157,7 +157,9 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         if they appear in the very same configuration.
         Default: False
     bool_times_format : bool, optional
+
     .. deprecated:: 0.10.0
+
        Has no effect, the returning 'times' are always a quantity array
        specifying the pattern spike times.
        Default: None

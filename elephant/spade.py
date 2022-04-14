@@ -179,7 +179,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
     min_neu : int, optional
-        Minimum number of neurons in a sequence to considered a pattern.
+        Minimum number of neurons in a sequence to consider a pattern.
         Default: 1
     approx_stab_pars : dict or None, optional
         Parameter values for approximate stability computation.

@@ -413,13 +413,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         `lowpass_frequency` and `highpass_frequency`:
 
         * `highpass_frequency` only (`lowpass_frequency` is None):
-        highpass filter
-
+           highpass filter
         * `lowpass_frequency` only (`highpass_frequency` is None):
-        lowpass filter
-
+           lowpass filter
         * `highpass_frequency` < `lowpass_frequency`: bandpass filter
-
         * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
         Default: None
@@ -430,9 +427,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         Filtering function to be used. Available filters:
 
         * 'filtfilt': `scipy.signal.filtfilt`;
-
         * 'lfilter': `scipy.signal.lfilter`;
-
         * 'sosfiltfilt': `scipy.signal.sosfiltfilt`.
 
         In most applications 'filtfilt' should be used, because it doesn't
@@ -884,8 +879,8 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         If None, ends at the last time of `signal`.
         The signal is cropped using `signal.time_slice(t_start, t_stop)` after
         baseline removal. Useful if you want the RAUC for a short section of
-        the signal but want the mean or median calculation (`baseline`='mean'
-        or `baseline`='median') to use the entire signal for better baseline
+        the signal but want the mean or median calculation (`baseline` ='mean'
+        or `baseline` ='median') to use the entire signal for better baseline
         estimation.
         Default: None
 
