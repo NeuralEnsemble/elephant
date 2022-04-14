@@ -370,8 +370,10 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
@@ -543,8 +545,10 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
