@@ -1874,6 +1874,7 @@ class ASSET(object):
                 * 'intersection': `len(intersection(s_i, s_j))`
                 * 'mean': `sqrt(len(s_1) * len(s_2))`
                 * 'union': `len(union(s_i, s_j))`
+
             Default: None
 
         Returns
@@ -1928,9 +1929,9 @@ class ASSET(object):
             If None, the output of :func:`ASSET.intersection_matrix` is used.
             Default: None
         surrogate_method : {'dither_spike_train', 'dither_spikes',
-                            'jitter_spikes',
-                            'randomise_spikes', 'shuffle_isis',
-                            'joint_isi_dithering'}, optional
+            'jitter_spikes', 'randomise_spikes', 'shuffle_isis',
+            'joint_isi_dithering'}, optional
+
             The method to generate surrogate spike trains. Refer to the
             :func:`spike_train_surrogates.surrogates` documentation for more
             information about each surrogate method. Note that some of these
@@ -2204,9 +2205,10 @@ class ASSET(object):
         precision : {'float', 'double'}, optional
             Single or double floating-point precision for the resulting `jmat`
             matrix.
-              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
 
+              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
               * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
+
             Double floating-point precision is typically x4 times slower than
             the single floating-point equivalent.
             Default: 'float'
