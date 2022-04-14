@@ -24,8 +24,8 @@ Examples
 ...   neo.SpikeTrain([0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0], t_stop=9, units='s')
 ... ]
 >>> bst = BinnedSpikeTrain(spiketrains, bin_size=1 * pq.s)
->>> bst
-BinnedSpikeTrain(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, 9))
+>>> bst # doctest: +ELLIPSIS
+BinnedSpikeTrain(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, 9), ...
 >>> bst.to_array()
 array([[2, 1, 0, 1, 1, 1, 1, 0, 0],
        [2, 1, 1, 0, 1, 1, 0, 0, 1]], dtype=int32)
@@ -37,26 +37,27 @@ array([[ True,  True, False,  True,  True,  True,  True, False, False],
        [ True,  True,  True, False,  True,  True, False, False,  True]])
 
 >>> bst_binary = bst.binarize()
->>> bst_binary
-BinnedSpikeTrainView(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, 9))
+>>> bst_binary # doctest: +ELLIPSIS
+BinnedSpikeTrainView(t_start=0.0 s, t_stop=9.0 s, bin_size=1.0 s; shape=(2, ...
 >>> bst_binary.to_array()
 array([[1, 1, 0, 1, 1, 1, 1, 0, 0],
        [1, 1, 1, 0, 1, 1, 0, 0, 1]], dtype=int32)
 
 Slicing.
 
->>> bst.time_slice(t_stop=3.5 * pq.s)
-BinnedSpikeTrainView(t_start=0.0 s, t_stop=3.0 s, bin_size=1.0 s; shape=(2, 3))
->>> bst[0, 1:-3]
-BinnedSpikeTrainView(t_start=1.0 s, t_stop=6.0 s, bin_size=1.0 s; shape=(1, 5))
+>>> bst.time_slice(t_stop=3.5 * pq.s) # doctest: +ELLIPSIS
+BinnedSpikeTrainView(t_start=0.0 s, t_stop=3.0 s, bin_size=1.0 s; shape=(2, ...
+>>> bst[0, 1:-3] # doctest: +ELLIPSIS
+BinnedSpikeTrainView(t_start=1.0 s, t_stop=6.0 s, bin_size=1.0 s; shape=(1, ...
 
 Generate a realisation of spike trains from the binned version.
 
->>> bst.to_spike_trains(spikes='center')
-[<SpikeTrain(array([0.33333333, 0.66666667, 1.5       , 3.5       , 4.5       ,
-       5.5       , 6.5       ]) * s, [0.0 s, 9.0 s])>,
-<SpikeTrain(array([0.33333333, 0.66666667, 1.5       , 2.5       , 4.5       ,
-       5.5       , 8.5       ]) * s, [0.0 s, 9.0 s])>]
+>>> print(bst.to_spike_trains(spikes='center')[0])
+[0.33333333 0.66666667 1.5        3.5        4.5        5.5
+ 6.5       ] s
+>>> print(bst.to_spike_trains(spikes='center')[1])
+[0.33333333 0.66666667 1.5        2.5        4.5        5.5
+ 8.5       ] s
 
 Check the correctness of a spike trains realosation
 
@@ -66,9 +67,8 @@ True
 Rescale the units of a binned spike train without changing the data.
 
 >>> bst.rescale('ms')
->>> bst
-BinnedSpikeTrain(t_start=0.0 ms, t_stop=9000.0 ms, bin_size=1000.0 ms;
-shape=(2, 9))
+>>> bst # doctest: +ELLIPSIS
+BinnedSpikeTrain(t_start=0.0 ms, t_stop=9000.0 ms, bin_size=1000.0 ms; ...
 
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
@@ -945,11 +945,11 @@ class BinnedSpikeTrain(object):
         >>> x = conv.BinnedSpikeTrain(st, n_bins=10, bin_size=1 * pq.s,
         ...                           t_start=0 * pq.s)
         >>> print(x.spike_indices)
-        [[0, 0, 1, 3, 4, 5, 6]]
+        [array([0, 0, 1, 3, 4, 5, 6], dtype=int32)]
         >>> print(x.sparse_matrix.nonzero()[1])
         [0 1 3 4 5 6]
         >>> print(x.to_array())
-        [[2, 1, 0, 1, 1, 1, 1, 0, 0, 0]]
+        [[2 1 0 1 1 1 1 0 0 0]]
 
         """
         spike_idx = []
@@ -1267,6 +1267,27 @@ def discretise_spiketimes(spiketrains, sampling_rate):
     -------
     neo.SpikeTrain or list of neo.SpikeTrain
         The discretised spiketrain(s)
+
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant import conversion
+    >>>
+    >>> np.random.seed(1)
+    >>> times = (np.arange(10) + np.random.uniform(size=10)) * pq.ms
+    >>> spiketrain = neo.SpikeTrain(times, t_stop=10*pq.ms)
+    >>>
+    >>> spiketrain.times
+    array([0.417022  , 1.72032449, 2.00011437, 3.30233257, 4.14675589,
+           5.09233859, 6.18626021, 7.34556073, 8.39676747, 9.53881673]) * ms
+    >>>
+    >>> discretised_spiketrain = conversion.discretise_spiketimes(spiketrain,
+    ...                                                           1 / pq.ms)
+    >>> discretised_spiketrain.times
+    array([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]) * ms
+
     """
     # spiketrains type check
     was_single_spiketrain = False
@@ -1307,7 +1328,6 @@ def discretise_spiketimes(spiketrains, sampling_rate):
 
         discrete_times *= units
         new_spiketrain = spiketrain.duplicate_with_new_data(discrete_times)
-        new_spiketrain.annotations = spiketrain.annotations
         new_spiketrain.sampling_rate = sampling_rate
         new_spiketrains.append(new_spiketrain)
 
