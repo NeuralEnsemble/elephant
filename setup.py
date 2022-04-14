@@ -86,4 +86,5 @@ setup_kwargs = {
 if platform.system() in ["Windows", "Linux"]:
     setup_kwargs["ext_modules"] = [fim_module]
 
+
 setup(**setup_kwargs)
