@@ -270,7 +270,9 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
         of a (default) `neo.SpikeTrain` object.
         Default: False
     format : {None, 'raw'}, optional
+
         .. deprecated:: 0.8.0
+
         Whether to return as SpikeTrain (None) or as a plain array of times
         ('raw').
         Deprecated. Use `as_array=False` for None format and `as_array=True`
@@ -1347,11 +1349,13 @@ def single_interaction_process(
         Overall mean rate of the time series to be generated (coincidence
         rate `coincidence_rate` is subtracted to determine the background
         rate). Can be:
+
         * a float, representing the overall mean rate of each process. If
           so, it must be higher than `coincidence_rate`.
         * an iterable of floats (one float per process), each float
           representing the overall mean rate of a process. If so, all the
           entries must be larger than `coincidence_rate`.
+
     coincidence_rate : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP).
         The SIP spike trains will have coincident events with rate
@@ -1373,9 +1377,10 @@ def single_interaction_process(
         istic (i.e. rate_coincidence is the actual rate with which coincidences
         are generated) or stochastic (i.e. rate_coincidence is the mean rate of
         coincidences):
-          * 'deterministic': deterministic rate
 
+          * 'deterministic': deterministic rate
           * 'stochastic': stochastic rate
+
         Default: 'deterministic'
     t_start : pq.Quantity, optional
         Starting time of the series. If specified, it must be lower than

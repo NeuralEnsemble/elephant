@@ -25,13 +25,15 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 
 Notes
 -----
-This modules relies on the C++ implementation of the fp-growth algorithm developed by
-Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces
-a more generic implementation of the algorithm by Christian Borgelt
-(http://www.borgelt.net/pyfim.html) that was used in previous versions of Elephant.
-If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
-be compiled on a given system during install, SPADE will make use of a pure Python implementation
-of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
+This modules relies on the C++ implementation of the fp-growth
+algorithm developed by Forian Porrmann (available at
+https://github.com/fporrmann/FPG). The module replaces a more generic
+implementation of the algorithm by Christian Borgelt (
+http://www.borgelt.net/pyfim.html) that was used in previous versions of
+Elephant. If the module (fim.so) is not available in a precompiled format (
+currently Linux/Windows) or cannot be compiled on a given system during
+install, SPADE will make use of a pure Python implementation of the fast fca
+algorithm contained in `elephant/spade_src/fast_fca.py`, which is
 significantly slower.
 
 
@@ -268,12 +270,14 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
             If `output_format` is 'concepts', then `output['patterns']` is a
             tuple of patterns which in turn are tuples of
+
                 1. spikes in the pattern
                 2. occurrences of the pattern
 
             For details see :func:`concepts_mining`.
 
             if stability is calculated, there are also:
+
                 3. intensional stability
                 4. extensional stability
 

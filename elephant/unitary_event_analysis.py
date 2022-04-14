@@ -726,15 +726,15 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
         Default: None
     method : str, optional
         The method with which to compute the unitary events:
+
           * 'analytic_TrialByTrial': calculate the analytical expectancy
             on each trial, then sum over all trials;
-
           * 'analytic_TrialAverage': calculate the expectancy by averaging over
             trials (cf. Gruen et al. 2003);
-
           * 'surrogate_TrialByTrial': calculate the distribution of expected
             coincidences by spike time randomization in each trial and sum over
             trials.
+
         Default: 'analytic_trialByTrial'
     t_start, t_stop : float or pq.Quantity, optional
         The start and stop times to use for the time points.
