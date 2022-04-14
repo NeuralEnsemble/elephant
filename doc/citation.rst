@@ -3,21 +3,12 @@ Citing Elephant
 ***************
 To refer to the Elephant software package in publications, please use:
 
-Elephant (`doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.4582366>`_;
+Elephant (`doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.1186602>`_;
 `RRID:SCR_003833 <https://scicrunch.org/resolver/RRID:SCR_003833>`_)
 
-To cite a specific version of Elephant use:
+To cite a specific version of Elephant please see version-specific DOIs at:
 
-* v0.10.0 `doi:10.5281/zenodo.4582366 <https://doi.org/10.5281/zenodo.4582366>`_
-* v0.9.0 `doi:10.5281/zenodo.4271489 <https://doi.org/10.5281/zenodo.4271489>`_
-* v0.8.0 `doi:10.5281/zenodo.3975676 <https://doi.org/10.5281/zenodo.3975676>`_
-* v0.7.0 `doi:10.5281/zenodo.3695277 <https://doi.org/10.5281/zenodo.3695277>`_
-* v0.6.4 `doi:10.5281/zenodo.3524331 <https://doi.org/10.5281/zenodo.3524331>`_
-* v0.6.3 `doi:10.5281/zenodo.3346596 <https://doi.org/10.5281/zenodo.3346596>`_
-* v0.6.1 `doi:10.5281/zenodo.2620229 <https://doi.org/10.5281/zenodo.2620229>`_
-* v0.5.0 `doi:10.5281/zenodo.1216145 <https://doi.org/10.5281/zenodo.1216145>`_
-* v0.4.3 `doi:10.5281/zenodo.1187084 <https://doi.org/10.5281/zenodo.1187084>`_
-* v0.4.2 `doi:10.5281/zenodo.1186603 <https://doi.org/10.5281/zenodo.1186603>`_
+ `doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.1186602>`_
 
 To cite Elephant, please use:
 
