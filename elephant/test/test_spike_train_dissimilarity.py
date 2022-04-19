@@ -387,16 +387,36 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
             stds.victor_purpura_distance([self.st21, self.st22, self.st23],
                                          self.q3, algorithm='intuitive'))
 
-    def test_victor_purpura_matlab_comparison(self):
+    def test_victor_purpura_matlab_comparison_float(self):
+
+        repo_path = r"unittest/spike_train_dissimilarity/victor_purpura_distance/data"
+
+        files_to_download = [("times_float.npy", "ed1ff4d2c0eeed4a2b50a456803656be"),
+                             ("matlab_results_float.npy", "a17f049e7ad0ddf7ca812e86fdb92646")]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}", checksum=checksum)
+
+        times_float = np.load(ELEPHANT_TMP_DIR / 'times_float.npy')
+        mat_res_float = np.load(ELEPHANT_TMP_DIR / 'matlab_results_float.npy')
+
+        r_float = SpikeTrain(times_float[0], units='ms', t_start=0, t_stop=1000 * ms)
+        s_float = SpikeTrain(times_float[1], units='ms', t_start=0, t_stop=1000 * ms)
+        t_float = SpikeTrain(times_float[2], units='ms', t_start=0, t_stop=1000 * ms)
+
+        vic_pur_result_float = stds.victor_purpura_distance([r_float, s_float, t_float],
+                                                            cost_factor=1.0 / ms, kernel=None,
+                                                            sort=True, algorithm='intuitive')
+
+        assert_array_almost_equal(vic_pur_result_float, mat_res_float)
+
+    def test_victor_purpura_matlab_comparison_int(self):
 
         repo_path = r"unittest/spike_train_dissimilarity/victor_purpura_distance/data"
 
         files_to_download = [("times_int.npy", "aa1411c04da3f58d8b8913ae2f935057"),
-                             ("matlab_results_int.npy", "7edd32e50edde12dc1ef4aa5f57f70fb"),
-                             ("times_float.npy", "ed1ff4d2c0eeed4a2b50a456803656be"),
-                             ("matlab_results_float.npy", "a17f049e7ad0ddf7ca812e86fdb92646")]
+                             ("matlab_results_int.npy", "7edd32e50edde12dc1ef4aa5f57f70fb")]
 
-        os.environ["ELEPHANT_DATA_URL"] = "https://gin.g-node.org/INM-6/elephant-data/raw/newData/victor_purpura"
 
         for filename, checksum in files_to_download:
             download_datasets(repo_path=f"{repo_path}/{filename}", checksum=checksum)
@@ -405,31 +425,20 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
 
         times_int = np.load(ELEPHANT_TMP_DIR / 'times_int.npy')
         mat_res_int = np.load(ELEPHANT_TMP_DIR / 'matlab_results_int.npy')
-        times_float = np.load(ELEPHANT_TMP_DIR / 'times_float.npy')
-        mat_res_float = np.load(ELEPHANT_TMP_DIR / 'matlab_results_float.npy')
+
 
 
         r_int = SpikeTrain(times_int[0], units='ms', t_start=0, t_stop=1000*ms)
         s_int = SpikeTrain(times_int[1], units='ms', t_start=0, t_stop=1000*ms)
         t_int = SpikeTrain(times_int[2], units='ms', t_start=0, t_stop=1000*ms)
-        r_float = SpikeTrain(times_float[0], units='ms', t_start=0, t_stop=1000 * ms)
-        s_float = SpikeTrain(times_float[1], units='ms', t_start=0, t_stop=1000 * ms)
-        t_float = SpikeTrain(times_float[2], units='ms', t_start=0, t_stop=1000 * ms)
+
 
         vic_pur_result_int = stds.victor_purpura_distance([r_int, s_int, t_int],
                                                           cost_factor=1.0/ms, kernel=None,
                                                           sort=True, algorithm='intuitive')
 
-        vic_pur_result_float = stds.victor_purpura_distance([r_float, s_float, t_float],
-                                                          cost_factor=1.0 / ms, kernel=None,
-                                                          sort=True, algorithm='intuitive')
-
-        #print(vic_pur_result)
-        #print(times)
-        #print(mat_res)
 
         assert_array_equal(vic_pur_result_int, mat_res_int)
-        assert_array_almost_equal(vic_pur_result_float, mat_res_float)
 
     def test_van_rossum_distance(self):
         # Tests of distances of simplest spike trains
