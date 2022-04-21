@@ -91,7 +91,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest --cov=elephant
+          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
           coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
