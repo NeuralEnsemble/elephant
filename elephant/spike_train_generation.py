@@ -582,7 +582,7 @@ class StationaryPoissonProcess(RenewalProcess):
     Generates spike trains whose spikes are realizations of a stationary
     Poisson process with the given rate, starting at time `t_start` and
     stopping at time `t_stop` :cite:`generation-Deger12_443`. Optionally,
-    a absolute refractory period / dead time can be specified.
+    an absolute refractory period / dead time can be specified.
 
     Parameters
     ----------

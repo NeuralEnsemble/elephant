@@ -87,7 +87,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         A list of input spike trains to calculate the synchrony from.
     t_start : pq.Quantity, optional
         The beginning of the spike train. If None, it's taken as the minimum
-        value of `t_start's` of the input spike trains.
+        value of `t_start` values of the input spike trains.
         Default: None
     t_stop : pq.Quantity, optional
         The end of the spike train. If None, it's taken as the maximum value
