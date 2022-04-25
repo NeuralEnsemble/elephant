@@ -5,8 +5,6 @@ Tests for the spike train dissimilarity measures module.
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-import os
-import tempfile
 import unittest
 from neo import SpikeTrain
 import numpy as np
@@ -14,10 +12,8 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import scipy.integrate as spint
 from quantities import ms, s, Hz
 import elephant.kernels as kernels
-import elephant.spike_train_dissimilarity
 import elephant.spike_train_generation as stg
 import elephant.spike_train_dissimilarity as stds
-from pathlib import Path
 
 from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
