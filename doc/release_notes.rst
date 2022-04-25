@@ -2,6 +2,30 @@
 Release Notes
 =============
 
+Elephant 0.11.1 release notes
+=============================
+
+Bug fixes
+-------------
+* Fix installation on macOS (#472)
+
+Documentation
+-------------
+* Added example to `asset.discretise_spiketimes` docstring  (#468)
+
+Optimizations
+-------------
+* Performance improvement of Spike Time Tiling Coefficient (STTC) (#438)
+
+Other changes
+-------------
+* Continuous Integration (CI): added two workflows for macOS (#474)
+* Fixed failing unit test asset on macOS (#474)
+
+Selected dependency changes
+-------------
+* scipy >=1.5.4 (#473)
+
 Elephant 0.11.0 release notes
 =============================
 

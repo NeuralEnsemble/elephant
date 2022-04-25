@@ -12,9 +12,9 @@ on:
         default: 'warning'
         type: choice
         options:
-        - info
-        - warning
-        - debug
+          - info
+          - warning
+          - debug
   pull_request:
     branches:
       - master
@@ -106,111 +106,114 @@ jobs:
           source ~/test_env/bin/activate
           pytest --cov=elephant
 
-  # install dependencies with conda and run tests with pytest
-  test-conda:
+  test-macOS:
+    name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # do not cancel all in-progress jobs if any matrix job fails
+      fail-fast: false
+      matrix:
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-10.15,macos-latest]
+        python-version: [3.9]
+    steps:
+      - name: Get current year-month
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
+
+      - uses: actions/checkout@v2
+
+      - name: Cache conda
+        uses: actions/cache@v2
+        with:
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          activate-environment: elephant
+          environment-file: requirements/environment-tests.yml
+          auto-activate-base: false
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+
+      - name: Install dependencies
+        shell: bash -l {0}
+        run: |
+          python --version
+          conda env list
+          conda install pytest
+          conda install pytest-cov coveralls
+          pip install -e .[extras]
+
+      - name: List packages
+        shell: bash -l {0}
+        run: |
+          pip list
+          conda list
+          python --version
+
+      - name: Test with pytest
+        shell: bash -l {0}
+        run: |
+          pytest --cov=elephant
+
+  # install dependencies with pip and run tests with pytest
+  test-pip:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.8,]
         # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [ubuntu-latest]
-
+        os: [windows-latest]
+        include:
+          # - os: ubuntu-latest
+          #  path: ~/.cache/pip
+          # - os: macos-latest
+          #   path: ~/Library/Caches/pip
+          - os: windows-latest
+            path: ~\AppData\Local\pip\Cache
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v2
+      - name: Get current year-month
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
 
-    - name: Cache pip
-      uses: actions/cache@v2
-      with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ steps.date.outputs.date }}
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ${{ matrix.path }}
+          # Look to see if there is a cache hit for the corresponding requirements files
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
+            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
 
-    - name: Install dependencies
-      run: |
-        conda update conda
-        conda env update --file requirements/environment-tests.yml --name base
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements-tests.txt
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/requirements-extras.txt
+          pip install pytest-cov coveralls
+          pip install -e .
 
-        activate base
-        conda install -c conda-forge openmpi
-        pip install -r requirements/requirements-tests.txt
-        pip install pytest==6.2.5 # hotfix for pytest 7.0.0, remove once fixed
-        pip install pytest-cov coveralls
-        pip install .
+      - name: List packages
+        run: |
+          pip list
+          python --version
 
-    - name: List packages
-      run: |
-        activate base
-        pip list
-        conda list
-        python --version
-
-    - name: Test with pytest
-      run: |
-        activate base
-        pytest --cov=elephant --import-mode=importlib
-
-  # install dependencies with pip and run tests with pytest
-  test-pip:
-      runs-on: ${{ matrix.os }}
-      strategy:
-        matrix:
-          # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
-          python-version: [3.8,]
-          # OS [ubuntu-latest, macos-latest, windows-latest]
-          os: [windows-latest]
-          include:
-         # - os: ubuntu-latest
-         #  path: ~/.cache/pip
-         # - os: macos-latest
-         #   path: ~/Library/Caches/pip
-          - os: windows-latest
-            path: ~\AppData\Local\pip\Cache
-        # do not cancel all in-progress jobs if any matrix job fails
-        fail-fast: false
-
-      steps:
-        - name: Get current year-month
-          id: date
-          run: echo "::set-output name=date::$(date +'%Y-%m')"
-
-        - uses: actions/checkout@v2
-        - name: Set up Python ${{ matrix.python-version }}
-          uses: actions/setup-python@v2
-          with:
-            python-version: ${{ matrix.python-version }}
-
-        - name: Cache pip
-          uses: actions/cache@v2
-          with:
-            path: ${{ matrix.path }}
-            # Look to see if there is a cache hit for the corresponding requirements files
-            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-              -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
-
-        - name: Install dependencies
-          run: |
-            python -m pip install --upgrade pip
-            pip install -r requirements/requirements-tests.txt
-            pip install -r requirements/requirements.txt
-            pip install -r requirements/requirements-extras.txt
-            pip install pytest-cov coveralls
-            pip install -e .
-
-        - name: List packages
-          run: |
-            pip list
-            python --version
-
-        - name: Test with pytest
-          run: |
-            python --version
-            pytest --cov=elephant
+      - name: Test with pytest
+        run: |
+          pytest --cov=elephant
 
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
@@ -267,55 +270,101 @@ jobs:
         run: |
           mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant
 
+  # install dependencies with conda and run tests with pytest
+  test-conda:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
+
+      # do not cancel all in-progress jobs if any matrix job fails
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ steps.date.outputs.date }}
+
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          conda update conda
+          conda env update --file requirements/environment-tests.yml --name base
+          activate base
+          conda install -c conda-forge openmpi
+          pip install -r requirements/requirements-tests.txt
+          pip install pytest
+          pip install pytest-cov coveralls
+          pip install .
+      - name: List packages
+        run: |
+          activate base
+          pip list
+          conda list
+          python --version
+      - name: Test with pytest
+        run: |
+          activate base
+          pytest --cov=elephant --import-mode=importlib
+
   # install dependencies for the documentation and build .html
   docs:
-       runs-on: ${{ matrix.os }}
-       strategy:
-        matrix:
-          # OS [ubuntu-latest, macos-latest, windows-latest]
-          os: [ubuntu-latest]
+    name: docs (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
 
-       steps:
+    steps:
 
-       - name: Get current year-month
-         id: date
-         run: echo "::set-output name=date::$(date +'%Y-%m')"
+      - name: Get current year-month
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
 
-       - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-       - name: Add conda to system path
-         run: |
-            # $CONDA is an environment variable pointing to the root of the miniconda directory
-            echo $CONDA/bin >> $GITHUB_PATH
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
 
-       - name: Cache pip
-         uses: actions/cache@v2
-         with:
-            path: ~/.cache/pip
-            # Look to see if there is a cache hit for the corresponding requirements files
-            key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}-${{ steps.date.outputs.date }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements files
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}-${{ steps.date.outputs.date }}
 
-       - name: Install dependencies
-         run: |
-            sudo apt install -y libopenmpi-dev openmpi-bin
-            python -m pip install --upgrade pip
-            pip install -r requirements/requirements-docs.txt
-            pip install -r requirements/requirements-tutorials.txt
-            conda update conda
-            conda env update --file requirements/environment-docs.yml --name base
-            conda install -c conda-forge openmpi
-            conda install -c conda-forge pandoc
-            pip install -e .[extras]
-            # run notebooks
-            sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
+      - name: Install dependencies
+        run: |
+          sudo apt install -y libopenmpi-dev openmpi-bin
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements-docs.txt
+          pip install -r requirements/requirements-tutorials.txt
+          conda update conda
+          conda env update --file requirements/environment-docs.yml --name base
+          conda install -c conda-forge openmpi
+          conda install -c conda-forge pandoc
+          pip install -e .[extras]
+          # run notebooks
+          sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
-       - name: List packages
-         run: |
-            pip list
-            conda list
-            python --version
+      - name: List packages
+        run: |
+          pip list
+          conda list
+          python --version
 
-       - name: make html
-         run: |
-            cd doc
-            make html
+      - name: make html
+        run: |
+          cd doc
+          make html
