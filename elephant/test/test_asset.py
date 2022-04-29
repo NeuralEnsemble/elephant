@@ -33,7 +33,7 @@ else:
 
 try:
     import pyopencl
-    HAVE_PYOPENCL = True
+    HAVE_PYOPENCL = asset.get_opencl_capability()
 except ImportError:
     HAVE_PYOPENCL = False
 

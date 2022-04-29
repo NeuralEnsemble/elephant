@@ -340,3 +340,25 @@ def get_cuda_capability_major():
                                    ctypes.byref(cc_minor),
                                    device)
     return cc_major.value
+
+
+def get_opencl_capability():
+    """
+    Return a list of available OpenCL devices.
+
+    Returns
+    -------
+    bool
+        True: if openCL platform detected, False: if OpenCL is not found or if
+        no OpenCL devices are found
+    """
+    try:
+        import pyopencl
+        platforms = pyopencl.get_platforms()
+
+        if len(platforms) == 0:
+            return False
+        if len(platforms) > 0:
+            return True
+    except ImportError:
+        return False
