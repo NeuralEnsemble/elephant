@@ -349,8 +349,8 @@ def get_opencl_capability():
     Returns
     -------
     bool
-        True: if openCL platform detected, False: if OpenCL is not found or if
-        no OpenCL devices are found
+        True: if openCL platform detected and at least one device is found,
+        False: if OpenCL is not found or if no OpenCL devices are found
     """
     try:
         import pyopencl
@@ -358,7 +358,7 @@ def get_opencl_capability():
 
         if len(platforms) == 0:
             return False
-        if len(platforms) > 0:
-            return True
+        # len(platforms) is > 0, if it is not == 0
+        return True
     except ImportError:
         return False
