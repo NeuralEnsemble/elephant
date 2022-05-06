@@ -420,8 +420,8 @@ class AssetTestCase(unittest.TestCase):
         if HAVE_PYOPENCL:
             self.assertEqual(backend_obj.backend(), 'opencl')
         else:
-            # if environment variable is set but no module pyopencl or device
-            # is found: choose cpu backend
+            # if environment variable is not set and no module pyopencl or
+            # device is found: choose cpu backend
             self.assertEqual(backend_obj.backend(), 'cpu')
 
         os.environ['ELEPHANT_USE_OPENCL'] = '0'
