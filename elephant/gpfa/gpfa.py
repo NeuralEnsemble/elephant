@@ -259,11 +259,6 @@ class GPFA(sklearn.base.BaseEstimator):
         self.fit_info = dict()
         self.transform_info = dict()
 
-    @property
-    def binsize(self):
-        warnings.warn("'binsize' is deprecated; use 'bin_size'")
-        return self.bin_size
-
     def fit(self, spiketrains):
         """
         Fit the model with the given training data.
