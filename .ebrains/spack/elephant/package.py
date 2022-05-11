@@ -26,23 +26,15 @@ class PyElephant(PythonPackage):
     version('0.6.4', sha256='b8c5f2c00ad3249e1fe428d0b8a1dbcaee4a69464481f5f8fd55d2f7f22c45a3')
     version('0.6.3', sha256='bf697a0b126c5b7878de9b0c4d426b1acdaf35270feff34991a3089bd867ae7d')
     version('0.6.2', sha256='14bb2d938faa9c52aeaf9e6c459825e15d102862e5cbbca3f56fa57258d92375')
-    version('0.6.1', sha256='24f7b6853d03bd8b4fa53e8752c98cb79296cb305e20d0ccf5add4fa6d2acd48')
-    version('0.6.0', sha256='a5c1ba6e8a1194bafee9f27cd61d64507be44d0caa1b1b7de26de0d8c5bb2e5e')
-    version('0.5.0', sha256='eeedc58f49200b158a9be329015c8dd562450b3c2aa01fdcd92375aca80e461c')
-    version('0.4.3', sha256='e444e319cdd97733f2b7121bef714a96dee1879618dcb7b7507c6dc296ebe7fb')
-    version('0.4.2', sha256='e303c0cee048705b44d049c52a6a1264367eb43e2b594870a7c0cd0850a4cc1b')
     version('0.4.1', sha256='86b21a44cbacdc09a6ba6f51738dcd5b42ecd553d73acb29f71a0be7c82eac81')
     version('0.3.0', sha256='747251ccfb5820bdead6391411b5faf205b4ddf3ababaefe865f50b16540cfef')
 
-
-
-
     variant('doc', default=False, description='Build the documentation')
     variant('pandas', default=False, description='Build with pandas', when='@0.3.0:0.4.1')
-    variant('extras', default=True, description='Build with extras for GPFA, ASSET', when='@0.7.0:')
+    variant('extras', default=True, description='Build with extras for GPFA, ASSET', when='@0.6.2:')
 
     depends_on('py-setuptools',             type='build')
-    depends_on('python@3.7:', 	     type=('build', 'run'), when='@0.11.0:')
+    depends_on('python@3.7:', 	            type=('build', 'run'), when='@0.11.0:')
     depends_on('py-neo@0.3.4:',             type=('build', 'run'), when='@0.3.0:0.4.1')  # > 0.3.3 ?
     depends_on('py-numpy@1.8.2:',           type=('build', 'run'), when='@0.3.0:0.4.1')
     depends_on('py-quantities@0.10.1:',     type=('build', 'run'), when='@0.3.0:0.4.1')
@@ -56,12 +48,13 @@ class PyElephant(PythonPackage):
     depends_on('py-jinja2@2.11.2:',         type=('build', 'run'), when='+extras')
     depends_on('py-neo@0.10.0:',            type=('build', 'run'), when='@0.11.0:')
     depends_on('py-neo@0.9.0',              type=('build', 'run'), when='@0.9.0:0.10.0')
-    depends_on('py-neo@0.8.0',              type=('build', 'run'), when='@0.7.0:0.8.0')
-    depends_on('py-numpy@1.18.1:',          type=('build', 'run'), when='@0.7.0:')
-    depends_on('py-quantities@0.12.1:',     type=('build', 'run'), when='@0.7.0:')
-    depends_on('py-scipy@1.5.4:',           type=('build', 'run'), when='@0.7.0:')
-    depends_on('py-six@1.10.0:',            type=('build', 'run'), when='@0.7.0:')
-    depends_on('py-tqdm',                   type=('build', 'run'), when='@0.7.0:')
+    depends_on('py-neo@0.8.0',              type=('build', 'run'), when='@0.6.4:0.8.0')
+    depends_on('py-neo@0.7.1',              type=('build', 'run'), when='@0.6.2:0.6.3')
+    depends_on('py-numpy@1.18.1:',          type=('build', 'run'), when='@0.6.2:')
+    depends_on('py-quantities@0.12.1:',     type=('build', 'run'), when='@0.6.2:')
+    depends_on('py-scipy@1.5.4:',           type=('build', 'run'), when='@0.6.2:')
+    depends_on('py-six@1.10.0:',            type=('build', 'run'), when='@0.6.2:')
+    depends_on('py-tqdm',                   type=('build', 'run'), when='@0.6.2:')
 
 
 
