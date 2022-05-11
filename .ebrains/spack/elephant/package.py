@@ -55,13 +55,3 @@ class PyElephant(PythonPackage):
     depends_on('py-scipy@1.5.4:',           type=('build', 'run'), when='@0.6.2:')
     depends_on('py-six@1.10.0:',            type=('build', 'run'), when='@0.6.2:')
     depends_on('py-tqdm',                   type=('build', 'run'), when='@0.6.2:')
-
-
-
-
-
-    @run_after('install')
-    @on_package_attributes(run_tests=True)
-    def install_test(self):
-        with working_dir('spack-test', create=True):
-            python('-c', 'import elephant; elephant.test("full", verbose=2)')
