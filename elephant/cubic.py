@@ -22,11 +22,11 @@ Given a list of spike trains, the analysis comprises the following steps:
 >>> import quantities as pq
 >>> from elephant import statistics
 >>> from elephant.cubic import cubic
->>> from elephant.spike_train_generation import homogeneous_poisson_process
+>>> from elephant.spike_train_generation import StationaryPoissonProcess
 
 >>> np.random.seed(10)
->>> spiketrains = [homogeneous_poisson_process(rate=10*pq.Hz,
-...                t_stop=10 * pq.s) for _ in range(20)]
+>>> spiketrains = [StationaryPoissonProcess(rate=10*pq.Hz,
+...                t_stop=10 * pq.s).generate_spiketrain() for _ in range(20).]
 >>> pop_count = statistics.time_histogram(spiketrains, bin_size=0.1 * pq.s)
 
 2) apply CuBIC to the population count
@@ -52,8 +52,6 @@ import warnings
 import scipy.special
 import scipy.stats
 
-from elephant.utils import deprecated_alias
-
 __all__ = [
     "cubic"
 ]
@@ -63,7 +61,6 @@ __all__ = [
 # Adaptation to python by Pietro Quaglio and Emiliano Torre
 
 
-@deprecated_alias(data='histogram', ximax='max_iterations')
 def cubic(histogram, max_iterations=100, alpha=0.05):
     r"""
     Performs the CuBIC analysis :cite:`cubic-Staude2010_327` on a population
