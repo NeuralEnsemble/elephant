@@ -84,7 +84,7 @@ import numpy as np
 import quantities as pq
 import scipy.sparse as sps
 
-from elephant.utils import is_binary, deprecated_alias, is_time_quantity, \
+from elephant.utils import is_binary, is_time_quantity, \
     check_neo_consistency, round_binning_errors
 
 __all__ = [
@@ -333,7 +333,6 @@ class BinnedSpikeTrain(object):
 
     """
 
-    @deprecated_alias(binsize='bin_size', num_bins='n_bins')
     def __init__(self, spiketrains, bin_size=None, n_bins=None, t_start=None,
                  t_stop=None, tolerance=1e-8, sparse_format="csr"):
         if sparse_format not in ("csr", "csc"):
@@ -385,24 +384,6 @@ class BinnedSpikeTrain(object):
         t_stop quantity; spike times above this value have been ignored.
         """
         return pq.Quantity(self._t_stop, units=self.units, copy=False)
-
-    @property
-    def binsize(self):
-        """
-        Deprecated in favor of :attr:`bin_size`.
-        """
-        warnings.warn("'.binsize' is deprecated; use '.bin_size'",
-                      DeprecationWarning)
-        return self._bin_size
-
-    @property
-    def num_bins(self):
-        """
-        Deprecated in favor of :attr:`n_bins`.
-        """
-        warnings.warn("'.num_bins' is deprecated; use '.n_bins'",
-                      DeprecationWarning)
-        return self.n_bins
 
     def __repr__(self):
         return f"{type(self).__name__}(t_start={str(self.t_start)}, " \
@@ -617,27 +598,6 @@ class BinnedSpikeTrain(object):
                                   num=self.n_bins, endpoint=True)
         bin_centers = pq.Quantity(bin_centers, units=self.units, copy=False)
         return bin_centers
-
-    def to_sparse_array(self):
-        """
-        Getter for sparse matrix with time points. Deprecated in favor of
-        :attr:`sparse_matrix`.
-
-        Returns
-        -------
-        scipy.sparse.csr_matrix or scipy.sparse.csc_matrix
-            Sparse matrix, version with spike counts.
-
-        See also
-        --------
-        scipy.sparse.csr_matrix
-        to_array
-
-        """
-        warnings.warn("'.to_sparse_array()' function is deprecated; "
-                      "use '.sparse_matrix' attribute directly",
-                      DeprecationWarning)
-        return self.sparse_matrix
 
     def to_sparse_bool_array(self):
         """
