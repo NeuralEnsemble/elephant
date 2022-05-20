@@ -489,8 +489,8 @@ class ButterTestCase(unittest.TestCase):
             sampling_rate=1000 * pq.Hz, units='mV',
             array_annotations=dict(valid=True, my_list=[0]))
 
-        kwds = {'signal': noise, 'highpass_freq': 250.0 * pq.Hz,
-                'lowpass_freq': None, 'filter_function': 'filtfilt'}
+        kwds = {'signal': noise, 'highpass_frequency': 250.0 * pq.Hz,
+                'lowpass_frequency': None, 'filter_function': 'filtfilt'}
         filtered_noise = elephant.signal_processing.butter(**kwds)
         _, psd_filtfilt = spsig.welch(
             filtered_noise.T, nperseg=1024, fs=1000.0, detrend=lambda x: x)
@@ -517,7 +517,7 @@ class ButterTestCase(unittest.TestCase):
         anasig_dummy = neo.AnalogSignal(
             np.zeros(5000), sampling_rate=1000 * pq.Hz, units='mV')
         # test exception upon invalid filtfunc string
-        kwds = {'signal': anasig_dummy, 'highpass_freq': 250.0 * pq.Hz,
+        kwds = {'signal': anasig_dummy, 'highpass_frequency': 250.0 * pq.Hz,
                 'filter_function': 'invalid_filter'}
         self.assertRaises(
             ValueError, elephant.signal_processing.butter, **kwds)
@@ -527,8 +527,8 @@ class ButterTestCase(unittest.TestCase):
         anasig_dummy = neo.AnalogSignal(
             np.zeros(5000), sampling_rate=1000 * pq.Hz, units='mV')
         # test a case where no cut-off frequencies are given
-        kwds = {'signal': anasig_dummy, 'highpass_freq': None,
-                'lowpass_freq': None}
+        kwds = {'signal': anasig_dummy, 'highpass_frequency': None,
+                'lowpass_frequency': None}
         self.assertRaises(
             ValueError, elephant.signal_processing.butter, **kwds)
 
@@ -649,7 +649,7 @@ class HilbertTestCase(unittest.TestCase):
 
         self.assertRaises(
             ValueError, elephant.signal_processing.hilbert,
-            self.long_signals, N=padding)
+            self.long_signals, padding=padding)
 
     def test_hilbert_output_shape(self):
         """
@@ -807,27 +807,30 @@ class WaveletTestCase(unittest.TestCase):
         Tests if errors are raised as expected.
         """
         # too high center frequency
-        kwds = {'signal': self.test_data, 'freq': self.fs / 2}
+        kwds = {'signal': self.test_data, 'frequency': self.fs / 2}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
         kwds = {
             'signal': self.test_data_arr,
-            'freq': self.fs / 2,
-            'fs': self.fs}
+            'frequency': self.fs / 2,
+            'sampling_frequency': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
         # too high center frequency in a list
-        kwds = {'signal': self.test_data, 'freq': [self.fs / 10, self.fs / 2]}
+        kwds = {'signal': self.test_data,
+                'frequency': [self.fs / 10, self.fs / 2]}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
         kwds = {'signal': self.test_data_arr,
-                'freq': [self.fs / 10, self.fs / 2], 'fs': self.fs}
+                'frequency': [self.fs / 10, self.fs / 2],
+                'sampling_frequency': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
         # nco is not positive
-        kwds = {'signal': self.test_data, 'freq': self.fs / 10, 'nco': 0}
+        kwds = {'signal': self.test_data, 'frequency': self.fs / 10,
+                'n_cycles': 0}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
