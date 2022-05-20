@@ -13,7 +13,7 @@ import numpy as np
 import quantities as pq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
 
 try:
     import sklearn
@@ -82,7 +82,8 @@ class GPFATestCase(unittest.TestCase):
         n_channels = 20
         for trial in range(n_trials):
             rates = np.random.randint(low=1, high=100, size=n_channels)
-            spike_times = [homogeneous_poisson_process(rate=rate * pq.Hz)
+            spike_times = [StationaryPoissonProcess(rate=rate * pq.Hz,
+                           t_stop=1000.0 * pq.ms).generate_spiketrain()
                            for rate in rates]
             self.data2.append(spike_times)
 
