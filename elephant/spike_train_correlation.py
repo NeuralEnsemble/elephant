@@ -25,7 +25,6 @@ import scipy.signal
 from scipy import integrate
 
 from elephant.conversion import BinnedSpikeTrain
-from elephant.utils import deprecated_alias
 
 __all__ = [
     "covariance",
@@ -277,7 +276,6 @@ class _CrossCorrHist(object):
         return np.convolve(cross_corr_array, kernel, mode='same')
 
 
-@deprecated_alias(binned_sts='binned_spiketrain')
 def covariance(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise covariances between all combinations
@@ -351,13 +349,15 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import covariance
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(rate=10*pq.Hz,
+    ... t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(rate=10*pq.Hz,
+    ... t_stop=10.0*pq.s).generate_spiketrain()
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
     >>> cov_matrix
     array([[ 0.05432316, -0.00152276],
@@ -375,7 +375,6 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         binned_spiketrain, corrcoef_norm=False)
 
 
-@deprecated_alias(binned_sts='binned_spiketrain')
 def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
@@ -457,13 +456,15 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import correlation_coefficient
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(rate=10*pq.Hz,
+    ... t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(rate=10*pq.Hz,
+    ... t_stop=10.0*pq.s).generate_spiketrain()
     >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
     ...     bin_size=5*pq.ms))
     >>> corrcoef
@@ -546,9 +547,6 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
     return res
 
 
-@deprecated_alias(binned_st1='binned_spiketrain_i',
-                  binned_st2='binned_spiketrain_j',
-                  cross_corr_coef='cross_correlation_coefficient')
 def cross_correlation_histogram(
         binned_spiketrain_i, binned_spiketrain_j, window='full',
         border_correction=False, binary=False, kernel=None, method='speed',
@@ -665,18 +663,20 @@ def cross_correlation_histogram(
     >>> import quantities as pq
     >>> import numpy as np
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.spike_train_correlation import \
     ... cross_correlation_histogram
 
     >>> np.random.seed(1)
     >>> binned_spiketrain_i = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms,
+    ...             t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
     >>> binned_spiketrain_j = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms,
+    ...             t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
 
     >>> cc_hist, lags = cross_correlation_histogram(
@@ -813,7 +813,6 @@ def cross_correlation_histogram(
 cch = cross_correlation_histogram
 
 
-@deprecated_alias(spiketrain_1='spiketrain_i', spiketrain_2='spiketrain_j')
 def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     """
     Calculates the Spike Time Tiling Coefficient (STTC) as described in
@@ -991,7 +990,6 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
 sttc = spike_time_tiling_coefficient
 
 
-@deprecated_alias(binned_st='binned_spiketrain', tau_max='max_tau')
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
     Calculates the auto-correlation time of a binned spike train; uses the
