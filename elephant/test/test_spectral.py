@@ -27,19 +27,20 @@ class WelchPSDTestCase(unittest.TestCase):
         # check for invalid parameter values
         # - length of segments
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
-                          len_seg=0)
+                          len_segment=0)
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
-                          len_seg=data.shape[0] * 2)
+                          len_segment=data.shape[0] * 2)
         # - number of segments
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
-                          num_seg=0)
+                          n_segments=0)
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
-                          num_seg=data.shape[0] * 2)
+                          n_segments=data.shape[0] * 2)
         # - frequency resolution
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
-                          freq_res=-1)
+                          frequency_resolution=-1)
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
-                          freq_res=data.sampling_rate / (data.shape[0] + 1))
+                          frequency_resolution=data.sampling_rate /
+                          (data.shape[0] + 1))
         # - overlap
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           overlap=-1.0)
@@ -318,19 +319,20 @@ class WelchCohereTestCase(unittest.TestCase):
         # check for invalid parameter values
         # - length of segments
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
-                          len_seg=0)
+                          len_segment=0)
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
-                          len_seg=x.shape[0] * 2)
+                          len_segment=x.shape[0] * 2)
         # - number of segments
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
-                          num_seg=0)
+                          n_segments=0)
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
-                          num_seg=x.shape[0] * 2)
+                          n_segments=x.shape[0] * 2)
         # - frequency resolution
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
-                          freq_res=-1)
+                          frequency_resolution=-1)
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
-                          freq_res=x.sampling_rate / (x.shape[0] + 1))
+                          frequency_resolution=x.sampling_rate /
+                          (x.shape[0] + 1))
         # - overlap
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
                           overlap=-1.0)
