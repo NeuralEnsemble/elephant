@@ -53,16 +53,18 @@ class CSD1D_TestCase(unittest.TestCase):
         self.lfp = csd.generate_lfp(utils.gauss_1d_dipole, self.ele_pos)
         self.csd_method = csd.estimate_csd
 
-        self.params = {}  # Input dictionaries for each method
-        self.params['DeltaiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
-                                    'diam': 500E-6 * pq.m}
-        self.params['StepiCSD'] = {'sigma_top': 0. * pq.S / pq.m, 'tol': 1E-12,
-                                   'diam': 500E-6 * pq.m}
-        self.params['SplineiCSD'] = {'sigma_top': 0. * pq.S / pq.m,
-                                     'num_steps': 201, 'tol': 1E-12,
-                                     'diam': 500E-6 * pq.m}
-        self.params['StandardCSD'] = {}
-        self.params['KCSD1D'] = {'h': 50., 'Rs': np.array((0.1, 0.25, 0.5))}
+        # Input dictionaries for each method
+        self.params = {'DeltaiCSD': {'sigma_top': 0. * pq.S / pq.m,
+                                     'diam': 500E-6 * pq.m},
+                       'StepiCSD': {'sigma_top': 0. * pq.S / pq.m,
+                                    'tol': 1E-12,
+                                    'diam': 500E-6 * pq.m},
+                       'SplineiCSD': {'sigma_top': 0. * pq.S / pq.m,
+                                      'num_steps': 201, 'tol': 1E-12,
+                                      'diam': 500E-6 * pq.m},
+                       'StandardCSD': {}, 'KCSD1D': {'h': 50.,
+                                                     'Rs': np.array(
+                                                        (0.1, 0.25, 0.5))}}
 
     def test_validate_inputs(self):
         self.assertRaises(TypeError, self.csd_method, lfp=[[1], [2], [3]])
@@ -124,8 +126,8 @@ class CSD2D_TestCase(unittest.TestCase):
     def setUp(self):
         xx_ele, yy_ele = utils.generate_electrodes(dim=2)
         self.lfp = csd.generate_lfp(utils.large_source_2D, xx_ele, yy_ele)
-        self.params = {}  # Input dictionaries for each method
-        self.params['KCSD2D'] = {'sigma': 1., 'Rs': np.array((0.1, 0.25, 0.5))}
+        self.params = {'KCSD2D': {'sigma': 1., 'Rs': np.array(
+            (0.1, 0.25, 0.5))}}  # Input dictionaries for each method
 
     def test_kcsd2d_init(self):
         method = 'KCSD2D'
@@ -141,10 +143,9 @@ class CSD3D_TestCase(unittest.TestCase):
         xx_ele, yy_ele, zz_ele = utils.generate_electrodes(dim=3)
         self.lfp = csd.generate_lfp(utils.gauss_3d_dipole,
                                     xx_ele, yy_ele, zz_ele)
-        self.params = {}
-        self.params['KCSD3D'] = {'gdx': 0.1, 'gdy': 0.1, 'gdz': 0.1,
-                                 'src_type': 'step',
-                                 'Rs': np.array((0.1, 0.25, 0.5))}
+        self.params = {'KCSD3D': {'gdx': 0.1, 'gdy': 0.1, 'gdz': 0.1,
+                                  'src_type': 'step',
+                                  'Rs': np.array((0.1, 0.25, 0.5))}}
 
     def test_kcsd2d_init(self):
         method = 'KCSD3D'
