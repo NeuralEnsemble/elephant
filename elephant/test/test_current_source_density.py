@@ -67,10 +67,11 @@ class CSD1D_TestCase(unittest.TestCase):
     def test_validate_inputs(self):
         self.assertRaises(TypeError, self.csd_method, lfp=[[1], [2], [3]])
         self.assertRaises(ValueError, self.csd_method, lfp=self.lfp,
-                          coords=self.ele_pos * pq.mm)
+                          coordinates=self.ele_pos * pq.mm)
         # inconsistent number of electrodes
         self.assertRaises(ValueError, self.csd_method, lfp=self.lfp,
-                          coords=[1, 2, 3, 4] * pq.mm, method='StandardCSD')
+                          coordinates=[1, 2, 3, 4] * pq.mm,
+                          method='StandardCSD')
         # bad method name
         self.assertRaises(ValueError, self.csd_method, lfp=self.lfp,
                           method='InvalidMethodName')
