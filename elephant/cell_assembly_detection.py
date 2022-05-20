@@ -71,28 +71,23 @@ from __future__ import division, print_function, unicode_literals
 import copy
 import math
 import time
-import warnings
 
 import numpy as np
 from scipy.stats import f
 
 import elephant.conversion as conv
-from elephant.utils import deprecated_alias
 
 __all__ = [
     "cell_assembly_detection"
 ]
 
 
-@deprecated_alias(data='binned_spiketrain', maxlag='max_lag',
-                  min_occ='min_occurrences',
-                  same_config_cut='same_configuration_pruning')
 def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             alpha=0.05, min_occurrences=1, size_chunks=100,
                             max_spikes=np.inf, significance_pruning=True,
                             subgroup_pruning=True,
                             same_configuration_pruning=False,
-                            bool_times_format=None, verbose=False):
+                            verbose=False):
     """
     Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
     (discretized) spike trains given in the input. The method looks for
@@ -156,11 +151,6 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         efficient), not testing assemblies already formed
         if they appear in the very same configuration.
         Default: False
-    bool_times_format : bool, optional
-        .. deprecated:: 0.10.0
-        Has no effect, the returning 'times' are always a quantity array
-        specifying the pattern spike times.
-        Default: None
     verbose : bool, optional
         Regulates the number of prints given by the method. If true all prints
         are given, otherwise the method does give any prints.
@@ -212,12 +202,6 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                   min_occurrences=min_occurrences,
                   size_chunks=size_chunks,
                   max_spikes=max_spikes)
-
-    if bool_times_format is not None:
-        warnings.warn("'bool_times_format' is deprecated and has no effect; "
-                      "the returning 'times' are always a quantity array "
-                      "specifying the pattern spike times. Set this parameter "
-                      "to None.", DeprecationWarning)
 
     bin_size = binned_spiketrain.bin_size
     t_start = binned_spiketrain.t_start
