@@ -33,7 +33,7 @@ else:
 
 try:
     import pyopencl
-    HAVE_PYOPENCL = True
+    HAVE_PYOPENCL = asset.get_opencl_capability()
 except ImportError:
     HAVE_PYOPENCL = False
 
@@ -392,6 +392,39 @@ class AssetTestCase(unittest.TestCase):
         self.assertRaises(ValueError, asset.ASSET,
                           spiketrains_i=[st1, st2], bin_size=bin_size,
                           t_stop_j=5 * pq.ms)
+
+    #  regression test Issue #481
+    #  see: https://github.com/NeuralEnsemble/elephant/issues/481
+    def test_asset_choose_backend_opencl(self):
+        class TestClassBackend(asset._GPUBackend):
+
+            def __init__(self):
+                super().__init__()
+                self.backend = self._choose_backend()
+
+            def cpu(self):
+                return "cpu"
+
+            def pycuda(self):
+                return "cuda"
+
+            def pyopencl(self):
+                return "opencl"
+
+        # check which backend is chosen if environment variable for opencl
+        # is not set
+        os.environ.pop('ELEPHANT_USE_OPENCL', None)
+        # create object of TestClass
+        backend_obj = TestClassBackend()
+
+        if HAVE_PYOPENCL:
+            self.assertEqual(backend_obj.backend(), 'opencl')
+        else:
+            # if environment variable is not set and no module pyopencl or
+            # device is found: choose cpu backend
+            self.assertEqual(backend_obj.backend(), 'cpu')
+
+        os.environ['ELEPHANT_USE_OPENCL'] = '0'
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
