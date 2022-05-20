@@ -15,10 +15,8 @@ import quantities as pq
 import scipy as sp
 
 from elephant.conversion import BinnedSpikeTrain
-from elephant.utils import deprecated_alias
 
 
-@deprecated_alias(binsize='bin_size')
 def get_seqs(data, bin_size, use_sqrt=True):
     """
     Converts the data into a rec array using internally BinnedSpikeTrain.
