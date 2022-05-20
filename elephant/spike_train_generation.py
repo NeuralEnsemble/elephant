@@ -612,22 +612,17 @@ class StationaryPoissonProcess(RenewalProcess):
 
     Examples
     --------
-    >>> import quantities as pq
-    >>> spiketrain = StationaryPoissonProcess(rate=50.*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms).generate_spiketrain()
-    >>> spiketrain_array = StationaryPoissonProcess(
-    ...     rate=20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms
-    ...     ).generate_spiketrain(as_array=True)
-    >>> spiketrain = StationaryPoissonProcess(
-    ...     rate=50*pq.Hz,
-    ...     t_start=0*pq.ms, t_stop=1000*pq.ms,
-    ...     refractory_period = 3*pq.ms).generate_spiketrain()
+    >>> import quantities as pq  # noqa
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
+    >>> spiketrain = StationaryPoissonProcess(rate=50.*pq.Hz,t_stop=1000*pq.ms,t_start=0*pq.ms).generate_spiketrain()
+    >>> spiketrain_array = StationaryPoissonProcess(rate=20*pq.Hz,t_stop=10000*pq.ms,t_start=5000*pq.ms).generate_spiketrain(as_array=True)
+    >>> spiketrain = StationaryPoissonProcess(rate=50*pq.Hz,t_stop=1000*pq.ms,t_start=0*pq.ms,refractory_period=3*pq.ms).generate_spiketrain()
     """
     def __init__(
             self,
             rate: pq.Quantity,
-            t_stop: pq.Quantity = 1.*pq.s,
-            t_start: pq.Quantity = 0.*pq.s,
+            t_stop: pq.Quantity = 1000.0*pq.ms,
+            t_start: pq.Quantity = 0.0*pq.ms,
             refractory_period: Optional[pq.Quantity] = None,
             equilibrium: bool = True
     ):
@@ -1005,9 +1000,8 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
 
         super().__init__(rate_signal=rate_signal)
         self.process_operational_time = StationaryPoissonProcess(
-            rate=self.mean_rate * 1./self.units,
-            t_start=self.t_start,
-            t_stop=self.t_stop)
+            rate=self.mean_rate * 1. / self.units, t_stop=self.t_stop,
+            t_start=self.t_start)
 
         self.refractory_period = refractory_period
         if self.refractory_period is not None:
@@ -1107,20 +1101,23 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     Examples
     --------
     >>> import quantities as pq
-    >>> spikes = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms)
-    >>> spikes = homogeneous_poisson_process(
-    ...     20*pq.Hz, t_start=5000*pq.ms, t_stop=10000*pq.ms, as_array=True)
-    >>> spikes = homogeneous_poisson_process(50*pq.Hz, t_start=0*pq.ms,
-    ...     t_stop=1000*pq.ms, refractory_period = 3*pq.ms)
+    >>> spikes = StationaryPoissonProcess(50*pq.Hz, t_start=0*pq.ms,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> spikes = StationaryPoissonProcess(
+    ...     20*pq.Hz, t_start=5000*pq.ms,
+    ... t_stop=10000*pq.ms, as_array=True).generate_spiketrain()
+    >>> spikes = StationaryPoissonProcess(50*pq.Hz, t_start=0*pq.ms,
+    ...     t_stop=1000*pq.ms,
+    ...     refractory_period = 3*pq.ms).generate_spiketrain()
 
     """
     warnings.warn(
         "'homogeneous_poisson_process' is deprecated;"
         " use 'StationaryPoissonProcess'.", DeprecationWarning)
-    process = StationaryPoissonProcess(
-        rate=rate, t_start=t_start, t_stop=t_stop,
-        refractory_period=refractory_period, equilibrium=False)
+    process = StationaryPoissonProcess(rate=rate, t_stop=t_stop,
+                                       t_start=t_start,
+                                       refractory_period=refractory_period,
+                                       equilibrium=False)
     return process.generate_spiketrain(as_array=as_array)
 
 
@@ -1212,10 +1209,11 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
     Examples
     --------
     >>> import quantities as pq
-    >>> spikes = homogeneous_gamma_process(2.0, 50*pq.Hz, 0*pq.ms,
-    ...                                       1000*pq.ms)
-    >>> spikes = homogeneous_gamma_process(
-    ...        5.0, 20*pq.Hz, 5000*pq.ms, 10000*pq.ms, as_array=True)
+    >>> spikes = StationaryPoissonProcess(2.0, 50*pq.Hz, 0*pq.ms,
+    ...                                       1000*pq.ms).generate_spiketrain()
+    >>> spikes = StationaryPoissonProcess(
+    ...        5.0, 20*pq.Hz, 5000*pq.ms,
+    ... 10000*pq.ms, as_array=True).generate_spiketrain()
 
     """
     warnings.warn(
@@ -1269,7 +1267,6 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     return process.generate_spiketrain(as_array=as_array)
 
 
-@deprecated_alias(n='n_spiketrains')
 def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     """
     Generates one or more independent Poisson spike trains.
@@ -1315,12 +1312,13 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
     # one rate for all spike trains
     if rate.ndim == 0:
         return StationaryPoissonProcess(
-            rate=rate, t_start=t_start, t_stop=t_stop
-        ).generate_n_spiketrains(n_spiketrains)
+            rate=rate,
+            t_stop=t_stop,
+            t_start=t_start).generate_n_spiketrains(n_spiketrains)
 
     # different rate for each spike train
-    return [StationaryPoissonProcess(
-        rate=single_rate, t_start=t_start, t_stop=t_stop).generate_spiketrain()
+    return [StationaryPoissonProcess(rate=single_rate, t_stop=t_stop,
+                                     t_start=t_start).generate_spiketrain()
             for single_rate in rate]
 
 
@@ -1467,8 +1465,9 @@ def single_interaction_process(
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
                 break
     else:  # coincidences == 'stochastic'
-        poisson_process = StationaryPoissonProcess(
-            rate=coincidence_rate, t_stop=t_stop, t_start=t_start)
+        poisson_process = StationaryPoissonProcess(rate=coincidence_rate,
+                                                   t_stop=t_stop,
+                                                   t_start=t_start)
         while True:
             coinc_times = poisson_process.generate_spiketrain()
             if len(coinc_times) < 2 or min(np.diff(coinc_times)) >= min_delay:
@@ -1624,9 +1623,8 @@ def _mother_proc_cpp_stat(
         amplitude_distribution, np.arange(n_spiketrains + 1))
     # expected rate of the mother process
     exp_mother_rate = (n_spiketrains * rate) / exp_amplitude
-    return StationaryPoissonProcess(
-        rate=exp_mother_rate, t_stop=t_stop, t_start=t_start
-    ).generate_spiketrain()
+    return StationaryPoissonProcess(rate=exp_mother_rate, t_stop=t_stop,
+                                    t_start=t_start).generate_spiketrain()
 
 
 def _cpp_hom_stat(amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
@@ -1748,9 +1746,8 @@ def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0.*pq.ms):
 
     # Generate the independent heterogeneous Poisson processes
     poisson_spiketrains = \
-        [StationaryPoissonProcess(
-            rate=rate - r_min, t_start=t_start, t_stop=t_stop
-                                  ).generate_spiketrain()
+        [StationaryPoissonProcess(rate=rate - r_min, t_stop=t_stop,
+                                  t_start=t_start).generate_spiketrain()
          for rate in rates]
 
     # Pool the correlated CPP and the corresponding Poisson processes
