@@ -65,7 +65,6 @@ from scipy.optimize import root_scalar
 from scipy.special import gammainc, gammaincc
 
 from elephant.spike_train_surrogates import dither_spike_train
-from elephant.utils import deprecated_alias
 
 __all__ = [
     "spike_extraction",
@@ -86,7 +85,6 @@ __all__ = [
 ]
 
 
-@deprecated_alias(extr_interval='interval')
 def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
                      time_stamps=None, interval=(-2 * pq.ms, 4 * pq.ms)):
     """
@@ -246,7 +244,6 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
     return result_st
 
 
-@deprecated_alias(format='as_array')
 def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
                    as_array=False):
     """
@@ -269,13 +266,6 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
         If True, a NumPy array of the resulting peak times is returned instead
         of a (default) `neo.SpikeTrain` object.
         Default: False
-    format : {None, 'raw'}, optional
-        .. deprecated:: 0.8.0
-        Whether to return as SpikeTrain (None) or as a plain array of times
-        ('raw').
-        Deprecated. Use `as_array=False` for None format and `as_array=True`
-        otherwise.
-        Default: None
 
     Returns
     -------
@@ -288,11 +278,6 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
 
     if sign not in ('above', 'below'):
         raise ValueError("sign should be 'above' or 'below'")
-
-    if as_array in (None, 'raw'):
-        warnings.warn("'format' is deprecated; use as_array=True",
-                      DeprecationWarning)
-        as_array = bool(as_array)
 
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
@@ -1322,8 +1307,6 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
             for single_rate in rate]
 
 
-@deprecated_alias(rate_c='coincidence_rate', n='n_spiketrains',
-                  return_coinc='return_coincidences')
 def single_interaction_process(
         rate, coincidence_rate, t_stop, n_spiketrains=2, jitter=0 * pq.ms,
         coincidences='deterministic', t_start=0 * pq.ms, min_delay=0 * pq.ms,
@@ -1757,7 +1740,6 @@ def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0.*pq.ms):
             in zip(compound_poisson_spiketrains, poisson_spiketrains)]
 
 
-@deprecated_alias(A='amplitude_distribution')
 def compound_poisson_process(
         rate, amplitude_distribution, t_stop, shift=None, t_start=0 * pq.ms):
     """
