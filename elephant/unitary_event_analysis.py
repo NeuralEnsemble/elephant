@@ -60,7 +60,7 @@ import quantities as pq
 import scipy
 
 import elephant.conversion as conv
-from elephant.utils import is_binary, deprecated_alias
+from elephant.utils import is_binary, deprecated_alias, round_binning_errors
 
 __all__ = [
     "hash_from_pattern",
@@ -823,7 +823,10 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                             method=method, t_start=t_start, t_stop=t_stop,
                             n_surrogates=n_surrogates)
 
-    n_bins = int(((t_stop - t_start) / bin_size).simplified.item())
+    n_bins = (t_stop - t_start) / bin_size
+    if isinstance(n_bins, pq.Quantity):
+        n_bins = n_bins.simplified.item()
+    n_bins = round_binning_errors(n_bins)
 
     mat_tr_unit_spt = np.zeros((len(spiketrains), n_neurons, n_bins),
                                dtype=np.int32)
