@@ -8,7 +8,7 @@ dependencies:
 
   - mpi4py
   - numpy
-  - scipy
+  - scipy<1.8.1 # fix conda runners
   - tqdm
   - pandas
   - scikit-learn
