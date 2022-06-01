@@ -2,7 +2,7 @@ import random
 import unittest
 from collections import defaultdict
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import neo
 import numpy as np
 import quantities as pq
@@ -63,7 +63,7 @@ def _visualize_results_of_offline_and_online_uea(
     viziphant.unitary_event_analysis.plot_ue(
         spiketrains, Js_dict=ue_dict_offline, significance_level=alpha,
         unit_real_ids=['1', '2'], suptitle="offline")
-    plt.show()
+    # plt.show()
     # reorder and rename indices-dict of ue_dict_online, if only the last
     # n-trials were saved; indices-entries of unused trials are overwritten
     if len(online_trials) < len(spiketrains):
@@ -74,7 +74,7 @@ def _visualize_results_of_offline_and_online_uea(
     viziphant.unitary_event_analysis.plot_ue(
         online_trials, Js_dict=ue_dict_online, significance_level=alpha,
         unit_real_ids=['1', '2'], suptitle="online")
-    plt.show()
+    # plt.show()
 
 
 def _simulate_buffered_reading(n_buffers, ouea, st1, st2, IDW_length,
@@ -110,10 +110,7 @@ def _simulate_buffered_reading(n_buffers, ouea, st1, st2, IDW_length,
         # plt.savefig(f"plots/timelapse_UE/ue_real_data_buff_{i}.pdf")
 
 
-def _load_real_data(n_trials, trial_length, time_unit):
-    # download data
-    repo_path = 'tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix'
-    filepath = download_datasets(repo_path)
+def _load_real_data(filepath, n_trials, trial_length, time_unit):
     # load data and extract spiketrains
     io = neo.io.NixIO(f"{filepath}", 'ro')
     block = io.read_block()
@@ -160,6 +157,11 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         np.random.seed(73)
         cls.time_unit = 1 * pq.ms
         cls.last_n_trials = 50
+
+        # download real data once and load it several times later
+        cls.repo_path = 'tutorials/tutorial_unitary_event_analysis/' \
+                        'data/dataset-1.nix'
+        cls.filepath = download_datasets(cls.repo_path)
 
     def setUp(self):
         pass
@@ -242,9 +244,9 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
 
         # load data and extract spiketrains
         # 36 trials with 2.1s length and 0s background noise in between trials
-        spiketrains, neo_st1, neo_st2 = _load_real_data(n_trials=n_trials,
-                                                        trial_length=TW_length,
-                                                        time_unit=time_unit)
+        spiketrains, neo_st1, neo_st2 = _load_real_data(
+            filepath=self.filepath, n_trials=n_trials, trial_length=TW_length,
+            time_unit=time_unit)
 
         # perform standard unitary events analysis
         ue_dict = jointJ_window_analysis(
