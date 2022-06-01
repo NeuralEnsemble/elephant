@@ -39,8 +39,8 @@ class OnlineUnitaryEventAnalysis:
         on the trial segments. It advances with a step size defined by
         'saw_step'.
     saw_step : pq.Quantity
-        Size of the step which is used to advance the sliding analysis window to
-        its next position / next trial segment to analyze.
+        Size of the step which is used to advance the sliding analysis window
+        to its next position / next trial segment to analyze.
     n_neurons : int
         Number of neurons which are analyzed with the UEA.
     pattern_hash : int or list of int or None
@@ -53,8 +53,8 @@ class OnlineUnitaryEventAnalysis:
         This time unit is used for all calculations which requires a time
         quantity. (Default: [s])
     save_n_trials : (positive) int
-        The number of trials `n` which will be saved after their analysis with a
-        queue following the FIFO strategy (first in, first out), i.e. only
+        The number of trials `n` which will be saved after their analysis with
+        a queue following the FIFO strategy (first in, first out), i.e. only
         the last `n` analyzed trials will be stored. (default: None)
 
     Attributes
@@ -67,13 +67,13 @@ class OnlineUnitaryEventAnalysis:
         Reflects the status of the updating-algorithm in 'update_uea()'.
         It is `True`, when the algorithm is in the state of pre- / post-trial
         analysis, i.e. it expects the arrival of the next trigger event which
-        will define the next trial. Otherwise, it is `False`, when the algorithm
-        is within the analysis of the current trial, i.e. it does not need
-        the next trigger event at this moment.
+        will define the next trial. Otherwise, it is `False`, when the
+        algorithm is within the analysis of the current trial, i.e. it does
+        not need the next trigger event at this moment.
     trigger_events_left_over : boolean
-        Reflects the status of the trial defining events in the 'trigger_events'
-        list. It is `True`, when there are events left, which were not analyzed
-        yet. Otherwise, it is `False`.
+        Reflects the status of the trial defining events in the
+        'trigger_events' list. It is `True`, when there are events left, which
+        were not analyzed yet. Otherwise, it is `False`.
     mw : list of lists
         Contains for each neuron the spikes which are currently available in
         the memory window.
@@ -133,7 +133,8 @@ class OnlineUnitaryEventAnalysis:
             * 0-axis --> different window
             * 1-axis --> different pattern hash
     n_emp : np.ndarray
-        The empirical number of coincidences of each pattern within each window.
+        The empirical number of coincidences of each pattern within each
+        window.
             * 0-axis --> different window
             * 1-axis --> different pattern hash
     rate_avg : np.ndarray
@@ -220,7 +221,7 @@ class OnlineUnitaryEventAnalysis:
         self.save_n_trials = save_n_trials
 
         # initialize helper variables for the memory window (mw)
-        self.mw = [[] for _ in range(self.n_neurons)]  # array of all spiketimes
+        self.mw = [[] for _ in range(self.n_neurons)]  # list of all spiketimes
 
         # initialize helper variables for the trial window (tw)
         self.tw_size = self.trigger_pre_size + self.trigger_post_size
@@ -256,10 +257,11 @@ class OnlineUnitaryEventAnalysis:
                                      t_stop=self.tw_size,
                                      n_surrogates=self.n_surrogates)
 
-        # initialize the intermediate result arrays for the joint surprise (js),
-        # number of expected coincidences (n_exp), number of empirically found
-        # coincidences (n_emp), rate average of the analyzed neurons (rate_avg),
-        # as well as the indices of the saw position where coincidences appear
+        # initialize the intermediate result arrays for the joint surprise
+        # (js), number of expected coincidences (n_exp), number of empirically
+        # found coincidences (n_emp), rate average of the analyzed neurons
+        # (rate_avg), as well as the indices of the saw position where
+        # coincidences appear
         self.Js, self.n_exp, self.n_emp = np.zeros(
             (3, self.n_windows, self.n_hashes), dtype=np.float64)
         self.rate_avg = np.zeros(
@@ -427,7 +429,8 @@ class OnlineUnitaryEventAnalysis:
         current_trigger_event : pq.Quantity
             Time point around which the current / precedent trial was defined.
         next_trigger_event : pq.Quantity
-            Time point around which the next / subsequent trial will be defined.
+            Time point around which the next / subsequent trial will be
+            defined.
 
         Returns
         -------
@@ -462,7 +465,8 @@ class OnlineUnitaryEventAnalysis:
                                    bin_size=self.bw_size)
         self.bw = bs.to_bool_array()
 
-    def _set_saw_positions(self, t_start, t_stop, win_size, win_step, bin_size):
+    def _set_saw_positions(self, t_start, t_stop, win_size, win_step,
+                           bin_size):
         """
         Set positions of the sliding analysis window (SAW).
 
@@ -495,11 +499,11 @@ class OnlineUnitaryEventAnalysis:
         self.winsize_bintime = _bintime(win_size, bin_size)
         self.winstep_bintime = _bintime(win_step, bin_size)
         if self.winsize_bintime * bin_size != win_size:
-            warnings.warn(f"The ratio between the win_size ({win_size}) and the"
-                          f" bin_size ({bin_size}) is not an integer")
+            warnings.warn(f"The ratio between the win_size ({win_size}) and "
+                          f"the bin_size ({bin_size}) is not an integer")
         if self.winstep_bintime * bin_size != win_step:
-            warnings.warn(f"The ratio between the win_step ({win_step}) and the"
-                          f" bin_size ({bin_size}) is not an integer")
+            warnings.warn(f"The ratio between the win_step ({win_step}) and "
+                          f"the bin_size ({bin_size}) is not an integer")
 
     def _move_saw_over_tw(self, t_stop_idw):
         """
@@ -539,9 +543,7 @@ class OnlineUnitaryEventAnalysis:
             if p_realtime + self.saw_size <= t_stop_idw:  # saw is filled
                 mat_win = np.zeros((1, self.n_neurons, self.winsize_bintime))
                 n_bins_in_current_saw = self.bw[
-                                        :,
-                                        p_bintime:p_bintime + self.winsize_bintime].shape[
-                    1]
+                    :, p_bintime:p_bintime + self.winsize_bintime].shape[1]
                 if n_bins_in_current_saw < self.winsize_bintime:
                     mat_win[0] += np.pad(
                         self.bw[:, p_bintime:p_bintime + self.winsize_bintime],
@@ -575,7 +577,7 @@ class OnlineUnitaryEventAnalysis:
                     _trial_start = 0 * pq.s
                     _trial_stop = self.tw_size
                     _offset = self.trigger_events[self.tw_counter] - \
-                              self.trigger_pre_size
+                        self.trigger_pre_size
                     normalized_spike_times = []
                     for n in range(self.n_neurons):
                         normalized_spike_times.append(
@@ -605,8 +607,8 @@ class OnlineUnitaryEventAnalysis:
         'spiketrains' into the memory window (MW) and adds also the new trigger
         'events' into the 'trigger_events' list. Then depending on the state in
         which the algorithm is, it processes the new 'spiketrains' respectivly.
-        There are two major states with each two substates between the algorithm
-        is switching.
+        There are two major states with each two substates between the
+        algorithm is switching.
 
         Warns
         -----
@@ -698,8 +700,8 @@ class OnlineUnitaryEventAnalysis:
                             current_trigger_event=current_trigger_event,
                             next_trigger_event=next_trigger_event):
                         warnings.warn(
-                            f"Data in trial {self.tw_counter} will be analysed "
-                            f"twice! Adjust the trigger events and/or "
+                            f"Data in trial {self.tw_counter} will be analysed"
+                            f" twice! Adjust the trigger events and/or "
                             f"the trial window size.", UserWarning)
                     else:  # no overlap exists
                         pass

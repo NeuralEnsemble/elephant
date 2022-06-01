@@ -283,7 +283,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                                    events=reading_events)
         ue_dict_online = ouea.get_results()
 
-        # assert equality between result dicts of standard and online ue version
+        # assert equality between result dicts of standard / online ue version
         self._assert_equality_of_result_dicts(
             ue_dict_offline=ue_dict, ue_dict_online=ue_dict_online,
             tol_dict_user={})
@@ -320,7 +320,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
             n_trials=n_trials, tw_length=TW_length,
             noise_length=noise_length, idw_length=IDW_length)
 
-        # create two long random homogeneous poisson spiketrains which represent
+        # create two long random homogeneous poisson spiketrains representing
         # 40 trials with 1s length and 1.5s background noise in between trials
         spiketrains, st1_long, st2_long = _generate_spiketrains(
             freq=5*pq.Hz, length=(TW_length+noise_length)*n_trials,
@@ -359,13 +359,13 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         # perform online unitary event analysis
         # simulate buffered reading/transport of spiketrains,
         # i.e. loop over spiketrain list and call update_ue()
-        _simulate_buffered_reading(n_buffers=n_buffers, ouea=ouea, st1=st1_long,
-                                   st2=st2_long, IDW_length=IDW_length,
+        _simulate_buffered_reading(n_buffers=n_buffers, ouea=ouea, st1=st1_long
+                                   , st2=st2_long, IDW_length=IDW_length,
                                    length_remainder=length_remainder,
                                    events=reading_events)
         ue_dict_online = ouea.get_results()
 
-        # assert equality between result dicts of standard and online ue version
+        # assert equality between result dicts of standard / online ue version
         self._assert_equality_of_result_dicts(
             ue_dict_offline=ue_dict, ue_dict_online=ue_dict_online,
             tol_dict_user={})
@@ -439,7 +439,8 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
     def test_TW_smaller_IDW_real_data(self):
         """Test, if online UE analysis is correct when the trial window is
                 smaller than the in-coming data window with real data."""
-        idw_length = ([2.15, 2.2, 3, 10, 50, 75.6]*pq.s).rescale(self.time_unit)
+        idw_length = ([2.15, 2.2, 3, 10, 50, 75.6]*pq.s).rescale(
+            self.time_unit)
         for idw in idw_length:
             with self.subTest(f"IDW = {idw}"):
                 self._test_unitary_events_analysis_with_real_data(
