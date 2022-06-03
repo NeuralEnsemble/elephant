@@ -27,7 +27,7 @@ on:
       #- edited
       #- closed
       #- reopened
-      #- synchronize
+      - synchronize
       #- converted_to_draft
       #- ready_for_review
       #- locked
