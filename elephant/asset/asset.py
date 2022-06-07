@@ -143,6 +143,7 @@ from tqdm import trange, tqdm
 import elephant.conversion as conv
 from elephant import spike_train_surrogates
 from elephant.utils import get_cuda_capability_major, get_opencl_capability
+import logging
 
 try:
     from mpi4py import MPI
@@ -168,6 +169,13 @@ __all__ = [
     "synchronous_events_overlap"
 ]
 
+# Create logger and set configuration
+logger = logging.getLogger(__file__)
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter("[%(asctime)s] asset -"
+                                           " %(levelname)s: %(message)s"))
+logger.addHandler(log_handler)
+logger.propagate = False
 
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
@@ -562,7 +570,7 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
             raise ValueError('elements in fir_rates must have 2 dimensions')
 
     if verbose:
-        print('create time slices of the rates...')
+        logger.info('create time slices of the rates...')
 
     # Interpolate in the time bins
     interpolated_signal = np.vstack([_analog_signal_step_interp(
@@ -816,7 +824,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
 
         context = cl.create_some_context(interactive=False)
         if self.verbose:
-            print("Available OpenCL devices:\n", context.devices)
+            logger.info("Available OpenCL devices:\n", context.devices)
         device = context.devices[device_id]
 
         # A queue bounded to the device
@@ -868,9 +876,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 grid_size = l_num_blocks
 
             if self.verbose:
-                print(f"[Joint prob. matrix] it_todo={it_todo}, "
-                      f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                      f"N_THREADS={n_threads}")
+                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                            f"N_THREADS={n_threads}")
 
             # OpenCL defines unsigned long as uint64, therefore we're adding
             # the LU suffix, not LLU, which would indicate unsupported uint128
@@ -959,9 +967,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 grid_size = l_num_blocks
 
             if self.verbose:
-                print(f"[Joint prob. matrix] it_todo={it_todo}, "
-                      f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                      f"N_THREADS={n_threads}")
+                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                            f"N_THREADS={n_threads}")
 
             asset_cu = self._compile_template(
                 template_name="joint_pmat.cu",
@@ -1026,8 +1034,8 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 compile_cmd,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
-                print(compile_status.stdout.decode())
-                print(compile_status.stderr.decode(), file=sys.stderr)
+                logger.info(compile_status.stdout.decode())
+                logger.info(compile_status.stderr.decode(), file=sys.stderr)
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
@@ -1037,8 +1045,8 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 [asset_bin_path, log_du_path, P_total_path],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
-                print(run_status.stdout.decode())
-                print(run_status.stderr.decode(), file=sys.stderr)
+                logger.info(run_status.stdout.decode())
+                logger.info(run_status.stderr.decode(), file=sys.stderr)
             run_status.check_returncode()
             with open(P_total_path, 'rb') as f:
                 P_total = np.fromfile(f, dtype=self.dtype)
@@ -2227,8 +2235,8 @@ class ASSET(object):
 
         # For each neuron, compute the prob. that that neuron spikes in any bin
         if self.verbose:
-            print('compute the prob. that each neuron fires in each pair of '
-                  'bins...')
+            logger.info('compute the prob. that each neuron fires in each '
+                        'pair of bins...')
 
         rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
         spike_probs_x = 1. - np.exp(-rate_bins_x)
@@ -2245,8 +2253,8 @@ class ASSET(object):
         # p_ijk is the probability that neuron k spikes in both bins i and j.
         # The sum of outer products is equivalent to a dot product.
         if self.verbose:
-            print(
-                "compute the probability matrix by Le Cam's approximation...")
+            logger.info("compute the probability matrix by Le Cam's "
+                        "approximation...")
         Mu = spike_probs_x.T.dot(spike_probs_y)
         # A straightforward implementation is:
         # pmat_shape = spike_probs_x.shape[1], spike_probs_y.shape[1]
@@ -2261,7 +2269,8 @@ class ASSET(object):
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
             if self.verbose:
-                print("substitute 0.5 to elements along the main diagonal...")
+                logger.info("substitute 0.5 to elements along the main "
+                            "diagonal...")
             np.fill_diagonal(pmat, 0.5)
 
         return pmat
@@ -2366,6 +2375,9 @@ class ASSET(object):
 
         """
         l, w = filter_shape
+
+        if self.verbose:
+            logger.info("finding neighbors in probability matrix")
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
@@ -2687,7 +2699,7 @@ class ASSET(object):
         a boxcar kernel.
         """
         if self.verbose:
-            print('compute rates by boxcar-kernel convolution...')
+            logger.info('compute rates by boxcar-kernel convolution...')
 
         # Create the boxcar kernel and convolve it with the binned spike trains
         k = int((kernel_width / self.bin_size).simplified.item())
