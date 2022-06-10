@@ -297,10 +297,11 @@ jobs:
           echo $CONDA/bin >> $GITHUB_PATH
       - name: Install dependencies
         run: |
+          apt-get update
+          apt-get install libstdc++
           conda update conda
           conda env update --file requirements/environment-tests.yml --name base
           activate base
-          conda install -c conda-forge libstdcxx-ng 
           conda install -c conda-forge openmpi
           pip install -r requirements/requirements-tests.txt
           pip install pytest
