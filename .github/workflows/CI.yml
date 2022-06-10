@@ -297,11 +297,11 @@ jobs:
           echo $CONDA/bin >> $GITHUB_PATH
       - name: Install dependencies
         run: |
+          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
           conda env update --file requirements/environment-tests.yml --name base
           activate base
           conda install -c conda-forge openmpi
-          conda install -c conda-forge libstdcxx-ng # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           pip install -r requirements/requirements-tests.txt
           pip install pytest
           pip install pytest-cov coveralls
@@ -353,11 +353,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
+          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
           conda env update --file requirements/environment-docs.yml --name base
           conda install -c conda-forge openmpi
           conda install -c conda-forge pandoc
-          conda install -c conda-forge libstdcxx-ng # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           pip install -e .[extras]
           # run notebooks
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
