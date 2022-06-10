@@ -300,6 +300,7 @@ jobs:
           conda update conda
           conda env update --file requirements/environment-tests.yml --name base
           activate base
+          conda install -c conda-forge libstdcxx-ng 
           conda install -c conda-forge openmpi
           pip install -r requirements/requirements-tests.txt
           pip install pytest
