@@ -13,9 +13,14 @@ with open("README.md") as f:
 with open('requirements/requirements.txt') as fp:
     install_requires = fp.read().splitlines()
 extras_require = {}
-for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda', 'opencl']:
-    with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
-        extras_require[extra] = fp.read()
+for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda', 'opencl',
+              'no_cpp']:
+    if 'no_cpp' in extra:
+        extras_require[extra] = ''
+    else:
+        with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
+            extras_require[extra] = fp.read()
+
 
 if platform.system() == "Windows":
     fim_module = Extension(
@@ -82,8 +87,14 @@ setup_kwargs = {
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Scientific/Engineering']
 }
+
+# do not compile cpp-extension (fim.cpp) if extra is [no_cpp],
+# e.g. pip install elephant[no_cpp].
+# In this case the pure python implementation fast_fca is used in spade
+if 'no_cpp' in extra:
+    pass
 # do not compile external modules on darwin
-if platform.system() in ["Windows", "Linux"]:
+elif platform.system() in ["Windows", "Linux"]:
     setup_kwargs["ext_modules"] = [fim_module]
 
 
