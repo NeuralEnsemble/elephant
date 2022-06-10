@@ -473,7 +473,21 @@ class OnlineUnitaryEventAnalysis:
         Determines the positions of the sliding analysis window with respect to
         the used window size 'win_size' and the advancing step 'win_step'. Also
         converts this time points into bin-units, i.e. into multiple of the
-        'bin_size' which facilitates indexing in upcoming steps.
+        'bin_size' which facilitates indexing in upcoming analysis steps.
+
+        Parameters
+        ----------
+        t_start : pq.Quantity
+            Time point at which the current trial starts.
+        t_stop : pq.Quantity
+            Time point at which the current trial ends.
+        win_size : pq.Quantity
+            Temporal length of the sliding analysis window.
+        win_step : pq.Quantity
+            Temporal size of the advancing step of the sliding analysis window.
+        bin_size : pq.Quantity
+            Temporal length of the histogram bins, which were used to bin
+            the 'spiketrains' in  '_apply_bw_tw()'.
 
         Warns
         -----
@@ -516,6 +530,11 @@ class OnlineUnitaryEventAnalysis:
         coincidences and determines the firing rates of the neurons.
         The respective results are then used to update the class attributes
         'n_emp', 'n_exp', 'rate_avg' and 'indices'.
+
+        Parameters
+        ----------
+        t_stop_idw : pq.Quantity
+            Time point at which the current incoming data window (IDW) ends.
 
         Notes
         -----
@@ -604,11 +623,18 @@ class OnlineUnitaryEventAnalysis:
         the incoming data window (IDW).
 
         This method orchestrates the updating process. It saves the incoming
-        'spiketrains' into the memory window (MW) and adds also the new trigger
-        'events' into the 'trigger_events' list. Then depending on the state in
-        which the algorithm is, it processes the new 'spiketrains' respectivly.
-        There are two major states with each two substates between the
-        algorithm is switching.
+        'spiketrains' into the memory window (MW) and adds also the new
+        trigger 'events' into the 'trigger_events' list. Then depending on
+        the state in which the algorithm is, it processes the new
+        'spiketrains' respectively. There are two major states with each two
+        substates between the algorithm is switching.
+
+        Parameters
+        ----------
+        spiketrains : list of neo.SpikeTrain objects
+            Spike times of the analysed neurons.
+        events : list of pq.Quantity
+            Time points of the trial defining trigger events.
 
         Warns
         -----
