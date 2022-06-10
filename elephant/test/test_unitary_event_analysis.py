@@ -556,6 +556,40 @@ class UETestCase(unittest.TestCase):
                                UE_dic['indices'][trial_key])
         self.assertEqual(UE_dic['input_parameters'], input_parameters_expected)
 
+    def test_n_bins_calculation_in_jointJ_window_analysis(self):
+        n_trials = 50
+        t_start = 0.*pq.ks
+        t_stop = 0.0021*pq.ks
+        spp = StationaryPoissonProcess(rate=50*pq.Hz, t_start=t_start,
+                                       t_stop=t_stop)
+        sts1 = spp.generate_n_spiketrains(n_spiketrains=n_trials)
+        sts2 = spp.generate_n_spiketrains(n_spiketrains=n_trials)
+        data = np.vstack((sts1, sts2)).T
+        win_size = 100 * pq.ms
+        bin_size = 0.000005 * pq.ks
+        win_step = 20 * pq.ms
+        pattern_hash = [3]
+
+        expected_n_bins = 420
+
+        try:
+            ue.jointJ_window_analysis(spiketrains=data,
+                                      pattern_hash=pattern_hash,
+                                      bin_size=bin_size,
+                                      win_size=win_size,
+                                      win_step=win_step)
+        except ValueError as ve:
+            if str(ve) == "could not broadcast input array from shape (2,420)"\
+                          " into shape (2,419)":
+                raise ValueError(
+                    f"The variable 'n_bins' within 'jointF_window_analysis()' "
+                    f"has not the expected value of {expected_n_bins}! "
+                    f"A probable reason for this incorrect rounding is the "
+                    f"usage of unusual time units.\n"
+                    f"Original error message was: {ve}")
+            else:
+                raise ve
+
 
 if __name__ == '__main__':
     unittest.main()
