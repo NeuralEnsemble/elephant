@@ -65,6 +65,13 @@ Installation
 
               pip install elephant[extras]
 
+        To avoid compilation of the c++ extension ``fim.cpp`` used in :ref:`spade`, install the package
+        with ``no_cpp``. In this case the pure python implementation of SPADE is still available.
+
+           .. code-block:: sh
+
+              pip install elephant[no_cpp]
+
 
         To upgrade to a newer release use the ``--upgrade`` flag:
 
