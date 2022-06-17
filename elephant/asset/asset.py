@@ -2552,8 +2552,14 @@ class ASSET(object):
         xpos_sgnf, ypos_sgnf = np.where(mask_matrix > 0)
 
         # Allocate temporary file if requested
-        disk_array = tempfile.TemporaryFile(prefix=array_file) if array_file \
-            else None
+        disk_array = None
+        if array_file:
+            file_path = Path(array_file) if isinstance(array_file, str) \
+                else array_file
+            file_dir = file_path.parent
+            file_name = file_path.stem
+            disk_array = tempfile.NamedTemporaryFile(prefix=file_name,
+                                                     dir=file_dir)
         
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
