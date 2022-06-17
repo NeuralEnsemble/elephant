@@ -236,10 +236,10 @@ class AssetTestCase(unittest.TestCase):
         for working_memory in [1, 10, 100, 1000]:
             with tempfile.TemporaryDirectory() as tmpdir:
                 cmat = asset.ASSET.cluster_matrix_entries(
-                mmat, max_distance=max_distance, min_neighbors=min_neighbors,
-                stretch=stretch, working_memory=working_memory,
-                array_file=Path(tmpdir) / f"test_distances_{working_memory}",
-                verbose=True)
+                    mmat, max_distance=max_distance,
+                    min_neighbors=min_neighbors, stretch=stretch,
+                    working_memory=working_memory,
+                    array_file=Path(tmpdir) / f"test_dist_{working_memory}")
                 assert_array_equal(cmat, cmat_true)
 
     def test_pmat_neighbors_gpu(self):
