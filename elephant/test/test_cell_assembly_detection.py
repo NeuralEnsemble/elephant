@@ -5,7 +5,7 @@ Unit test for cell_assembly_detection
 
 import unittest
 import numpy as np
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 import neo
 import quantities as pq
 import elephant.conversion as conv
@@ -22,7 +22,7 @@ class CadTestCase(unittest.TestCase):
         self.size_chunks = 100
         self.max_lag = 10
         self.reference_lag = 2
-        self.min_occ = 1
+        self.min_occurrences = 1
         self.max_spikes = np.inf
         self.significance_pruning = True
         self.subgroup_pruning = True
@@ -110,111 +110,89 @@ class CadTestCase(unittest.TestCase):
         # check neurons in the pattern
         assert_array_equal(sorted(output_single[0]['neurons']),
                            self.elements1)
-        # check the occurrences time of the patter
+        # check the occurrences time of the pattern
         assert_array_equal(output_single[0]['times'],
-                           self.occ1)
+                           self.occ1 * self.bin_size)
         # check the lags
-        assert_array_equal(sorted(output_single[0]['lags']),
-                           self.output_lags1)
+        assert_array_equal(sorted(output_single[0]['lags']) * pq.s,
+                           self.output_lags1 * self.bin_size)
 
     # test with multiple (3) patterns injected in the data
     def test_cad_msip(self):
         # collecting cad output
         output_msip = cad.cell_assembly_detection(
             binned_spiketrain=self.msip, max_lag=self.max_lag)
-
-        elements_msip = []
-        occ_msip = []
-        lags_msip = []
-        for out in output_msip:
-            elements_msip.append(out['neurons'])
-            occ_msip.append(out['times'])
-            lags_msip.append(list(out['lags']))
-        elements_msip = sorted(elements_msip, key=lambda d: len(d))
-        occ_msip = sorted(occ_msip, key=lambda d: len(d))
-        lags_msip = sorted(lags_msip, key=lambda d: len(d))
-        elements_msip = [sorted(e) for e in elements_msip]
-        # check neurons in the patterns
-        assert_array_equal(elements_msip, self.elements_msip)
-        # check the occurrences time of the patters
-        assert_array_equal(occ_msip[0], self.occ_msip[0])
-        assert_array_equal(occ_msip[1], self.occ_msip[1])
-        assert_array_equal(occ_msip[2], self.occ_msip[2])
-        lags_msip = [sorted(e) for e in lags_msip]
-        # check the lags
-        assert_array_equal(lags_msip, self.lags_msip)
+        for i, out in enumerate(output_msip):
+            assert_array_equal(out['times'], self.occ_msip[i] * self.bin_size)
+            assert_array_equal(sorted(out['lags']) * pq.s,
+                               self.lags_msip[i] * self.bin_size)
+            assert_array_equal(sorted(out['neurons']), self.elements_msip[i])
 
     # test the errors raised
     def test_cad_raise_error(self):
         # test error data input format
         self.assertRaises(TypeError, cad.cell_assembly_detection,
-                          data=[[1, 2, 3], [3, 4, 5]],
-                          maxlag=self.max_lag)
+                          binned_spiketrain=[[1, 2, 3], [3, 4, 5]],
+                          max_lag=self.max_lag)
         # test error significance level
         self.assertRaises(ValueError, cad.cell_assembly_detection,
-                          data=conv.BinnedSpikeTrain(
+                          binned_spiketrain=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3] * pq.s,
                                               t_stop=5 * pq.s),
                                neo.SpikeTrain([3, 4, 5] * pq.s,
                                               t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.max_lag,
+                          max_lag=self.max_lag,
                           alpha=-3)
         # test error minimum number of occurrences
         self.assertRaises(ValueError, cad.cell_assembly_detection,
-                          data=conv.BinnedSpikeTrain(
+                          binned_spiketrain=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3] * pq.s,
                                               t_stop=5 * pq.s),
                                neo.SpikeTrain([3, 4, 5] * pq.s,
                                               t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.max_lag,
-                          min_occ=-1)
+                          max_lag=self.max_lag,
+                          min_occurrences=-1)
         # test error minimum number of spikes in a pattern
         self.assertRaises(ValueError, cad.cell_assembly_detection,
-                          data=conv.BinnedSpikeTrain(
+                          binned_spiketrain=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3] * pq.s,
                                               t_stop=5 * pq.s),
                                neo.SpikeTrain([3, 4, 5] * pq.s,
                                               t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.max_lag,
+                          max_lag=self.max_lag,
                           max_spikes=1)
         # test error chunk size for variance computation
         self.assertRaises(ValueError, cad.cell_assembly_detection,
-                          data=conv.BinnedSpikeTrain(
+                          binned_spiketrain=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3] * pq.s,
                                               t_stop=5 * pq.s),
                                neo.SpikeTrain([3, 4, 5] * pq.s,
                                               t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=self.max_lag,
+                          max_lag=self.max_lag,
                           size_chunks=1)
         # test error maximum lag
         self.assertRaises(ValueError, cad.cell_assembly_detection,
-                          data=conv.BinnedSpikeTrain(
+                          binned_spiketrain=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3] * pq.s,
                                               t_stop=5 * pq.s),
                                neo.SpikeTrain([3, 4, 5] * pq.s,
                                               t_stop=5 * pq.s)],
                               bin_size=self.bin_size),
-                          maxlag=1)
+                          max_lag=1)
         # test error minimum length spike train
         self.assertRaises(ValueError, cad.cell_assembly_detection,
-                          data=conv.BinnedSpikeTrain(
+                          binned_spiketrain=conv.BinnedSpikeTrain(
                               [neo.SpikeTrain([1, 2, 3] * pq.ms,
                                               t_stop=6 * pq.ms),
                                neo.SpikeTrain([3, 4, 5] * pq.ms,
                                               t_stop=6 * pq.ms)],
                               bin_size=1 * pq.ms),
-                          maxlag=self.max_lag)
-
-
-def suite():
-    suite = unittest.makeSuite(CadTestCase, 'test')
-    return suite
+                          max_lag=self.max_lag)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

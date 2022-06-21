@@ -3,7 +3,13 @@
 Identification of spectral properties in analog signals (e.g., the power
 spectrum).
 
-:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
+.. autosummary::
+    :toctree: _toctree/spectral
+
+    welch_psd
+    welch_coherence
+
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -65,54 +71,54 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_segment` or `frequency_resolution` is
         given.
-        Default: 8.
+        Default: 8
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
-        Default: None.
+        Default: None
     frequency_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained PSD estimate in terms of
         the interval between adjacent frequency bins. When given as a `float`,
         it is taken as frequency in Hz.
         If None, it will be determined from other parameters.
-        Default: None.
+        Default: None
     overlap : float, optional
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
-        Default: 0.5 (half-overlapped).
+        Default: 0.5 (half-overlapped)
     fs : pq.Quantity or float, optional
         Specifies the sampling frequency of the input time series. When the
         input is given as a `neo.AnalogSignal`, the sampling frequency is
         taken from its attribute and this parameter is ignored.
-        Default: 1.0.
+        Default: 1.0
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [2].
-        Default: 'hanning'.
+        Default: 'hanning'
     nfft : int, optional
         Length of the FFT used.
         See Notes [2].
-        Default: None.
+        Default: None
     detrend : str or function or False, optional
         Specifies how to detrend each segment.
         See Notes [2].
-        Default: 'constant'.
+        Default: 'constant'
     return_onesided : bool, optional
         If True, return a one-sided spectrum for real data.
         If False return a two-sided spectrum.
         See Notes [2].
-        Default: True.
+        Default: True
     scaling : {'density', 'spectrum'}, optional
         If 'density', computes the power spectral density where Pxx has units
         of V**2/Hz. If 'spectrum', computes the power spectrum where Pxx has
         units of V**2, if `signal` is measured in V and `fs` is measured in
         Hz.
         See Notes [2].
-        Default: 'density'.
+        Default: 'density'
     axis : int, optional
         Axis along which the periodogram is computed.
         See Notes [2].
-        Default: last axis (-1).
+        Default: last axis (-1)
 
     Returns
     -------
@@ -169,6 +175,28 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     --------
     scipy.signal.welch
     welch_cohere
+
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.spectral import welch_psd
+    >>> signal = neo.AnalogSignal(np.cos(np.linspace(0, 2 * np.pi, num=100)),
+    ...     sampling_rate=20 * pq.Hz, units='mV')
+
+    Sampling frequency will be taken as `signal.sampling_rate`.
+
+    >>> freq, psd = welch_psd(signal)
+    >>> freq
+    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,
+            3.63636364,  4.54545455,  5.45454545,  6.36363636,
+            7.27272727,  8.18181818,  9.09090909, 10.        ]) * Hz
+    >>> psd
+    array([[1.09566410e-03, 2.33607943e-02, 1.35436832e-03,
+        6.74408723e-05, 1.00810196e-05, 2.40079315e-06,
+        7.35821437e-07, 2.58361700e-07, 9.44183422e-08,
+        3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
 
     """
 
@@ -285,7 +313,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_segment` or `frequency_resolution` is
         given.
-        Default: 1.
+        Default: 8.
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
@@ -320,8 +348,8 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
 
     Notes
     -----
-    1. There is a paramter hierarchy regarding n_segments and len_segment. The
-       former paramter is ignored if the latter one is passed.
+    1. There is a parameter hierarchy regarding n_segments and len_segment. The
+       former parameter is ignored if the latter one is passed.
 
     2. There is a parameter hierarchy regarding nw, num_tapers and
        peak_resolution. If peak_resolution is provided, it determines both nw
@@ -465,7 +493,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
                                    i * n_overlap_step + n_per_seg]
                               * slepian_fcts)
         else:
-            # Use broadcasting to match dime for point-wise multiplication
+            # Use broadcasting to match dim for point-wise multiplication
             tapered_signal = (data[:,
                                    np.newaxis,
                                    i * n_overlap_step:
@@ -844,49 +872,49 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_seg` or `frequency_resolution` is given.
-        Default: 8.
+        Default: 8
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it is determined from other parameters.
-        Default: None.
+        Default: None
     frequency_resolution : pq.Quantity or float, optional
         Desired frequency resolution of the obtained coherence estimate in
         terms of the interval between adjacent frequency bins. When given as a
         `float`, it is taken as frequency in Hz.
         If None, it is determined from other parameters.
-        Default: None.
+        Default: None
     overlap : float, optional
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
-        Default: 0.5 (half-overlapped).
+        Default: 0.5 (half-overlapped)
     fs : pq.Quantity or float, optional
         Specifies the sampling frequency of the input time series. When the
         input time series are given as `neo.AnalogSignal`, the sampling
         frequency is taken from their attribute and this parameter is ignored.
-        Default: 1.0.
+        Default: 1.0
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [1].
-        Default: 'hanning'.
+        Default: 'hanning'
     nfft : int, optional
         Length of the FFT used.
         See Notes [1].
-        Default: None.
+        Default: None
     detrend : str or function or False, optional
         Specifies how to detrend each segment.
         See Notes [1].
-        Default: 'constant'.
+        Default: 'constant'
     scaling : {'density', 'spectrum'}, optional
         If 'density', computes the power spectral density where Pxx has units
         of V**2/Hz. If 'spectrum', computes the power spectrum where Pxx has
         units of V**2, if `signal` is measured in V and `fs` is measured in
         Hz.
         See Notes [1].
-        Default: 'density'.
+        Default: 'density'
     axis : int, optional
         Axis along which the periodogram is computed.
         See Notes [1].
-        Default: last axis (-1).
+        Default: last axis (-1)
 
     Returns
     -------
@@ -940,6 +968,27 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     --------
     welch_psd
 
+    Examples
+    --------
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant.spectral import welch_coherence
+    >>> signal = neo.AnalogSignal(np.cos(np.linspace(0, 2 * np.pi, num=100)),
+    ...     sampling_rate=20 * pq.Hz, units='mV')
+
+    Sampling frequency will be taken as `signal.sampling_rate`.
+
+    >>> freq, coherency, phase_lag = welch_coherence(signal, signal)
+    >>> freq
+    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,
+            3.63636364,  4.54545455,  5.45454545,  6.36363636,
+            7.27272727,  8.18181818,  9.09090909, 10.        ]) * Hz
+    >>> coherency.flatten()
+    array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
+    >>> phase_lag.flatten()
+    array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) * rad
+
     """
 
     # TODO: code duplication with welch_psd()
@@ -982,13 +1031,13 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     elif len_segment is not None:
         if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
-        elif xdata.shape[axis] < len_segment:
+        if xdata.shape[axis] < len_segment:
             raise ValueError("len_seg must be shorter than the data length")
         nperseg = len_segment
     else:
         if n_segments <= 0:
             raise ValueError("n_segments must be a positive number")
-        elif xdata.shape[axis] < n_segments:
+        if xdata.shape[axis] < n_segments:
             raise ValueError("n_segments must be smaller than the data length")
         # when only *n_segments* is given, *nperseg* is determined by solving
         # the following equation:
@@ -1025,7 +1074,6 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
-
 
 if __name__ == "__main__":
 
@@ -1098,3 +1146,4 @@ if __name__ == "__main__":
     import IPython
     IPython.embed()
 
+    return welch_coherence(*args, **kwargs)

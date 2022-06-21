@@ -2,13 +2,14 @@
 """
 Unit tests for the conversion module.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 import unittest
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 from numpy.testing import (assert_array_almost_equal, assert_array_equal)
@@ -185,6 +186,28 @@ class binarize_TestCase(unittest.TestCase):
         assert_array_equal(bst.spike_indices, [[]])  # no binned spikes
         self.assertEqual(bst.get_num_of_spikes(), 0)
 
+    def test_regression_431(self):
+        """
+        Addresses issue 431
+        This unittest addresses an issue where a SpikeTrainList obejct was not
+        correctly handled by the constructor
+        """
+        st1 = neo.SpikeTrain(
+            times=np.array([1, 2, 3]) * pq.ms,
+            t_start=0 * pq.ms, t_stop=10 * pq.ms)
+        st2 = neo.SpikeTrain(
+            times=np.array([4, 5, 6]) * pq.ms,
+            t_start=0 * pq.ms, t_stop=10 * pq.ms)
+        real_list = [st1, st2]
+        spiketrainlist = SpikeTrainList([st1, st2])
+
+        real_list_binary = cv.BinnedSpikeTrain(real_list, bin_size=1*pq.ms)
+        spiketrainlist_binary = cv.BinnedSpikeTrain(
+            spiketrainlist, bin_size=1 * pq.ms)
+
+        assert_array_equal(
+            real_list_binary.to_array(), spiketrainlist_binary.to_array())
+
 
 class BinnedSpikeTrainTestCase(unittest.TestCase):
     def setUp(self):
@@ -194,6 +217,19 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
             [0.1, 0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s, t_stop=10.0 * pq.s)
         self.bin_size = 1 * pq.s
         self.tolerance = 1e-8
+
+    def test_binarize(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b,
+                       self.spiketrain_a, self.spiketrain_b]
+        for sparse_format in ("csr", "csc"):
+            bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                      bin_size=self.bin_size,
+                                      sparse_format=sparse_format)
+            bst_bin = bst.binarize(copy=True)
+            bst_copy = bst.copy()
+            assert_array_equal(bst_bin.to_array(), bst.to_bool_array())
+            bst_copy.sparse_matrix.data[:] = 1
+            self.assertEqual(bst_bin, bst_copy)
 
     def test_slice(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b,
@@ -254,32 +290,38 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
 
     def test_to_spike_trains(self):
         np.random.seed(1)
-        bst1 = cv.BinnedSpikeTrain(
-            spiketrains=[self.spiketrain_a, self.spiketrain_b],
-            bin_size=self.bin_size
-        )
         spiketrains = [homogeneous_poisson_process(rate=10 * pq.Hz,
                                                    t_start=-1 * pq.s,
                                                    t_stop=10 * pq.s)]
-        bst2 = cv.BinnedSpikeTrain(spiketrains=spiketrains,
-                                   bin_size=300 * pq.ms)
-        for bst in (bst1, bst2):
-            for spikes in ("random", "left", "center"):
-                spiketrains_gen = bst.to_spike_trains(spikes=spikes,
-                                                      annotate_bins=True)
-                for st, indices in zip(spiketrains_gen, bst.spike_indices):
-                    # check sorted
-                    self.assertTrue((np.diff(st.magnitude) > 0).all())
-                    assert_array_equal(st.array_annotations['bins'], indices)
-                    self.assertEqual(st.annotations['bin_size'], bst.bin_size)
-                    self.assertEqual(st.t_start, bst.t_start)
-                    self.assertEqual(st.t_stop, bst.t_stop)
-                bst_same = cv.BinnedSpikeTrain(spiketrains_gen,
-                                               bin_size=bst.bin_size)
-                self.assertEqual(bst_same, bst)
+        for sparse_format in ("csr", "csc"):
+            bst1 = cv.BinnedSpikeTrain(
+                spiketrains=[self.spiketrain_a, self.spiketrain_b],
+                bin_size=self.bin_size, sparse_format=sparse_format
+            )
+            bst2 = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                       bin_size=300 * pq.ms,
+                                       sparse_format=sparse_format)
+            for bst in (bst1, bst2):
+                for spikes in ("random", "left", "center"):
+                    spiketrains_gen = bst.to_spike_trains(spikes=spikes,
+                                                          annotate_bins=True)
+                    for st, indices in zip(spiketrains_gen, bst.spike_indices):
+                        # check sorted
+                        self.assertTrue((np.diff(st.magnitude) > 0).all())
+                        assert_array_equal(st.array_annotations['bins'],
+                                           indices)
+                        self.assertEqual(st.annotations['bin_size'],
+                                         bst.bin_size)
+                        self.assertEqual(st.t_start, bst.t_start)
+                        self.assertEqual(st.t_stop, bst.t_stop)
+                    bst_same = cv.BinnedSpikeTrain(spiketrains_gen,
+                                                   bin_size=bst.bin_size,
+                                                   sparse_format=sparse_format)
+                    self.assertEqual(bst_same, bst)
 
-            # invalid mode
-            self.assertRaises(ValueError, bst.to_spike_trains, spikes='right')
+                # invalid mode
+                self.assertRaises(ValueError, bst.to_spike_trains,
+                                  spikes='right')
 
     def test_get_num_of_spikes(self):
         spiketrains = [self.spiketrain_a, self.spiketrain_b]
@@ -288,14 +330,16 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                          bin_size=1 * pq.s, t_start=0 * pq.s)
             self.assertEqual(binned.get_num_of_spikes(),
                              len(binned.spike_indices[0]))
-        binned_matrix = cv.BinnedSpikeTrain(spiketrains, n_bins=10,
-                                            bin_size=1 * pq.s)
-        n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
-        n_spikes_per_row_from_indices = list(map(len,
-                                                 binned_matrix.spike_indices))
-        assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
-        self.assertEqual(binned_matrix.get_num_of_spikes(),
-                         sum(n_spikes_per_row_from_indices))
+        for sparse_format in ("csr", "csc"):
+            binned_matrix = cv.BinnedSpikeTrain(spiketrains, n_bins=10,
+                                                bin_size=1 * pq.s,
+                                                sparse_format=sparse_format)
+            n_spikes_per_row = binned_matrix.get_num_of_spikes(axis=1)
+            n_spikes_per_row_from_indices = list(
+                map(len, binned_matrix.spike_indices))
+            assert_array_equal(n_spikes_per_row, n_spikes_per_row_from_indices)
+            self.assertEqual(binned_matrix.get_num_of_spikes(),
+                             sum(n_spikes_per_row_from_indices))
 
     def test_binned_spiketrain_sparse(self):
         a = neo.SpikeTrain([1.7, 1.8, 4.3] * pq.s, t_stop=10.0 * pq.s)
@@ -493,10 +537,10 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         b = neo.SpikeTrain(
             [-0.1, -0.7, 1.2, 2.2, 4.3, 5.5, 8.0] * pq.s,
             t_start=-1 * pq.s, t_stop=8 * pq.s)
-        start, stop = cv.get_common_start_stop_times(a)
+        start, stop = get_common_start_stop_times(a)
         self.assertEqual(start, a.t_start)
         self.assertEqual(stop, a.t_stop)
-        start, stop = cv.get_common_start_stop_times([a, b])
+        start, stop = get_common_start_stop_times([a, b])
         self.assertEqual(start, a.t_start)
         self.assertEqual(stop, b.t_stop)
 
@@ -662,7 +706,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                   bin_size=1 * pq.ms)
         self.assertEqual(repr(bst), "BinnedSpikeTrain(t_start=1.0 s, "
                                     "t_stop=1.01 s, bin_size=0.001 s; "
-                                    "shape=(1, 10))")
+                                    "shape=(1, 10), format=csr_matrix)")
 
     def test_binned_sparsity(self):
         train = neo.SpikeTrain(np.arange(10), t_stop=10 * pq.s, units=pq.s)
@@ -679,6 +723,44 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                       bin_size=1. / 30000. * pq.s)
         assert_array_equal(bst.to_array().nonzero()[1],
                            np.arange(120000))
+
+
+class DiscretiseSpiketrainsTestCase(unittest.TestCase):
+    def setUp(self):
+        times = (np.arange(10) + np.random.uniform(size=10)) * pq.ms
+        self.spiketrains = [neo.SpikeTrain(times, t_stop=10*pq.ms)] * 5
+
+    def test_list_of_spiketrains(self):
+        discretised_spiketrains = cv.discretise_spiketimes(self.spiketrains,
+                                                           1 / pq.ms)
+        for idx in range(len(self.spiketrains)):
+            np.testing.assert_array_equal(discretised_spiketrains[idx].times,
+                                          np.arange(10) * pq.ms)
+
+    def test_single_spiketrain(self):
+        discretised_spiketrain = cv.discretise_spiketimes(self.spiketrains[0],
+                                                          1 / pq.ms)
+        np.testing.assert_array_equal(discretised_spiketrain.times,
+                                      np.arange(10) * pq.ms)
+
+    def test_preserve_t_start(self):
+        spiketrain = neo.SpikeTrain([0.7, 5.1]*pq.ms,
+                                    t_start=0.5*pq.ms, t_stop=10*pq.ms)
+        with self.assertWarns(UserWarning):
+            discretised_spiketrain = cv.discretise_spiketimes(spiketrain,
+                                                              1 / pq.ms)
+        np.testing.assert_array_equal(discretised_spiketrain.times,
+                                      [0.5, 5] * pq.ms)
+
+    def test_binning_consistency(self):
+        discretised_spiketrains = cv.discretise_spiketimes(self.spiketrains,
+                                                           1 / pq.ms)
+        bsts = cv.BinnedSpikeTrain(self.spiketrains,
+                                   bin_size=1 * pq.ms)
+        bsts_discretised = cv.BinnedSpikeTrain(discretised_spiketrains,
+                                               bin_size=1 * pq.ms)
+        np.testing.assert_array_equal(bsts.to_array(),
+                                      bsts_discretised.to_array())
 
 
 if __name__ == '__main__':

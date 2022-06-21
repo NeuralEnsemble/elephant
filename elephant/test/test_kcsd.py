@@ -32,11 +32,7 @@ class KCSD1D_TestCase(unittest.TestCase):
             temp_signals.append(self.pots[ii])
         self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
                                         sampling_rate=1000 * pq.Hz)
-        chidx = neo.ChannelIndex(range(len(self.pots)))
-        chidx.analogsignals.append(self.an_sigs)
-        chidx.coordinates = self.ele_pos * pq.mm
-
-        chidx.create_relationship()
+        self.an_sigs.annotate(coordinates=self.ele_pos * pq.mm)
 
     def test_kcsd1d_estimate(self, cv_params={}):
         self.test_params.update(cv_params)
@@ -86,11 +82,7 @@ class KCSD2D_TestCase(unittest.TestCase):
             temp_signals.append(self.pots[ii])
         self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
                                         sampling_rate=1000 * pq.Hz)
-        chidx = neo.ChannelIndex(range(len(self.pots)))
-        chidx.analogsignals.append(self.an_sigs)
-        chidx.coordinates = self.ele_pos * pq.mm
-
-        chidx.create_relationship()
+        self.an_sigs.annotate(coordinates=self.ele_pos * pq.mm)
 
     def test_kcsd2d_estimate(self, cv_params={}):
         self.test_params.update(cv_params)
@@ -149,11 +141,7 @@ class KCSD3D_TestCase(unittest.TestCase):
             temp_signals.append(self.pots[ii])
         self.an_sigs = neo.AnalogSignal(np.array(temp_signals).T * pq.mV,
                                         sampling_rate=1000 * pq.Hz)
-        chidx = neo.ChannelIndex(range(len(self.pots)))
-        chidx.analogsignals.append(self.an_sigs)
-        chidx.coordinates = self.ele_pos * pq.mm
-
-        chidx.create_relationship()
+        self.an_sigs.annotate(coordinates=self.ele_pos * pq.mm)
 
     def test_kcsd3d_estimate(self, cv_params={}):
         self.test_params.update(cv_params)

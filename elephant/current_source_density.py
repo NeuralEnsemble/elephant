@@ -1,38 +1,36 @@
 # -*- coding: utf-8 -*-
-"""'Current Source Density analysis (CSD) is a class of methods of analysis of
+"""
+*\"Current Source Density analysis (CSD) is a class of methods of analysis of
 extracellular electric potentials recorded at multiple sites leading to
 estimates of current sources generating the measured potentials. It is usually
 applied to low-frequency part of the potential (called the Local Field
 Potential, LFP) and to simultaneous recordings or to recordings taken with
-fixed time reference to the onset of specific stimulus (Evoked Potentials)'
+fixed time reference to the onset of specific stimulus (Evoked Potentials).\"*
 (Definition by Prof.Daniel K. Wójcik for Encyclopedia of Computational
-Neuroscience)
+Neuroscience.)
 
 CSD is also called as Source Localization or Source Imaging in the EEG circles.
 Here are CSD methods for different types of electrode configurations.
 
-1D - laminar probe like electrodes.
-2D - Microelectrode Array like
-3D - UtahArray or multiple laminar probes.
+- 1D - laminar probe like electrodes.
+- 2D - Microelectrode Array like
+- 3D - UtahArray or multiple laminar probes.
 
 The following methods have been implemented so far
 
-1D - StandardCSD, DeltaiCSD, SplineiCSD, StepiCSD, KCSD1D
-2D - KCSD2D, MoIKCSD (Saline layer on top of slice)
-3D - KCSD3D
+- 1D: StandardCSD, DeltaiCSD, SplineiCSD, StepiCSD, KCSD1D
+- 2D: KCSD2D, MoIKCSD (Saline layer on top of slice)
+- 3D: KCSD3D
 
-Each of these methods listed have some advantages. The KCSD methods for
-instance can handle broken or irregular electrode configurations electrode
+Each listed method has certain advantages. The KCSD methods, for instance, can
+handle broken or irregular electrode configurations electrode.
 
-Keywords: LFP; CSD; Multielectrode; Laminar electrode; Barrel cortex
+.. autosummary::
+    :toctree: _toctree/current_source_density
 
-Citation Policy: See ./current_source_density_src/README.md
+    estimate_csd
+    generate_lfp
 
-Contributors to this  current source density estimation module are:
-Chaitanya Chintaluri(CC), Espen Hagen(EH) and Michał Czerwinski(MC).
-EH implemented the iCSD methods and StandardCSD
-CC implemented the kCSD methods, kCSD1D(MC and CC)
-CC and EH developed the interface to elephant.
 """
 
 from __future__ import division, print_function, unicode_literals
@@ -64,22 +62,26 @@ py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 
 
 @deprecated_alias(coords='coordinates')
-def estimate_csd(lfp, coordinates=None, method=None,
+def estimate_csd(lfp, coordinates='coordinates', method=None,
                  process_estimate=True, **kwargs):
     """
     Function call to compute the current source density (CSD) from
-    extracellular potential recordings(local-field potentials - LFP) using
+    extracellular potential recordings (local field potentials - LFP) using
     laminar electrodes or multi-contact electrodes with 2D or 3D geometries.
 
     Parameters
     ----------
     lfp : neo.AnalogSignal
-        positions of electrodes can be added as neo.RecordingChannel
-        coordinate or sent externally as a func argument (See coords)
-    coordinates : [Optional] corresponding spatial coordinates of the
-        electrodes.
-        Defaults to None
-        Otherwise looks for ChannelIndex coordinate
+        Positions of electrodes can be added as an array annotation
+    coordinates : array-like Quantity or string
+        Specifies the corresponding spatial coordinates of the electrodes.
+        Coordinates can be directly supplied by a NxM array-like Quantity
+        with dimension of space, where M is the number of signals in 'lfp',
+        and N is equal to the dimensionality of the method.
+        Alternatively, if coordinates is a string, the function will fetch the
+        coordinates, supplied in the same format, as annotation of 'lfp' by that
+        name.
+        Default: 'coordinates'
     method : string
         Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
@@ -116,17 +118,19 @@ def estimate_csd(lfp, coordinates=None, method=None,
     """
     if not isinstance(lfp, neo.AnalogSignal):
         raise TypeError('Parameter `lfp` must be a neo.AnalogSignal object')
-    if coordinates is None:
-        coordinates = lfp.channel_index.coordinates
-    else:
-        scaled_coords = []
-        for coord in coordinates:
-            try:
-                scaled_coords.append(coord.rescale(pq.mm))
-            except AttributeError:
-                raise AttributeError('No units given for electrode spatial \
-                coordinates')
-        coordinates = scaled_coords
+    if isinstance(coordinates, str):
+        coordinates = lfp.annotations[coordinates]
+
+    # Scale all coordinates to mm as common basis
+    scaled_coords = []
+    for coord in coordinates:
+        try:
+            scaled_coords.append(coord.rescale(pq.mm))
+        except AttributeError:
+            raise AttributeError('No units given for electrode spatial \
+            coordinates')
+    coordinates = scaled_coords
+
     if method is None:
         raise ValueError('Must specify a method of CSD implementation')
     if len(coordinates) != lfp.shape[1]:
@@ -187,10 +191,8 @@ def estimate_csd(lfp, coordinates=None, method=None,
                 raise ValueError("The order of {} filter must be \
                                   specified".format(kwargs['f_type']))
 
-        lfp = neo.AnalogSignal(np.asarray(lfp).T, units=lfp.units,
-                               sampling_rate=lfp.sampling_rate)
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
-        csd_estimator = csd_method(lfp=lfp.magnitude * lfp.units,
+        csd_estimator = csd_method(lfp=lfp.T.magnitude * lfp.units,
                                    coord_electrode=coordinates.flatten(),
                                    **kwargs)
         csd_pqarr = csd_estimator.get_csd()
@@ -253,7 +255,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     -------
     LFP : neo.AnalogSignal
        The potentials created by the csd profile at the electrode positions.
-       The electrode positions are attached as RecordingChannel's coordinate.
+       The electrode positions are attached as an annotation named
+       'coordinates'.
     """
 
     def integrate_1D(x0, csd_x, csd, h):
@@ -331,10 +334,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         pots /= 4 * np.pi * sigma
         ele_pos = np.vstack((x_positions, y_positions, z_positions)).T
     ele_pos = ele_pos * pq.mm
-    ch = neo.ChannelIndex(index=range(len(pots)))
+
     asig = neo.AnalogSignal(np.expand_dims(pots, axis=0),
                             sampling_rate=pq.kHz, units='mV')
-    ch.coordinates = ele_pos
-    ch.analogsignals.append(asig)
-    ch.create_relationship()
+    asig.annotate(coordinates=ele_pos)
     return asig

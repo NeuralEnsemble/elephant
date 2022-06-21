@@ -3,4 +3,12 @@ Detection of non-stationary processes
 =====================================
 
 .. automodule:: elephant.change_point_detection
-   :members:
+
+
+References
+----------
+
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: cpd
+   :keyprefix: cpd-
+   :style: unsrt
