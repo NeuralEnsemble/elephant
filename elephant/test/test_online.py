@@ -474,14 +474,6 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         # do reset with default parameters
         ouea.reset()
         # check all class attributes
-        with self.subTest(f"check 'time_unit'"):
-            self.assertEqual(ouea.time_unit, 1*pq.s)
-        with self.subTest(f"check 'data_available_in_mv'"):
-            self.assertEqual(ouea.data_available_in_mv, None)
-        with self.subTest(f"check 'waiting_for_new_trigger'"):
-            self.assertEqual(ouea.waiting_for_new_trigger, True)
-        with self.subTest(f"check 'trigger_events_left_over'"):
-            self.assertEqual(ouea.trigger_events_left_over, True)
         with self.subTest(f"check 'bw_size'"):
             self.assertEqual(ouea.bw_size, 0.005 * pq.s)
         with self.subTest(f"check 'trigger_events'"):
@@ -498,6 +490,16 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
             self.assertEqual(ouea.n_neurons, 2)
         with self.subTest(f"check 'pattern_hash'"):
             self.assertEqual(ouea.pattern_hash, [3])
+        with self.subTest(f"check 'time_unit'"):
+            self.assertEqual(ouea.time_unit, 1*pq.s)
+        with self.subTest(f"check 'save_n_trials'"):
+            self.assertEqual(ouea.save_n_trials, None)
+        with self.subTest(f"check 'data_available_in_mv'"):
+            self.assertEqual(ouea.data_available_in_mv, None)
+        with self.subTest(f"check 'waiting_for_new_trigger'"):
+            self.assertEqual(ouea.waiting_for_new_trigger, True)
+        with self.subTest(f"check 'trigger_events_left_over'"):
+            self.assertEqual(ouea.trigger_events_left_over, True)
         with self.subTest(f"check 'mw'"):
             np.testing.assert_equal(ouea.mw, [[] for _ in range(2)])
         with self.subTest(f"check 'tw_size'"):

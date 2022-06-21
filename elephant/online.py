@@ -60,9 +60,9 @@ class OnlineUnitaryEventAnalysis:
     Attributes
     ----------
     data_available_in_mv : boolean
-        Reflects the status of spike trains in the memory window. It is True,
+        Reflects the status of spike trains in the memory window. It is `True',
         when spike trains are in the memory window which were not yet analyzed.
-        Otherwise, it is False.
+        Otherwise, it is `False'.
     waiting_for_new_trigger : boolean
         Reflects the status of the updating-algorithm in 'update_uea()'.
         It is `True`, when the algorithm is in the state of pre- / post-trial
@@ -164,9 +164,13 @@ class OnlineUnitaryEventAnalysis:
         Updates the entries of the result dictionary by processing the
         new arriving 'spiketrains' and trial defining trigger 'events'.
     reset(bw_size, trigger_events, trigger_pre_size, trigger_post_size,
-            saw_size, saw_step, n_neurons, pattern_hash)
+            saw_size, saw_step, n_neurons, pattern_hash, time_unit,
+            save_n_trials)
         Resets all class attributes to their initial (default) value. It is
         actually a re-initialization which allows parameter adjustments.
+    get_all_saved_trials()
+        Returns the last 'n'-trials which were analyzed according to the FIFO
+        strategy (first in, first out).
 
     Returns
     -------
@@ -325,6 +329,154 @@ class OnlineUnitaryEventAnalysis:
                 (self.n_windows, self.n_hashes, self.n_neurons)).astype(
                 np.float32),
             'input_parameters': self.input_parameters}
+
+    def reset(self, bw_size=0.005 * pq.s, trigger_events=None,
+              trigger_pre_size=0.5 * pq.s, trigger_post_size=0.5 * pq.s,
+              saw_size=0.1 * pq.s, saw_step=0.005 * pq.s, n_neurons=2,
+              pattern_hash=None, time_unit=1 * pq.s, save_n_trials=None):
+        """
+        Resets all class attributes to their initial value.
+
+        This reset is actually a re-initialization which allows parameter
+        adjustments, so that one instance of 'OnlineUnitaryEventAnalysis' can
+        be flexibly adjusted to changing experimental circumstances.
+
+        Parameters
+        ----------
+        (same as for the constructor; see docstring of constructor for details)
+
+        """
+        self.__init__(bw_size, trigger_events, trigger_pre_size,
+                      trigger_post_size, saw_size, saw_step, n_neurons,
+                      pattern_hash, time_unit, save_n_trials)
+
+    def update_uea(self, spiketrains, events=None):
+        """
+        Update unitary event analysis (UEA) with new arriving spike data from
+        the incoming data window (IDW).
+
+        This method orchestrates the updating process. It saves the incoming
+        'spiketrains' into the memory window (MW) and adds also the new
+        trigger 'events' into the 'trigger_events' list. Then depending on
+        the state in which the algorithm is, it processes the new
+        'spiketrains' respectively. There are two major states with each two
+        substates between the algorithm is switching.
+
+        Parameters
+        ----------
+        spiketrains : list of neo.SpikeTrain objects
+            Spike times of the analysed neurons.
+        events : list of pq.Quantity
+            Time points of the trial defining trigger events.
+
+        Warns
+        -----
+        UserWarning
+            * if an overlap between successive trials exists, spike data
+                of these trials will be analysed twice. The user should adjust
+                the trigger events and/or the trial window size to increase
+                the interval between successive trials to avoid an overlap.
+
+        Notes
+        -----
+        Short summary of the different algorithm major states / substates:
+        1. pre/post trial analysis: algorithm is waiting for IDW with
+                                    new trigger event
+            1.1. IDW contains new trigger event
+            1.2. IDW does not contain new trigger event
+        2. within trial analysis: algorithm is waiting for IDW with
+                                    spikes of current trial
+            2.1. IDW contains new trigger event
+            2.2. IDW does not contain new trigger event, it just has new spikes
+                    of the current trial
+
+        """
+        # rescale spiketrains to time_unit
+        spiketrains = [st.rescale(self.time_unit)
+                       if st.t_start.units == st.units == st.t_stop
+                       else st.rescale(st.units).rescale(self.time_unit)
+                       for st in spiketrains]
+
+        if events is None:
+            events = np.array([])
+        if len(events) > 0:
+            for event in events:
+                if event not in self.trigger_events:
+                    self.trigger_events.append(event.rescale(self.time_unit))
+            self.trigger_events.sort()
+            self.n_trials = len(self.trigger_events)
+        # save incoming spikes (IDW) into memory (MW)
+        self._save_idw_into_mw(spiketrains)
+        # extract relevant time information
+        idw_t_start = spiketrains[0].t_start
+        idw_t_stop = spiketrains[0].t_stop
+
+        # analyse all trials which are available in the memory
+        self.data_available_in_mv = True
+        while self.data_available_in_mv:
+            if self.tw_counter == self.n_trials:
+                break
+            if self.n_trials == 0:
+                current_trigger_event = np.inf * self.time_unit
+                next_trigger_event = np.inf * self.time_unit
+            else:
+                current_trigger_event = self.trigger_events[self.tw_counter]
+                if self.tw_counter <= self.n_trials - 2:
+                    next_trigger_event = self.trigger_events[
+                        self.tw_counter + 1]
+                else:
+                    next_trigger_event = np.inf * self.time_unit
+
+            # # case 1: pre/post trial analysis,
+            # i.e. waiting for IDW  with new trigger event
+            if self.waiting_for_new_trigger:
+                # # subcase 1: IDW contains trigger event
+                if (idw_t_start <= current_trigger_event) & \
+                        (current_trigger_event <= idw_t_stop):
+                    self.waiting_for_new_trigger = False
+                    if self.trigger_events_left_over:
+                        # define TW around trigger event
+                        self._define_tw(trigger_event=current_trigger_event)
+                        # apply BW to available data in TW
+                        self._apply_bw_to_tw()
+                        # move SAW over available data in TW
+                        self._move_saw_over_tw(t_stop_idw=idw_t_stop)
+                    else:
+                        pass
+                # # subcase 2: IDW does not contain trigger event
+                else:
+                    self._move_mw(
+                        new_t_start=idw_t_stop - self.trigger_pre_size)
+
+            # # Case 2: within trial analysis,
+            # i.e. waiting for new IDW with spikes of current trial
+            else:
+                # # Subcase 3: IDW contains new trigger event
+                if (idw_t_start <= next_trigger_event) & \
+                        (next_trigger_event <= idw_t_stop):
+                    # check if an overlap between current / next trial exists
+                    if self._check_tw_overlap(
+                            current_trigger_event=current_trigger_event,
+                            next_trigger_event=next_trigger_event):
+                        warnings.warn(
+                            f"Data in trial {self.tw_counter} will be analysed"
+                            f" twice! Adjust the trigger events and/or "
+                            f"the trial window size.", UserWarning)
+                    else:  # no overlap exists
+                        pass
+                # # Subcase 4: IDW does not contain trigger event,
+                # i.e. just new spikes of the current trial
+                else:
+                    pass
+                if self.trigger_events_left_over:
+                    # define trial TW around trigger event
+                    self._define_tw(trigger_event=current_trigger_event)
+                    # apply BW to available data in TW
+                    self._apply_bw_to_tw()
+                    # move SAW over available data in TW
+                    self._move_saw_over_tw(t_stop_idw=idw_t_stop)
+                else:
+                    pass
 
     def _pval(self, n_emp, n_exp):
         """
@@ -616,151 +768,3 @@ class OnlineUnitaryEventAnalysis:
                     self.trigger_events_left_over = False
                     self.data_available_in_mv = False
                 print(f"tw_counter = {self.tw_counter}")  # DEBUG-aid
-
-    def update_uea(self, spiketrains, events=None):
-        """
-        Update unitary event analysis (UEA) with new arriving spike data from
-        the incoming data window (IDW).
-
-        This method orchestrates the updating process. It saves the incoming
-        'spiketrains' into the memory window (MW) and adds also the new
-        trigger 'events' into the 'trigger_events' list. Then depending on
-        the state in which the algorithm is, it processes the new
-        'spiketrains' respectively. There are two major states with each two
-        substates between the algorithm is switching.
-
-        Parameters
-        ----------
-        spiketrains : list of neo.SpikeTrain objects
-            Spike times of the analysed neurons.
-        events : list of pq.Quantity
-            Time points of the trial defining trigger events.
-
-        Warns
-        -----
-        UserWarning
-            * if an overlap between successive trials exists, spike data
-                of these trials will be analysed twice. The user should adjust
-                the trigger events and/or the trial window size to increase
-                the interval between successive trials to avoid an overlap.
-
-        Notes
-        -----
-        Short summary of the different algorithm major states / substates:
-        1. pre/post trial analysis: algorithm is waiting for IDW with
-                                    new trigger event
-            1.1. IDW contains new trigger event
-            1.2. IDW does not contain new trigger event
-        2. within trial analysis: algorithm is waiting for IDW with
-                                    spikes of current trial
-            2.1. IDW contains new trigger event
-            2.2. IDW does not contain new trigger event, it just has new spikes
-                    of the current trial
-
-        """
-        # rescale spiketrains to time_unit
-        spiketrains = [st.rescale(self.time_unit)
-                       if st.t_start.units == st.units == st.t_stop
-                       else st.rescale(st.units).rescale(self.time_unit)
-                       for st in spiketrains]
-
-        if events is None:
-            events = np.array([])
-        if len(events) > 0:
-            for event in events:
-                if event not in self.trigger_events:
-                    self.trigger_events.append(event.rescale(self.time_unit))
-            self.trigger_events.sort()
-            self.n_trials = len(self.trigger_events)
-        # save incoming spikes (IDW) into memory (MW)
-        self._save_idw_into_mw(spiketrains)
-        # extract relevant time information
-        idw_t_start = spiketrains[0].t_start
-        idw_t_stop = spiketrains[0].t_stop
-
-        # analyse all trials which are available in the memory
-        self.data_available_in_mv = True
-        while self.data_available_in_mv:
-            if self.tw_counter == self.n_trials:
-                break
-            if self.n_trials == 0:
-                current_trigger_event = np.inf * self.time_unit
-                next_trigger_event = np.inf * self.time_unit
-            else:
-                current_trigger_event = self.trigger_events[self.tw_counter]
-                if self.tw_counter <= self.n_trials - 2:
-                    next_trigger_event = self.trigger_events[
-                        self.tw_counter + 1]
-                else:
-                    next_trigger_event = np.inf * self.time_unit
-
-            # # case 1: pre/post trial analysis,
-            # i.e. waiting for IDW  with new trigger event
-            if self.waiting_for_new_trigger:
-                # # subcase 1: IDW contains trigger event
-                if (idw_t_start <= current_trigger_event) & \
-                        (current_trigger_event <= idw_t_stop):
-                    self.waiting_for_new_trigger = False
-                    if self.trigger_events_left_over:
-                        # define TW around trigger event
-                        self._define_tw(trigger_event=current_trigger_event)
-                        # apply BW to available data in TW
-                        self._apply_bw_to_tw()
-                        # move SAW over available data in TW
-                        self._move_saw_over_tw(t_stop_idw=idw_t_stop)
-                    else:
-                        pass
-                # # subcase 2: IDW does not contain trigger event
-                else:
-                    self._move_mw(
-                        new_t_start=idw_t_stop - self.trigger_pre_size)
-
-            # # Case 2: within trial analysis,
-            # i.e. waiting for new IDW with spikes of current trial
-            else:
-                # # Subcase 3: IDW contains new trigger event
-                if (idw_t_start <= next_trigger_event) & \
-                        (next_trigger_event <= idw_t_stop):
-                    # check if an overlap between current / next trial exists
-                    if self._check_tw_overlap(
-                            current_trigger_event=current_trigger_event,
-                            next_trigger_event=next_trigger_event):
-                        warnings.warn(
-                            f"Data in trial {self.tw_counter} will be analysed"
-                            f" twice! Adjust the trigger events and/or "
-                            f"the trial window size.", UserWarning)
-                    else:  # no overlap exists
-                        pass
-                # # Subcase 4: IDW does not contain trigger event,
-                # i.e. just new spikes of the current trial
-                else:
-                    pass
-                if self.trigger_events_left_over:
-                    # define trial TW around trigger event
-                    self._define_tw(trigger_event=current_trigger_event)
-                    # apply BW to available data in TW
-                    self._apply_bw_to_tw()
-                    # move SAW over available data in TW
-                    self._move_saw_over_tw(t_stop_idw=idw_t_stop)
-                else:
-                    pass
-
-    def reset(self, bw_size=0.005 * pq.s, trigger_events=None,
-              trigger_pre_size=0.5 * pq.s, trigger_post_size=0.5 * pq.s,
-              saw_size=0.1 * pq.s, saw_step=0.005 * pq.s, n_neurons=2,
-              pattern_hash=None, time_unit=1 * pq.s):
-        """
-        Resets all class attributes to their initial value.
-
-        This reset is actually a re-initialization which allows parameter
-        adjustments, so that one instance of 'OnlineUnitaryEventAnalysis' can
-        be flexibly adjusted to changing experimental circumstances.
-
-        Parameters
-        ----------
-        (same as for the constructor; see docstring of constructor for details)
-
-        """
-        self.__init__(bw_size, trigger_events, trigger_pre_size,
-                      trigger_post_size, saw_size, saw_step, n_neurons,
-                      pattern_hash, time_unit)
