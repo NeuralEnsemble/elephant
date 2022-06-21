@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Identification of spectral properties in analog signals (e.g., the power
@@ -16,6 +17,7 @@ spectrum).
 from __future__ import division, print_function, unicode_literals
 
 import neo
+from neo.core import AnalogSignal
 import warnings
 import numpy as np
 import quantities as pq
@@ -738,15 +740,15 @@ def multitaper_cross_spectrum(signals, n_segments=8, len_segment=None,
 
         phase_spec_estimates[i] = np.angle(np.mean(temp, axis=-2))
 
-    amp_cross_spec = np.mean(cross_spec_estimates, axis=0)
+    cross_spec = np.mean(cross_spec_estimates, axis=0)
     phase_cross_spec = np.mean(phase_spec_estimates, axis=0)
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
-        amp_cross_spec = amp_cross_spec * signals.units * signals.units / pq.Hz
+        cross_spec = cross_spec * signals.units * signals.units / pq.Hz
         freqs = freqs * pq.Hz
 
-    return freqs, phase_cross_spec, amp_cross_spec
+    return freqs, phase_cross_spec, cross_spec
 
 
 def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -819,16 +821,47 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Phase lags associated with the magnitude-square coherence estimate
 
     """
-    signals = np.vstack([signal_i, signal_j])
 
-    freqs, _, Pxy = multitaper_cross_spectrum(signals=signals,
-                                              n_segments=n_segments,
-                                              len_segment=len_segment,
-                                              overlap=overlap,
-                                              fs=fs,
-                                              nw=nw,
-                                              num_tapers=num_tapers,
-                                              peak_resolution=peak_resolution)
+
+    if (isinstance(signal_i, neo.AnalogSignal)
+        and isinstance(signal_j, neo.AnalogSignal)):
+
+        if not (signal_i.sampling_rate is signal_j.sampling_rate):
+            raise ValueError('Sampling rates do not coincide')
+
+        fs = signal_i.sampling_rate
+
+    if isinstance(signal_i, neo.AnalogSignal):
+        xdata = signal_i.rescale('mV').magnitude
+        xdata = np.rollaxis(xdata, 0, len(data.shape))
+    else:
+        xdata = signal_i
+    if isinstance(signal_j, neo.AnalogSignal):
+        ydata = signal_j.rescale('mV').magnitude
+        ydata = np.rollaxis(ydata, 0, len(data.shape))
+    else:
+        ydata = signal_j
+
+    if not isinstance(fs, pq.Quantity):
+        fs = fs * pq.Hz
+
+
+    combined_data = np.vstack([xdata, ydata]).T
+    signals = AnalogSignal(combined_data,
+                           sampling_rate=fs,
+                           units='mV')
+
+    freqs, _, Pxy = multitaper_cross_spectrum(
+        signals=signals,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        frequency_resolution=frequency_resolution,
+        overlap=overlap,
+        fs=fs,
+        nw=nw,
+        num_tapers=num_tapers,
+        peak_resolution=peak_resolution,
+        return_onesided=True)
 
     coherence = np.abs(Pxy[0, 1]) ** 2 / (Pxy[0, 0].real * Pxy[1, 1].real)
 
@@ -1112,6 +1145,7 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
 
+    test_data = test_data.T
     fcs, _, Pcs = multitaper_cross_spectrum(test_data, num_tapers=20)
     plt.figure()
     plt.semilogy(fx, Pxx, label="Pxx welch")
@@ -1122,7 +1156,7 @@ if __name__ == "__main__":
     plt.show()
     print(test_data.shape)
 
-    fcs, _, Pcs = multitaper_cross_spectrum(test_data.T, num_tapers=4)
+    fcs, _, Pcs = multitaper_cross_spectrum(test_data, num_tapers=4)
 
     plt.figure()
     plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
@@ -1132,8 +1166,8 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    fcs, multitaper_coh, _ =  multitaper_coherence(test_data[:, 0],
-                                                   test_data[:, 1],
+    fcs, multitaper_coh, _ =  multitaper_coherence(test_data[0],
+                                                   test_data[1],
                                                    num_tapers=4)
     plt.figure()
     plt.plot(fc, Coh, label="Welch Coh")
@@ -1146,4 +1180,4 @@ if __name__ == "__main__":
     import IPython
     IPython.embed()
 
-    return welch_coherence(*args, **kwargs)
+    #return welch_coherence(*args, **kwargs)

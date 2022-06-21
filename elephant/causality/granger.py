@@ -712,19 +712,49 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     return conditional_causality_xy_z_round
 
 
-def pairwise_spectral_granger(signals, n_segments=8, len_segment=None,
+def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
+                              len_segment=None, frequency_resolution=None,
                               overlap=0.5, fs=1, nw=4, num_tapers=None,
                               peak_resolution=None, num_iterations=300):
 
-    freqs, _, S = multitaper_cross_spectrum(signals,
-                                            n_segments=n_segments,
-                                            len_segment=len_segment,
-                                            overlap=overlap,
-                                            fs=fs,
-                                            nw=nw,
-                                            num_tapers=num_tapers,
-                                            peak_resolution=peak_resolution,
-                                            return_onesided=False)
+    if (isinstance(signal_i, neo.AnalogSignal)
+        and isinstance(signal_j, neo.AnalogSignal)):
+
+        if not (signal_i.sampling_rate is signal_j.sampling_rate):
+            raise ValueError('Sampling rates do not coincide')
+
+        fs = signal_i.sampling_rate
+
+    if isinstance(signal_i, neo.AnalogSignal):
+        xdata = signal_i.rescale('mV').magnitude
+        xdata = np.rollaxis(xdata, 0, len(data.shape))
+    else:
+        xdata = signal_i
+    if isinstance(signal_j, neo.AnalogSignal):
+        ydata = signal_j.rescale('mV').magnitude
+        ydata = np.rollaxis(ydata, 0, len(data.shape))
+    else:
+        ydata = signal_j
+
+    if not isinstance(fs, pq.Quantity):
+        fs = fs * pq.Hz
+
+
+    combined_data = np.vstack([xdata, ydata]).T
+    signals = AnalogSignal(combined_data,
+                           sampling_rate=fs,
+                           units='mV')
+    freqs, _, S = multitaper_cross_spectrum(
+        signals,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        frequency_resolution=frequency_resolution,
+        overlap=overlap,
+        fs=fs,
+        nw=nw,
+        num_tapers=num_tapers,
+        peak_resolution=peak_resolution,
+        return_onesided=False)
 
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
