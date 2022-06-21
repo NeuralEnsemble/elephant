@@ -65,6 +65,8 @@ import warnings
 from collections import namedtuple
 
 import numpy as np
+import quantities as pq
+import neo
 from neo.core import AnalogSignal
 from elephant.spectral import multitaper_cross_spectrum, multitaper_psd
 
@@ -755,6 +757,10 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
         num_tapers=num_tapers,
         peak_resolution=peak_resolution,
         return_onesided=False)
+
+    # Remove units attached by the multitaper_cross_spectrum
+    if isinstance(S, pq.Quantity):
+        S = S.magnitude
 
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
