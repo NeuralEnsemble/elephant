@@ -351,17 +351,20 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import covariance
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
     >>> cov_matrix
-    array([[ 0.05432316, -0.00152276],
-       [-0.00152276,  0.04917234]])
+    array([[0.05432316, 0.00250525],
+           [0.00250525, 0.05072136]])
+
 
     """
     if binary:
@@ -457,18 +460,21 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import correlation_coefficient
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
     ...     bin_size=5*pq.ms))
     >>> corrcoef
-    array([[ 1.        , -0.02946313],
-           [-0.02946313,  1.        ]])
+    array([[1.        , 0.04772694],
+           [0.04772694, 1.        ]])
+
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -665,18 +671,17 @@ def cross_correlation_histogram(
     >>> import quantities as pq
     >>> import numpy as np
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> from elephant.spike_train_correlation import \
-    ... cross_correlation_histogram
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
+    >>> from elephant.spike_train_correlation import cross_correlation_histogram # noqa
 
     >>> np.random.seed(1)
     >>> binned_spiketrain_i = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
     >>> binned_spiketrain_j = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
 
     >>> cc_hist, lags = cross_correlation_histogram(
@@ -684,12 +689,12 @@ def cross_correlation_histogram(
     ...        border_correction=False,
     ...        binary=False, kernel=None)
     >>> print(cc_hist.flatten())
-    [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
-      1.  2.  4.  2. -0.  3.  3.] dimensionless
+    [2. 4. 0. 1. 5. 3. 4. 2. 2. 2. 5. 1. 2. 4. 2. 0. 3. 3. 0. 1. 4.] dimensionless
+
     >>> lags
-    array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
-         0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
-        10], dtype=int32)
+    array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,   0,   1,   2,
+             3,   4,   5,   6,   7,   8,   9,  10], dtype=int32)
+
 
     """
 
@@ -871,8 +876,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     --------
     >>> import neo
     >>> import quantities as pq
-    >>> from elephant.spike_train_correlation import \
-    ...    spike_time_tiling_coefficient
+    >>> from elephant.spike_train_correlation import spike_time_tiling_coefficient  # noqa
 
     >>> spiketrain1 = neo.SpikeTrain([1.3, 7.56, 15.87, 28.23, 30.9, 34.2,
     ...     38.2, 43.2], units='ms', t_stop=50)
