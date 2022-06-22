@@ -175,15 +175,9 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     >>> print(dither_spikes(st, dither = 20 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))
-    [<SpikeTrain(array([ 104.24942044,  246.0317873 ,  584.55938657,
-        818.84446913]) * ms, [0.0 ms, 1000.0 ms])>,
-     <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
-        786.1807108 ]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spikes(st, dither = 20 * pq.ms,
-                            decimals=0))  # doctest: +SKIP
-    [<SpikeTrain(array([  81.,  242.,  595.,  799.]) * ms,
-        [0.0 ms, 1000.0 ms])>]
+    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))  # noqa
+    [<SpikeTrain(array([ 91.35932902, 230.19488192, 606.76631191, 814.81031796]) * ms, [0.0 ms, 1000.0 ms])>, <SpikeTrain(array([101.87873237, 251.7265619 , 604.62903714, 792.08726002]) * ms, [0.0 ms, 1000.0 ms])>]
+
 
     """
     if len(spiketrain) == 0:
@@ -427,13 +421,11 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
     >>> print(dither_spike_train(st, shift = 20*pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))
-    [<SpikeTrain(array([  92.89084054,  242.89084054,  592.89084054,
-        792.89084054]) * ms, [0.0 ms, 1000.0 ms])>,
-     <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
-        784.61079043]) * ms, [0.0 ms, 1000.0 ms])>]
+    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))  # noqa
+    [<SpikeTrain(array([ 81.19131777, 231.19131777, 581.19131777, 781.19131777]) * ms, [0.0 ms, 1000.0 ms])>, <SpikeTrain(array([ 85.86989519, 235.86989519, 585.86989519, 785.86989519]) * ms, [0.0 ms, 1000.0 ms])>]
+
     >>> print(dither_spike_train(st, shift = 20 * pq.ms,
-                                 decimals=0))  # doctest: +SKIP
+    ...                             decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  82.,  232.,  582.,  782.]) * ms,
         [0.0 ms, 1000.0 ms])>]
 
@@ -510,18 +502,14 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     >>> import neo
     ...
     >>> st = neo.SpikeTrain([80, 150, 320, 480] * pq.ms, t_stop=1 * pq.s)
-    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
-    [<SpikeTrain(array([  98.82898293,  178.45805954,  346.93993867,
-        461.34268507]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))
-    [<SpikeTrain(array([  97.15720041,  199.06945744,  397.51928207,
-        402.40065162]) * ms, [0.0 ms, 1000.0 ms])>,
-     <SpikeTrain(array([  80.74513157,  173.69371317,  338.05860962,
-        495.48869981]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
-    [<SpikeTrain(array([  4.55064897e-01,   1.31927046e+02,   3.57846265e+02,
-         4.69370604e+02]) * ms, [0.0 ms, 1000.0 ms])>]
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # noqa
+    [<SpikeTrain(array([ 36.67319817, 157.49397273, 380.92165837, 420.15966344]) * ms, [0.0 ms, 1000.0 ms])>]
 
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))  # noqa
+    [<SpikeTrain(array([ 32.75240558, 174.29212504, 334.09202491, 404.76109287]) * ms, [0.0 ms, 1000.0 ms])>, <SpikeTrain(array([ 15.63569287, 119.38648597, 349.51123626, 463.51249611]) * ms, [0.0 ms, 1000.0 ms])>]
+
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # noqa
+    [<SpikeTrain(array([ 88.02199772, 190.25365564, 330.71607685, 475.33800731]) * ms, [0.0 ms, 1000.0 ms])>]
     """
     # Define standard time unit; all time Quantities are converted to
     # scalars after being rescaled to this unit, to use the power of numpy
