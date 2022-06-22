@@ -101,17 +101,18 @@ def zscore(signal, inplace=True):
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.signal_processing import zscore
-    ...
+
     >>> a = neo.AnalogSignal(
     ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
     >>> zscore(a).as_quantity()
-    [[-1.46385011]
-     [-0.87831007]
-     [-0.29277002]
-     [ 0.29277002]
-     [ 0.87831007]
-     [ 1.46385011]] dimensionless
+    array([[-1.46385011],
+           [-0.87831007],
+           [-0.29277002],
+           [ 0.29277002],
+           [ 0.87831007],
+           [ 1.46385011]]) * dimensionless
+
 
     Z-transform a single `neo.AnalogSignal` containing multiple signals.
 
@@ -119,13 +120,14 @@ def zscore(signal, inplace=True):
     ...       np.transpose([[1, 2, 3, 4, 5, 6],
     ...                     [11, 12, 13, 14, 15, 16]]) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
-    >>> zscore(b).as_quantity()
-    [[-1.46385011 -1.46385011]
-     [-0.87831007 -0.87831007]
-     [-0.29277002 -0.29277002]
-     [ 0.29277002  0.29277002]
-     [ 0.87831007  0.87831007]
-     [ 1.46385011  1.46385011]] dimensionless
+    >>> zscore(b, inplace=False).as_quantity()
+    array([[-1.46385011, -1.46385011],
+           [-0.87831007, -0.87831007],
+           [-0.29277002, -0.29277002],
+           [ 0.29277002,  0.29277002],
+           [ 0.87831007,  0.87831007],
+           [ 1.46385011,  1.46385011]]) * dimensionless
+
 
     Z-transform a list of `neo.AnalogSignal`, each one containing more than
     one signal:
@@ -134,21 +136,19 @@ def zscore(signal, inplace=True):
     ...       np.transpose([[21, 22, 23, 24, 25, 26],
     ...                     [31, 32, 33, 34, 35, 36]]) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
-    >>> zscore([b, c])
-    [<AnalogSignal(array([[-1.11669108, -1.08361877],
-       [-1.0672076 , -1.04878252],
-       [-1.01772411, -1.01394628],
-       [-0.96824063, -0.97911003],
-       [-0.91875714, -0.94427378],
-       [-0.86927366, -0.90943753]]) * dimensionless, [0.0 s, 0.006 s],
-       sampling rate: 1000.0 Hz)>,
-       <AnalogSignal(array([[ 0.78170952,  0.84779261],
-       [ 0.86621866,  0.90728682],
-       [ 0.9507278 ,  0.96678104],
-       [ 1.03523694,  1.02627526],
-       [ 1.11974608,  1.08576948],
-       [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
-       sampling rate: 1000.0 Hz)>]
+    >>> zscore([b, c])  # noqa
+    [<AnalogSignal(array([[-1.23216015, -1.23216015],
+           [-1.13358733, -1.13358733],
+           [-1.03501452, -1.03501452],
+           [-0.93644171, -0.93644171],
+           [-0.8378689 , -0.8378689 ],
+           [-0.73929609, -0.73929609]]) * dimensionless, [0.0 s, 0.006 s], sampling rate: 1000.0 Hz)>, <AnalogSignal(array([[0.73929609, 0.73929609],
+           [0.8378689 , 0.8378689 ],
+           [0.93644171, 0.93644171],
+           [1.03501452, 1.03501452],
+           [1.13358733, 1.13358733],
+           [1.23216015, 1.23216015]]) * dimensionless, [0.0 s, 0.006 s], sampling rate: 1000.0 Hz)>]
+
 
     """
     # Transform input to a list
@@ -295,6 +295,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     Examples
     --------
     >>> import neo
+    >>> import numpy as np
     >>> import quantities as pq
     >>> import matplotlib.pyplot as plt
     >>> from elephant.signal_processing import cross_correlation_function
@@ -309,14 +310,34 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     Generate neo.AnalogSignals from x and find cross-correlation
 
     >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
-    >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
+    ...          sampling_rate=1/dt*pq.Hz, dtype=float)
     >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
     >>> env = cross_correlation_function(signal, [0,1], n_lags=150,
     ...     hilbert_envelope=True)
-    ...
-    >>> plt.plot(rho.times, rho)
-    >>> plt.plot(env.times, env) # should be equal to one
-    >>> plt.show()
+    >>> rho.magnitude[::30]
+    array([[-0.00694126],
+           [-0.95198687],
+           [ 0.59475847],
+           [ 0.58413388],
+           [-0.95590266],
+           [ 0.00619544],
+           [ 0.94651862],
+           [-0.59102096],
+           [-0.58076991],
+           [ 0.95029406],
+           [-0.00645466]])
+    >>> env.magnitude[::30] # should be equal to one
+    array([[1.00328093],
+           [1.0030958 ],
+           [1.00269424],
+           [1.00322928],
+           [1.00324062],
+           [1.00015334],
+           [0.99699886],
+           [0.99670774],
+           [0.9971458 ],
+           [0.9971345 ],
+           [0.9969391 ]])
 
     """
 
@@ -474,9 +495,14 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     ...     sampling_rate=1000 * pq.Hz, units='mV')
     >>> filtered_noise = butter(noise, highpass_frequency=250.0 * pq.Hz)
     >>> filtered_noise
-    AnalogSignal with 1 channels of length 5000; units mV; datatype float64
-    sampling rate: 1000.0 Hz
-    time: 0.0 s to 5.0 s
+    <AnalogSignal(array([[-1.04415422e-03],
+           [ 5.86641606e-02],
+           [ 2.00336604e-01],
+           ...,
+           [ 4.31487954e-01],
+           [-8.81032795e-01],
+           [-5.93455862e-04]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
+
 
     Let's check that the normal noise power spectrum at zero frequency is close
     to zero.
@@ -486,7 +512,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> psd.shape
     (1, 556)
     >>> freq[0], psd[0, 0]
-    (array(0.) * Hz, array(7.21464674e-08) * mV**2/Hz)
+    (array(0.) * Hz, array(1.32490369e-07) * mV**2/Hz)
 
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
@@ -648,13 +674,13 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     picking at 5 Hz.
 
     >>> wavelet_transform(noise, frequency=5)
-    array([[-1.00890049+3.003473j  ],
-       [-1.43664254-2.8389273j ],
-       [ 3.02499511+0.96534578j],
-       [-2.79543976+1.4581079j ],
-       [ 0.94387304-2.98159518j],
-       [ 1.41476471+2.77389985j],
-       [-2.95996766-0.9872236j ]])
+    array([[-3.13037913-0.4107579j ],
+           [ 2.51264979-1.89124199j],
+           [-0.47137957+3.12277519j],
+           [-1.88373091-2.5734939j ],
+           [ 3.18371093+0.47866771j],
+           [-2.58055961+1.9445738j ],
+           [ 0.41804777-3.19068501j]])
 
     """
     def _morlet_wavelet_ft(freq, n_cycles, fs, n):
@@ -800,11 +826,12 @@ def hilbert(signal, padding='nextpow'):
     [[-1.57079633]
      [-1.51334228]
      [-1.46047675]
-     ...,
+     ...
      [-1.73112977]
      [-1.68211683]
-     [-1.62879501]]
-    >>> plt.plot(t, angles)
+     [-1.62879501]] dimensionless
+
+    #>>> plt.plot(t, angles)
 
     """
     # Length of input signals
