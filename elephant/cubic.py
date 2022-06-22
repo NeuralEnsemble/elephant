@@ -35,9 +35,9 @@ Given a list of spike trains, the analysis comprises the following steps:
 >>> xi
 1
 >>> p_val
-[0.43014065113883904]
+[0.8653663881082869]
 >>> kappa
-[20.1, 22.656565656565657, 27.674706246134818]
+[20.2, 20.949494949494948, -7.186147186147186]
 
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
