@@ -66,11 +66,12 @@ def spike_triggered_average(signal, spiketrains, window):
 
     Examples
     --------
+    >>> import neo
 
     >>> signal = neo.AnalogSignal(np.array([signal1, signal2]).T, units='mV',
-    ...                                sampling_rate=10/ms)
+    ...                                sampling_rate=10/ms) # doctest: +SKIP
     >>> stavg = spike_triggered_average(signal, [spiketrain1, spiketrain2],
-    ...                                 (-5 * ms, 10 * ms))
+    ...                                 (-5 * ms, 10 * ms)) # doctest: +SKIP
 
     """
 
@@ -244,21 +245,21 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     >>> t = pq.Quantity(range(10000),units='ms')
     >>> f1, f2 = 20. * Hz, 23. * Hz
     >>> signal = neo.AnalogSignal(np.array([
-            np.sin(f1 * 2. * np.pi * t.rescale(s)),
-            np.sin(f2 * 2. * np.pi * t.rescale(s))]).T,
-            units=pq.mV, sampling_rate=1. * kHz)
+    ...                           np.sin(f1 * 2. * np.pi * t.rescale(s)),
+    ...                           np.sin(f2 * 2. * np.pi * t.rescale(s))]).T,
+    ...                           units=pq.mV, sampling_rate=1. * kHz)
     >>> spiketrain = neo.SpikeTrain(
-        range(t[0], t[-1], 50), units='ms',
-        t_start=t[0], t_stop=t[-1])
+    ...    range(t[0], t[-1], 50), units='ms',
+    ...    t_start=t[0], t_stop=t[-1])
     >>> sfc, freqs = elephant.sta.spike_field_coherence(
-        signal, spiketrain, window='boxcar')
+    ...    signal, spiketrain, window='boxcar')
 
-    >>> plt.plot(freqs, sfc[:,0])
-    >>> plt.plot(freqs, sfc[:,1])
-    >>> plt.xlabel('Frequency [Hz]')
-    >>> plt.ylabel('SFC')
-    >>> plt.xlim((0, 60))
-    >>> plt.show()
+    >>> # plt.plot(freqs, sfc[:,0])
+    >>> # plt.plot(freqs, sfc[:,1])
+    >>> # plt.xlabel('Frequency [Hz]')
+    >>> # plt.ylabel('SFC')
+    >>> # plt.xlim((0, 60))
+    >>> # plt.show()
     """
 
     if not hasattr(scipy.signal, 'coherence'):
