@@ -52,14 +52,19 @@ Generate correlated data and bin it with a bin_size of 10ms.
 Call of the method.
 
 >>> patterns = cell_assembly_detection(bst, max_lag=2)
->>> patterns[0]
-{'neurons': [0, 2],
- 'lags': array([0.]) * ms,
- 'pvalue': [5.3848138041122556e-05],
- 'times': array([  90.,  160.,  170.,  550.,  790.,  910.,  930., 1420., 1470.,
-        1480., 1650., 2030., 2220., 2570., 3130., 3430., 3480., 3610.,
-        3800., 3830., 3930., 4080., 4560., 4600., 4670.]) * ms,
- 'signature': [[1, 83], [2, 25]]}
+>>> patterns[0]['neurons']
+[0, 2]
+>>> patterns[0]['lags']
+array([0.]) * ms
+>>> patterns[0]['pvalue']
+[0.00014782852438168152]
+>>> patterns[0]['times']
+array([  80.,  150.,  170.,  530.,  790.,  910., 1420., 1470., 1480.,
+       1640., 2030., 2220., 2550., 3120., 3430., 3470., 3600., 3800.,
+       3820., 3930., 4080., 4550., 4600., 4660.]) * ms
+>>> patterns[0]['signature']
+array([[ 1, 80],
+       [ 2, 25]], dtype=int32)
 
 Refer to the Viziphant documentation regarding the visualization of this
 example.
