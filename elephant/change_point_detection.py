@@ -28,10 +28,11 @@ Examples
 --------
 >>> import quantities as pq
 >>> from elephant.change_point_detection import multiple_filter_test
->>> spike_times = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.9, 1.95] * pq.s
+>>> spike_times = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8,1.85, 1.9, 1.95] * pq.s
 >>> change_points = multiple_filter_test(window_sizes=[0.5] * pq.s,
 ...     spiketrain=spike_times, t_final=2.1 * pq.s, alpha=5, n_surrogates=100,
 ...     time_step=0.1 * pq.s)
+>>> change_points
 [[array(1.5) * s]]
 
 Original code
@@ -308,23 +309,12 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
     ...     window_sizes=[0.5] * pq.s, t_final=2.1 * pq.s, alpha=5,
     ...     n_surrogates=100, time_step=0.1 * pq.s)
     >>> test_quantile
-    1.8133759165692873
+    1.6975869965771369
     >>> test_param
     array([[0.5       ],
-           [1.74482974],
-           [0.24290945]])
+           [1.68125364],
+           [0.27340368]])
     """
-
-    # try:
-    #     window_sizes_sec = window_sizes.rescale(u)
-    # except ValueError:
-    #     raise ValueError("H must be a list of times")
-    # window_sizes_mag = window_sizes_sec.magnitude
-    # try:
-    #     t_final_sec = t_final.rescale(u)
-    # except ValueError:
-    #     raise ValueError("T must be a time quantity")
-    # t_final_mag = t_final_sec.magnitude
 
     if not isinstance(window_sizes, pq.Quantity):
         raise ValueError("window_sizes must be a list of time quantities")
