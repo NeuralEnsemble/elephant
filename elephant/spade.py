@@ -63,23 +63,25 @@ bin (i.e., detecting only synchronous patterns).
 
 >>> patterns = spade(spiketrains, bin_size=10 * pq.ms, winlen=1,
 ...                  dither=5 * pq.ms, min_spikes=6, n_surr=10,
-...                  psr_param=[0, 0, 3])['patterns']
->>> patterns[0]
-{'itemset': (4, 3, 0, 2, 5, 1),
- 'windows_ids': (9,
-  16,
-  55,
-  91,
-  ...,
-  393,
-  456,
-  467),
- 'neurons': [4, 3, 0, 2, 5, 1],
- 'lags': array([0., 0., 0., 0., 0.]) * ms,
- 'times': array([  90.,  160.,  550.,  910.,  930., 1420., 1480., 1650., 2570.,
-        3130., 3430., 3480., 3610., 3800., 3830., 3930., 4560., 4670.]) * ms,
- 'signature': (6, 18),
- 'pvalue': 0.0}
+...                  psr_param=[0, 0, 3])['patterns']  # doctest:+ELLIPSIS
+Time for data mining: ...
+Time for pvalue spectrum computation: ...
+
+>>> patterns[0]['itemset']
+(0, 1, 2, 3, 4, 5)
+>>> print(patterns[0]['windows_ids'])  # noqa
+(8, 15, 53, 91, 142, 148, 164, 255, 312, 343, 347, 360, 380, 382, 393, 455, 466)
+>>> patterns[0]['times']
+array([  80.,  150.,  530.,  910., 1420., 1480., 1640., 2550., 3120.,
+       3430., 3470., 3600., 3800., 3820., 3930., 4550., 4660.]) * ms
+>>> patterns[0]['neurons']
+[0, 1, 2, 3, 4, 5]
+>>> patterns[0]['lags']
+array([0., 0., 0., 0., 0.]) * ms
+>>> patterns[0]['signature']
+(6, 17)
+>>> patterns[0]['pvalue']
+0.0
 
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
@@ -301,9 +303,18 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     >>> from elephant.spade import spade
     >>> import quantities as pq
+    >>> from elephant.spike_train_generation import compound_poisson_process
+
+    >>> np.random.seed(30)
+    >>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
+    ...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
+
     >>> bin_size = 3 * pq.ms # time resolution to discretize the spiketrains
     >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
-    >>> result_spade = spade(spiketrains, bin_size, winlen)
+
+    >>> result_spade = spade(spiketrains, bin_size, winlen) # doctest: +ELLIPSIS
+    Time for data mining: ...
+
 
     """
     if HAVE_MPI:  # pragma: no cover
