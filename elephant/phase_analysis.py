@@ -75,11 +75,11 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     >>> import elephant
     >>> import quantities as pq
     >>> import numpy as np
-    ...
+
     >>> f_osc = 20. * pq.Hz
     >>> f_sampling = 1 * pq.ms
     >>> tlen = 100 * pq.s
-    ...
+
     >>> time_axis = np.arange(
     ...     0, tlen.magnitude,
     ...     f_sampling.rescale(pq.s).magnitude) * pq.s
@@ -87,22 +87,23 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     ...     np.sin(2 * np.pi * (f_osc * time_axis).simplified.magnitude),
     ...     units=pq.mV, t_start=0*pq.ms, sampling_period=f_sampling)
     >>> spiketrain = (elephant.spike_train_generation.
-    ...     homogeneous_poisson_process(
-    ...     50 * pq.Hz, t_start=0.0*pq.ms, t_stop=tlen.rescale(pq.ms)))
-    ...
+    ...     StationaryPoissonProcess(
+    ...     50 * pq.Hz, t_start=0.0*pq.ms, t_stop=tlen.rescale(pq.ms)
+    ...     ).generate_spiketrain())
+
     >>> phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
     ...     elephant.signal_processing.hilbert(analogsignal),
     ...     spiketrain,
     ...     interpolate=True)
     >>> phases
-    [array([-0.57890515,  1.03105904, -0.82241075, ...,  0.90023903,
-             2.23702263,  2.93744259])]
+    [array([ 1.85422198, -1.63714367,  0.36934364, ...,  3.00866506,
+           -2.2723749 , -2.25715415])]
     >>> amps
-    [array([0.86117412, 1.08918248, 0.98256318, ..., 1.05760518, 1.08407016,
-        1.01927305]) * dimensionless]
+    [array([1.07891184, 0.95129079, 1.01295706, ..., 1.00847577, 0.77915133,
+           0.77417756]) * dimensionless]
     >>> times
-    [array([6.41327152e+00, 2.02715221e+01, 1.05827312e+02, ...,
-        9.99692942e+04, 9.99808429e+04, 9.99870120e+04]) * ms]
+    [array([2.74386225e+01, 4.94979128e+01, 6.51602160e+01, ...,
+           9.99876391e+04, 9.99958010e+04, 9.99959165e+04]) * ms]
 
     """
 
