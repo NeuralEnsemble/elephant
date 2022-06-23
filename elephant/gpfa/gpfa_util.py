@@ -2,7 +2,7 @@
 """
 GPFA util functions.
 
-:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2022 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

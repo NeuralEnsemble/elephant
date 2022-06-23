@@ -1,6 +1,6 @@
 """
 .. autosummary::
-    :toctree: toctree/utils
+    :toctree: _toctree/utils
 
     is_time_quantity
     get_common_start_stop_times
@@ -16,12 +16,14 @@ import warnings
 from functools import wraps
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 import neo
 
 
 __all__ = [
+    "deprecated_alias",
     "is_binary",
     "is_time_quantity",
     "get_common_start_stop_times",
@@ -35,7 +37,7 @@ def is_binary(array):
     """
     Parameters
     ----------
-    array: np.ndarray or list
+    array : np.ndarray or list
 
     Returns
     -------
@@ -53,7 +55,7 @@ def deprecated_alias(**aliases):
 
     Parameters
     ----------
-    aliases: str
+    **aliases
         The key-value pairs of mapping old --> new argument names of a
         function.
 
@@ -87,9 +89,9 @@ def _rename_kwargs(func_name, kwargs, aliases):
     for old, new in aliases.items():
         if old in kwargs:
             if new in kwargs:
-                raise TypeError("{} received both '{}' and '{}'".format(
-                    func_name, old, new))
-            warnings.warn("'{}' is deprecated; use '{}'".format(old, new),
+                raise TypeError(f"{func_name} received both '{old}' and "
+                                f"'{new}'")
+            warnings.warn(f"'{old}' is deprecated; use '{new}'",
                           DeprecationWarning)
             kwargs[new] = kwargs.pop(old)
 
@@ -157,8 +159,8 @@ def get_common_start_stop_times(neo_objects):
         raise AttributeError("Input neo objects must have 't_start' and "
                              "'t_stop' attributes")
     if t_stop < t_start:
-        raise ValueError("t_stop ({t_stop}) is smaller than t_start "
-                         "({t_start})".format(t_stop=t_stop, t_start=t_start))
+        raise ValueError(f"t_stop ({t_stop}) is smaller than t_start "
+                         f"({t_start})")
     return t_start, t_stop
 
 
@@ -188,7 +190,7 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
     ValueError
         If input object units, t_start, or t_stop do not match across trials.
     """
-    if not isinstance(neo_objects, (list, tuple)):
+    if not isinstance(neo_objects, (list, tuple, SpikeTrainList)):
         neo_objects = [neo_objects]
     try:
         units = neo_objects[0].units
@@ -202,8 +204,9 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         tolerance = 0
     for neo_obj in neo_objects:
         if not isinstance(neo_obj, object_type):
-            raise TypeError("The input must be a list of {}. Got {}".format(
-                object_type.__name__, type(neo_obj).__name__))
+            raise TypeError("The input must be a list of "
+                            f"{object_type.__name__}. Got "
+                            f"{type(neo_obj).__name__}")
         if neo_obj.units != units:
             raise ValueError("The input must have the same units.")
         if t_start is None and abs(neo_obj.t_start.item() - start) > tolerance:
@@ -240,7 +243,7 @@ def check_same_units(quantities, object_type=pq.Quantity):
         raise TypeError(f"The input must be a list of {object_type.__name__}")
     for quantity in quantities:
         if not isinstance(quantity, object_type):
-            raise TypeError(f"The input must be a list of "
+            raise TypeError("The input must be a list of "
                             f"{object_type.__name__}. Got "
                             f"{type(quantity).__name__}")
         if quantity.units != units:
@@ -312,7 +315,7 @@ def get_cuda_capability_major():
     int
         CUDA capability major version.
     """
-    CUDA_SUCCESS = 0
+    cuda_success = 0
     for libname in ('libcuda.so', 'libcuda.dylib', 'cuda.dll'):
         try:
             cuda = ctypes.CDLL(libname)
@@ -324,12 +327,12 @@ def get_cuda_capability_major():
         # not found
         return 0
     result = cuda.cuInit(0)
-    if result != CUDA_SUCCESS:
+    if result != cuda_success:
         return 0
     device = ctypes.c_int()
     # parse the first GPU card only
     result = cuda.cuDeviceGet(ctypes.byref(device), 0)
-    if result != CUDA_SUCCESS:
+    if result != cuda_success:
         return 0
 
     cc_major = ctypes.c_int()
@@ -338,3 +341,25 @@ def get_cuda_capability_major():
                                    ctypes.byref(cc_minor),
                                    device)
     return cc_major.value
+
+
+def get_opencl_capability():
+    """
+    Return a list of available OpenCL devices.
+
+    Returns
+    -------
+    bool
+        True: if openCL platform detected and at least one device is found,
+        False: if OpenCL is not found or if no OpenCL devices are found
+    """
+    try:
+        import pyopencl
+        platforms = pyopencl.get_platforms()
+
+        if len(platforms) == 0:
+            return False
+        # len(platforms) is > 0, if it is not == 0
+        return True
+    except ImportError:
+        return False

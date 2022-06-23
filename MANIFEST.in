@@ -7,7 +7,10 @@ include elephant/VERSION
 include elephant/current_source_density_src/README.md
 include elephant/current_source_density_src/test_data.mat
 include elephant/spade_src/LICENSE
-recursive-include elephant/spade_src *.so *.pyd
+include elephant/spade_src/src/fim.cpp
+recursive-include elephant/spade_src/include *.h
+include elephant/asset/*.cu
+include elephant/asset/*.cl
 include elephant/test/spike_extraction_test_data.txt
 recursive-include doc *
 prune doc/_build

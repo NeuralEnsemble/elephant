@@ -2,7 +2,7 @@
 """
 Unit tests for the GPFA analysis.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2022 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -20,6 +20,7 @@ try:
     from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
+
     HAVE_SKLEARN = True
 except ImportError:
     HAVE_SKLEARN = False
@@ -216,15 +217,5 @@ class GPFATestCase(unittest.TestCase):
         assert_array_almost_equal(logdet_fast, logdet_ground_truth)
 
 
-def suite():
-    suite = unittest.makeSuite(GPFATestCase, 'test')
-    return suite
-
-
-def run():
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
-
-
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
