@@ -310,7 +310,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     ...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
 
     >>> bin_size = 3 * pq.ms # time resolution to discretize the spiketrains
-    >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
+    >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)  # noqa
 
     >>> result_spade = spade(spiketrains, bin_size, winlen) # doctest: +ELLIPSIS
     Time for data mining: ...
