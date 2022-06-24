@@ -151,7 +151,7 @@ class TestMeanOnline(unittest.TestCase):
                                              t_stop=t_stop)
             online.update(synchrony_batch)
         synchrony = online.get_mean()
-        self.assertAlmostEqual(synchrony, synchrony_target, places=2)
+        self.assertAlmostEqual(synchrony, synchrony_target, places=1)
 
 
 class TestVarianceOnline(unittest.TestCase):
