@@ -9,7 +9,7 @@ from elephant import statistics
 from elephant.online import MeanOnline, VarianceOnline, CovarianceOnline, \
     PearsonCorrelationCoefficientOnline, InterSpikeIntervalOnline
 
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.spike_train_synchrony import spike_contrast
 
 
@@ -21,8 +21,9 @@ class TestSlidingWindowGeneric(unittest.TestCase):
         """
         np.random.seed(0)
         t_stop = 10 * pq.s
-        spiketrains = [homogeneous_poisson_process(
-            rate=20 * pq.Hz, t_stop=t_stop) for _ in range(10)]
+        spiketrains = [StationaryPoissonProcess(
+            rate=20 * pq.Hz, t_stop=t_stop).generate_spiketrain()
+                       for _ in range(10)]
         fanofactor_target = statistics.fanofactor(spiketrains)
         spike_counts = np.zeros(len(spiketrains))
         checkpoints = np.linspace(0 * pq.s, t_stop, num=10)
@@ -138,8 +139,9 @@ class TestMeanOnline(unittest.TestCase):
     def test_spike_contrast(self):
         np.random.seed(1)
         t_stop = 100 * pq.s
-        spiketrains = [homogeneous_poisson_process(
-            rate=20 * pq.Hz, t_stop=t_stop) for _ in range(10)]
+        spiketrains = [StationaryPoissonProcess(
+            rate=20 * pq.Hz, t_stop=t_stop).generate_spiketrain()
+                       for _ in range(10)]
         synchrony_target = spike_contrast(spiketrains)
         checkpoints = np.linspace(0 * pq.s, t_stop, num=10)
         online = MeanOnline()
@@ -280,7 +282,8 @@ class TestInterSpikeIntervalOnline(unittest.TestCase):
             online_isi.update(arr_vec)
         self.assertEqual(online_isi.units, arr.units)
         standard_isi_histo, _ = np.histogram(
-            statistics.isi(arr.reshape(1, 10 * 100)), bins=online_isi.bin_edges)
+            statistics.isi(arr.reshape(1, 10 * 100)),
+            bins=online_isi.bin_edges)
         np.testing.assert_allclose(online_isi.get_isi().magnitude,
                                    standard_isi_histo, rtol=1e-15, atol=1e-15)
 
@@ -300,6 +303,7 @@ class TestInterSpikeIntervalOnline(unittest.TestCase):
         self.assertIsNone(online_isi.last_spike_time)
         np.testing.assert_allclose(online_isi.current_isi_histogram,
                                    np.zeros(shape=online_isi.num_bins))
+
 
 class TestCovarianceOnline(unittest.TestCase):
     def test_simple_small_sets_XY_unbatched(self):
@@ -425,7 +429,8 @@ class TestPearsonCorrelationCoefficientOnline(unittest.TestCase):
             online_pcc.update([x_i, y_i])
         self.assertIsNone(online_pcc.units)
         self.assertAlmostEqual(online_pcc.get_pcc(),
-                               np.corrcoef([X.reshape(15), Y.reshape(15)])[0][1])
+                               np.corrcoef([X.reshape(15),
+                                            Y.reshape(15)])[0][1])
 
     def test_floats(self):
         np.random.seed(0)
@@ -448,8 +453,9 @@ class TestPearsonCorrelationCoefficientOnline(unittest.TestCase):
         self.assertIsNone(online_pcc.units)
         self.assertIsInstance(online_pcc.get_pcc(), float)
         self.assertAlmostEqual(online_pcc.get_pcc(),
-                               np.corrcoef([X.reshape(10*100),
-                                            Y.reshape(10*100)])[0][1], places=3)
+                               np.corrcoef(
+                                   [X.reshape(10*100),
+                                    Y.reshape(10*100)])[0][1], places=3)
 
     def test_quantity_scaler(self):
         np.random.seed(2)
@@ -508,6 +514,7 @@ class TestPearsonCorrelationCoefficientOnline(unittest.TestCase):
                                          [x_i, y_i]*pq.ms)
             else:
                 online_pcc.update([x_i, y_i]*pq.s)
+
 
 if __name__ == '__main__':
     unittest.main()
