@@ -501,7 +501,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             # Using an array mapped to disk. Store in the file passed as
             # parameter
             if verbose:
-                print("Creating disk array at '{disk_array}'.")
+                print(f"Creating disk array at '{disk_array.name}'.")
 
             stretch_mat = np.memmap(disk_array, mode='w+',
                                     shape=(len(x), len(y)),
@@ -2453,7 +2453,7 @@ class ASSET(object):
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
                                stretch, working_memory=None, array_file=None,
-                               verbose=False):
+                               keep_file=False, verbose=False):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2523,6 +2523,11 @@ class ASSET(object):
             array). This option should be used when there is not enough memory
             to allocate the full stretched distance matrix needed before DBSCAN.
             Default: None
+        keep_file : bool, optional
+            Delete the temporary file specified in `array_file` automatically.
+            This option can be used to access the distance matrix after the
+            clustering.
+            Default: False
         verbose : bool, optional
             Display log messages and progress bars.
             Default: False
@@ -2559,7 +2564,8 @@ class ASSET(object):
             file_dir = file_path.parent
             file_name = file_path.stem
             disk_array = tempfile.NamedTemporaryFile(prefix=file_name,
-                                                     dir=file_dir)
+                                                     dir=file_dir,
+                                                     delete=not keep_file)
         
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
