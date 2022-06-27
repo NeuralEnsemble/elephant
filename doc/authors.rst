@@ -1,5 +1,3 @@
-.. _authors:
-
 ************************
 Authors and contributors
 ************************
@@ -7,9 +5,6 @@ Authors and contributors
 The following people have contributed code and/or ideas to the current version
 of Elephant. The institutional affiliations are those at the time of the
 contribution, and may not be the current affiliation of a contributor.
-
-Do you want to contribute to Elephant? Please refer to the
-:ref:`developers_guide`.
 
 * Alper Yegenoglu [1]
 * Andrew Davison [2]
@@ -51,9 +46,11 @@ Do you want to contribute to Elephant? Please refer to the
 * Regimantas Jurkus [1]
 * Philipp Steigerwald [12]
 * Manuel Ciba [12]
-* Thijs Ruikes [13]
+* Maximilian Kramer [1]
+* Florian Porrmann [13]
+* Sarah Pilz [13]
 
-1. Institute of Neuroscience and Medicine (INM-6), Computational and Systems Neuroscience & Institute for Advanced Simulation (IAS-6), Theoretical Neuroscience, Jülich Research Centre and JARA, Jülich, Germany
+1. Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
 3. Electronic Visions Group, Kirchhoff-Institute for Physics, University of Heidelberg, Germany
 4. Brain-Mind Institute, Ecole Polytechnique Fédérale de Lausanne, Switzerland
@@ -65,5 +62,6 @@ Do you want to contribute to Elephant? Please refer to the
 10. Instituto de Neurobiología, Universidad Nacional Autónoma de México, Mexico City, Mexico
 11. Case Western Reserve University (CWRU), Cleveland, OH, USA
 12. BioMEMS Lab, TH Aschaffenburg University of applied sciences, Germany
-13. Cognitive and Systems Neuroscience (CSN) group, University of Amsterdam, Amsterdam, Netherlands
+13. Cognitronics and Sensor Systems, CITEC, Bielefeld University, Bielefeld, Germany
+
 If we've somehow missed you off the list we're very sorry - please let us know.

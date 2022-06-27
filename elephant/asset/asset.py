@@ -8,7 +8,7 @@ ASSET analysis class object of finding patterns
 -----------------------------------------------
 
 .. autosummary::
-    :toctree: toctree/asset/
+    :toctree: _toctree/asset/
 
     ASSET
 
@@ -17,7 +17,7 @@ Patterns post-exploration
 -------------------------
 
 .. autosummary::
-    :toctree: toctree/asset/
+    :toctree: _toctree/asset/
 
     synchronous_events_intersection
     synchronous_events_difference
@@ -42,64 +42,88 @@ Run tutorial interactively:
 
 Examples
 --------
+In this example we
 
-0) Create `ASSET` class object that holds spike trains.
+  * simulate two noisy synfire chains;
+  * shuffle the neurons to destroy visual appearance;
+  * run ASSET analysis to recover the original neurons arrangement.
+
+1. Simulate two noise synfire chains, shuffle the neurons to destroy the
+   pattern visually, and store shuffled activations in neo.SpikeTrains.
+
+   >>> import neo
+   >>> import numpy as np
+   >>> import quantities as pq
+   >>> np.random.seed(10)
+   >>> spiketrain = np.linspace(0, 50, num=10)
+   >>> np.random.shuffle(spiketrain)
+   >>> spiketrains = np.c_[spiketrain, spiketrain + 100]
+   >>> spiketrains += np.random.random_sample(spiketrains.shape) * 5
+   >>> spiketrains = [neo.SpikeTrain(st, units='ms', t_stop=1 * pq.s)
+   ...                for st in spiketrains]
+
+2. Create `ASSET` class object that holds spike trains.
 
    `ASSET` requires at least one argument - a list of spike trains. If
    `spiketrains_y` is not provided, the same spike trains are used to build an
    intersection matrix with.
 
-   >>> import neo
-   >>> import numpy as np
-   >>> import quantities as pq
    >>> from elephant import asset
+   >>> asset_obj = asset.ASSET(spiketrains, bin_size=3*pq.ms)
 
-   >>> spiketrains = [
-   ...      neo.SpikeTrain([start, start + 6] * (3 * pq.ms) + 10 * pq.ms,
-   ...                     t_stop=60 * pq.ms)
-   ...      for _ in range(3)
-   ...      for start in range(3)
-   ... ]
-   >>> asset_obj = asset.ASSET(spiketrains, bin_size=3*pq.ms, verbose=False)
-
-1) Build the intersection matrix `imat`:
+3. Build the intersection matrix `imat`:
 
    >>> imat = asset_obj.intersection_matrix()
 
-2) Estimate the probability matrix `pmat`, using the analytical method:
+4. Estimate the probability matrix `pmat`, using the analytical method:
 
    >>> pmat = asset_obj.probability_matrix_analytical(imat,
-   ...                                                kernel_width=9*pq.ms)
+   ...                                                kernel_width=50*pq.ms)
 
-3) Compute the joint probability matrix `jmat`, using a suitable filter:
+5. Compute the joint probability matrix `jmat`, using a suitable filter:
 
    >>> jmat = asset_obj.joint_probability_matrix(pmat, filter_shape=(5, 1),
    ...                                           n_largest=3)
 
-4) Create the masked version of the intersection matrix, `mmat`, from `pmat`
+6. Create the masked version of the intersection matrix, `mmat`, from `pmat`
    and `jmat`:
 
    >>> mmat = asset_obj.mask_matrices([pmat, jmat], thresholds=.9)
 
-5) Cluster significant elements of imat into diagonal structures:
+7. Cluster significant elements of imat into diagonal structures:
 
-   >>> cmat = asset_obj.cluster_matrix_entries(mmat, max_distance=3,
+   >>> cmat = asset_obj.cluster_matrix_entries(mmat, max_distance=11,
    ...                                         min_neighbors=3, stretch=5)
 
-6) Extract sequences of synchronous events:
+9. Extract sequences of synchronous events:
 
    >>> sses = asset_obj.extract_synchronous_events(cmat)
 
-The ASSET found 2 sequences of synchronous events:
+The ASSET found the following sequences of synchronous events:
 
-   >>> from pprint import pprint
-   >>> pprint(sses)
-   {1: {(9, 3): {0, 3, 6}, (10, 4): {1, 4, 7}, (11, 5): {8, 2, 5}}}
+>>> sses
+{1: {(36, 2): {5},
+  (37, 4): {1},
+  (40, 6): {4},
+  (41, 7): {8},
+  (43, 9): {2},
+  (47, 14): {7},
+  (48, 15): {0},
+  (50, 17): {9}}}
+
+To visualize them, refer to Viziphant documentation and an example plot
+:func:`viziphant.asset.plot_synchronous_events`.
 
 """
 from __future__ import division, print_function, unicode_literals
 
+import math
+import os
+import subprocess
+import sys
+import tempfile
 import warnings
+from pathlib import Path
 
 import neo
 import numpy as np
@@ -107,10 +131,12 @@ import quantities as pq
 import scipy.spatial
 import scipy.stats
 from sklearn.cluster import dbscan
+from sklearn.metrics import pairwise_distances, pairwise_distances_chunked
 from tqdm import trange, tqdm
 
 import elephant.conversion as conv
 from elephant import spike_train_surrogates
+from elephant.utils import get_cuda_capability_major, get_opencl_capability
 
 try:
     from mpi4py import MPI
@@ -135,6 +161,7 @@ __all__ = [
     "synchronous_events_contains_all",
     "synchronous_events_overlap"
 ]
+
 
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
@@ -231,18 +258,18 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
         time segment `[t_start, t_start+bin_size]`.
         If None, takes the value of `spiketrain.t_start`, common for all
         input `spiketrains` (raises ValueError if it's not the case).
-        Default: None.
+        Default: None
     t_stop : pq.Quantity
         The ending time. Only spikes occurring at times `t < t_stop` are
         considered.
         If None, takes the value of `spiketrain.t_stop`, common for all
         input `spiketrains` (raises ValueError if it's not the case).
-        Default: None.
+        Default: None
     ids : list of int, optional
         List of spike train IDs.
         If None, the IDs `0` to `N-1` are used, where `N` is the number of
         input spike trains.
-        Default: None.
+        Default: None
 
     Returns
     -------
@@ -318,7 +345,7 @@ def _analog_signal_step_interp(signal, times):
 # =============================================================================
 
 
-def _stretched_metric_2d(x, y, stretch, ref_angle):
+def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -363,29 +390,66 @@ def _stretched_metric_2d(x, y, stretch, ref_angle):
 
     # Create the array of points (one per row) for which to compute the
     # stretched distance
-    points = np.vstack([x, y]).T
+    points = np.column_stack([x, y])
 
-    # Compute the matrix D[i, j] of euclidean distances among points i and j
-    D = scipy.spatial.distance_matrix(points, points)
+    x_array = np.expand_dims(x, axis=0)
+    y_array = np.expand_dims(y, axis=0)
 
-    # Compute the angular coefficients of the line between each pair of points
-    x_array = np.tile(x, reps=(len(x), 1))
-    y_array = np.tile(y, reps=(len(y), 1))
-    dX = x_array.T - x_array  # dX[i,j]: x difference between points i and j
-    dY = y_array.T - y_array  # dY[i,j]: y difference between points i and j
+    def calculate_stretch_mat(theta_mat, D_mat):
+        # Transform [-pi, pi] back to [-pi/2, pi/2]
+        theta_mat[theta_mat < -np.pi / 2] += np.pi
+        theta_mat[theta_mat > np.pi / 2] -= np.pi
 
-    # Compute the matrix Theta of angles between each pair of points
-    theta = np.arctan2(dY, dX)
+        # Compute the matrix of stretching factors for each pair of points.
+        # Equivalent to:
+        #   stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
+        _stretch_mat = np.subtract(alpha, theta_mat, out=theta_mat)
+        _stretch_mat = np.sin(_stretch_mat, out=_stretch_mat)
+        _stretch_mat = np.abs(_stretch_mat, out=_stretch_mat)
+        _stretch_mat = np.multiply(stretch - 1, _stretch_mat, out=_stretch_mat)
+        _stretch_mat = np.add(1, _stretch_mat, out=_stretch_mat)
 
-    # Transform [-pi, pi] back to [-pi/2, pi/2]
-    theta[theta < -np.pi / 2] += np.pi
-    theta[theta > np.pi / 2] -= np.pi
+        _stretch_mat = np.multiply(D_mat, _stretch_mat, out=_stretch_mat)
 
-    # Compute the matrix of stretching factors for each pair of points
-    stretch_mat = 1 + (stretch - 1.) * np.abs(np.sin(alpha - theta))
+        return _stretch_mat
+
+    if working_memory is None:
+        # Compute the matrix D[i, j] of euclidean distances among points
+        # i and j
+        D = pairwise_distances(points)
+
+        # Compute the angular coefficients of the line between each pair of
+        # points
+
+        # dX[i,j]: x difference between points i and j
+        # dY[i,j]: y difference between points i and j
+        dX = x_array.T - x_array
+        dY = y_array.T - y_array
+
+        # Compute the matrix Theta of angles between each pair of points
+        theta = np.arctan2(dY, dX, dtype=np.float64)
+
+        stretch_mat = calculate_stretch_mat(theta, D)
+    else:
+        start = 0
+        # x and y sizes are the same
+        stretch_mat = np.empty((len(x), len(y)), dtype=np.float32)
+        for D_chunk in pairwise_distances_chunked(
+                points, working_memory=working_memory):
+            chunk_size = D_chunk.shape[0]
+            dX = x_array[:, start: start + chunk_size].T - x_array
+            dY = y_array[:, start: start + chunk_size].T - y_array
+
+            theta_chunk = np.arctan2(
+                dY, dX, out=stretch_mat[start: start + chunk_size, :])
+
+            # stretch_mat (theta_chunk) is updated in-place here
+            calculate_stretch_mat(theta_chunk, D_chunk)
+
+            start += chunk_size
 
     # Return the stretched distance matrix
-    return D * stretch_mat
+    return stretch_mat
 
 
 def _interpolate_signals(signals, sampling_times, verbose=False):
@@ -410,315 +474,816 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
     return interpolated_signal
 
 
-def _num_iterations(n, d):
-    if d > n:
-        return 0
-    if d == 1:
-        return n
-    if d == 2:
-        # equivalent to np.sum(count_matrix)
-        return n * (n + 1) // 2 - 1
-
-    # Create square matrix with diagonal values equal to 2 to `n`.
-    # Start from row/column with index == 2 to facilitate indexing.
-    count_matrix = np.zeros((n + 1, n + 1), dtype=int)
-    np.fill_diagonal(count_matrix, np.arange(n + 1))
-    count_matrix[1, 1] = 0
-
-    # Accumulate counts of all the iterations where the first index
-    # is in the interval `d` to `n`.
-    #
-    # The counts for every level is obtained by accumulating the
-    # `count_matrix`, which is the count of iterations with the first
-    # index between `d` and `n`, when `d` == 2.
-    #
-    # For every value from 3 to `d`...
-    # 1. Define each row `n` in the count matrix as the sum of all rows
-    #    equal or above.
-    # 2. Set all rows above the current value of `d` with zeros.
-    #
-    # Example for `n` = 6 and `d` = 4:
-    #
-    #  d = 2 (start)                d = 3
-    #        count                        count
-    #  n                            n
-    #  2     2  0  0  0  0
-    #  3     0  3  0  0  0    ==>   3     2  3  0  0  0    ==>
-    #  4     0  0  4  0  0          4     2  3  4  0  0
-    #  5     0  0  0  5  0          5     2  3  4  5  0
-    #  6     0  0  0  0  6          6     2  3  4  5  6
-    #
-    #  d = 4
-    #        count
-    #  n
-    #
-    #  4     4  6  4  0  0
-    #  5     6  9  8  5  0
-    #  6     8  12 12 10 6
-    #
-    #  The total number is the sum of the `count_matrix` when `d` has
-    #  the value passed to the function.
-    #
-
-    for cur_d in range(3, d + 1):
-        for cur_n in range(n, 2, -1):
-            count_matrix[cur_n, :] = np.sum(count_matrix[:cur_n + 1, :],
-                                            axis=0)
-        # Set previous `d` level to zeros
-        count_matrix[cur_d - 1, :] = 0
-    return np.sum(count_matrix)
-
-
-def _combinations_with_replacement(n, d):
-    # Generate sequences of {a_i} such that
-    #   a_0 >= a_1 >= ... >= a_(d-1) and
-    #   d-i <= a_i <= n, for each i in [0, d-1].
-    #
-    # Almost equivalent to
-    # list(itertools.combinations_with_replacement(range(n, 0, -1), r=d))[::-1]
-    #
-    # Example:
-    #   _combinations_with_replacement(n=13, d=3) -->
-    #   (3, 2, 1), (3, 2, 2), (3, 3, 1), ... , (13, 13, 12), (13, 13, 13).
-    #
-    # The implementation follows the insertion sort algorithm:
-    #   insert a new element a_i from right to left to keep the reverse sorted
-    #   order. Now substitute increment operation for insert.
-    if d > n:
-        return
-    if d == 1:
-        for matrix_entry in range(1, n + 1):
-            yield (matrix_entry,)
-        return
-    sequence_sorted = list(range(d, 0, -1))
-    input_order = tuple(sequence_sorted)  # fixed
-    while sequence_sorted[0] != n + 1:
-        for last_element in range(1, sequence_sorted[-2] + 1):
-            sequence_sorted[-1] = last_element
-            yield tuple(sequence_sorted)
-        increment_id = d - 2
-        while increment_id > 0 and sequence_sorted[increment_id - 1] == \
-                sequence_sorted[increment_id]:
-            increment_id -= 1
-        sequence_sorted[increment_id + 1:] = input_order[increment_id + 1:]
-        sequence_sorted[increment_id] += 1
-
-
-def _jsf_uniform_orderstat_3d(u, n, verbose=False):
-    r"""
-    Considered n independent random variables X1, X2, ..., Xn all having
-    uniform distribution in the interval (0, 1):
-
-    .. centered::  Xi ~ Uniform(0, 1),
-
-    given a 2D matrix U = (u_ij) where each U_i is an array of length d:
-    U_i = [u0, u1, ..., u_{d-1}] of quantiles, with u1 <= u2 <= ... <= un,
-    computes the joint survival function (jsf) of the d highest order
-    statistics (U_{n-d+1}, U_{n-d+2}, ..., U_n),
-    where U_k := "k-th highest X's" at each u_i, i.e.:
-
-    .. centered::  jsf(u_i) = Prob(U_{n-k} >= u_ijk, k=0,1,..., d-1).
-
+class _GPUBackend:
+    """
     Parameters
     ----------
-    u : (A,d) np.ndarray
-        2D matrix of floats between 0 and 1.
-        Each row `u_i` is an array of length `d`, considered a set of
-        `d` largest order statistics extracted from a sample of `n` random
-        variables whose cdf is `F(x) = x` for each `x`.
-        The routine computes the joint cumulative probability of the `d`
-        values in `u_ij`, for each `i` and `j`.
-    n : int
-        Size of the sample where the `d` largest order statistics `u_ij` are
-        assumed to have been sampled from.
-    verbose : bool
-        If True, print messages during the computation.
-        Default: False.
+    max_chunk_size: int or None, optional
+        Defines the maximum chunk size used in the `_split_axis` function. The
+        users typically don't need to set this parameter manually - it's used
+        to simulate scenarios when the input matrix is so large that it cannot
+        fit into GPU memory. Setting this parameter manually can resolve GPU
+        memory errors in case automatic parameters adjustment fails.
 
-    Returns
-    -------
-    P_total : (A,) np.ndarray
-        Matrix of joint survival probabilities. `s_ij` is the joint survival
-        probability of the values `{u_ijk, k=0, ..., d-1}`.
-        Note: the joint probability matrix computed for the ASSET analysis
-        is `1 - S`.
+    Notes
+    -----
+    1. PyOpenCL backend takes some time to compile the kernel for the first
+       time - the caching will affect your benchmarks unless you run each
+       program twice.
+    2. Pinned Host Memory.
+       Host (CPU) data allocations are pageable by default. The GPU cannot
+       access data directly from pageable host memory, so when a data transfer
+       from pageable host memory to device memory is invoked, the CUDA driver
+       must first allocate a temporary page-locked, or "pinned", host array,
+       copy the host data to the pinned array, and then transfer the data from
+       the pinned array to device memory, as illustrated at
+       https://developer.nvidia.com/blog/how-optimize-data-transfers-cuda-cc/
+       Same for OpenCL. Therefore, Python memory analyzers show increments in
+       the used RAM each time an OpenCL/CUDA buffer is created. As with any
+       Python objects, PyOpenCL and PyCUDA clean up and free allocated memory
+       automatically when garbage collection is executed.
     """
-    num_p_vals, d = u.shape
+    def __init__(self, max_chunk_size=None):
+        self.max_chunk_size = max_chunk_size
 
-    # Define ranges [1,...,n], [2,...,n], ..., [d,...,n] for the mute variables
-    # used to compute the integral as a sum over all possibilities
-    it_todo = _num_iterations(n, d)
+    def _choose_backend(self):
+        # If CUDA is detected, always use CUDA.
+        # If OpenCL is detected, don't use it by default to avoid the system
+        # becoming unresponsive until the program terminates.
+        use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
+        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
+        cuda_detected = get_cuda_capability_major() != 0
+        opencl_detected = get_opencl_capability()
 
-    log_1 = np.log(1.)
-    # Compute the log of the integral's coefficient
-    logK = np.sum(np.log(np.arange(1, n + 1)))
-    # Add to the 3D matrix u a bottom layer equal to 0 and a
-    # top layer equal to 1. Then compute the difference du along
-    # the first dimension.
-    du = np.diff(u, prepend=0, append=1, axis=1)
+        if use_cuda and cuda_detected:
+            return self.pycuda
+        if use_opencl and opencl_detected:
+            return self.pyopencl
+        return self.cpu
 
-    # precompute logarithms
-    # ignore warnings about infinities, see inside the loop:
-    # we replace 0 * ln(0) by 1 to get exp(0 * ln(0)) = 0 ** 0 = 1
-    # the remaining infinities correctly evaluate to
-    # exp(ln(0)) = exp(-inf) = 0
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', RuntimeWarning)
-        log_du = np.log(du)
-
-    # prepare arrays for usage inside the loop
-    di_scratch = np.empty_like(du, dtype=np.int32)
-    log_du_scratch = np.empty_like(log_du)
-
-    # precompute log(factorial)s
-    # pad with a zero to get 0! = 1
-    log_factorial = np.hstack((0, np.cumsum(np.log(range(1, n + 1)))))
-
-    # compute the probabilities for each unique row of du
-    # only loop over the indices and do all du entries at once
-    # using matrix algebra
-    # initialise probabilities to 0
-    P_total = np.zeros(du.shape[0], dtype=np.float32)
-    for iter_id, matrix_entries in enumerate(
-            tqdm(_combinations_with_replacement(n, d=d),
-                 total=it_todo,
-                 desc="Joint survival function",
-                 disable=not verbose)):
-        # if we are running with MPI
-        if mpi_accelerated and iter_id % size != rank:
-            continue
-
-        # we only need the differences of the indices:
-        di = -np.diff((n,) + matrix_entries + (0,))
-
-        # reshape the matrix to be compatible with du
-        di_scratch[:, range(len(di))] = di
-
-        # use precomputed factorials
-        sum_log_di_factorial = log_factorial[di].sum()
-
-        # Compute for each i,j the contribution to the probability
-        # given by this step, and add it to the total probability
-
-        # Use precomputed log
-        np.copyto(log_du_scratch, log_du)
-
-        # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace du with 1
-        # whenever di_scratch = 0, so that du ** di_scratch = 1 (this avoids
-        # nans when both du and di_scratch are 0, and is mathematically
-        # correct)
-        log_du_scratch[di_scratch == 0] = log_1
-
-        di_log_du = di_scratch * log_du_scratch
-        sum_di_log_du = di_log_du.sum(axis=1)
-        logP = sum_di_log_du - sum_log_di_factorial
-
-        P_total += np.exp(logP + logK)
-
-    if mpi_accelerated:
-        totals = np.zeros(du.shape[0], dtype=np.float32)
-
-        # exchange all the results
-        comm.Allreduce(
-            [P_total, MPI.FLOAT],
-            [totals, MPI.FLOAT],
-            op=MPI.SUM)
-
-        # We need to return the collected totals instead of the local P_total
-        return totals
-
-    return P_total
+    def _split_axis(self, chunk_size, axis_size, min_chunk_size=None):
+        chunk_size = min(chunk_size, axis_size)
+        if self.max_chunk_size is not None:
+            chunk_size = min(chunk_size, self.max_chunk_size)
+        if min_chunk_size is not None and chunk_size < min_chunk_size:
+            raise ValueError(f"[GPU not enough memory] Impossible to split "
+                             f"the array into chunks of size at least "
+                             f"{min_chunk_size} to fit into GPU memory")
+        n_chunks = math.ceil(axis_size / chunk_size)
+        chunk_size = math.ceil(axis_size / n_chunks)  # align in size
+        if min_chunk_size is not None:
+            chunk_size = max(chunk_size, min_chunk_size)
+        split_idx = list(range(0, axis_size, chunk_size))
+        last_id = split_idx[-1]
+        last_size = axis_size - last_id  # last is the smallest
+        split_idx = list(zip(split_idx[:-1], split_idx[1:]))
+        if min_chunk_size is not None and last_size < min_chunk_size:
+            # Overlap the last chunk with the previous.
+            # The overlapped part (intersection) will be computed twice.
+            last_id = axis_size - min_chunk_size
+        split_idx.append((last_id, axis_size))
+        return chunk_size, split_idx
 
 
-def _pmat_neighbors(mat, filter_shape, n_largest):
+class _JSFUniformOrderStat3D(_GPUBackend):
+    def __init__(self, n, d, precision='float', verbose=False,
+                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5,
+                 max_chunk_size=None):
+        super().__init__(max_chunk_size=max_chunk_size)
+        if d > n:
+            raise ValueError(f"d ({d}) must be less or equal n ({n})")
+        self.n = n
+        self.d = d
+        self.precision = precision
+        self.verbose = verbose and rank == 0
+        self.cuda_threads = cuda_threads
+        self.cuda_cwr_loops = cuda_cwr_loops
+        self.map_iterations = self._create_iteration_table()
+        bits = 32 if precision == "float" else 64
+        self.dtype = np.dtype(f"float{bits}")
+        self.tolerance = tolerance
+
+    @property
+    def num_iterations(self):
+        # map_iterations table is populated with element indices, not counts;
+        # therefore, we add 1
+        return self.map_iterations[:, -1].sum() + 1
+
+    def _create_iteration_table(self):
+        # do not use numpy arrays - they are limited to uint64
+        map_iterations = [list(range(self.n))]
+        for row_id in range(1, self.d):
+            prev_row = map_iterations[row_id - 1]
+            curr_row = [0] * (row_id + 1)
+            for col_id in range(row_id + 1, self.n):
+                cumsum = prev_row[col_id] + curr_row[-1]
+                curr_row.append(cumsum)
+            map_iterations.append(curr_row)
+        # here we can wrap the resulting array in numpy:
+        # if at least one item is greater than 2<<63 - 1,
+        # the data type will be set to 'object'
+        map_iterations = np.vstack(map_iterations)
+        return map_iterations
+
+    def _combinations_with_replacement(self):
+        # Generate sequences of {a_i} such that
+        #   a_0 >= a_1 >= ... >= a_(d-1) and
+        #   d-i <= a_i <= n, for each i in [0, d-1].
+        #
+        # Almost equivalent to
+        # list(itertools.combinations_with_replacement(range(n, 0, -1), r=d))
+        # [::-1]
+        #
+        # Example:
+        #   _combinations_with_replacement(n=13, d=3) -->
+        #   (3, 2, 1), (3, 2, 2), (3, 3, 1), ... , (13, 13, 12), (13, 13, 13).
+        #
+        # The implementation follows the insertion sort algorithm:
+        #   insert a new element a_i from right to left to keep the reverse
+        #   sorted order. Now substitute increment operation for insert.
+        if self.d > self.n:
+            return
+        if self.d == 1:
+            for matrix_entry in range(1, self.n + 1):
+                yield (matrix_entry,)
+            return
+        sequence_sorted = list(range(self.d, 0, -1))
+        input_order = tuple(sequence_sorted)  # fixed
+        while sequence_sorted[0] != self.n + 1:
+            for last_element in range(1, sequence_sorted[-2] + 1):
+                sequence_sorted[-1] = last_element
+                yield tuple(sequence_sorted)
+            increment_id = self.d - 2
+            while increment_id > 0 and sequence_sorted[increment_id - 1] == \
+                    sequence_sorted[increment_id]:
+                increment_id -= 1
+            sequence_sorted[increment_id + 1:] = input_order[increment_id + 1:]
+            sequence_sorted[increment_id] += 1
+
+    def cpu(self, log_du):
+        log_1 = np.log(1.)
+        # Compute the log of the integral's coefficient
+        logK = np.sum(np.log(np.arange(1, self.n + 1)))
+        # Add to the 3D matrix u a bottom layer equal to 0 and a
+        # top layer equal to 1. Then compute the difference du along
+        # the first dimension.
+
+        # prepare arrays for usage inside the loop
+        di_scratch = np.empty_like(log_du, dtype=np.int32)
+        log_du_scratch = np.empty_like(log_du)
+
+        # precompute log(factorial)s
+        # pad with a zero to get 0! = 1
+        log_factorial = np.hstack((0, np.cumsum(np.log(range(1, self.n + 1)))))
+
+        # compute the probabilities for each unique row of du
+        # only loop over the indices and do all du entries at once
+        # using matrix algebra
+        # initialise probabilities to 0
+        P_total = np.zeros(
+            log_du.shape[0],
+            dtype=np.float32 if self.precision == 'float' else np.float64
+        )
+
+        for iter_id, matrix_entries in enumerate(
+                tqdm(self._combinations_with_replacement(),
+                     total=self.num_iterations,
+                     desc="Joint survival function",
+                     disable=not self.verbose)):
+            # if we are running with MPI
+            if mpi_accelerated and iter_id % size != rank:
+                continue
+            # we only need the differences of the indices:
+            di = -np.diff((self.n,) + matrix_entries + (0,))
+
+            # reshape the matrix to be compatible with du
+            di_scratch[:, range(len(di))] = di
+
+            # use precomputed factorials
+            sum_log_di_factorial = log_factorial[di].sum()
+
+            # Compute for each i,j the contribution to the probability
+            # given by this step, and add it to the total probability
+
+            # Use precomputed log
+            np.copyto(log_du_scratch, log_du)
+
+            # for each a=0,1,...,A-1 and b=0,1,...,B-1, replace du with 1
+            # whenever di_scratch = 0, so that du ** di_scratch = 1 (this
+            # avoids nans when both du and di_scratch are 0, and is
+            # mathematically correct)
+            log_du_scratch[di_scratch == 0] = log_1
+
+            di_log_du = di_scratch * log_du_scratch
+            sum_di_log_du = di_log_du.sum(axis=1)
+            logP = sum_di_log_du - sum_log_di_factorial
+
+            P_total += np.exp(logP + logK)
+
+        if mpi_accelerated:
+            totals = np.zeros_like(P_total)
+
+            # exchange all the results
+            mpi_float_type = MPI.FLOAT \
+                if self.precision == 'float' else MPI.DOUBLE
+            comm.Allreduce(
+                [P_total, mpi_float_type],
+                [totals, mpi_float_type],
+                op=MPI.SUM)
+
+            # We need to return the collected totals instead of the local
+            # P_total
+            P_total = totals
+
+        return P_total
+
+    def _compile_template(self, template_name, **kwargs):
+        from jinja2 import Template
+        cu_template_path = Path(__file__).parent / template_name
+        cu_template = Template(cu_template_path.read_text())
+        asset_cu = cu_template.render(
+            precision=self.precision,
+            CWR_LOOPS=self.cuda_cwr_loops,
+            N=self.n, D=self.d, **kwargs)
+        return asset_cu
+
+    def pyopencl(self, log_du, device_id=0):
+        import pyopencl as cl
+        import pyopencl.array as cl_array
+
+        self._check_input(log_du)
+
+        it_todo = self.num_iterations
+        u_length = log_du.shape[0]
+
+        context = cl.create_some_context(interactive=False)
+        if self.verbose:
+            print("Available OpenCL devices:\n", context.devices)
+        device = context.devices[device_id]
+
+        # A queue bounded to the device
+        queue = cl.CommandQueue(context)
+
+        max_l_block = device.local_mem_size // (
+                self.dtype.itemsize * (self.d + 2))
+        n_threads = min(self.cuda_threads, max_l_block,
+                        device.max_work_group_size)
+        if n_threads > 32:
+            # It's more efficient to make the number of threads
+            # a multiple of the warp size (32).
+            n_threads -= n_threads % 32
+
+        iteration_table_str = ", ".join(f"{val}LU" for val in
+                                        self.map_iterations.flatten())
+        iteration_table_str = "{%s}" % iteration_table_str
+
+        log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
+        logK = log_factorial[-1]
+        log_factorial_str = ", ".join(f"{val:.10f}" for val in log_factorial)
+        log_factorial_str = "{%s}" % log_factorial_str
+        atomic_int = 'int' if self.precision == 'float' else 'long'
+
+        # GPU_MAX_HEAP_SIZE OpenCL flag is set to 2 Gb (1 << 31) by default
+        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size,
+                        1 << 31)
+        # 4 * (D + 1) * size + 8 * size == mem_avail
+        chunk_size = mem_avail // (4 * log_du.shape[1] + self.dtype.itemsize)
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=u_length)
+
+        P_total = np.empty(u_length, dtype=self.dtype)
+        P_total_gpu = cl_array.Array(queue, shape=chunk_size, dtype=self.dtype)
+
+        for i_start, i_end in split_idx:
+            log_du_gpu = cl_array.to_device(queue, log_du[i_start: i_end],
+                                            async_=True)
+            P_total_gpu.fill(0, queue=queue)
+            chunk_size = i_end - i_start
+            l_block = min(n_threads, chunk_size)
+            l_num_blocks = math.ceil(chunk_size / l_block)
+            grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
+            if grid_size > l_num_blocks:
+                # make grid_size divisible by l_num_blocks
+                grid_size -= grid_size % l_num_blocks
+            else:
+                # grid_size must be at least l_num_blocks
+                grid_size = l_num_blocks
+
+            if self.verbose:
+                print(f"[Joint prob. matrix] it_todo={it_todo}, "
+                      f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                      f"N_THREADS={n_threads}")
+
+            # OpenCL defines unsigned long as uint64, therefore we're adding
+            # the LU suffix, not LLU, which would indicate unsupported uint128
+            # data type format.
+            asset_cl = self._compile_template(
+                template_name="joint_pmat.cl",
+                L=f"{chunk_size}LU",
+                L_BLOCK=l_block,
+                L_NUM_BLOCKS=l_num_blocks,
+                ITERATIONS_TODO=f"{it_todo}LU",
+                logK=f"{logK:.10f}f",
+                iteration_table=iteration_table_str,
+                log_factorial=log_factorial_str,
+                ATOMIC_UINT=f"unsigned {atomic_int}",
+                ASSET_ENABLE_DOUBLE_SUPPORT=int(self.precision == "double")
+            )
+
+            program = cl.Program(context, asset_cl).build()
+
+            # synchronize
+            cl.enqueue_barrier(queue)
+
+            kernel = program.jsf_uniform_orderstat_3d_kernel
+            kernel(queue, (grid_size,), (n_threads,),
+                   P_total_gpu.data, log_du_gpu.data, g_times_l=True)
+
+            P_total_gpu[:chunk_size].get(ary=P_total[i_start: i_end])
+
+        return P_total
+
+    def pycuda(self, log_du):
+        try:
+            # PyCuda should not be in requirements-extra because CPU limited
+            # users won't be able to install Elephant.
+            import pycuda.autoinit
+            import pycuda.gpuarray as gpuarray
+            import pycuda.driver as drv
+            from pycuda.compiler import SourceModule
+        except ImportError as err:
+            raise ImportError(
+                "Install pycuda with 'pip install pycuda'") from err
+
+        self._check_input(log_du)
+
+        it_todo = self.num_iterations
+        u_length = log_du.shape[0]
+
+        device = pycuda.autoinit.device
+
+        max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK // (
+                    self.dtype.itemsize * (self.d + 2))
+        n_threads = min(self.cuda_threads, max_l_block,
+                        device.MAX_THREADS_PER_BLOCK)
+        if n_threads > device.WARP_SIZE:
+            # It's more efficient to make the number of threads
+            # a multiple of the warp size (32).
+            n_threads -= n_threads % device.WARP_SIZE
+
+        log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
+        log_factorial = log_factorial.astype(self.dtype)
+        logK = log_factorial[-1]
+
+        free, total = drv.mem_get_info()
+        # 4 * (D + 1) * size + 8 * size == mem_avail
+        chunk_size = free // (4 * log_du.shape[1] + self.dtype.itemsize)
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=u_length)
+
+        P_total = np.empty(u_length, dtype=self.dtype)
+        P_total_gpu = gpuarray.GPUArray(chunk_size, dtype=self.dtype)
+        log_du_gpu = drv.mem_alloc(4 * chunk_size * log_du.shape[1])
+
+        for i_start, i_end in split_idx:
+            drv.memcpy_htod_async(dest=log_du_gpu, src=log_du[i_start: i_end])
+            P_total_gpu.fill(0)
+            chunk_size = i_end - i_start
+            l_block = min(n_threads, chunk_size)
+            l_num_blocks = math.ceil(chunk_size / l_block)
+            grid_size = math.ceil(it_todo / (n_threads * self.cuda_cwr_loops))
+            grid_size = min(grid_size, device.MAX_GRID_DIM_X)
+            if grid_size > l_num_blocks:
+                # make grid_size divisible by l_num_blocks
+                grid_size -= grid_size % l_num_blocks
+            else:
+                # grid_size must be at least l_num_blocks
+                grid_size = l_num_blocks
+
+            if self.verbose:
+                print(f"[Joint prob. matrix] it_todo={it_todo}, "
+                      f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                      f"N_THREADS={n_threads}")
+
+            asset_cu = self._compile_template(
+                template_name="joint_pmat.cu",
+                L=f"{chunk_size}LLU",
+                L_BLOCK=l_block,
+                L_NUM_BLOCKS=l_num_blocks,
+                ITERATIONS_TODO=f"{it_todo}LLU",
+                logK=f"{logK:.10f}f",
+            )
+
+            module = SourceModule(asset_cu)
+
+            iteration_table_gpu, _ = module.get_global("iteration_table")
+            iteration_table = self.map_iterations.astype(np.uint64)
+            drv.memcpy_htod(iteration_table_gpu, iteration_table)
+
+            log_factorial_gpu, _ = module.get_global("log_factorial")
+            drv.memcpy_htod(log_factorial_gpu, log_factorial)
+
+            drv.Context.synchronize()
+
+            kernel = module.get_function("jsf_uniform_orderstat_3d_kernel")
+            kernel(P_total_gpu.gpudata, log_du_gpu, grid=(grid_size, 1),
+                   block=(n_threads, 1, 1))
+
+            P_total_gpu[:chunk_size].get(ary=P_total[i_start: i_end])
+
+        return P_total
+
+    def _cuda(self, log_du):
+        # Compile a self-contained joint_pmat_old.cu file and run it
+        # in a terminal. Having this function is useful to debug ASSET CUDA
+        # application because it's self-contained and the logic is documented.
+        # Don't use this backend when the 'log_du' arrays are huge because
+        # of the disk I/O operations.
+        # A note to developers: remove this backend in half a year once the
+        # pycuda backend proves to be stable.
+
+        self._check_input(log_du)
+
+        asset_cu = self._compile_template(
+            template_name="joint_pmat_old.cu",
+            L=f"{log_du.shape[0]}LLU",
+            N_THREADS=self.cuda_threads,
+            ITERATIONS_TODO=f"{self.num_iterations}LLU",
+            ASSET_DEBUG=int(self.verbose)
+        )
+        with tempfile.TemporaryDirectory() as asset_tmp_folder:
+            asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
+            asset_bin_path = os.path.join(asset_tmp_folder, 'asset.o')
+            with open(asset_cu_path, 'w') as f:
+                f.write(asset_cu)
+            # -O3 optimization flag is for the host code only;
+            # by default, GPU device code is optimized with -O3.
+            # -w to ignore warnings.
+            compile_cmd = ['nvcc', '-w', '-O3', '-o', asset_bin_path,
+                           asset_cu_path]
+            if self.precision == 'double' and get_cuda_capability_major() >= 6:
+                # atomicAdd(double) requires compute capability 6.x
+                compile_cmd.extend(['-arch', 'sm_60'])
+            compile_status = subprocess.run(
+                compile_cmd,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if self.verbose:
+                print(compile_status.stdout.decode())
+                print(compile_status.stderr.decode(), file=sys.stderr)
+            compile_status.check_returncode()
+            log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
+            P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
+            with open(log_du_path, 'wb') as f:
+                log_du.tofile(f)
+            run_status = subprocess.run(
+                [asset_bin_path, log_du_path, P_total_path],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if self.verbose:
+                print(run_status.stdout.decode())
+                print(run_status.stderr.decode(), file=sys.stderr)
+            run_status.check_returncode()
+            with open(P_total_path, 'rb') as f:
+                P_total = np.fromfile(f, dtype=self.dtype)
+
+        return P_total
+
+    def _check_input(self, log_du):
+        it_todo = self.num_iterations
+        if it_todo > np.iinfo(np.uint64).max:
+            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
+                             " Only Python backend is supported.")
+        # Don't convert log_du to float32 transparently for the user to avoid
+        # situations when the user accidentally passes an array with float64.
+        # Doing so wastes memory for nothing.
+        if log_du.dtype != np.float32:
+            raise ValueError("'log_du' must be a float32 array")
+        if log_du.shape[1] != self.d + 1:
+            raise ValueError(f"log_du.shape[1] ({log_du.shape[1]}) must be "
+                             f"equal to D+1 ({self.d + 1})")
+
+    def compute(self, u):
+        if u.shape[1] != self.d:
+            raise ValueError("Invalid input data shape axis 1: expected {}, "
+                             "got {}".format(self.d, u.shape[1]))
+        # A faster and memory efficient implementation of
+        # du = np.diff(u, prepend=0, append=1, axis=1).astype(np.float32)
+        du = np.empty((u.shape[0], u.shape[1] + 1), dtype=np.float32)
+        du[:, 0] = u[:, 0]
+        np.subtract(u[:, 1:], u[:, :-1], out=du[:, 1:-1])
+        np.subtract(1, u[:, -1], out=du[:, -1])
+
+        # precompute logarithms
+        # ignore warnings about infinities, see inside the loop:
+        # we replace 0 * ln(0) by 1 to get exp(0 * ln(0)) = 0 ** 0 = 1
+        # the remaining infinities correctly evaluate to
+        # exp(ln(0)) = exp(-inf) = 0
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            log_du = np.log(du, out=du)
+
+        jsf_backend = self._choose_backend()
+
+        P_total = jsf_backend(log_du)
+
+        # Captures non-finite values like NaN, inf
+        inside = (P_total > -self.tolerance) & (P_total < 1 + self.tolerance)
+        outside_vals = P_total[~inside]
+        if len(outside_vals) > 0:
+            # A watchdog for unexpected results.
+            warnings.warn(f"{len(outside_vals)}/{P_total.shape[0]} values of "
+                          "the computed joint prob. matrix lie outside of the "
+                          f"valid [0, 1] interval:\n{outside_vals}\nIf you're "
+                          "using PyOpenCL backend, make sure you've disabled "
+                          "GPU Hangcheck as described here https://"
+                          "software.intel.com/content/www/us/en/develop/"
+                          "documentation/get-started-with-intel-oneapi-"
+                          "base-linux/top/before-you-begin.html\n"
+                          "Clipping the output array to 0 and 1.")
+            P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
+
+        return P_total
+
+
+class _PMatNeighbors(_GPUBackend):
     """
-    Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
-    `mat`.
-
-    For each entry `mat[i, j]`, collects the `n_largest` elements with largest
-    values around `mat[i, j]`, say `z_i, i=1,2,...,n_largest`, and assigns them
-    to `L[i, j, :]`.
-    The zone around `mat[i, j]` where largest neighbors are collected from is
-    a rectangular area (kernel) of shape `(l, w) = filter_shape` centered
-    around `mat[i, j]` and aligned along the diagonal.
-
-    If `mat` is symmetric, only the triangle below the diagonal is considered.
-
     Parameters
     ----------
-    mat : np.ndarray
-        A square matrix of real-valued elements.
     filter_shape : tuple of int
         A pair of integers representing the kernel shape `(l, w)`.
     n_largest : int
         The number of largest neighbors to collect for each entry in `mat`.
-
-    Returns
-    -------
-    lmat : np.ndarray
-        A matrix of shape `(n_largest, l, w)` containing along the first
-        dimension `lmat[:, i, j]` the largest neighbors of `mat[i, j]`.
-
-    Raises
-    ------
-    ValueError
-        If `filter_shape[1]` is not lower than `filter_shape[0]`.
-
-    Warns
-    -----
-    UserWarning
-        If both entries in `filter_shape` are not odd values (i.e., the kernel
-        is not centered on the data point used in the calculation).
-
     """
-    l, w = filter_shape
 
-    # if the matrix is symmetric the diagonal was set to 0.5
-    # when computing the probability matrix
-    symmetric = np.all(np.diagonal(mat) == 0.5)
+    def __init__(self, filter_shape, n_largest, max_chunk_size=None):
+        super().__init__(max_chunk_size=max_chunk_size)
+        self.n_largest = n_largest
+        self.max_chunk_size = max_chunk_size
 
-    # Check consistent arguments
-    if w >= l:
-        raise ValueError('filter_shape width must be lower than length')
-    if not ((w % 2) and (l % 2)):
-        warnings.warn('The kernel is not centered on the datapoint in whose'
-                      'calculation it is used. Consider using odd values'
-                      'for both entries of filter_shape.')
+        filter_size, filter_width = filter_shape
+        if filter_width >= filter_size:
+            raise ValueError('filter_shape width must be lower than length')
+        if not ((filter_width % 2) and (filter_size % 2)):
+            warnings.warn(
+                'The kernel is not centered on the datapoint in whose'
+                'calculation it is used. Consider using odd values'
+                'for both entries of filter_shape.')
 
-    # Construct the kernel
-    filt = np.ones((l, l), dtype=np.float32)
-    filt = np.triu(filt, -w)
-    filt = np.tril(filt, w)
+        # Construct the kernel
+        filt = np.ones((filter_size, filter_size), dtype=bool)
+        filt = np.triu(filt, -filter_width)
+        filt = np.tril(filt, filter_width)
+        if n_largest > len(filt.nonzero()[0]):
+            raise ValueError(f"Too small filter shape {filter_shape} to "
+                             f"select {n_largest} largest elements.")
 
-    # Convert mat values to floats, and replaces np.infs with specified input
-    # values
-    mat = np.array(mat, dtype=np.float32)
+        self.filter_kernel = filt
 
-    # Initialize the matrix of d-largest values as a matrix of zeroes
-    lmat = np.zeros((n_largest, mat.shape[0], mat.shape[1]), dtype=np.float32)
+    def _check_input(self, mat):
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        # Check consistent arguments
+        filter_size = self.filter_kernel.shape[0]
+        if (symmetric and mat.shape[0] < 2 * filter_size - 1) \
+                or (not symmetric and min(mat.shape) < filter_size):
+            raise ValueError(f"'filter_shape' {self.filter_kernel.shape} is "
+                             f"too large for the input matrix of shape "
+                             f"{mat.shape}")
+        if mat.dtype != np.float32:
+            raise ValueError("The input matrix dtype must be float32.")
 
-    N_bin_y = mat.shape[0]
-    N_bin_x = mat.shape[1]
-    # if the matrix is symmetric do not use kernel positions intersected
-    # by the diagonal
-    if symmetric:
-        bin_range_y = range(l, N_bin_y - l + 1)
-    else:
-        bin_range_y = range(N_bin_y - l + 1)
-        bin_range_x = range(N_bin_x - l + 1)
+    def pyopencl(self, mat):
+        import pyopencl as cl
+        import pyopencl.array as cl_array
+        from jinja2 import Template
 
-    # compute matrix of largest values
-    for y in bin_range_y:
+        context = cl.create_some_context(interactive=False)
+        device = context.devices[0]
+        queue = cl.CommandQueue(context)
+
+        # if the matrix is symmetric the diagonal was set to 0.5
+        # when computing the probability matrix
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        self._check_input(mat)
+
+        filt_size = self.filter_kernel.shape[0]  # filt is a square matrix
+        filt_rows, filt_cols = self.filter_kernel.nonzero()
+        filt_rows = "{%s}" % ", ".join(f"{row}U" for row in filt_rows)
+        filt_cols = "{%s}" % ", ".join(f"{col}U" for col in filt_cols)
+
+        lmat_padded = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
+                               dtype=np.float32)
         if symmetric:
-            # x range depends on y position
-            bin_range_x = range(y - l + 1)
-        for x in bin_range_x:
-            patch = mat[y: y + l, x: x + l]
-            mskd = np.multiply(filt, patch)
-            largest_vals = np.sort(mskd, axis=None)[-n_largest:]
-            lmat[:, y + (l // 2), x + (l // 2)] = largest_vals
+            mat = mat[filt_size:]
+            lmat = lmat_padded[filt_size + filt_size // 2: -filt_size // 2 + 1]
+        else:
+            lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
 
-    return lmat
+        # GPU_MAX_HEAP_SIZE OpenCL flag is set to 2 Gb (1 << 31) by default
+        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size,
+                        1 << 31)
+        # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
+        chunk_size = (mem_avail // 4 - filt_size * lmat.shape[1]) // (
+                lmat.shape[1] * (self.n_largest + 1))
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=lmat.shape[0],
+                                                 min_chunk_size=filt_size)
+
+        pmat_cl_path = Path(__file__).parent / "pmat_neighbors.cl"
+        pmat_cl_template = Template(pmat_cl_path.read_text())
+
+        lmat_gpu = cl_array.Array(
+            queue, shape=(chunk_size, lmat.shape[1], self.n_largest),
+            dtype=np.float32
+        )
+
+        for i_start, i_end in split_idx:
+            mat_gpu = cl_array.to_device(queue,
+                                         mat[i_start: i_end + filt_size],
+                                         async_=True)
+            lmat_gpu.fill(0, queue=queue)
+            chunk_size = i_end - i_start
+            it_todo = chunk_size * (lmat.shape[1] - filt_size + 1)
+
+            pmat_neighbors_cl = pmat_cl_template.render(
+                FILT_SIZE=filt_size,
+                N_LARGEST=self.n_largest,
+                PMAT_COLS=f"{lmat.shape[1]}LU",
+                Y_OFFSET=f"{i_start}LU",
+                NONZERO_SIZE=self.filter_kernel.sum(),
+                SYMMETRIC=int(symmetric),
+                filt_rows=filt_rows,
+                filt_cols=filt_cols
+            )
+
+            program = cl.Program(context, pmat_neighbors_cl).build()
+
+            # synchronize
+            cl.enqueue_barrier(queue)
+
+            kernel = program.pmat_neighbors
+            # When the grid size is set to the total number of work items to
+            # execute and the local size is set to None, PyOpenCL chooses the
+            # number of threads automatically such that the total number of
+            # work items exactly matches the desired number of iterations.
+            kernel(queue, (it_todo,), None, lmat_gpu.data, mat_gpu.data)
+
+            lmat_gpu[:chunk_size].get(ary=lmat[i_start: i_end])
+
+        return lmat_padded
+
+    def pycuda(self, mat):
+        from jinja2 import Template
+        try:
+            # PyCuda should not be in requirements-extra because CPU limited
+            # users won't be able to install Elephant.
+            import pycuda.autoinit
+            import pycuda.gpuarray as gpuarray
+            import pycuda.driver as drv
+            from pycuda.compiler import SourceModule
+        except ImportError as err:
+            raise ImportError(
+                "Install pycuda with 'pip install pycuda'") from err
+
+        # if the matrix is symmetric the diagonal was set to 0.5
+        # when computing the probability matrix
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        self._check_input(mat)
+
+        device = pycuda.autoinit.device
+        n_threads = device.MAX_THREADS_PER_BLOCK
+
+        filt_size = self.filter_kernel.shape[0]
+        filt_rows, filt_cols = self.filter_kernel.nonzero()
+
+        lmat_padded = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
+                               dtype=np.float32)
+        if symmetric:
+            mat = mat[filt_size:]
+            lmat = lmat_padded[filt_size + filt_size // 2: -filt_size // 2 + 1]
+        else:
+            lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
+
+        free, total = drv.mem_get_info()
+        # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
+        chunk_size = (free // 4 - filt_size * lmat.shape[1]) // (
+                lmat.shape[1] * (self.n_largest + 1))
+        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
+                                                 axis_size=lmat.shape[0],
+                                                 min_chunk_size=filt_size)
+
+        pmat_cu_path = Path(__file__).parent / "pmat_neighbors.cu"
+        pmat_cu_template = Template(pmat_cu_path.read_text())
+
+        lmat_gpu = gpuarray.GPUArray(
+            (chunk_size, lmat.shape[1], self.n_largest), dtype=np.float32)
+
+        mat_gpu = drv.mem_alloc(4 * (chunk_size + filt_size) * mat.shape[1])
+
+        for i_start, i_end in split_idx:
+            drv.memcpy_htod_async(dest=mat_gpu,
+                                  src=mat[i_start: i_end + filt_size])
+            lmat_gpu.fill(0)
+            chunk_size = i_end - i_start
+            it_todo = chunk_size * (lmat.shape[1] - filt_size + 1)
+
+            pmat_neighbors_cu = pmat_cu_template.render(
+                FILT_SIZE=filt_size,
+                N_LARGEST=self.n_largest,
+                PMAT_COLS=f"{lmat.shape[1]}LLU",
+                Y_OFFSET=f"{i_start}LLU",
+                NONZERO_SIZE=self.filter_kernel.sum(),
+                SYMMETRIC=int(symmetric),
+                IT_TODO=it_todo,
+            )
+
+            module = SourceModule(pmat_neighbors_cu)
+
+            filt_rows_gpu, _ = module.get_global("filt_rows")
+            drv.memcpy_htod(filt_rows_gpu, filt_rows.astype(np.uint32))
+
+            filt_cols_gpu, _ = module.get_global("filt_cols")
+            drv.memcpy_htod(filt_cols_gpu, filt_cols.astype(np.uint32))
+
+            drv.Context.synchronize()
+
+            grid_size = math.ceil(it_todo / n_threads)
+            if grid_size > device.MAX_GRID_DIM_X:
+                raise ValueError("Cannot launch a CUDA kernel with "
+                                 f"{grid_size} num. of blocks. Adjust the "
+                                 "'max_chunk_size' parameter.")
+
+            kernel = module.get_function("pmat_neighbors")
+            kernel(lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1),
+                   block=(n_threads, 1, 1))
+
+            lmat_gpu[:chunk_size].get(ary=lmat[i_start: i_end])
+
+        return lmat_padded
+
+    def compute(self, mat):
+        """
+        Build the 3D matrix `L` of largest neighbors of elements in a 2D matrix
+        `mat`.
+
+        For each entry `mat[i, j]`, collects the `n_largest` elements with
+        largest values around `mat[i, j]`, say `z_i, i=1,2,...,n_largest`,
+        and assigns them to `L[i, j, :]`.
+        The zone around `mat[i, j]` where largest neighbors are collected from
+        is a rectangular area (kernel) of shape `(l, w) = filter_shape`
+        centered around `mat[i, j]` and aligned along the diagonal.
+
+        If `mat` is symmetric, only the triangle below the diagonal is
+        considered.
+
+        Parameters
+        ----------
+        mat : np.ndarray
+            A square matrix of real-valued elements.
+
+        Returns
+        -------
+        lmat : np.ndarray
+            A matrix of shape `(l, w, n_largest)` containing along the last
+            dimension `lmat[i, j, :]` the largest neighbors of `mat[i, j]`.
+        """
+        backend = self._choose_backend()
+        lmat = backend(mat)
+        return lmat
+
+    def cpu(self, mat):
+        # if the matrix is symmetric the diagonal was set to 0.5
+        # when computing the probability matrix
+        symmetric = np.all(np.diagonal(mat) == 0.5)
+        self._check_input(mat)
+
+        filter_size = self.filter_kernel.shape[0]
+
+        # Initialize the matrix of d-largest values as a matrix of zeroes
+        lmat = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
+                        dtype=np.float32)
+
+        N_bin_y = mat.shape[0]
+        N_bin_x = mat.shape[1]
+        # if the matrix is symmetric do not use kernel positions intersected
+        # by the diagonal
+        if symmetric:
+            bin_range_y = range(filter_size, N_bin_y - filter_size + 1)
+        else:
+            bin_range_y = range(N_bin_y - filter_size + 1)
+            bin_range_x = range(N_bin_x - filter_size + 1)
+
+        # compute matrix of largest values
+        for y in bin_range_y:
+            if symmetric:
+                # x range depends on y position
+                bin_range_x = range(y - filter_size + 1)
+            for x in bin_range_x:
+                patch = mat[y: y + filter_size, x: x + filter_size]
+                mskd = patch[self.filter_kernel]
+                largest_vals = np.sort(mskd)[-self.n_largest:]
+                lmat[y + (filter_size // 2), x + (filter_size // 2), :] = \
+                    largest_vals
+
+        return lmat
 
 
 def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
@@ -751,7 +1316,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
         of synchronous events as values (see above).
     intersection : {'pixelwise', 'linkwise'}, optional
         The type of intersection to perform among the two SSEs (see above).
-        Default: 'linkwise'.
+        Default: 'linkwise'
 
     Returns
     -------
@@ -820,7 +1385,7 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
     difference : {'pixelwise', 'linkwise'}, optional
         The type of difference to perform between `sse1` and `sse2` (see
         above).
-        Default: 'linkwise'.
+        Default: 'linkwise'
 
     Returns
     -------
@@ -964,12 +1529,11 @@ def synchronous_events_no_overlap(sse1, sse2):
         return False
 
     common_pixels = set(sse11.keys()).intersection(set(sse22.keys()))
-    if common_pixels == set([]):
+    if len(common_pixels) == 0:
         return True
-    elif all(sse11[p].isdisjoint(sse22[p]) for p in common_pixels):
+    if all(sse11[p].isdisjoint(sse22[p]) for p in common_pixels):
         return True
-    else:
-        return False
+    return False
 
 
 def synchronous_events_contained_in(sse1, sse2):
@@ -1020,7 +1584,7 @@ def synchronous_events_contained_in(sse1, sse2):
     for pixel1, link1 in sse11.items():
         if pixel1 not in sse22.keys():
             return False
-        elif not link1.issubset(sse22[pixel1]):
+        if not link1.issubset(sse22[pixel1]):
             return False
 
     # Check that sse1 is a STRICT subset of sse2, i.e. that sse2 contains at
@@ -1188,16 +1752,16 @@ class ASSET(object):
         respectively.
         If None, the attribute `t_start` of the spike trains is used
         (if the same for all spike trains).
-        Default: None.
+        Default: None
     t_stop_i, t_stop_j : pq.Quantity, optional
         The stop time of the binning for the first and second axes,
         respectively.
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
-        Default: None.
+        Default: None
     verbose : bool, optional
         If True, print messages and show progress bar.
-        Default: True.
+        Default: True
 
 
     Raises
@@ -1226,7 +1790,7 @@ class ASSET(object):
             spiketrains_j,
             t_start=t_start_j,
             t_stop=t_stop_j)
-        self.verbose = verbose
+        self.verbose = verbose and rank == 0
 
         msg = 'The time intervals for x and y need to be either identical ' \
               'or fully disjoint, but they are:\n' \
@@ -1312,7 +1876,7 @@ class ASSET(object):
                 * 'intersection': `len(intersection(s_i, s_j))`
                 * 'mean': `sqrt(len(s_1) * len(s_2))`
                 * 'union': `len(union(s_i, s_j))`
-            Default: None.
+            Default: None
 
         Returns
         -------
@@ -1373,7 +1937,7 @@ class ASSET(object):
             :func:`spike_train_surrogates.surrogates` documentation for more
             information about each surrogate method. Note that some of these
             methods need `surrogate_dt` parameter, others ignore it.
-            Default: 'dither_spike_train'.
+            Default: 'dither_spike_train'
         surrogate_dt : pq.Quantity, optional
             For surrogate methods shifting spike times randomly around their
             original time ('dither_spike_train', 'dither_spikes') or replacing
@@ -1381,7 +1945,7 @@ class ASSET(object):
             `surrogate_dt` represents the size of that shift (window). For
             other methods, `surrogate_dt` is ignored.
             If None, it's set to `self.bin_size * 5`.
-            Default: None.
+            Default: None
 
         Returns
         -------
@@ -1496,11 +2060,11 @@ class ASSET(object):
             `spiketrains[i]`.
             If 'estimate', firing rates are estimated by simple boxcar kernel
             convolution, with the specified `kernel_width`.
-            Default: 'estimate'.
+            Default: 'estimate'
         kernel_width : pq.Quantity, optional
             The total width of the kernel used to estimate the rate profiles
             when `firing_rates` is 'estimate'.
-            Default: 100 * pq.ms.
+            Default: 100 * pq.ms
 
         Returns
         -------
@@ -1566,30 +2130,29 @@ class ASSET(object):
             print('compute the prob. that each neuron fires in each pair of '
                   'bins...')
 
-        spike_probs_x = [1. - np.exp(-(rate * self.bin_size).rescale(
-            pq.dimensionless).magnitude) for rate in fir_rate_x]
+        rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
+        spike_probs_x = 1. - np.exp(-rate_bins_x)
         if symmetric:
             spike_probs_y = spike_probs_x
         else:
-            spike_probs_y = [1. - np.exp(-(rate * self.bin_size).rescale(
-                pq.dimensionless).magnitude) for rate in fir_rate_y]
-
-        # For each neuron k compute the matrix of probabilities p_ijk that
-        # neuron k spikes in both bins i and j. (For i = j it's just spike
-        # probs[k][i])
-        spike_prob_mats = [np.outer(probx, proby) for (probx, proby) in
-                           zip(spike_probs_x, spike_probs_y)]
+            rate_bins_y = (fir_rate_y * self.bin_size).simplified.magnitude
+            spike_probs_y = 1. - np.exp(-rate_bins_y)
 
         # Compute the matrix Mu[i, j] of parameters for the Poisson
         # distributions which describe, at each (i, j), the approximated
         # overlap probability. This matrix is just the sum of the probability
-        # matrices computed above
-
+        # matrices p_ijk computed for each neuron k:
+        # p_ijk is the probability that neuron k spikes in both bins i and j.
+        # The sum of outer products is equivalent to a dot product.
         if self.verbose:
             print(
                 "compute the probability matrix by Le Cam's approximation...")
-
-        Mu = np.sum(spike_prob_mats, axis=0)
+        Mu = spike_probs_x.T.dot(spike_probs_y)
+        # A straightforward implementation is:
+        # pmat_shape = spike_probs_x.shape[1], spike_probs_y.shape[1]
+        # Mu = np.zeros(pmat_shape, dtype=np.float64)
+        # for probx, proby in zip(spike_probs_x, spike_probs_y):
+        #     Mu += np.outer(probx, proby)
 
         # Compute the probability matrix obtained from imat using the Poisson
         # pdfs
@@ -1604,7 +2167,9 @@ class ASSET(object):
         return pmat
 
     def joint_probability_matrix(self, pmat, filter_shape, n_largest,
-                                 min_p_value=1e-5):
+                                 min_p_value=1e-5, precision='float',
+                                 cuda_threads=64, cuda_cwr_loops=32,
+                                 tolerance=1e-5):
         """
         Map a probability matrix `pmat` to a joint probability matrix `jmat`,
         where `jmat[i, j]` is the joint p-value of the largest neighbors of
@@ -1636,36 +2201,99 @@ class ASSET(object):
             `min(pmat[i, j], 1-p_value_min)` to avoid that a single highly
             significant value in `pmat` (extreme case: `pmat[i, j] = 1`) yields
             joint significance of itself and its neighbors.
-            Default: 1e-5.
+            Default: 1e-5
+
+        precision : {'float', 'double'}, optional
+            Single or double floating-point precision for the resulting `jmat`
+            matrix.
+              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
+
+              * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
+            Double floating-point precision is typically x4 times slower than
+            the single floating-point equivalent.
+            Default: 'float'
+        cuda_threads : int, optional
+            [CUDA/OpenCL performance parameter that does not influence the
+            result.]
+            The number of CUDA/OpenCL threads per block (in X axis) between 1
+            and 1024 and is used only if CUDA or OpenCL backend is enabled.
+            For performance reasons, it should be a multiple of 32.
+            Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
+            than 64 while new series (Tesla T4) with capabilities 6.x and more
+            work best with 32 threads.
+            Default: 64
+        cuda_cwr_loops : int, optional
+            [CUDA/OpenCL performance parameter that does not influence the
+            result.]
+            A positive integer that defines the number of fast
+            'combinations_with_replacement' loops to run to reduce branch
+            divergence. This parameter influences the performance when the
+            number of iterations is huge (`>1e8`); in such cases, increase
+            the value.
+            Default: 32
+        tolerance : float, optional
+            Tolerance is used to catch unexpected behavior of billions of
+            floating point additions, when the number of iterations is huge
+            or the data arrays are large. A warning is thrown when the
+            resulting joint prob. matrix values are outside of the acceptable
+            range ``[-tolerance, 1.0 + tolerance]``.
+            Default: 1e-5
 
         Returns
         -------
         jmat : np.ndarray
             The joint probability matrix associated to `pmat`.
 
+        Notes
+        -----
+        1. By default, if CUDA is detected, CUDA acceleration is used. CUDA
+           backend is **~X1000** faster than the Python implementation.
+           To turn off CUDA features, set the environment flag
+           ``ELEPHANT_USE_CUDA`` to ``0``. Otherwise
+        2. If PyOpenCL is installed and detected, PyOpenCL backend is used.
+           PyOpenCL backend is **~X100** faster than the Python implementation.
+           To turn off OpenCL features, set the environment flag
+           ``ELEPHANT_USE_OPENCL`` to ``0``.
+
+           When using PyOpenCL backend, make sure you've disabled GPU Hangcheck
+           as described in the `Intel GPU developers documentation
+           <https://software.intel.com/content/www/us/en/develop/
+           documentation/get-started-with-intel-oneapi-base-linux/top/
+           before-you-begin.html>`_. Do it with caution - using your built-in
+           Intel graphics card to perform computations may make the system
+           unresponsive until the compute program terminates.
+
         """
         l, w = filter_shape
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
-        pmat_neighb = _pmat_neighbors(
-            pmat, filter_shape=filter_shape, n_largest=n_largest)
+        pmat = np.asarray(pmat, dtype=np.float32)
+        pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
+                                         n_largest=n_largest)
+        pmat_neighb = pmat_neighb_obj.compute(pmat)
 
-        pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value)
+        pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value,
+                                 out=pmat_neighb)
 
         # in order to avoid doing the same calculation multiple times:
         # find all unique sets of values in pmat_neighb
         # and store the corresponding indices
         # flatten the second and third dimension in order to use np.unique
-        pmat_neighb = pmat_neighb.reshape(n_largest, pmat.size).T
+        pmat_neighb = pmat_neighb.reshape(pmat.size, n_largest)
         pmat_neighb, pmat_neighb_indices = np.unique(pmat_neighb, axis=0,
                                                      return_inverse=True)
 
         # Compute the joint p-value matrix jpvmat
         n = l * (1 + 2 * w) - w * (
                 w + 1)  # number of entries covered by kernel
-        jpvmat = _jsf_uniform_orderstat_3d(pmat_neighb, n,
-                                           verbose=self.verbose)
+        jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
+                                     precision=precision,
+                                     verbose=self.verbose,
+                                     cuda_threads=cuda_threads,
+                                     cuda_cwr_loops=cuda_cwr_loops,
+                                     tolerance=tolerance)
+        jpvmat = jsf.compute(u=pmat_neighb)
 
         # restore the original shape using the stored indices
         jpvmat = jpvmat[pmat_neighb_indices].reshape(pmat.shape)
@@ -1729,7 +2357,7 @@ class ASSET(object):
 
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
-                               stretch):
+                               stretch, working_memory=None):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -1781,6 +2409,14 @@ class ASSET(object):
             stretching increases from 1 to `stretch` as the direction of the
             two elements moves from the 45 to the 135 degree direction.
             `stretch` must be greater than 1.
+        working_memory : int or None, optional
+            The sought maximum memory in MiB for temporary distance matrix
+            chunks. When None (default), no chunking is performed. This
+            parameter is passed directly to
+            ``sklearn.metrics.pairwise_distances_chunked`` function and it
+            has no influence on the outcome matrix. Instead, it control the
+            memory VS speed trade-off.
+            Default: None
 
         Returns
         -------
@@ -1808,8 +2444,14 @@ class ASSET(object):
 
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
-        D = _stretched_metric_2d(
-            xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45)
+        try:
+            D = _stretched_metric_2d(
+                xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
+                working_memory=working_memory
+            )
+        except MemoryError as err:
+            raise MemoryError("Set 'working_memory=100' or another value to "
+                              "chunk the data") from err
 
         # Cluster positions of significant pixels via dbscan
         core_samples, config = dbscan(
@@ -1835,13 +2477,13 @@ class ASSET(object):
 
         Parameters
         ----------
-        cmat: (n,n) np.ndarray
+        cmat : (n,n) np.ndarray
             The cluster matrix, the output of
             :func:`ASSET.cluster_matrix_entries`.
         ids : list, optional
             A list of spike train IDs. If provided, `ids[i]` is the identity
             of `spiketrains[i]`. If None, the IDs `0,1,...,n-1` are used.
-            Default: None.
+            Default: None
 
         Returns
         -------

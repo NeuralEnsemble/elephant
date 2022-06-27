@@ -47,12 +47,26 @@ Advanced
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/gpfa.ipynb
 
+* Spike Pattern Detection and Evaluation (SPADE)
+
+  :doc:`View the notebook <../tutorials/spade>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/spade.ipynb
+
 * Analysis of Sequences of Synchronous EvenTs (ASSET)
 
   :doc:`View the notebook <../tutorials/asset>` or run interactively:
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/asset.ipynb
+
+* Granger causality
+
+  :doc:`View the notebook <../tutorials/granger_causality>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/granger_causality.ipynb
 
 
 Additional
@@ -67,3 +81,17 @@ Additional
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/parallel.ipynb
+
+..
+    Index the notebooks in a hidden toctree to avoid sphinx warnings.
+
+.. toctree::
+    :hidden:
+
+    tutorials/asset.ipynb
+    tutorials/gpfa.ipynb
+    tutorials/parallel.ipynb
+    tutorials/statistics.ipynb
+    tutorials/unitary_event_analysis.ipynb
+    tutorials/granger_causality.ipynb
+    tutorials/spade.ipynb

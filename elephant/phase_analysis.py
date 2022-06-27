@@ -3,12 +3,15 @@
 Methods for performing phase analysis.
 
 .. autosummary::
-    :toctree: toctree/phase_analysis
+    :toctree: _toctree/phase_analysis
 
     spike_triggered_phase
+    phase_locking_value
+    mean_phase_vector
+    phase_difference
     pairwise_phase_consistency
 
-:copyright: Copyright 2014-2018 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -16,10 +19,14 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import quantities as pq
+import neo
 
 __all__ = [
     "spike_triggered_phase",
-    "pairwise_phase_consistency"
+    "pairwise_phase_consistency",
+    "phase_locking_value",
+    "mean_phase_vector",
+    "phase_difference"
 ]
 
 
@@ -89,6 +96,15 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     ...     elephant.signal_processing.hilbert(analogsignal),
     ...     spiketrain,
     ...     interpolate=True)
+    >>> phases
+    [array([-0.57890515,  1.03105904, -0.82241075, ...,  0.90023903,
+             2.23702263,  2.93744259])]
+    >>> amps
+    [array([0.86117412, 1.08918248, 0.98256318, ..., 1.05760518, 1.08407016,
+        1.01927305]) * dimensionless]
+    >>> times
+    [array([6.41327152e+00, 2.02715221e+01, 1.05827312e+02, ...,
+        9.99692942e+04, 9.99808429e+04, 9.99870120e+04]) * ms]
 
     """
 
@@ -154,7 +170,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                 # sample points
                 # if z->0 spike is more to the left sample
                 # if z->1 more to the right sample
-                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) / \
+                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) /\
                     hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
@@ -199,8 +215,8 @@ def pairwise_phase_consistency(phases, method='ppc0'):
 
     PPC0 is computed according to Eq. 14 and 15 of the cited paper.
 
-    An improved version of the PPC (PPC1) :cite: `PMID:22187161` computes angular
-    difference ony between pairs of spikes within trials.
+    An improved version of the PPC (PPC1) :cite:`phase-Vinck2012_33` computes
+    angular difference ony between pairs of spikes within trials.
 
     PPC1 is not implemented yet
 
@@ -230,13 +246,11 @@ def pairwise_phase_consistency(phases, method='ppc0'):
         Pairwise Phase Consistency
 
     """
-    # Convert inputs to lists
-    if not isinstance(phases, list):
+    if isinstance(phases, np.ndarray):
         phases = [phases]
-
-    # Check if all elements are arrays
     if not isinstance(phases, (list, tuple)):
         raise TypeError("Input must be a list of 1D numpy arrays with phases")
+
     for phase_array in phases:
         if not isinstance(phase_array, np.ndarray):
             raise TypeError("Each entry of the input list must be an 1D "
@@ -260,7 +274,7 @@ def pairwise_phase_consistency(phases, method='ppc0'):
     # transpose, we get the distance between phases for all possible pairs
     # of elements in 'phase'
     dot_prod = np.multiply(p_cos_2d, p_cos_2d.T, dtype=np.float32) + \
-               np.multiply(p_sin_2d, p_sin_2d.T, dtype=np.float32)  # TODO: agree on using this precision  or not
+        np.multiply(p_sin_2d, p_sin_2d.T, dtype=np.float32)
 
     # Now average over all elements in temp_results (the diagonal are 1
     # and should not be included)
@@ -270,9 +284,130 @@ def pairwise_phase_consistency(phases, method='ppc0'):
         # Note: each pair i,j is computed twice in dot_prod. do not
         # multiply by 2. n_trial * n_trials - n_trials = nr of filled elements
         # in dot_prod
-        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)  # TODO: handle nan's
+        ppc = np.sum(dot_prod) / (n_trials * n_trials - n_trials)
         return ppc
 
     elif method == 'ppc1':
         # TODO: remove all indices from the same trial
         return
+
+
+def phase_locking_value(phases_i, phases_j):
+    r"""
+    Calculates the phase locking value (PLV).
+
+    This function expects the phases of two signals (each containing multiple
+    trials). For each trial pair, it calculates the phase difference at each
+    time point. Then it calculates the mean vectors of those phase differences
+    across all trials. The PLV at time `t` is the length of the corresponding
+    mean vector.
+
+    Parameters
+    ----------
+    phases_i, phases_j : (t, n) np.ndarray
+        Time-series of the first and second signals, with `t` time points and
+        `n` trials.
+
+    Returns
+    -------
+    plv : (t,) np.ndarray
+        Vector of floats with the phase-locking value at each time point.
+        Range: :math:`[0, 1]`
+
+    Raises
+    ------
+    ValueError
+        If the shapes of `phases_i` and `phases_j` are different.
+
+    Notes
+    -----
+    This implementation is based on the formula taken from [1] (pp. 195):
+
+    .. math::
+        PLV_t = \frac{1}{N} \left |
+        \sum_{n=1}^N \exp(i \cdot \theta(t, n)) \right | \\
+
+    where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
+    is the phase difference at time `t` for trial `n`.
+
+    References
+    ----------
+    [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
+    and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
+    Human Brain Mapping, vol 8, pp. 194-208, 1999.
+    """
+    if np.shape(phases_i) != np.shape(phases_j):
+        raise ValueError("trial number and trial length of signal x and y "
+                         "must be equal")
+
+    # trial by trial and time-resolved
+    # version 0.2: signal x and y have multiple trials
+    # with discrete values/phases
+
+    phase_diff = phase_difference(phases_i, phases_j)
+    theta, r = mean_phase_vector(phase_diff, axis=0)
+    return r
+
+
+def mean_phase_vector(phases, axis=0):
+    r"""
+    Calculates the mean vector of phases.
+
+    This function expects phases (in radians) and uses their representation as
+    complex numbers to calculate the direction :math:`\theta` and the length
+    `r` of the mean vector.
+
+    Parameters
+    ----------
+    phases : np.ndarray
+        Phases in radians.
+    axis : int, optional
+        Axis along which the mean vector will be calculated.
+        If None, it will be computed across the flattened array.
+        Default: 0
+
+    Returns
+    -------
+    z_mean_theta : np.ndarray
+        Angle of the mean vector.
+        Range: :math:`(-\pi, \pi]`
+    z_mean_r : np.ndarray
+        Length of the mean vector.
+        Range: :math:`[0, 1]`
+    """
+    # use complex number representation
+    # z_phases = np.cos(phases) + 1j * np.sin(phases)
+    z_phases = np.exp(1j * np.asarray(phases))
+    z_mean = np.mean(z_phases, axis=axis)
+    z_mean_theta = np.angle(z_mean)
+    z_mean_r = np.abs(z_mean)
+    return z_mean_theta, z_mean_r
+
+
+def phase_difference(alpha, beta):
+    r"""
+    Calculates the difference between a pair of phases.
+
+    The output is in range from :math:`-\pi` to :math:`\pi`.
+
+    Parameters
+    ----------
+    alpha : np.ndarray
+        Phases in radians.
+    beta : np.ndarray
+        Phases in radians.
+
+    Returns
+    -------
+    phase_diff : np.ndarray
+        Difference between phases `alpha` and `beta`.
+        Range: :math:`[-\pi, \pi]`
+
+    Notes
+    -----
+    The usage of `np.arctan2` ensures that the range of the phase difference
+    is :math:`[-\pi, \pi]` and is located in the correct quadrant.
+    """
+    delta = alpha - beta
+    phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
+    return phase_diff

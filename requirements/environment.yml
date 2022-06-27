@@ -4,8 +4,7 @@ channels:
   - conda-forge  # required for MPI
 
 dependencies:
-  - python>=3.6
-  - pip
+  - python>=3.7
   - mpi4py
   - numpy
   - scipy
@@ -13,5 +12,8 @@ dependencies:
   - pandas
   - scikit-learn
   - statsmodels
+  - jinja2
   - pip:
-     - -r file:requirements.txt
+    - neo>=0.10.0
+    - viziphant
+    # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt

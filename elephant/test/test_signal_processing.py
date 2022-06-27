@@ -2,7 +2,7 @@
 """
 Unit tests for the signal_processing module.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
@@ -29,11 +29,11 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
     freq = 1. * pq.Hz
 
     def test_cross_correlation_freqs(self):
-        '''
+        """
         Sine vs cosine for different frequencies
         Note, that accuracy depends on N and min(f).
         E.g., f=0.1 and N=2018 only has an accuracy on the order decimal=1
-        '''
+        """
         freq_arr = np.linspace(0.5, 15, 8) * pq.Hz
         signal = np.zeros((self.n_samples, 3))
         for freq in freq_arr:
@@ -54,9 +54,9 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
             self.assertEqual(rho.shape, (signal.shape[0], 2))  # 2 pairs
 
     def test_cross_correlation_nlags(self):
-        '''
+        """
         Sine vs cosine for specific nlags
-        '''
+        """
         nlags = 30
         signal = np.zeros((self.n_samples, 2))
         signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
@@ -71,9 +71,9 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         assert len(rho.times) == 2 * int(nlags) + 1
 
     def test_cross_correlation_phi(self):
-        '''
+        """
         Sine with phase shift phi vs cosine
-        '''
+        """
         phi = np.pi / 6.
         signal = np.zeros((self.n_samples, 2))
         signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times + phi)
@@ -89,9 +89,9 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
             2. * np.pi * self.freq * rho.times + phi), decimal=2)
 
     def test_cross_correlation_envelope(self):
-        '''
+        """
         Envelope of sine vs cosine
-        '''
+        """
         # Sine with phase shift phi vs cosine for different frequencies
         nlags = 800  # nlags need to be smaller than N/2 b/c border effects
         signal = np.zeros((self.n_samples, 2))
@@ -195,6 +195,9 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is untouched
         self.assertEqual(signal[0].magnitude, self.test_seq1[0])
 
+        # Assert original and returned objects are different
+        self.assertIsNot(result, signal)
+
     def test_zscore_single_inplace(self):
         """
         Test z-score on a single AnalogSignal, asking for an inplace
@@ -218,6 +221,9 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertEqual(signal[0].magnitude, target[0])
 
+        # Assert original and returned objects are the same
+        self.assertIs(result, signal)
+
     def test_zscore_single_multidim_dup(self):
         """
         Test z-score on a single AnalogSignal with multiple dimensions, asking
@@ -232,12 +238,14 @@ class ZscoreTestCase(unittest.TestCase):
         s = np.std(signal.magnitude, axis=0, keepdims=True)
         target = (signal.magnitude - m) / s
 
-        assert_array_almost_equal(
-            elephant.signal_processing.zscore(
-                signal, inplace=False).magnitude, target, decimal=9)
+        result = elephant.signal_processing.zscore(signal, inplace=False)
+        assert_array_almost_equal(result.magnitude, target, decimal=9)
 
         # Assert original signal is untouched
         self.assertEqual(signal[0, 0].magnitude, self.test_seq1[0])
+
+        # Assert original and returned objects are different
+        self.assertIsNot(result, signal)
 
     def test_zscore_array_annotations(self):
         signal = neo.AnalogSignal(
@@ -269,6 +277,9 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertAlmostEqual(signal[0, 0].magnitude, ground_truth[0, 0])
 
+        # Assert original and returned objects are the same
+        self.assertIs(result, signal)
+
     def test_zscore_single_dup_int(self):
         """
         Test if the z-score is correctly calculated even if the input is an
@@ -283,28 +294,28 @@ class ZscoreTestCase(unittest.TestCase):
         s = np.std(self.test_seq1)
         target = (self.test_seq1 - m) / s
 
-        assert_array_almost_equal(
-            elephant.signal_processing.zscore(signal, inplace=False).magnitude,
-            target.reshape(-1, 1), decimal=9)
+        result = elephant.signal_processing.zscore(signal, inplace=False)
+        assert_array_almost_equal(result.magnitude, target.reshape(-1, 1),
+                                  decimal=9)
 
         # Assert original signal is untouched
         self.assertEqual(signal.magnitude[0], self.test_seq1[0])
 
+        # Assert original and returned objects are different
+        self.assertIsNot(result, signal)
+
     def test_zscore_single_inplace_int(self):
         """
-        Test if the z-score is correctly calculated even if the input is an
-        AnalogSignal of type int, asking for an inplace operation.
+        Test if the z-score operation fails if the input is an
+        AnalogSignal of type int, when asking for an inplace operation.
         """
-        m = np.mean(self.test_seq1)
-        s = np.std(self.test_seq1)
-        target = (self.test_seq1 - m) / s
 
         signal = neo.AnalogSignal(
             self.test_seq1, units='mV',
             t_start=0. * pq.ms, sampling_rate=1000. * pq.Hz, dtype=int)
-        zscored = elephant.signal_processing.zscore(signal, inplace=True)
 
-        assert_array_almost_equal(zscored.magnitude.squeeze(), target)
+        with self.assertRaises(ValueError):
+            elephant.signal_processing.zscore(signal, inplace=True)
 
     def test_zscore_list_dup(self):
         """
@@ -344,6 +355,10 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertEqual(signal1.magnitude[0, 0], self.test_seq1[0])
         self.assertEqual(signal2.magnitude[0, 1], self.test_seq2[0])
 
+        # Assert original and returned objects are different
+        self.assertIsNot(result[0], signal_list[0])
+        self.assertIsNot(result[1], signal_list[1])
+
     def test_zscore_list_inplace(self):
         """
         Test zscore on a list of AnalogSignal objects, asking for an
@@ -381,6 +396,10 @@ class ZscoreTestCase(unittest.TestCase):
         # Assert original signal is overwritten
         self.assertEqual(signal1[0, 0].magnitude, target11[0])
         self.assertEqual(signal2[0, 0].magnitude, target21[0])
+
+        # Assert original and returned objects are the same
+        self.assertIs(result[0], signal_list[0])
+        self.assertIs(result[1], signal_list[1])
 
     def test_wrong_input(self):
         # wrong type
@@ -645,7 +664,6 @@ class HilbertTestCase(unittest.TestCase):
         """
         # Performing test using all pad types
         for padding in ['nextpow', 'none', 16384]:
-
             h = elephant.signal_processing.hilbert(
                 self.long_signals, padding=padding)
 
@@ -673,7 +691,7 @@ class HilbertTestCase(unittest.TestCase):
             # amplitude
             amplitudediff = \
                 amplitude[ind1:ind2, :] - self.amplitude[ind1:ind2, :]
-#
+            #
             assert_allclose(phasediff, 0, atol=0.1)
             assert_allclose(amplitudediff, 0, atol=0.5)
 
@@ -691,7 +709,6 @@ class HilbertTestCase(unittest.TestCase):
 
         # Performing test using both pad types
         for padding in ['nextpow', 'none', 512]:
-
             h = elephant.signal_processing.hilbert(
                 self.one_period, padding=padding)
 
@@ -939,13 +956,13 @@ class DerivativeTestCase(unittest.TestCase):
             t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
 
     def test_derivative_invalid_signal(self):
-        '''Test derivative on non-AnalogSignal'''
+        """Test derivative on non-AnalogSignal"""
         kwds = {'signal': np.arange(5)}
         self.assertRaises(
             TypeError, elephant.signal_processing.derivative, **kwds)
 
     def test_derivative_units(self):
-        '''Test derivative returns AnalogSignal with correct units'''
+        """Test derivative returns AnalogSignal with correct units"""
         derivative = elephant.signal_processing.derivative(
             self.test_signal1)
         self.assertTrue(isinstance(derivative, neo.AnalogSignal))
@@ -954,7 +971,7 @@ class DerivativeTestCase(unittest.TestCase):
             self.test_signal1.units / self.test_signal1.times.units)
 
     def test_derivative_times(self):
-        '''Test derivative returns AnalogSignal with correct times'''
+        """Test derivative returns AnalogSignal with correct times"""
         derivative = elephant.signal_processing.derivative(
             self.test_signal1)
         self.assertTrue(isinstance(derivative, neo.AnalogSignal))
@@ -976,7 +993,7 @@ class DerivativeTestCase(unittest.TestCase):
             target_times[-1] + derivative.sampling_period)
 
     def test_derivative_values(self):
-        '''Test derivative returns AnalogSignal with correct values'''
+        """Test derivative returns AnalogSignal with correct values"""
         derivative1 = elephant.signal_processing.derivative(
             self.test_signal1)
         derivative2 = elephant.signal_processing.derivative(
@@ -1013,25 +1030,25 @@ class RAUCTestCase(unittest.TestCase):
             t_stop=self.times[-1] * pq.s, sampling_period=(1 / self.fs) * pq.s)
 
     def test_rauc_invalid_signal(self):
-        '''Test rauc on non-AnalogSignal'''
+        """Test rauc on non-AnalogSignal"""
         kwds = {'signal': np.arange(5)}
         self.assertRaises(
             ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_invalid_bin_duration(self):
-        '''Test rauc on bad bin duration'''
+        """Test rauc on bad bin duration"""
         kwds = {'signal': self.test_signal1, 'bin_duration': 'bad'}
         self.assertRaises(
             ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_invalid_baseline(self):
-        '''Test rauc on bad baseline'''
+        """Test rauc on bad baseline"""
         kwds = {'signal': self.test_signal1, 'baseline': 'bad'}
         self.assertRaises(
             ValueError, elephant.signal_processing.rauc, **kwds)
 
     def test_rauc_units(self):
-        '''Test rauc returns Quantity or AnalogSignal with correct units'''
+        """Test rauc returns Quantity or AnalogSignal with correct units"""
 
         # test that single-bin result is Quantity with correct units
         rauc = elephant.signal_processing.rauc(
@@ -1050,7 +1067,7 @@ class RAUCTestCase(unittest.TestCase):
             self.test_signal1.units * self.test_signal1.times.units)
 
     def test_rauc_times_without_overextending_bin(self):
-        '''Test rauc returns correct times when signal is binned evenly'''
+        """Test rauc returns correct times when signal is binned evenly"""
 
         bin_duration = 1 * pq.s  # results in all bin centers < original t_stop
         rauc_arr = elephant.signal_processing.rauc(
@@ -1074,9 +1091,9 @@ class RAUCTestCase(unittest.TestCase):
             target_times[-1] + bin_duration)
 
     def test_rauc_times_with_overextending_bin(self):
-        '''Test rauc returns correct times when signal is NOT binned evenly'''
-
-        bin_duration = 0.99 * pq.s  # results in one bin center > original t_stop
+        """Test rauc returns correct times when signal is NOT binned evenly"""
+        # results in one bin center > original t_stop
+        bin_duration = 0.99 * pq.s
         rauc_arr = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=bin_duration)
         self.assertTrue(isinstance(rauc_arr, neo.AnalogSignal))
@@ -1098,7 +1115,7 @@ class RAUCTestCase(unittest.TestCase):
             target_times[-1] + bin_duration)
 
     def test_rauc_values_one_bin(self):
-        '''Test rauc returns correct values when there is just one bin'''
+        """Test rauc returns correct values when there is just one bin"""
         rauc1 = elephant.signal_processing.rauc(
             self.test_signal1)
         rauc2 = elephant.signal_processing.rauc(
@@ -1117,7 +1134,7 @@ class RAUCTestCase(unittest.TestCase):
             np.array([6.36517679, 6.36617364]))
 
     def test_rauc_values_multi_bin(self):
-        '''Test rauc returns correct values when there are multiple bins'''
+        """Test rauc returns correct values when there are multiple bins"""
         rauc_arr1 = elephant.signal_processing.rauc(
             self.test_signal1, bin_duration=0.99 * pq.s)
         rauc_arr2 = elephant.signal_processing.rauc(
@@ -1154,7 +1171,7 @@ class RAUCTestCase(unittest.TestCase):
             [0.09304862, 0.03039579]]))
 
     def test_rauc_mean_baseline(self):
-        '''Test rauc returns correct values when baseline='mean' is given'''
+        """Test rauc returns correct values when baseline='mean' is given"""
         rauc1 = elephant.signal_processing.rauc(
             self.test_signal1, baseline='mean')
         rauc2 = elephant.signal_processing.rauc(
@@ -1173,7 +1190,7 @@ class RAUCTestCase(unittest.TestCase):
             np.array([6.36517679, 6.36617364]))
 
     def test_rauc_median_baseline(self):
-        '''Test rauc returns correct values when baseline='median' is given'''
+        """Test rauc returns correct values when baseline='median' is given"""
         rauc1 = elephant.signal_processing.rauc(
             self.test_signal1, baseline='median')
         rauc2 = elephant.signal_processing.rauc(
@@ -1192,7 +1209,7 @@ class RAUCTestCase(unittest.TestCase):
             np.array([6.36517679, 6.36617364]))
 
     def test_rauc_arbitrary_baseline(self):
-        '''Test rauc returns correct values when arbitrary baseline is given'''
+        """Test rauc returns correct values when arbitrary baseline is given"""
         rauc1 = elephant.signal_processing.rauc(
             self.test_signal1, baseline=0.123 * pq.mV)
         rauc2 = elephant.signal_processing.rauc(
@@ -1211,7 +1228,7 @@ class RAUCTestCase(unittest.TestCase):
             np.array([6.41354725, 6.41429810]))
 
     def test_rauc_time_slice(self):
-        '''Test rauc returns correct values when t_start, t_stop are given'''
+        """Test rauc returns correct values when t_start, t_stop are given"""
         rauc1 = elephant.signal_processing.rauc(
             self.test_signal1, t_start=0.123 * pq.s, t_stop=0.456 * pq.s)
         rauc2 = elephant.signal_processing.rauc(

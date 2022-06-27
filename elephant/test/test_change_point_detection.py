@@ -1,22 +1,19 @@
 # -*- coding: utf-8 -*-
+import unittest
+
 import neo
 import numpy as np
 import quantities as pq
+from numpy.testing import assert_array_almost_equal, assert_allclose
 
-import unittest
 import elephant.change_point_detection as mft
-from numpy.testing.utils import assert_array_almost_equal, assert_allclose
 
-
-# np.random.seed(13)
 
 class FilterTestCase(unittest.TestCase):
     def setUp(self):
         self.test_array = [0.4, 0.5, 0.65, 0.7, 0.9, 1.15, 1.2, 1.9]
-        '''
-        spks_ri = [0.9, 1.15, 1.2]
-        spk_le = [0.4, 0.5, 0.65, 0.7]
-        '''
+        # spks_ri = [0.9, 1.15, 1.2]
+        # spk_le = [0.4, 0.5, 0.65, 0.7]
         mu_ri = (0.25 + 0.05) / 2
         mu_le = (0.1 + 0.15 + 0.05) / 3
         sigma_ri = ((0.25 - 0.15) ** 2 + (0.05 - 0.15) ** 2) / 2
@@ -24,7 +21,7 @@ class FilterTestCase(unittest.TestCase):
             0.05 - 0.1) ** 2) / 3
         self.targ_t08_h025 = 0
         self.targ_t08_h05 = (3 - 4) / np.sqrt(
-            (sigma_ri / mu_ri ** (3)) * 0.5 + (sigma_le / mu_le ** (3)) * 0.5)
+            (sigma_ri / mu_ri ** 3) * 0.5 + (sigma_le / mu_le ** 3) * 0.5)
 
     # Window Large #
     def test_filter_with_spiketrain_h05(self):
@@ -156,13 +153,6 @@ class MultipleFilterAlgorithmTestCase(unittest.TestCase):
         target = [self.targ_h05_dt05]
         res = mft.multiple_filter_test([0.5] * pq.s, st, 2.1 * pq.s, 5, 100,
                                        time_step=0.5 * pq.s)
-        assert_array_almost_equal(res, target, decimal=9)
-
-    def test_MultipleFilterAlgorithm_with_plain_array_h05(self):
-        st = self.test_array
-        target = [self.targ_h05_dt05]
-        res = mft.multiple_filter_test([0.5] * pq.s, st * pq.s, 2.1 * pq.s, 5,
-                                       100, time_step=0.5 * pq.s)
         self.assertNotIsInstance(res, pq.Quantity)
         assert_array_almost_equal(res, target, decimal=9)
 

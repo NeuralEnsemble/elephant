@@ -34,7 +34,8 @@ Issues 1Ð2, 30 June 2006, Pages 116-133, ISSN 0165-0270,
 http://dx.doi.org/10.1016/j.jneumeth.2005.12.005.
 (http://www.sciencedirect.com/science/article/pii/S0165027005004541)
 
-To see an example of usage of the methods, see the file demo_icsd.py
+To see an example of usage of the methods, see
+[demo_icsd.py](https://github.com/espenhgn/iCSD/blob/master/demo_icsd.py)
 
 KCSD 
 ---- 
