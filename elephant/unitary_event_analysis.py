@@ -37,17 +37,15 @@ Run tutorial interactively:
             ?filepath=doc/tutorials/unitary_event_analysis.ipynb
 
 
-.. current_module elephant.unitary_event_analysis
-
 Functions overview
 ------------------
 
 .. autosummary::
-    :toctree: toctree/unitary_event_analysis/
+    :toctree: _toctree/unitary_event_analysis/
 
     jointJ_window_analysis
 
-:copyright: Copyright 2015-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -336,8 +334,8 @@ def _n_exp_mat_analytic(mat, pattern_hash):
     nrep = m.shape[1]
     # multipyling the marginal probability of neurons with regard to the
     # pattern
-    pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) + \
-        np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
+    pmat = np.multiply(m, np.tile(marg_prob, (1, nrep))) \
+        + np.multiply(1 - m, np.tile(1 - marg_prob, (1, nrep)))
     return np.prod(pmat, axis=0) * float(mat.shape[1])
 
 
@@ -352,7 +350,8 @@ def _n_exp_mat_surrogate(mat, pattern_hash, n_surrogates=1):
     for rz_idx, rz in enumerate(np.arange(n_surrogates)):
         # row-wise shuffling all elements of zero-one matrix
         mat_surr = np.copy(mat)
-        [np.random.shuffle(row) for row in mat_surr]
+        for row in mat_surr:
+            np.random.shuffle(row)
         N_exp_array[rz_idx] = n_emp_mat(mat_surr, pattern_hash)[0][0]
     return N_exp_array
 

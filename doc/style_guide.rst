@@ -1,4 +1,4 @@
-.. _style_guide:
+:orphan:
 
 ********************************
 Coding Style Guide with Examples

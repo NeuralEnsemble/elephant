@@ -12,7 +12,7 @@ from quantities import Hz, ms, second
 import elephant.spike_train_generation as stgen
 from elephant.spike_train_synchrony import Synchrotool, spike_contrast, \
     _get_theta_and_n_per_bin, _binning_half_overlap
-from elephant.test.download import download, unzip
+from elephant.datasets import download_datasets, unzip
 
 
 class TestSpikeContrast(unittest.TestCase):
@@ -21,49 +21,37 @@ class TestSpikeContrast(unittest.TestCase):
         # randomly generated spiketrains that share the same t_start and
         # t_stop
         np.random.seed(24)  # to make the results reproducible
-        spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_2 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_3 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_4 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_5 = stgen.homogeneous_poisson_process(rate=1 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_6 = stgen.homogeneous_poisson_process(rate=1 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
+        poisson_process_1 = stgen.StationaryPoissonProcess(
+            rate=10.*Hz, t_start=0.*ms, t_stop=10000.*ms)
+        poisson_process_2 = stgen.StationaryPoissonProcess(
+            rate=1.*Hz, t_start=0.*ms, t_stop=10000.*ms)
+        spike_train_1 = poisson_process_1.generate_spiketrain()
+        spike_train_2 = poisson_process_1.generate_spiketrain()
+        spike_train_3 = poisson_process_1.generate_spiketrain()
+        spike_train_4 = poisson_process_1.generate_spiketrain()
+        spike_train_5 = poisson_process_2.generate_spiketrain()
+        spike_train_6 = poisson_process_2.generate_spiketrain()
+
         spike_trains = [spike_train_1, spike_train_2, spike_train_3,
                         spike_train_4, spike_train_5, spike_train_6]
         synchrony = spike_contrast(spike_trains)
-        self.assertAlmostEqual(synchrony, 0.2098687, places=6)
+        self.assertAlmostEqual(synchrony, 0.1875795, places=6)
 
     def test_spike_contrast_same_signal(self):
         np.random.seed(21)
-        spike_train = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                        t_start=0. * ms,
-                                                        t_stop=10000. * ms)
+        spike_train = stgen.StationaryPoissonProcess(
+            rate=10.*Hz, t_start=0.*ms, t_stop=10000.*ms).generate_spiketrain()
         spike_trains = [spike_train, spike_train]
         synchrony = spike_contrast(spike_trains, min_bin=1 * ms)
         self.assertEqual(synchrony, 1.0)
 
     def test_spike_contrast_double_duration(self):
         np.random.seed(19)
-        spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_2 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_3 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
+        poisson_process = stgen.StationaryPoissonProcess(
+            rate=10 * Hz, t_start=0. * ms, t_stop=10000. * ms)
+        spike_train_1 = poisson_process.generate_spiketrain()
+        spike_train_2 = poisson_process.generate_spiketrain()
+        spike_train_3 = poisson_process.generate_spiketrain()
 
         spike_trains = [spike_train_1, spike_train_2, spike_train_3]
         synchrony = spike_contrast(spike_trains, t_stop=20000 * ms)
@@ -71,12 +59,12 @@ class TestSpikeContrast(unittest.TestCase):
 
     def test_spike_contrast_non_overlapping_spiketrains(self):
         np.random.seed(15)
-        spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=0. * ms,
-                                                          t_stop=10000. * ms)
-        spike_train_2 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_start=5000. * ms,
-                                                          t_stop=10000. * ms)
+        spike_train_1 = stgen.StationaryPoissonProcess(
+            rate=10 * Hz, t_start=0. * ms, t_stop=10000. * ms
+        ).generate_spiketrain()
+        spike_train_2 = stgen.StationaryPoissonProcess(
+            rate=10 * Hz, t_start=5000. * ms, t_stop=10000. * ms
+        ).generate_spiketrain()
         spiketrains = [spike_train_1, spike_train_2]
         synchrony = spike_contrast(spiketrains, t_stop=5000 * ms)
         # the synchrony of non-overlapping spiketrains must be zero
@@ -84,10 +72,10 @@ class TestSpikeContrast(unittest.TestCase):
 
     def test_spike_contrast_trace(self):
         np.random.seed(15)
-        spike_train_1 = stgen.homogeneous_poisson_process(rate=20 * Hz,
-                                                          t_stop=1000. * ms)
-        spike_train_2 = stgen.homogeneous_poisson_process(rate=20 * Hz,
-                                                          t_stop=1000. * ms)
+        poisson_process = stgen.StationaryPoissonProcess(
+            rate=10 * Hz, t_start=0. * ms, t_stop=1000. * ms)
+        spike_train_1 = poisson_process.generate_spiketrain()
+        spike_train_2 = poisson_process.generate_spiketrain()
         synchrony, trace = spike_contrast([spike_train_1, spike_train_2],
                                           return_trace=True)
         self.assertEqual(synchrony, max(trace.synchrony))
@@ -127,10 +115,10 @@ class TestSpikeContrast(unittest.TestCase):
     def test_t_start_agnostic(self):
         np.random.seed(15)
         t_stop = 10 * second
-        spike_train_1 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_stop=t_stop)
-        spike_train_2 = stgen.homogeneous_poisson_process(rate=10 * Hz,
-                                                          t_stop=t_stop)
+        poisson_process = stgen.StationaryPoissonProcess(
+            rate=10 * Hz, t_stop=t_stop)
+        spike_train_1 = poisson_process.generate_spiketrain()
+        spike_train_2 = poisson_process.generate_spiketrain()
         spiketrains = [spike_train_1, spike_train_2]
         synchrony_target = spike_contrast(spiketrains)
         # a check for developer: test meaningful result
@@ -152,9 +140,9 @@ class TestSpikeContrast(unittest.TestCase):
             [1, 2, 2.5]
         ]
         theta, n = _get_theta_and_n_per_bin(spike_trains,
-                                                t_start=0,
-                                                t_stop=10,
-                                                bin_size=5)
+                                            t_start=0,
+                                            t_stop=10,
+                                            bin_size=5)
         assert_array_equal(theta, [9, 3, 2])
         assert_array_equal(n, [3, 3, 2])
 
@@ -176,11 +164,10 @@ class TestSpikeContrast(unittest.TestCase):
         # The default unit time is seconds. Each simulation lasted 2 seconds,
         # starting from 0.
 
-        izhikevich_url = r"https://web.gin.g-node.org/INM-6/" \
-                         r"elephant-data/raw/master/" \
-                         r"dataset-3/Data_Izhikevich_network.zip"
-        filepath_zip = download(url=izhikevich_url,
-                                checksum="70e848500c1d9c6403b66de8c741d849")
+        izhikevich_gin = r"dataset-3/Data_Izhikevich_network.zip"
+        checksum = "70e848500c1d9c6403b66de8c741d849"
+        filepath_zip = download_datasets(repo_path=izhikevich_gin,
+                                         checksum=checksum)
         unzip(filepath_zip)
         filepath_json = filepath_zip.with_suffix(".json")
         with open(filepath_json) as read_file:
@@ -219,6 +206,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                        for st in spiketrains]
 
         assert_array_equal(annotations, correct_complexities)
+        for a in annotations:
+            self.assertEqual(a.dtype, np.dtype(np.uint16).type)
 
         if mode == 'extract':
             correct_spike_times = [
@@ -282,6 +271,59 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         self._test_template(spiketrains, correct_annotations, sampling_rate,
                             spread=0, mode='delete', in_place=True,
                             deletion_threshold=2)
+
+    def test_spiketrains_findable(self):
+
+        # same test as `test_spread_0` with the addition of
+        # a neo structure: we must not overwrite the spiketrain
+        # list of the segment before determining the index
+
+        sampling_rate = 1 / pq.s
+
+        segment = neo.Segment()
+
+        segment.spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                              t_stop=20*pq.s),
+                               neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                              t_stop=20*pq.s)]
+
+        segment.create_relationship()
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        self._test_template(segment.spiketrains, correct_annotations,
+                            sampling_rate, spread=0, mode='delete',
+                            in_place=True, deletion_threshold=2)
+
+    def test_unidirectional_uplinks(self):
+
+        # same test as `test_spiketrains_findable` but the spiketrains
+        # are rescaled first
+        # the rescaled spiketrains have a unidirectional uplink to segment
+        # check that this does not cause an error
+        # check that a UserWarning is issued in this case
+
+        sampling_rate = 1 / pq.s
+
+        segment = neo.Segment()
+
+        segment.spiketrains = [neo.SpikeTrain([1, 5, 9, 11, 16, 19] * pq.s,
+                                              t_stop=20*pq.s),
+                               neo.SpikeTrain([1, 4, 8, 12, 16, 18] * pq.s,
+                                              t_stop=20*pq.s)]
+
+        segment.create_relationship()
+
+        spiketrains = [st.rescale(pq.s) for st in segment.spiketrains]
+
+        correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
+                                        [2, 1, 1, 1, 2, 1]])
+
+        with self.assertWarns(UserWarning):
+            self._test_template(spiketrains, correct_annotations,
+                                sampling_rate, spread=0, mode='delete',
+                                in_place=True, deletion_threshold=2)
 
     def test_spread_1(self):
 
