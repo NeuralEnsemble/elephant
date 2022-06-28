@@ -147,8 +147,8 @@ class Kernel(object):
             raise TypeError("'sigma' must be a quantity")
 
         if sigma.ndim > 0:
-            # handle the one-dimensional case
-            if sigma.size == 1:
+            # handle the one-dimensional case of size 1
+            if sigma.ndim == 1 & sigma.size == 1:
                 sigma = sigma[0]
             else:
                 raise TypeError("'sigma' cannot be multidimensional")
