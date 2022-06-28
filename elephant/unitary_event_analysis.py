@@ -582,7 +582,7 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
             mat, pattern_hash, method=method, n_surrogates=n_surrogates)
 
         def pval(n_emp):
-            hist = np.bincount(np.int64(n_exp))
+            hist = np.bincount(n_exp.astype(int))
             exp_dist = hist / float(np.sum(hist))
             if len(n_emp) > 1:
                 raise ValueError('In surrogate method the p_value can be'
