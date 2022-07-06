@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import os.path
 import platform
+import sys
 
 from setuptools import setup, Extension
+from setuptools.command.install import install
+from setuptools.command.develop import develop
 
 with open(os.path.join(os.path.dirname(__file__),
                        "elephant", "VERSION")) as version_file:
@@ -13,14 +16,9 @@ with open("README.md") as f:
 with open('requirements/requirements.txt') as fp:
     install_requires = fp.read().splitlines()
 extras_require = {}
-for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda', 'opencl',
-              'no_cpp']:
-    if 'no_cpp' in extra:
-        extras_require[extra] = ''
-    else:
-        with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
-            extras_require[extra] = fp.read()
-
+for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda', 'opencl']:
+    with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
+        extras_require[extra] = fp.read()
 
 if platform.system() == "Windows":
     fim_module = Extension(
@@ -31,7 +29,9 @@ if platform.system() == "Windows":
         libraries=[],
         extra_compile_args=[
             '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
-            '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'])
+            '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'],
+        optional=True
+    )
 elif platform.system() == "Darwin":
     fim_module = Extension(
         name='elephant.spade_src.fim',
@@ -44,7 +44,9 @@ elif platform.system() == "Darwin":
             '-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra',
             '-Weffc++', '-Wunused-result', '-Werror', '-Werror=return-type',
             '-Xpreprocessor',
-            '-fopenmp', '-std=gnu++17'])
+            '-fopenmp', '-std=gnu++17'],
+        optional=True
+    )
 elif platform.system() == "Linux":
     fim_module = Extension(
         name='elephant.spade_src.fim',
@@ -56,7 +58,9 @@ elif platform.system() == "Linux":
             '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
             '-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra',
             '-Weffc++', '-Wunused-result', '-Werror',
-            '-fopenmp', '-std=gnu++17'])
+            '-fopenmp', '-std=gnu++17'],
+        optional=True
+    )
 
 setup_kwargs = {
     "name": "elephant",
@@ -72,6 +76,11 @@ setup_kwargs = {
     "long_description_content_type": "text/markdown",
     "license": "BSD",
     "url": 'http://python-elephant.org',
+    "project_urls": {
+            "Bug Tracker": "https://github.com/NeuralEnsemble/elephant/issues",
+            "Documentation": "https://elephant.readthedocs.io/en/latest/",
+            "Source Code": "https://github.com/NeuralEnsemble/elephant",
+        },
     "python_requires": ">=3.7",
     "classifiers": [
         'Development Status :: 5 - Production/Stable',
@@ -88,14 +97,75 @@ setup_kwargs = {
         'Topic :: Scientific/Engineering']
 }
 
-# do not compile cpp-extension (fim.cpp) if extra is [no_cpp],
-# e.g. pip install elephant[no_cpp].
-# In this case the pure python implementation fast_fca is used in spade
-if 'no_cpp' in extra:
-    pass
-# do not compile external modules on darwin
-elif platform.system() in ["Windows", "Linux"]:
-    setup_kwargs["ext_modules"] = [fim_module]
+if '--nofim' not in sys.argv:
+    # do not compile external modules on darwin
+    if platform.system() in ["Windows", "Linux"]:
+        setup_kwargs["ext_modules"] = [fim_module]
 
+
+class CommandMixin(object):
+    """
+    This class acts as a superclass to integrate new commands in setuptools.
+    """
+    user_options = [
+        ('nofim', None, 'a flag option')
+    ]
+
+    def initialize_options(self):
+        """
+        The method is responsible for setting default values for
+        all the options that the command supports.
+
+        Option dependencies should not be set here.
+        """
+
+        super().initialize_options()
+        # Initialize options
+        self.nofim = None
+
+    def finalize_options(self):
+        """
+        Overriding a required abstract method.
+
+        This method is responsible for setting and checking the
+        final values and option dependencies for all the options
+        just before the method run is executed.
+
+        In practice, this is where the values are assigned and verified.
+        """
+
+        super().finalize_options()
+
+    def run(self):
+        """
+        Sets global which can later be used in setup.py to remove c-extensions
+        from setup call.
+        """
+        # Use options
+        global nofim
+        nofim = self.nofim
+
+        super().run()
+
+
+class InstallCommand(CommandMixin, install):
+    """
+    This class extends setuptools.command.install class, adding user options.
+    """
+    user_options = getattr(
+        install, 'user_options', []) + CommandMixin.user_options
+
+
+class DevelopCommand(CommandMixin, develop):
+    """
+    This class extends setuptools.command.develop class, adding user options.
+    """
+    user_options = getattr(
+        develop, 'user_options', []) + CommandMixin.user_options
+
+
+# add classes to setup-kwargs to add the user options
+setup_kwargs['cmdclass'] = {'install': InstallCommand,
+                            'develop': DevelopCommand}
 
 setup(**setup_kwargs)
