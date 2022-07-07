@@ -476,17 +476,18 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.signal_processing import butter
+    >>> np.random.seed(0)
     >>> noise = neo.AnalogSignal(np.random.normal(size=5000),
     ...     sampling_rate=1000 * pq.Hz, units='mV')
     >>> filtered_noise = butter(noise, highpass_frequency=250.0 * pq.Hz)
     >>> filtered_noise
-    <AnalogSignal(array([[-1.04415422e-03],
-           [ 5.86641606e-02],
-           [ 2.00336604e-01],
+    <AnalogSignal(array([[-2.70236218e-05],
+           [-3.44299631e-01],
+           [-1.36890122e-01],
            ...,
-           [ 4.31487954e-01],
-           [-8.81032795e-01],
-           [-5.93455862e-04]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
+           [ 1.12088277e-01],
+           [-3.11053132e-01],
+           [ 2.63563988e-03]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
 
 
     Let's check that the normal noise power spectrum at zero frequency is close
@@ -497,7 +498,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> psd.shape
     (1, 556)
     >>> freq[0], psd[0, 0]
-    (array(0.) * Hz, array(1.32490369e-07) * mV**2/Hz)
+    (array(0.) * Hz, array(1.15344314e-07) * mV**2/Hz)
 
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
@@ -789,34 +790,28 @@ def hilbert(signal, padding='nextpow'):
     Create a sine signal at 5 Hz with increasing amplitude and calculate the
     instantaneous phases:
 
-    >>> import neo
-    >>> import numpy as np
-    >>> import quantities as pq
-    >>> import matplotlib.pyplot as plt
-    >>> from elephant.signal_processing import hilbert
-    >>> t = np.arange(0, 5000) * pq.ms
-    >>> f = 5. * pq.Hz
-    >>> a = neo.AnalogSignal(
-    ...       np.array(
-    ...           (1 + t.magnitude / t[-1].magnitude) * np.sin(
-    ...               2. * np.pi * f * t.rescale(pq.s))).reshape(
-    ...                   (-1,1)) * pq.mV,
-    ...       t_start=0*pq.s,
-    ...       sampling_rate=1000*pq.Hz)
-    ...
-    >>> analytic_signal = hilbert(a, padding='nextpow')
-    >>> angles = np.angle(analytic_signal)
-    >>> amplitudes = np.abs(analytic_signal)
-    >>> print(angles)
-    [[-1.57079633]
-     [-1.51334228]
-     [-1.46047675]
-     ...
-     [-1.73112977]
-     [-1.68211683]
-     [-1.62879501]] dimensionless
+    .. plot::
+        :include-source:
 
-    #>>> plt.plot(t, angles)
+        import neo
+        import numpy as np
+        import quantities as pq
+        import matplotlib.pyplot as plt
+        from elephant.signal_processing import hilbert
+        t = np.arange(0, 5000) * pq.ms
+        f = 5. * pq.Hz
+        a = neo.AnalogSignal(
+              np.array(
+                  (1 + t.magnitude / t[-1].magnitude) * np.sin(
+                      2. * np.pi * f * t.rescale(pq.s))).reshape(
+                          (-1,1)) * pq.mV,
+              t_start=0*pq.s,
+              sampling_rate=1000*pq.Hz)
+
+        analytic_signal = hilbert(a, padding='nextpow')
+        angles = np.angle(analytic_signal)
+        amplitudes = np.abs(analytic_signal)
+        plt.plot(t, angles)
 
     """
     # Length of input signals
