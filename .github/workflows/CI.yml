@@ -420,6 +420,7 @@ jobs:
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
+          pip install mpi4py
           pip install -e .
 
       - name: List packages
