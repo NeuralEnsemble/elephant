@@ -1269,7 +1269,7 @@ class Complexity(object):
     Complexity calculated at sampling rate precision
 
     >>> print(cpx.complexity_histogram)
-    [5 1 1 1]
+    [5 4 1]
     >>> print(cpx.time_histogram.flatten())
     [0 2 0 0 3 3 3 0 1 0] dimensionless
 
@@ -1290,11 +1290,9 @@ class Complexity(object):
            [0.        ],
            [0.16666667]]) * dimensionless, [0.0 dimensionless, 5.0 dimensionless], sampling rate: 1.0 dimensionless)>
     >>> pdf1.magnitude
-    array([[0.66666667],
-           [0.        ],
-           [0.16666667],
-           [0.        ],
-           [0.16666667]])
+    array([[0.5],
+           [0.4],
+           [0.1]])
 
     """
 
