@@ -450,11 +450,12 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     In this case, the directional causality is non-zero.
 
+    >>> np.random.seed(31)
     >>> x = np.random.randn(1001)
     >>> y = 3.5 * x[:-1] + np.random.randn(1000)
     >>> signals = np.array([x[1:], y]).T  # N x 2 matrix
     >>> pairwise_granger(signals, max_order=1)  # noqa
-    Causality(directional_causality_x_y=2.55, directional_causality_y_x=-0.0, instantaneous_causality=0.0, total_interdependence=2.55)
+    Causality(directional_causality_x_y=2.64, directional_causality_y_x=-0.0, instantaneous_causality=0.0, total_interdependence=2.64)
 
     """
     if isinstance(signals, AnalogSignal):
