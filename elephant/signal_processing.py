@@ -136,21 +136,23 @@ def zscore(signal, inplace=True):
     ...       np.transpose([[21, 22, 23, 24, 25, 26],
     ...                     [31, 32, 33, 34, 35, 36]]) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
-    >>> zscore([b, c])  # noqa
-    [<AnalogSignal(array([[-1.23216015, -1.23216015],
-           [-1.13358733, -1.13358733],
-           [-1.03501452, -1.03501452],
-           [-0.93644171, -0.93644171],
-           [-0.8378689 , -0.8378689 ],
-           [-0.73929609, -0.73929609]]) * dimensionless, [0.0 s, 0.006 s], sampling rate: 1000.0 Hz)>, <AnalogSignal(array([[0.73929609, 0.73929609],
-           [0.8378689 , 0.8378689 ],
-           [0.93644171, 0.93644171],
-           [1.03501452, 1.03501452],
-           [1.13358733, 1.13358733],
-           [1.23216015, 1.23216015]]) * dimensionless, [0.0 s, 0.006 s], sampling rate: 1000.0 Hz)>]
-
-
+    >>> zscore([b, c])
+    [<AnalogSignal(array([[-1.11669108, -1.08361877],
+       [-1.0672076 , -1.04878252],
+       [-1.01772411, -1.01394628],
+       [-0.96824063, -0.97911003],
+       [-0.91875714, -0.94427378],
+       [-0.86927366, -0.90943753]]) * dimensionless, [0.0 s, 0.006 s],
+       sampling rate: 1000.0 Hz)>,
+       <AnalogSignal(array([[ 0.78170952,  0.84779261],
+       [ 0.86621866,  0.90728682],
+       [ 0.9507278 ,  0.96678104],
+       [ 1.03523694,  1.02627526],
+       [ 1.11974608,  1.08576948],
+       [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
+       sampling rate: 1000.0 Hz)>]
     """
+
     # Transform input to a list
     if isinstance(signal, neo.AnalogSignal):
         signal = [signal]
@@ -294,50 +296,33 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 
     Examples
     --------
-    >>> import neo
-    >>> import numpy as np
-    >>> import quantities as pq
-    >>> import matplotlib.pyplot as plt
-    >>> from elephant.signal_processing import cross_correlation_function
-    >>> dt = 0.02
-    >>> N = 2018
-    >>> f = 0.5
-    >>> t = np.arange(N)*dt
-    >>> x = np.zeros((N,2))
-    >>> x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
-    >>> x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
+    .. plot::
+       :include-source:
 
-    Generate neo.AnalogSignals from x and find cross-correlation
+       import neo
+       import numpy as np
+       import quantities as pq
+       import matplotlib.pyplot as plt
+       from elephant.signal_processing import cross_correlation_function
+       dt = 0.02
+       N = 2018
+       f = 0.5
+       t = np.arange(N)*dt
+       x = np.zeros((N,2))
+       x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
+       x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
 
-    >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
-    ...          sampling_rate=1/dt*pq.Hz, dtype=float)
-    >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
-    >>> env = cross_correlation_function(signal, [0,1], n_lags=150,
-    ...     hilbert_envelope=True)
-    >>> rho.magnitude[::30]
-    array([[-0.00694126],
-           [-0.95198687],
-           [ 0.59475847],
-           [ 0.58413388],
-           [-0.95590266],
-           [ 0.00619544],
-           [ 0.94651862],
-           [-0.59102096],
-           [-0.58076991],
-           [ 0.95029406],
-           [-0.00645466]])
-    >>> env.magnitude[::30] # should be equal to one
-    array([[1.00328093],
-           [1.0030958 ],
-           [1.00269424],
-           [1.00322928],
-           [1.00324062],
-           [1.00015334],
-           [0.99699886],
-           [0.99670774],
-           [0.9971458 ],
-           [0.9971345 ],
-           [0.9969391 ]])
+       # Generate neo.AnalogSignals from x and find cross-correlation
+
+       signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
+                sampling_rate=1/dt*pq.Hz, dtype=float)
+       rho = cross_correlation_function(signal, [0,1], n_lags=150)
+       env = cross_correlation_function(signal, [0,1], n_lags=150,
+           hilbert_envelope=True)
+
+       plt.plot(rho.times, rho)
+       plt.plot(env.times, env) # should be equal to one
+       plt.show()
 
     """
 
