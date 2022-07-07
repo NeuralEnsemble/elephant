@@ -498,8 +498,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> psd.shape
     (1, 556)
     >>> freq[0], psd[0, 0]
-    (array(0.) * Hz, array(1.15344314e-07) * mV**2/Hz)
-
+    (array(0.) * Hz, array(7.21464674e-08) * mV**2/Hz)
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
     if filter_function not in available_filters:
@@ -660,13 +659,13 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     picking at 5 Hz.
 
     >>> wavelet_transform(noise, frequency=5)
-    array([[-3.13037913-0.4107579j ],
-           [ 2.51264979-1.89124199j],
-           [-0.47137957+3.12277519j],
-           [-1.88373091-2.5734939j ],
-           [ 3.18371093+0.47866771j],
-           [-2.58055961+1.9445738j ],
-           [ 0.41804777-3.19068501j]])
+    array([[-1.00890049+3.003473j  ],
+       [-1.43664254-2.8389273j ],
+       [ 3.02499511+0.96534578j],
+       [-2.79543976+1.4581079j ],
+       [ 0.94387304-2.98159518j],
+       [ 1.41476471+2.77389985j],
+       [-2.95996766-0.9872236j ]])
 
     """
     def _morlet_wavelet_ft(freq, n_cycles, fs, n):
