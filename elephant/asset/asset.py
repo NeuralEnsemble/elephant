@@ -54,6 +54,7 @@ In this example we
    >>> import neo
    >>> import numpy as np
    >>> import quantities as pq
+   >>> from pprint import pprint
    >>> np.random.seed(10)
    >>> spiketrain = np.linspace(0, 50, num=10)
    >>> np.random.shuffle(spiketrain)
@@ -79,6 +80,11 @@ In this example we
 
    >>> pmat = asset_obj.probability_matrix_analytical(imat,
    ...                                                kernel_width=50*pq.ms)
+   compute rates by boxcar-kernel convolution...
+   compute the prob. that each neuron fires in each pair of bins...
+   compute the probability matrix by Le Cam's approximation...
+   substitute 0.5 to elements along the main diagonal...
+
 
 5. Compute the joint probability matrix `jmat`, using a suitable filter:
 
@@ -101,15 +107,15 @@ In this example we
 
 The ASSET found the following sequences of synchronous events:
 
->>> sses
+>>> pprint(sses)
 {1: {(36, 2): {5},
-  (37, 4): {1},
-  (40, 6): {4},
-  (41, 7): {8},
-  (43, 9): {2},
-  (47, 14): {7},
-  (48, 15): {0},
-  (50, 17): {9}}}
+     (37, 4): {1},
+     (40, 6): {4},
+     (41, 7): {8},
+     (43, 9): {2},
+     (47, 14): {7},
+     (48, 15): {0},
+     (50, 17): {9}}}
 
 To visualize them, refer to Viziphant documentation and an example plot
 :func:`viziphant.asset.plot_synchronous_events`.
