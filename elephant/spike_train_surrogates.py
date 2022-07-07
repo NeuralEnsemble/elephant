@@ -433,7 +433,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
      <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
         784.61079043]) * ms, [0.0 ms, 1000.0 ms])>]
     >>> print(dither_spike_train(st, shift = 20 * pq.ms,
-                                 decimals=0))  # doctest: +SKIP
+    ...                          decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  82.,  232.,  582.,  782.]) * ms,
         [0.0 ms, 1000.0 ms])>]
 
