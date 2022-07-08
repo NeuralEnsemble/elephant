@@ -8,7 +8,8 @@ Unit tests for the trials objects.
 
 import unittest
 
-import neo
+import neo.utils
+import quantities as pq
 from elephant.trials import TrialsFromBlock
 
 
@@ -32,3 +33,27 @@ class TrialsTestCase(unittest.TestCase):
         Test get a trial from the trials.
         """
         self.assertEqual(type(self.trial_object[0]), neo.core.Segment)
+
+    def test_trials_from_block_n_trials(self):
+        """
+        Test get a trial from the trials.
+        """
+        self.assertEqual(self.trial_object.n_trials,
+                         len(self.block.segments))
+
+    def test_trials_from_block_cut_trials(self):
+        """
+        Test cutting of the trials
+        """
+        cut_events = neo.utils.get_events(
+            self.block.segments[0],
+            trial_event_labels='TS-ON',
+            performance_in_trial_str='correct_trial')
+
+        self.trial_object.pre = 0 * pq.ms
+        self.trial_object.post = 2105 * pq.ms
+        self.trial_object.cut_events = cut_events[0]
+
+
+        self.trial_object.cut_trials()
+        self.assertEqual(self.trial_object.n_trials, 11)
