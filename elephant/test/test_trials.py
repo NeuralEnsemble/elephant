@@ -10,10 +10,6 @@ import unittest
 
 import neo
 from elephant.trials import TrialsFromBlock
-import numpy as np
-import quantities as pq
-
-from elephant.spike_train_generation import StationaryPoissonProcess
 
 
 class TrialsTestCase(unittest.TestCase):
@@ -22,11 +18,17 @@ class TrialsTestCase(unittest.TestCase):
                 'reach_to_grasp_material/i140703-001.nix', 'ro') as io:
             self.block = io.read_block()
 
-    def test_trials_from_block(self):
+        self.trial_object = TrialsFromBlock(self.block,
+                                            description='successful trials')
+
+    def test_trials_from_block_description(self):
         """
-        Test elephant.trials TrialsFromBlock class.
+        Test description of the trials object.
         """
-        trial_object = TrialsFromBlock(self.block,
-                                       description='successful trials')
-        # Test that the trials description is correct
-        self.assertEqual(trial_object.description, 'successful trials')
+        self.assertEqual(self.trial_object.description, 'successful trials')
+
+    def test_trials_from_block_get_trial(self):
+        """
+        Test get a trial from the trials.
+        """
+        self.assertEqual(type(self.trial_object[0]), neo.core.Segment)

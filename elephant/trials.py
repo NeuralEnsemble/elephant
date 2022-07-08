@@ -56,7 +56,7 @@ class TrialsFromBlock(Trials):
 
     Parameters
     ----------
-    block : neo.Block object
+    block : neo.Block
         An instance of neo.Block.
 
     """
@@ -67,3 +67,6 @@ class TrialsFromBlock(Trials):
         """
         self.block = block
         super().__init__(**kwargs)
+
+    def __getitem__(self, trials_number):
+        return self.block.segments[trials_number]
