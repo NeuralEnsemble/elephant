@@ -11,6 +11,14 @@ Methods for performing phase analysis.
     phase_difference
     weighted_phase_lag_index
 
+References
+----------
+
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: ph
+   :keyprefix: phase-
+   :style: unsrt
+
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
@@ -211,7 +219,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
 def phase_locking_value(phases_i, phases_j):
     r"""
-    Calculates the phase locking value (PLV).
+    Calculates the phase locking value (PLV) :cite:`phase-Lachaux99_194`.
 
     This function expects the phases of two signals (each containing multiple
     trials). For each trial pair, it calculates the phase difference at each
@@ -247,11 +255,6 @@ def phase_locking_value(phases_i, phases_j):
     where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
     is the phase difference at time `t` for trial `n`.
 
-    References
-    ----------
-    [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
-    and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
-    Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
     if np.shape(phases_i) != np.shape(phases_j):
         raise ValueError("trial number and trial length of signal x and y "
@@ -333,7 +336,7 @@ def phase_difference(alpha, beta):
 def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
                              absolute_value=True):
     r"""
-    Calculates the Weigthed Phase-Lag Index (WPLI)
+    Calculates the Weigthed Phase-Lag Index (WPLI) :cite:`phase-Vinck11_1548`.
 
     This function estimates the WPLI, which is a measure of phase-synchrony. It
     describes for two given signals i and j, which is leading/lagging the other
@@ -381,14 +384,6 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
         - X = Z_i * Z_j_conjugate : cross-spectrum, averaged across trials
         - Z_i, Z_j : complex-valued matrix, representing the Fourier spectra
                      of a particular frequency of the signals i and j.
-
-    References
-    ----------
-    ..  [1] Martin Vinck, Robert Oostenveld, Marijn van Wingerden,
-        Franscesco Battaglia, Cyriel M.A. Pennartz; "An improved index of
-        phase-synchronization for electrophysiological data in the presence
-        of volume-conduction, noise and sample-size bias"; NeuroImage, vol. 55,
-        pp. 1548-1565, 2011
 
     """
     if isinstance(signal_i, neo.AnalogSignal) and \
