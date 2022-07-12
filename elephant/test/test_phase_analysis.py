@@ -8,7 +8,6 @@ Unit tests for the phase analysis module.
 from __future__ import division, print_function
 
 import unittest
-from pathlib import Path
 
 import numpy as np
 import quantities as pq
@@ -17,7 +16,7 @@ from neo import SpikeTrain, AnalogSignal
 from numpy.ma.testutils import assert_allclose
 
 import elephant.phase_analysis
-from elephant.test.download import download, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets
 
 
 class SpikeTriggeredPhaseTestCase(unittest.TestCase):
@@ -373,21 +372,21 @@ class PhaseLockingValueTestCase(unittest.TestCase):
 
 
 class WeightedPhaseLagIndexTestCase(unittest.TestCase):
+    files_to_download_ground_truth = None
+    files_to_download_artificial = None
+    files_to_download_real = None
+
     @classmethod
     def setUpClass(cls):
         np.random.seed(73)
 
-        # TODO: change url's (branch names) after the pull-request "feature_PhaseAnalysis_WPLI"
-        #  in elephant-data is merged into master branch
-
         # The files from G-Node GIN 'elephant-data' repository will be
         # downloaded once into a local temporary directory
         # and then loaded/ read for each test function individually.
-        repo_url = "https://gin.g-node.org/INM-6/elephant-data/raw/" \
-                   "feature_PhaseAnalysis_WPLI"
+
         # REAL DATA
-        real_data_url = repo_url + "/dataset-4"
-        files_to_download_real = (
+        real_data_path = "dataset-4"
+        cls.files_to_download_real = (
             ("i140703-001_ch01_slice_TS_ON_to_GO_ON_correct_trials.mat",
              "0e76454c58208cab710e672d04de5168"),
             ("i140703-001_ch02_slice_TS_ON_to_GO_ON_correct_trials.mat",
@@ -396,33 +395,35 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
              "TS_ON_to_GO_ON_corect_trials.mat",
              "2687ef63a4a456971a5dcc621b02e9a9")
         )
-        for filename, checksum in files_to_download_real:
+        for filename, checksum in cls.files_to_download_real:
             # files will be downloaded to ELEPHANT_TMP_DIR
-            download(url=f"{real_data_url}/{filename}", checksum=checksum)
+            cls.tmp_path = download_datasets(
+                f"{real_data_path}/{filename}", checksum=checksum)
         # ARTIFICIAL DATA
-        url_artificial = \
-            repo_url + "/validation/phase_analysis/weighted_phase_lag_index/" \
-                       "wpli_specific_artificial_dataset"
-        files_to_download_artificial = (
+        artificial_data_path = "validation/phase_analysis/" \
+            "weighted_phase_lag_index/wpli_specific_artificial_dataset"
+        cls.files_to_download_artificial = (
             ("artificial_LFPs_1.mat", "4b99b15f89c0b9a0eb6fc14e9009436f"),
             ("artificial_LFPs_2.mat", "7144976b5f871fa62f4a831f530deee4"),
         )
-        for filename, checksum in files_to_download_artificial:
+        for filename, checksum in cls.files_to_download_artificial:
             # files will be downloaded to ELEPHANT_TMP_DIR
-            download(url=f"{url_artificial}/{filename}", checksum=checksum)
+            cls.tmp_path = download_datasets(
+                f"{artificial_data_path}/{filename}", checksum=checksum)
         # GROUND TRUTH DATA
-        url_ground_truth = \
-            repo_url + "/validation/phase_analysis/weighted_phase_lag_index/" \
-                       "ground_truth_wpli"
-        files_to_download_ground_truth = (
+        ground_truth_data_path = \
+            "/validation/phase_analysis/weighted_phase_lag_index/" \
+            "ground_truth_wpli"
+        cls.files_to_download_ground_truth = (
             ("ground_truth_WPLI_from_ft_connectivity_wpli_"
              "with_real_LFPs_R2G.csv", "4d9a7b7afab7d107023956077ab11fef"),
             ("ground_truth_WPLI_from_ft_connectivity_wpli_"
              "with_artificial_LFPs.csv", "92988f475333d7badbe06b3f23abe494"),
         )
-        for filename, checksum in files_to_download_ground_truth:
+        for filename, checksum in cls.files_to_download_ground_truth:
             # files will be downloaded into ELEPHANT_TMP_DIR
-            download(url=f"{url_ground_truth}/{filename}", checksum=checksum)
+            cls.tmp_path = download_datasets(
+                f"{ground_truth_data_path}/{filename}", checksum=checksum)
 
     def setUp(self):
         self.tolerance = 1e-15
@@ -430,11 +431,12 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # load real/artificial LFP-dataset for ground-truth consistency checks
         # real LFP-dataset
         dataset1_real = scipy.io.loadmat(
-            ELEPHANT_TMP_DIR / "i140703-001_ch01_slice_TS_ON_to_GO_ON_"
-                               "correct_trials.mat", squeeze_me=True)
+            f"{self.tmp_path.parent}/{self.files_to_download_real[0][0]}",
+            squeeze_me=True)
         dataset2_real = scipy.io.loadmat(
-            ELEPHANT_TMP_DIR / "i140703-001_ch02_slice_TS_ON_to_GO_ON_"
-                               "correct_trials.mat", squeeze_me=True)
+            f"{self.tmp_path.parent}/{self.files_to_download_real[1][0]}",
+            squeeze_me=True)
+
         # get relevant values
         self.lfps1_real = dataset1_real['lfp_matrix'] * pq.uV
         self.sf1_real = dataset1_real['sf'] * pq.Hz
@@ -448,9 +450,11 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
 
         # artificial LFP-dataset
         dataset1_artificial = scipy.io.loadmat(
-            ELEPHANT_TMP_DIR / "artificial_LFPs_1.mat", squeeze_me=True)
+            f"{self.tmp_path.parent}/"
+            f"{self.files_to_download_artificial[0][0]}", squeeze_me=True)
         dataset2_artificial = scipy.io.loadmat(
-            ELEPHANT_TMP_DIR / "artificial_LFPs_2.mat", squeeze_me=True)
+            f"{self.tmp_path.parent}/"
+            f"{self.files_to_download_artificial[1][0]}", squeeze_me=True)
         # get relevant values
         self.lfps1_artificial = dataset1_artificial['lfp_matrix'] * pq.uV
         self.sf1_artificial = dataset1_artificial['sf'] * pq.Hz
@@ -465,13 +469,13 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # load ground-truth reference calculated by:
         # Matlab package 'FieldTrip': ft_connectivity_wpli()
         self.wpli_ground_truth_ft_connectivity_wpli_real = np.loadtxt(
-            ELEPHANT_TMP_DIR / "ground_truth_WPLI_from_ft_connectivity_wpli_"
-                               "with_real_LFPs_R2G.csv", delimiter=',',
-            dtype=np.float64)
+            f"{self.tmp_path.parent}/"
+            f"{self.files_to_download_ground_truth[0][0]}",
+            delimiter=',', dtype=np.float64)
         self.wpli_ground_truth_ft_connectivity_artificial = np.loadtxt(
-            ELEPHANT_TMP_DIR / "ground_truth_WPLI_from_ft_connectivity_wpli_"
-                               "with_artificial_LFPs.csv", delimiter=',',
-            dtype=np.float64)
+            f"{self.tmp_path.parent}/"
+            f"{self.files_to_download_ground_truth[1][0]}",
+            delimiter=',', dtype=np.float64)
 
     def test_WPLI_ground_truth_consistency_real_LFP_dataset(self):
         """
@@ -554,7 +558,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         with self.subTest(msg="Quantity input"):
             freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_artificial, self.lfps2_artificial,
-                self.sf1_artificial,  absolute_value=False)
+                self.sf1_artificial, absolute_value=False)
             np.testing.assert_allclose(
                 wpli[freq == 70], 0, atol=0.004, rtol=self.tolerance)
         # np.array-input
