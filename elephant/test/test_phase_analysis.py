@@ -556,14 +556,14 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         """
         # Quantity-input
         with self.subTest(msg="Quantity input"):
-            freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
+            freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_artificial, self.lfps2_artificial,
                 self.sf1_artificial, absolute_value=False)
             np.testing.assert_allclose(
                 wpli[freq == 70], 0, atol=0.004, rtol=self.tolerance)
         # np.array-input
         with self.subTest(msg="np.array input"):
-            freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
+            freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_artificial.magnitude,
                 self.lfps2_artificial.magnitude, self.sf1_artificial,
                 absolute_value=False)
@@ -571,7 +571,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 wpli[freq == 70], 0, atol=0.004, rtol=self.tolerance)
         # neo.AnalogSignal-input
         with self.subTest(msg="neo.AnalogSignal input"):
-            freq, wpli, = elephant.phase_analysis.weighted_phase_lag_index(
+            freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_artificial_AnalogSignal,
                 self.lfps2_artificial_AnalogSignal, absolute_value=False)
             np.testing.assert_allclose(
