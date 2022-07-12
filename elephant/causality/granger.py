@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-.. current_module elephant.causality
-
-Overview
---------
 This module provides function to estimate causal influences of signals on each
 other.
 
 
 Granger causality
-~~~~~~~~~~~~~~~~~
+*****************
 Granger causality is a method to determine causal influence of one signal on
 another based on autoregressive modelling. It was developed by Nobel prize
 laureate Clive Granger and has been adopted in various numerical fields ever
@@ -20,14 +16,14 @@ signal alone. If it does reduce the prediction error, the first signal is said
 to Granger cause the other signal.
 
 Limitations
-+++++++++++
+-----------
 The user must be mindful of the method's limitations, which are assumptions of
 covariance stationary data, linearity imposed by the underlying autoregressive
 modelling as well as the fact that the variables not included in the model will
 not be accounted for :cite:`granger-Seth07_1667`.
 
 Implementation
-++++++++++++++
+--------------
 The mathematical implementation of Granger causality methods in this module
 closely follows :cite:`granger-Ding06_0608035`.
 
@@ -42,7 +38,7 @@ Time-series Granger causality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: toctree/causality/
+    :toctree: _toctree/causality/
 
     pairwise_granger
     conditional_granger
@@ -59,17 +55,7 @@ Run tutorial interactively:
    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/granger_causality.ipynb
 
-
-References
-----------
-
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: gr
-   :keyprefix: granger-
-   :style: unsrt
-
-
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -158,11 +144,11 @@ def _lag_covariances(signals, dimension, max_lag):
 
     Parameters
     ----------
-    signals: np.ndarray
+    signals : np.ndarray
         time series data
     dimension : int
         number of time series
-    max_lag: int
+    max_lag : int
         maximal time lag to be considered
 
     Returns
@@ -284,7 +270,7 @@ def _vector_arm(signals, dimension, order):
 
     Returns
     -------
-    coeffs: np.ndarray
+    coeffs : np.ndarray
         coefficients of the autoregressive model
         ry
     covar_mat : np.ndarray
@@ -336,7 +322,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
 
     Returns
     -------
-    optimal_coeffs: np.ndarray
+    optimal_coeffs : np.ndarray
         coefficients of the autoregressive model
     optimal_cov_mat : np.ndarray
         covariance matrix of
@@ -386,7 +372,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion,
-        Default: 'aic'.
+        Default: 'aic'
 
     Returns
     -------
@@ -559,7 +545,7 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion,
-        Default: 'aic'.
+        Default: 'aic'
 
     Returns
     -------

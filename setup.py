@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-
-import os
+import os.path
 import platform
-import struct
-import sys
-from urllib.request import urlretrieve
 
-from setuptools import setup
+from setuptools import setup, Extension
 
 with open(os.path.join(os.path.dirname(__file__),
                        "elephant", "VERSION")) as version_file:
@@ -17,62 +13,83 @@ with open("README.md") as f:
 with open('requirements/requirements.txt') as fp:
     install_requires = fp.read().splitlines()
 extras_require = {}
-for extra in ['extras', 'docs', 'tests', 'tutorials']:
+for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda', 'opencl']:
     with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
         extras_require[extra] = fp.read()
 
+if platform.system() == "Windows":
+    fim_module = Extension(
+        name='elephant.spade_src.fim',
+        sources=['elephant/spade_src/src/fim.cpp'],
+        include_dirs=['elephant/spade_src/include'],
+        language='c++',
+        libraries=[],
+        extra_compile_args=[
+            '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
+            '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'])
+elif platform.system() == "Darwin":
+    fim_module = Extension(
+        name='elephant.spade_src.fim',
+        sources=['elephant/spade_src/src/fim.cpp'],
+        include_dirs=['elephant/spade_src/include'],
+        language='c++',
+        libraries=['pthread', 'omp'],
+        extra_compile_args=[
+            '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
+            '-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra',
+            '-Weffc++', '-Wunused-result', '-Werror', '-Werror=return-type',
+            '-Xpreprocessor',
+            '-fopenmp', '-std=gnu++17'])
+elif platform.system() == "Linux":
+    fim_module = Extension(
+        name='elephant.spade_src.fim',
+        sources=['elephant/spade_src/src/fim.cpp'],
+        include_dirs=['elephant/spade_src/include'],
+        language='c++',
+        libraries=['pthread', 'gomp'],
+        extra_compile_args=[
+            '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
+            '-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra',
+            '-Weffc++', '-Wunused-result', '-Werror',
+            '-fopenmp', '-std=gnu++17'])
 
-def download_spade_fim():
-    """
-    Downloads SPADE specific PyFIM binary file.
-    """
-    if platform.system() == "Windows":
-        fim_filename = "fim.pyd"
-    else:
-        # Linux
-        fim_filename = "fim.so"
-    spade_src_dir = os.path.join(os.path.dirname(__file__), "elephant",
-                                 "spade_src")
-    fim_lib_path = os.path.join(spade_src_dir, fim_filename)
-    if os.path.exists(fim_lib_path):
-        return
-
-    arch = struct.calcsize("P") * 8
-    py_ver = sys.version_info.major
-    url_fim = f"http://www.borgelt.net/bin{arch}/py{py_ver}/{fim_filename}"
-    try:
-        urlretrieve(url_fim, filename=fim_lib_path)
-        print("Successfully downloaded fim lib to {}".format(fim_lib_path))
-    except Exception:
-        print("Unable to download {url} module.".format(url=url_fim))
-
-
-if len(sys.argv) > 1 and sys.argv[1].lower() != 'sdist':
-    download_spade_fim()
-
-setup(
-    name="elephant",
-    version=version,
-    packages=['elephant', 'elephant.test'],
-    include_package_data=True,
-
-    install_requires=install_requires,
-    extras_require=extras_require,
-
-    author="Elephant authors and contributors",
-    author_email="andrew.davison@unic.cnrs-gif.fr",
-    description="Elephant is a package for analysis of electrophysiology"
-                " data in Python",
-    long_description=long_description,
-    license="BSD",
-    url='http://neuralensemble.org/elephant',
-    classifiers=[
+setup_kwargs = {
+    "name": "elephant",
+    "version": version,
+    "packages": ['elephant', 'elephant.test'],
+    "include_package_data": True,
+    "install_requires": install_requires,
+    "extras_require": extras_require,
+    "author": "Elephant authors and contributors",
+    "author_email": "contact@python-elephant.org",
+    "description": "Elephant is a package for analysis of electrophysiology data in Python",  # noqa
+    "long_description": long_description,
+    "long_description_content_type": "text/markdown",
+    "license": "BSD",
+    "url": 'http://python-elephant.org',
+    "project_urls": {
+            "Bug Tracker": "https://github.com/NeuralEnsemble/elephant/issues",
+            "Documentation": "https://elephant.readthedocs.io/en/latest/",
+            "Source Code": "https://github.com/NeuralEnsemble/elephant",
+        },
+    "python_requires": ">=3.7",
+    "classifiers": [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3 :: Only',
         'Topic :: Scientific/Engineering']
-)
+}
+# do not compile external modules on darwin
+if platform.system() in ["Windows", "Linux"]:
+    setup_kwargs["ext_modules"] = [fim_module]
+
+
+setup(**setup_kwargs)

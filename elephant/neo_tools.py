@@ -2,7 +2,15 @@
 """
 Tools to manipulate Neo objects.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+.. autosummary::
+    :toctree: _toctree/neo_tools
+
+    extract_neo_attributes
+    get_all_spiketrains
+    get_all_events
+    get_all_epochs
+
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -11,6 +19,7 @@ import warnings
 
 from itertools import chain
 
+from neo.core.spiketrainlist import SpikeTrainList
 from neo.core.container import unique_objs
 from elephant.utils import deprecated_alias
 
@@ -35,19 +44,19 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
     parents : bool, optional
         If True, also include attributes and annotations from parent Neo
         objects (if any).
-        Default: True.
+        Default: True
     child_first : bool, optional
         If True, values of child attributes are used over parent attributes in
         the event of a name conflict.
         If False, parent attributes are used.
         This parameter does nothing if `parents` is False.
-        Default: True.
+        Default: True
     skip_array : bool, optional
         If True, skip attributes that store non-scalar array values.
-        Default: False.
+        Default: False
     skip_none : bool, optional
         If True, skip annotations and attributes that have a value of None.
-        Default: False.
+        Default: False
 
     Returns
     -------
@@ -172,10 +181,10 @@ def get_all_spiketrains(container):
     Returns
     -------
     list
-        A list of the unique `neo.SpikeTrain` objects in `container`.
+        A `neo.SpikeTrainList` object of the unique `neo.SpikeTrain` objects in `container`.
 
     """
-    return _get_all_objs(container, 'SpikeTrain')
+    return SpikeTrainList(_get_all_objs(container, 'SpikeTrain'))
 
 
 def get_all_events(container):

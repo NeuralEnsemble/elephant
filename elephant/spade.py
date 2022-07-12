@@ -1,11 +1,12 @@
 """
-SPADE [1]_, [2]_, [3]_ is the combination of a mining technique and multiple
-statistical tests to detect and assess the statistical significance of repeated
-occurrences of spike sequences (spatio-temporal patterns, STP).
+SPADE :cite:`spade-Torre2013_132,spade-Quaglio2017_41,spade-Stella2019_104022`
+is the combination of a mining technique and multiple statistical tests to
+detect and assess the statistical significance of repeated occurrences of spike
+sequences (spatio-temporal patterns, STP).
 
 
 .. autosummary::
-    :toctree: toctree/spade
+    :toctree: _toctree/spade
 
     spade
     concepts_mining
@@ -24,13 +25,21 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 
 Notes
 -----
-This modules relies on the implementation of the fp-growth algorithm contained
-in the file fim.so which can be found here (http://www.borgelt.net/pyfim.html)
-and should be available in the spade_src folder (elephant/spade_src/).
-If the fim.so module is not present in the correct location or cannot be
-imported (only available for linux OS) SPADE will make use of a python
-implementation of the fast fca algorithm contained in
-`elephant/spade_src/fast_fca.py`, which is about 10 times slower.
+This modules relies on the C++ implementation of the fp-growth algorithm developed by
+Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces
+a more generic implementation of the algorithm by Christian Borgelt
+(http://www.borgelt.net/pyfim.html) that was used in previous versions of Elephant.
+If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
+be compiled on a given system during install, SPADE will make use of a pure Python implementation
+of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
+significantly slower.
+
+
+See Also
+--------
+elephant.cell_assembly_detection.cell_assembly_detection : another synchronous
+patterns detection
+
 
 Examples
 --------
@@ -38,55 +47,44 @@ Given a list of Neo Spiketrain objects, assumed to be recorded in parallel, the
 SPADE analysis can be applied as demonstrated in this short toy example of 10
 artificial spike trains of exhibiting fully synchronous events of order 10.
 
->>> from elephant.spade import spade
->>> import elephant.spike_train_generation
 >>> import quantities as pq
+>>> import numpy as np
+>>> from elephant.spike_train_generation import compound_poisson_process
+>>> from elephant.spade import spade
 
 Generate correlated spiketrains.
 
->>> spiketrains = elephant.spike_train_generation.cpp(
-...    rate=5*pq.Hz, A=[0]+[0.99]+[0]*9+[0.01], t_stop=10*pq.s)
+>>> np.random.seed(30)
+>>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
+...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
 
 Mining patterns with SPADE using a `bin_size` of 1 ms and a window length of 1
 bin (i.e., detecting only synchronous patterns).
 
->>> patterns = spade(
-...        spiketrains=spiketrains, bin_size=1*pq.ms, winlen=1, dither=5*pq.ms,
-...        min_spikes=10, n_surr=10, psr_param=[0,0,3],
-...        output_format='patterns')['patterns'][0]
+>>> patterns = spade(spiketrains, bin_size=10 * pq.ms, winlen=1,
+...                  dither=5 * pq.ms, min_spikes=6, n_surr=10,
+...                  psr_param=[0, 0, 3])['patterns']
+>>> patterns[0]
+{'itemset': (4, 3, 0, 2, 5, 1),
+ 'windows_ids': (9,
+  16,
+  55,
+  91,
+  ...,
+  393,
+  456,
+  467),
+ 'neurons': [4, 3, 0, 2, 5, 1],
+ 'lags': array([0., 0., 0., 0., 0.]) * ms,
+ 'times': array([  90.,  160.,  550.,  910.,  930., 1420., 1480., 1650., 2570.,
+        3130., 3430., 3480., 3610., 3800., 3830., 3930., 4560., 4670.]) * ms,
+ 'signature': (6, 18),
+ 'pvalue': 0.0}
 
->>> import matplotlib.pyplot as plt
->>> for neu in patterns['neurons']:
-...     label = 'pattern' if neu == 0 else None
-...     plt.plot(patterns['times'], [neu]*len(patterns['times']), 'ro',
-...              label=label)
 
-Raster plot of the spiketrains.
+Refer to Viziphant documentation to check how to visualzie such patterns.
 
->>> for st_idx, spiketrain in enumerate(spiketrains):
-...     label = 'pattern' if st_idx == 0 else None
-...     plt.plot(spiketrain.rescale(pq.ms), [st_idx] * len(spiketrain),
-...              'k.', label=label)
->>> plt.ylim([-1, len(spiketrains)])
->>> plt.xlabel('time (ms)')
->>> plt.ylabel('neurons ids')
->>> plt.legend()
->>> plt.show()
-
-References
-----------
-.. [1] Torre, E., Picado-Muino, D., Denker, M., Borgelt, C., & Gruen, S.
-   (2013). Statistical evaluation of synchronous spike patterns extracted
-   by frequent item set mining. Frontiers in Computational Neuroscience, 7.
-.. [2] Quaglio, P., Yegenoglu, A., Torre, E., Endres, D. M., & Gruen, S.
-   (2017). Detection and Evaluation of Spatio-Temporal Spike Patterns in
-   Massively Parallel Spike Train Data with SPADE. Frontiers in
-   Computational Neuroscience, 11.
-.. [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019). 3d-SPADE:
-   Significance evaluation of spatio-temporal patterns of various temporal
-   extents. Biosystems, 185, 104022.
-
-:copyright: Copyright 2017 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -99,6 +97,7 @@ from functools import reduce
 from itertools import chain, combinations
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 from scipy import sparse
@@ -142,9 +141,10 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
           alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns', **surr_kwargs):
     r"""
-    Perform the SPADE [1]_, [2]_, [3]_ analysis for the parallel input
-    `spiketrains`. They are discretized with a temporal resolution equal to
-    `bin_size` in a sliding window of `winlen*bin_size`.
+    Perform the SPADE :cite:`spade-Torre2013_132`,
+    :cite:`spade-Quaglio2017_41`, :cite:`spade-Stella2019_104022` analysis for
+    the parallel input `spiketrains`. They are discretized with a temporal
+    resolution equal to `bin_size` in a sliding window of `winlen*bin_size`.
 
     First, spike patterns are mined from the `spiketrains` using a technique
     called frequent itemset mining (FIM) or formal concept analysis (FCA). In
@@ -293,19 +293,6 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     Notes
     -----
     If detected, this function will use MPI to parallelize the analysis.
-
-    References
-    ----------
-    .. [1] Torre, E., Picado-Muino, D., Denker, M., Borgelt, C., & Gruen, S.
-       (2013). Statistical evaluation of synchronous spike patterns extracted
-       by frequent item set mining. Frontiers in Computational Neuroscience, 7.
-    .. [2] Quaglio, P., Yegenoglu, A., Torre, E., Endres, D. M., & Gruen, S.
-       (2017). Detection and Evaluation of Spatio-Temporal Spike Patterns in
-       Massively Parallel Spike Train Data with SPADE. Frontiers in
-       Computational Neuroscience, 11.
-    .. [3] Stella, A., Quaglio, P., Torre, E., & Gruen, S. (2019). 3d-SPADE:
-       Significance evaluation of spatio-temporal patterns of various temporal
-       extents. Biosystems, 185, 104022.
 
     Examples
     --------
@@ -628,7 +615,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             "report has to assume of the following values:" +
             "  'a', '#' and '3d#,' got {} instead".format(report))
     # if spiketrains is list of neo.SpikeTrain convert to conv.BinnedSpikeTrain
-    if isinstance(spiketrains, list) and \
+    if isinstance(spiketrains, (list, SpikeTrainList)) and \
             isinstance(spiketrains[0], neo.SpikeTrain):
         spiketrains = conv.BinnedSpikeTrain(
             spiketrains, bin_size=bin_size, tolerance=None)
@@ -897,13 +884,16 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 zmin=min_z,
                 zmax=max_z,
                 report='a',
-                algo='s')
+                algo='s',
+                winlen=winlen,
+                threads=0,
+                verbose=4)
             break
     else:
         fpgrowth_output = [(tuple(transactions[0]), len(transactions))]
     # Applying min/max conditions and computing extent (window positions)
-    fpgrowth_output = [concept for concept in fpgrowth_output
-                       if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
+    # fpgrowth_output = [concept for concept in fpgrowth_output
+    #                    if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
     # filter out subsets of patterns that are found as a side-effect
     # of using the moving window strategy
     fpgrowth_output = _filter_for_moving_window_subsets(
@@ -951,18 +941,18 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     return spectrum
 
 
-def _fpgrowth_filter(concept, winlen, max_c, min_neu):
-    """
-    Filter for selecting closed frequent items set with a minimum number of
-    neurons and a maximum number of occurrences and first spike in the first
-    bin position
-    """
-    intent = np.array(concept[0])
-    keep_concept = (min(intent % winlen) == 0
-                    and concept[1] <= max_c
-                    and np.unique(intent // winlen).shape[0] >= min_neu
-                    )
-    return keep_concept
+# def _fpgrowth_filter(concept, winlen, max_c, min_neu):
+#     """
+#     Filter for selecting closed frequent items set with a minimum number of
+#     neurons and a maximum number of occurrences and first spike in the first
+#     bin position
+#     """
+#     intent = np.array(concept[0])
+#     keep_concept = (min(intent % winlen) == 0
+#                     and concept[1] <= max_c
+#                     and np.unique(intent // winlen).shape[0] >= min_neu
+#                     )
+#     return keep_concept
 
 
 def _rereference_to_last_spike(transactions, winlen):
@@ -1378,7 +1368,8 @@ def _generate_binned_surrogates(
                 binned_surrogates,
                 bin_size=bin_size,
                 t_start=spiketrains[0].t_start,
-                t_stop=spiketrains[0].t_stop)
+                t_stop=spiketrains[0].t_stop,
+                tolerance=None)
         elif surr_method in ('joint_isi_dithering', 'isi_dithering'):
             surrs = [instance.dithering()[0]
                      for instance in joint_isi_instances]
@@ -1767,10 +1758,10 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         Default: 0
     delta : float, optional
         delta: probability with at least :math:`1-\delta`
-        Default: 0.
+        Default: 0.0
     epsilon : float, optional
         epsilon: absolute error
-        Default: 0.
+        Default: 0.0
 
     Returns
     -------
@@ -1854,21 +1845,21 @@ def _calculate_single_stability_parameter(intent, extent,
 
     Parameters
     ----------
-    extent: np.array
+    extent : np.array
         2nd element of concept
-    intent: np.array
+    intent : np.array
         1st element of concept
-    n_subsets: int
+    n_subsets : int
         See approximate_stabilty
-    rel_matrix: sparse.coo_matrix
+    rel_matrix : sparse.coo_matrix
         See approximate_stabilty
-    look_at: {'extent', 'intent'}
+    look_at : {'extent', 'intent'}
         whether to determine stability for extent or intent.
         Default: 'intent'
 
     Returns
     -------
-    stability: float
+    stability : float
         Stability parameter for given extent, intent depending on which to look
     """
     if look_at == 'intent':
@@ -1914,9 +1905,9 @@ def _select_random_subsets(element_1, n_subsets):
 
     Parameters
     ----------
-    element_1: np.array
+    element_1 : np.array
         intent or extent
-    n_subsets: int
+    n_subsets : int
         see approximate_stability
 
     Returns
@@ -2265,17 +2256,17 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
 
     Parameters
     ----------
-    concepts: tuple
+    concepts : tuple
         Each element of the tuple corresponds to a pattern which it turn is a
         tuple of (spikes in the pattern, occurrences of the patterns)
-    winlen: int
+    winlen : int
         Length (in bins) of the sliding window used for the analysis.
-    bin_size: pq.Quantity
+    bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
-    pv_spec: None or tuple
+    pv_spec : None or tuple
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all p-values are set to -1.
-    spectrum: {'#', '3d#'}
+    spectrum : {'#', '3d#'}
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrences)
         '3d#': pattern spectrum using the as signature the triplets:
@@ -2283,7 +2274,7 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
             and first spike of the pattern)
 
         Default: '#'
-    t_start: pq.Quantity
+    t_start : pq.Quantity
         t_start of the analyzed spike trains
 
     Returns

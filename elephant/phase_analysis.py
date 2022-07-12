@@ -2,7 +2,15 @@
 """
 Methods for performing phase analysis.
 
-:copyright: Copyright 2014-2018 by the Elephant team, see `doc/authors.rst`.
+.. autosummary::
+    :toctree: _toctree/phase_analysis
+
+    spike_triggered_phase
+    phase_locking_value
+    mean_phase_vector
+    phase_difference
+
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -89,6 +97,15 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     ...     elephant.signal_processing.hilbert(analogsignal),
     ...     spiketrain,
     ...     interpolate=True)
+    >>> phases
+    [array([-0.57890515,  1.03105904, -0.82241075, ...,  0.90023903,
+             2.23702263,  2.93744259])]
+    >>> amps
+    [array([0.86117412, 1.08918248, 0.98256318, ..., 1.05760518, 1.08407016,
+        1.01927305]) * dimensionless]
+    >>> times
+    [array([6.41327152e+00, 2.02715221e+01, 1.05827312e+02, ...,
+        9.99692942e+04, 9.99808429e+04, 9.99870120e+04]) * ms]
 
     """
 
