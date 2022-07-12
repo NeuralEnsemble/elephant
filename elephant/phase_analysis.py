@@ -9,6 +9,7 @@ Methods for performing phase analysis.
     phase_locking_value
     mean_phase_vector
     phase_difference
+    weighted_phase_lag_index
 
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
