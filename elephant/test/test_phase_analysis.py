@@ -385,7 +385,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # and then loaded/ read for each test function individually.
 
         # REAL DATA
-        real_data_path = "dataset-4"
+        real_data_path = "unittest/phase_analysis/weighted_phase_lag_index/" \
+                         "data/wpli_real_data"
         cls.files_to_download_real = (
             ("i140703-001_ch01_slice_TS_ON_to_GO_ON_correct_trials.mat",
              "0e76454c58208cab710e672d04de5168"),
@@ -400,8 +401,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             cls.tmp_path = download_datasets(
                 f"{real_data_path}/{filename}", checksum=checksum)
         # ARTIFICIAL DATA
-        artificial_data_path = "validation/phase_analysis/" \
-            "weighted_phase_lag_index/wpli_specific_artificial_dataset"
+        artificial_data_path = "unittest/phase_analysis/" \
+            "weighted_phase_lag_index/data/wpli_specific_artificial_dataset"
         cls.files_to_download_artificial = (
             ("artificial_LFPs_1.mat", "4b99b15f89c0b9a0eb6fc14e9009436f"),
             ("artificial_LFPs_2.mat", "7144976b5f871fa62f4a831f530deee4"),
@@ -411,9 +412,8 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
             cls.tmp_path = download_datasets(
                 f"{artificial_data_path}/{filename}", checksum=checksum)
         # GROUND TRUTH DATA
-        ground_truth_data_path = \
-            "/validation/phase_analysis/weighted_phase_lag_index/" \
-            "ground_truth_wpli"
+        ground_truth_data_path = "unittest/phase_analysis/" \
+                        "weighted_phase_lag_index/data/wpli_ground_truth"
         cls.files_to_download_ground_truth = (
             ("ground_truth_WPLI_from_ft_connectivity_wpli_"
              "with_real_LFPs_R2G.csv", "4d9a7b7afab7d107023956077ab11fef"),
