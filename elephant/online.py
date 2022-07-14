@@ -507,7 +507,7 @@ class OnlineUnitaryEventAnalysis:
         """
         Save in-incoming data window (IDW) into memory window (MW).
 
-        This function appends for each neuron all the spikes which are arriving
+        This method appends for each neuron all the spikes which are arriving
         with 'idw' into the respective  sub-list of 'mv'.
 
         Parameters
@@ -639,7 +639,7 @@ class OnlineUnitaryEventAnalysis:
             Temporal size of the advancing step of the sliding analysis window.
         bin_size : pq.Quantity
             Temporal length of the histogram bins, which were used to bin
-            the 'spiketrains' in  '_apply_bw_tw()'.
+            the 'spiketrains' in  '_apply_bw_to_tw()'.
 
         Warns
         -----
@@ -694,8 +694,8 @@ class OnlineUnitaryEventAnalysis:
         joint-surprise is determined just when the user calls 'get_results()'.
         This is due to the dependency of the distribution from which 'Js' is
         calculated on the attributes 'n_emp' and 'n_exp'. Updating / changing
-        'n_emp' and 'n_exp' changes also this distribution, so that it not any
-        more possible to simply sum the joint-surprise values of different
+        'n_emp' and 'n_exp' changes also this distribution, so that it is not
+        possible anymore to simply sum the joint-surprise values of different
         trials at the same sliding analysis window position, because they were
         based on different distributions.
 
@@ -741,8 +741,8 @@ class OnlineUnitaryEventAnalysis:
             if i == self.n_windows - 1:  # last SAW position finished
                 self.saw_pos_counter = 0
                 #  move MV after SAW is finished with analysis of one trial
-                self._move_mw(new_t_start=self.trigger_events[
-                                              self.tw_counter] + self.tw_size)
+                self._move_mw(new_t_start=self.trigger_events[self.tw_counter]
+                                          + self.trigger_post_size)
                 # save analysed trial for visualization
                 if self.save_n_trials:
                     _trial_start = 0 * pq.s
