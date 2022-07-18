@@ -361,7 +361,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> st2 = StationaryPoissonProcess(
     ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
-    >>> cov_matrix
+    >>> cov_matrix # doctest: +SKIP
     array([[ 0.05432316, -0.00152276],
        [-0.00152276,  0.04917234]])
 
@@ -471,7 +471,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
     ...     bin_size=5*pq.ms))
-    >>> corrcoef
+    >>> corrcoef # doctest: +SKIP
     array([[ 1.        , -0.02946313],
            [-0.02946313,  1.        ]])
 
@@ -688,7 +688,7 @@ def cross_correlation_histogram(
     ...        binned_spiketrain_i, binned_spiketrain_j, window=[-10, 10],
     ...        border_correction=False,
     ...        binary=False, kernel=None)
-    >>> print(cc_hist.flatten())
+    >>> print(cc_hist.flatten()) # doctest: +SKIP
     [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
       1.  2.  4.  2. -0.  3.  3.] dimensionless
 
