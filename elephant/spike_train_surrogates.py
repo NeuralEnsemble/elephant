@@ -175,7 +175,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     >>> print(dither_spikes(st, dither = 20 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))
+    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2)) # doctest: +SKIP
     [<SpikeTrain(array([ 104.24942044,  246.0317873 ,  584.55938657,
         818.84446913]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
@@ -427,7 +427,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
     >>> print(dither_spike_train(st, shift = 20*pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))
+    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2)) # doctest: +SKIP
     [<SpikeTrain(array([  92.89084054,  242.89084054,  592.89084054,
         792.89084054]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
@@ -513,7 +513,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  98.82898293,  178.45805954,  346.93993867,
         461.34268507]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2)) # doctest: +SKIP
     [<SpikeTrain(array([  97.15720041,  199.06945744,  397.51928207,
         402.40065162]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  80.74513157,  173.69371317,  338.05860962,
