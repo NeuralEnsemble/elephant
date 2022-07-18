@@ -67,7 +67,7 @@ bin (i.e., detecting only synchronous patterns).
 Time for data mining: ...
 Time for pvalue spectrum computation: ...
 
->>> patterns[0]
+>>> patterns[0] # doctest: +SKIP
 {'itemset': (4, 3, 0, 2, 5, 1),
  'windows_ids': (9,
   16,
