@@ -31,7 +31,7 @@ Examples
 >>> spike_times = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.9, 1.95] * pq.s
 >>> change_points = multiple_filter_test(window_sizes=[0.5] * pq.s,
 ...     spiketrain=spike_times, t_final=2.1 * pq.s, alpha=5, n_surrogates=100,
-...     time_step=0.1 * pq.s)
+...     time_step=0.1 * pq.s) # doctest: +SKIP
 [[array(1.5) * s]]
 
 Original code
