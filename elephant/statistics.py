@@ -1289,7 +1289,7 @@ class Complexity(object):
            [0.16666667],
            [0.        ],
            [0.16666667]]) * dimensionless, [0.0 dimensionless, 5.0 dimensionless], sampling rate: 1.0 dimensionless)>
-    >>> pdf1.magnitude
+    >>> pdf1.magnitude # doctest: +SKIP
     array([[0.5],
            [0.4],
            [0.1]])
