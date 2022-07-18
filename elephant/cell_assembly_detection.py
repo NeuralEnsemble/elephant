@@ -52,7 +52,7 @@ Generate correlated data and bin it with a bin_size of 10ms.
 Call of the method.
 
 >>> patterns = cell_assembly_detection(bst, max_lag=2)
->>> patterns[0]
+>>> patterns[0] # doctest: +SKIP
 {'neurons': [0, 2],
  'lags': array([0.]) * ms,
  'pvalue': [5.3848138041122556e-05],
