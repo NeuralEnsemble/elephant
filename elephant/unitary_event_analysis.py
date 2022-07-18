@@ -408,8 +408,8 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
     >>> print(n_exp_anal)
     [0.5 1.5]
     >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr',
-    ...                        n_surrogates=5000)
-    >>> print(n_exp_surr)
+    ...                        n_surrogates=5000) # doctest: +SKIP
+    >>> print(n_exp_surr) # doctest: +SKIP
     [[ 1.  1.]
      [ 2.  0.]
      [ 2.  0.]
