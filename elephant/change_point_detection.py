@@ -309,7 +309,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
     ...     n_surrogates=100, time_step=0.1 * pq.s)
     >>> test_quantile  # doctest: +SKIP
     1.8133759165692873
-    >>> test_param
+    >>> test_param # doctest: +SKIP
     array([[0.5       ],
            [1.74482974],
            [0.24290945]])
