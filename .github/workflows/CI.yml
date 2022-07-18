@@ -416,11 +416,11 @@ jobs:
           source ~/test_env/bin/activate
 
           python -m pip install --upgrade pip
-          pip install mpi4py
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
           pip install pytest-cov coveralls
+          pip install mpi4py
           pip install -e .
 
       - name: List packages
