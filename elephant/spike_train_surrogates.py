@@ -181,7 +181,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
      <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
         786.1807108 ]) * ms, [0.0 ms, 1000.0 ms])>]
     >>> print(dither_spikes(st, dither = 20 * pq.ms,
-                            decimals=0))  # doctest: +SKIP
+    ...                        decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  81.,  242.,  595.,  799.]) * ms,
         [0.0 ms, 1000.0 ms])>]
 
