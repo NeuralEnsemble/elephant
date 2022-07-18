@@ -136,7 +136,7 @@ def zscore(signal, inplace=True):
     ...       np.transpose([[21, 22, 23, 24, 25, 26],
     ...                     [31, 32, 33, 34, 35, 36]]) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
-    >>> zscore([b, c])
+    >>> zscore([b, c])  # doctest: +SKIP
     [<AnalogSignal(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
        [-1.01772411, -1.01394628],
@@ -497,7 +497,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> freq, psd = welch_psd(filtered_noise, fs=1000.0)
     >>> psd.shape
     (1, 556)
-    >>> freq[0], psd[0, 0]
+    >>> freq[0], psd[0, 0] # doctest: +SKIP
     (array(0.) * Hz, array(7.21464674e-08) * mV**2/Hz)
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
@@ -658,7 +658,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     The wavelet frequency must be less than the half of the sampling rate;
     picking at 5 Hz.
 
-    >>> wavelet_transform(noise, frequency=5)
+    >>> wavelet_transform(noise, frequency=5) # doctest: +SKIP
     array([[-1.00890049+3.003473j  ],
        [-1.43664254-2.8389273j ],
        [ 3.02499511+0.96534578j],
