@@ -187,10 +187,10 @@ class OnlineUnitaryEventAnalysis:
 
     """
 
-    def __init__(self, bw_size=0.005 * pq.s, trigger_events=None,
-                 trigger_pre_size=0.5 * pq.s, trigger_post_size=0.5 * pq.s,
-                 saw_size=0.1 * pq.s, saw_step=0.005 * pq.s, n_neurons=2,
-                 pattern_hash=None, time_unit=1 * pq.s, save_n_trials=None):
+    def __init__(self, bw_size=0.005, trigger_events=None,
+                 trigger_pre_size=0.5, trigger_post_size=0.5,
+                 saw_size=0.1, saw_step=0.005, n_neurons=2,
+                 pattern_hash=None, time_unit='s', save_n_trials=None):
         """
         Constructor. Initializes all attributes of the new instance.
         """
@@ -200,22 +200,22 @@ class OnlineUnitaryEventAnalysis:
         self.trigger_events_left_over = True
 
         # save constructor parameters
-        if time_unit.units != (pq.s and pq.ms):
+        if time_unit not in ['s', 'ms'] and time_unit not in [pq.s, pq.ms]:
             warnings.warn(message=f"Unusual time units like {time_unit} can "
                                   f"cause numerical imprecise results. "
                                   f"Use `ms` or `s` instead!",
                           category=UserWarning)
-        self.time_unit = time_unit
-        self.bw_size = bw_size.rescale(self.time_unit)
+        self.time_unit = pq.Quantity(1, time_unit)
+        self.bw_size = pq.Quantity(bw_size, self.time_unit)
         if trigger_events is None:
             self.trigger_events = []
         else:
-            self.trigger_events = trigger_events.rescale(
-                self.time_unit).tolist()
-        self.trigger_pre_size = trigger_pre_size.rescale(self.time_unit)
-        self.trigger_post_size = trigger_post_size.rescale(self.time_unit)
-        self.saw_size = saw_size.rescale(self.time_unit)  # multiple of bw_size
-        self.saw_step = saw_step.rescale(self.time_unit)  # multiple of bw_size
+             self.trigger_events = pq.Quantity(trigger_events,
+                                               self.time_unit).tolist()
+        self.trigger_pre_size = pq.Quantity(trigger_pre_size, self.time_unit)
+        self.trigger_post_size = pq.Quantity(trigger_post_size, self.time_unit)
+        self.saw_size = pq.Quantity(saw_size, self.time_unit)  # multiple of bw_size
+        self.saw_step = pq.Quantity(saw_step, self.time_unit)  # multiple of bw_size
         self.n_neurons = n_neurons
         if pattern_hash is None:
             pattern = [1] * n_neurons
@@ -257,7 +257,7 @@ class OnlineUnitaryEventAnalysis:
                                      win_size=self.saw_size.rescale(pq.ms),
                                      win_step=self.saw_step.rescale(pq.ms),
                                      method=self.method,
-                                     t_start=0 * time_unit,
+                                     t_start=0 * self.time_unit,
                                      t_stop=self.tw_size,
                                      n_surrogates=self.n_surrogates)
 

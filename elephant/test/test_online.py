@@ -280,15 +280,31 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
 
         # create instance of OnlineUnitaryEventAnalysis
         _last_n_trials = min(self.last_n_trials, len(spiketrains))
-        ouea = OnlineUnitaryEventAnalysis(
-            bw_size=(0.005 * pq.s).rescale(time_unit),
-            trigger_pre_size=(0. * pq.s).rescale(time_unit),
-            trigger_post_size=(2.1 * pq.s).rescale(time_unit),
-            saw_size=(0.1 * pq.s).rescale(time_unit),
-            saw_step=(0.005 * pq.s).rescale(time_unit),
-            trigger_events=init_events,
-            time_unit=time_unit,
-            save_n_trials=_last_n_trials)
+        ouea = None
+        if st_type == "list_of_neo.SpikeTrain":
+            ouea = OnlineUnitaryEventAnalysis(
+                bw_size=(0.005 * pq.s).rescale(time_unit),
+                trigger_pre_size=(0. * pq.s).rescale(time_unit),
+                trigger_post_size=(2.1 * pq.s).rescale(time_unit),
+                saw_size=(0.1 * pq.s).rescale(time_unit),
+                saw_step=(0.005 * pq.s).rescale(time_unit),
+                trigger_events=init_events,
+                time_unit=time_unit,
+                save_n_trials=_last_n_trials)
+        elif st_type == "list_of_numpy_array":
+            ouea = OnlineUnitaryEventAnalysis(
+                bw_size=(0.005 * pq.s).rescale(time_unit).magnitude,
+                trigger_pre_size=(0. * pq.s).rescale(time_unit).magnitude,
+                trigger_post_size=(2.1 * pq.s).rescale(time_unit).magnitude,
+                saw_size=(0.1 * pq.s).rescale(time_unit).magnitude,
+                saw_step=(0.005 * pq.s).rescale(time_unit).magnitude,
+                trigger_events=init_events.magnitude,
+                time_unit=time_unit.__str__().split(" ")[1],
+                save_n_trials=_last_n_trials)
+        else:
+            ValueError("undefined type for spiktrains representation! "
+                       "Use either list of neo.SpikeTrains or "
+                       "list of numpy arrays")
         # perform online unitary event analysis
         # simulate buffered reading/transport of spiketrains,
         # i.e. loop over spiketrain list and call update_ue()
@@ -318,7 +334,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
 
     def _test_unitary_events_analysis_with_artificial_data(
             self, idw_length, method="pass_events_at_initialization",
-            time_unit=1 * pq.s , st_type="list_of_neo.SpikeTrain"):
+            time_unit=1 * pq.s, st_type="list_of_neo.SpikeTrain"):
         # Fix random seed to guarantee fixed output
         random.seed(1224)
 
@@ -362,15 +378,31 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
 
         # create instance of OnlineUnitaryEventAnalysis
         _last_n_trials = min(self.last_n_trials, len(spiketrains))
-        ouea = OnlineUnitaryEventAnalysis(
-            bw_size=(0.005 * pq.s).rescale(time_unit),
-            trigger_pre_size=trigger_pre_size,
-            trigger_post_size=trigger_post_size,
-            saw_size=(0.1 * pq.s).rescale(time_unit),
-            saw_step=(0.005 * pq.s).rescale(time_unit),
-            trigger_events=init_events,
-            time_unit=time_unit,
-            save_n_trials=_last_n_trials)
+        ouea = None
+        if st_type == "list_of_neo.SpikeTrain":
+            ouea = OnlineUnitaryEventAnalysis(
+                bw_size=(0.005 * pq.s).rescale(time_unit),
+                trigger_pre_size=trigger_pre_size,
+                trigger_post_size=trigger_post_size,
+                saw_size=(0.1 * pq.s).rescale(time_unit),
+                saw_step=(0.005 * pq.s).rescale(time_unit),
+                trigger_events=init_events,
+                time_unit=time_unit,
+                save_n_trials=_last_n_trials)
+        elif st_type == "list_of_numpy_array":
+            ouea = OnlineUnitaryEventAnalysis(
+                bw_size=(0.005 * pq.s).rescale(time_unit).magnitude,
+                trigger_pre_size=trigger_pre_size.magnitude,
+                trigger_post_size=trigger_post_size.magnitude,
+                saw_size=(0.1 * pq.s).rescale(time_unit).magnitude,
+                saw_step=(0.005 * pq.s).rescale(time_unit).magnitude,
+                trigger_events=init_events.magnitude,
+                time_unit=time_unit.__str__().split(" ")[1],
+                save_n_trials=_last_n_trials)
+        else:
+            ValueError("undefined type for spiktrains representation! "
+                       "Use either list of neo.SpikeTrains or "
+                       "list of numpy arrays")
         # perform online unitary event analysis
         # simulate buffered reading/transport of spiketrains,
         # i.e. loop over spiketrain list and call update_ue()
