@@ -350,7 +350,8 @@ class OnlineUnitaryEventAnalysis:
                       trigger_post_size, saw_size, saw_step, n_neurons,
                       pattern_hash, time_unit, save_n_trials)
 
-    def update_uea(self, spiketrains, events=None):
+    def update_uea(self, spiketrains, events=None,
+                   t_start=None, t_stop=None, time_unit=None):
         """
         Update unitary event analysis (UEA) with new arriving spike data from
         the incoming data window (IDW).
@@ -364,10 +365,19 @@ class OnlineUnitaryEventAnalysis:
 
         Parameters
         ----------
-        spiketrains : list of neo.SpikeTrain objects
+        spiketrains : list of neo.SpikeTrain or list of numpy.ndarray
             Spike times of the analysed neurons.
-        events : list of pq.Quantity
+        events : list of pq.Quantity or list of numpy.ndarray
             Time points of the trial defining trigger events.
+        t_start : float
+            Start time of the IDW.
+            Required if 'spiketrains' is a list of numpy.ndarray.
+        t_stop : float
+            Stop time of the IDW.
+            Required if 'spiketrains' is a list of numpy.ndarray.
+        time_unit : string
+            Name of the time unit used for representing the spikes in the IDW.
+            E.g. 's', 'ms'.
 
         Warns
         -----
@@ -391,25 +401,40 @@ class OnlineUnitaryEventAnalysis:
                     of the current trial
 
         """
-        # rescale spiketrains to time_unit
-        spiketrains = [st.rescale(self.time_unit)
-                       if st.t_start.units == st.units == st.t_stop
-                       else st.rescale(st.units).rescale(self.time_unit)
-                       for st in spiketrains]
+        if isinstance(spiketrains[0], neo.SpikeTrain):
+            # rescale spiketrains to time_unit
+            spiketrains = [st.rescale(self.time_unit)
+                           if st.t_start.units == st.units == st.t_stop
+                           else st.rescale(st.units).rescale(self.time_unit)
+                           for st in spiketrains]
+        elif isinstance(spiketrains[0], np.ndarray):
+            if t_start is None or t_stop is None or time_unit is None:
+                raise ValueError("'spiketrains' is a list of np.array(), thus"
+                                 "'t_start', 't_stop' and 'time_unit' must be"
+                                 "specified!")
+            else:
+                spiketrains = [neo.SpikeTrain(
+                    times=st, t_start=t_start, t_stop=t_stop,
+                    units=time_unit).rescale(self.time_unit)
+                               for st in spiketrains]
+        # extract relevant time information
+        idw_t_start = spiketrains[0].t_start
+        idw_t_stop = spiketrains[0].t_stop
 
         if events is None:
             events = np.array([])
         if len(events) > 0:
             for event in events:
-                if event not in self.trigger_events:
+                if isinstance(events, np.ndarray):
+                    event = pq.Quantity(event, time_unit)
+                if event.rescale(self.time_unit) not in self.trigger_events:
                     self.trigger_events.append(event.rescale(self.time_unit))
             self.trigger_events.sort()
             self.n_trials = len(self.trigger_events)
+
         # save incoming spikes (IDW) into memory (MW)
         self._save_idw_into_mw(spiketrains)
-        # extract relevant time information
-        idw_t_start = spiketrains[0].t_start
-        idw_t_stop = spiketrains[0].t_stop
+
 
         # analyse all trials which are available in the memory
         self.data_available_in_mv = True
