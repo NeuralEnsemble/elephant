@@ -15,7 +15,7 @@ on:
           - info
           - warning
           - debug
-          
+
   pull_request:
     branches:
       - master
@@ -37,7 +37,7 @@ on:
       #- review_request_removed
       #- auto_merge_enabled
       #- auto_merge_disabled
-      
+
   push:
     branches:
       - master
