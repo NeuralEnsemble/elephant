@@ -136,7 +136,7 @@ from tqdm import trange, tqdm
 
 import elephant.conversion as conv
 from elephant import spike_train_surrogates
-from elephant.utils import get_cuda_capability_major
+from elephant.utils import get_cuda_capability_major, get_opencl_capability
 
 try:
     from mpi4py import MPI
@@ -513,9 +513,11 @@ class _GPUBackend:
         use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
         use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
         cuda_detected = get_cuda_capability_major() != 0
+        opencl_detected = get_opencl_capability()
+
         if use_cuda and cuda_detected:
             return self.pycuda
-        if use_opencl:
+        if use_opencl and opencl_detected:
             return self.pyopencl
         return self.cpu
 

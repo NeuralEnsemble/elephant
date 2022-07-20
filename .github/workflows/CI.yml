@@ -63,7 +63,12 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      # used to reset cache every month
+      - name: Get current year-month
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
+
+- uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
@@ -71,6 +76,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
           cache-dependency-path: '**/requirements.txt'
+
+      - name: Cache test_env
+        uses: actions/cache@v3
+        with:
+          path: ~/test_env
+          # Look to see if there is a cache hit for the corresponding requirements files
+          # cache will be reset on changes to any requirements or every month
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
+            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
+            -${{ steps.date.outputs.date }}
 
       - name: Install dependencies
         run: |
@@ -120,7 +135,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ steps.date.outputs.date }}
+          key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
@@ -194,7 +209,7 @@ jobs:
           path: ${{ matrix.path }}
           # Look to see if there is a cache hit for the corresponding requirements files
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
+            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - name: Install dependencies
         run: |
@@ -251,7 +266,7 @@ jobs:
           # Look to see if there is a cache hit for the corresponding requirements files
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ steps.date.outputs.date }}
+            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - name: Setup environment
         run: |
@@ -302,13 +317,16 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ steps.date.outputs.date }}
+
+          key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
+
       - name: Add conda to system path
         run: |
           # $CONDA is an environment variable pointing to the root of the miniconda directory
           echo $CONDA/bin >> $GITHUB_PATH
       - name: Install dependencies
         run: |
+          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
           conda env update --file requirements/environment-tests.yml --name base
           activate base
@@ -361,7 +379,8 @@ jobs:
         with:
           path: ~/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements files
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}-${{ steps.date.outputs.date }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
+           -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - name: Install dependencies
         run: |
@@ -369,6 +388,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
+          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
           conda env update --file requirements/environment-docs.yml --name base
           conda install -c conda-forge openmpi
