@@ -15,6 +15,7 @@ on:
           - info
           - warning
           - debug
+          
   pull_request:
     branches:
       - master
@@ -36,6 +37,7 @@ on:
       #- review_request_removed
       #- auto_merge_enabled
       #- auto_merge_disabled
+      
   push:
     branches:
       - master
@@ -68,7 +70,7 @@ jobs:
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
 
-- uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
