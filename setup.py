@@ -118,7 +118,7 @@ class CommandMixin(object):
     """
     user_options = [
         ('no-compile', None, 'do not compile any C++ extension'),
-        ('no-compile-spade', None, 'do not compile spade related C++ extension') # noqa
+        ('no-compile-spade', None, 'do not compile spade related C++ extension')  # noqa
     ]
 
     def initialize_options(self):
