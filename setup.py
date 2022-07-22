@@ -97,10 +97,19 @@ setup_kwargs = {
         'Topic :: Scientific/Engineering']
 }
 
-if '--nofim' not in sys.argv:
-    # do not compile external modules on darwin
+# no compile options and corresponding extensions
+options = {"--no-compile": None, "--no-compile-spade": fim_module}
+# check if any option was specified
+if not any([True for key in options.keys() if key in sys.argv]):
     if platform.system() in ["Windows", "Linux"]:
         setup_kwargs["ext_modules"] = [fim_module]
+else:  # ...any option was specified
+    # select extensions accordingly
+    extensions = [module for flag, module in options.items() if
+                  flag not in sys.argv]
+    if None in extensions:  # None indicates "--no-compile" not in sys.argv
+        extensions.remove(None)
+        setup_kwargs["ext_modules"] = extensions
 
 
 class CommandMixin(object):
@@ -108,7 +117,8 @@ class CommandMixin(object):
     This class acts as a superclass to integrate new commands in setuptools.
     """
     user_options = [
-        ('nofim', None, 'a flag option')
+        ('no-compile', None, 'do not compile any C++ extension'),
+        ('no-compile-spade', None, 'do not compile spade related C++ extension') # noqa
     ]
 
     def initialize_options(self):
@@ -121,7 +131,8 @@ class CommandMixin(object):
 
         super().initialize_options()
         # Initialize options
-        self.nofim = None
+        self.no_compile_spade = None
+        self.no_compile = None
 
     def finalize_options(self):
         """
@@ -142,8 +153,10 @@ class CommandMixin(object):
         from setup call.
         """
         # Use options
-        global nofim
-        nofim = self.nofim
+        global no_compile_spade
+        global no_compile
+        no_compile_spade = self.no_compile_spade
+        no_compile = self.no_compile
 
         super().run()
 
