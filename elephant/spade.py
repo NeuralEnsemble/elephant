@@ -25,14 +25,21 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 
 Notes
 -----
-This modules relies on the C++ implementation of the fp-growth algorithm developed by
-Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces
-a more generic implementation of the algorithm by Christian Borgelt
-(http://www.borgelt.net/pyfim.html) that was used in previous versions of Elephant.
-If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
-be compiled on a given system during install, SPADE will make use of a pure Python implementation
-of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
+This modules relies on the C++ implementation of the fp-growth
+algorithm developed by Forian Porrmann (available at
+https://github.com/fporrmann/FPG). The module replaces a more generic
+implementation of the algorithm by Christian Borgelt (
+http://www.borgelt.net/pyfim.html) that was used in previous versions of
+Elephant.
+
+If the module (fim.so) is not available in a precompiled format (
+currently Linux/Windows) or cannot be compiled on a given system during
+install, SPADE will make use of a pure Python implementation of the fast fca
+algorithm contained in `elephant/spade_src/fast_fca.py`, which is
 significantly slower.
+
+See :ref:`no-compile-spade` on how to install elephant without compiling the
+fim.so module.
 
 
 See Also
@@ -971,7 +978,7 @@ def _rereference_to_last_spike(transactions, winlen):
         neurons[idx] = attribute // winlen
         bins[idx] = attribute % winlen
 
-    # rereference bins to last spike
+    # reference bins to last spike
     bins = bins.max() - bins
 
     # calculate converted transactions

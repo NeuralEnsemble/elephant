@@ -42,7 +42,7 @@ Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
 
            sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
 
-
+.. _no-compile-spade:
 ************
 Installation
 ************
@@ -66,11 +66,11 @@ Installation
               pip install elephant[extras]
 
         To avoid compilation of the c++ extension ``fim.cpp`` used in :ref:`spade`, install the package
-        with ``--install-option='--nofim'``. In this case the pure python implementation of SPADE is still available.
+        with ``--install-option='--no-compile-spade'``. In this case the pure python implementation of SPADE is still available.
 
            .. code-block:: sh
 
-              pip install elephant --install-option='--nofim'
+              pip install elephant --install-option='--no-compile-spade'
 
 
         To upgrade to a newer release use the ``--upgrade`` flag:
