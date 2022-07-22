@@ -312,7 +312,7 @@ Entries in the .bib are built according to the following specification:
 ``{Last name of first author}+{last two digits of publication year}+"_"+{first page of article}``
 
 
-.. note::
+.. admonition:: Example
 
     According to this specification, the following article:
 
