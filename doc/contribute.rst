@@ -92,12 +92,12 @@ your local machine.
 3. Before you make any changes, run the test suite to make sure all the tests
    pass on your system::
 
-    $ nosetests .
+    $ pytest .
 
    You can specify a particular module to test, for example
    ``test_statistics.py``::
 
-    $ nosetests elephant/test/test_statistics.py
+    $ pytest elephant/test/test_statistics.py
 
    At the end, if you see "OK", then all the tests passed (or were skipped
    because certain dependencies are not installed), otherwise it will report
