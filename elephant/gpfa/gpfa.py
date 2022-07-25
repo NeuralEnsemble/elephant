@@ -460,7 +460,7 @@ class GPFA(sklearn.base.BaseEstimator):
                 raise ValueError("'spiketrains' must contain the same number of "
                                 "neurons as the training spiketrain data")
             seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
-        elif seq_trains is not None:
+        elif seqs is not None:
             # check some stuff
             pass
 
