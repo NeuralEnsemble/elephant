@@ -31,7 +31,7 @@ Visualization of CAD method is covered in Viziphant
 
 See Also
 --------
-elephant.spade.spade : advanced synchronous patterns detection
+:ref:`spade` : advanced synchronous patterns detection
 
 Examples
 --------
