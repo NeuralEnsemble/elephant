@@ -19,7 +19,11 @@ sequences (spatio-temporal patterns, STP).
 
 Visualization
 -------------
-Visualization of SPADE analysis is covered in Viziphant:
+Visualization of SPADE analysis is covered in Viziphant e.g.:
+:func:`viziphant.patterns.plot_patterns_statistics_all`
+
+See Viziphant for more information:
+
 https://viziphant.readthedocs.io/en/latest/modules.html
 
 
@@ -32,19 +36,19 @@ implementation of the algorithm by Christian Borgelt (
 http://www.borgelt.net/pyfim.html) that was used in previous versions of
 Elephant.
 
-If the module (fim.so) is not available in a precompiled format (
+If the module ``fim.so`` is not available in a precompiled format (
 currently Linux/Windows) or cannot be compiled on a given system during
 install, SPADE will make use of a pure Python implementation of the fast fca
 algorithm contained in `elephant/spade_src/fast_fca.py`, which is
 significantly slower.
 
 See :ref:`no-compile-spade` on how to install elephant without compiling the
-fim.so module.
+``fim.so`` module.
 
 
 See Also
 --------
-elephant.cell_assembly_detection.cell_assembly_detection : another synchronous
+:doc:`cell_assembly_detection`: another synchronous
 patterns detection
 
 
