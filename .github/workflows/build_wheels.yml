@@ -11,7 +11,6 @@ on:
 # Building Wheels on Ubuntu and Windows systems
 jobs:
   build_wheels:
-    if: github.event.review.state == 'approved'
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
