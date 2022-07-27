@@ -8,7 +8,7 @@ on:
   pull_request_review:
     types: [ submitted ]
 
-# Building wheels on Ubuntu and Windows systems
+# Building Wheels on Ubuntu and Windows systems
 jobs:
   build_wheels:
     if: github.event.review.state == 'approved'
