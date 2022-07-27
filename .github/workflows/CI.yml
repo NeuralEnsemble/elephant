@@ -22,7 +22,7 @@ on:
     types:
       #- assigned
       #- unassigned
-      #- labeled
+      - labeled
       #- unlabeled
       - opened
       #- edited
