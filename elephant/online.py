@@ -316,7 +316,7 @@ class OnlineUnitaryEventAnalysis:
                        self.n_exp.astype(np.float64)).flatten()
         self.Js = jointJ(p)
         self.rate_avg = (self.rate_avg * (self.saw_size / self.bw_size)) / \
-                        (self.saw_size * self.n_trials)
+                        (self.saw_size * self.tw_counter)
         return {
             'Js': self.Js.reshape(
                 (self.n_windows, self.n_hashes)).astype(np.float32),
