@@ -6,7 +6,7 @@ from collections import defaultdict
 import neo
 import numpy as np
 import quantities as pq
-import viziphant
+# import viziphant
 
 from elephant.datasets import download_datasets
 from elephant.online import OnlineUnitaryEventAnalysis
@@ -53,28 +53,28 @@ def _generate_spiketrains(freq, length, trigger_events, injection_pos,
     return spiketrains, st1, st2
 
 
-def _visualize_results_of_offline_and_online_uea(
-        spiketrains, online_trials, ue_dict_offline, ue_dict_online, alpha):
-    # rescale input-params 'bin_size', win_size' and 'win_step' to ms,
-    # because plot_ue() expects these parameters in ms
-    ue_dict_offline["input_parameters"]["bin_size"].units = pq.ms
-    ue_dict_offline["input_parameters"]["win_size"].units = pq.ms
-    ue_dict_offline["input_parameters"]["win_step"].units = pq.ms
-    viziphant.unitary_event_analysis.plot_ue(
-        spiketrains, Js_dict=ue_dict_offline, significance_level=alpha,
-        unit_real_ids=['1', '2'], suptitle="offline")
-    # plt.show()
-    # reorder and rename indices-dict of ue_dict_online, if only the last
-    # n-trials were saved; indices-entries of unused trials are overwritten
-    if len(online_trials) < len(spiketrains):
-        _diff_n_trials = len(spiketrains) - len(online_trials)
-        for i in range(len(online_trials)):
-            ue_dict_online["indices"][f"trial{i}"] = \
-                ue_dict_online["indices"].pop(f"trial{i+_diff_n_trials}")
-    viziphant.unitary_event_analysis.plot_ue(
-        online_trials, Js_dict=ue_dict_online, significance_level=alpha,
-        unit_real_ids=['1', '2'], suptitle="online")
-    # plt.show()
+# def _visualize_results_of_offline_and_online_uea(
+#         spiketrains, online_trials, ue_dict_offline, ue_dict_online, alpha):
+#     # rescale input-params 'bin_size', win_size' and 'win_step' to ms,
+#     # because plot_ue() expects these parameters in ms
+#     ue_dict_offline["input_parameters"]["bin_size"].units = pq.ms
+#     ue_dict_offline["input_parameters"]["win_size"].units = pq.ms
+#     ue_dict_offline["input_parameters"]["win_step"].units = pq.ms
+#     viziphant.unitary_event_analysis.plot_ue(
+#         spiketrains, Js_dict=ue_dict_offline, significance_level=alpha,
+#         unit_real_ids=['1', '2'], suptitle="offline")
+#     # plt.show()
+#     # reorder and rename indices-dict of ue_dict_online, if only the last
+#     # n-trials were saved; indices-entries of unused trials are overwritten
+#     if len(online_trials) < len(spiketrains):
+#         _diff_n_trials = len(spiketrains) - len(online_trials)
+#         for i in range(len(online_trials)):
+#             ue_dict_online["indices"][f"trial{i}"] = \
+#                 ue_dict_online["indices"].pop(f"trial{i+_diff_n_trials}")
+#     viziphant.unitary_event_analysis.plot_ue(
+#         online_trials, Js_dict=ue_dict_online, significance_level=alpha,
+#         unit_real_ids=['1', '2'], suptitle="online")
+#     plt.show()
 
 
 def _simulate_buffered_reading(n_buffers, ouea, st1, st2, IDW_length,
