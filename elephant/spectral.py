@@ -32,7 +32,7 @@ __all__ = [
 @deprecated_alias(num_seg='n_segments', len_seg='len_segment',
                   freq_res='frequency_resolution')
 def welch_psd(signal, n_segments=8, len_segment=None,
-              frequency_resolution=None, overlap=0.5, fs=1.0, window='hanning',
+              frequency_resolution=None, overlap=0.5, fs=1.0, window='hann',
               nfft=None, detrend='constant', return_onesided=True,
               scaling='density', axis=-1):
     """
@@ -91,7 +91,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [2].
-        Default: 'hanning'
+        Default: 'hann'
     nfft : int, optional
         Length of the FFT used.
         See Notes [2].
@@ -520,7 +520,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
                   len_seg='len_segment', freq_res='frequency_resolution')
 def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
                     frequency_resolution=None, overlap=0.5, fs=1.0,
-                    window='hanning', nfft=None, detrend='constant',
+                    window='hann', nfft=None, detrend='constant',
                     scaling='density', axis=-1):
     r"""
     Estimates coherence between a given pair of analog signals.
@@ -574,7 +574,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [1].
-        Default: 'hanning'
+        Default: 'hann'
     nfft : int, optional
         Length of the FFT used.
         See Notes [1].
