@@ -139,7 +139,7 @@ class WelchPSDTestCase(unittest.TestCase):
         noise = np.random.normal(size=(num_channel, data_length))
         data_np = np.array(noise)
         # Since row-column order in AnalogSignal is different from the
-        # conventional one, `data_np` needs to be transposed when its used to
+        # conventional one, `data_np` needs to be transposed when it's used to
         # define an AnalogSignal
         data_neo = n.AnalogSignal(data_np.T,
                                   sampling_period=sampling_period * pq.s,
@@ -444,7 +444,7 @@ class WelchCohereTestCase(unittest.TestCase):
         x_np = np.array(np.random.normal(size=(num_channel, data_length)))
         y_np = np.array(np.random.normal(size=(num_channel, data_length)))
         # Since row-column order in AnalogSignal is different from the
-        # convention in NumPy/SciPy, `data_np` needs to be transposed when its
+        # convention in NumPy/SciPy, `data_np` needs to be transposed when it's
         # used to define an AnalogSignal
         x_neo = n.AnalogSignal(x_np.T, units='mV',
                                sampling_period=sampling_period * pq.s)

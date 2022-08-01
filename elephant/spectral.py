@@ -329,7 +329,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
         Time bandwidth product
         Default: 4.0.
     num_tapers : int, optional
-        Number of tapers used in 1. to obtain estimate of PSD. By default
+        Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None.
     peak_resolution : pq.Quantity float, optional
@@ -607,7 +607,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Estimate of coherency between the input time series. For each
         frequency, coherency takes a value between 0 and 1, with 0 or 1
         representing no or perfect coherence, respectively.
-        When the input arrays `signal_i` and `signal_j` are multi-dimensional,
+        When the input arrays `signal_i` and `signal_j` are multidimensional,
         `coherency` is of the same shape as the inputs, and the frequency is
         indexed depending on the type of the input. If the input is
         `neo.AnalogSignal`, the first axis indexes frequency. Otherwise,
