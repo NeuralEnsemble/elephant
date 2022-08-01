@@ -13,10 +13,9 @@ spectrum).
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function, unicode_literals
+import warnings
 
 import neo
-import warnings
 import numpy as np
 import quantities as pq
 import scipy.signal
