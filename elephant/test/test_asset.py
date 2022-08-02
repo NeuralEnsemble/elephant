@@ -245,7 +245,7 @@ class AssetTestCase(unittest.TestCase):
                     assert_array_almost_equal(lmat_cuda, lmat_true)
 
     def test_pmat_neighbors_gpu_chunked(self):
-        np.random.seed(12)
+        np.random.seed(0)
         filter_shape = (7, 3)
         n_largest = 3
         pmat1 = np.random.random_sample((40, 40)).astype(np.float32)
