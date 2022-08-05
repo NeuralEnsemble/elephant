@@ -36,7 +36,7 @@ Examples
 
 Original code
 -------------
-Adapted from the published R implementation: DOI: 10.1214/14-AOAS782SUPP;.r
+Adapted from the published R implementation: :cite:`cpd-Messer2014_2027`
 
 """
 
