@@ -195,7 +195,7 @@ public:
 		// TODO: Try to fully remove RefPairs
 		std::vector<RefPair> fF;
 
-		for (const RefPair& p : F)
+		for (const RefPair p : F)
 		{
 #ifdef DEBUG
 			LOG_DEBUG << (char)p.first << ":" << p.second->support << std::endl;
