@@ -31,7 +31,7 @@ Examples
 >>> spike_times = [1.1, 1.2, 1.4, 1.6, 1.7, 1.75, 1.8, 1.9, 1.95] * pq.s
 >>> change_points = multiple_filter_test(window_sizes=[0.5] * pq.s,
 ...     spiketrain=spike_times, t_final=2.1 * pq.s, alpha=5, n_surrogates=100,
-...     time_step=0.1 * pq.s)
+...     time_step=0.1 * pq.s) # doctest: +SKIP
 [[array(1.5) * s]]
 
 Original code
@@ -307,9 +307,9 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
     >>> test_quantile, test_param = empirical_parameters(
     ...     window_sizes=[0.5] * pq.s, t_final=2.1 * pq.s, alpha=5,
     ...     n_surrogates=100, time_step=0.1 * pq.s)
-    >>> test_quantile
+    >>> test_quantile  # doctest: +SKIP
     1.8133759165692873
-    >>> test_param
+    >>> test_param # doctest: +SKIP
     array([[0.5       ],
            [1.74482974],
            [0.24290945]])
