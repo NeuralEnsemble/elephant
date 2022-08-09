@@ -100,7 +100,7 @@ def is_time_quantity(*quantities, allow_none=False):
     Parameters
     ----------
     *quantities : pq.Quantity
-         A scalar or array-like to check for being a Quantity with time units.
+        A scalar or array-like to check for being a Quantity with time units.
     allow_none : bool, optional
         Allow the input to be None or not.
         Default: False
@@ -289,8 +289,8 @@ def round_binning_errors(values, tolerance=1e-8):
         num_corrections = correction_mask.sum()
         if num_corrections > 0:
             warnings.warn(f'Correcting {num_corrections} rounding errors by '
-                          f'shifting the affected spikes into the following '
-                          f'bin. You can set tolerance=None to disable this '
+                          'shifting the affected spikes into the following '
+                          'bin. You can set tolerance=None to disable this '
                           'behaviour.')
             values[correction_mask] += 0.5
         return values.astype(np.int32)
@@ -377,12 +377,12 @@ def calculate_n_bins(t_start, t_stop, bin_size, time_unit=pq.ms):
     t_start : pq.Quantity
         Time point at which the time histogram starts.
     t_stop : pq.Quantity
-        Time point at wich the time histogram ends.
+        Time point at which the time histogram ends.
     bin_size : pq.Quantity
         Temporal size of the bins within the time histogram.
     time_unit : pq.Quantity
         Time unit which will be used for the calculation of 'n_bins'
-         if 't_start', 't_stop' and 'bin_size' have different time units.
+        if 't_start', 't_stop' and 'bin_size' have different time units.
 
     Returns
     -------
@@ -393,9 +393,8 @@ def calculate_n_bins(t_start, t_stop, bin_size, time_unit=pq.ms):
     # sanity check: are parameters time quantities and share the same unit?
     for key, value in params_dict.items():
         if not is_time_quantity(value):
-            warnings.warn(f"Parameter '{key}' is not a time "
-                          f"quantity! Adjust it to a time quantity!",
-                          UserWarning)
+            raise TypeError(f"Parameter '{key}' is not a time "
+                            f"quantity! Adjust it to a time quantity!")
     if not t_start.units == t_stop.units == bin_size.units:
         warnings.warn(f"Parameters 't_start' [{t_start.units}], "
                       f"'t_stop' [{t_stop.units}] and 'bin_size' "
@@ -408,7 +407,7 @@ def calculate_n_bins(t_start, t_stop, bin_size, time_unit=pq.ms):
     # calculate (floating) point number of 'n_bins'
     n_bins = (params_dict["t_stop"] - params_dict["t_start"]) \
         / params_dict["bin_size"]
-    if isinstance(n_bins, pq.Quantity):
+    if isinstance(n_bins, pq.Quantity): # remove pq.dimensionless
         n_bins = n_bins.simplified.item()
     # round 'n_bins' to an integer according the machine precision
     n_bins = round_binning_errors(n_bins)
