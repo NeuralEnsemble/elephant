@@ -81,7 +81,7 @@ import elephant.conversion as conv
 import elephant.kernels as kernels
 from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, check_neo_consistency, \
-    is_time_quantity, round_binning_errors
+    is_time_quantity, round_binning_errors, calculate_n_bins
 
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
@@ -861,9 +861,10 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     t_stop = t_stop.rescale(spiketrains[0].units)
 
     # Calculate parameters for np.histogram
-    n_bins = int(((t_stop - t_start) / sampling_period).simplified)
-    hist_range_end = t_start + n_bins * \
-        sampling_period.rescale(spiketrains[0].units)
+    n_bins = calculate_n_bins(t_start=t_start, t_stop=t_stop,
+                              bin_size=sampling_period)
+    hist_range_end = t_start + n_bins * sampling_period.rescale(
+        spiketrains[0].units)
 
     hist_range = (t_start.item(), hist_range_end.item())
 
