@@ -195,7 +195,13 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
 
     """
-
+    # 'hanning' window was removed with release of scipy 1.9.0, it was
+    # deprecated since 1.1.0.
+    if window == 'hanning':
+        warnings.warn("'hanning' is deprecated and was removed from scipy "
+                      "with release 1.9.0. Please use 'hann' instead",
+                      DeprecationWarning)
+        window = 'hann'
     # initialize a parameter dict (to be given to scipy.signal.welch()) with
     # the parameters directly passed on to scipy.signal.welch()
     params = {'window': window, 'nfft': nfft,
@@ -670,6 +676,13 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     """
 
     # TODO: code duplication with welch_psd()
+    # 'hanning' window was removed with release of scipy 1.9.0, it was
+    # deprecated since 1.1.0.
+    if window == 'hanning':
+        warnings.warn("'hanning' is deprecated and was removed from scipy "
+                      "with release 1.9.0. Please use 'hann' instead",
+                      DeprecationWarning)
+        window = 'hann'
 
     # initialize a parameter dict for scipy.signal.csd()
     params = {'window': window, 'nfft': nfft,

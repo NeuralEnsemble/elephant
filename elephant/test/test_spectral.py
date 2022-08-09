@@ -46,6 +46,14 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           overlap=1.1)
 
+    def test_welch_psd_warnings(self):
+        # generate a dummy data
+        data = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                              units='mV')
+        # Test deprecation warning for 'hanning' window
+        self.assertWarns(DeprecationWarning, elephant.spectral.welch_psd,
+                         data, window='hanning')
+
     def test_welch_psd_behavior(self):
         # generate data by adding white noise and a sinusoid
         data_length = 5000
@@ -336,6 +344,16 @@ class WelchCohereTestCase(unittest.TestCase):
                           overlap=-1.0)
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
                           overlap=1.1)
+
+    def test_welch_cohere_warnings(self):
+        # generate a dummy data
+        x = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                           units='mV')
+        y = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                           units='mV')
+        # Test deprecation warning for 'hanning' window
+        self.assertWarns(DeprecationWarning, elephant.spectral.welch_coherence,
+                         x, y, window='hanning')
 
     def test_welch_cohere_behavior(self):
         # generate data by adding white noise and a sinusoid
