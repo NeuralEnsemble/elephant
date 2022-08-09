@@ -407,7 +407,7 @@ def calculate_n_bins(t_start, t_stop, bin_size, time_unit=pq.ms):
     # calculate (floating) point number of 'n_bins'
     n_bins = (params_dict["t_stop"] - params_dict["t_start"]) \
         / params_dict["bin_size"]
-    if isinstance(n_bins, pq.Quantity): # remove pq.dimensionless
+    if isinstance(n_bins, pq.Quantity):  # remove pq.dimensionless
         n_bins = n_bins.simplified.item()
     # round 'n_bins' to an integer according the machine precision
     n_bins = round_binning_errors(n_bins)
