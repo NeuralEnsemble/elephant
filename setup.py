@@ -67,6 +67,11 @@ setup_kwargs = {
     "long_description_content_type": "text/markdown",
     "license": "BSD",
     "url": 'http://python-elephant.org',
+    "project_urls": {
+            "Bug Tracker": "https://github.com/NeuralEnsemble/elephant/issues",
+            "Documentation": "https://elephant.readthedocs.io/en/latest/",
+            "Source Code": "https://github.com/NeuralEnsemble/elephant",
+        },
     "python_requires": ">=3.7",
     "classifiers": [
         'Development Status :: 5 - Production/Stable',
