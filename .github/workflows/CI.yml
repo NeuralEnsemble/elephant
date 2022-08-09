@@ -15,18 +15,19 @@ on:
           - info
           - warning
           - debug
+
   pull_request:
     branches:
       - master
     types:
       #- assigned
       #- unassigned
-      - labeled
+      #- labeled
       #- unlabeled
       - opened
       #- edited
       #- closed
-      #- reopened
+      - reopened
       - synchronize
       #- converted_to_draft
       #- ready_for_review
@@ -36,12 +37,21 @@ on:
       #- review_request_removed
       #- auto_merge_enabled
       #- auto_merge_disabled
+
   push:
     branches:
       - master
 
 # jobs define the steps that will be executed on the runner
 jobs:
+
+  #        _
+  #  _ __ (_)_ __
+  #  | '_ \| | '_ \
+  #  | |_) | | |_) |
+  #  | .__/|_| .__/
+  #  |_|     |_|
+
   # install dependencies and elephant with pip and run tests with pytest
   build-and-test-pip:
     runs-on: ${{ matrix.os }}
@@ -49,10 +59,8 @@ jobs:
       matrix:
         # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
         python-version: [3.7, 3.8, 3.9, "3.10"]
-
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
-
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
 
@@ -61,12 +69,15 @@ jobs:
       - name: Get current year-month
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
+
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: '**/requirements.txt'
 
       - name: Cache test_env
         uses: actions/cache@v3
@@ -80,32 +91,30 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # create an environment and install everything
-          python -m venv ~/test_env
-          source ~/test_env/bin/activate
-
           python -m pip install --upgrade pip
+          pip install coveralls
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
-          pip install pytest-cov coveralls
           pip install -e .
-
-      - name: Build
-        run: |
-          source ~/test_env/bin/activate
-          python setup.py install
 
       - name: List packages
         run: |
-          source ~/test_env/bin/activate
           pip list
           python --version
 
       - name: Test with pytest
         run: |
-          source ~/test_env/bin/activate
-          pytest --cov=elephant
+          coverage run --source=elephant -m pytest
+          coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #                        ___  ____
+  #  _ __ ___   __ _  ___ / _ \/ ___|
+  # | '_ ` _ \ / _` |/ __| | | \___ \
+  # | | | | | | (_| | (__| |_| |___) |
+  # |_| |_| |_|\__,_|\___|\___/|____/
 
   test-macOS:
     name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
@@ -115,7 +124,7 @@ jobs:
       fail-fast: false
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-10.15,macos-latest]
+        os: [macos-11,macos-12]
         python-version: [3.9]
     steps:
       - name: Get current year-month
@@ -160,6 +169,12 @@ jobs:
         run: |
           pytest --cov=elephant
 
+  # __        ___           _
+  # \ \      / (_)_ __   __| | _____      _____
+  #  \ \ /\ / /| | '_ \ / _` |/ _ \ \ /\ / / __|
+  #   \ V  V / | | | | | (_| | (_) \ V  V /\__ \
+  #    \_/\_/  |_|_| |_|\__,_|\___/ \_/\_/ |___/
+
   # install dependencies with pip and run tests with pytest
   test-pip:
     runs-on: ${{ matrix.os }}
@@ -186,7 +201,7 @@ jobs:
 
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -216,6 +231,12 @@ jobs:
         run: |
           pytest --cov=elephant
 
+  #  __  __ ____ ___
+  # |  \/  |  _ \_ _|
+  # | |\/| | |_) | |
+  # | |  | |  __/| |
+  # |_|  |_|_|  |___|
+
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
     runs-on: ${{ matrix.os }}
@@ -223,7 +244,6 @@ jobs:
       matrix:
         # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
         python-version: [3.9]
-
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -237,7 +257,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -250,12 +270,13 @@ jobs:
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
             -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - name: Setup enviroment
+      - name: Setup environment
         run: |
           sudo apt install -y libopenmpi-dev openmpi-bin
 
           python -m pip install --upgrade pip
           pip install mpi4py
+          pip install coveralls
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
           pip install -r requirements/requirements-extras.txt
@@ -269,7 +290,16 @@ jobs:
 
       - name: Test with pytest
         run: |
-          mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant
+          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
+          coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #   ____                _
+  #  / ___|___  _ __   __| | __ _
+  # | |   / _ \| '_ \ / _` |/ _` |
+  # | |__| (_) | | | | (_| | (_| |
+  #  \____\___/|_| |_|\__,_|\__,_|
 
   # install dependencies with conda and run tests with pytest
   test-conda:
@@ -289,6 +319,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
+
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - name: Add conda to system path
@@ -316,6 +347,12 @@ jobs:
         run: |
           activate base
           pytest --cov=elephant --import-mode=importlib
+
+  #  ____
+  # |  _ \  ___   ___ ___
+  # | | | |/ _ \ / __/ __|
+  # | |_| | (_) | (__\__ \
+  # |____/ \___/ \___|___/
 
   # install dependencies for the documentation and build .html
   docs:
