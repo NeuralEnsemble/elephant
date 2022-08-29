@@ -56,6 +56,7 @@ class TrialsFromLists(Trials):
     def n_trials(self):
         return len(self.list_of_trials)
 
+
 class TrialsFromBlock(Trials):
     """
     This class implements support for handling trials from neo.Block
