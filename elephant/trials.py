@@ -79,9 +79,6 @@ class TrialsFromBlock(Trials):
         (actual documentation is in class documentation, see above!)
         """
         self.block = block
-        self.cut_events = cut_events
-        self.pre = pre
-        self.post = post
         super().__init__(**kwargs)
 
     def __getitem__(self, trial_number):
