@@ -58,14 +58,6 @@ class TrialsFromBlock(Trials):
     ----------
     block : neo.Block
         An instance of neo.Block containing the trials.
-    cut_events: list of neo.Event objects, optional
-        Events used to cut the trials.
-    pre: pq.Quantity, optional
-        Defines the time period before the cut_events, which will be added
-        to the trial.
-    post: pq.Quantity, optional
-        defines the time period after the cut_events, which will be added
-        to the trial.
 
     Attributes
     ----------
