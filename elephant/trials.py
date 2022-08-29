@@ -63,8 +63,15 @@ class TrialsFromLists(Trials):
         """
         Get the number of spiketrains in each trial.
         """
-        # return[len(trial) for trial in self.list_of_trials
-        #        if spiketrain is isinstance(neo.core.SpikeTrain) for spiketrain in trial ]
+        return[sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
+               for trial in self.list_of_trials]
+
+    def n_analogsignals(self):
+        """
+        Get the number of analogsignals in each trial.
+        """
+        return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
+                for trial in self.list_of_trials]
 
 
 class TrialsFromBlock(Trials):
