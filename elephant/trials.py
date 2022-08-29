@@ -49,6 +49,12 @@ class TrialsFromLists(Trials):
         self.list_of_trials = list_of_trials
         super().__init__(**kwargs)
 
+    def __getitem__(self, trial_number):
+        return self.list_of_trials[trial_number]
+
+    @property
+    def n_trials(self):
+        return len(self.list_of_trials)
 
 class TrialsFromBlock(Trials):
     """
