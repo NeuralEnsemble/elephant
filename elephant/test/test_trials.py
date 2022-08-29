@@ -35,13 +35,13 @@ class TrialsFromBlockTestCase(unittest.TestCase):
             self.block = io.read_block()
 
         self.trial_object = TrialsFromBlock(self.block,
-                                            description='successful trials')
+                                            description='trials are segments')
 
     def test_trials_from_block_description(self):
         """
         Test description of the trials object.
         """
-        self.assertEqual(self.trial_object.description, 'successful trials')
+        self.assertEqual(self.trial_object.description, 'trials are segments')
 
     def test_trials_from_block_get_trial(self):
         """
@@ -79,13 +79,13 @@ class TrialsFromListTestCase(unittest.TestCase):
         self.trial_list = [trial.spiketrains for trial in block.segments]
 
         self.trial_object = TrialsFromLists(self.trial_list,
-                                            description='successful trials')
+                                            description='trial is a list')
 
     def test_trials_from_list_description(self):
         """
         Test description of the trials object.
         """
-        self.assertEqual(self.trial_object.description, 'successful trials')
+        self.assertEqual(self.trial_object.description, 'trial is a list')
 
     def test_trials_from_list_get_trial(self):
         """
