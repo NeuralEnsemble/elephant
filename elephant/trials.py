@@ -54,7 +54,17 @@ class TrialsFromLists(Trials):
 
     @property
     def n_trials(self):
+        """
+        Get the number of trials.
+        """
         return len(self.list_of_trials)
+
+    def n_spiketrains(self):
+        """
+        Get the number of spiketrains in each trial.
+        """
+        # return[len(trial) for trial in self.list_of_trials
+        #        if spiketrain is isinstance(neo.core.SpikeTrain) for spiketrain in trial ]
 
 
 class TrialsFromBlock(Trials):
@@ -72,9 +82,7 @@ class TrialsFromBlock(Trials):
         Calculated based on the number of segments in the block.
 
     """
-    def __init__(self, block,
-                 cut_events=None, pre=None, post=None,
-                 **kwargs):
+    def __init__(self, block, **kwargs):
         """
         Constructor
         (actual documentation is in class documentation, see above!)
@@ -87,4 +95,19 @@ class TrialsFromBlock(Trials):
 
     @property
     def n_trials(self):
+        """
+        Get the number of trials.
+        """
         return len(self.block.segments)
+
+    def n_spiketrains(self):
+        """
+        Get the number of SpikeTrain instances in each trial.
+        """
+        return[len(trial.spiketrains) for trial in self.block.segments]
+
+    def n_analogsignals(self):
+        """
+        Get the number of AnalogSignals instances in each trial.
+        """
+        return[len(trial.analogsignals) for trial in self.block.segments]
