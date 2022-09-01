@@ -22,7 +22,7 @@ class OnlineUnitaryEventAnalysis:
 
     Parameters
     ----------
-    bw_size : pq.Quantity
+    bin_window_size : pq.Quantity
         Size of the bin window, which is used to bin the spike trains.
     trigger_events : pq.Quantity
         Quantity array of time points around which the trials are defined.
@@ -34,11 +34,11 @@ class OnlineUnitaryEventAnalysis:
     trigger_post_size : pq.Quantity
         Interval size after the trigger event. It is used with
         'trigger_pre_size' to define the trial.
-    saw_size : pq.Quantity
+    sliding_analysis_window_size : pq.Quantity
         Size of the sliding analysis window, which is used to perform the UEA
         on the trial segments. It advances with a step size defined by
-        'saw_step'.
-    saw_step : pq.Quantity
+        'sliding_analysis_window_step'.
+    sliding_analysis_window_step : pq.Quantity
         Size of the step which is used to advance the sliding analysis window
         to its next position / next trial segment to analyze.
     n_neurons : int
@@ -59,7 +59,7 @@ class OnlineUnitaryEventAnalysis:
 
     Attributes
     ----------
-    data_available_in_mv : boolean
+    data_available_in_memory_window : boolean
         Reflects the status of spike trains in the memory window. It is `True',
         when spike trains are in the memory window which were not yet analyzed.
         Otherwise, it is `False'.
@@ -74,32 +74,32 @@ class OnlineUnitaryEventAnalysis:
         Reflects the status of the trial defining events in the
         'trigger_events' list. It is `True`, when there are events left, which
         were not analyzed yet. Otherwise, it is `False`.
-    mw : list of lists
+    memory_window : list of lists
         Contains for each neuron the spikes which are currently available in
         the memory window.
             * 0-axis --> Neurons
             * 1-axis --> Spike times
-    tw_size : pq.Quantity
+    trial_window_size : pq.Quantity
         The size of the trial window. It is the sum of 'trigger_pre_size' and
         'trigger_post_size'.
-    tw : list of lists
+    trial_window : list of lists
         Contains for each neuron the spikes which belong to the current trial
         and are available in the memory window.
             * 0-axis --> Neurons
             * 1-axis --> Spike times
-    tw_counter : int
+    trial_counter : int
         Counts how many trails are yet analyzed.
     n_bins : int
         Number of bins which are used for the binning of the spikes of a trial.
-    bw : np.array of booleans
+    bin_window : np.array of booleans
         A binned representation of the current trial window. `True` indicates
         the presence of a spike in the bin and `False` indicates absence of
         a spike.
         * 0-axis --> Neurons
         * 1-axis --> Index position of the bin
-    saw_pos_counter : int
+    sliding_analysis_window_position : int
         Represents the current position of the sliding analysis window.
-    n_windows : int
+    n_sliding_analysis_windows : int
         Total number of positions of the sliding analysis window.
     n_trials : int
         Total number of trials to analyze.
@@ -163,9 +163,9 @@ class OnlineUnitaryEventAnalysis:
     update_uea(spiketrains, events)
         Updates the entries of the result dictionary by processing the
         new arriving 'spiketrains' and trial defining trigger 'events'.
-    reset(bw_size, trigger_events, trigger_pre_size, trigger_post_size,
-            saw_size, saw_step, n_neurons, pattern_hash, time_unit,
-            save_n_trials)
+    reset(bin_window_size, trigger_events, trigger_pre_size, trigger_post_size,
+            sliding_analysis_window_size, sliding_analysis_window_step,
+            n_neurons, pattern_hash, time_unit, save_n_trials)
         Resets all class attributes to their initial (default) value. It is
         actually a re-initialization which allows parameter adjustments.
     get_all_saved_trials()
@@ -176,26 +176,18 @@ class OnlineUnitaryEventAnalysis:
     -------
     see 'get_results()' in Methods section
 
-    Notes
-    -----
-    Common abbreviations which are used in both code and documentation:
-        bw = bin window
-        tw = trial window
-        saw = sliding analysis window
-        idw = incoming data window
-        mw = memory window
-
     """
 
-    def __init__(self, bw_size=0.005, trigger_events=None,
+    def __init__(self, bin_window_size=0.005, trigger_events=None,
                  trigger_pre_size=0.5, trigger_post_size=0.5,
-                 saw_size=0.1, saw_step=0.005, n_neurons=2,
+                 sliding_analysis_window_size=0.1,
+                 sliding_analysis_window_step=0.005, n_neurons=2,
                  pattern_hash=None, time_unit='s', save_n_trials=None):
         """
         Constructor. Initializes all attributes of the new instance.
         """
         # state controlling booleans for the updating algorithm
-        self.data_available_in_mv = None
+        self.data_available_in_memory_window = None
         self.waiting_for_new_trigger = True
         self.trigger_events_left_over = True
 
@@ -206,7 +198,7 @@ class OnlineUnitaryEventAnalysis:
                                   f"Use `ms` or `s` instead!",
                           category=UserWarning)
         self.time_unit = pq.Quantity(1, time_unit)
-        self.bw_size = pq.Quantity(bw_size, self.time_unit)
+        self.bin_window_size = pq.Quantity(bin_window_size, self.time_unit)
         if trigger_events is None:
             self.trigger_events = []
         else:
@@ -214,8 +206,10 @@ class OnlineUnitaryEventAnalysis:
                                                self.time_unit).tolist()
         self.trigger_pre_size = pq.Quantity(trigger_pre_size, self.time_unit)
         self.trigger_post_size = pq.Quantity(trigger_post_size, self.time_unit)
-        self.saw_size = pq.Quantity(saw_size, self.time_unit)  # multiple of bw_size
-        self.saw_step = pq.Quantity(saw_step, self.time_unit)  # multiple of bw_size
+        self.sliding_analysis_window_size = \
+            pq.Quantity(sliding_analysis_window_size, self.time_unit)
+        self.sliding_analysis_window_step = \
+            pq.Quantity(sliding_analysis_window_step, self.time_unit)
         self.n_neurons = n_neurons
         if pattern_hash is None:
             pattern = [1] * n_neurons
@@ -224,22 +218,25 @@ class OnlineUnitaryEventAnalysis:
             self.pattern_hash = [int(self.pattern_hash)]
         self.save_n_trials = save_n_trials
 
-        # initialize helper variables for the memory window (mw)
-        self.mw = [[] for _ in range(self.n_neurons)]  # list of all spiketimes
+        # initialize the memory window
+        self.memory_window = [[] for _ in range(self.n_neurons)]
 
-        # initialize helper variables for the trial window (tw)
-        self.tw_size = self.trigger_pre_size + self.trigger_post_size
-        self.tw = [[] for _ in range(self.n_neurons)]  # pointer to slice of mw
-        self.tw_counter = 0
+        # initialize the trial window and helper variables
+        self.trial_window_size = self.trigger_pre_size + self.trigger_post_size
+        self.trial_window = [[] for _ in range(self.n_neurons)]
+        self.trial_counter = 0
 
-        # initialize helper variables for the bin window (bw)
+        # initialize the bin window and helper variable
         self.n_bins = None
-        self.bw = None  # binned copy of tw
+        self.bin_window = None
 
-        # initialize helper variable for the sliding analysis window (saw)
-        self.saw_pos_counter = 0
-        self.n_windows = int(np.round(
-            (self.tw_size - self.saw_size + self.saw_step) / self.saw_step))
+        # initialize the sliding analysis window and helper variable
+        self.sliding_analysis_window_position = 0
+        self.n_sliding_analysis_windows = \
+            int(np.round((self.trial_window_size -
+                          self.sliding_analysis_window_size +
+                          self.sliding_analysis_window_step) /
+                         self.sliding_analysis_window_step))
 
         # determine the number trials and the number of patterns (hashes)
         self.n_trials = len(self.trigger_events)
@@ -252,24 +249,27 @@ class OnlineUnitaryEventAnalysis:
         # to facilitate a later comparison of the used parameters
         self.method = 'analytic_TrialByTrial'
         self.n_surrogates = 100
-        self.input_parameters = dict(pattern_hash=self.pattern_hash,
-                                     bin_size=self.bw_size.rescale(pq.ms),
-                                     win_size=self.saw_size.rescale(pq.ms),
-                                     win_step=self.saw_step.rescale(pq.ms),
-                                     method=self.method,
-                                     t_start=0 * self.time_unit,
-                                     t_stop=self.tw_size,
-                                     n_surrogates=self.n_surrogates)
+        self.input_parameters = \
+            dict(pattern_hash=self.pattern_hash,
+                 bin_size=self.bin_window_size.rescale(pq.ms),
+                 win_size=self.sliding_analysis_window_size.rescale(pq.ms),
+                 win_step=self.sliding_analysis_window_step.rescale(pq.ms),
+                 method=self.method,
+                 t_start=0 * self.time_unit,
+                 t_stop=self.trial_window_size,
+                 n_surrogates=self.n_surrogates)
 
         # initialize the intermediate result arrays for the joint surprise
-        # (js), number of expected coincidences (n_exp), number of empirically
+        # (Js), number of expected coincidences (n_exp), number of empirically
         # found coincidences (n_emp), rate average of the analyzed neurons
-        # (rate_avg), as well as the indices of the saw position where
-        # coincidences appear
+        # (rate_avg), as well as the indices of the sliding analysis window
+        # position where coincidences appear
         self.Js, self.n_exp, self.n_emp = np.zeros(
-            (3, self.n_windows, self.n_hashes), dtype=np.float64)
+            (3, self.n_sliding_analysis_windows, self.n_hashes),
+            dtype=np.float64)
         self.rate_avg = np.zeros(
-            (self.n_windows, self.n_hashes, self.n_neurons), dtype=np.float64)
+            (self.n_sliding_analysis_windows, self.n_hashes, self.n_neurons),
+            dtype=np.float64)
         self.indices = defaultdict(list)
 
     def get_all_saved_trials(self):
@@ -284,6 +284,7 @@ class OnlineUnitaryEventAnalysis:
             : list of list of neo.SpikeTrain
             A nested list of trials, neurons and their neo.SpikeTrain objects,
             respectively.
+
         """
         return list(self.all_trials)
 
@@ -292,7 +293,8 @@ class OnlineUnitaryEventAnalysis:
         Return result dictionary.
 
         Prepares the dictionary entries by reshaping them into the correct
-        shape with the correct dtype.
+        shape with the correct datatype. Moreover, it calculates 'Js' (could
+        not be updated continuously) and scales 'n_exp' and 'rate_avg'.
 
         Returns
         -------
@@ -311,28 +313,30 @@ class OnlineUnitaryEventAnalysis:
         """
         for key in self.indices.keys():
             self.indices[key] = np.hstack(self.indices[key]).flatten()
-        self.n_exp /= (self.saw_size / self.bw_size)
+        self.n_exp /= (self.sliding_analysis_window_size /
+                       self.bin_window_size)
         p = self._pval(self.n_emp.astype(np.float64),
                        self.n_exp.astype(np.float64)).flatten()
         self.Js = jointJ(p)
-        self.rate_avg = (self.rate_avg * (self.saw_size / self.bw_size)) / \
-                        (self.saw_size * self.tw_counter)
+        self.rate_avg = self.rate_avg / (self.bin_window_size *
+                                         self.trial_counter)
         return {
-            'Js': self.Js.reshape(
-                (self.n_windows, self.n_hashes)).astype(np.float32),
+            'Js': self.Js.reshape((self.n_sliding_analysis_windows,
+                                   self.n_hashes)).astype(np.float32),
             'indices': self.indices,
-            'n_emp': self.n_emp.reshape(
-                (self.n_windows, self.n_hashes)).astype(np.float32),
-            'n_exp': self.n_exp.reshape(
-                (self.n_windows, self.n_hashes)).astype(np.float32),
+            'n_emp': self.n_emp.reshape((self.n_sliding_analysis_windows,
+                                         self.n_hashes)).astype(np.float32),
+            'n_exp': self.n_exp.reshape((self.n_sliding_analysis_windows,
+                                         self.n_hashes)).astype(np.float32),
             'rate_avg': self.rate_avg.reshape(
-                (self.n_windows, self.n_hashes, self.n_neurons)).astype(
-                np.float32),
+                (self.n_sliding_analysis_windows,
+                 self.n_hashes, self.n_neurons)).astype(np.float32),
             'input_parameters': self.input_parameters}
 
-    def reset(self, bw_size=0.005 * pq.s, trigger_events=None,
+    def reset(self, bin_window_size=0.005 * pq.s, trigger_events=None,
               trigger_pre_size=0.5 * pq.s, trigger_post_size=0.5 * pq.s,
-              saw_size=0.1 * pq.s, saw_step=0.005 * pq.s, n_neurons=2,
+              sliding_analysis_window_size=0.1 * pq.s,
+              sliding_analysis_window_step=0.005 * pq.s, n_neurons=2,
               pattern_hash=None, time_unit=1 * pq.s, save_n_trials=None):
         """
         Resets all class attributes to their initial value.
@@ -346,15 +350,16 @@ class OnlineUnitaryEventAnalysis:
         (same as for the constructor; see docstring of constructor for details)
 
         """
-        self.__init__(bw_size, trigger_events, trigger_pre_size,
-                      trigger_post_size, saw_size, saw_step, n_neurons,
+        self.__init__(bin_window_size, trigger_events, trigger_pre_size,
+                      trigger_post_size, sliding_analysis_window_size,
+                      sliding_analysis_window_step, n_neurons,
                       pattern_hash, time_unit, save_n_trials)
 
-    def update_uea(self, spiketrains, events=None,
-                   t_start=None, t_stop=None, time_unit=None):
+    def update_uea(self, spiketrains, events=None, t_start=None, t_stop=None,
+                   time_unit=None):
         """
         Update unitary event analysis (UEA) with new arriving spike data from
-        the incoming data window (IDW).
+        the incoming data window (incoming data window).
 
         This method orchestrates the updating process. It saves the incoming
         'spiketrains' into the memory window (MW) and adds also the new
@@ -370,14 +375,14 @@ class OnlineUnitaryEventAnalysis:
         events : list of pq.Quantity or list of numpy.ndarray
             Time points of the trial defining trigger events.
         t_start : float
-            Start time of the IDW.
+            Start time of the incoming data window.
             Required if 'spiketrains' is a list of numpy.ndarray.
         t_stop : float
-            Stop time of the IDW.
+            Stop time of the incoming data window.
             Required if 'spiketrains' is a list of numpy.ndarray.
         time_unit : string
-            Name of the time unit used for representing the spikes in the IDW.
-            E.g. 's', 'ms'.
+            Name of the time unit used for representing the spikes in the
+            incoming data window, e.g. 's', 'ms'.
 
         Warns
         -----
@@ -390,15 +395,15 @@ class OnlineUnitaryEventAnalysis:
         Notes
         -----
         Short summary of the different algorithm major states / substates:
-        1. pre/post trial analysis: algorithm is waiting for IDW with
-                                    new trigger event
-            1.1. IDW contains new trigger event
-            1.2. IDW does not contain new trigger event
-        2. within trial analysis: algorithm is waiting for IDW with
-                                    spikes of current trial
-            2.1. IDW contains new trigger event
-            2.2. IDW does not contain new trigger event, it just has new spikes
-                    of the current trial
+        1. pre/post trial analysis: algorithm is waiting for
+            incoming data window with new trigger event
+            1.1. incoming data window contains new trigger event
+            1.2. incoming data window does not contain new trigger event
+        2. within trial analysis: algorithm is waiting for incoming data window
+            with spikes of current trial
+            2.1. incoming data window contains new trigger event
+            2.2. incoming data window does not contain new trigger event, it
+                just has new spikes of the current trial
 
         """
         if isinstance(spiketrains[0], neo.SpikeTrain):
@@ -418,8 +423,8 @@ class OnlineUnitaryEventAnalysis:
                     units=time_unit).rescale(self.time_unit)
                                for st in spiketrains]
         # extract relevant time information
-        idw_t_start = spiketrains[0].t_start
-        idw_t_stop = spiketrains[0].t_stop
+        t_start_incoming_data_window = spiketrains[0].t_start
+        t_stop_incoming_data_window = spiketrains[0].t_stop
 
         if events is None:
             events = np.array([])
@@ -432,74 +437,83 @@ class OnlineUnitaryEventAnalysis:
             self.trigger_events.sort()
             self.n_trials = len(self.trigger_events)
 
-        # save incoming spikes (IDW) into memory (MW)
-        self._save_idw_into_mw(spiketrains)
-
+        # save spikes of incoming data window into memory window
+        self._save_incoming_data_window_into_memory_window(spiketrains)
 
         # analyse all trials which are available in the memory
-        self.data_available_in_mv = True
-        while self.data_available_in_mv:
-            if self.tw_counter == self.n_trials:
+        self.data_available_in_memory_window = True
+        while self.data_available_in_memory_window:
+            if self.trial_counter == self.n_trials:
                 break
             if self.n_trials == 0:
                 current_trigger_event = np.inf * self.time_unit
                 next_trigger_event = np.inf * self.time_unit
             else:
-                current_trigger_event = self.trigger_events[self.tw_counter]
-                if self.tw_counter <= self.n_trials - 2:
+                current_trigger_event = self.trigger_events[self.trial_counter]
+                if self.trial_counter <= self.n_trials - 2:
                     next_trigger_event = self.trigger_events[
-                        self.tw_counter + 1]
+                        self.trial_counter + 1]
                 else:
                     next_trigger_event = np.inf * self.time_unit
 
             # # case 1: pre/post trial analysis,
-            # i.e. waiting for IDW  with new trigger event
+            # i.e. waiting for incoming data window with new trigger event
             if self.waiting_for_new_trigger:
-                # # subcase 1: IDW contains trigger event
-                if (idw_t_start <= current_trigger_event) & \
-                        (current_trigger_event <= idw_t_stop):
+                # # subcase 1: incoming data window contains trigger event
+                if (t_start_incoming_data_window <= current_trigger_event) & \
+                        (current_trigger_event <= t_stop_incoming_data_window):
                     self.waiting_for_new_trigger = False
                     if self.trigger_events_left_over:
-                        # define TW around trigger event
-                        self._define_tw(trigger_event=current_trigger_event)
-                        # apply BW to available data in TW
-                        self._apply_bw_to_tw()
-                        # move SAW over available data in TW
-                        self._move_saw_over_tw(t_stop_idw=idw_t_stop)
+                        # define trial window around trigger event
+                        self._define_trial_window(
+                            trigger_event=current_trigger_event)
+                        # apply bin window to available data in trial window
+                        self._binning_of_trial_window()
+                        # move sliding analysis window over available data
+                        # in trial window
+                        self._move_sliding_analysis_window_over_trial_window(
+                            t_stop_incoming_data_window=
+                            t_stop_incoming_data_window)
                     else:
                         pass
-                # # subcase 2: IDW does not contain trigger event
+                # # subcase 2: incoming data window does not contain
+                # trigger event
                 else:
-                    self._move_mw(
-                        new_t_start=idw_t_stop - self.trigger_pre_size)
+                    self._move_memory_window(new_t_start=
+                                             t_stop_incoming_data_window -
+                                             self.trigger_pre_size)
 
-            # # Case 2: within trial analysis,
-            # i.e. waiting for new IDW with spikes of current trial
+            # # Case 2: within trial analysis, i.e. waiting for
+            # new incoming data window with spikes of current trial
             else:
-                # # Subcase 3: IDW contains new trigger event
-                if (idw_t_start <= next_trigger_event) & \
-                        (next_trigger_event <= idw_t_stop):
+                # # Subcase 3: incoming data window contains new trigger event
+                if (t_start_incoming_data_window <= next_trigger_event) & \
+                        (next_trigger_event <= t_stop_incoming_data_window):
                     # check if an overlap between current / next trial exists
-                    if self._check_tw_overlap(
+                    if self._check_trial_window_overlap(
                             current_trigger_event=current_trigger_event,
                             next_trigger_event=next_trigger_event):
                         warnings.warn(
-                            f"Data in trial {self.tw_counter} will be analysed"
-                            f" twice! Adjust the trigger events and/or "
-                            f"the trial window size.", UserWarning)
+                            f"Data in trial {self.trial_counter} will be "
+                            f"analysed twice! Adjust the trigger events and/or"
+                            f" the trial window size.", UserWarning)
                     else:  # no overlap exists
                         pass
-                # # Subcase 4: IDW does not contain trigger event,
-                # i.e. just new spikes of the current trial
+                # # Subcase 4: incoming data window does not contain
+                # trigger event, i.e. just new spikes of the current trial
                 else:
                     pass
                 if self.trigger_events_left_over:
-                    # define trial TW around trigger event
-                    self._define_tw(trigger_event=current_trigger_event)
-                    # apply BW to available data in TW
-                    self._apply_bw_to_tw()
-                    # move SAW over available data in TW
-                    self._move_saw_over_tw(t_stop_idw=idw_t_stop)
+                    # define trial window around trigger event
+                    self._define_trial_window(trigger_event=
+                                              current_trigger_event)
+                    # apply bin window to available data in trial window
+                    self._binning_of_trial_window()
+                    # move sliding analysis window over available data
+                    # in trial window
+                    self._move_sliding_analysis_window_over_trial_window(
+                        t_stop_incoming_data_window=
+                        t_stop_incoming_data_window)
                 else:
                     pass
 
@@ -528,24 +542,26 @@ class OnlineUnitaryEventAnalysis:
         p = 1. - sc.gammaincc(n_emp, n_exp)
         return p
 
-    def _save_idw_into_mw(self, idw):
+    def _save_incoming_data_window_into_memory_window(self,
+                                                      incoming_data_window):
         """
-        Save in-incoming data window (IDW) into memory window (MW).
+        Save in-incoming data window into memory window.
 
         This method appends for each neuron all the spikes which are arriving
-        with 'idw' into the respective  sub-list of 'mv'.
+        with 'incoming_data_window' into the respective  sub-list of
+        'memory_window'.
 
         Parameters
         ---------
-        idw : list of pq.Quantity arrays
+        incoming_data_window : list of pq.Quantity arrays
             * 0-axis --> Neurons
             * 1-axis --> Spike times
 
         """
         for i in range(self.n_neurons):
-            self.mw[i] += idw[i].tolist()
+            self.memory_window[i] += incoming_data_window[i].tolist()
 
-    def _move_mw(self, new_t_start):
+    def _move_memory_window(self, new_t_start):
         """
         Move memory window.
 
@@ -561,16 +577,16 @@ class OnlineUnitaryEventAnalysis:
 
         """
         for i in range(self.n_neurons):
-            idx = np.where(new_t_start > self.mw[i])[0]
+            idx = np.where(new_t_start > self.memory_window[i])[0]
             # print(f"idx = {idx}")
-            if not len(idx) == 0:  # move mv
-                self.mw[i] = self.mw[i][idx[-1] + 1:]
-            else:  # keep mv
-                self.data_available_in_mv = False
+            if not len(idx) == 0:  # move memory_window
+                self.memory_window[i] = self.memory_window[i][idx[-1] + 1:]
+            else:  # keep memory_window
+                self.data_available_in_memory_window = False
 
-    def _define_tw(self, trigger_event):
+    def _define_trial_window(self, trigger_event):
         """
-        Define trial window (TW) based on a trigger event.
+        Define trial window based on a trigger event.
 
         This method defines the trial window around the 'trigger_event', i.e.
         it sets the start and stop of the trial, so that it covers the
@@ -588,10 +604,12 @@ class OnlineUnitaryEventAnalysis:
         self.trial_start = trigger_event - self.trigger_pre_size
         self.trial_stop = trigger_event + self.trigger_post_size
         for i in range(self.n_neurons):
-            self.tw[i] = [t for t in self.mw[i]
-                          if (self.trial_start <= t) & (t <= self.trial_stop)]
+            self.trial_window[i] = [t for t in self.memory_window[i]
+                                    if (self.trial_start <= t) &
+                                    (t <= self.trial_stop)]
 
-    def _check_tw_overlap(self, current_trigger_event, next_trigger_event):
+    def _check_trial_window_overlap(self, current_trigger_event,
+                                    next_trigger_event):
         """
         Check if successive trials do overlap each other.
 
@@ -621,9 +639,9 @@ class OnlineUnitaryEventAnalysis:
         else:
             return False
 
-    def _apply_bw_to_tw(self):
+    def _binning_of_trial_window(self):
         """
-        Apply bin window (BW) to trial window (TW).
+        Apply bin window to trial window.
 
         Perform the binning and clipping procedure on the trial window, i.e.
         if at least one spike is within a bin, it is occupied and
@@ -631,21 +649,22 @@ class OnlineUnitaryEventAnalysis:
 
         """
         self.n_bins = int(((self.trial_stop - self.trial_start) /
-                           self.bw_size).simplified.item())
-        self.bw = np.zeros((1, self.n_neurons, self.n_bins), dtype=np.int32)
+                           self.bin_window_size).simplified.item())
+        self.bin_window = np.zeros((1, self.n_neurons, self.n_bins),
+                                   dtype=np.int32)
         spiketrains = [neo.SpikeTrain(np.array(st) * self.time_unit,
                                       t_start=self.trial_start,
                                       t_stop=self.trial_stop)
-                       for st in self.tw]
-        bs = conv.BinnedSpikeTrain(spiketrains, t_start=self.trial_start,
-                                   t_stop=self.trial_stop,
-                                   bin_size=self.bw_size)
-        self.bw = bs.to_bool_array()
+                       for st in self.trial_window]
+        bst = conv.BinnedSpikeTrain(spiketrains, t_start=self.trial_start,
+                                    t_stop=self.trial_stop,
+                                    bin_size=self.bin_window_size)
+        self.bin_window = bst.to_bool_array()
 
-    def _set_saw_positions(self, t_start, t_stop, win_size, win_step,
-                           bin_size):
+    def _set_sliding_analysis_windows_positions(self, t_start, t_stop,
+                                                win_size, win_step, bin_size):
         """
-        Set positions of the sliding analysis window (SAW).
+        Set positions of the sliding analysis window.
 
         Determines the positions of the sliding analysis window with respect to
         the used window size 'win_size' and the advancing step 'win_step'. Also
@@ -677,8 +696,8 @@ class OnlineUnitaryEventAnalysis:
         """
         self.t_winpos = _winpos(t_start, t_stop, win_size, win_step,
                                 position='left-edge')
-        while len(self.t_winpos) != self.n_windows:
-            if len(self.t_winpos) > self.n_windows:
+        while len(self.t_winpos) != self.n_sliding_analysis_windows:
+            if len(self.t_winpos) > self.n_sliding_analysis_windows:
                 self.t_winpos = _winpos(t_start, t_stop - win_step / 2,
                                         win_size,
                                         win_step, position='left-edge')
@@ -696,9 +715,10 @@ class OnlineUnitaryEventAnalysis:
             warnings.warn(f"The ratio between the win_step ({win_step}) and "
                           f"the bin_size ({bin_size}) is not an integer")
 
-    def _move_saw_over_tw(self, t_stop_idw):
+    def _move_sliding_analysis_window_over_trial_window(
+            self, t_stop_incoming_data_window):
         """
-        Move sliding analysis window (SAW) over trial window (TW).
+        Move sliding analysis window over trial window.
 
         This method iterates over each sliding analysis window position and
         applies at each position the unitary event analysis, i.e. within each
@@ -710,8 +730,8 @@ class OnlineUnitaryEventAnalysis:
 
         Parameters
         ----------
-        t_stop_idw : pq.Quantity
-            Time point at which the current incoming data window (IDW) ends.
+        t_stop_incoming_data_window : pq.Quantity
+            Time point at which the current incoming data window ends.
 
         Notes
         -----
@@ -725,71 +745,85 @@ class OnlineUnitaryEventAnalysis:
         based on different distributions.
 
         """
-        # define saw positions
-        self._set_saw_positions(
+        # define sliding analysis window positions
+        self._set_sliding_analysis_windows_positions(
             t_start=self.trial_start, t_stop=self.trial_stop,
-            win_size=self.saw_size, win_step=self.saw_step,
-            bin_size=self.bw_size)
+            win_size=self.sliding_analysis_window_size,
+            win_step=self.sliding_analysis_window_step,
+            bin_size=self.bin_window_size)
 
-        # iterate over saw positions
-        for i in range(self.saw_pos_counter, self.n_windows):
+        # iterate over sliding analysis window positions
+        for i in range(self.sliding_analysis_window_position,
+                       self.n_sliding_analysis_windows):
             p_realtime = self.t_winpos[i]
             p_bintime = self.t_winpos_bintime[i] - self.t_winpos_bintime[0]
-            # check if saw filled with data
-            if p_realtime + self.saw_size <= t_stop_idw:  # saw is filled
+            # check if sliding analysis window is filled with data
+            # case 1: sliding analysis window is filled
+            if p_realtime + self.sliding_analysis_window_size <= \
+                    t_stop_incoming_data_window:
                 mat_win = np.zeros((1, self.n_neurons, self.winsize_bintime))
-                n_bins_in_current_saw = self.bw[
+                n_bins_in_current_sliding_analysis_window = self.bin_window[
                     :, p_bintime:p_bintime + self.winsize_bintime].shape[1]
-                if n_bins_in_current_saw < self.winsize_bintime:
+                if n_bins_in_current_sliding_analysis_window < \
+                        self.winsize_bintime:
                     mat_win[0] += np.pad(
-                        self.bw[:, p_bintime:p_bintime + self.winsize_bintime],
-                        (0, self.winsize_bintime - n_bins_in_current_saw),
+                        self.bin_window[:,
+                        p_bintime:p_bintime + self.winsize_bintime],
+                        (0, self.winsize_bintime -
+                         n_bins_in_current_sliding_analysis_window),
                         "minimum")[0:2]
                 else:
                     mat_win[0] += \
-                        self.bw[:, p_bintime:p_bintime + self.winsize_bintime]
+                        self.bin_window[
+                        :, p_bintime:p_bintime + self.winsize_bintime]
                 Js_win, rate_avg, n_exp_win, n_emp_win, indices_lst = _UE(
                     mat_win, pattern_hash=self.pattern_hash,
                     method=self.method, n_surrogates=self.n_surrogates)
                 self.rate_avg[i] += rate_avg
                 self.n_exp[i] += (np.round(
-                    n_exp_win * (self.saw_size / self.bw_size))).astype(int)
+                    n_exp_win * (self.sliding_analysis_window_size /
+                                 self.bin_window_size))).astype(int)
                 self.n_emp[i] += n_emp_win
                 self.indices_lst = indices_lst
                 if len(self.indices_lst[0]) > 0:
-                    self.indices[f"trial{self.tw_counter}"].append(
+                    self.indices[f"trial{self.trial_counter}"].append(
                         self.indices_lst[0] + p_bintime)
-            else:  # saw is empty / half-filled -> pause iteration
-                self.saw_pos_counter = i
-                self.data_available_in_mv = False
+            # case 2: sliding analysis window is empty / partially filled
+            else:  # -> pause iteration
+                self.sliding_analysis_window_position = i
+                self.data_available_in_memory_window = False
                 break
-            if i == self.n_windows - 1:  # last SAW position finished
-                self.saw_pos_counter = 0
-                #  move MV after SAW is finished with analysis of one trial
-                self._move_mw(new_t_start=self.trigger_events[self.tw_counter]
-                                          + self.trigger_post_size)
+            # last sliding analysis window position finished
+            if i == self.n_sliding_analysis_windows - 1:
+                self.sliding_analysis_window_position = 0
+                # move memory window after sliding analysis window is finished
+                #  with analysis of one trial
+                self._move_memory_window(
+                    new_t_start=self.trigger_events[self.trial_counter]
+                    + self.trigger_post_size)
                 # save analysed trial for visualization
                 if self.save_n_trials:
                     _trial_start = 0 * pq.s
-                    _trial_stop = self.tw_size
-                    _offset = self.trigger_events[self.tw_counter] - \
-                        self.trigger_pre_size
+                    _trial_stop = self.trial_window_size
+                    _offset = self.trigger_events[self.trial_counter] - \
+                              self.trigger_pre_size
                     normalized_spike_times = []
                     for n in range(self.n_neurons):
                         normalized_spike_times.append(
-                            np.array(self.tw[n]) * self.time_unit - _offset)
+                            np.array(self.trial_window[n]) * self.time_unit -
+                            _offset)
                     self.all_trials.append(
                         [neo.SpikeTrain(normalized_spike_times[m],
                                         t_start=_trial_start,
                                         t_stop=_trial_stop,
                                         units=self.time_unit)
                          for m in range(self.n_neurons)])
-                # reset bw
-                self.bw = np.zeros_like(self.bw)
-                if self.tw_counter <= self.n_trials - 1:
-                    self.tw_counter += 1
+                # reset bin window
+                self.bin_window = np.zeros_like(self.bin_window)
+                if self.trial_counter <= self.n_trials - 1:
+                    self.trial_counter += 1
                 else:
                     self.waiting_for_new_trigger = True
                     self.trigger_events_left_over = False
-                    self.data_available_in_mv = False
-                print(f"tw_counter = {self.tw_counter}")  # DEBUG-aid
+                    self.data_available_in_memory_window = False
+                print(f"trial_counter = {self.trial_counter}")  # DEBUG-aid

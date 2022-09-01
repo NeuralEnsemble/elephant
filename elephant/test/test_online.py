@@ -2,15 +2,13 @@ import random
 import unittest
 from collections import defaultdict
 
-# import matplotlib.pyplot as plt
 import neo
 import numpy as np
 import quantities as pq
-# import viziphant
 
 from elephant.datasets import download_datasets
 from elephant.online import OnlineUnitaryEventAnalysis
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.unitary_event_analysis import jointJ_window_analysis
 
 
@@ -21,12 +19,14 @@ def _generate_spiketrains(freq, length, trigger_events, injection_pos,
     Generate two spiketrains from a homogeneous Poisson process with
     injected coincidences.
     """
-    st1 = homogeneous_poisson_process(rate=freq,
-                                      t_start=(0*pq.s).rescale(time_unit),
-                                      t_stop=length.rescale(time_unit))
-    st2 = homogeneous_poisson_process(rate=freq,
-                                      t_start=(0*pq.s.rescale(time_unit)),
-                                      t_stop=length.rescale(time_unit))
+    st1 = StationaryPoissonProcess(rate=freq,
+                                   t_start=(0*pq.s).rescale(time_unit),
+                                   t_stop=length.rescale(time_unit)
+                                   ).generate_spiketrain()
+    st2 = StationaryPoissonProcess(rate=freq,
+                                   t_start=(0*pq.s.rescale(time_unit)),
+                                   t_stop=length.rescale(time_unit)
+                                   ).generate_spiketrain()
     # inject 10 coincidences within a 0.1s interval for each trial
     injection = (np.linspace(0, 0.1, 10)*pq.s).rescale(time_unit)
     all_injections = np.array([])
@@ -53,48 +53,25 @@ def _generate_spiketrains(freq, length, trigger_events, injection_pos,
     return spiketrains, st1, st2
 
 
-# def _visualize_results_of_offline_and_online_uea(
-#         spiketrains, online_trials, ue_dict_offline, ue_dict_online, alpha):
-#     # rescale input-params 'bin_size', win_size' and 'win_step' to ms,
-#     # because plot_ue() expects these parameters in ms
-#     ue_dict_offline["input_parameters"]["bin_size"].units = pq.ms
-#     ue_dict_offline["input_parameters"]["win_size"].units = pq.ms
-#     ue_dict_offline["input_parameters"]["win_step"].units = pq.ms
-#     viziphant.unitary_event_analysis.plot_ue(
-#         spiketrains, Js_dict=ue_dict_offline, significance_level=alpha,
-#         unit_real_ids=['1', '2'], suptitle="offline")
-#     # plt.show()
-#     # reorder and rename indices-dict of ue_dict_online, if only the last
-#     # n-trials were saved; indices-entries of unused trials are overwritten
-#     if len(online_trials) < len(spiketrains):
-#         _diff_n_trials = len(spiketrains) - len(online_trials)
-#         for i in range(len(online_trials)):
-#             ue_dict_online["indices"][f"trial{i}"] = \
-#                 ue_dict_online["indices"].pop(f"trial{i+_diff_n_trials}")
-#     viziphant.unitary_event_analysis.plot_ue(
-#         online_trials, Js_dict=ue_dict_online, significance_level=alpha,
-#         unit_real_ids=['1', '2'], suptitle="online")
-#     plt.show()
-
-
-def _simulate_buffered_reading(n_buffers, ouea, st1, st2, IDW_length,
-                               length_remainder, events=None,
-                               st_type="list_of_neo.SpikeTrain"):
+def _simulate_buffered_reading(n_buffers, ouea, st1, st2,
+                               incoming_data_window_size, length_remainder,
+                               events=None, st_type="list_of_neo.SpikeTrain"):
     if events is None:
         events = np.array([])
     for i in range(n_buffers):
-        buff_t_start = i * IDW_length
+        buff_t_start = i * incoming_data_window_size
 
         if length_remainder > 1e-7 and i == n_buffers - 1:
-            buff_t_stop = i * IDW_length + length_remainder
+            buff_t_stop = i * incoming_data_window_size + length_remainder
         else:
-            buff_t_stop = i * IDW_length + IDW_length
+            buff_t_stop = i * incoming_data_window_size + \
+                          incoming_data_window_size
 
         events_in_buffer = np.array([])
         if len(events) > 0:
             idx_events_in_buffer = (events >= buff_t_start) & \
                                    (events <= buff_t_stop)
-            events_in_buffer = events[idx_events_in_buffer]#.tolist()
+            events_in_buffer = events[idx_events_in_buffer]
             events = events[np.logical_not(idx_events_in_buffer)]
 
         if st_type == "list_of_neo.SpikeTrain":
@@ -106,8 +83,10 @@ def _simulate_buffered_reading(n_buffers, ouea, st1, st2, IDW_length,
         elif st_type == "list_of_numpy_array":
             ouea.update_uea(
                 spiketrains=[
-                    st1.time_slice(t_start=buff_t_start, t_stop=buff_t_stop).magnitude,
-                    st2.time_slice(t_start=buff_t_start, t_stop=buff_t_stop).magnitude],
+                    st1.time_slice(t_start=buff_t_start, t_stop=buff_t_stop
+                                   ).magnitude,
+                    st2.time_slice(t_start=buff_t_start, t_stop=buff_t_stop
+                                   ).magnitude],
                 events=events_in_buffer, t_start=buff_t_start,
                 t_stop=buff_t_stop, time_unit=st1.units)
         else:
@@ -115,12 +94,6 @@ def _simulate_buffered_reading(n_buffers, ouea, st1, st2, IDW_length,
                              "Use either list of neo.SpikeTrains or "
                              "list of numpy arrays")
         print(f"#buffer = {i}")  # DEBUG-aid
-        # # aid to create timelapses
-        # result_dict = ouea.get_results()
-        # viziphant.unitary_event_analysis.plot_ue(
-        #     spiketrains[:i+1], Js_dict=result_dict, significance_level=0.05,
-        #     unit_real_ids=['1', '2'])
-        # plt.savefig(f"plots/timelapse_UE/ue_real_data_buff_{i}.pdf")
 
 
 def _load_real_data(filepath, n_trials, trial_length, time_unit):
@@ -247,21 +220,21 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         random.seed(1224)
 
         # set relevant variables of this TestCase
-        n_trials = 36  # determined by real data
-        TW_length = (2.1 * pq.s).rescale(time_unit)  # determined by real data
+        n_trials = 36
+        trial_window_length = (2.1 * pq.s).rescale(time_unit)
         IDW_length = idw_length.rescale(time_unit)
         noise_length = (0. * pq.s).rescale(time_unit)
         trigger_events = (np.arange(0., n_trials * 2.1, 2.1) * pq.s).rescale(
             time_unit)
         n_buffers, length_remainder = _calculate_n_buffers(
-            n_trials=n_trials, tw_length=TW_length,
+            n_trials=n_trials, tw_length=trial_window_length,
             noise_length=noise_length, idw_length=IDW_length)
 
         # load data and extract spiketrains
         # 36 trials with 2.1s length and 0s background noise in between trials
         spiketrains, neo_st1, neo_st2 = _load_real_data(
-            filepath=self.filepath, n_trials=n_trials, trial_length=TW_length,
-            time_unit=time_unit)
+            filepath=self.filepath, n_trials=n_trials,
+            trial_length=trial_window_length, time_unit=time_unit)
 
         # perform standard unitary events analysis
         ue_dict = jointJ_window_analysis(
@@ -283,21 +256,23 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         ouea = None
         if st_type == "list_of_neo.SpikeTrain":
             ouea = OnlineUnitaryEventAnalysis(
-                bw_size=(0.005 * pq.s).rescale(time_unit),
+                bin_window_size=(0.005 * pq.s).rescale(time_unit),
                 trigger_pre_size=(0. * pq.s).rescale(time_unit),
                 trigger_post_size=(2.1 * pq.s).rescale(time_unit),
-                saw_size=(0.1 * pq.s).rescale(time_unit),
-                saw_step=(0.005 * pq.s).rescale(time_unit),
+                sliding_analysis_window_size=(0.1 * pq.s).rescale(time_unit),
+                sliding_analysis_window_step=(0.005 * pq.s).rescale(time_unit),
                 trigger_events=init_events,
                 time_unit=time_unit,
                 save_n_trials=_last_n_trials)
         elif st_type == "list_of_numpy_array":
             ouea = OnlineUnitaryEventAnalysis(
-                bw_size=(0.005 * pq.s).rescale(time_unit).magnitude,
+                bin_window_size=(0.005 * pq.s).rescale(time_unit).magnitude,
                 trigger_pre_size=(0. * pq.s).rescale(time_unit).magnitude,
                 trigger_post_size=(2.1 * pq.s).rescale(time_unit).magnitude,
-                saw_size=(0.1 * pq.s).rescale(time_unit).magnitude,
-                saw_step=(0.005 * pq.s).rescale(time_unit).magnitude,
+                sliding_analysis_window_size=
+                (0.1 * pq.s).rescale(time_unit).magnitude,
+                sliding_analysis_window_step=
+                (0.005 * pq.s).rescale(time_unit).magnitude,
                 trigger_events=init_events.magnitude,
                 time_unit=time_unit.__str__().split(" ")[1],
                 save_n_trials=_last_n_trials)
@@ -310,8 +285,9 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         # i.e. loop over spiketrain list and call update_ue()
         _simulate_buffered_reading(
             n_buffers=n_buffers, ouea=ouea, st1=neo_st1, st2=neo_st2,
-            IDW_length=IDW_length, length_remainder=length_remainder,
-            events=reading_events, st_type=st_type)
+            incoming_data_window_size=IDW_length,
+            length_remainder=length_remainder, events=reading_events,
+            st_type=st_type)
         ue_dict_online = ouea.get_results()
 
         # assert equality between result dicts of standard / online ue version
@@ -323,38 +299,31 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
             last_n_trials=_last_n_trials, passed_trials=spiketrains,
             saved_trials=ouea.get_all_saved_trials())
 
-        # visualize results of online and standard UEA for real data
-        # _visualize_results_of_offline_and_online_uea(
-        #     spiketrains=spiketrains,
-        #     online_trials=ouea.get_all_saved_trials(),
-        #     ue_dict_offline=ue_dict,
-        #     ue_dict_online=ue_dict_online, alpha=0.05)
-
         return ouea
 
     def _test_unitary_events_analysis_with_artificial_data(
             self, idw_length, method="pass_events_at_initialization",
             time_unit=1 * pq.s, st_type="list_of_neo.SpikeTrain"):
-        # Fix random seed to guarantee fixed output
+        # fix random seed to guarantee fixed output
         random.seed(1224)
 
         # set relevant variables of this TestCase
         n_trials = 40
-        TW_length = (1 * pq.s).rescale(time_unit)
+        trial_window_length = (1 * pq.s).rescale(time_unit)
         noise_length = (1.5 * pq.s).rescale(time_unit)
-        IDW_length = idw_length.rescale(time_unit)
+        incoming_data_window_size = idw_length.rescale(time_unit)
         trigger_events = (np.arange(0., n_trials*2.5, 2.5) * pq.s).rescale(
             time_unit)
         trigger_pre_size = (0. * pq.s).rescale(time_unit)
         trigger_post_size = (1. * pq.s).rescale(time_unit)
         n_buffers, length_remainder = _calculate_n_buffers(
-            n_trials=n_trials, tw_length=TW_length,
-            noise_length=noise_length, idw_length=IDW_length)
+            n_trials=n_trials, tw_length=trial_window_length,
+            noise_length=noise_length, idw_length=incoming_data_window_size)
 
         # create two long random homogeneous poisson spiketrains representing
         # 40 trials with 1s length and 1.5s background noise in between trials
         spiketrains, st1_long, st2_long = _generate_spiketrains(
-            freq=5*pq.Hz, length=(TW_length+noise_length)*n_trials,
+            freq=5*pq.Hz, length=(trial_window_length+noise_length)*n_trials,
             trigger_events=trigger_events,
             injection_pos=(0.6 * pq.s).rescale(time_unit),
             trigger_pre_size=trigger_pre_size,
@@ -381,21 +350,23 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         ouea = None
         if st_type == "list_of_neo.SpikeTrain":
             ouea = OnlineUnitaryEventAnalysis(
-                bw_size=(0.005 * pq.s).rescale(time_unit),
+                bin_window_size=(0.005 * pq.s).rescale(time_unit),
                 trigger_pre_size=trigger_pre_size,
                 trigger_post_size=trigger_post_size,
-                saw_size=(0.1 * pq.s).rescale(time_unit),
-                saw_step=(0.005 * pq.s).rescale(time_unit),
+                sliding_analysis_window_size=(0.1 * pq.s).rescale(time_unit),
+                sliding_analysis_window_step=(0.005 * pq.s).rescale(time_unit),
                 trigger_events=init_events,
                 time_unit=time_unit,
                 save_n_trials=_last_n_trials)
         elif st_type == "list_of_numpy_array":
             ouea = OnlineUnitaryEventAnalysis(
-                bw_size=(0.005 * pq.s).rescale(time_unit).magnitude,
+                bin_window_size=(0.005 * pq.s).rescale(time_unit).magnitude,
                 trigger_pre_size=trigger_pre_size.magnitude,
                 trigger_post_size=trigger_post_size.magnitude,
-                saw_size=(0.1 * pq.s).rescale(time_unit).magnitude,
-                saw_step=(0.005 * pq.s).rescale(time_unit).magnitude,
+                sliding_analysis_window_size=
+                (0.1 * pq.s).rescale(time_unit).magnitude,
+                sliding_analysis_window_step=
+                (0.005 * pq.s).rescale(time_unit).magnitude,
                 trigger_events=init_events.magnitude,
                 time_unit=time_unit.__str__().split(" ")[1],
                 save_n_trials=_last_n_trials)
@@ -408,7 +379,8 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         # i.e. loop over spiketrain list and call update_ue()
         _simulate_buffered_reading(
             n_buffers=n_buffers, ouea=ouea, st1=st1_long, st2=st2_long,
-            IDW_length=IDW_length, length_remainder=length_remainder,
+            incoming_data_window_size=incoming_data_window_size,
+            length_remainder=length_remainder,
             events=reading_events, st_type=st_type)
         ue_dict_online = ouea.get_results()
 
@@ -421,17 +393,10 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
             last_n_trials=_last_n_trials, passed_trials=spiketrains,
             saved_trials=ouea.get_all_saved_trials())
 
-        # visualize results of online and standard UEA for artificial data
-        # _visualize_results_of_offline_and_online_uea(
-        #     spiketrains=spiketrains,
-        #     online_trials=ouea.get_all_saved_trials(),
-        #     ue_dict_offline=ue_dict,
-        #     ue_dict_online=ue_dict_online, alpha=0.01)
-
         return ouea
 
-    # test: trial window > in-coming data window    (TW > IDW)
-    def test_TW_larger_IDW_artificial_data(self):
+    # test: trial window > incoming data window
+    def test_trial_window_larger_IDW_artificial_data(self):
         """Test, if online UE analysis is correct when the trial window is
         larger than the in-coming data window with artificial data."""
         idw_length = ([0.995, 0.8, 0.6, 0.3, 0.1, 0.05]*pq.s).rescale(
@@ -444,7 +409,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                         st_type=st_type)
                     self.doCleanups()
 
-    def test_TW_larger_IDW_real_data(self):
+    def test_trial_window_larger_IDW_real_data(self):
         """Test, if online UE analysis is correct when the trial window is
                 larger than the in-coming data window with real data."""
         idw_length = ([2.05, 2., 1.1, 0.8, 0.1, 0.05]*pq.s).rescale(
@@ -457,8 +422,8 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                         st_type=st_type)
                     self.doCleanups()
 
-    # test: trial window = in-coming data window    (TW = IDW)
-    def test_TW_as_large_as_IDW_real_data(self):
+    # test: trial window = incoming data window
+    def test_trial_window_as_large_as_IDW_real_data(self):
         """Test, if online UE analysis is correct when the trial window is
                 as large as the in-coming data window with real data."""
         idw_length = (2.1*pq.s).rescale(self.time_unit)
@@ -469,7 +434,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                     st_type=st_type)
                 self.doCleanups()
 
-    def test_TW_as_large_as_IDW_artificial_data(self):
+    def test_trial_window_as_large_as_IDW_artificial_data(self):
         """Test, if online UE analysis is correct when the trial window is
                 as large as the in-coming data window with artificial data."""
         idw_length = (1*pq.s).rescale(self.time_unit)
@@ -480,8 +445,8 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                     st_type=st_type)
                 self.doCleanups()
 
-    # test: trial window < in-coming data window    (TW < IDW)
-    def test_TW_smaller_IDW_artificial_data(self):
+    # test: trial window < incoming data window
+    def test_trial_window_smaller_IDW_artificial_data(self):
         """Test, if online UE analysis is correct when the trial window is
         smaller than the in-coming data window with artificial data."""
         idw_length = ([1.05, 1.1, 2, 10, 50, 100]*pq.s).rescale(self.time_unit)
@@ -493,7 +458,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                         st_type=st_type)
                     self.doCleanups()
 
-    def test_TW_smaller_IDW_real_data(self):
+    def test_trial_window_smaller_IDW_real_data(self):
         """Test, if online UE analysis is correct when the trial window is
                 smaller than the in-coming data window with real data."""
         idw_length = ([2.15, 2.2, 3, 10, 50, 75.6]*pq.s).rescale(
@@ -503,7 +468,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                 with self.subTest(f"IDW = {idw} | st_type: {st_type}"):
                     self._test_unitary_events_analysis_with_real_data(
                         idw_length=idw, time_unit=self.time_unit,
-                    st_type=st_type)
+                        st_type=st_type)
                     self.doCleanups()
 
     def test_pass_trigger_events_while_buffered_reading_real_data(self):
@@ -536,17 +501,17 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         ouea.reset()
         # check all class attributes
         with self.subTest(f"check 'bw_size'"):
-            self.assertEqual(ouea.bw_size, 0.005 * pq.s)
+            self.assertEqual(ouea.bin_window_size, 0.005 * pq.s)
         with self.subTest(f"check 'trigger_events'"):
             self.assertEqual(ouea.trigger_events, [])
         with self.subTest(f"check 'trigger_pre_size'"):
             self.assertEqual(ouea.trigger_pre_size, 0.5 * pq.s)
         with self.subTest(f"check 'trigger_post_size'"):
             self.assertEqual(ouea.trigger_post_size, 0.5 * pq.s)
-        with self.subTest(f"check 'saw_size'"):
-            self.assertEqual(ouea.saw_size, 0.1 * pq.s)
-        with self.subTest(f"check 'saw_step'"):
-            self.assertEqual(ouea.saw_step, 0.005 * pq.s)
+        with self.subTest(f"check 'sliding_analysis_window_size'"):
+            self.assertEqual(ouea.sliding_analysis_window_size, 0.1 * pq.s)
+        with self.subTest(f"check 'sliding_analysis_window_step'"):
+            self.assertEqual(ouea.sliding_analysis_window_step, 0.005 * pq.s)
         with self.subTest(f"check 'n_neurons'"):
             self.assertEqual(ouea.n_neurons, 2)
         with self.subTest(f"check 'pattern_hash'"):
@@ -555,28 +520,28 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
             self.assertEqual(ouea.time_unit, 1*pq.s)
         with self.subTest(f"check 'save_n_trials'"):
             self.assertEqual(ouea.save_n_trials, None)
-        with self.subTest(f"check 'data_available_in_mv'"):
-            self.assertEqual(ouea.data_available_in_mv, None)
+        with self.subTest(f"check 'data_available_in_memory_window'"):
+            self.assertEqual(ouea.data_available_in_memory_window, None)
         with self.subTest(f"check 'waiting_for_new_trigger'"):
             self.assertEqual(ouea.waiting_for_new_trigger, True)
         with self.subTest(f"check 'trigger_events_left_over'"):
             self.assertEqual(ouea.trigger_events_left_over, True)
         with self.subTest(f"check 'mw'"):
-            np.testing.assert_equal(ouea.mw, [[] for _ in range(2)])
+            np.testing.assert_equal(ouea.memory_window, [[] for _ in range(2)])
         with self.subTest(f"check 'tw_size'"):
-            self.assertEqual(ouea.tw_size, 1 * pq.s)
+            self.assertEqual(ouea.trial_window_size, 1 * pq.s)
         with self.subTest(f"check 'tw'"):
-            np.testing.assert_equal(ouea.tw, [[] for _ in range(2)])
+            np.testing.assert_equal(ouea.trial_window, [[] for _ in range(2)])
         with self.subTest(f"check 'tw_counter'"):
-            self.assertEqual(ouea.tw_counter, 0)
+            self.assertEqual(ouea.trial_counter, 0)
         with self.subTest(f"check 'n_bins'"):
             self.assertEqual(ouea.n_bins, None)
         with self.subTest(f"check 'bw'"):
-            self.assertEqual(ouea.bw, None)
-        with self.subTest(f"check 'saw_pos_counter'"):
-            self.assertEqual(ouea.saw_pos_counter, 0)
+            self.assertEqual(ouea.bin_window, None)
+        with self.subTest(f"check 'sliding_analysis_window_pos_counter'"):
+            self.assertEqual(ouea.sliding_analysis_window_position, 0)
         with self.subTest(f"check 'n_windows'"):
-            self.assertEqual(ouea.n_windows, 181)
+            self.assertEqual(ouea.n_sliding_analysis_windows, 181)
         with self.subTest(f"check 'n_trials'"):
             self.assertEqual(ouea.n_trials, 0)
         with self.subTest(f"check 'n_hashes'"):
