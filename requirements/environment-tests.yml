@@ -10,7 +10,7 @@ dependencies:
   - numpy
   - scipy
   - tqdm
-  - pandas
+  - pandas<=1.4.3
   - scikit-learn
   - statsmodels
   - jinja2
