@@ -145,6 +145,7 @@ class InterSpikeIntervalOnline(object):
         self.units = None
         self.current_isi_histogram = np.zeros(shape=self.num_bins)
 
+
 class CovarianceOnline(object):
     def __init__(self, batch_mode=False):
         self.batch_mode = batch_mode
@@ -183,7 +184,8 @@ class CovarianceOnline(object):
             self.var_x.update(new_val_pair[0])
             self.var_y.update(new_val_pair[1])
             self.count += 1
-            self.covariance_sum += ((self.count - 1) / self.count) * delta_covar
+            self.covariance_sum += \
+                ((self.count - 1) / self.count) * delta_covar
 
     def get_cov(self, unbiased=False):
         if self.var_x.mean is None and self.var_y.mean is None:
@@ -247,4 +249,3 @@ class PearsonCorrelationCoefficientOnline(object):
         self.units = None
         self.R_xy = 0.
         self.covariance_xy.reset()
-
