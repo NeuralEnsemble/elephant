@@ -46,6 +46,14 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertRaises(ValueError, elephant.spectral.welch_psd, data,
                           overlap=1.1)
 
+    def test_welch_psd_warnings(self):
+        # generate a dummy data
+        data = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                              units='mV')
+        # Test deprecation warning for 'hanning' window
+        self.assertWarns(DeprecationWarning, elephant.spectral.welch_psd,
+                         data, window='hanning')
+
     def test_welch_psd_behavior(self):
         # generate data by adding white noise and a sinusoid
         data_length = 5000
@@ -139,7 +147,7 @@ class WelchPSDTestCase(unittest.TestCase):
         noise = np.random.normal(size=(num_channel, data_length))
         data_np = np.array(noise)
         # Since row-column order in AnalogSignal is different from the
-        # conventional one, `data_np` needs to be transposed when its used to
+        # conventional one, `data_np` needs to be transposed when it's used to
         # define an AnalogSignal
         data_neo = n.AnalogSignal(data_np.T,
                                   sampling_period=sampling_period * pq.s,
@@ -337,6 +345,16 @@ class WelchCohereTestCase(unittest.TestCase):
         self.assertRaises(ValueError, elephant.spectral.welch_coherence, x, y,
                           overlap=1.1)
 
+    def test_welch_cohere_warnings(self):
+        # generate a dummy data
+        x = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                           units='mV')
+        y = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                           units='mV')
+        # Test deprecation warning for 'hanning' window
+        self.assertWarns(DeprecationWarning, elephant.spectral.welch_coherence,
+                         x, y, window='hanning')
+
     def test_welch_cohere_behavior(self):
         # generate data by adding white noise and a sinusoid
         data_length = 5000
@@ -444,7 +462,7 @@ class WelchCohereTestCase(unittest.TestCase):
         x_np = np.array(np.random.normal(size=(num_channel, data_length)))
         y_np = np.array(np.random.normal(size=(num_channel, data_length)))
         # Since row-column order in AnalogSignal is different from the
-        # convention in NumPy/SciPy, `data_np` needs to be transposed when its
+        # convention in NumPy/SciPy, `data_np` needs to be transposed when it's
         # used to define an AnalogSignal
         x_neo = n.AnalogSignal(x_np.T, units='mV',
                                sampling_period=sampling_period * pq.s)
