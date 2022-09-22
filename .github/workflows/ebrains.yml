@@ -1,9 +1,9 @@
-name: Mirror to Ebrains
+name: Mirror to EBRAINS
 
 # Configure the events that are going to trigger tha automated update of the mirror
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 # Configure what will be updated
 jobs:
@@ -21,7 +21,7 @@ jobs:
         with:
           source_repo: "NeuralEnsemble/elephant"
           source_branch: "master"
-          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neural-ensemble/elephant.git"
+          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neuralensemble/elephant.git"
           destination_branch: "master"
       # this task will push all tags from the source_repo to the destination_repo
       - name: synctags
@@ -29,5 +29,5 @@ jobs:
         with:
           source_repo: "NeuralEnsemble/elephant"
           source_branch: "refs/tags/*"
-          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neural-ensemble/elephant.git"
+          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neuralensemble/elephant.git"
           destination_branch: "refs/tags/*"
