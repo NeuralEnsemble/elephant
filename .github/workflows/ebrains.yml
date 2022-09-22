@@ -1,29 +1,22 @@
 name: Mirror to EBRAINS
 
-# Configure the events that are going to trigger tha automated update of the mirror
 on:
   push:
     branches: [ master ]
 
-# Configure what will be updated
 jobs:
-  # set the job name
-  to_ebrains:
+  sync_to_ebrains:
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'NeuralEnsemble' }}
     steps:
-      # this task will push the master branch of the source_repo (github) to the
-      # destination_repo (ebrains gitlab)
       - name: syncmaster
         uses: wei/git-sync@v3
-        # component owners need to set their own variables
-        # the destination_repo format is
-        # https://gitlab_service_account_name:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/name_of_mirror.git
         with:
           source_repo: "NeuralEnsemble/elephant"
           source_branch: "master"
           destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neuralensemble/elephant.git"
           destination_branch: "master"
-      # this task will push all tags from the source_repo to the destination_repo
+
       - name: synctags
         uses: wei/git-sync@v3
         with:
