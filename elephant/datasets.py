@@ -131,6 +131,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         >>> from elephant.datasets import download_datasets
         >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper" # noqa
         >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy")
+        PosixPath('/tmp/elephant/time_series.npy')
         """
 
     # this url redirects to the current location of elephant-data
