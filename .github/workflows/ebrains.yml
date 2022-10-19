@@ -6,8 +6,8 @@ on:
 
 jobs:
   sync_to_ebrains:
+    if: github.repository_owner == 'NeuralEnsemble'
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'NeuralEnsemble' }}
     steps:
       - name: syncmaster
         uses: wei/git-sync@v3
