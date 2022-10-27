@@ -68,7 +68,7 @@ jobs:
       # used to reset cache every month
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
@@ -129,7 +129,7 @@ jobs:
     steps:
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
@@ -198,7 +198,7 @@ jobs:
     steps:
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -254,7 +254,7 @@ jobs:
     steps:
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -368,7 +368,7 @@ jobs:
 
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
