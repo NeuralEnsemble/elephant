@@ -2,7 +2,18 @@
 """
 Bridge to the pandas library.
 
-:copyright: Copyright 2014-2016 by the Elephant team, see `doc/authors.rst`.
+.. autosummary::
+    :toctree: _toctree/pandas_bridge
+
+    spiketrain_to_dataframe
+    event_to_dataframe
+    epoch_to_dataframe
+    multi_spiketrains_to_dataframe
+    multi_events_to_dataframe
+    multi_epochs_to_dataframe
+    slice_spiketrain
+
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

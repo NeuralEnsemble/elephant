@@ -2,12 +2,13 @@
 """
 Elephant is a package for the analysis of neurophysiology data, based on Neo.
 
-:copyright: Copyright 2014-2019 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 from . import (statistics,
                spike_train_generation,
+               spike_train_synchrony,
                spike_train_correlation,
                unitary_event_analysis,
                cubic,

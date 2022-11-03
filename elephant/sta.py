@@ -1,19 +1,27 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Functions to calculate spike-triggered average and spike-field coherence of
 analog signals.
 
-:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
+.. autosummary::
+    :toctree: _toctree/sta
+
+    spike_triggered_average
+    spike_field_coherence
+
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
-'''
+"""
 
 from __future__ import division, print_function, unicode_literals
 
-import numpy as np
-import scipy.signal
-import quantities as pq
-from neo.core import AnalogSignal, SpikeTrain
 import warnings
+
+import numpy as np
+import quantities as pq
+import scipy.signal
+from neo.core import AnalogSignal, SpikeTrain
+
 from .conversion import BinnedSpikeTrain
 
 __all__ = [
@@ -58,11 +66,12 @@ def spike_triggered_average(signal, spiketrains, window):
 
     Examples
     --------
+    >>> import neo
 
     >>> signal = neo.AnalogSignal(np.array([signal1, signal2]).T, units='mV',
-    ...                                sampling_rate=10/ms)
+    ...                                sampling_rate=10/ms) # doctest: +SKIP
     >>> stavg = spike_triggered_average(signal, [spiketrain1, spiketrain2],
-    ...                                 (-5 * ms, 10 * ms))
+    ...                                 (-5 * ms, 10 * ms)) # doctest: +SKIP
 
     """
 
@@ -228,29 +237,35 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     Plot the SFC between a regular spike train at 20 Hz, and two sinusoidal
     time series at 20 Hz and 23 Hz, respectively.
 
-    >>> import numpy as np
-    >>> import matplotlib.pyplot as plt
-    >>> from quantities import s, ms, mV, Hz, kHz
-    >>> import neo, elephant
 
-    >>> t = pq.Quantity(range(10000),units='ms')
-    >>> f1, f2 = 20. * Hz, 23. * Hz
-    >>> signal = neo.AnalogSignal(np.array([
-            np.sin(f1 * 2. * np.pi * t.rescale(s)),
-            np.sin(f2 * 2. * np.pi * t.rescale(s))]).T,
-            units=pq.mV, sampling_rate=1. * kHz)
-    >>> spiketrain = neo.SpikeTrain(
-        range(t[0], t[-1], 50), units='ms',
-        t_start=t[0], t_stop=t[-1])
-    >>> sfc, freqs = elephant.sta.spike_field_coherence(
-        signal, spiketrain, window='boxcar')
+    .. plot::
+        :include-source:
 
-    >>> plt.plot(freqs, sfc[:,0])
-    >>> plt.plot(freqs, sfc[:,1])
-    >>> plt.xlabel('Frequency [Hz]')
-    >>> plt.ylabel('SFC')
-    >>> plt.xlim((0, 60))
-    >>> plt.show()
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import quantities as pq
+        from quantities import s, ms, mV, Hz, kHz
+        import neo, elephant
+
+        t = pq.Quantity(range(10000),units='ms')
+        f1, f2 = 20. * Hz, 23. * Hz
+        signal = neo.AnalogSignal(np.array([
+                                  np.sin(f1 * 2. * np.pi * t.rescale(s)),
+                                  np.sin(f2 * 2. * np.pi * t.rescale(s))]).T,
+                                  units=pq.mV, sampling_rate=1. * kHz)
+        spiketrain = neo.SpikeTrain(
+           range(t[0], t[-1], 50), units='ms',
+           t_start=t[0], t_stop=t[-1])
+        sfc, freqs = elephant.sta.spike_field_coherence(
+           signal, spiketrain, window='boxcar')
+
+        plt.plot(freqs, sfc[:,0])
+        plt.plot(freqs, sfc[:,1])
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('SFC')
+        plt.xlim((0, 60))
+        plt.show()
+
     """
 
     if not hasattr(scipy.signal, 'coherence'):

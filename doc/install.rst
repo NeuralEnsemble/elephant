@@ -1,8 +1,8 @@
 .. _install:
 
-************
+============
 Installation
-************
+============
 
 The easiest way to install Elephant is by creating a conda environment, followed by ``pip install elephant``.
 Below is the explanation of how to proceed with these two steps.
@@ -10,10 +10,11 @@ Below is the explanation of how to proceed with these two steps.
 
 .. _prerequisites:
 
+*************
 Prerequisites
-=============
+*************
 
-Elephant requires `Python <http://python.org/>`_ 3.6, 3.7, 3.8, or 3.9.
+Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
 
 .. tabs::
 
@@ -41,10 +42,9 @@ Elephant requires `Python <http://python.org/>`_ 3.6, 3.7, 3.8, or 3.9.
 
            sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
 
-
-
+************
 Installation
-============
+************
 
 .. tabs::
 
@@ -63,7 +63,6 @@ Installation
            .. code-block:: sh
 
               pip install elephant[extras]
-
 
         To upgrade to a newer release use the ``--upgrade`` flag:
 
@@ -116,8 +115,9 @@ Installation
                     conda activate elephant
                     pip install -e .
 
+***********
 MPI support
------------
+***********
 
 Some Elephant modules (ASSET, SPADE, etc.) are parallelized to run with MPI.
 In order to make use of MPI parallelization, you need to install ``mpi4py``
@@ -131,7 +131,7 @@ package:
 
             conda install -c conda-forge mpi4py
 
-    .. tab:: pip (Debian/Ubuntu)
+    .. tab:: pip (Linux)
 
         .. code-block:: sh
 
@@ -148,11 +148,103 @@ For more information, refer to `mpi4py
 <https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html>`_ documentation.
 
 
-Dependencies
-------------
+***********************
+CUDA and OpenCL support
+***********************
 
-Elephant relies on the following packages (automatically installed when you
-run ``pip install elephant``):
+:ref:`asset` module supports CUDA and OpenCL. These are experimental features.
+You can have one, both, or none installed in your system.
+
+.. tabs::
+
+    .. tab:: CUDA
+
+        To leverage CUDA acceleration on an NVIDIA GPU card, `CUDA toolkit
+        <https://developer.nvidia.com/cuda-downloads>`_ must installed on
+        your system. Then run the following command in a terminal:
+
+        .. code-block:: sh
+
+            pip install pycuda
+
+        In case you experience issues installing PyCUDA, `this guide
+        <https://medium.com/leadkaro/setting-up-pycuda-on-ubuntu-18-04-for-
+        gpu-programming-with-python-830e03fc4b81>`_ offers a step-by-step
+        installation manual.
+
+        If PyCUDA is detected and installed, CUDA backend is used by default in
+        Elephant ASSET module. To turn off CUDA support, set ``ELEPHANT_USE_CUDA``
+        environment flag to ``0``.
+
+
+    .. tab:: OpenCL
+
+        If you have a laptop with a built-in Intel Graphics Card, you can still
+        leverage significant performance optimization with OpenCL backend.
+        The simplest way to install PyOpenCL is to run a conda command:
+
+        .. code-block:: sh
+
+            conda install -c conda-forge pyopencl intel-compute-runtime
+
+        However, if you have root (sudo) privileges, it's recommended to install
+        up-to-date `Intel Graphics Compute Runtime
+        <https://github.com/intel/compute-runtime/releases>`_ system-wide and then
+        install PyOpenCL as follows:
+
+        .. code-block:: sh
+
+            conda install -c conda-forge pyopencl ocl-icd-system
+
+        Set ``ELEPHANT_USE_OPENCL`` environment flag to ``0`` to turn off
+        PyOpenCL support.
+
+        .. note::
+
+            Make sure you've disabled GPU Hangcheck as described in the
+            `Intel GPU developers documentation <https://software.intel.com/
+            content/www/us/en/develop/documentation/get-started-with-intel-
+            oneapi-base-linux/top/before-you-begin.html>`_. Do it with caution -
+            using your graphics card to perform computations may make the system
+            unresponsive until the compute program terminates.
+
+.. _no-compile-spade:
+***********
+Resolving compilation issues
+***********
+
+Some modules in Elephant make use of C extensions to speed up computation.
+However, those extensions need to be compiled before use. In some cases, this
+causes problems. For example, the compiler on the current machine does not
+fulfill the requirements for the extension, certain libraries are missing,
+or no compiler is available at all.
+
+In order to circumvent this problem, the following commands allow to avoid the
+compilation for specific or for all C extensions.
+
+.. tabs::
+
+    .. tab:: general
+        Use the following to install elephant without C extensions:
+
+        .. code-block:: sh
+
+            pip install elephant --install-option='--no-compile'
+
+    .. tab:: spade
+        To avoid compilation of the c++ extension ``fim.cpp`` used in :ref:`spade`, install the package with:
+
+        .. code-block:: sh
+
+            pip install elephant --install-option='--no-compile-spade'
+
+        In this case the pure python implementation of :ref:`spade` is still available.
+
+************
+Dependencies
+************
+
+Elephant relies on two special packages, installed by default:
 
     * `quantities <http://pypi.python.org/pypi/quantities>`_ - support for physical quantities with units (mV, ms, etc.)
     * `neo <http://pypi.python.org/pypi/neo>`_ - electrophysiology data manipulations

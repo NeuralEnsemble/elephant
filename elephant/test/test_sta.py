@@ -2,7 +2,7 @@
 """
 Tests for the function sta module
 
-:copyright: Copyright 2015-2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -10,9 +10,7 @@ import unittest
 import math
 import numpy as np
 import scipy
-from numpy.testing import assert_array_equal
-from numpy.testing.utils import assert_array_almost_equal
-import neo
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 from neo import AnalogSignal, SpikeTrain
 from elephant.conversion import BinnedSpikeTrain
 import quantities as pq
@@ -26,16 +24,16 @@ class sta_TestCase(unittest.TestCase):
     def setUp(self):
         self.asiga0 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.asiga1 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)),
             np.cos(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.asiga2 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)),
             np.cos(np.arange(0, 20 * math.pi, 0.1)),
             np.tan(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.st0 = SpikeTrain(
             [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
             units='ms', t_stop=self.asiga0.t_stop)
@@ -48,7 +46,7 @@ class sta_TestCase(unittest.TestCase):
     # ************************ Test for typical values **********************
 
     def test_spike_triggered_average_with_n_spikes_on_constant_function(self):
-        '''Signal should average to the input'''
+        """Signal should average to the input"""
         const = 13.8
         x = const * np.ones(201)
         asiga = AnalogSignal(
@@ -65,7 +63,7 @@ class sta_TestCase(unittest.TestCase):
         assert_array_almost_equal(STA, cutout, 12)
 
     def test_spike_triggered_average_with_shifted_sin_wave(self):
-        '''Signal should average to zero'''
+        """Signal should average to zero"""
         STA = sta.spike_triggered_average(
             self.asiga0, self.st0, (-4 * ms, 4 * ms))
         target = 5e-2 * mV
@@ -74,9 +72,9 @@ class sta_TestCase(unittest.TestCase):
         self.assertLess(np.abs(STA).max(), target)
 
     def test_only_one_spike(self):
-        '''The output should be the same as the input'''
+        """The output should be the same as the input"""
         x = np.arange(0, 20, 0.1)
-        y = x**2
+        y = x ** 2
         sr = 10 / ms
         z = AnalogSignal(np.array([y]).T, units='mV', sampling_rate=sr)
         spiketime = 8 * ms
@@ -108,7 +106,7 @@ class sta_TestCase(unittest.TestCase):
     # ********* an exception or returns an error code ***********************
 
     def test_analog_signal_of_wrong_type(self):
-        '''Analog signal given as list, but must be AnalogSignal'''
+        """Analog signal given as list, but must be AnalogSignal"""
         asiga = [0, 1, 2, 3, 4]
         self.assertRaises(TypeError, sta.spike_triggered_average,
                           asiga, self.st0, (-2 * ms, 2 * ms))
@@ -128,7 +126,7 @@ class sta_TestCase(unittest.TestCase):
                           self.st0, (-2 * ms, 2 * ms))
 
     def test_one_smaller_nrspiketrains_smaller_nranalogsignals(self):
-        '''Number of spiketrains between 1 and number of analogsignals'''
+        """Number of spiketrains between 1 and number of analogsignals"""
         self.assertRaises(ValueError, sta.spike_triggered_average,
                           self.asiga2, self.lst, (-2 * ms, 2 * ms))
 
@@ -189,7 +187,7 @@ class sta_TestCase(unittest.TestCase):
                           asiga, st, (-1 * ms, 1 * ms))
 
     def test_one_spiketrain_empty(self):
-        '''Test for one empty SpikeTrain, but existing spikes in other'''
+        """Test for one empty SpikeTrain, but existing spikes in other"""
         st = [SpikeTrain(
             [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
             units='ms', t_stop=self.asiga1.t_stop),
@@ -226,7 +224,8 @@ class sta_TestCase(unittest.TestCase):
 # Tests for new scipy verison (with scipy.signal.coherence)
 # =========================================================================
 
-@unittest.skipIf(not hasattr(scipy.signal, 'coherence'), "Please update scipy "
+@unittest.skipIf(not hasattr(scipy.signal, 'coherence'),
+                 "Please update scipy "
                  "to a version >= 0.16")
 class sfc_TestCase_new_scipy(unittest.TestCase):
 
@@ -278,7 +277,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         self.st4 = SpikeTrain(np.arange(
             (tlen0.rescale(pq.ms).magnitude * .25),
             (tlen0.rescale(pq.ms).magnitude * .75), 50) * pq.ms,
-            t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
+                              t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
         self.bst4 = BinnedSpikeTrain(self.st4, bin_size=fs0)
 
         # spike train with incompatible bin_size

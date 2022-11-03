@@ -6,10 +6,10 @@ firing rate estimation.
 
 
 Symmetric kernels
-~~~~~~~~~~~~~~~~~
+*****************
 
 .. autosummary::
-    :toctree: toctree/kernels/
+    :toctree: _toctree/kernels/
 
     RectangularKernel
     TriangularKernel
@@ -18,22 +18,56 @@ Symmetric kernels
     LaplacianKernel
 
 Asymmetric kernels
-~~~~~~~~~~~~~~~~~~
+******************
 
 .. autosummary::
-    :toctree: toctree/kernels/
+    :toctree: _toctree/kernels/
 
     ExponentialKernel
     AlphaKernel
 
 
 Examples
---------
->>> import quantities as pq
->>> kernel1 = GaussianKernel(sigma=100*pq.ms)
->>> kernel2 = ExponentialKernel(sigma=8*pq.ms, invert=True)
+********
 
-:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
+Example 1. Gaussian kernel
+
+>>> import neo
+>>> import quantities as pq
+>>> from elephant import kernels
+>>> kernel = kernels.GaussianKernel(sigma=300 * pq.ms)
+>>> kernel
+GaussianKernel(sigma=300.0 ms, invert=False)
+>>> spiketrain = neo.SpikeTrain([-1, 0, 1], t_start=-1, t_stop=1, units='s')
+>>> kernel_pdf = kernel(spiketrain)
+>>> kernel_pdf
+array([0.00514093, 1.3298076 , 0.00514093]) * 1/s
+
+Cumulative Distribution Function
+
+>>> kernel.cdf(0 * pq.s)
+0.5
+>>> kernel.cdf(1 * pq.s)
+0.9995709396668032
+
+Inverse Cumulative Distribution Function
+
+>>> kernel.icdf(0.5)
+array(0.) * ms
+>>> kernel.icdf(0.9)
+array(384.46546966) * ms
+
+Example 2. Alpha kernel
+
+>>> kernel = kernels.AlphaKernel(sigma=1 * pq.s)
+>>> kernel(spiketrain)
+array([-0.        ,  0.        ,  0.48623347]) * 1/s
+>>> kernel.cdf(0 * pq.s)
+0.0
+>>> kernel.icdf(0.5)
+array(1.18677054) * s
+
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -91,12 +125,16 @@ class Kernel(object):
     invert : bool, optional
         If True, asymmetric kernels (e.g., exponential or alpha kernels) are
         inverted along the time axis.
-        Default: False.
+        Default: False
 
     Raises
     ------
     TypeError
         If `sigma` is not `pq.Quantity`.
+
+        If `sigma` is a multidimensional array
+
+    ValueError
 
         If `sigma` is negative.
 
@@ -107,6 +145,13 @@ class Kernel(object):
     def __init__(self, sigma, invert=False):
         if not isinstance(sigma, pq.Quantity):
             raise TypeError("'sigma' must be a quantity")
+
+        if sigma.ndim > 0:
+            # handle the one-dimensional case of size 1
+            if sigma.ndim == 1 & sigma.size == 1:
+                sigma = sigma[0]
+            else:
+                raise TypeError("'sigma' cannot be multidimensional")
 
         if sigma.magnitude < 0:
             raise ValueError("'sigma' cannot be negative")
@@ -523,15 +568,12 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     The Epanechnikov kernel under full consideration of its axioms has a half
     width of :math:`\sqrt{5}`. Ignoring one axiom also the respective kernel
-    with half width = 1 can be called Epanechnikov kernel [1]_.
+    with half width = 1 can be called `Epanechnikov kernel
+    <https://de.wikipedia.org/wiki/Epanechnikov-Kern>`_.
     However, arbitrary width of this type of kernel is here preferred to be
     called 'Epanechnikov-like' kernel.
 
     The parameter `invert` has no effect on symmetric kernels.
-
-    References
-    ----------
-    .. [1] https://de.wikipedia.org/wiki/Epanechnikov-Kern
 
     Examples
     --------
@@ -586,16 +628,40 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
     def boundary_enclosing_area_fraction(self, fraction):
         r"""
-        Refer to :func:`Kernel.boundary_enclosing_area_fraction` for the
-        documentation.
+        Calculates the boundary :math:`b` so that the integral from
+        :math:`-b` to :math:`b` encloses a certain fraction of the
+        integral over the complete kernel.
+
+        By definition the returned value is hence non-negative, even if the
+        whole probability mass of the kernel is concentrated over negative
+        support for inverted kernels.
+
+        Parameters
+        ----------
+        fraction : float
+            Fraction of the whole area which has to be enclosed.
+
+        Returns
+        -------
+        pq.Quantity
+            Boundary of the kernel containing area `fraction` under the
+            kernel density.
+
+        Raises
+        ------
+        ValueError
+            If `fraction` was chosen too close to one, such that in
+            combination with integral approximation errors the calculation of
+            a boundary was not possible.
 
         Notes
         -----
         For Epanechnikov-like kernels, integration of its density within
         the boundaries 0 and :math:`b`, and then solving for :math:`b` leads
         to the problem of finding the roots of a polynomial of third order.
-        The implemented formulas are based on the solution of this problem
-        given in [1]_, where the following 3 solutions are given:
+        The implemented formulas are based on the solution of a
+        `cubic function <https://en.wikipedia.org/wiki/Cubic_function>`_,
+        where the following 3 solutions are given:
 
         * :math:`u_1 = 1`, solution on negative side;
         * :math:`u_2 = \frac{-1 + i\sqrt{3}}{2}`, solution for larger
@@ -605,11 +671,6 @@ class EpanechnikovLikeKernel(SymmetricKernel):
 
         The solution :math:`u_3` is the relevant one for the problem at hand,
         since it involves only positive area contributions.
-
-        References
-        ----------
-        .. [1] https://en.wikipedia.org/wiki/Cubic_function
-
         """
         self._check_fraction(fraction)
         # Python's complex-operator cannot handle quantities, hence the

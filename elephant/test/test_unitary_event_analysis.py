@@ -1,7 +1,7 @@
 """
 Unit tests for the Unitary Events analysis
 
-:copyright: Copyright 2016 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -14,9 +14,9 @@ import quantities as pq
 from numpy.testing import assert_array_equal
 
 import elephant.unitary_event_analysis as ue
-from elephant.test.download import download, ELEPHANT_TMP_DIR
+from elephant.datasets import download, ELEPHANT_TMP_DIR
 from numpy.testing import assert_array_almost_equal
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
 
 
 class UETestCase(unittest.TestCase):
@@ -115,7 +115,7 @@ class UETestCase(unittest.TestCase):
     def test_hash_default_longpattern(self):
         m = np.zeros((100, 2))
         m[0, 0] = 1
-        expected = np.array([2**99, 0])
+        expected = np.array([2 ** 99, 0])
         h = ue.hash_from_pattern(m)
         self.assertTrue(np.all(expected == h))
 
@@ -168,7 +168,7 @@ class UETestCase(unittest.TestCase):
         N = 8
         h = np.array([178, 212, 232])
         expected = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [
-                            1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1]])
+            1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1]])
         m = ue.inverse_hash_from_pattern(h, N)
         self.assertTrue(np.shape(m)[0] == N)
 
@@ -301,13 +301,13 @@ class UETestCase(unittest.TestCase):
     def test__UE_surrogate(self):
         mat = self.binary_sts
         pattern_hash = np.array([4])
-        _, rate_avg_surr, _, n_emp_surr, indices_surr =\
+        _, rate_avg_surr, _, n_emp_surr, indices_surr = \
             ue._UE(
                 mat,
                 pattern_hash,
                 method='surrogate_TrialByTrial',
                 n_surrogates=100)
-        _, rate_avg, _, n_emp, indices =\
+        _, rate_avg, _, n_emp, indices = \
             ue._UE(mat, pattern_hash, method='analytic_TrialByTrial')
         self.assertTrue(np.allclose(n_emp, n_emp_surr))
         self.assertTrue(np.allclose(rate_avg, rate_avg_surr))
@@ -492,34 +492,51 @@ class UETestCase(unittest.TestCase):
 
     def test_multiple_neurons(self):
         np.random.seed(12)
-        spiketrains = [[homogeneous_poisson_process(
-            rate=50 * pq.Hz, t_stop=1 * pq.s)
-            for _ in range(5)] for neuron in range(3)]
+        spiketrains = \
+            [StationaryPoissonProcess(
+                rate=50 * pq.Hz, t_stop=1 * pq.s).generate_n_spiketrains(5)
+             for neuron in range(3)]
 
         spiketrains = np.stack(spiketrains, axis=1)
         UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                                            win_size=300 * pq.ms,
                                            win_step=100 * pq.ms)
 
-        js_expected = [[0.6081138], [0.17796665], [-1.2601125],
-                       [-0.2790147], [0.07804556], [0.7861176], [0.23452221],
-                       [0.11624397]]
-        indices_expected = {'trial2': [20, 30, 20, 30, 104, 104, 104],
-                            'trial3': [21, 21, 65, 65, 65, 128, 128, 128],
-                            'trial4': [8, 172, 172],
-                            'trial0': [104, 106, 104, 106, 104, 106],
-                            'trial1': [158, 158, 158, 188]}
-        n_emp_expected = [[4.], [4.], [1.], [4.], [4.], [5.], [3.], [3.]]
-        n_exp_expected = [[2.2858334], [3.2066667], [2.955], [4.485833],
-                          [3.4622223], [2.723611], [2.166111], [2.4122221]]
-        rate_expected = [[[0.04666667, 0.03266666, 0.04333333]],
-                         [[0.04733333, 0.03666667, 0.044]],
-                         [[0.04533333, 0.03466666, 0.046]],
-                         [[0.04933333, 0.04466667, 0.04933333]],
-                         [[0.04466667, 0.04266667, 0.046]],
-                         [[0.04133333, 0.04466667, 0.044]],
-                         [[0.04133333, 0.03666667, 0.04266667]],
-                         [[0.03933334, 0.03866667, 0.04666667]]] * 1 / pq.ms
+        js_expected = [[0.3978179],
+                       [0.08131966],
+                       [-1.4239882],
+                       [-0.9377029],
+                       [-0.3374434],
+                       [-0.2043383],
+                       [-1.001536],
+                       [-np.inf]]
+        indices_expected = \
+            {'trial3': [12, 27, 31, 34, 27, 31, 34, 136, 136, 136],
+             'trial4': [4, 60, 60, 60, 117, 117, 117]}
+        n_emp_expected = [[5.],
+                          [4.],
+                          [1.],
+                          [2.],
+                          [2.],
+                          [2.],
+                          [1.],
+                          [0.]]
+        n_exp_expected = [[3.5591667],
+                          [3.4536111],
+                          [3.3158333],
+                          [3.8466666],
+                          [2.370278],
+                          [2.0811112],
+                          [2.4011111],
+                          [3.0533333]]
+        rate_expected = [[[0.042, 0.03933334, 0.048]],
+                         [[0.04533333, 0.038, 0.05]],
+                         [[0.046, 0.04, 0.04666667]],
+                         [[0.05066667, 0.042, 0.046]],
+                         [[0.04466667, 0.03666667, 0.04066667]],
+                         [[0.04066667, 0.03533333, 0.04333333]],
+                         [[0.03933334, 0.038, 0.038]],
+                         [[0.04066667, 0.04866667, 0.03666667]]] * (1. / pq.ms)
         input_parameters_expected = {'pattern_hash': [7],
                                      'bin_size': 5 * pq.ms,
                                      'win_size': 300 * pq.ms,
@@ -527,6 +544,7 @@ class UETestCase(unittest.TestCase):
                                      'method': 'analytic_TrialByTrial',
                                      't_start': 0 * pq.s,
                                      't_stop': 1 * pq.s, 'n_surrogates': 100}
+
         assert_array_almost_equal(UE_dic['Js'], js_expected)
         assert_array_almost_equal(UE_dic['n_emp'], n_emp_expected)
         assert_array_almost_equal(UE_dic['n_exp'], n_exp_expected)

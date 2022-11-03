@@ -1,9 +1,9 @@
 """
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
-[#f1]_ for neural trajectory visualization of parallel spike trains. GPFA
-applies factor analysis (FA) to time-binned spike count data to reduce the
-dimensionality and at the same time smoothes the resulting low-dimensional
-trajectories by fitting a Gaussian process (GP) model to them.
+:cite:`gpfa-Yu2008_1881` for neural trajectory visualization of parallel spike
+trains. GPFA applies factor analysis (FA) to time-binned spike count data to
+reduce the dimensionality and at the same time smoothes the resulting
+low-dimensional trajectories by fitting a Gaussian process (GP) model to them.
 
 The input consists of a set of trials (Y), each containing a list of spike
 trains (N neurons). The output is the projection (X) of the data in a space
@@ -35,7 +35,7 @@ visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
 
 
 .. autosummary::
-    :toctree: toctree/gpfa
+    :toctree: _toctree/gpfa
 
     GPFA
 
@@ -58,17 +58,13 @@ Run tutorial interactively:
             ?filepath=doc/tutorials/gpfa.ipynb
 
 
-References
-----------
+Original code
+-------------
 The code was ported from the MATLAB code based on Byron Yu's implementation.
 The original MATLAB code is available at Byron Yu's website:
 https://users.ece.cmu.edu/~byronyu/software.shtml
 
-.. [#f1] Yu MB, Cunningham JP, Santhanam G, Ryu SI, Shenoy K V, Sahani M (2009)
-   Gaussian-process factor analysis for low-dimensional single-trial analysis
-   of neural population activity. J Neurophysiol 102:614-635.
-
-:copyright: Copyright 2015-2019 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2022 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -216,26 +212,28 @@ class GPFA(sklearn.base.BaseEstimator):
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.gpfa import GPFA
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> data = []
-    >>> for trial in range(50):
-    >>>     n_channels = 20
-    >>>     firing_rates = np.random.randint(low=1, high=100,
+    >>> for trial in range(50):  # noqa
+    ...     n_channels = 20
+    ...     firing_rates = np.random.randint(low=1, high=100,
     ...                                      size=n_channels) * pq.Hz
-    >>>     spike_times = [homogeneous_poisson_process(rate=rate)
-    ...                    for rate in firing_rates]
-    >>>     data.append((trial, spike_times))
-    ...
+    ...     spike_times = []
+    ...     for rate in firing_rates:
+    ...         spike_times.append(
+    ...              StationaryPoissonProcess(rate=rate).generate_spiketrain())
+    ...     data.append((trial, spike_times))
+
     >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
-    >>> gpfa.fit(data)
+    >>> gpfa.fit(data)  # doctest: +SKIP
     >>> results = gpfa.transform(data, returned_data=['latent_variable_orth',
-    ...                                               'latent_variable'])
-    >>> latent_variable_orth = results['latent_variable_orth']
-    >>> latent_variable = results['latent_variable']
+    ...                                               'latent_variable'])  # doctest: +SKIP
+    >>> latent_variable_orth = results['latent_variable_orth']  # doctest: +SKIP
+    >>> latent_variable = results['latent_variable']  # doctest: +SKIP
 
     or simply
 
-    >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,
+    >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,  # doctest: +SKIP
     ...                returned_data=['latent_variable_orth',
     ...                               'latent_variable'])
     """

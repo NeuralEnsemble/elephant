@@ -1,3 +1,5 @@
+.. _asset:
+
 ===================================================
 Analysis of Sequences of Synchronous EvenTs (ASSET)
 ===================================================
@@ -9,6 +11,6 @@ References
 ----------
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: as
+   :labelprefix: asset
    :keyprefix: asset-
    :style: unsrt
