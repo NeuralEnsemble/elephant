@@ -359,9 +359,10 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> st2 = StationaryPoissonProcess(rate=10*pq.Hz,
     ... t_stop=10.0*pq.s).generate_spiketrain()
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
-    >>> cov_matrix
+    >>> cov_matrix # doctest: +SKIP
     array([[ 0.05432316, -0.00152276],
        [-0.00152276,  0.04917234]])
+
 
     """
     if binary:
@@ -467,9 +468,10 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     ... t_stop=10.0*pq.s).generate_spiketrain()
     >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
     ...     bin_size=5*pq.ms))
-    >>> corrcoef
+    >>> corrcoef # doctest: +SKIP
     array([[ 1.        , -0.02946313],
            [-0.02946313,  1.        ]])
+
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -666,7 +668,6 @@ def cross_correlation_histogram(
     >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.spike_train_correlation import \
     ... cross_correlation_histogram
-
     >>> np.random.seed(1)
     >>> binned_spiketrain_i = BinnedSpikeTrain(
     ...        StationaryPoissonProcess(
@@ -683,13 +684,15 @@ def cross_correlation_histogram(
     ...        binned_spiketrain_i, binned_spiketrain_j, window=[-10, 10],
     ...        border_correction=False,
     ...        binary=False, kernel=None)
-    >>> print(cc_hist.flatten())
+    >>> print(cc_hist.flatten()) # doctest: +SKIP
     [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
       1.  2.  4.  2. -0.  3.  3.] dimensionless
-    >>> lags
+
+    >>> lags # doctest: +SKIP
     array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
          0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
         10], dtype=int32)
+
 
     """
 
@@ -870,8 +873,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     --------
     >>> import neo
     >>> import quantities as pq
-    >>> from elephant.spike_train_correlation import \
-    ...    spike_time_tiling_coefficient
+    >>> from elephant.spike_train_correlation import spike_time_tiling_coefficient  # noqa
 
     >>> spiketrain1 = neo.SpikeTrain([1.3, 7.56, 15.87, 28.23, 30.9, 34.2,
     ...     38.2, 43.2], units='ms', t_stop=50)

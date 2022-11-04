@@ -1,0 +1,26 @@
+name: Mirror to EBRAINS
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  sync_to_ebrains:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'NeuralEnsemble' }}
+    steps:
+      - name: syncmaster
+        uses: wei/git-sync@v3
+        with:
+          source_repo: "NeuralEnsemble/elephant"
+          source_branch: "master"
+          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neuralensemble/elephant.git"
+          destination_branch: "master"
+
+      - name: synctags
+        uses: wei/git-sync@v3
+        with:
+          source_repo: "NeuralEnsemble/elephant"
+          source_branch: "refs/tags/*"
+          destination_repo: "https://ghpusher:${{ secrets.EBRAINS_GITLAB_ACCESS_TOKEN }}@gitlab.ebrains.eu/neuralensemble/elephant.git"
+          destination_branch: "refs/tags/*"
