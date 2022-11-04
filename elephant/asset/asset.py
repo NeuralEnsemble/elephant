@@ -54,6 +54,7 @@ In this example we
    >>> import neo
    >>> import numpy as np
    >>> import quantities as pq
+   >>> from pprint import pprint
    >>> np.random.seed(10)
    >>> spiketrain = np.linspace(0, 50, num=10)
    >>> np.random.shuffle(spiketrain)
@@ -79,6 +80,11 @@ In this example we
 
    >>> pmat = asset_obj.probability_matrix_analytical(imat,
    ...                                                kernel_width=50*pq.ms)
+   compute rates by boxcar-kernel convolution...
+   compute the prob. that each neuron fires in each pair of bins...
+   compute the probability matrix by Le Cam's approximation...
+   substitute 0.5 to elements along the main diagonal...
+
 
 5. Compute the joint probability matrix `jmat`, using a suitable filter:
 
@@ -101,15 +107,15 @@ In this example we
 
 The ASSET found the following sequences of synchronous events:
 
->>> sses
+>>> pprint(sses)
 {1: {(36, 2): {5},
-  (37, 4): {1},
-  (40, 6): {4},
-  (41, 7): {8},
-  (43, 9): {2},
-  (47, 14): {7},
-  (48, 15): {0},
-  (50, 17): {9}}}
+     (37, 4): {1},
+     (40, 6): {4},
+     (41, 7): {8},
+     (43, 9): {2},
+     (47, 14): {7},
+     (48, 15): {0},
+     (50, 17): {9}}}
 
 To visualize them, refer to Viziphant documentation and an example plot
 :func:`viziphant.asset.plot_synchronous_events`.
@@ -136,7 +142,7 @@ from tqdm import trange, tqdm
 
 import elephant.conversion as conv
 from elephant import spike_train_surrogates
-from elephant.utils import get_cuda_capability_major
+from elephant.utils import get_cuda_capability_major, get_opencl_capability
 
 try:
     from mpi4py import MPI
@@ -513,9 +519,11 @@ class _GPUBackend:
         use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
         use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
         cuda_detected = get_cuda_capability_major() != 0
+        opencl_detected = get_opencl_capability()
+
         if use_cuda and cuda_detected:
             return self.pycuda
-        if use_opencl:
+        if use_opencl and opencl_detected:
             return self.pyopencl
         return self.cpu
 

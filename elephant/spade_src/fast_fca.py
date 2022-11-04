@@ -19,7 +19,6 @@ Usage example:
 >>> relation+=[('spider','neuron3')]
 >>> concepts=FormalConcepts(relation)
 >>> concepts.computeLattice()
->>> print(concepts)
 
 If you generate publications based on this code, please cite the following
 paper:
