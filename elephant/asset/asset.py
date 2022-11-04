@@ -124,7 +124,6 @@ import sys
 import tempfile
 import warnings
 from pathlib import Path
-import tempfile
 
 import neo
 import numpy as np
@@ -347,7 +346,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
-        disk_array=None, verbose=False):
+                         disk_array=None, verbose=False):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -384,13 +383,13 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     working_memory : int, optional
         The sought maximum memory in MiB for temporary distance matrix chunks.
         When None (default), no chunking is performed. This parameter is passed
-        directly to `sklearn.metrics.pairwise_distances_chunked` function and
-        it has no influence on the outcome matrix. Instead, it control the
+        directly to `sklearn.metrics.pairwise_distances_chunked` function, and
+        it has no influence on the outcome matrix. Instead, it controls the
         memory VS speed trade-off.
         Default: None
     disk_array : file-like, optional
-        Temporary file, that should be used to store the matrix  of stretched 
-        distances when chunking the computations. This is achieved  using 
+        Temporary file, that should be used to store the matrix  of stretched
+        distances when chunking the computations. This is achieved  using
         `np.memmap`. If `working_memory` is None (no chunking), this parameter
         is ignored. This will not impact the results, but the  operations will
         be slower (than chunking and storing the final matrix  in a memory
@@ -466,13 +465,13 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         # `pairwise_distances_chunked` returns half of the possible size.
         estimated_chunk = max(
             ((working_memory * 1024 * 1024) // (len(y) * 4)) // 2, 1)
-        
+
         # The number of rows in a chunk cannot be larger than the maximum
         estimated_chunk = min(len(x), estimated_chunk)
 
         # Compute the number of iterations needed
         it_todo = len(x) // estimated_chunk
-        
+
         # If size is not a multiple, an extra iteration with smaller size
         # is needed
         last_chunk = len(x) % estimated_chunk
@@ -496,7 +495,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
                                   "to the disk. Operations will be slower. "
                                   f"The required size is {required_size} GiB")
 
-
         else:
             # Using an array mapped to disk. Store in the file passed as
             # parameter
@@ -510,7 +508,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             # Buffer to store the computations per iteration, to avoid
             # writing to the file after every single operation
             chunk_mat = np.empty((estimated_chunk, len(y)), dtype=np.float32)
-
 
         for D_chunk in tqdm(
                 pairwise_distances_chunked(points,
@@ -1437,6 +1434,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
             if len(sse_new[pixel1]) == 0:
                 del sse_new[pixel1]
     elif intersection == 'pixelwise':
+        # no action required
         pass
     else:
         raise ValueError(
@@ -2509,19 +2507,20 @@ class ASSET(object):
             The sought maximum memory in MiB for temporary distance matrix
             chunks. When None (default), no chunking is performed. This
             parameter is passed directly to
-            ``sklearn.metrics.pairwise_distances_chunked`` function and it
-            has no influence on the outcome matrix. Instead, it control the
+            ``sklearn.metrics.pairwise_distances_chunked`` function, and it
+            has no influence on the outcome matrix. Instead, it controls the
             memory VS speed trade-off.
             Default: None
         array_file : str or path-like, optional
             Path to a location of a temporary file, that should be used to
             store the matrix of stretched  distances when chunking the
-            computations. This is achieved using `np.memmap`. If 
+            computations. This is achieved using `np.memmap`. If
             `working_memory` is None (no chunking), this parameter is ignored.
             This will not impact the results, but the  operations will  be
             slower (than chunking and storing the final matrix in a memory
             array). This option should be used when there is not enough memory
-            to allocate the full stretched distance matrix needed before DBSCAN.
+            to allocate the full stretched distance matrix needed before
+            DBSCAN.
             Default: None
         keep_file : bool, optional
             Delete the temporary file specified in `array_file` automatically.
@@ -2566,7 +2565,7 @@ class ASSET(object):
             disk_array = tempfile.NamedTemporaryFile(prefix=file_name,
                                                      dir=file_dir,
                                                      delete=not keep_file)
-        
+
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
         try:
@@ -2644,18 +2643,14 @@ class ASSET(object):
             t_stop=self.t_stop_i,
             ids=ids)
 
-        if self.spiketrains_j is self.spiketrains_i:
+        if self.spiketrains_j is self.spiketrains_i or self.is_symmetric():
             diag_id = 0
             tracts_y = tracts_x
         else:
-            if self.is_symmetric():
-                diag_id = 0
-                tracts_y = tracts_x
-            else:
-                diag_id = None
-                tracts_y = _transactions(
-                    self.spiketrains_j, bin_size=self.bin_size,
-                    t_start=self.t_start_j, t_stop=self.t_stop_j, ids=ids)
+            diag_id = None
+            tracts_y = _transactions(
+                self.spiketrains_j, bin_size=self.bin_size,
+                t_start=self.t_start_j, t_stop=self.t_stop_j, ids=ids)
 
         # Reconstruct each worm, link by link
         sse_dict = {}
