@@ -2568,9 +2568,9 @@ class ASSET(object):
                 else array_file
             file_dir = file_path.parent
             file_name = file_path.stem
-            mapped_array_file = tempfile.NamedTemporaryFile(prefix=file_name,
-                                                     dir=file_dir,
-                                                     delete=not keep_file)
+            mapped_array_file = tempfile.NamedTemporaryFile(
+                                    prefix=file_name, dir=file_dir,
+                                    delete=not keep_file)
 
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
