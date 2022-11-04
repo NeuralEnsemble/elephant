@@ -293,7 +293,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
        i.e. segments are overlapped by the half of their length).
        The number and the length of the segments are determined according
        to the parameters `n_segments`, `len_segment` or `frequency_resolution`.
-       By default, the data is cut into 8 segments;
+       By default, the data is not cut into  segments;
 
     2. Calculate 'num_tapers' approximately independent estimates of the
        spectrum by multiplying the signal with the discrete prolate spheroidal
@@ -319,7 +319,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_segment` or `frequency_resolution` is
         given.
-        Default: 8.
+        Default: 1.
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
@@ -525,7 +525,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     return freqs, psd
 
 
-def multitaper_cross_spectrum(signals, fs=1., n_segments=8, len_segment=None,
+def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
                               frequency_resolution=None, overlap=0.5, nw=4.,
                               num_tapers=None, peak_resolution=None,
                               return_onesided=True, axis=-1):
@@ -540,7 +540,7 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=8, len_segment=None,
        i.e. segments are overlapped by the half of their length).
        The number and the length of the segments are determined according
        to the parameters `n_segments`, `len_segment` or `frequency_resolution`.
-       By default, the data is cut into 8 segments;
+       By default, the data is not cut into segments;
 
     2. Calculate 'num_tapers' approximately independent estimates of the
        spectrum by multiplying the signals with the discrete prolate spheroidal
@@ -566,7 +566,7 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=8, len_segment=None,
         overlapping segments cover the entire stretch of the given data. This
         parameter is ignored if `len_segment` or `frequency_resolution` is
         given.
-        Default: 8.
+        Default: 1.
     len_segment : int, optional
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
@@ -780,7 +780,8 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=8, len_segment=None,
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
-        amp_cross_spec = amp_cross_spec * signals.units * signals.units / pq.Hz
+        cross_spec = cross_spec * signals.units * signals.units / pq.Hz
+        phase_cross_spec = phase_cross_spec * pq.rad
         freqs = freqs * pq.Hz
 
     return freqs, phase_cross_spec, cross_spec
@@ -869,9 +870,10 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
                                               num_tapers=num_tapers,
                                               peak_resolution=peak_resolution)
 
+    # Calculate magnitude-squared coherence.
     coherence = np.abs(Pxy[0, 1]) ** 2 / (Pxy[0, 0].real * Pxy[1, 1].real)
 
-    phase_lag = np.angle(2*Pxy[0, 1])
+    phase_lag = np.angle(Pxy[0, 1])
 
     return freqs, coherence, phase_lag
 
@@ -1127,67 +1129,107 @@ def welch_cohere(*args, **kwargs):
 
 if __name__ == "__main__":
 
-    def _generate_ground_truth(length_2d=30000):
-        order = 2
-        signal = np.zeros((2, length_2d + order))
+    # def _generate_ground_truth(length_2d=30000):
+    #     order = 2
+    #     signal = np.zeros((2, length_2d + order))
 
-        weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
-        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+    #     weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
+    #     weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
 
-        weights = np.stack((weights_1, weights_2))
+    #     weights = np.stack((weights_1, weights_2))
 
-        noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+    #     noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
 
-        for i in range(length_2d):
-            for lag in range(order):
-                signal[:, i + order] += np.dot(weights[lag],
-                                               signal[:, i + 1 - lag])
-            rnd_var = np.random.multivariate_normal([0, 0],
-                                                    noise_covariance)
-            signal[:, i + order] += rnd_var
+    #     for i in range(length_2d):
+    #         for lag in range(order):
+    #             signal[:, i + order] += np.dot(weights[lag],
+    #                                            signal[:, i + 1 - lag])
+    #         rnd_var = np.random.multivariate_normal([0, 0],
+    #                                                 noise_covariance)
+    #         signal[:, i + order] += rnd_var
 
-        signal = signal[:, 2:]
+    #     signal = signal[:, 2:]
 
-        # Return signals as Nx2
-        return signal.T
+    #     # Return signals as Nx2
+    #     return signal.T
 
 
-    test_data = _generate_ground_truth(length_2d=2**10)
+    # test_data = _generate_ground_truth(length_2d=2**10)
 
-    fx, Pxx = welch_psd(test_data[:, 0])
-    fy, Pyy = welch_psd(test_data[:, 1])
+    # fx, Pxx = welch_psd(test_data[:, 0])
+    # fy, Pyy = welch_psd(test_data[:, 1])
 
-    fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1])
+    # fc, Coh, _ = welch_coherence(test_data[:, 0], test_data[:, 1])
 
-    fm, Pxxm = multitaper_psd(test_data.T, num_tapers=4, n_segments=8)
+    # fm, Pxxm = multitaper_psd(test_data.T, num_tapers=4, n_segments=8)
 
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
 
-    plt.figure()
-    plt.semilogy(fx, Pxx, label="Pxx welch")
-    plt.semilogy(fy, Pyy, label="Pyy welch")
-    plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
-    plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
-    plt.legend()
-    plt.show()
-    print(test_data.shape)
+    # plt.figure()
+    # plt.semilogy(fx, Pxx, label="Pxx welch")
+    # plt.semilogy(fy, Pyy, label="Pyy welch")
+    # plt.semilogy(fm, Pxxm[0], label="Pxx Multitaper")
+    # plt.semilogy(fm, Pxxm[1], label="Pyy Multitaper")
+    # plt.legend()
+    # plt.show()
+    # print(test_data.shape)
 
-    fcs, _, Pcs = multitaper_cross_spectrum(test_data.T, num_tapers=4,
-                                            n_segments=8)
 
-    plt.figure()
-    plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
-    plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
-    plt.semilogy(fcs[:512], 2*Pcs[0,0, :512].real,'r:', label="Pxx Multitaper")
-    plt.semilogy(fcs[:512], 2*Pcs[1,1, :512].real, 'b:', label="Pyy Multitaper")
-    plt.legend()
-    plt.show()
+    # fcs, _, Pcs = multitaper_cross_spectrum(test_data.T, num_tapers=4,
+    #                                         n_segments=8)
 
-    fcs, multitaper_coh, _ =  multitaper_coherence(test_data[:, 0],
-                                                   test_data[:, 1],
-                                                   num_tapers=4)
+    # plt.figure()
+    # plt.semilogy(fm, Pxxm[0], 'k', label="Pxx Multitaper")
+    # plt.semilogy(fm, Pxxm[1], 'g', label="Pyy Multitaper")
+    # plt.semilogy(fcs[:512], 2*Pcs[0,0, :512].real,'r:', label="Pxx Multitaper")
+    # plt.semilogy(fcs[:512], 2*Pcs[1,1, :512].real, 'b:', label="Pyy Multitaper")
+    # plt.legend()
+    # plt.show()
+
+    # fcs, multitaper_coh, _ =  multitaper_coherence(test_data[:, 0],
+    #                                                test_data[:, 1],
+    #                                                num_tapers=4)
+    # plt.figure()
+    # plt.plot(fc, Coh, label="Welch Coh")
+    # plt.plot(fcs, multitaper_coh, 'b:', label="Multitaper Coh")
+    # plt.legend()
+    # plt.show()
+
+    data_length = 10000
+    sampling_period = 0.001
+    signal_freq = 100.0
+    noise = np.random.normal(0, 1, size=(2, data_length))
+    time_points = np.arange(0, data_length * sampling_period,
+                            sampling_period)
+    signal_i = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
+    signal_j = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
+    #data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
+    #                      sampling_period=sampling_period * pq.s,
+    #                      units='mV')
+
+    fcs, multitaper_coh, multitaper_phase_lag =  multitaper_coherence(signal_i,
+                                                   signal_j,
+                                                   fs=1/sampling_period,
+                                                   n_segments=16)
+
+    fc, Coh, phase_lag = welch_coherence(signal_i, signal_j, fs =1/sampling_period,
+                                 n_segments=16)
+
+
+
+    from matplotlib import pyplot as plt
     plt.figure()
     plt.plot(fc, Coh, label="Welch Coh")
     plt.plot(fcs, multitaper_coh, 'b:', label="Multitaper Coh")
+    plt.legend()
+    plt.show() 
+
+    import IPython
+    IPython.embed()
+
+    from matplotlib import pyplot as plt
+    plt.figure()
+    plt.plot(fc, phase_lag, label="Welch Coh")
+    plt.plot(fcs, multitaper_phase_lag, 'b:', label="Multitaper Coh")
     plt.legend()
     plt.show()
