@@ -346,7 +346,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
-                         disk_array=None, verbose=False):
+                         mapped_array_file=None, verbose=False):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -387,7 +387,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         it has no influence on the outcome matrix. Instead, it controls the
         memory VS speed trade-off.
         Default: None
-    disk_array : file-like, optional
+    mapped_array_file : file-like, optional
         Temporary file, that should be used to store the matrix  of stretched
         distances when chunking the computations. This is achieved  using
         `np.memmap`. If `working_memory` is None (no chunking), this parameter
@@ -483,7 +483,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
                   f"Number of chunked iterations: {it_todo}")
 
         # x and y sizes are the same
-        if disk_array is None:
+        if mapped_array_file is None:
             # Create the distance matrix in memory. Raise exception if
             # it is not possible due to insufficient memory.
             try:
@@ -499,9 +499,9 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             # Using an array mapped to disk. Store in the file passed as
             # parameter
             if verbose:
-                print(f"Creating disk array at '{disk_array.name}'.")
+                print(f"Creating disk array at '{mapped_array_file.name}'.")
 
-            stretch_mat = np.memmap(disk_array, mode='w+',
+            stretch_mat = np.memmap(mapped_array_file, mode='w+',
                                     shape=(len(x), len(y)),
                                     dtype=np.float32)
 
@@ -527,7 +527,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             # the theta computations are written directly to the
             # stretch_mat. Otherwise, write to the buffer
             out = stretch_mat[start: start + chunk_size, :] \
-                if disk_array is None else chunk_mat[:chunk_size, :]
+                if mapped_array_file is None else chunk_mat[:chunk_size, :]
 
             theta_chunk = np.arctan2(dY, dX, out=out)
 
@@ -535,7 +535,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             calculate_stretch_mat(theta_chunk, D_chunk)
 
             # If mapping to file, transfer from the buffer to stretch_mat
-            if disk_array is not None:
+            if mapped_array_file is not None:
                 stretch_mat[start: start + chunk_size, :] = theta_chunk
 
             start += chunk_size
@@ -2571,7 +2571,7 @@ class ASSET(object):
         try:
             D = _stretched_metric_2d(
                 xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
-                working_memory=working_memory, disk_array=disk_array,
+                working_memory=working_memory, mapped_array_file=disk_array,
                 verbose=verbose
             )
         except MemoryError as err:
