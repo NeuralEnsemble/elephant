@@ -213,6 +213,9 @@ htmlhelp_basename = 'elephantdoc'
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
 
+# path to bibtex_bibfiles
+bibtex_bibfiles = ['bib/elephant.bib']
+
 # A fix for Alabaster theme for no space between a citation reference
 # and citation text
 # https://github.com/sphinx-doc/sphinx/issues/6705#issuecomment-536197438
