@@ -16,5 +16,6 @@ dependencies:
   - jinja2
   - pip:
     - neo>=0.10.0
+    - nixio>=1.5.0
     # - viziphant
     # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt
