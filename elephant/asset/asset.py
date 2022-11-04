@@ -2562,13 +2562,13 @@ class ASSET(object):
         xpos_sgnf, ypos_sgnf = np.where(mask_matrix > 0)
 
         # Allocate temporary file if requested
-        disk_array = None
+        mapped_array_file = None
         if array_file:
             file_path = Path(array_file) if isinstance(array_file, str) \
                 else array_file
             file_dir = file_path.parent
             file_name = file_path.stem
-            disk_array = tempfile.NamedTemporaryFile(prefix=file_name,
+            mapped_array_file = tempfile.NamedTemporaryFile(prefix=file_name,
                                                      dir=file_dir,
                                                      delete=not keep_file)
 
@@ -2577,9 +2577,8 @@ class ASSET(object):
         try:
             D = _stretched_metric_2d(
                 xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
-                working_memory=working_memory, mapped_array_file=disk_array,
-                verbose=verbose
-            )
+                working_memory=working_memory,
+                mapped_array_file=mapped_array_file, verbose=verbose)
         except MemoryError as err:
             raise MemoryError("Set 'working_memory=100' or another value to "
                               "chunk the data. If this does not solve, use the"
