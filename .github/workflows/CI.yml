@@ -153,6 +153,7 @@ jobs:
         run: |
           python --version
           conda env list
+          conda install mpi4py openmpi
           conda install pytest
           conda install pytest-cov coveralls
           pip install -e .[extras]

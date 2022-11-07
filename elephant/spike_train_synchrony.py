@@ -144,14 +144,16 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     Examples
     --------
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> import numpy as np
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.spike_train_synchrony import spike_contrast
-    >>> spiketrain_1 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_stop=1000*pq.ms)
-    >>> spiketrain_2 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_stop=1000*pq.ms)
-    >>> spike_contrast([spiketrain_1, spiketrain_2])
-    0.4192546583850932
+    >>> np.random.seed(225)
+    >>> spiketrain_1 = StationaryPoissonProcess(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> spiketrain_2 = StationaryPoissonProcess(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> round(spike_contrast([spiketrain_1, spiketrain_2]),3)
+    0.419
 
     """
     if not 0. < bin_shrink_factor < 1.:

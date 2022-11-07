@@ -206,26 +206,28 @@ class GPFA(sklearn.base.BaseEstimator):
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.gpfa import GPFA
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> data = []
-    >>> for trial in range(50):
-    >>>     n_channels = 20
-    >>>     firing_rates = np.random.randint(low=1, high=100,
+    >>> for trial in range(50):  # noqa
+    ...     n_channels = 20
+    ...     firing_rates = np.random.randint(low=1, high=100,
     ...                                      size=n_channels) * pq.Hz
-    >>>     spike_times = [homogeneous_poisson_process(rate=rate)
-    ...                    for rate in firing_rates]
-    >>>     data.append((trial, spike_times))
-    ...
+    ...     spike_times = []
+    ...     for rate in firing_rates:
+    ...         spike_times.append(
+    ...              StationaryPoissonProcess(rate=rate).generate_spiketrain())
+    ...     data.append((trial, spike_times))
+
     >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
-    >>> gpfa.fit(data)
+    >>> gpfa.fit(data)  # doctest: +SKIP
     >>> results = gpfa.transform(data, returned_data=['latent_variable_orth',
-    ...                                               'latent_variable'])
-    >>> latent_variable_orth = results['latent_variable_orth']
-    >>> latent_variable = results['latent_variable']
+    ...                                               'latent_variable'])  # doctest: +SKIP
+    >>> latent_variable_orth = results['latent_variable_orth']  # doctest: +SKIP
+    >>> latent_variable = results['latent_variable']  # doctest: +SKIP
 
     or simply
 
-    >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,
+    >>> results = GPFA(bin_size=20*pq.ms, x_dim=8).fit_transform(data,  # doctest: +SKIP
     ...                returned_data=['latent_variable_orth',
     ...                               'latent_variable'])
     """
