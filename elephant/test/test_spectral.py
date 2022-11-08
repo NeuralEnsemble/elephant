@@ -561,14 +561,11 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
         # Generate dummy data
         data_length = 10000
         sampling_period = 0.001
-        noise = np.random.normal(size=(2, data_length))
+        time_points = np.arange(0, data_length * sampling_period,
+                                sampling_period)
 
-        # Set random seed for controlling coherence values
-        np.random.seed(1)
-
-        # Signals are designed to have no coherence peak at `signal_freq`
-        signal_i = noise[0]
-        signal_j = noise[1]
+        signal_i = np.sin(2 * np.pi * 2.5 * time_points)
+        signal_j = np.sin(2 * np.pi * 5 * time_points)
 
         # Estimate coherence and phase lag with the multitaper method
         freq, coh, phase_lag = elephant.spectral.multitaper_coherence(
@@ -577,7 +574,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
             fs=1/sampling_period,
             n_segments=16)
 
-        np.testing.assert_allclose(coh, np.zeros(coh.size), atol=0.1)
+        np.testing.assert_allclose(coh, np.zeros(coh.size), atol=0.002)
 
     def test_multitaper_cohere_phase_lag(self):
         # Generate dummy data
