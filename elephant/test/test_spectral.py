@@ -510,7 +510,7 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
 
 
 class MultitaperCoherenceTestCase(unittest.TestCase):
-    def test_multitaper_cohere_against_welch_cohere(self):
+    def test_multitaper_cohere_peak(self):
         # Generate dummy data
         data_length = 10000
         sampling_period = 0.001
@@ -518,6 +518,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
         noise = np.random.normal(size=(2, data_length))
         time_points = np.arange(0, data_length * sampling_period,
                                 sampling_period)
+        # Signals are designed to have coherence peak at `signal_freq`
         signal_i = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
         signal_j = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
 
@@ -528,15 +529,6 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
             fs=1/sampling_period,
             n_segments=16)
 
-        # Estimate coherence and phase lag with the Welch method.
-        # freq2, coh2, phase_lag2 = elephant.spectral.welch_coherence(
-        #     signal_i,
-        #     signal_j,
-        #     fs=1/sampling_period,
-        #     n_segments=16)
-
-        #self.assertTrue((freq1[] == freq2).all())
-
         indices, vals = scipy.signal.find_peaks(coh1, height=0.8, distance=10)
 
         peak_freqs = freq1[indices]
@@ -545,6 +537,82 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                    signal_freq*np.ones(len(peak_freqs)),
                                    rtol=0.05)
 
+    def test_multitaper_cohere_perfect_cohere(self):
+        # Generate dummy data
+        data_length = 10000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        noise = np.random.normal(size=(1, data_length))
+        time_points = np.arange(0, data_length * sampling_period,
+                                sampling_period)
+        signal = np.cos(2 * np.pi * signal_freq * time_points) + noise
+
+        # Estimate coherence and phase lag with the multitaper method
+        freq1, coh, phase_lag = elephant.spectral.multitaper_coherence(
+            signal,
+            signal,
+            fs=1/sampling_period,
+            n_segments=16)
+
+        self.assertTrue((coh == np.ones(coh.size)).all())
+        self.assertTrue((phase_lag == np.zeros(phase_lag.size)).all())
+
+    def test_multitaper_cohere_no_cohere(self):
+        # Generate dummy data
+        data_length = 10000
+        sampling_period = 0.001
+        noise = np.random.normal(size=(2, data_length))
+
+        # Set random seed for controlling coherence values
+        np.random.seed(1)
+
+        # Signals are designed to have no coherence peak at `signal_freq`
+        signal_i = noise[0]
+        signal_j = noise[1]
+
+        # Estimate coherence and phase lag with the multitaper method
+        freq, coh, phase_lag = elephant.spectral.multitaper_coherence(
+            signal_i,
+            signal_j,
+            fs=1/sampling_period,
+            n_segments=16)
+
+        np.testing.assert_allclose(coh, np.zeros(coh.size), atol=0.1)
+
+    def test_multitaper_cohere_phase_lag(self):
+        # Generate dummy data
+        data_length = 10000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        time_points = np.arange(0, data_length * sampling_period,
+                                sampling_period)
+
+        # Signals are designed to have maximal phase lag at 100 with value pi/4
+        signal_i = np.sin(2 * np.pi * signal_freq * time_points + np.pi / 4)
+        signal_j = np.cos(2 * np.pi * signal_freq * time_points)
+
+        # Estimate coherence and phase lag with the multitaper method
+        freq, coh, phase_lag = elephant.spectral.multitaper_coherence(
+            signal_i,
+            signal_j,
+            fs=1/sampling_period,
+            n_segments=16,
+            num_tapers=8)
+
+        indices, vals = scipy.signal.find_peaks(phase_lag,
+                                                height=0.8 * np.pi / 4,
+                                                distance=10)
+
+        # Get peak frequencies and peak heights
+        peak_freqs = freq[indices]
+        peak_heights = vals['peak_heights']
+
+        np.testing.assert_allclose(peak_freqs,
+                                   signal_freq*np.ones(len(peak_freqs)),
+                                   rtol=0.05)
+        np.testing.assert_allclose(peak_heights,
+                                   np.pi / 4 * np.ones(len(peak_heights)),
+                                   rtol=0.05)
 
 class WelchCohereTestCase(unittest.TestCase):
     def test_welch_cohere_errors(self):
