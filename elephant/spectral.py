@@ -823,9 +823,9 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         is given. If None, it will be determined from other parameters.
         Default: None.
     frequency_resolution : pq.Quantity or float, optional
-        Desired frequency resolution of the obtained PSD estimate in terms of
-        the interval between adjacent frequency bins. When given as a `float`,
-        it is taken as frequency in Hz.
+        Desired frequency resolution of the obtained coherence estimate in
+        terms of the interval between adjacent frequency bins. When given as a
+        `float`, it is taken as frequency in Hz.
         If None, it will be determined from other parameters.
         Default: None.
     overlap : float, optional
@@ -861,14 +861,10 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     """
     signals = np.vstack([signal_i, signal_j])
 
-    freqs, _, Pxy = multitaper_cross_spectrum(signals=signals,
-                                              n_segments=n_segments,
-                                              len_segment=len_segment,
-                                              overlap=overlap,
-                                              fs=fs,
-                                              nw=nw,
-                                              num_tapers=num_tapers,
-                                              peak_resolution=peak_resolution)
+    freqs, _, Pxy = multitaper_cross_spectrum(
+        signals=signals, n_segments=n_segments, len_segment=len_segment,
+        frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
+        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution)
 
     # Calculate magnitude-squared coherence.
     coherence = np.abs(Pxy[0, 1]) ** 2 / (Pxy[0, 0].real * Pxy[1, 1].real)
