@@ -186,8 +186,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                 # Save hilbert_transform (interpolate on circle)
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
-                interpolation = (1 - z) * np.exp(np.complex(0, p1)) \
-                                    + z * np.exp(np.complex(0, p2))
+                interpolation = (1 - z) * np.exp(complex(0, p1)) \
+                                    + z * np.exp(complex(0, p2))
                 p12 = np.angle([interpolation])
                 result_phases[spiketrain_i].append(p12)
 
