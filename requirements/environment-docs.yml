@@ -17,4 +17,5 @@ dependencies:
   - pip:
     - neo>=0.10.0
     - viziphant
+    - sphinx>=3.3.0, <=5.2.3 # fix for math formulas not rendering correctly
     # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt

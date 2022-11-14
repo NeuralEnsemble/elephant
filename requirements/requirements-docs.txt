@@ -1,7 +1,7 @@
 # Packages required to build docs (in addition to requirements-tutorials.rst)
 numpydoc>=1.1.0
 jupyter>=1.0.0
-sphinx>=3.3.0
+sphinx>=3.3.0, <=5.2.3 # fix for math formulas not rendering correctly
 nbsphinx>=0.8.0
 sphinxcontrib-bibtex>1.0.0
 sphinx-tabs>=1.3.0
