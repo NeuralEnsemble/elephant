@@ -345,7 +345,7 @@ intersphinx_mapping = {
 }
 
 # Use more reliable mathjax source
-mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 # Remove the copyright notice from docstrings:
 
