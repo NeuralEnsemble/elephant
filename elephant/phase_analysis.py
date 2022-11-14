@@ -37,8 +37,6 @@ __all__ = [
     "weighted_phase_lag_index"
 ]
 
-from neo import AnalogSignal
-
 
 def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     """
@@ -187,7 +185,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
                 interpolation = (1 - z) * np.exp(complex(0, p1)) \
-                                    + z * np.exp(complex(0, p2))
+                    + z * np.exp(complex(0, p2))
                 p12 = np.angle([interpolation])
                 result_phases[spiketrain_i].append(p12)
 
@@ -373,17 +371,19 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
 
     Notes
     -----
-    This implementation is based on the formula taken from [1] (pp.1550) :
+    This implementation is based on the formula taken from
+    :cite:`phase-Vinck11_1548` (pp.1550, equation (8)) :
 
     .. math::
         WPLI = \frac{| E( |Im(X)| * sgn(Im(X)) ) |}{E( |Im(X)| )}
 
     with:
-        - E{...} : expected value operator
-        - Im{X} : imaginary component of the cross-spectrum
-        - X = Z_i * Z_j_conjugate : cross-spectrum, averaged across trials
-        - Z_i, Z_j : complex-valued matrix, representing the Fourier spectra
-                     of a particular frequency of the signals i and j.
+        - :math:`E{...}` : expected value operator
+        - :math:`Im{X}` : imaginary component of the cross-spectrum
+        - :math:`X = Z_i Z_{j}^{*}` : cross-spectrum, averaged across
+        trials
+        - :math:`Z_i, Z_j`: complex-valued matrix, representing the Fourier
+        spectra of a particular frequency of the signals i and j.
 
     """
     if isinstance(signal_i, neo.AnalogSignal) and \
@@ -397,7 +397,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     else:  # np.array() or Quantity input
         if sampling_frequency is None:
             raise ValueError("sampling frequency must be given for np.array or"
-                             "Quanitity input")
+                             "Quantity input")
 
     if np.shape(signal_i) != np.shape(signal_j):
         if len(signal_i) != len(signal_j):
