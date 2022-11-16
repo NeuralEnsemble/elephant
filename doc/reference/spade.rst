@@ -11,4 +11,4 @@ References
 ----------
 
 .. bibliography::
-   :keyprefix: spade-
+    :keyprefix: spade-
