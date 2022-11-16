@@ -37,6 +37,4 @@ Further publications directly related to Elephant development
 used in Elephant documentation).
 
 .. bibliography:: bib/elephant.bib
-   :labelprefix: ref
-   :keyprefix: citations-
-   :style: unsrt
+    :keyprefix: citations-
