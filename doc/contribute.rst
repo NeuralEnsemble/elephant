@@ -340,7 +340,7 @@ Each module in ``doc/reference`` folder ends with the reference section:
     References
     ----------
 
-    .. bibliography:: ../bib/elephant.bib
+    .. bibliography::
         :keyprefix: <module name>-
 
 where ``<module name>`` is (by convention) the Python source file name, and

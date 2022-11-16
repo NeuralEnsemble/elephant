@@ -8,5 +8,5 @@ Cell assembly detection (CAD)
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
+.. bibliography::
     :keyprefix: cad-

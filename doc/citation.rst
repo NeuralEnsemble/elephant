@@ -36,5 +36,5 @@ Further publications directly related to Elephant development
 `BibTex references <https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_
 used in Elephant documentation).
 
-.. bibliography:: bib/elephant.bib
+.. bibliography::
     :keyprefix: citations-

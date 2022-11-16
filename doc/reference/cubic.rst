@@ -8,5 +8,5 @@ Cumulant Based Inference of higher-order Correlation (CuBIC)
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
+.. bibliography::
     :keyprefix: cubic-
