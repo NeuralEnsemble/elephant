@@ -344,16 +344,13 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable', None)
 }
 
-# The name of math_renderer extension for HTML output.
-html_math_renderer = 'mathjax'
-
 # Use more reliable mathjax source
-mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
-
-# Remove the copyright notice from docstrings:
+mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 
 def process_docstring_remove_copyright(app, what, name, obj, options, lines):
+    """Remove the copyright notice from docstrings: """
+
     copyright_line = None
     for i, line in enumerate(lines):
         if line.startswith(':copyright:'):
