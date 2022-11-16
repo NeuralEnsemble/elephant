@@ -12,4 +12,3 @@ References
 
 .. bibliography::
    :keyprefix: spade-
-   :style: plain
