@@ -219,6 +219,9 @@ bibtex_bibfiles = ['bib/elephant.bib']
 # To configure your referencing style:
 bibtex_reference_style = 'author_year'
 
+# To configure the bibliography style:
+bibtex_default_style = 'plain'
+
 # -- Options for LaTeX output --------------------------------------------
 
 latex_elements = {
