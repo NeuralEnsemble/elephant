@@ -10,7 +10,6 @@ Spike Pattern Detection and Evaluation (SPADE)
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: spade
+.. bibliography::
    :keyprefix: spade-
-   :style: unsrt
+   :style: plain
