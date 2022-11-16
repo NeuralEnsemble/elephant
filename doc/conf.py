@@ -220,7 +220,7 @@ bibtex_bibfiles = ['bib/elephant.bib']
 bibtex_reference_style = 'author_year_round'
 
 # To configure the bibliography style:
-bibtex_default_style = 'plain'
+bibtex_default_style = 'author_year'
 
 # -- Options for LaTeX output --------------------------------------------
 
@@ -388,7 +388,7 @@ def bracket_style() -> BracketStyle:
 
 
 @dataclass
-class MyReferenceStyle(AuthorYearReferenceStyle):
+class RoundBracketReferenceStyle(AuthorYearReferenceStyle):
     bracket_parenthetical: BracketStyle = field(default_factory=bracket_style)
     bracket_textual: BracketStyle = field(default_factory=bracket_style)
     bracket_author: BracketStyle = field(default_factory=bracket_style)
@@ -398,4 +398,28 @@ class MyReferenceStyle(AuthorYearReferenceStyle):
 
 sphinxcontrib.bibtex.plugin.register_plugin(
     'sphinxcontrib.bibtex.style.referencing',
-    'author_year_round', MyReferenceStyle)
+    'author_year_round', RoundBracketReferenceStyle)
+
+# Custom style for bibliography labels
+
+from pybtex.style.formatting.unsrt import Style as UnsrtStyle
+from pybtex.style.labels import BaseLabelStyle
+from pybtex.plugin import register_plugin
+
+
+# a simple label style which uses the bibtex keys for labels
+class AuthorYearStyle(BaseLabelStyle):
+
+    def format_labels(self, sorted_entries):
+        for entry in sorted_entries:
+            # create string for label
+            yield entry.persons["author"][0].last_names[0] + ", " +\
+                entry.fields["year"][-4:]
+
+
+class AuthorYear(UnsrtStyle):
+
+    default_label_style = AuthorYearStyle
+
+
+register_plugin('pybtex.style.formatting', 'author_year', AuthorYear)
