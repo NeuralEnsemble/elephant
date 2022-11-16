@@ -216,6 +216,9 @@ numpydoc_show_class_members = False
 # path to bibtex-bibfiles
 bibtex_bibfiles = ['bib/elephant.bib']
 
+# To configure your referencing style:
+bibtex_reference_style = 'author_year'
+
 # -- Options for LaTeX output --------------------------------------------
 
 latex_elements = {
