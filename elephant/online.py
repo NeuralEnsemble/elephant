@@ -5,6 +5,8 @@ import quantities as pq
 
 from elephant.statistics import isi
 
+msg_same_units = "Each batch must have the same units."
+
 
 class MeanOnline(object):
     def __init__(self, batch_mode=False):
@@ -30,7 +32,7 @@ class MeanOnline(object):
             self.units = units
         else:
             if units != self.units:
-                raise ValueError("Each batch must have the same units.")
+                raise ValueError(msg_same_units)
             self.mean += (new_val_sum - self.mean * batch_size) / self.count
 
     def as_units(self, val):
@@ -62,7 +64,7 @@ class VarianceOnline(MeanOnline):
             self.variance_sum = 0.
             self.units = units
         elif units != self.units:
-            raise ValueError("Each batch must have the same units.")
+            raise ValueError(msg_same_units)
         delta_var = new_val - self.mean
         if self.batch_mode:
             batch_size = new_val.shape[0]
@@ -122,7 +124,7 @@ class InterSpikeIntervalOnline(object):
             self.units = units
         else:  # for second to last batch
             if units != self.units:
-                raise ValueError("Each batch must have the same units.")
+                raise ValueError(msg_same_units)
             if self.bach_mode:
                 new_isi = isi(np.append(self.last_spike_time, new_val))
                 self.last_spike_time = new_val[-1]
@@ -166,7 +168,7 @@ class CovarianceOnline(object):
             self.covariance_sum = 0.
             self.units = units
         elif units != self.units:
-            raise ValueError("Each batch must have the same units.")
+            raise ValueError(msg_same_units)
         if self.batch_mode:
             self.var_x.update(new_val_pair[0])
             self.var_y.update(new_val_pair[1])
@@ -223,7 +225,7 @@ class PearsonCorrelationCoefficientOnline(object):
             self.covariance_xy.var_y.mean = 0.
             self.units = units
         elif units != self.units:
-            raise ValueError("Each batch must have the same units.")
+            raise ValueError(msg_same_units)
         self.covariance_xy.update(new_val_pair)
         if self.batch_mode:
             batch_size = len(new_val_pair[0])
