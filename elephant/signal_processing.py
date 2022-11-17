@@ -937,6 +937,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         raise ValueError('Input signal is not a neo.AnalogSignal!')
 
     if baseline is None:
+        # do nothing
         pass
     elif baseline == 'mean':
         # subtract mean from each channel
