@@ -7,7 +7,7 @@ import quantities as pq
 import scipy.special as sc
 
 import elephant.conversion as conv
-from elephant.unitary_event_analysis import *
+from elephant.unitary_event_analysis import hash_from_pattern, jointJ
 from elephant.unitary_event_analysis import _winpos, _bintime, _UE
 
 
@@ -202,8 +202,8 @@ class OnlineUnitaryEventAnalysis:
         if trigger_events is None:
             self.trigger_events = []
         else:
-             self.trigger_events = pq.Quantity(trigger_events,
-                                               self.time_unit).tolist()
+            self.trigger_events = pq.Quantity(trigger_events,
+                                              self.time_unit).tolist()
         self.trigger_pre_size = pq.Quantity(trigger_pre_size, self.time_unit)
         self.trigger_post_size = pq.Quantity(trigger_post_size, self.time_unit)
         self.sliding_analysis_window_size = \
@@ -417,11 +417,11 @@ class OnlineUnitaryEventAnalysis:
                 raise ValueError("'spiketrains' is a list of np.array(), thus"
                                  "'t_start', 't_stop' and 'time_unit' must be"
                                  "specified!")
-            else:
-                spiketrains = [neo.SpikeTrain(
-                    times=st, t_start=t_start, t_stop=t_stop,
-                    units=time_unit).rescale(self.time_unit)
-                               for st in spiketrains]
+
+            spiketrains = [neo.SpikeTrain(times=st, t_start=t_start,
+                                          t_stop=t_stop, units=time_unit
+                                          ).rescale(self.time_unit)
+                           for st in spiketrains]
         # extract relevant time information
         t_start_incoming_data_window = spiketrains[0].t_start
         t_stop_incoming_data_window = spiketrains[0].t_stop
@@ -474,14 +474,13 @@ class OnlineUnitaryEventAnalysis:
                         self._move_sliding_analysis_window_over_trial_window(
                             t_stop_incoming_data_window=
                             t_stop_incoming_data_window)
-                    else:
-                        pass
+
                 # # subcase 2: incoming data window does not contain
                 # trigger event
                 else:
-                    self._move_memory_window(new_t_start=
-                                             t_stop_incoming_data_window -
-                                             self.trigger_pre_size)
+                    self._move_memory_window(
+                        new_t_start=t_stop_incoming_data_window -
+                        self.trigger_pre_size)
 
             # # Case 2: within trial analysis, i.e. waiting for
             # new incoming data window with spikes of current trial
@@ -501,12 +500,11 @@ class OnlineUnitaryEventAnalysis:
                         pass
                 # # Subcase 4: incoming data window does not contain
                 # trigger event, i.e. just new spikes of the current trial
-                else:
-                    pass
+
                 if self.trigger_events_left_over:
                     # define trial window around trigger event
-                    self._define_trial_window(trigger_event=
-                                              current_trigger_event)
+                    self._define_trial_window(
+                        trigger_event=current_trigger_event)
                     # apply bin window to available data in trial window
                     self._binning_of_trial_window()
                     # move sliding analysis window over available data
@@ -514,8 +512,6 @@ class OnlineUnitaryEventAnalysis:
                     self._move_sliding_analysis_window_over_trial_window(
                         t_stop_incoming_data_window=
                         t_stop_incoming_data_window)
-                else:
-                    pass
 
     def _pval(self, n_emp, n_exp):
         """
@@ -579,7 +575,7 @@ class OnlineUnitaryEventAnalysis:
         for i in range(self.n_neurons):
             idx = np.where(new_t_start > self.memory_window[i])[0]
             # print(f"idx = {idx}")
-            if not len(idx) == 0:  # move memory_window
+            if len(idx) != 0:  # move memory_window
                 self.memory_window[i] = self.memory_window[i][idx[-1] + 1:]
             else:  # keep memory_window
                 self.data_available_in_memory_window = False
@@ -767,8 +763,8 @@ class OnlineUnitaryEventAnalysis:
                 if n_bins_in_current_sliding_analysis_window < \
                         self.winsize_bintime:
                     mat_win[0] += np.pad(
-                        self.bin_window[:,
-                        p_bintime:p_bintime + self.winsize_bintime],
+                        self.bin_window[:, p_bintime:p_bintime +
+                                        self.winsize_bintime],
                         (0, self.winsize_bintime -
                          n_bins_in_current_sliding_analysis_window),
                         "minimum")[0:2]
@@ -806,7 +802,7 @@ class OnlineUnitaryEventAnalysis:
                     _trial_start = 0 * pq.s
                     _trial_stop = self.trial_window_size
                     _offset = self.trigger_events[self.trial_counter] - \
-                              self.trigger_pre_size
+                        self.trigger_pre_size
                     normalized_spike_times = []
                     for n in range(self.n_neurons):
                         normalized_spike_times.append(
@@ -826,4 +822,4 @@ class OnlineUnitaryEventAnalysis:
                     self.waiting_for_new_trigger = True
                     self.trigger_events_left_over = False
                     self.data_available_in_memory_window = False
-                print(f"trial_counter = {self.trial_counter}")  # DEBUG-aid
+                # print(f"trial_counter = {self.trial_counter}")  # DEBUG-aid

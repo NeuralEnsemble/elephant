@@ -145,9 +145,10 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         cls.last_n_trials = 50
 
         # download real data once and load it several times later
-        cls.repo_path = 'tutorials/tutorial_unitary_event_analysis/' \
-                        'data/dataset-1.nix'
-        cls.filepath = download_datasets(cls.repo_path)
+        repo_path = 'tutorials/tutorial_unitary_event_analysis/' \
+                    'data/dataset-1.nix'
+        cls.repo_path = repo_path
+        cls.filepath = download_datasets(repo_path)
 
         cls.st_types = ["list_of_neo.SpikeTrain", "list_of_numpy_array"]
 
@@ -254,7 +255,6 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
 
         # create instance of OnlineUnitaryEventAnalysis
         _last_n_trials = min(self.last_n_trials, len(spiketrains))
-        ouea = None
         if st_type == "list_of_neo.SpikeTrain":
             ouea = OnlineUnitaryEventAnalysis(
                 bin_window_size=(0.005 * pq.s).rescale(time_unit),
