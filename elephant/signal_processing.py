@@ -296,11 +296,8 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 
         If `scaleopt` is not one of the predefined above keywords.
 
-    References
-    ----------
-    .. [1] Stoica, P., & Moses, R. (2005). Spectral Analysis of Signals.
-       Prentice Hall. Retrieved from http://user.it.uu.se/~ps/SAS-new.pdf,
-       Eq. 2.2.3.
+    .. bibliography::
+        :keyprefix: signal-
 
     Examples
     --------
