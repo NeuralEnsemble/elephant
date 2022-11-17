@@ -152,6 +152,7 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
         cls.st_types = ["list_of_neo.SpikeTrain", "list_of_numpy_array"]
 
     def setUp(self):
+        # do nothing
         pass
 
     def _assert_equality_of_passed_and_saved_trials(
@@ -269,17 +270,17 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                 bin_window_size=(0.005 * pq.s).rescale(time_unit).magnitude,
                 trigger_pre_size=(0. * pq.s).rescale(time_unit).magnitude,
                 trigger_post_size=(2.1 * pq.s).rescale(time_unit).magnitude,
-                sliding_analysis_window_size=
-                (0.1 * pq.s).rescale(time_unit).magnitude,
-                sliding_analysis_window_step=
-                (0.005 * pq.s).rescale(time_unit).magnitude,
+                sliding_analysis_window_size=(0.1 * pq.s
+                                              ).rescale(time_unit).magnitude,
+                sliding_analysis_window_step=(0.005 * pq.s
+                                              ).rescale(time_unit).magnitude,
                 trigger_events=init_events.magnitude,
                 time_unit=time_unit.__str__().split(" ")[1],
                 save_n_trials=_last_n_trials)
         else:
-            ValueError("undefined type for spiktrains representation! "
-                       "Use either list of neo.SpikeTrains or "
-                       "list of numpy arrays")
+            raise ValueError("undefined type for spiktrains representation! "
+                             "Use either list of neo.SpikeTrains or "
+                             "list of numpy arrays")
         # perform online unitary event analysis
         # simulate buffered reading/transport of spiketrains,
         # i.e. loop over spiketrain list and call update_ue()
@@ -363,17 +364,17 @@ class TestOnlineUnitaryEventAnalysis(unittest.TestCase):
                 bin_window_size=(0.005 * pq.s).rescale(time_unit).magnitude,
                 trigger_pre_size=trigger_pre_size.magnitude,
                 trigger_post_size=trigger_post_size.magnitude,
-                sliding_analysis_window_size=
-                (0.1 * pq.s).rescale(time_unit).magnitude,
-                sliding_analysis_window_step=
-                (0.005 * pq.s).rescale(time_unit).magnitude,
+                sliding_analysis_window_size=(0.1 * pq.s
+                                              ).rescale(time_unit).magnitude,
+                sliding_analysis_window_step=(0.005 * pq.s
+                                              ).rescale(time_unit).magnitude,
                 trigger_events=init_events.magnitude,
                 time_unit=time_unit.__str__().split(" ")[1],
                 save_n_trials=_last_n_trials)
         else:
-            ValueError("undefined type for spiktrains representation! "
-                       "Use either list of neo.SpikeTrains or "
-                       "list of numpy arrays")
+            raise ValueError("undefined type for spiktrains representation! "
+                             "Use either list of neo.SpikeTrains or "
+                             "list of numpy arrays")
         # perform online unitary event analysis
         # simulate buffered reading/transport of spiketrains,
         # i.e. loop over spiketrain list and call update_ue()
