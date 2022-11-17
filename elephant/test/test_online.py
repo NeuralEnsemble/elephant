@@ -93,7 +93,7 @@ def _simulate_buffered_reading(n_buffers, ouea, st1, st2,
             raise ValueError("undefined type for spiktrains representation! "
                              "Use either list of neo.SpikeTrains or "
                              "list of numpy arrays")
-        print(f"#buffer = {i}")  # DEBUG-aid
+        # print(f"#buffer = {i}")  # DEBUG-aid
 
 
 def _load_real_data(filepath, n_trials, trial_length, time_unit):
