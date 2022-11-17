@@ -342,7 +342,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
                          "indices. Cannot define pairs for cross-correlation.")
     if not isinstance(hilbert_envelope, bool):
         raise ValueError("'hilbert_envelope' must be a boolean value")
-    if n_lags is not None and not isinstance(n_lags, int) or n_lags <= 0:
+    if n_lags is not None and (not isinstance(n_lags, int) or n_lags <= 0):
         raise ValueError('n_lags must be a non-negative integer')
 
     # z-score analog signal and store channel time series in different arrays
