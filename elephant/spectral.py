@@ -652,10 +652,7 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
         data = np.rollaxis(data, 0, len(data.shape))
 
     # Number of data points in time series
-    if data.ndim == 1:
-        length_signal = np.shape(data)[0]
-    else:
-        length_signal = np.shape(data)[1]
+    length_signal = np.shape(data)[1]
 
     # If the data is given as AnalogSignal, use its attribute to specify the
     # sampling frequency
