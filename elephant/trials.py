@@ -9,6 +9,8 @@ import quantities as pq
 import neo.utils
 from abc import ABCMeta, abstractmethod
 
+from typing import List
+
 
 class Trials:
     """
@@ -27,7 +29,7 @@ class Trials:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, description=None):
+    def __init__(self, description: str):
         """
         Constructor
         (actual documentation is in class documentation, see above!)
@@ -66,7 +68,7 @@ class TrialsFromLists(Trials):
         A list of lists. Each list entry contains a list of neo.SpikeTrains
         or neo.AnalogSignals.
     """
-    def __init__(self, list_of_trials, **kwargs):
+    def __init__(self, list_of_trials: list, **kwargs):
         """
         Constructor
         (actual documentation is in class documentation, see above!)
@@ -74,24 +76,24 @@ class TrialsFromLists(Trials):
         self.list_of_trials = list_of_trials
         super().__init__(**kwargs)
 
-    def __getitem__(self, trial_number):
+    def __getitem__(self, trial_number: int):
         return self.list_of_trials[trial_number]
 
     @property
-    def n_trials(self):
+    def n_trials(self) -> int:
         """
         Get the number of trials.
         """
         return len(self.list_of_trials)
 
-    def n_spiketrains(self):
+    def n_spiketrains(self) -> List[int]:
         """
         Get the number of spiketrains in each trial.
         """
         return[sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
                for trial in self.list_of_trials]
 
-    def n_analogsignals(self):
+    def n_analogsignals(self) -> List[int]:
         """
         Get the number of analogsignals in each trial.
         """
@@ -108,13 +110,13 @@ class TrialsFromBlock(Trials):
     block : neo.Block
         An instance of neo.Block containing the trials.
 
-    Attributes
+    Properties
     ----------
     n_trials : int
         Calculated based on the number of segments in the block.
 
     """
-    def __init__(self, block, **kwargs):
+    def __init__(self, block: neo.core.block, **kwargs):
         """
         Constructor
         (actual documentation is in class documentation, see above!)
@@ -122,23 +124,23 @@ class TrialsFromBlock(Trials):
         self.block = block
         super().__init__(**kwargs)
 
-    def __getitem__(self, trial_number):
+    def __getitem__(self, trial_number) -> neo.core.segment:
         return self.block.segments[trial_number]
 
     @property
-    def n_trials(self):
+    def n_trials(self) -> int:
         """
         Get the number of trials.
         """
         return len(self.block.segments)
 
-    def n_spiketrains(self):
+    def n_spiketrains(self) -> List[int]:
         """
         Get the number of SpikeTrain instances in each trial.
         """
         return[len(trial.spiketrains) for trial in self.block.segments]
 
-    def n_analogsignals(self):
+    def n_analogsignals(self) -> List[int]:
         """
         Get the number of AnalogSignals instances in each trial.
         """
