@@ -7,6 +7,7 @@ used by all :module:`elephant.trials` classes.
 """
 import quantities as pq
 import neo.utils
+from abc import ABCMeta, abstractmethod
 
 
 class Trials:
@@ -23,12 +24,36 @@ class Trials:
         Default: None.
 
     """
+
+    __metaclass__ = ABCMeta
+
     def __init__(self, description=None):
         """
         Constructor
         (actual documentation is in class documentation, see above!)
         """
         self.description = description
+
+    @abstractmethod
+    def n_trials(self):
+        """
+        Get the number of trials.
+        """
+        pass
+
+    @abstractmethod
+    def n_spiketrains(self):
+        """
+        Get the number of spiketrains in each trial.
+        """
+        pass
+
+    @abstractmethod
+    def n_analogsignals(self):
+        """
+        Get the number of analogsignals in each trial.
+        """
+        pass
 
 
 class TrialsFromLists(Trials):
