@@ -9,7 +9,6 @@ Unit tests for the trials objects.
 import unittest
 
 import neo.utils
-import quantities as pq
 
 import elephant.datasets
 from elephant.trials import TrialsFromBlock, TrialsFromLists

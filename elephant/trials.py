@@ -5,7 +5,6 @@ used by all :module:`elephant.trials` classes.
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-import quantities as pq
 import neo.utils
 from abc import ABCMeta, abstractmethod
 
