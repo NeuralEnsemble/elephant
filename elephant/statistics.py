@@ -1054,29 +1054,36 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
 
     """
     # Bin the spike trains and sum across columns
-    binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains, t_start=t_start,
-                                         t_stop=t_stop, bin_size=bin_size)
-
     if binary:
-        binned_spiketrain = binned_spiketrain.binarize(copy=False)
+        binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains,
+                                             t_start=t_start,
+                                             t_stop=t_stop, bin_size=bin_size
+                                             ).binarize(copy=False)
+    else:
+        binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains,
+                                             t_start=t_start,
+                                             t_stop=t_stop, bin_size=bin_size
+                                             )
 
     bin_hist = binned_spiketrain.get_num_of_spikes(axis=0)
     # Flatten array
-    bin_hist = np.ravel(bin_hist)
+    bin_hist.ravel()
 
-    # Re-normalise the histogram
+    # Re-normalise the histogram according to desired
+    # output : {'counts', 'mean', 'rate'}
 
     def _counts(bin_hist, *_):
-        # Raw
+        # 'counts': spike counts at each bin (as integer numbers).
         return pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
 
     def _mean(bin_hist, list_of_spiketrains, *_):
-        # Divide by number of input spike trains
+        # 'mean': mean spike counts per spike train.
         return pq.Quantity(bin_hist / len(list_of_spiketrains),
                            units=pq.dimensionless, copy=False)
 
     def _rate(bin_hist, list_of_spiketrains, bin_size, *_):
-        # Divide by number of input spike trains and bin width
+        # 'rate': mean spike rate per spike train. Like 'mean', but the
+        #         counts are additionally normalized by the bin width.
         return bin_hist / (len(list_of_spiketrains) * bin_size)
 
     output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
