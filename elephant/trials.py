@@ -28,7 +28,7 @@ class Trials:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, description: str):
+    def __init__(self, description: str = "Trials"):
         """
         Constructor
         (actual documentation is in class documentation, see above!)
