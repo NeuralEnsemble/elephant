@@ -70,12 +70,12 @@ import math
 import warnings
 
 import neo
-from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 import scipy.stats
 import scipy.signal
 from scipy.special import erf
+from typing import List
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -959,8 +959,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
 
 @deprecated_alias(binsize='bin_size')
-def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
-                   output='counts', binary=False):
+def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
+                   bin_size: pq.Quantity,
+                   t_start: pq.Quantity = None,
+                   t_stop: pq.Quantity = None,
+                   output: str = 'counts',
+                   binary: bool = False) -> neo.core.AnalogSignal:
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
@@ -969,7 +973,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    list_of_spiketrains : list of neo.SpikeTrain
         `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
@@ -1037,7 +1041,8 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
     ...     neo.SpikeTrain([0.7, 4.3, 8.2], t_stop=10, units='s')
     ... ]
-    >>> hist = statistics.time_histogram(spiketrains, bin_size=1 * pq.s)
+    >>> hist = statistics.time_histogram(list_of_spiketrains,
+    ...                                  bin_size=1 * pq.s)
     >>> hist
     AnalogSignal with 1 channels of length 10; units dimensionless; datatype
     int64
@@ -1049,32 +1054,42 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     """
     # Bin the spike trains and sum across columns
-    bs = BinnedSpikeTrain(spiketrains, t_start=t_start, t_stop=t_stop,
-                          bin_size=bin_size)
+    binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains, t_start=t_start,
+                                         t_stop=t_stop, bin_size=bin_size)
 
     if binary:
-        bs = bs.binarize(copy=False)
-    bin_hist = bs.get_num_of_spikes(axis=0)
+        binned_spiketrain = binned_spiketrain.binarize(copy=False)
+
+    bin_hist = binned_spiketrain.get_num_of_spikes(axis=0)
     # Flatten array
     bin_hist = np.ravel(bin_hist)
-    # Renormalise the histogram
-    if output == 'counts':
+
+    # Re-normalise the histogram
+
+    def _counts(bin_hist, *_):
         # Raw
-        bin_hist = pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
-    elif output == 'mean':
+        return pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
+
+    def _mean(bin_hist, list_of_spiketrains, *_):
         # Divide by number of input spike trains
-        bin_hist = pq.Quantity(bin_hist / len(spiketrains),
-                               units=pq.dimensionless, copy=False)
-    elif output == 'rate':
+        return pq.Quantity(bin_hist / len(list_of_spiketrains),
+                           units=pq.dimensionless, copy=False)
+
+    def _rate(bin_hist, list_of_spiketrains, bin_size, *_):
         # Divide by number of input spike trains and bin width
-        bin_hist = bin_hist / (len(spiketrains) * bin_size)
-    else:
+        return bin_hist / (len(list_of_spiketrains) * bin_size)
+
+    output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
+    try:
+        normalise_func = output_mapping.get(output)
+        bin_hist = normalise_func(bin_hist, list_of_spiketrains, bin_size)
+    except TypeError:
         raise ValueError(f'Parameter output ({output}) is not valid.')
 
     return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
                             sampling_period=bin_size, units=bin_hist.units,
-                            t_start=bs.t_start, normalization=output,
-                            copy=False)
+                            t_start=binned_spiketrain.t_start,
+                            normalization=output, copy=False)
 
 
 @deprecated_alias(binsize='bin_size')
@@ -1330,7 +1345,7 @@ class Complexity(object):
             `t_start + j * binsize` and `t_start + (j + 1) * binsize`.
         """
         norm_hist = self.complexity_histogram / self.complexity_histogram.sum()
-        # Convert the Complexity pdf to an neo.AnalogSignal
+        # Convert the Complexity pdf to a neo.AnalogSignal
         pdf = neo.AnalogSignal(
             np.expand_dims(norm_hist, axis=1),
             units=pq.dimensionless,
