@@ -7,11 +7,26 @@ Unit tests for the trials objects.
 """
 
 import unittest
-
 import neo.utils
+import quantities as pq
 
-import elephant.datasets
+from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.trials import TrialsFromBlock, TrialsFromLists
+
+
+def _create_trials_block(n_trials: int = 0, n_spiketrains: int = 2):
+    """ Create block with n_trials and n_spiketrains """
+    block = neo.Block(name='test_block')
+    for trial in range(n_trials):
+        segment = neo.Segment(name=f'No. {trial}')
+        spiketrains = StationaryPoissonProcess(rate=50.*pq.Hz, t_start=0*pq.ms,
+                                               t_stop=1000*pq.ms
+                                               ).generate_n_spiketrains(
+                                                n_spiketrains=n_spiketrains)
+        for spiketrain in spiketrains:
+            segment.spiketrains.append(spiketrain)
+        block.segments.append(segment)
+    return block
 
 
 class TrialsFromBlockTestCase(unittest.TestCase):
@@ -21,12 +36,8 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         Run once before tests:
         Download the dataset from elephant_data
         """
-        filepath = elephant.datasets.download_datasets(
-            'tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix')
 
-        with neo.io.NixIO(filepath, 'ro') as io:
-            block = io.read_block()
-
+        block = _create_trials_block(n_trials=36)
         cls.block = block
         cls.trial_object = TrialsFromBlock(block,
                                            description='trials are segments')
@@ -63,11 +74,7 @@ class TrialsFromListTestCase(unittest.TestCase):
         Run once before tests:
         Download the dataset from elephant_data
         """
-        filepath = elephant.datasets.download_datasets(
-            'tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix')
-
-        with neo.io.NixIO(filepath, 'ro') as io:
-            block = io.read_block()
+        block = _create_trials_block(n_trials=36)
 
         # Create Trialobject as list of lists
         trial_list = [trial.spiketrains for trial in block.segments]
@@ -100,3 +107,7 @@ class TrialsFromListTestCase(unittest.TestCase):
         Test get number of trials.
         """
         self.assertEqual(self.trial_object.n_trials, len(self.trial_list))
+
+
+if __name__ == '__main__':
+    unittest.main()
