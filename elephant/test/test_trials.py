@@ -14,7 +14,8 @@ from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.trials import TrialsFromBlock, TrialsFromLists
 
 
-def _create_trials_block(n_trials: int = 0, n_spiketrains: int = 2):
+def _create_trials_block(n_trials: int = 0,
+                         n_spiketrains: int = 2) -> neo.core.Block:
     """ Create block with n_trials and n_spiketrains """
     block = neo.Block(name='test_block')
     for trial in range(n_trials):
