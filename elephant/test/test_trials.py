@@ -16,85 +16,87 @@ from elephant.trials import TrialsFromBlock, TrialsFromLists
 
 class TrialsFromBlockTestCase(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """
         Run once before tests:
         Download the dataset from elephant_data
         """
-        cls.filepath = elephant.datasets.download_datasets(
+        filepath = elephant.datasets.download_datasets(
             'tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix')
 
-    def setUp(self):
+        with neo.io.NixIO(filepath, 'ro') as io:
+            block = io.read_block()
+
+        cls.block = block
+        cls.trial_object = TrialsFromBlock(block,
+                                           description='trials are segments')
+
+    def setUp(self) -> None:
         """
         Run before every test:
         Load the dataset with neo.NixIO
         """
-        with neo.io.NixIO(
-                self.filepath, 'ro') as io:
-            self.block = io.read_block()
 
-        self.trial_object = TrialsFromBlock(self.block,
-                                            description='trials are segments')
-
-    def test_trials_from_block_description(self):
+    def test_trials_from_block_description(self) -> None:
         """
         Test description of the trials object.
         """
         self.assertEqual(self.trial_object.description, 'trials are segments')
 
-    def test_trials_from_block_get_trial(self):
+    def test_trials_from_block_get_trial(self) -> None:
         """
         Test get a trial from the trials.
         """
-        self.assertEqual(type(self.trial_object[0]), neo.core.Segment)
+        self.assertIsInstance(self.trial_object[0], neo.core.Segment)
 
-    def test_trials_from_block_n_trials(self):
+    def test_trials_from_block_n_trials(self) -> None:
         """
-        Test get a trial from the trials.
+        Test get number of trials.
         """
         self.assertEqual(self.trial_object.n_trials, len(self.block.segments))
 
 
 class TrialsFromListTestCase(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """
         Run once before tests:
         Download the dataset from elephant_data
         """
-        cls.filepath = elephant.datasets.download_datasets(
+        filepath = elephant.datasets.download_datasets(
             'tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix')
 
-    def setUp(self):
+        with neo.io.NixIO(filepath, 'ro') as io:
+            block = io.read_block()
+
+        # Create Trialobject as list of lists
+        trial_list = [trial.spiketrains for trial in block.segments]
+        cls.trial_list = trial_list
+
+        cls.trial_object = TrialsFromLists(trial_list,
+                                           description='trial is a list')
+
+    def setUp(self) -> None:
         """
         Run before every test:
         Load the dataset with neo.NixIO
         """
-        with neo.io.NixIO(
-                self.filepath, 'ro') as io:
-            block = io.read_block()
 
-        # Create Trialobject as list of lists
-        self.trial_list = [trial.spiketrains for trial in block.segments]
-
-        self.trial_object = TrialsFromLists(self.trial_list,
-                                            description='trial is a list')
-
-    def test_trials_from_list_description(self):
+    def test_trials_from_list_description(self) -> None:
         """
         Test description of the trials object.
         """
         self.assertEqual(self.trial_object.description, 'trial is a list')
 
-    def test_trials_from_list_get_trial(self):
+    def test_trials_from_list_get_trial(self) -> None:
         """
         Test get a trial from the trials.
         """
-        self.assertEqual(type(self.trial_object[0]),
-                         neo.core.spiketrainlist.SpikeTrainList)
+        self.assertIsInstance(self.trial_object[0],
+                              neo.core.spiketrainlist.SpikeTrainList)
 
-    def test_trials_from_list_n_trials(self):
+    def test_trials_from_list_n_trials(self) -> None:
         """
-        Test get a trial from the trials.
+        Test get number of trials.
         """
         self.assertEqual(self.trial_object.n_trials, len(self.trial_list))
