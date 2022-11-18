@@ -74,8 +74,9 @@ import numpy as np
 import quantities as pq
 import scipy.stats
 import scipy.signal
+from numpy import ndarray
 from scipy.special import erf
-from typing import List
+from typing import List, Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -1065,23 +1066,22 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
                                              t_stop=t_stop, bin_size=bin_size
                                              )
 
-    bin_hist = binned_spiketrain.get_num_of_spikes(axis=0)
+    bin_hist: Union[int, ndarray] = binned_spiketrain.get_num_of_spikes(axis=0)
     # Flatten array
     bin_hist.ravel()
 
-    # Re-normalise the histogram according to desired
-    # output : {'counts', 'mean', 'rate'}
+    # Re-normalise the histogram according to desired output
 
-    def _counts(bin_hist, *_):
+    def _counts() -> pq.Quantity:
         # 'counts': spike counts at each bin (as integer numbers).
         return pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
 
-    def _mean(bin_hist, list_of_spiketrains, *_):
+    def _mean() -> pq.Quantity:
         # 'mean': mean spike counts per spike train.
         return pq.Quantity(bin_hist / len(list_of_spiketrains),
                            units=pq.dimensionless, copy=False)
 
-    def _rate(bin_hist, list_of_spiketrains, bin_size, *_):
+    def _rate() -> pq.Quantity:
         # 'rate': mean spike rate per spike train. Like 'mean', but the
         #         counts are additionally normalized by the bin width.
         return bin_hist / (len(list_of_spiketrains) * bin_size)
@@ -1089,12 +1089,13 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
     output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
     try:
         normalise_func = output_mapping.get(output)
-        bin_hist = normalise_func(bin_hist, list_of_spiketrains, bin_size)
+        normalised_bin_hist = normalise_func()
     except TypeError:
         raise ValueError(f'Parameter output ({output}) is not valid.')
 
-    return neo.AnalogSignal(signal=np.expand_dims(bin_hist, axis=1),
-                            sampling_period=bin_size, units=bin_hist.units,
+    return neo.AnalogSignal(signal=np.expand_dims(normalised_bin_hist, axis=1),
+                            sampling_period=bin_size,
+                            units=normalised_bin_hist.units,
                             t_start=binned_spiketrain.t_start,
                             normalization=output, copy=False)
 
