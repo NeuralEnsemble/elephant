@@ -29,8 +29,13 @@ def _create_trials_block(n_trials: int = 0,
         block.segments.append(segment)
     return block
 
+#########
+# Tests #
+#########
+
 
 class TrialsFromBlockTestCase(unittest.TestCase):
+    """Tests for elephant.trials.TrialsFromBlock class"""
     @classmethod
     def setUpClass(cls) -> None:
         """
@@ -69,6 +74,7 @@ class TrialsFromBlockTestCase(unittest.TestCase):
 
 
 class TrialsFromListTestCase(unittest.TestCase):
+    """Tests for elephant.trials.TrialsFromList class"""
     @classmethod
     def setUpClass(cls) -> None:
         """
