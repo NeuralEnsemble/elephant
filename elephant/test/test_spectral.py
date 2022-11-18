@@ -319,23 +319,57 @@ class MultitaperPSDTestCase(unittest.TestCase):
 class MultitaperCrossSpectrumTestCase(unittest.TestCase):
     def test_multitaper_cross_spectrum_errors(self):
         # generate dummy data
-        signal = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+        data_length = 5000
+        signal = n.AnalogSignal(np.zeros(data_length),
+                                sampling_period=0.001 * pq.s,
                                 units='mV')
         fs = 1000 * pq.Hz
-        nw = 3
 
         # check for invalid parameter values
         # - number of tapers
         self.assertRaises(ValueError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, nw, num_tapers=-5)
+                          fs, num_tapers=-5)
         self.assertRaises(TypeError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, nw, num_tapers=-5.0)
+                          fs, num_tapers=-5.0)
+        
+        # - peak resolution
+        self.assertRaises(ValueError,
+                          elephant.spectral.multitaper_cross_spectrum, signal,
+                          fs, peak_resolution=-1)
+
         # - frequency resolution
         self.assertRaises(ValueError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, nw, peak_resolution=-1)
+                          fs, frequency_resolution=-10)
+
+        # - n per segment
+        # n_per_seg = int(fs / dF), where dF is the frequency_resolution
+        broken_freq_resolution = fs / (data_length+1)
+        self.assertRaises(ValueError,
+                          elephant.spectral.multitaper_cross_spectrum, signal,
+                          fs, frequency_resolution=broken_freq_resolution)
+
+        # - length of segment (negative)
+        self.assertRaises(ValueError,
+                          elephant.spectral.multitaper_cross_spectrum, signal,
+                          fs, len_segment=-10)
+
+        # - length of segment (larger than data length)
+        self.assertRaises(ValueError,
+                          elephant.spectral.multitaper_cross_spectrum, signal,
+                          fs, len_segment=data_length+1)
+
+        # - number of segments (negative)
+        self.assertRaises(ValueError,
+                          elephant.spectral.multitaper_cross_spectrum, signal,
+                          fs, n_segments=-10)
+
+        # - number of segments (larger than data length)
+        self.assertRaises(ValueError,
+                          elephant.spectral.multitaper_cross_spectrum, signal,
+                          fs, n_segments=data_length+1)
 
     def test_multitaper_cross_spectrum_behavior(self):
         # generate data by adding white noise and a sinusoid
