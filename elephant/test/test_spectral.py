@@ -10,6 +10,7 @@ import unittest
 
 import numpy as np
 import scipy.signal as spsig
+import scipy.fft
 import quantities as pq
 import neo.core as n
 from numpy.testing import assert_array_almost_equal, assert_array_equal
@@ -186,16 +187,17 @@ class MultitaperPSDTestCase(unittest.TestCase):
                           fs, nw, peak_resolution=-1)
 
     def test_multitaper_psd_behavior(self):
-        # generate data by adding white noise and a sinusoid
-        data_length = 5000
+        # generate data (frequency domain to time domain)
+        r = np.ones(2501) * 0.2
+        r[0], r[500] = 0, 10  # Zero DC, peak at 100 Hz
+        phi = np.random.uniform(-np.pi, np.pi, len(r))
+        fake_coeffs = r*np.exp(1j * phi)
+        fake_ts = scipy.fft.irfft(fake_coeffs)
         sampling_period = 0.001
-        signal_freq = 100.0
-        noise = np.random.normal(size=data_length)
-        signal = [np.sin(2 * np.pi * signal_freq * t)
-                  for t in np.arange(0, data_length * sampling_period,
-                                     sampling_period)]
-        data = n.AnalogSignal(np.array(signal + noise),
-                              sampling_period=sampling_period * pq.s,
+        freqs = scipy.fft.rfftfreq(len(fake_ts), d=sampling_period)
+        signal_freq = freqs[r.argmax()]
+
+        data = n.AnalogSignal(fake_ts, sampling_period=sampling_period * pq.s,
                               units='mV')
 
         # consistency between different ways of specifying number of tapers
