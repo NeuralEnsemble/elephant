@@ -9,6 +9,6 @@ References
 ----------
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: cpd
-   :keyprefix: cpd-
-   :style: unsrt
+    :labelprefix: cpd
+    :keyprefix: cpd-
+    :style: unsrt

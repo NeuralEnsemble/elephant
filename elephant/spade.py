@@ -19,25 +19,36 @@ sequences (spatio-temporal patterns, STP).
 
 Visualization
 -------------
-Visualization of SPADE analysis is covered in Viziphant:
+Visualization of SPADE analysis is covered in Viziphant e.g.:
+:func:`viziphant.patterns.plot_patterns_statistics_all`
+
+See Viziphant for more information:
+
 https://viziphant.readthedocs.io/en/latest/modules.html
 
 
 Notes
 -----
-This modules relies on the C++ implementation of the fp-growth algorithm developed by
-Forian Porrmann (available at https://github.com/fporrmann/FPG). The module replaces
-a more generic implementation of the algorithm by Christian Borgelt
-(http://www.borgelt.net/pyfim.html) that was used in previous versions of Elephant.
-If the module (fim.so) is not available in a precompiled format (currently Linux/Windows) or cannot
-be compiled on a given system during install, SPADE will make use of a pure Python implementation
-of the fast fca algorithm contained in `elephant/spade_src/fast_fca.py`, which is
+This modules relies on the C++ implementation of the fp-growth
+algorithm developed by Forian Porrmann (available at
+https://github.com/fporrmann/FPG). The module replaces a more generic
+implementation of the algorithm by Christian Borgelt (
+http://www.borgelt.net/pyfim.html) that was used in previous versions of
+Elephant.
+
+If the module ``fim.so`` is not available in a precompiled format (
+currently Linux/Windows) or cannot be compiled on a given system during
+install, SPADE will make use of a pure Python implementation of the fast fca
+algorithm contained in `elephant/spade_src/fast_fca.py`, which is
 significantly slower.
+
+See :ref:`no-compile-spade` on how to install elephant without compiling the
+``fim.so`` module.
 
 
 See Also
 --------
-elephant.cell_assembly_detection.cell_assembly_detection : another synchronous
+:doc:`cell_assembly_detection`: another synchronous
 patterns detection
 
 
@@ -63,8 +74,11 @@ bin (i.e., detecting only synchronous patterns).
 
 >>> patterns = spade(spiketrains, bin_size=10 * pq.ms, winlen=1,
 ...                  dither=5 * pq.ms, min_spikes=6, n_surr=10,
-...                  psr_param=[0, 0, 3])['patterns']
->>> patterns[0]
+...                  psr_param=[0, 0, 3])['patterns']  # doctest:+ELLIPSIS
+Time for data mining: ...
+Time for pvalue spectrum computation: ...
+
+>>> patterns[0] # doctest: +SKIP
 {'itemset': (4, 3, 0, 2, 5, 1),
  'windows_ids': (9,
   16,
@@ -301,9 +315,19 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     >>> from elephant.spade import spade
     >>> import quantities as pq
+    >>> from elephant.spike_train_generation import compound_poisson_process
+
+    >>> np.random.seed(30)
+    >>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
+    ...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
+
     >>> bin_size = 3 * pq.ms # time resolution to discretize the spiketrains
     >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
-    >>> result_spade = spade(spiketrains, bin_size, winlen)
+
+    >>> result_spade = spade(
+    ...                     spiketrains, bin_size, winlen) # doctest: +ELLIPSIS
+    Time for data mining: ...
+
 
     """
     if HAVE_MPI:  # pragma: no cover
@@ -971,7 +995,7 @@ def _rereference_to_last_spike(transactions, winlen):
         neurons[idx] = attribute // winlen
         bins[idx] = attribute % winlen
 
-    # rereference bins to last spike
+    # reference bins to last spike
     bins = bins.max() - bins
 
     # calculate converted transactions

@@ -10,9 +10,7 @@ import unittest
 import math
 import numpy as np
 import scipy
-from numpy.testing import assert_array_equal
-from numpy.testing.utils import assert_array_almost_equal
-import neo
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 from neo import AnalogSignal, SpikeTrain
 from elephant.conversion import BinnedSpikeTrain
 import quantities as pq
