@@ -426,6 +426,18 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         indices, peak_dict = scipy.signal.find_peaks(cross_spec[0, 0],
                                                      height=0.2, distance=10)
 
+        # The peak frequency can occasionally be 99.8 Hz (as opposed to 100 Hz)
+        np.testing.assert_allclose(freqs[indices].rescale('Hz').magnitude,
+                                   signal_freq * np.ones(len(indices)),
+                                   atol=0.2)
+        freqs_np, phase_cross_spec_np, cross_spec_np = \
+                elephant.spectral.multitaper_cross_spectrum(
+                    data.magnitude.T, fs=1 / sampling_period,
+                    peak_resolution=peak_res)
+        self.assertTrue((freqs == freqs_np).all()
+                        and (phase_cross_spec == phase_cross_spec_np).all()
+                        and (cross_spec == cross_spec_np).all())
+
         # one-sided vs two-sided spectrum
         freqs_os, phase_cross_spec_os, cross_spec_os = \
             elephant.spectral.multitaper_cross_spectrum(
@@ -458,18 +470,6 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         np.testing.assert_allclose(
             cross_spec_os.magnitude,
             cross_spec_ts[:, :, ts_freq_indices].magnitude, rtol=1e-12, atol=0)
-
-        # The peak frequency can occasionally be 99.8 Hz (as opposed to 100 Hz)
-        np.testing.assert_allclose(freqs[indices].rescale('Hz').magnitude,
-                                   signal_freq * np.ones(len(indices)),
-                                   atol=0.2)
-        freqs_np, phase_cross_spec_np, cross_spec_np = \
-                elephant.spectral.multitaper_cross_spectrum(
-                    data.magnitude.T, fs=1 / sampling_period,
-                    peak_resolution=peak_res)
-        self.assertTrue((freqs == freqs_np).all()
-                        and (phase_cross_spec == phase_cross_spec_np).all()
-                        and (cross_spec == cross_spec_np).all())
 
     def test_multitaper_cross_spectrum_parameter_hierarchy(self):
         # generate data by adding white noise and a sinusoid
