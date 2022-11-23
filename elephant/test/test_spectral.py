@@ -447,13 +447,17 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(freqs_os, ts_overlap_freqs)
 
-        np.testing.assert_array_equal(
-            phase_cross_spec_os,
-            phase_cross_spec_ts[:, :, ts_freq_indices])
+        diff_phase_cross_spec_os_ts = np.angle(np.exp(1j*(
+                phase_cross_spec_os.magnitude -
+                phase_cross_spec_ts[:, :, ts_freq_indices].magnitude)))
 
-        np.testing.assert_array_equal(
-            cross_spec_os,
-            cross_spec_ts[:, :, ts_freq_indices])
+        np.testing.assert_allclose(diff_phase_cross_spec_os_ts,
+                                   np.zeros_like(diff_phase_cross_spec_os_ts),
+                                   rtol=0, atol=1e-12)
+
+        np.testing.assert_allclose(
+            cross_spec_os.magnitude,
+            cross_spec_ts[:, :, ts_freq_indices].magnitude, rtol=1e-12, atol=0)
 
         # The peak frequency can occasionally be 99.8 Hz (as opposed to 100 Hz)
         np.testing.assert_allclose(freqs[indices].rescale('Hz').magnitude,
