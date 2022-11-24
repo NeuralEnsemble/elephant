@@ -9,9 +9,8 @@ import neo.utils
 from abc import ABCMeta, abstractmethod
 
 from typing import List
-
-import elephant.trials
 import itertools
+
 
 class Trials:
     """
@@ -151,7 +150,7 @@ class TrialsFromBlock(Trials):
 def spiketrains_over_trials(func):
     def wrapper_spiketrains_over_trials(*args, **kwargs):
         for arg in args:
-            if isinstance(arg, elephant.trials.TrialsFromBlock):
+            if isinstance(arg, TrialsFromBlock):
                 return func(list(itertools.chain.from_iterable(
                     [seg.spiketrains for seg in arg])), **kwargs)
 
