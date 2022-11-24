@@ -84,7 +84,7 @@ from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, check_neo_consistency, \
     is_time_quantity, round_binning_errors
 
-from elephant.trials import over_trials
+from elephant.trials import spiketrains_over_trials
 
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
@@ -961,7 +961,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     return rate
 
 
-@over_trials
+@spiketrains_over_trials
 @deprecated_alias(binsize='bin_size')
 def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
                    bin_size: pq.Quantity,
