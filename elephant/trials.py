@@ -5,6 +5,8 @@ used by all :module:`elephant.trials` classes.
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
+from functools import wraps
+
 import neo.utils
 from abc import ABCMeta, abstractmethod
 
@@ -147,8 +149,10 @@ class TrialsFromBlock(Trials):
         return[len(trial.analogsignals) for trial in self.block.segments]
 
 
-def spiketrains_over_trials(func):
-    def wrapper_spiketrains_over_trials(*args, **kwargs):
+def spiketrains_over_trials(func: callable) -> callable:
+    @wraps(func)
+    def wrapper_spiketrains_over_trials(*args: tuple,
+                                        **kwargs: tuple) -> callable:
         for arg in args:
             if isinstance(arg, TrialsFromBlock):
                 return func(list(itertools.chain.from_iterable(
