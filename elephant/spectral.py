@@ -8,6 +8,8 @@ spectrum).
 
     welch_psd
     welch_coherence
+    multitaper_cross_spectrum
+    multitaper_coherence
 
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
