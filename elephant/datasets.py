@@ -163,7 +163,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
                 ctx = ssl._create_unverified_context()
                 ctx.check_hostname = True
                 urlopen(default_url + '/README.md')
-            except HTTPError:  # e.g. 404:
+            except HTTPError:  # e.g. 404
                 default_url = url_to_root + f"raw/master"
 
             warnings.warn(f"Data URL:{default_url}, error: {error}."
