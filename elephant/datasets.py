@@ -144,7 +144,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
     if 'ELEPHANT_DATA_URL' not in environ:  # user did not set URL
         # is 'version-URL' available? (not for elephant development version)
         try:
-            urlopen(default_url+'/README.md', timeout=10)
+            urlopen(default_url+'/README.md')
 
         except HTTPError as error:
             # if corresponding elephant-data version is not found,
@@ -162,7 +162,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             try:  # try again without certificate verification
                 ctx = ssl._create_unverified_context()
                 ctx.check_hostname = True
-                urlopen(default_url + '/README.md', timeout=10)
+                urlopen(default_url + '/README.md')
             except HTTPError:  # e.g. 404:
                 default_url = url_to_root + f"raw/master"
 
