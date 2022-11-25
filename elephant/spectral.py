@@ -304,7 +304,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
