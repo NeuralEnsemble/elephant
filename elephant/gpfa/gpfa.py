@@ -87,7 +87,7 @@ __all__ = [
 
 
 class GPFA(sklearn.base.BaseEstimator):
-    """
+    r"""
     Apply Gaussian process factor analysis (GPFA) to spike train data
 
     There are two principle scenarios of using the GPFA analysis, both of which
@@ -162,7 +162,7 @@ class GPFA(sklearn.base.BaseEstimator):
             Currently, only 'rbf' is supported.
         gamma : (1, #latent_vars) np.ndarray
             related to GP timescales of latent variables before
-            orthonormalization by :math:`bin_size / sqrt(gamma)`
+            orthonormalization by :math:`\frac{bin\_size}{\sqrt{gamma}}`
         eps : (1, #latent_vars) np.ndarray
             GP noise variances
         d : (#units, 1) np.ndarray
