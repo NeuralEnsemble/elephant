@@ -372,15 +372,18 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                           fs, n_segments=data_length+1)
 
     def test_multitaper_cross_spectrum_behavior(self):
-        # generate data by adding white noise and a sinusoid
-        data_length = 5000
+        # generate data (frequency domain to time domain)
+        r = np.ones(2501) * 0.2
+        r[0], r[500] = 0, 10  # Zero DC, peak at 100 Hz
+        phi_x = np.random.uniform(-np.pi, np.pi, len(r))
+        phi_y = np.random.uniform(-np.pi, np.pi, len(r))
+        fake_coeffs_x = r*np.exp(1j * phi_x)
+        fake_coeffs_y = r*np.exp(1j * phi_y)
+        signal_x = scipy.fft.irfft(fake_coeffs_x)
+        signal_y = scipy.fft.irfft(fake_coeffs_y)
         sampling_period = 0.001
-        signal_freq = 100.0
-        noise = np.random.normal(size=(2, data_length))
-        time_points = np.arange(0, data_length * sampling_period,
-                                sampling_period)
-        signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
-        signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
+        freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
+        signal_freq = freqs[r.argmax()]
         data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
                               sampling_period=sampling_period * pq.s,
                               units='mV')
@@ -423,13 +426,8 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         freqs, phase_cross_spec, cross_spec = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data, peak_resolution=peak_res)
-        indices, peak_dict = scipy.signal.find_peaks(cross_spec[0, 0],
-                                                     height=0.2, distance=10)
 
-        # The peak frequency can occasionally be 99.8 Hz (as opposed to 100 Hz)
-        np.testing.assert_allclose(freqs[indices].rescale('Hz').magnitude,
-                                   signal_freq * np.ones(len(indices)),
-                                   atol=0.2)
+        self.assertEqual(freqs[cross_spec[0, 0].argmax()], signal_freq)
         freqs_np, phase_cross_spec_np, cross_spec_np = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T, fs=1 / sampling_period,
