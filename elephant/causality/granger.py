@@ -78,7 +78,7 @@ __all__ = (
 )
 
 
-# the return type of pairwise_granger() function
+# the return type of pairwise_granger(), pairwise_spectral_granger() function
 Causality = namedtuple('Causality',
                        ['directional_causality_x_y',
                         'directional_causality_y_x',
@@ -361,16 +361,24 @@ def _optimal_vector_arm(signals, dimension, max_order,
 
 
 def _bracket_operator(spectrum, num_freqs, num_signals):
-    '''
-    Implementation of the [ \cdot ]^{+} from "The Factorization of Matricial
-    Spectral Densities", Wilson 1972, SiAM J Appl Math, Definition 1.2 (ii)
+    r"""
+    Implementation of the [ \cdot ]^{+} from 'The Factorization of Matricial
+    Spectral Densities', Wilson 1972, SiAM J Appl Math, Definition 1.2 (ii).
 
     Paramaters
     ----------
-
     spectrum : np.ndarray
+        Cross-spectrum of multivariate time series
+    num_freqs : int
+        Number of frequencies
+    num_signals : int
+        Number of time series
 
-    '''
+    Returns
+    -------
+    causal_part : np.ndarray
+        Causal part of cross-spectrum of multivariate time series
+    """
     # Get coefficients from spectrum
     causal_part = np.fft.ifft(spectrum, axis=0)
     # Version 1
@@ -406,20 +414,58 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
 
 
 def _dagger(matrix_array):
-    '''
-    Return Hermitian conjugate of matrix array
-    '''
+    r"""
+    Return Hermitian conjugate of matrix array.
+
+    Parameters
+    ----------
+    matrix_array : np.ndarray
+        Array of matrices the Hermitian conjugate of which needs to be
+        determined
+
+    Returns
+    -------
+    matrix_array_dagger : np.ndarray
+        Hermitian conjugate of matrix_array
+    """
 
     if matrix_array.ndim == 2:
-        return np.transpose(matrix_array.conj(), axes=(1, 0))
+        matrix_array_dagger = np.transpose(matrix_array.conj(), axes=(1, 0))
 
     else:
-        return np.transpose(matrix_array.conj(), axes=(0, 2, 1))
+        matrix_array_dagger = np.transpose(matrix_array.conj(), axes=(0, 2, 1))
+
+    return matrix_array_dagger
 
 
 def _spectral_factorization(cross_spectrum, num_iterations):
-    '''
-    '''
+    r"""Determine the spectral matrix factorization of the cross-spectrum
+    (denoted by S) of multiple time series:
+        S = H \Sigma H^{\dagger}
+    Here, \Sigma is the covariance matrix, H the transfer function.
+    We follow the algorithm outlined in 'The Factorization of Matricial
+    Spectral Densities', Wilson 1972, SiAM J Appl Math.
+    The algorithm iteratively calculates approximations for the spectral
+    factorization and terminates if either the maximum number of iteratios is
+    reached or the difference between the cross spectrum and the approximate
+    cross spectrum calculated from the covariance matrix and transfer function
+    is sufficiently small.
+
+    Parameters
+    ----------
+    cross_spectrum : np.ndarray
+        Cross spectrum to be decomposed in covariance matrix and transfer
+        function
+    num_iterations : int
+        Maximal number of iterations of iterative algorithm
+
+    Returns
+    ------
+    cov_matrix : np.ndarray
+        Covariance matrix of spectral factorization
+    transfer_function : np.ndarray
+        Transfer function of spectral factorization
+    """
     cross_spectrum = np.transpose(cross_spectrum, axes=(2, 0, 1))
 
     # spectral_density_function = np.fft.ifft(cross_spectrum, axis=0)
@@ -713,7 +759,83 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
                               len_segment=None, frequency_resolution=None,
                               overlap=0.5, fs=1, nw=4, num_tapers=None,
                               peak_resolution=None, num_iterations=300):
+    r"""Determine spectral Granger Causality of two signals.
 
+    Parameters
+    ----------
+    signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
+        First time series data of the pair between which coherence is
+        computed.
+    signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
+        Second time series data of the pair between which coherence is
+        computed.
+        The shapes and the sampling frequencies of `signal_i` and `signal_j`
+        must be identical. When `signal_i` and `signal_j` are not
+        `neo.AnalogSignal`, sampling frequency should be specified through the
+        keyword argument `fs`. Otherwise, the default value is used
+        (`fs` = 1.0).
+    n_segments : int, optional
+        Number of segments. The length of segments is adjusted so that
+        overlapping segments cover the entire stretch of the given data. This
+        parameter is ignored if `len_segment` or `frequency_resolution` is
+        given.
+        Default: 8.
+    len_segment : int, optional
+        Length of segments. This parameter is ignored if `frequency_resolution`
+        is given. If None, it will be determined from other parameters.
+        Default: None.
+    frequency_resolution : pq.Quantity or float, optional
+        Desired frequency resolution of the obtained coherence estimate in
+        terms of the interval between adjacent frequency bins. When given as a
+        `float`, it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None.
+    overlap : float, optional
+        Overlap between segments represented as a float number between 0 (no
+        overlap) and 1 (complete overlap).
+        Default: 0.5 (half-overlapped).
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+        Default: 1.0
+    nw : float, optional
+        Time bandwidth product
+        Default: 4.0
+    num_tapers : int, optional
+        Number of tapers used in 1. to obtain estimate of PSD. By default
+        [2*nw] - 1 is chosen.
+        Default: None
+    peak_resolution : pq.Quantity float, optional
+        Quantity in Hz determining the number of tapers used for analysis.
+        Fine peak resolution --> low numerical value --> low number of tapers
+        High peak resolution --> high numerical value --> high number of tapers
+        When given as a `float`, it is taken as frequency in Hz.
+        Default: None.
+    num_iterations : int
+        Number of iterations for algorithm to estimate spectral factorization.
+        Default: 300
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with the magnitude-squared coherence estimate
+    Causality
+        A `namedtuple` with the following attributes:
+            directional_causality_x_y : float
+                Spectrally resolved Granger causality of X influence onto Y.
+
+            directional_causality_y_x : float
+                Spectrally resolved Granger causality of Y influence onto X.
+
+            instantaneous_causality : float
+                The remaining spectrally resolved channel interdependence not
+                accounted for by the directional causalities (e.g. shared input
+                to X and Y).
+
+            total_interdependence : float
+                The sum of the former three metrics. It measures the dependence
+                of X and Y. If the total interdependence is positive, X and Y
+                are not independent.
+    """
     if (isinstance(signal_i, neo.AnalogSignal)
         and isinstance(signal_j, neo.AnalogSignal)):
 
@@ -737,20 +859,16 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
         fs = fs * pq.Hz
 
 
-    combined_data = np.vstack([xdata, ydata]).T
-    signals = AnalogSignal(combined_data,
-                           sampling_rate=fs,
-                           units='mV')
+    signals = np.vstack([xdata, ydata])
+    # signals = AnalogSignal(combined_data,
+    #                        sampling_rate=fs,
+    #                        units='mV')
+
+    # Calculate cross spectrum for signals
     freqs, _, S = multitaper_cross_spectrum(
-        signals,
-        n_segments=n_segments,
-        len_segment=len_segment,
-        frequency_resolution=frequency_resolution,
-        overlap=overlap,
-        fs=fs,
-        nw=nw,
-        num_tapers=num_tapers,
-        peak_resolution=peak_resolution,
+        signals=signals, n_segments=n_segments, len_segment=len_segment,
+        frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
+        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution,
         return_onesided=False)
 
     # Remove units attached by the multitaper_cross_spectrum
@@ -762,30 +880,42 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
     # Take positive frequencies
     mask = (freqs >= 0)
     freqs = freqs[mask]
+
+    # Get cross-spectrum and transfer function for positive frequencies
     S = np.transpose(S, axes=(2, 0, 1))[mask]
     H = H[mask]
 
+    # Calculate spectral Granger Causality.
+    # Formulae follow Wen et al., 2012, Phil Trans R Soc
     H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
     H_tilde_yy = H[:, 1, 1] + C[0, 1]/C[1, 1]*H[:, 1, 0]
 
-    granger_y_x = np.log(S[:, 0, 0].real /
-                                  (H_tilde_xx
-                                   * C[0, 0]
-                                   * H_tilde_xx.conj()).real)
+    directional_causality_y_x = np.log(S[:, 0, 0].real /
+                                       (H_tilde_xx
+                                        * C[0, 0]
+                                        * H_tilde_xx.conj()).real)
 
-    granger_x_y = np.log(S[:, 1, 1].real /
-                                  (H_tilde_yy
-                                   * C[1, 1]
-                                   * H_tilde_yy.conj()).real)
+    directional_causality_x_y = np.log(S[:, 1, 1].real /
+                                       (H_tilde_yy
+                                        * C[1, 1]
+                                        * H_tilde_yy.conj()).real)
 
     instantaneous_causality = np.log(
         (H_tilde_xx * C[0, 0] * H_tilde_xx.conj()).real
         * (H_tilde_yy * C[1, 1] * H_tilde_yy.conj()).real)
     instantaneous_causality -= np.linalg.slogdet(S)[1]
 
-    total_interdependence = granger_x_y + granger_y_x + instantaneous_causality
+    total_interdependence = (directional_causality_x_y
+                             + directional_causality_y_x
+                             + instantaneous_causality)
 
-    return freqs, granger_y_x, granger_x_y, instantaneous_causality, total_interdependence
+    spectral_causality = Causality(
+        directional_causality_x_y=directional_causality_x_y,
+        directional_causality_y_x=directional_causality_y_x,
+        instantaneous_causality=instantaneous_causality,
+        total_interdependence=total_interdependence)
+
+    return freqs, spectral_causality
 
 
 if __name__ == '__main__':
@@ -821,19 +951,9 @@ if __name__ == '__main__':
     f, psd_1 = multitaper_psd(x, num_tapers=15, n_segments=8)
     f, psd_2 = multitaper_psd(y, num_tapers=15, n_segments=8)
 
-    _, _, cross_spectrum = multitaper_cross_spectrum(signal, num_tapers=15,
+    _, _, cross_spectrum = multitaper_cross_spectrum(signal, n_segments=8,
+                                                     num_tapers=15,
                                                      return_onesided=True)
-
-
-
-    from matplotlib import pyplot as plt
-    plt.plot(f, psd_1)
-    plt.plot(f, 2*cross_spectrum[0,0, :(n+2)//2])
-    plt.show()
-
-    plt.plot(f, psd_2)
-    plt.plot(f, 2*cross_spectrum[1,1,:(n+2)//2])
-    plt.show()
 
     cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
                                                             num_iterations=100)
@@ -843,6 +963,7 @@ if __name__ == '__main__':
 
 
     print('################')
+    from matplotlib import pyplot as plt
 
     plt.plot(f, cross_spectrum[0,0, :(n+2)//2], label='True')
     plt.plot(f, A[:(n+2)//2, 0, 0], label='Mult')
@@ -873,10 +994,9 @@ if __name__ == '__main__':
     plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
     plt.legend()
     plt.show()
-    '''
-    '''
+
     # Test spectral granger
-    length_2d = 2**20
+    length_2d = 2**18
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -898,32 +1018,17 @@ if __name__ == '__main__':
     #f, _, cross_spec = multitaper_cross_spectrum(signal, num_tapers=15)
 
 
-    f, ding_y_x, ding_x_y, ding_inst, ding_tot = \
-            pairwise_spectral_granger(signal,
-                                           len_segment=2**12,
-                                           num_tapers=5,
-                                           num_iterations=50)
+    f, spectral_causality = \
+            pairwise_spectral_granger(signal[0], signal[1],
+                                      len_segment=2**10,
+                                      num_tapers=5,
+                                      num_iterations=50)
 
     from matplotlib import pyplot as plt
 
-    #plt.plot(f, 2*cross_spectrum[0, 0, :(n+2)//2], label='1')
-    #plt.plot(f, 2*cross_spectrum[1, 1, :(n+2)//2], label='2')
-    #plt.plot(f, psd_x, label='1')
-    #plt.plot(f, psd_y, label='2')
-    #plt.legend()
-    #plt.show()
-
-
-    #plt.plot(f, y_x, label='y->x')
-    #plt.plot(f, x_y, label='x->y')
-    #xplt.plot(f, ding_y_x, label='y->x')
-    #plt.plot(f, ding_x_y, label='x->y')
-    #plt.legend()
-    #plt.show()
-
-    plt.plot(f, ding_y_x, label='y->x')
-    plt.plot(f, ding_x_y, label='x->y')
-    plt.plot(f, ding_inst, label='inst')
-    plt.plot(f, ding_tot, label='tot')
+    plt.plot(f, spectral_causality[0], label='x->y')
+    plt.plot(f, spectral_causality[1], label='y->x')
+    plt.plot(f, spectral_causality[2], label='inst')
+    plt.plot(f, spectral_causality[3], label='tot')
     plt.legend()
     plt.show()
