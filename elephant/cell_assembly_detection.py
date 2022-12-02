@@ -252,7 +252,8 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     # divide alpha by the number of tests performed in the first
     # pairwise testing loop
     number_test_performed = n_neurons * (n_neurons - 1) * (2 * max_lag + 1)
-    alpha = alpha * 2 / float(number_test_performed)
+    alph = alpha # alph is the original input for alpha, see MATLAB implementation
+    alpha = alph * 2 / float(number_test_performed)
     if verbose:
         print('actual significance_level', alpha)
 
@@ -360,7 +361,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         if w2_to_test:
 
             # bonferroni correction only for the tests actually performed
-            alpha = alpha / float(len(w2_to_test) * n_as * (2 * max_lag + 1))
+            alpha = alph / float(len(w2_to_test) * n_as * (2 * max_lag + 1))
 
             # testing for the element in w2_to_test
             for ww2 in range(len(w2_to_test)):
