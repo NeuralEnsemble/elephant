@@ -14,93 +14,87 @@ import elephant.cell_assembly_detection as cad
 
 class CadTestCase(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
 
         # Parameters
-        self.bin_size = 1 * pq.ms
-        self.alpha = 0.05
-        self.size_chunks = 100
-        self.max_lag = 10
-        self.reference_lag = 2
-        self.min_occurrences = 1
-        self.max_spikes = np.inf
-        self.significance_pruning = True
-        self.subgroup_pruning = True
-        self.flag_mypruning = False
+        cls.bin_size = bin_size = 1 * pq.ms
+        cls.max_lag = 10
 
         # Input parameters
 
         # Number of pattern occurrences
-        self.n_occ1 = 150
-        self.n_occ2 = 170
-        self.n_occ3 = 210
+        n_occ1 = 150
+        n_occ2 = 170
+        n_occ3 = 210
 
         # Pattern lags
-        self.lags1 = [0, 0.001]
-        self.lags2 = [0, 0.002]
-        self.lags3 = [0, 0.003]
+        lags1 = [0, 0.001]
+        lags2 = [0, 0.002]
+        lags3 = [0, 0.003]
 
         # Output pattern lags
-        self.output_lags1 = [0, 1]
-        self.output_lags2 = [0, 2]
-        self.output_lags3 = [0, 3]
+        cls.output_lags1 = output_lags1 = [0, 1]
+        cls.output_lags2 = output_lags2 = [0, 2]
+        cls.output_lags3 = output_lags3 = [0, 3]
 
         # Length of the spiketrain
-        self.t_start = 0
-        self.t_stop = 1
+        t_start = 0
+        t_stop = 1
 
         # Patterns times
         np.random.seed(1)
-        self.patt1_times = neo.SpikeTrain(
-            np.random.uniform(0, 1 - max(self.lags1), self.n_occ1) * pq.s,
+        patt1_times = neo.SpikeTrain(
+            np.random.uniform(0, 1 - max(lags1), n_occ1) * pq.s,
             t_start=0 * pq.s, t_stop=1 * pq.s)
-        self.patt2_times = neo.SpikeTrain(
-            np.random.uniform(0, 1 - max(self.lags2), self.n_occ2) * pq.s,
+        patt2_times = neo.SpikeTrain(
+            np.random.uniform(0, 1 - max(lags2), n_occ2) * pq.s,
             t_start=0 * pq.s, t_stop=1 * pq.s)
-        self.patt3_times = neo.SpikeTrain(
-            np.random.uniform(0, 1 - max(self.lags3), self.n_occ3) * pq.s,
+        patt3_times = neo.SpikeTrain(
+            np.random.uniform(0, 1 - max(lags3), n_occ3) * pq.s,
             t_start=0 * pq.s, t_stop=1 * pq.s)
 
         # Patterns
-        self.patt1 = [self.patt1_times] + [neo.SpikeTrain(
-            self.patt1_times + l * pq.s, t_start=self.t_start * pq.s,
-            t_stop=self.t_stop * pq.s) for l in self.lags1]
-        self.patt2 = [self.patt2_times] + [neo.SpikeTrain(
-            self.patt2_times + l * pq.s, t_start=self.t_start * pq.s,
-            t_stop=self.t_stop * pq.s) for l in self.lags2]
-        self.patt3 = [self.patt3_times] + [neo.SpikeTrain(
-            self.patt3_times + l * pq.s, t_start=self.t_start * pq.s,
-            t_stop=self.t_stop * pq.s) for l in self.lags3]
+        patt1 = [patt1_times] + [neo.SpikeTrain(
+            patt1_times + l * pq.s, t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s) for l in lags1]
+        patt2 = [patt2_times] + [neo.SpikeTrain(
+            patt2_times + l * pq.s, t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s) for l in lags2]
+        patt3 = [patt3_times] + [neo.SpikeTrain(
+            patt3_times + l * pq.s, t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s) for l in lags3]
 
         # Binning spiketrains
-        self.bin_patt1 = conv.BinnedSpikeTrain(self.patt1,
-                                               bin_size=self.bin_size)
+        cls.bin_patt1 = conv.BinnedSpikeTrain(patt1, bin_size=bin_size)
 
         # Data
-        self.msip = self.patt1 + self.patt2 + self.patt3
-        self.msip = conv.BinnedSpikeTrain(self.msip, bin_size=self.bin_size)
+        cls.msip = conv.BinnedSpikeTrain(patt1 + patt2 + patt3,
+                                         bin_size=bin_size)
 
         # Expected results
-        self.n_spk1 = len(self.lags1) + 1
-        self.n_spk2 = len(self.lags2) + 1
-        self.n_spk3 = len(self.lags3) + 1
-        self.elements1 = range(self.n_spk1)
-        self.elements2 = range(self.n_spk2)
-        self.elements3 = range(self.n_spk3)
-        self.elements_msip = [
-            self.elements1, range(self.n_spk1, self.n_spk1 + self.n_spk2),
-            range(self.n_spk1 + self.n_spk2,
-                  self.n_spk1 + self.n_spk2 + self.n_spk3)]
-        self.occ1 = np.unique(conv.BinnedSpikeTrain(
-            self.patt1_times, self.bin_size).spike_indices[0])
-        self.occ2 = np.unique(conv.BinnedSpikeTrain(
-            self.patt2_times, self.bin_size).spike_indices[0])
-        self.occ3 = np.unique(conv.BinnedSpikeTrain(
-            self.patt3_times, self.bin_size).spike_indices[0])
-        self.occ_msip = [list(self.occ1), list(self.occ2), list(self.occ3)]
-        self.lags_msip = [self.output_lags1,
-                          self.output_lags2,
-                          self.output_lags3]
+        n_spk1 = len(lags1) + 1
+        n_spk2 = len(lags2) + 1
+        n_spk3 = len(lags3) + 1
+        cls.elements1 = range(n_spk1)
+        cls.elements2 = range(n_spk2)
+        cls.elements3 = range(n_spk3)
+        cls.elements_msip = [range(n_spk1),
+                             range(n_spk1, n_spk1 + n_spk2),
+                             range(n_spk1 + n_spk2, n_spk1 + n_spk2 + n_spk3)]
+
+        occ1 = np.unique(conv.BinnedSpikeTrain(patt1_times, bin_size
+                                               ).spike_indices[0])
+        cls.occ1 = occ1
+        occ2 = np.unique(conv.BinnedSpikeTrain(patt2_times, bin_size
+                                               ).spike_indices[0])
+        cls.occ2 = occ2
+        occ3 = np.unique(conv.BinnedSpikeTrain(patt3_times, bin_size
+                                               ).spike_indices[0])
+        cls.occ3 = occ3
+
+        cls.occ_msip = [list(occ1), list(occ2), list(occ3)]
+        cls.lags_msip = [output_lags1, output_lags2, output_lags3]
 
     # test for single pattern injection input
     def test_cad_single_sip(self):
@@ -123,10 +117,13 @@ class CadTestCase(unittest.TestCase):
         output_msip = cad.cell_assembly_detection(
             binned_spiketrain=self.msip, max_lag=self.max_lag)
         for i, out in enumerate(output_msip):
-            assert_array_equal(out['times'], self.occ_msip[i] * self.bin_size)
-            assert_array_equal(sorted(out['lags']) * pq.s,
-                               self.lags_msip[i] * self.bin_size)
-            assert_array_equal(sorted(out['neurons']), self.elements_msip[i])
+            with self.subTest(i=i):
+                assert_array_equal(out['times'],
+                                   self.occ_msip[i] * self.bin_size)
+                assert_array_equal(sorted(out['lags']) * pq.s,
+                                   self.lags_msip[i] * self.bin_size)
+                assert_array_equal(sorted(out['neurons']),
+                                   self.elements_msip[i])
 
     # test the errors raised
     def test_cad_raise_error(self):
