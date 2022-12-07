@@ -2,7 +2,7 @@
 """
 Unit tests for the spike_train_correlation module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -15,7 +15,7 @@ from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
-from elephant.spike_train_generation import homogeneous_poisson_process,\
+from elephant.spike_train_generation import homogeneous_poisson_process, \
     homogeneous_gamma_process
 import math
 

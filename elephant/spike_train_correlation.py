@@ -11,7 +11,7 @@ This modules provides functions to calculate correlations between spike trains.
     spike_time_tiling_coefficient
     spike_train_timescale
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -351,17 +351,20 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import covariance
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
-    >>> cov_matrix
+    >>> cov_matrix # doctest: +SKIP
     array([[ 0.05432316, -0.00152276],
        [-0.00152276,  0.04917234]])
+
 
     """
     if binary:
@@ -457,18 +460,21 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import correlation_coefficient
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
     ...     bin_size=5*pq.ms))
-    >>> corrcoef
+    >>> corrcoef # doctest: +SKIP
     array([[ 1.        , -0.02946313],
            [-0.02946313,  1.        ]])
+
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -665,31 +671,32 @@ def cross_correlation_histogram(
     >>> import quantities as pq
     >>> import numpy as np
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> from elephant.spike_train_correlation import \
-    ... cross_correlation_histogram
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
+    >>> from elephant.spike_train_correlation import cross_correlation_histogram # noqa
 
     >>> np.random.seed(1)
     >>> binned_spiketrain_i = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
     >>> binned_spiketrain_j = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
 
     >>> cc_hist, lags = cross_correlation_histogram(
     ...        binned_spiketrain_i, binned_spiketrain_j, window=[-10, 10],
     ...        border_correction=False,
     ...        binary=False, kernel=None)
-    >>> print(cc_hist.flatten())
+    >>> print(cc_hist.flatten()) # doctest: +SKIP
     [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
       1.  2.  4.  2. -0.  3.  3.] dimensionless
-    >>> lags
+
+    >>> lags # doctest: +SKIP
     array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
          0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
         10], dtype=int32)
+
 
     """
 
@@ -871,8 +878,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     --------
     >>> import neo
     >>> import quantities as pq
-    >>> from elephant.spike_train_correlation import \
-    ...    spike_time_tiling_coefficient
+    >>> from elephant.spike_train_correlation import spike_time_tiling_coefficient  # noqa
 
     >>> spiketrain1 = neo.SpikeTrain([1.3, 7.56, 15.87, 28.23, 30.9, 34.2,
     ...     38.2, 43.2], units='ms', t_stop=50)
@@ -926,26 +932,34 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
         N = len(spiketrain)
         time_A = 2 * N * dt  # maximum possible time
 
-        if N == 1:  # for just one spike in train
-            if spiketrain[0] - spiketrain.t_start < dt:
-                time_A += -dt + spiketrain[0] - spiketrain.t_start
-            if spiketrain[0] + dt > spiketrain.t_stop:
-                time_A += -dt - spiketrain[0] + spiketrain.t_stop
-        else:  # if more than one spike in train
-            # Vectorized loop of spike time differences
-            diff = np.diff(spiketrain)
-            diff_overlap = diff[diff < 2 * dt]
-            # Subtract overlap
-            time_A += -2 * dt * len(diff_overlap) + np.sum(diff_overlap)
+        if N == 1:  # for only a single spike in the train
 
-            # check if spikes are within dt of the start and/or end
-            # if so subtract overlap of first and/or last spike
+            # Check difference between start of recording and single spike
+            if spiketrain[0] - spiketrain.t_start < dt:
+                time_A += - dt + spiketrain[0] - spiketrain.t_start
+
+            # Check difference between single spike and end of recording
+            elif spiketrain[0] + dt > spiketrain.t_stop:
+                time_A += - dt - spiketrain[0] + spiketrain.t_stop
+
+        else:  # if more than a single spike in the train
+
+            # Calculate difference between consecutive spikes
+            diff = np.diff(spiketrain)
+
+            # Find spikes whose tiles overlap
+            idx = np.where(diff < 2 * dt)[0]
+            # Subtract overlapping "2*dt" tiles and add differences instead
+            time_A += - 2 * dt * len(idx) + diff[idx].sum()
+
+            # Check if spikes are within +/-dt of the start and/or end
+            # if so, subtract overlap of first and/or last spike
             if (spiketrain[0] - spiketrain.t_start) < dt:
                 time_A += spiketrain[0] - dt - spiketrain.t_start
-
             if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
-                time_A += -spiketrain[-1] - dt + spiketrain.t_stop
+                time_A += - spiketrain[-1] - dt + spiketrain.t_stop
 
+        # Calculate the proportion of total recorded time to "tiled" time
         T = time_A / (spiketrain.t_stop - spiketrain.t_start)
         return T.simplified.item()  # enforce simplification, strip units
 

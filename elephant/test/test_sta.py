@@ -2,7 +2,7 @@
 """
 Tests for the function sta module
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -10,9 +10,7 @@ import unittest
 import math
 import numpy as np
 import scipy
-from numpy.testing import assert_array_equal
-from numpy.testing.utils import assert_array_almost_equal
-import neo
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 from neo import AnalogSignal, SpikeTrain
 from elephant.conversion import BinnedSpikeTrain
 import quantities as pq
@@ -26,16 +24,16 @@ class sta_TestCase(unittest.TestCase):
     def setUp(self):
         self.asiga0 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.asiga1 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)),
             np.cos(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.asiga2 = AnalogSignal(np.array([
             np.sin(np.arange(0, 20 * math.pi, 0.1)),
             np.cos(np.arange(0, 20 * math.pi, 0.1)),
             np.tan(np.arange(0, 20 * math.pi, 0.1))]).T,
-            units='mV', sampling_rate=10 / ms)
+                                   units='mV', sampling_rate=10 / ms)
         self.st0 = SpikeTrain(
             [9 * math.pi, 10 * math.pi, 11 * math.pi, 12 * math.pi],
             units='ms', t_stop=self.asiga0.t_stop)
@@ -76,7 +74,7 @@ class sta_TestCase(unittest.TestCase):
     def test_only_one_spike(self):
         """The output should be the same as the input"""
         x = np.arange(0, 20, 0.1)
-        y = x**2
+        y = x ** 2
         sr = 10 / ms
         z = AnalogSignal(np.array([y]).T, units='mV', sampling_rate=sr)
         spiketime = 8 * ms
@@ -226,7 +224,8 @@ class sta_TestCase(unittest.TestCase):
 # Tests for new scipy verison (with scipy.signal.coherence)
 # =========================================================================
 
-@unittest.skipIf(not hasattr(scipy.signal, 'coherence'), "Please update scipy "
+@unittest.skipIf(not hasattr(scipy.signal, 'coherence'),
+                 "Please update scipy "
                  "to a version >= 0.16")
 class sfc_TestCase_new_scipy(unittest.TestCase):
 
@@ -278,7 +277,7 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
         self.st4 = SpikeTrain(np.arange(
             (tlen0.rescale(pq.ms).magnitude * .25),
             (tlen0.rescale(pq.ms).magnitude * .75), 50) * pq.ms,
-            t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
+                              t_start=5 * fs0, t_stop=tlen0 - 5 * fs0)
         self.bst4 = BinnedSpikeTrain(self.st4, bin_size=fs0)
 
         # spike train with incompatible bin_size

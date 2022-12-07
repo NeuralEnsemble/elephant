@@ -130,9 +130,9 @@ def potential_of_cylinder(z_j,
 
     Tested with
 
-    >>>from sympy import *
-    >>>C_i, z_i, h, z_j, z_j, sigma, R = symbols('C_i z_i h z z_j sigma R')
-    >>>C_i*integrate(1/(2*sigma)*(sqrt((z-z_j)**2 + R**2) -
+    >>> from sympy import *
+    >>> C_i, z_i, h, z_j, z_j, sigma, R = symbols('C_i z_i h z z_j sigma R')
+    >>> C_i*integrate(1/(2*sigma)*(sqrt((z-z_j)**2 + R**2) -
     ... abs(z-z_j)), (z, z_i-h/2, z_i+h/2))
 
 
@@ -1202,31 +1202,5 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
 
-# def suite(verbosity=2):
-#    """
-#    Run unittests for the CSD toolbox
-#
-#
-#    Arguments
-#    ---------
-#    verbosity : int
-#        verbosity level
-#
-#    """
-#    suite = unittest.TestLoader().loadTestsFromTestCase(TestICSD)
-#    unittest.TextTestRunner(verbosity=verbosity).run(suite)
-#
-#
-#
-# if __name__ == '__main__':
-#    suite()
-
-
-def suite():
-    suite = unittest.makeSuite(TestICSD, 'test')
-    return suite
-
-
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+    unittest.main(verbosity=2)

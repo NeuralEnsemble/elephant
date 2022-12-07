@@ -33,7 +33,6 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
     'sphinxcontrib.bibtex',
@@ -89,7 +88,6 @@ version = '.'.join(release.split('.')[:-1])
 exclude_patterns = [
     '_build',
     '**.ipynb_checkpoints',
-    'maintainers_guide.rst',  # should not be visible for users
 ]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
@@ -348,8 +346,8 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable', None)
 }
 
-# Use more reliable mathjax source
-mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+# The name of math_renderer extension for HTML output.
+html_math_renderer = 'mathjax'
 
 # Remove the copyright notice from docstrings:
 

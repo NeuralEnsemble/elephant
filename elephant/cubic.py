@@ -34,12 +34,12 @@ Given a list of spike trains, the analysis comprises the following steps:
 >>> xi, p_val, kappa, test_aborted = cubic(pop_count, alpha=0.05)
 >>> xi
 1
->>> p_val
+>>> p_val # doctest: +SKIP
 [0.43014065113883904]
->>> kappa
+>>> kappa # doctest: +SKIP
 [20.1, 22.656565656565657, 27.674706246134818]
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 

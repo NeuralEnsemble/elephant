@@ -1,16 +1,20 @@
 ***************
 Citing Elephant
 ***************
-
 To refer to the Elephant software package in publications, please use:
-**Elephant (RRID:SCR_003833)**.
 
-    
+Elephant (`doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.1186602>`_;
+`RRID:SCR_003833 <https://scicrunch.org/resolver/RRID:SCR_003833>`_)
+
+To cite a specific version of Elephant please see version-specific DOIs at:
+
+ `doi:10.5281/zenodo.1186602 <https://doi.org/10.5281/zenodo.1186602>`_
+
 To cite Elephant, please use:
 
 **Denker M, Yegenoglu A, Grün S (2018) Collaborative HPC-enabled workflows on
 the HBP Collaboratory using the Elephant framework. Neuroinformatics 2018, P19.
-doi: 10.12751/incf.ni2018.0019**
+doi:10.12751/incf.ni2018.0019**
 
 A BibTeX entry for LaTeX users is:
 
@@ -27,7 +31,7 @@ A BibTeX entry for LaTeX users is:
     }
 
 
-Further publications directly related to Elephant development 
+Further publications directly related to Elephant development
 :cite:`citations-Rostami17_3,citations-Stella19_104022` (see a list of full
 `BibTex references <https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_
 used in Elephant documentation).

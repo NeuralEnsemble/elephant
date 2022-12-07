@@ -2,7 +2,7 @@
 """
 Unit tests for the kernels module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -31,8 +31,13 @@ class kernel_TestCase(unittest.TestCase):
         """
         Test of various error cases in the kernels module.
         """
-        self.assertRaises(
-            TypeError, kernels.RectangularKernel, sigma=2.0)
+        # pass multidimensional sigma
+        self.assertRaises(TypeError, kernels.RectangularKernel,
+                          sigma=[2.0, 2.3] * pq.s)
+        # pass one-dimensional sigma, this should be handled
+        self.assertEqual(
+            kernels.RectangularKernel(sigma=[2.0] * pq.s).sigma.ndim, 0)
+        self.assertRaises(TypeError, kernels.RectangularKernel, sigma=2.0)
         self.assertRaises(
             ValueError, kernels.RectangularKernel, sigma=-0.03 * pq.s)
         self.assertRaises(

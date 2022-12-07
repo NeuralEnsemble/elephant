@@ -2,10 +2,9 @@
 """
 Tests for the spike train dissimilarity measures module.
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-
 import unittest
 from neo import SpikeTrain
 import numpy as np
@@ -15,6 +14,8 @@ from quantities import ms, s, Hz
 import elephant.kernels as kernels
 import elephant.spike_train_generation as stg
 import elephant.spike_train_dissimilarity as stds
+
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
 class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
@@ -117,10 +118,10 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
             [self.st01, self.st02], self.q1,
             kernel=kernels.TriangularKernel(
                 2.0 / (np.sqrt(6.0) * self.q2)))[0, 1],
-            stds.victor_purpura_distance(
-            [self.st01, self.st02], self.q3,
-            kernel=kernels.TriangularKernel(
-                2.0 / (np.sqrt(6.0) * self.q2)))[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st01, self.st02], self.q3,
+                             kernel=kernels.TriangularKernel(
+                                 2.0 / (np.sqrt(6.0) * self.q2)))[0, 1])
         self.assertEqual(stds.victor_purpura_distance(
             [self.st01, self.st02],
             kernel=kernels.TriangularKernel(
@@ -163,8 +164,8 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         # Tests on timescales
         self.assertEqual(stds.victor_purpura_distance(
             [self.st11, self.st14], self.q1)[0, 1],
-            stds.victor_purpura_distance(
-            [self.st11, self.st14], self.q5)[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st11, self.st14], self.q5)[0, 1])
         self.assertEqual(stds.victor_purpura_distance(
             [self.st07, self.st11], self.q0)[0, 1], 6.0)
         self.assertEqual(stds.victor_purpura_distance(
@@ -176,14 +177,14 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         # Tests on unordered spiketrains
         self.assertEqual(stds.victor_purpura_distance(
             [self.st11, self.st13], self.q4)[0, 1],
-            stds.victor_purpura_distance(
-            [self.st12, self.st13], self.q4)[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st12, self.st13], self.q4)[0, 1])
         self.assertNotEqual(stds.victor_purpura_distance(
             [self.st11, self.st13], self.q4,
             sort=False)[0, 1],
-            stds.victor_purpura_distance(
-            [self.st12, self.st13], self.q4,
-            sort=False)[0, 1])
+                            stds.victor_purpura_distance(
+                                [self.st12, self.st13], self.q4,
+                                sort=False)[0, 1])
         # Tests on metric properties with random spiketrains
         # (explicit calculation of second metric axiom in particular case,
         # because from dist_matrix it is trivial)
@@ -197,7 +198,7 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         assert_array_equal(stds.victor_purpura_distance(
             [self.st21, self.st22], self.q3),
             stds.victor_purpura_distance(
-            [self.st22, self.st21], self.q3))
+                [self.st22, self.st21], self.q3))
         self.assertLessEqual(dist_matrix[0, 1],
                              dist_matrix[0, 2] + dist_matrix[1, 2])
         self.assertLessEqual(dist_matrix[0, 2],
@@ -281,9 +282,9 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.assertEqual(stds.victor_purpura_distance(
             [self.st11, self.st14], self.q1,
             algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st11, self.st14], self.q5,
-            algorithm='intuitive')[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st11, self.st14], self.q5,
+                             algorithm='intuitive')[0, 1])
         self.assertEqual(stds.victor_purpura_distance(
             [self.st07, self.st11], self.q0,
             algorithm='intuitive')[0, 1], 6.0)
@@ -300,15 +301,15 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.assertEqual(stds.victor_purpura_distance(
             [self.st11, self.st13], self.q4,
             algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st12, self.st13], self.q4,
-            algorithm='intuitive')[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st12, self.st13], self.q4,
+                             algorithm='intuitive')[0, 1])
         self.assertNotEqual(stds.victor_purpura_distance(
             [self.st11, self.st13], self.q4,
             sort=False, algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st12, self.st13], self.q4,
-            sort=False, algorithm='intuitive')[0, 1])
+                            stds.victor_purpura_distance(
+                                [self.st12, self.st13], self.q4,
+                                sort=False, algorithm='intuitive')[0, 1])
         # Tests on metric properties with random spiketrains
         # (explicit calculation of second metric axiom in particular case,
         # because from dist_matrix it is trivial)
@@ -324,8 +325,8 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
             [self.st21, self.st22], self.q3,
             algorithm='intuitive'),
             stds.victor_purpura_distance(
-            [self.st22, self.st21], self.q3,
-            algorithm='intuitive'))
+                [self.st22, self.st21], self.q3,
+                algorithm='intuitive'))
         self.assertLessEqual(dist_matrix[0, 1],
                              dist_matrix[0, 2] + dist_matrix[1, 2])
         self.assertLessEqual(dist_matrix[0, 2],
@@ -336,44 +337,44 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.assertAlmostEqual(stds.victor_purpura_distance(
             [self.st14, self.st16], self.q3,
             algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st15, self.st16], self.q3,
-            algorithm='intuitive')[0, 1])
+                               stds.victor_purpura_distance(
+                                   [self.st15, self.st16], self.q3,
+                                   algorithm='intuitive')[0, 1])
         self.assertAlmostEqual(stds.victor_purpura_distance(
             [self.st16, self.st14], self.q3,
             algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st16, self.st15], self.q3,
-            algorithm='intuitive')[0, 1])
+                               stds.victor_purpura_distance(
+                                   [self.st16, self.st15], self.q3,
+                                   algorithm='intuitive')[0, 1])
         self.assertEqual(stds.victor_purpura_distance(
             [self.st01, self.st05], self.q3,
             algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st01, self.st05], self.q7,
-            algorithm='intuitive')[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st01, self.st05], self.q7,
+                             algorithm='intuitive')[0, 1])
         # Tests on algorithmic behaviour for equal spike times
         self.assertEqual(stds.victor_purpura_distance(
             [self.st31, self.st34], self.q3,
             algorithm='intuitive')[0, 1],
-            0.8 + 1.0)
+                         0.8 + 1.0)
         self.assertEqual(stds.victor_purpura_distance(
             [self.st31, self.st34], self.q3,
             algorithm='intuitive')[0, 1],
-            stds.victor_purpura_distance(
-            [self.st32, self.st33], self.q3,
-            algorithm='intuitive')[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st32, self.st33], self.q3,
+                             algorithm='intuitive')[0, 1])
         self.assertEqual(stds.victor_purpura_distance(
             [self.st31, self.st33], self.q3,
             algorithm='intuitive')[0, 1] * 2.0,
-            stds.victor_purpura_distance(
-            [self.st32, self.st34], self.q3,
-            algorithm='intuitive')[0, 1])
+                         stds.victor_purpura_distance(
+                             [self.st32, self.st34], self.q3,
+                             algorithm='intuitive')[0, 1])
         # Tests on spike train list lengthes smaller than 2
         self.assertEqual(stds.victor_purpura_distance(
             [self.st21], self.q3,
             algorithm='intuitive')[0, 0], 0)
         self.assertEqual(len(stds.victor_purpura_distance(
-                             [], self.q3, algorithm='intuitive')), 0)
+            [], self.q3, algorithm='intuitive')), 0)
 
     def test_victor_purpura_algorithm_comparison(self):
         assert_array_almost_equal(
@@ -381,6 +382,66 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                                          self.q3),
             stds.victor_purpura_distance([self.st21, self.st22, self.st23],
                                          self.q3, algorithm='intuitive'))
+
+    def test_victor_purpura_matlab_comparison_float(self):
+
+        repo_path =\
+            r"unittest/spike_train_dissimilarity/victor_purpura_distance/data"
+
+        files_to_download = [
+            ("times_float.npy", "ed1ff4d2c0eeed4a2b50a456803656be"),
+            ("matlab_results_float.npy", "a17f049e7ad0ddf7ca812e86fdb92646")]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+
+        times_float = np.load(ELEPHANT_TMP_DIR / 'times_float.npy')
+        mat_res_float = np.load(ELEPHANT_TMP_DIR / 'matlab_results_float.npy')
+
+        r_float = SpikeTrain(times_float[0], units='ms', t_start=0,
+                             t_stop=1000 * ms)
+        s_float = SpikeTrain(times_float[1], units='ms', t_start=0,
+                             t_stop=1000 * ms)
+        t_float = SpikeTrain(times_float[2], units='ms', t_start=0,
+                             t_stop=1000 * ms)
+
+        vic_pur_result_float = stds.victor_purpura_distance(
+            [r_float, s_float, t_float],
+            cost_factor=1.0 / ms, kernel=None,
+            sort=True, algorithm='intuitive')
+
+        assert_array_almost_equal(vic_pur_result_float, mat_res_float)
+
+    def test_victor_purpura_matlab_comparison_int(self):
+
+        repo_path =\
+            r"unittest/spike_train_dissimilarity/victor_purpura_distance/data"
+
+        files_to_download = [
+            ("times_int.npy", "aa1411c04da3f58d8b8913ae2f935057"),
+            ("matlab_results_int.npy", "7edd32e50edde12dc1ef4aa5f57f70fb")]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+
+        times_int = np.load(ELEPHANT_TMP_DIR / 'times_int.npy')
+        mat_res_int = np.load(ELEPHANT_TMP_DIR / 'matlab_results_int.npy')
+
+        r_int = SpikeTrain(times_int[0], units='ms', t_start=0,
+                           t_stop=1000 * ms)
+        s_int = SpikeTrain(times_int[1], units='ms', t_start=0,
+                           t_stop=1000 * ms)
+        t_int = SpikeTrain(times_int[2], units='ms', t_start=0,
+                           t_stop=1000 * ms)
+
+        vic_pur_result_int = stds.victor_purpura_distance(
+            [r_int, s_int, t_int],
+            cost_factor=1.0 / ms, kernel=None,
+            sort=True, algorithm='intuitive')
+
+        assert_array_equal(vic_pur_result_int, mat_res_int)
 
     def test_van_rossum_distance(self):
         # Tests of distances of simplest spike trains
@@ -395,37 +456,37 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         # Tests of distances under elementary spike operations
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st01, self.st02], self.tau2)[0, 1],
-            float(np.sqrt(2 * (1.0 - np.exp(-np.absolute(
-                ((self.st01[0] - self.st02[0]) /
-                 self.tau2).simplified))))))
+                               float(np.sqrt(2 * (1.0 - np.exp(-np.absolute(
+                                   ((self.st01[0] - self.st02[0]) /
+                                    self.tau2).simplified))))))
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st01, self.st05], self.tau2)[0, 1],
-            float(np.sqrt(2 * (1.0 - np.exp(-np.absolute(
-                ((self.st01[0] - self.st05[0]) /
-                 self.tau2).simplified))))))
+                               float(np.sqrt(2 * (1.0 - np.exp(-np.absolute(
+                                   ((self.st01[0] - self.st05[0]) /
+                                    self.tau2).simplified))))))
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st01, self.st05], self.tau2)[0, 1],
-            np.sqrt(2.0), 1)
+                               np.sqrt(2.0), 1)
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st01, self.st06], self.tau2)[0, 1],
-            np.sqrt(2.0), 20)
+                               np.sqrt(2.0), 20)
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st00, self.st07], self.tau1)[0, 1],
-            np.sqrt(0 + 2))
+                               np.sqrt(0 + 2))
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st07, self.st08], self.tau4)[0, 1],
-            float(np.sqrt(2 * (1.0 - np.exp(-np.absolute(
-                ((self.st07[0] - self.st08[-1]) /
-                 self.tau4).simplified))))))
+                               float(np.sqrt(2 * (1.0 - np.exp(-np.absolute(
+                                   ((self.st07[0] - self.st08[-1]) /
+                                    self.tau4).simplified))))))
         f_minus_g_squared = (
             (self.t > self.st08[0]) * np.exp(
                 -((self.t - self.st08[0]) / self.tau3).simplified) +
             (self.t > self.st08[1]) * np.exp(
                 -((self.t - self.st08[1]) / self.tau3).simplified) -
             (self.t > self.st09[0]) * np.exp(
-                -((self.t - self.st09[0]) / self.tau3).simplified))**2
+                -((self.t - self.st09[0]) / self.tau3).simplified)) ** 2
         distance = np.sqrt(2.0 * spint.cumtrapz(
-                           y=f_minus_g_squared, x=self.t.magnitude)[-1] /
+            y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
         self.assertAlmostEqual(stds.van_rossum_distance(
             [self.st08, self.st09], self.tau3)[0, 1], distance, 5)
@@ -500,14 +561,14 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
             stds.van_rossum_distance([self.st01, self.st05], self.tau7)[0, 1])
         # Tests on algorithmic behaviour for equal spike times
         f_minus_g_squared = (
-            (self.t > self.st31[0]) * np.exp(
+              (self.t > self.st31[0]) * np.exp(
                 -((self.t - self.st31[0]) / self.tau3).simplified) -
-            (self.t > self.st34[0]) * np.exp(
+              (self.t > self.st34[0]) * np.exp(
                 -((self.t - self.st34[0]) / self.tau3).simplified) -
-            (self.t > self.st34[1]) * np.exp(
-                -((self.t - self.st34[1]) / self.tau3).simplified))**2
+              (self.t > self.st34[1]) * np.exp(
+                -((self.t - self.st34[1]) / self.tau3).simplified)) ** 2
         distance = np.sqrt(2.0 * spint.cumtrapz(
-                           y=f_minus_g_squared, x=self.t.magnitude)[-1] /
+            y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
         self.assertAlmostEqual(stds.van_rossum_distance([self.st31, self.st34],
                                                         self.tau3)[0, 1],

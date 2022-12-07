@@ -67,7 +67,7 @@ array([-0.        ,  0.        ,  0.48623347]) * 1/s
 >>> kernel.icdf(0.5)
 array(1.18677054) * s
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -132,6 +132,10 @@ class Kernel(object):
     TypeError
         If `sigma` is not `pq.Quantity`.
 
+        If `sigma` is a multidimensional array
+
+    ValueError
+
         If `sigma` is negative.
 
         If `invert` is not `bool`.
@@ -141,6 +145,13 @@ class Kernel(object):
     def __init__(self, sigma, invert=False):
         if not isinstance(sigma, pq.Quantity):
             raise TypeError("'sigma' must be a quantity")
+
+        if sigma.ndim > 0:
+            # handle the one-dimensional case of size 1
+            if sigma.ndim == 1 & sigma.size == 1:
+                sigma = sigma[0]
+            else:
+                raise TypeError("'sigma' cannot be multidimensional")
 
         if sigma.magnitude < 0:
             raise ValueError("'sigma' cannot be negative")

@@ -13,7 +13,7 @@ Synchrony Measures
     Synchrotool
 
 
-:copyright: Copyright 2014-2020 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -144,14 +144,16 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     Examples
     --------
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> import numpy as np
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.spike_train_synchrony import spike_contrast
-    >>> spiketrain_1 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_stop=1000*pq.ms)
-    >>> spiketrain_2 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_stop=1000*pq.ms)
-    >>> spike_contrast([spiketrain_1, spiketrain_2])
-    0.4192546583850932
+    >>> np.random.seed(225)
+    >>> spiketrain_1 = StationaryPoissonProcess(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> spiketrain_2 = StationaryPoissonProcess(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> round(spike_contrast([spiketrain_1, spiketrain_2]),3)
+    0.419
 
     """
     if not 0. < bin_shrink_factor < 1.:
@@ -349,7 +351,11 @@ class Synchrotool(Complexity):
                     # replace link to spiketrain in segment
                     new_index = self._get_spiketrain_index(
                         segment.spiketrains, st)
-                    segment.spiketrains[new_index] = new_st
+                    # Todo: Simplify following lines once Neo SpikeTrainList
+                    # implments indexed assignment of entries (i.e., stl[i]=st)
+                    spiketrainlist = list(segment.spiketrains)
+                    spiketrainlist[new_index] = new_st
+                    segment.spiketrains = spiketrainlist
                 except ValueError:
                     # st is not in this segment even though it points to it
                     warnings.warn(f"The SpikeTrain at index {idx} of the "

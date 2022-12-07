@@ -16,6 +16,7 @@ import warnings
 from functools import wraps
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 
@@ -188,7 +189,7 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
     ValueError
         If input object units, t_start, or t_stop do not match across trials.
     """
-    if not isinstance(neo_objects, (list, tuple)):
+    if not isinstance(neo_objects, (list, tuple, SpikeTrainList)):
         neo_objects = [neo_objects]
     try:
         units = neo_objects[0].units
@@ -339,3 +340,25 @@ def get_cuda_capability_major():
                                    ctypes.byref(cc_minor),
                                    device)
     return cc_major.value
+
+
+def get_opencl_capability():
+    """
+    Return a list of available OpenCL devices.
+
+    Returns
+    -------
+    bool
+        True: if openCL platform detected and at least one device is found,
+        False: if OpenCL is not found or if no OpenCL devices are found
+    """
+    try:
+        import pyopencl
+        platforms = pyopencl.get_platforms()
+
+        if len(platforms) == 0:
+            return False
+        # len(platforms) is > 0, if it is not == 0
+        return True
+    except ImportError:
+        return False
