@@ -319,8 +319,8 @@ class UETestCase(unittest.TestCase):
                         item1))
 
     def test_jointJ_window_analysis(self):
-        sts1 = self.sts1_neo
-        sts2 = self.sts2_neo
+        sts1 = np.asarray(self.sts1_neo, dtype=object)
+        sts2 = np.asarray(self.sts2_neo, dtype=object)
         data = np.vstack((sts1, sts2)).T
         win_size = 100 * pq.ms
         bin_size = 5 * pq.ms
@@ -423,7 +423,9 @@ class UETestCase(unittest.TestCase):
                         [] * pq.ms, t_start=0 * pq.ms,
                         t_stop=t_pre + t_post))
             data_tr.append(data_sel_units)
+
         data_tr.reverse()
+        data_tr=np.asarray(data_tr, dtype=object)
         spiketrain = np.vstack([i for i in data_tr]).T
         return spiketrain
 
@@ -492,10 +494,10 @@ class UETestCase(unittest.TestCase):
 
     def test_multiple_neurons(self):
         np.random.seed(12)
-        spiketrains = \
+        spiketrains = np.asarray(
             [StationaryPoissonProcess(
                 rate=50 * pq.Hz, t_stop=1 * pq.s).generate_n_spiketrains(5)
-             for neuron in range(3)]
+             for neuron in range(3)],dtype=object)
 
         spiketrains = np.stack(spiketrains, axis=1)
         UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
