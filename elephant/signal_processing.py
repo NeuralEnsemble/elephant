@@ -167,7 +167,7 @@ def zscore(signal, inplace=True):
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
         # Otherwise, raise an error.
-        if inplace and not np.issubdtype(np.float, sig.dtype):
+        if inplace and not np.issubdtype(float, sig.dtype):
             raise ValueError(f"Cannot perform inplace operation as the "
                              f"signal dtype is not float. Source: {sig.name}")
 
@@ -673,7 +673,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
         sigma = n_cycles / (6. * freq)
         freqs = np.fft.fftfreq(n, 1.0 / fs)
-        heaviside = np.array(freqs > 0., dtype=np.float)
+        heaviside = np.array(freqs > 0., dtype=float)
         ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
             -2 * (np.pi * sigma * (freqs - freq)) ** 2) * heaviside * fs
         ft_imag = np.zeros_like(ft_real)
@@ -717,7 +717,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         n = n_orig
 
     # generate Morlet wavelets (in the frequency domain)
-    wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
+    wavelet_fts = np.empty([len(freqs), n], dtype=complex)
     for i, f in enumerate(freqs):
         wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, sampling_frequency, n)
 
