@@ -1,4 +1,4 @@
-# This workflow will setup GitHub-hosted runners and install the required dependencies for elephant tests.
+# This workflow will set up GitHub-hosted runners and install the required dependencies for elephant tests.
 # On a pull requests and on pushes to master it will run different tests for elephant.
 
 name: tests
@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         # python versions for elephant: [3.8, 3.9, "3.10", 3.11]
-        python-version: [3.8, 3.9, "3.10", 3.11]
+        python-version: [3.8, 3.9, "3.10"]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
       # do not cancel all in-progress jobs if any matrix job fails
