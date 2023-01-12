@@ -7,7 +7,7 @@ dependencies:
   - python>=3.8
 
   - mpi4py
-  - numpy>1.20
+  - numpy>=1.19.5
   - scipy
   - tqdm
   - pandas
