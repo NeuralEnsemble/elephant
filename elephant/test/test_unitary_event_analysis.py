@@ -498,12 +498,13 @@ class UETestCase(unittest.TestCase):
 
     def test_multiple_neurons(self):
         np.random.seed(12)
-        spiketrains = np.asarray(
+        # Create a list of lists containing 3 Trials with 5 spiketrains
+        spiketrains = \
             [StationaryPoissonProcess(
                 rate=50 * pq.Hz, t_stop=1 * pq.s).generate_n_spiketrains(5)
-             for neuron in range(3)],dtype=object)
+             for _ in range(3)]
 
-        spiketrains = np.stack(spiketrains, axis=1)
+        spiketrains = list(zip(*spiketrains))
         UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                                            win_size=300 * pq.ms,
                                            win_step=100 * pq.ms)
