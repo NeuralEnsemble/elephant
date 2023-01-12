@@ -608,7 +608,7 @@ class SpadeTestCase(unittest.TestCase):
                           corr='invalid_key')
         # Test negative number of subset for stability
         self.assertRaises(ValueError, spade.approximate_stability, (),
-                          np.ndarray([]), n_subsets=-3)
+                          np.array([]), n_subsets=-3)
 
     def test_pattern_set_reduction(self):
         winlen = 6
