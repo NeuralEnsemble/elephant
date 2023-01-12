@@ -440,7 +440,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         times = np.where(pattern['times'] > 0)[0] * bin_size + t_start
         pattern['times'] = times
         pattern['lags'] = pattern['lags'] * bin_size
-        pattern['signature'] = np.array(pattern['signature'], dtype=int)
+        pattern['signature'] = np.array(pattern['signature'], dtype=np.int32)
 
     # Give as output only the maximal groups
     if verbose:
