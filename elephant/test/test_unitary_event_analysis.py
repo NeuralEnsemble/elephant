@@ -319,9 +319,13 @@ class UETestCase(unittest.TestCase):
                         item1))
 
     def test_jointJ_window_analysis(self):
-        sts1 = np.asarray(self.sts1_neo, dtype=object)
-        sts2 = np.asarray(self.sts2_neo, dtype=object)
-        data = np.vstack((sts1, sts2)).T
+        sts1 = self.sts1_neo
+        sts2 = self.sts2_neo
+
+        # joinJ_window_analysis requires the following:
+        # A list of spike trains(neo.SpikeTrain objects) in different trials:
+        data = list(zip(*[sts1,sts2]))
+
         win_size = 100 * pq.ms
         bin_size = 5 * pq.ms
         win_step = 20 * pq.ms
