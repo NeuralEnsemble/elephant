@@ -21,7 +21,7 @@ from neo.test.generate_datasets import generate_one_simple_block, \
     random_event, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
 
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 
 import elephant.neo_tools as nt
 
