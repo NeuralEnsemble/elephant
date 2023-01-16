@@ -13,6 +13,7 @@ An example is the representation of a spike train as a sequence of 0-1 values
     BinnedSpikeTrain
     BinnedSpikeTrainView
     binarize
+    calculate_n_bins
 
 Examples
 ********
@@ -89,7 +90,8 @@ from elephant.utils import is_binary, deprecated_alias, is_time_quantity, \
 
 __all__ = [
     "binarize",
-    "BinnedSpikeTrain"
+    "BinnedSpikeTrain",
+    "calculate_n_bins"
 ]
 
 
@@ -1335,3 +1337,53 @@ def discretise_spiketimes(spiketrains, sampling_rate):
         new_spiketrains = new_spiketrains[0]
 
     return new_spiketrains
+
+def calculate_n_bins(t_start, t_stop, bin_size, time_unit=pq.ms):
+    """
+    Calculates the number of bins of time histogram.
+
+    This function determines the number of bins used in a time histogram which
+    starts at 't_start', ends at 't_stop' and has a binning length of
+    'bin_size'.
+
+    Parameters
+    ----------
+    t_start : pq.Quantity
+        Time point at which the time histogram starts.
+    t_stop : pq.Quantity
+        Time point at which the time histogram ends.
+    bin_size : pq.Quantity
+        Temporal size of the bins within the time histogram.
+    time_unit : pq.Quantity
+        Time unit which will be used for the calculation of 'n_bins'
+        if 't_start', 't_stop' and 'bin_size' have different time units.
+
+    Returns
+    -------
+    n_bins : int
+        Number of bins of the time histogram.
+    """
+    params_dict = {"t_start": t_start, "t_stop": t_stop, "bin_size": bin_size}
+    # sanity check: are parameters time quantities and share the same unit?
+    for key, value in params_dict.items():
+        if not is_time_quantity(value):
+            raise TypeError(f"Parameter '{key}' is not a time "
+                            f"quantity! Adjust it to a time quantity!")
+    if not t_start.units == t_stop.units == bin_size.units:
+        warnings.warn(f"Parameters 't_start' [{t_start.units}], "
+                      f"'t_stop' [{t_stop.units}] and 'bin_size' "
+                      f"[{bin_size.units}] have different time units!\n"
+                      f"They will be all rescaled to [{time_unit.units}]",
+                      UserWarning)
+        for key, value in params_dict.items():
+            params_dict[key] = value.rescale(time_unit)
+
+    # calculate (floating) point number of 'n_bins'
+    n_bins = (params_dict["t_stop"] - params_dict["t_start"]) \
+        / params_dict["bin_size"]
+    if isinstance(n_bins, pq.Quantity):  # remove pq.dimensionless
+        n_bins = n_bins.simplified.item()
+    # round 'n_bins' to an integer according the machine precision
+    n_bins = round_binning_errors(n_bins)
+
+    return n_bins

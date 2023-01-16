@@ -60,8 +60,8 @@ import quantities as pq
 import scipy
 
 import elephant.conversion as conv
-from elephant.utils import is_binary, deprecated_alias, round_binning_errors, \
-    calculate_n_bins
+from elephant.utils import is_binary, deprecated_alias, round_binning_errors
+from elephant.conversion import calculate_n_bins
 
 __all__ = [
     "hash_from_pattern",

@@ -58,35 +58,5 @@ class TestUtils(unittest.TestCase):
             [0, 0, 0, 0])
 
 
-class CalculateNBinsTestCase(unittest.TestCase):
-    def test_calculate_n_bins_not_time_quantity(self):
-        # t_start is in Hz
-        self.assertRaises(TypeError, utils.calculate_n_bins, t_start=1*pq.Hz,
-                          t_stop=5*pq.ms, bin_size=1*pq.ms)
-
-    def test_calculate_n_bins_different_units(self):
-        self.assertWarns(UserWarning, utils.calculate_n_bins, t_start=1*pq.s,
-                         t_stop=5*pq.ms, bin_size=1*pq.ms)
-
-    def test_calculate_n_bins_int(self):
-        n_bins = utils.calculate_n_bins(t_start=0*pq.s, t_stop=10*pq.ms,
-                                        bin_size=3*pq.ms)
-        self.assertIsInstance(n_bins, int)
-        self.assertEqual(n_bins, 3)
-
-    def test_calculate_n_bins_float(self):
-        n_bins = utils.calculate_n_bins(t_start=0.0*pq.s, t_stop=9.0*pq.ms,
-                                        bin_size=3.0*pq.ms)
-        self.assertIsInstance(n_bins, int)
-        self.assertEqual(n_bins, 3)
-
-    def test_calculate_n_bins_rounding(self):
-        n_bins = utils.calculate_n_bins(t_start=0*pq.s,
-                                        t_stop=0.99999999*pq.ms,
-                                        bin_size=1.0*pq.ms)
-        self.assertIsInstance(n_bins, int)
-        self.assertEqual(n_bins, 1)
-
-
 if __name__ == '__main__':
     unittest.main()
