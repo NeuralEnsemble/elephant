@@ -546,10 +546,12 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
        to the parameters `n_segments`, `len_segment` or `frequency_resolution`.
        By default, the data is not cut into segments;
 
-    2. Calculate 'num_tapers' approximately independent estimates of the
-       spectrum by multiplying the signals with the discrete prolate spheroidal
-       functions (also known as Slepian function) and calculate the cross
-       spectrum for the tapered segment.
+    2. Obtain approximately independent estimates of the spectrum for each
+       signal segment by multiplying the segment with tapering functions
+       (obtained as the discrete prolate spheroidal functions, also known as
+       Slepian functions) and calculating the cross spectrum for the tapered
+       segment. The number of tapering functions (and hence the number of the
+       estimates) is specified by the parameter `num_tapers`.
 
     3. Average the approximately independent estimates of each segment to
        decrease overall variance of the estimates
@@ -559,9 +561,10 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
     Parameters
     ----------
     signal : neo.AnalogSignal or pq.Quantity or np.ndarray
-        Time series data of which PSD is estimated. When `signal` is np.ndarray
-        sampling frequency should be given through keyword argument `fs`.
-        Signal should be passed as (n_channels, n_samples)
+        Time series data of which PSD is estimated. When `signal` is
+        np.ndarray, it needs to be passed as a 2-dimensional array of shape
+        (n_channels, n_samples), and the data sampling frequency should be
+        given through the keyword argument `fs`.
     fs : float, optional
         Specifies the sampling frequency of the input time series
         Default: 1.0.
@@ -586,11 +589,16 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
         overlap) and 1 (complete overlap).
         Default: 0.5 (half-overlapped).
     nw : float, optional
-        Time bandwidth product
+        Time-halfbandwidth product. This parameter can be used to determine the
+        number of tapers following the equation:
+            num_tapers = 2*nw - 1
+        It can be determined by multplying the duration of the signal with the
+        desired half-peak resolution frequency:
+            n_samples/fs * peak_resolution/2.
         Default: 4.0.
     num_tapers : int, optional
-        Number of tapers used in 1. to obtain estimate of PSD. By default,
-        [2*nw] - 1 is chosen.
+        Number of tapers used in step 2 (see above) to obtain estimate of PSD.
+        By default, [2*nw] - 1 is chosen.
         Default: None.
     peak_resolution : pq.Quantity float, optional
         Quantity in Hz determining the number of tapers used for analysis.
@@ -602,10 +610,6 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
         If True, return a one-sided spectrum for real data.
         If False return a two-sided spectrum.
         Default: True.
-    axis : int, optional
-        Axis along which the periodogram is computed.
-        See Notes [2].
-        Default: last axis (-1).
 
     Notes
     -----
@@ -720,7 +724,7 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
         if num_tapers <= 0:
             raise ValueError("num_tapers must be positive")
 
-    # Generate frequencies of PSD estimate
+    # Generate frequencies of CSD estimate
     if return_onesided:
         freqs = np.fft.rfftfreq(n_per_seg, d=1/fs)
     else:
