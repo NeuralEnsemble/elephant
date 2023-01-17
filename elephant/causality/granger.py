@@ -412,9 +412,11 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
     # Back-transformation
     causal_part = np.fft.fft(causal_part, axis=0)
 
-    # Adjust zero frequency part to ensure convergence
-    indices = np.tril_indices(num_signals, k=-1)
-    causal_part[0, indices[0], indices[1]] = 0
+    # Adjust zero frequency part to ensure convergence by setting entries
+    # below diagonal to zero at zero-frequency
+    if num_signals > 1:
+        indices = np.tril_indices(num_signals, k=-1)
+        causal_part[0, indices[0], indices[1]] = 0
 
     return causal_part
 
@@ -870,9 +872,6 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
 
 
     signals = np.vstack([xdata, ydata])
-    # signals = AnalogSignal(combined_data,
-    #                        sampling_rate=fs,
-    #                        units='mV')
 
     # Calculate cross spectrum for signals
     freqs, _, S = multitaper_cross_spectrum(
@@ -968,6 +967,8 @@ if __name__ == '__main__':
     cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
                                                             num_iterations=100)
 
+    import IPython
+    IPython.embed()
     A = np.matmul(np.matmul(transfer_function, cov_matrix),
                   _dagger(transfer_function))
 
