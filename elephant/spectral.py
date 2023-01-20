@@ -665,7 +665,7 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
     # If the data is given as AnalogSignal, use its attribute to specify the
     # sampling frequency
     if hasattr(signals, 'sampling_rate'):
-        fs = signals.sampling_rate.rescale('Hz').magnitude
+        fs = signals.sampling_rate.rescale('Hz')
 
     # If fs and peak resolution is pq.Quantity, get magnitude
     if isinstance(fs, pq.quantity.Quantity):
@@ -706,11 +706,11 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
     n_overlap = int(n_per_seg * overlap)
     n_segments = int((length_signal - n_overlap) / (n_per_seg - n_overlap))
 
-    if isinstance(peak_resolution, pq.quantity.Quantity):
-        peak_resolution = peak_resolution.rescale('Hz').magnitude
 
     # Determine time-halfbandwidth product from given parameters
     if peak_resolution is not None:
+        if isinstance(peak_resolution, pq.quantity.Quantity):
+            peak_resolution = peak_resolution.rescale('Hz').magnitude
         if peak_resolution <= 0:
             raise ValueError("peak_resolution must be positive")
         nw = n_per_seg / fs * peak_resolution / 2
@@ -778,18 +778,14 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
                                           axis=-2,
                                           dtype=np.complex64) / fs
 
-        phase_spec_estimates[i] = np.angle(np.mean(temp, axis=-2))
-
     cross_spec = np.mean(cross_spec_estimates, axis=0)
-    phase_cross_spec = np.mean(phase_spec_estimates, axis=0)
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
         cross_spec = cross_spec * signals.units * signals.units / pq.Hz
-        phase_cross_spec = phase_cross_spec * pq.rad
         freqs = freqs * pq.Hz
 
-    return freqs, phase_cross_spec, cross_spec
+    return freqs, cross_spec
 
 
 def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -866,7 +862,7 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     """
     signals = np.vstack([signal_i, signal_j])
 
-    freqs, _, Pxy = multitaper_cross_spectrum(
+    freqs, Pxy = multitaper_cross_spectrum(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
         frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
         nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution)

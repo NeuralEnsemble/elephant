@@ -462,19 +462,18 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                               units='mV')
 
         # consistency between different ways of specifying number of tapers
-        freqs1, phase_cross_spec1, cross_spec1 = \
+        freqs1, cross_spec1 = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
                     nw=3.5)
-        freqs2, phase_cross_spec2, cross_spec2 = \
+        freqs2, cross_spec2 = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
                     nw=3.5,
                     num_tapers=6)
         self.assertTrue((cross_spec1 == cross_spec2).all()
-                        and (phase_cross_spec1 == phase_cross_spec2).all()
                         and (freqs1 == freqs2).all())
 
         # consistency between different ways of specifying n_per_seg
@@ -482,39 +481,37 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         frequency_resolution = 1 * pq.Hz
         len_segment = int(data.sampling_rate / frequency_resolution)
 
-        freqs_fr, phase_cross_spec_fr, cross_spec_fr = \
+        freqs_fr, cross_spec_fr = \
             elephant.spectral.multitaper_cross_spectrum(
                 data, frequency_resolution=frequency_resolution)
 
-        freqs_ls, phase_cross_spec_ls, cross_spec_ls = \
+        freqs_ls, cross_spec_ls = \
             elephant.spectral.multitaper_cross_spectrum(
                 data, len_segment=len_segment)
 
         np.testing.assert_array_equal(freqs_fr, freqs_ls)
-        np.testing.assert_array_equal(phase_cross_spec_fr, phase_cross_spec_ls)
         np.testing.assert_array_equal(cross_spec_fr, cross_spec_ls)
 
         # peak resolution and consistency with data
         peak_res = 1.0 * pq.Hz
-        freqs, phase_cross_spec, cross_spec = \
+        freqs, cross_spec = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data, peak_resolution=peak_res)
 
         self.assertEqual(freqs[cross_spec[0, 0].argmax()], signal_freq)
-        freqs_np, phase_cross_spec_np, cross_spec_np = \
+        freqs_np, cross_spec_np = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T, fs=1 / sampling_period,
                     peak_resolution=peak_res)
         self.assertTrue((freqs == freqs_np).all()
-                        and (phase_cross_spec == phase_cross_spec_np).all()
                         and (cross_spec == cross_spec_np).all())
 
         # one-sided vs two-sided spectrum
-        freqs_os, phase_cross_spec_os, cross_spec_os = \
+        freqs_os, cross_spec_os = \
             elephant.spectral.multitaper_cross_spectrum(
                 data, return_onesided=True)
 
-        freqs_ts, phase_cross_spec_ts, cross_spec_ts = \
+        freqs_ts, cross_spec_ts = \
             elephant.spectral.multitaper_cross_spectrum(
                 data, return_onesided=False)
 
@@ -529,14 +526,6 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
             np.abs(freqs_ts[nyquist_freq_idx].rescale('Hz').magnitude)) * pq.Hz
 
         np.testing.assert_array_equal(freqs_os, ts_overlap_freqs)
-
-        diff_phase_cross_spec_os_ts = np.angle(np.exp(1j*(
-                phase_cross_spec_os.magnitude -
-                phase_cross_spec_ts[:, :, ts_freq_indices].magnitude)))
-
-        np.testing.assert_allclose(diff_phase_cross_spec_os_ts,
-                                   np.zeros_like(diff_phase_cross_spec_os_ts),
-                                   rtol=0, atol=1e-12)
 
         np.testing.assert_allclose(
             cross_spec_os.magnitude,
@@ -557,13 +546,13 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                               units='mV')
 
         # Test num_tapers vs nw
-        freqs1, phase_cross_spec1, cross_spec1 = \
+        freqs1, cross_spec1 = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
                     nw=3,
                     num_tapers=9)
-        freqs2, phase_cross_spec2, cross_spec2 = \
+        freqs2, cross_spec2 = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
@@ -572,14 +561,14 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                         and (cross_spec1 != cross_spec2).all())
 
         # Test peak_resolution vs nw
-        freqs1, phase_cross_spec1, cross_spec1 = \
+        freqs1, cross_spec1 = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
                     nw=3,
                     num_tapers=9,
                     peak_resolution=1)
-        freqs2, phase_cross_spec2, cross_spec2 = \
+        freqs2, cross_spec2 = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
@@ -606,7 +595,7 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
 
         psd_multitaper[:, 1:] /= 2  # since comparing rfft and fft results
 
-        freqs2, phase_cross_spec, cross_spec = \
+        freqs2, cross_spec = \
                 elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
@@ -636,54 +625,48 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                               units='mV')
 
         # outputs from AnalogSignal input are of Quantity type (standard usage)
-        freqs_neo, phase_cross_spec_neo, cross_spec_neo \
+        freqs_neo, cross_spec_neo \
                 = elephant.spectral.multitaper_cross_spectrum(data)
         self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
         self.assertTrue(isinstance(cross_spec_neo, pq.quantity.Quantity))
 
         # outputs from Quantity array input are of Quantity type
-        freqs_pq, phase_cross_spec_pq, cross_spec_pq \
+        freqs_pq, cross_spec_pq \
                 = elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T * data.units,
                     fs=1 / (sampling_period * pq.s))
         self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
-        self.assertTrue(isinstance(phase_cross_spec_pq, pq.quantity.Quantity))
         self.assertTrue(isinstance(cross_spec_pq, pq.quantity.Quantity))
 
         # outputs from Numpy ndarray input are NOT of Quantity type
-        freqs_np, phase_cross_spec_np, cross_spec_np \
+        freqs_np, cross_spec_np \
                 = elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T,
                     fs=1 / (sampling_period * pq.s))
         self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
-        self.assertFalse(isinstance(phase_cross_spec_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(cross_spec_np, pq.quantity.Quantity))
 
         # frequency resolution as an integer
         freq_res_int = 1
         freq_res_hz = 1 * pq.Hz
 
-        freqs_int, phase_cross_spec_int, cross_spec_int = \
+        freqs_int, cross_spec_int = \
             elephant.spectral.multitaper_cross_spectrum(
                 data, frequency_resolution=freq_res_int)
 
-        freqs_hz, phase_cross_spec_hz, cross_spec_hz = \
+        freqs_hz, cross_spec_hz = \
             elephant.spectral.multitaper_cross_spectrum(
                 data, frequency_resolution=freq_res_hz)
 
         np.testing.assert_array_equal(freqs_int, freqs_hz)
-        np.testing.assert_array_equal(phase_cross_spec_int,
-                                      phase_cross_spec_hz)
         np.testing.assert_array_equal(cross_spec_int, cross_spec_hz)
 
         # check if the results from different input types are identical
         self.assertTrue(
             (freqs_neo == freqs_pq).all() and
-            (phase_cross_spec_neo == phase_cross_spec_pq).all() and
             (cross_spec_neo == cross_spec_pq).all())
         self.assertTrue(
             (freqs_neo == freqs_np).all() and
-            (phase_cross_spec_neo == phase_cross_spec_np).all() and
             (cross_spec_neo == cross_spec_np).all())
 
 
