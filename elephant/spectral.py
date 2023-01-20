@@ -653,11 +653,11 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
         If `peak_resolution` is None and `num_tapers` is not an int.
     """
 
-    # When the input is AnalogSignal, the data is added after rolling the axis
-    # for time index to the last
+    # When the input is AnalogSignal, fetch the underlying numpy array and swap
+    # axes from (n_samples, n_channels) to (n_channels, n_samples)
     data = np.asarray(signals)
     if isinstance(signals, neo.AnalogSignal):
-        data = np.rollaxis(data, 0, len(data.shape))
+        data = np.moveaxis(data, 0, 1)
 
     # Number of data points in time series
     length_signal = np.shape(data)[1]
